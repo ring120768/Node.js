@@ -1,0 +1,207 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Login - Car Crash Lawyer AI</title>
+  <style>
+    body {
+      margin: 0;
+      font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+      background-color: #f7f9fa;
+      display: flex;
+      flex-direction: column;
+      min-height: 100vh;
+    }
+    .nav {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      padding: 16px;
+      background-color: white;
+      box-shadow: 0 2px 4px rgba(0,0,0,0.05);
+      position: relative;
+      z-index: 10;
+    }
+    .nav button,
+    .nav a {
+      background-color: #007acc;
+      color: white;
+      padding: 6px 12px;
+      border-radius: 6px;
+      font-weight: bold;
+      font-size: 0.85rem;
+      cursor: pointer;
+      border: none;
+      text-decoration: none;
+      transition: background-color 0.3s ease, transform 0.2s ease;
+    }
+    .nav button:hover,
+    .nav a:hover {
+      background-color: #005f9e;
+      transform: translateY(-1px);
+    }
+    .container {
+      max-width: 400px;
+      margin: 40px auto;
+      padding: 20px;
+      background-color: white;
+      border-radius: 8px;
+      box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+    }
+    h1 {
+      text-align: center;
+      margin-bottom: 24px;
+      color: #333;
+    }
+    .form-group {
+      margin-bottom: 16px;
+    }
+    .form-group label {
+      display: block;
+      margin-bottom: 6px;
+      font-weight: 500;
+      color: #555;
+    }
+    .form-group input {
+      width: 100%;
+      padding: 10px;
+      border: 1px solid #ddd;
+      border-radius: 4px;
+      font-size: 16px;
+      box-sizing: border-box;
+    }
+    .form-group input:focus {
+      outline: none;
+      border-color: #007acc;
+      box-shadow: 0 0 0 2px rgba(0,120,204,0.2);
+    }
+    .btn {
+      display: block;
+      width: 100%;
+      padding: 12px;
+      background-color: #007acc;
+      color: white;
+      border: none;
+      border-radius: 4px;
+      font-size: 16px;
+      font-weight: 500;
+      cursor: pointer;
+      transition: background-color 0.3s;
+    }
+    .btn:hover {
+      background-color: #005f9e;
+    }
+    .error {
+      color: #e74c3c;
+      margin-top: 16px;
+      text-align: center;
+    }
+    .links {
+      margin-top: 20px;
+      text-align: center;
+    }
+    .links a {
+      color: #007acc;
+      text-decoration: none;
+    }
+    .links a:hover {
+      text-decoration: underline;
+    }
+  </style>
+</head>
+<body>
+  <!-- Navigation Bar -->
+  <div class="nav">
+    <button onclick="window.history.back()">← Back</button>
+    <a href="index.html">🏠 Home</a>
+  </div>
+
+  <div class="container">
+    <h1>Login</h1>
+    <div id="error-message" class="error" style="display: none;"></div>
+
+    <form id="login-form">
+      <div class="form-group">
+        <label for="email">Email</label>
+        <input type="email" id="email" name="email" required>
+      </div>
+
+      <div class="form-group">
+        <label for="password">Password</label>
+        <input type="password" id="password" name="password" required>
+      </div>
+
+      <button type="submit" class="btn">Login</button>
+    </form>
+
+    <div class="links">
+      <p>Don't have an account? <a href="signup.html">Sign Up</a></p>
+      <p><a href="#" id="forgot-password">Forgot Password?</a></p>
+    </div>
+  </div>
+
+  <script>
+    // Authentication now handled by backend Supabase integration
+
+    // Handle login form submission
+    document.getElementById('login-form').addEventListener('submit', async (e) => {
+      e.preventDefault();
+
+      const email = document.getElementById('email').value;
+      const password = document.getElementById('password').value;
+      const errorElement = document.getElementById('error-message');
+
+      try {
+        // Send credentials to backend for authentication
+        const response = await fetch('/auth/login', {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json'
+          },
+          body: JSON.stringify({ email, password })
+        });
+
+        const data = await response.json();
+
+        if (data.success) {
+          // Redirect to dashboard or home page
+          window.location.href = 'index.html';
+        } else {
+          errorElement.textContent = data.error || 'Login failed';
+          errorElement.style.display = 'block';
+        }
+      } catch (error) {
+        console.error('Login error:', error);
+        errorElement.textContent = error.message || 'Login failed';
+        errorElement.style.display = 'block';
+      }
+    });
+
+    // Handle forgot password
+    document.getElementById('forgot-password').addEventListener('click', async (e) => {
+      e.preventDefault();
+
+      const email = document.getElementById('email').value;
+      const errorElement = document.getElementById('error-message');
+
+      if (!email) {
+        errorElement.textContent = 'Please enter your email address';
+        errorElement.style.display = 'block';
+        return;
+      }
+
+      try {
+        // Password reset functionality to be implemented with Supabase
+        errorElement.textContent = 'Password reset functionality coming soon!';
+        errorElement.style.display = 'block';
+        errorElement.style.color = '#f39c12'; // Orange color for info
+      } catch (error) {
+        console.error('Password reset error:', error);
+        errorElement.textContent = error.message || 'Failed to send password reset email';
+        errorElement.style.display = 'block';
+      }
+    });
+  </script>
+</body>
+</html>
