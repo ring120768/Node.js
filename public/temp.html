@@ -5,7 +5,6 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Car Crash Lawyer AI - Report Incident</title>
     <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
     <style>
         * {
             margin: 0;
@@ -125,13 +124,6 @@
             margin-bottom: 15px;
             font-size: 18px;
             font-weight: bold;
-            position: relative;
-        }
-
-        .what3words-display .timestamp {
-            font-size: 10px;
-            opacity: 0.8;
-            margin-top: 5px;
         }
 
         #map {
@@ -396,8 +388,7 @@
             </div>
 
             <div class="what3words-display" id="what3wordsDisplay">
-                <div id="what3wordsText">///fetching.words.location</div>
-                <div class="timestamp" id="w3wTimestamp"></div>
+                ///fetching.words.location
             </div>
 
             <div id="map"></div>
@@ -441,7 +432,6 @@
         let mediaRecorder = null;
         let audioChunks = [];
         let isRecording = false;
-        let what3wordsStoragePath = null;
 
         // Initialize on page load
         document.addEventListener('DOMContentLoaded', async () => {
@@ -481,6 +471,7 @@
                     }
                 } else {
                     console.warn('User not authenticated');
+                    // Optionally show a warning or redirect to login
                 }
             } catch (error) {
                 console.error('Authentication check error:', error);
@@ -618,14 +609,13 @@
                             const w3wData = await w3wResponse.json();
                             if (w3wData.words) {
                                 what3wordsData = w3wData.words;
-                                document.getElementById('what3wordsText').textContent = `///${w3wData.words}`;
-                                document.getElementById('w3wTimestamp').textContent = new Date().toLocaleString();
+                                document.getElementById('what3wordsDisplay').textContent = `///${w3wData.words}`;
                             } else {
-                                document.getElementById('what3wordsText').textContent = '///location.not.available';
+                                document.getElementById('what3wordsDisplay').textContent = '///location.not.available';
                             }
                         } catch (error) {
                             console.error('What3Words error:', error);
-                            document.getElementById('what3wordsText').textContent = '///location.error.occurred';
+                            document.getElementById('what3wordsDisplay').textContent = '///location.error.occurred';
                         }
 
                         // Show location section
@@ -669,56 +659,6 @@
                     }
                 );
             });
-        }
-
-        // Capture and upload what3words screenshot
-        async function captureWhat3Words() {
-            try {
-                const w3wElement = document.getElementById('what3wordsDisplay');
-
-                if (!w3wElement || !what3wordsData) {
-                    console.log('No what3words data to capture');
-                    return null;
-                }
-
-                // Capture the element
-                const canvas = await html2canvas(w3wElement, {
-                    backgroundColor: '#dc2626',
-                    scale: 2,
-                    logging: false,
-                    useCORS: true
-                });
-
-                // Convert to blob
-                const blob = await new Promise((resolve) => {
-                    canvas.toBlob(resolve, 'image/png', 0.9);
-                });
-
-                // Upload to server
-                const formData = new FormData();
-                formData.append('image', blob, 'what3words.png');
-                formData.append('what3words', what3wordsData);
-                formData.append('latitude', userLocation?.lat || '');
-                formData.append('longitude', userLocation?.lng || '');
-                formData.append('userId', userData?.uid || '');
-
-                const response = await fetch('/api/upload-what3words-image', {
-                    method: 'POST',
-                    body: formData
-                });
-
-                if (response.ok) {
-                    const result = await response.json();
-                    console.log('What3words uploaded:', result);
-                    return result.storagePath;
-                }
-
-                return null;
-
-            } catch (error) {
-                console.error('Error capturing what3words:', error);
-                return null;
-            }
         }
 
         // Setup voice recording
@@ -837,36 +777,26 @@
             }
         }
 
-        // Setup continue button with what3words upload
+        // Setup continue button - UPDATED TO GO TO SAFETY CHECK
         function setupContinueButton() {
-            document.getElementById('continueBtn').addEventListener('click', async function() {
-                this.disabled = true;
-                this.textContent = 'Processing...';
-
-                // Capture and upload what3words screenshot
-                if (what3wordsData) {
-                    what3wordsStoragePath = await captureWhat3Words();
-                    console.log('What3words upload result:', what3wordsStoragePath ? 'Success' : 'Failed');
-                }
-
-                // Store all collected data in sessionStorage
+            document.getElementById('continueBtn').addEventListener('click', function() {
+                // Store all collected data in sessionStorage for safety-check.html
                 const incidentData = {
                     userId: userData?.uid || null,
                     location: userLocation,
                     what3words: what3wordsData,
-                    what3wordsStoragePath: what3wordsStoragePath,
                     voiceTranscription: voiceTranscription,
                     timestamp: new Date().toISOString(),
                     address: document.getElementById('addressText').textContent
                 };
 
-                // Save to sessionStorage
+                // Save to sessionStorage so safety-check.html can access it
                 sessionStorage.setItem('incidentData', JSON.stringify(incidentData));
 
                 // Log what we're passing
                 console.log('Passing incident data to safety check:', incidentData);
 
-                // Redirect to safety check page
+                // Redirect to safety check page instead of directly to Typeform
                 window.location.href = 'safety-check.html';
             });
         }

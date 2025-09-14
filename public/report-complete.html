@@ -1,0 +1,775 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Report Submitted - Car Crash Lawyer AI</title>
+
+    <!-- Supabase Client -->
+    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, sans-serif;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+            padding: 20px;
+        }
+
+        .container {
+            max-width: 400px;
+            margin: 0 auto;
+        }
+
+        .header {
+            text-align: center;
+            color: white;
+            margin-bottom: 20px;
+        }
+
+        .header h1 {
+            font-size: 24px;
+            margin-bottom: 5px;
+        }
+
+        .header p {
+            opacity: 0.9;
+            font-size: 14px;
+        }
+
+        .success-banner {
+            background: #10b981;
+            color: white;
+            padding: 15px;
+            border-radius: 10px;
+            text-align: center;
+            margin-bottom: 20px;
+            font-weight: bold;
+            animation: slideDown 0.5s ease-out;
+        }
+
+        @keyframes slideDown {
+            from {
+                opacity: 0;
+                transform: translateY(-20px);
+            }
+            to {
+                opacity: 1;
+                transform: translateY(0);
+            }
+        }
+
+        .card {
+            background: white;
+            border-radius: 15px;
+            padding: 20px;
+            margin-bottom: 20px;
+            box-shadow: 0 10px 30px rgba(0,0,0,0.2);
+        }
+
+        .emergency-panel {
+            background: #fef2f2;
+            border: 2px solid #dc2626;
+        }
+
+        .emergency-header {
+            text-align: center;
+            margin-bottom: 15px;
+        }
+
+        .emergency-header h3 {
+            color: #dc2626;
+            font-size: 20px;
+            margin-bottom: 5px;
+        }
+
+        .emergency-header p {
+            color: #7f1d1d;
+            font-size: 14px;
+        }
+
+        .emergency-buttons {
+            display: grid;
+            gap: 10px;
+        }
+
+        .emergency-btn {
+            padding: 18px;
+            border: none;
+            border-radius: 10px;
+            font-size: 16px;
+            font-weight: bold;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            cursor: pointer;
+            transition: all 0.3s;
+            box-shadow: 0 4px 6px rgba(0,0,0,0.1);
+        }
+
+        .emergency-btn:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 6px 12px rgba(0,0,0,0.15);
+        }
+
+        .emergency-btn:active {
+            transform: scale(0.98);
+            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+        }
+
+        .emergency-btn.critical {
+            background: #dc2626;
+            color: white;
+        }
+
+        .emergency-btn.recovery {
+            background: #f59e0b;
+            color: white;
+        }
+
+        .emergency-btn.contact {
+            background: #3b82f6;
+            color: white;
+        }
+
+        .btn-icon {
+            margin-right: 10px;
+            font-size: 24px;
+        }
+
+        .find-me-btn {
+            width: 100%;
+            padding: 15px;
+            background: #06b6d4;
+            color: white;
+            border: none;
+            border-radius: 10px;
+            font-size: 16px;
+            font-weight: bold;
+            cursor: pointer;
+            margin-bottom: 15px;
+            transition: all 0.3s;
+        }
+
+        .find-me-btn:hover {
+            background: #0891b2;
+            transform: translateY(-2px);
+        }
+
+        .additional-controls {
+            display: flex;
+            gap: 10px;
+            margin-bottom: 20px;
+        }
+
+        .additional-btn {
+            flex: 1;
+            padding: 15px;
+            border: none;
+            border-radius: 10px;
+            font-weight: bold;
+            font-size: 16px;
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            transition: all 0.3s;
+        }
+
+        .witness-btn {
+            background: #10b981;
+            color: white;
+        }
+
+        .witness-btn:hover {
+            background: #059669;
+            transform: translateY(-2px);
+        }
+
+        .vehicle-btn {
+            background: #8b5cf6;
+            color: white;
+        }
+
+        .vehicle-btn:hover {
+            background: #7c3aed;
+            transform: translateY(-2px);
+        }
+
+        .additional-btn:active {
+            transform: scale(0.98);
+        }
+
+        .website-btn {
+            width: 100%;
+            padding: 18px;
+            background: #3b82f6;
+            color: white;
+            border: none;
+            border-radius: 10px;
+            font-size: 18px;
+            font-weight: bold;
+            cursor: pointer;
+            transition: all 0.3s;
+            margin-bottom: 10px;
+        }
+
+        .website-btn:hover {
+            background: #2563eb;
+            transform: translateY(-2px);
+        }
+
+        .helper-text {
+            text-align: center;
+            color: white;
+            font-size: 14px;
+            margin-top: 10px;
+            background: rgba(255,255,255,0.1);
+            padding: 10px;
+            border-radius: 8px;
+        }
+
+        .helper-text strong {
+            color: #fbbf24;
+            font-size: 16px;
+        }
+
+        /* Modal Styles */
+        .modal {
+            display: none;
+            position: fixed;
+            z-index: 1000;
+            left: 0;
+            top: 0;
+            width: 100%;
+            height: 100%;
+            background-color: rgba(0,0,0,0.5);
+            animation: fadeIn 0.3s;
+        }
+
+        .modal.active {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+
+        @keyframes fadeIn {
+            from { opacity: 0; }
+            to { opacity: 1; }
+        }
+
+        .modal-content {
+            background: white;
+            padding: 30px;
+            border-radius: 15px;
+            width: 90%;
+            max-width: 500px;
+            max-height: 80vh;
+            overflow-y: auto;
+            animation: slideUp 0.3s;
+        }
+
+        @keyframes slideUp {
+            from {
+                transform: translateY(50px);
+                opacity: 0;
+            }
+            to {
+                transform: translateY(0);
+                opacity: 1;
+            }
+        }
+
+        .modal-header {
+            margin-bottom: 20px;
+        }
+
+        .modal-header h2 {
+            color: #333;
+            margin-bottom: 5px;
+        }
+
+        .modal-header p {
+            color: #666;
+            font-size: 14px;
+        }
+
+        .form-group {
+            margin-bottom: 20px;
+        }
+
+        .form-group label {
+            display: block;
+            margin-bottom: 5px;
+            color: #333;
+            font-weight: 500;
+        }
+
+        .form-group input,
+        .form-group textarea,
+        .form-group select {
+            width: 100%;
+            padding: 12px;
+            border: 2px solid #e5e7eb;
+            border-radius: 8px;
+            font-size: 16px;
+            transition: border-color 0.3s;
+        }
+
+        .form-group input:focus,
+        .form-group textarea:focus,
+        .form-group select:focus {
+            outline: none;
+            border-color: #3b82f6;
+        }
+
+        .form-group textarea {
+            min-height: 100px;
+            resize: vertical;
+        }
+
+        .modal-buttons {
+            display: flex;
+            gap: 10px;
+            margin-top: 20px;
+        }
+
+        .modal-btn {
+            flex: 1;
+            padding: 12px;
+            border: none;
+            border-radius: 8px;
+            font-size: 16px;
+            font-weight: bold;
+            cursor: pointer;
+            transition: all 0.3s;
+        }
+
+        .modal-btn.primary {
+            background: #3b82f6;
+            color: white;
+        }
+
+        .modal-btn.primary:hover {
+            background: #2563eb;
+        }
+
+        .modal-btn.secondary {
+            background: #e5e7eb;
+            color: #333;
+        }
+
+        .modal-btn.secondary:hover {
+            background: #d1d5db;
+        }
+
+        .loading {
+            opacity: 0.6;
+            pointer-events: none;
+        }
+
+        .error-message {
+            background: #fee2e2;
+            border: 1px solid #f87171;
+            color: #991b1b;
+            padding: 10px;
+            border-radius: 8px;
+            margin-bottom: 15px;
+            display: none;
+        }
+
+        .error-message.show {
+            display: block;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="header">
+            <h1>🚗 Report Road Traffic Incident</h1>
+            <p>Secure, AI-powered incident documentation</p>
+        </div>
+
+        <!-- Success Notification -->
+        <div class="success-banner">
+            ✅ Your report has been successfully submitted
+        </div>
+
+        <!-- Emergency Actions Panel -->
+        <div class="card emergency-panel">
+            <div class="emergency-header">
+                <h3>🚨 Emergency Actions</h3>
+                <p>Tap to call emergency services</p>
+            </div>
+
+            <div class="emergency-buttons">
+                <button class="emergency-btn critical" onclick="makeEmergencyCall()">
+                    <span class="btn-icon">📞</span>
+                    <span>Call 999 - Emergency Services</span>
+                </button>
+
+                <button class="emergency-btn recovery" onclick="makeRecoveryCall()">
+                    <span class="btn-icon">🚗</span>
+                    <span>Call Recovery Service</span>
+                </button>
+
+                <button class="emergency-btn contact" onclick="makeEmergencyContactCall()">
+                    <span class="btn-icon">👤</span>
+                    <span>Call Emergency Contact</span>
+                </button>
+            </div>
+        </div>
+
+        <!-- Additional Reports Section -->
+        <div class="card">
+            <button class="find-me-btn" onclick="startNewReport()">
+                📝 Start New Report
+            </button>
+
+            <div class="additional-controls">
+                <button class="additional-btn witness-btn" onclick="openWitnessModal()">
+                    👥 Other Witnesses
+                </button>
+                <button class="additional-btn vehicle-btn" onclick="openVehicleModal()">
+                    🚙 Other Vehicles
+                </button>
+            </div>
+        </div>
+
+        <!-- Go to Website Button -->
+        <button class="website-btn" onclick="goToWebsite()">
+            🌐 Go to Website
+        </button>
+
+        <p class="helper-text">
+            Reference: <strong id="incident-ref">INC-2024-78432</strong><br>
+            We'll be in touch within 24 hours
+        </p>
+    </div>
+
+    <!-- Witness Modal -->
+    <div id="witnessModal" class="modal">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h2>👥 Add Witness Information</h2>
+                <p>Please provide details of any witnesses to the incident</p>
+            </div>
+
+            <div class="error-message" id="witnessError"></div>
+
+            <form id="witnessForm">
+                <div class="form-group">
+                    <label for="witnessName">Full Name *</label>
+                    <input type="text" id="witnessName" name="witnessName" required>
+                </div>
+
+                <div class="form-group">
+                    <label for="witnessAddress">Address *</label>
+                    <input type="text" id="witnessAddress" name="witnessAddress" required>
+                </div>
+
+                <div class="form-group">
+                    <label for="witnessMobile">Mobile Number *</label>
+                    <input type="tel" id="witnessMobile" name="witnessMobile" required>
+                </div>
+
+                <div class="form-group">
+                    <label for="witnessEmail">Email Address</label>
+                    <input type="email" id="witnessEmail" name="witnessEmail">
+                </div>
+
+                <div class="form-group">
+                    <label for="witnessStatement">Witness Statement *</label>
+                    <textarea id="witnessStatement" name="witnessStatement" required 
+                              placeholder="Please describe what the witness observed..."></textarea>
+                </div>
+
+                <div class="modal-buttons">
+                    <button type="button" class="modal-btn secondary" onclick="closeModal('witnessModal')">
+                        Cancel
+                    </button>
+                    <button type="submit" class="modal-btn primary">
+                        Save Witness
+                    </button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <!-- Vehicle Modal -->
+    <div id="vehicleModal" class="modal">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h2>🚙 Add Vehicle Information</h2>
+                <p>Please provide details of other vehicles involved</p>
+            </div>
+
+            <div class="error-message" id="vehicleError"></div>
+
+            <form id="vehicleForm">
+                <div class="form-group">
+                    <label for="driverName">Driver's Full Name *</label>
+                    <input type="text" id="driverName" name="driverName" required>
+                </div>
+
+                <div class="form-group">
+                    <label for="driverAddress">Driver's Address *</label>
+                    <input type="text" id="driverAddress" name="driverAddress" required>
+                </div>
+
+                <div class="form-group">
+                    <label for="driverMobile">Driver's Mobile Number *</label>
+                    <input type="tel" id="driverMobile" name="driverMobile" required>
+                </div>
+
+                <div class="form-group">
+                    <label for="driverEmail">Driver's Email</label>
+                    <input type="email" id="driverEmail" name="driverEmail">
+                </div>
+
+                <div class="form-group">
+                    <label for="vehicleReg">Vehicle Registration *</label>
+                    <input type="text" id="vehicleReg" name="vehicleReg" required 
+                           placeholder="e.g., AB12 CDE">
+                </div>
+
+                <div class="form-group">
+                    <label for="vehicleMake">Vehicle Make *</label>
+                    <input type="text" id="vehicleMake" name="vehicleMake" required 
+                           placeholder="e.g., Ford">
+                </div>
+
+                <div class="form-group">
+                    <label for="vehicleModel">Vehicle Model *</label>
+                    <input type="text" id="vehicleModel" name="vehicleModel" required 
+                           placeholder="e.g., Focus">
+                </div>
+
+                <div class="form-group">
+                    <label for="vehicleColor">Vehicle Color</label>
+                    <input type="text" id="vehicleColor" name="vehicleColor" 
+                           placeholder="e.g., Blue">
+                </div>
+
+                <div class="form-group">
+                    <label for="insuranceCompany">Insurance Company</label>
+                    <input type="text" id="insuranceCompany" name="insuranceCompany">
+                </div>
+
+                <div class="form-group">
+                    <label for="insurancePolicy">Policy Number</label>
+                    <input type="text" id="insurancePolicy" name="insurancePolicy">
+                </div>
+
+                <div class="modal-buttons">
+                    <button type="button" class="modal-btn secondary" onclick="closeModal('vehicleModal')">
+                        Cancel
+                    </button>
+                    <button type="submit" class="modal-btn primary">
+                        Save Vehicle
+                    </button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <script>
+        // Initialize Supabase - Replace with your actual credentials
+        const SUPABASE_URL = 'YOUR_SUPABASE_URL';
+        const SUPABASE_ANON_KEY = 'YOUR_SUPABASE_ANON_KEY';
+        const supabase = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
+
+        // Get current user and incident data from URL params or session
+        const urlParams = new URLSearchParams(window.location.search);
+        const incidentId = urlParams.get('incident_id') || sessionStorage.getItem('incident_id');
+        const userId = urlParams.get('user_id') || sessionStorage.getItem('user_id');
+
+        // Update incident reference if available
+        if (incidentId) {
+            document.getElementById('incident-ref').textContent = incidentId;
+        }
+
+        // Emergency Call Functions
+        async function makeEmergencyCall() {
+            // For 999, we can directly use tel: without fetching from database
+            window.location.href = 'tel:999';
+        }
+
+        async function makeRecoveryCall() {
+            try {
+                // Fetch recovery number from user's profile
+                const { data, error } = await supabase
+                    .from('user_sign_up')
+                    .select('recovery_service_number')
+                    .eq('id', userId)
+                    .single();
+
+                if (error) throw error;
+
+                if (data && data.recovery_service_number) {
+                    window.location.href = `tel:${data.recovery_service_number}`;
+                } else {
+                    alert('Recovery service number not found. Please update your profile.');
+                }
+            } catch (error) {
+                console.error('Error fetching recovery number:', error);
+                alert('Unable to fetch recovery number. Please try again.');
+            }
+        }
+
+        async function makeEmergencyContactCall() {
+            try {
+                // Fetch emergency contact from user's profile
+                const { data, error } = await supabase
+                    .from('user_sign_up')
+                    .select('emergency_contact_number')
+                    .eq('id', userId)
+                    .single();
+
+                if (error) throw error;
+
+                if (data && data.emergency_contact_number) {
+                    window.location.href = `tel:${data.emergency_contact_number}`;
+                } else {
+                    alert('Emergency contact number not found. Please update your profile.');
+                }
+            } catch (error) {
+                console.error('Error fetching emergency contact:', error);
+                alert('Unable to fetch emergency contact. Please try again.');
+            }
+        }
+
+        // Start New Report
+        function startNewReport() {
+            // Clear current session data
+            sessionStorage.clear();
+
+            // Redirect to your Typeform incident report
+            // Replace with your actual Typeform URL for incident reports
+            window.location.href = 'https://YOUR_TYPEFORM_URL_FOR_INCIDENT_REPORTS';
+            // Example: https://yourcompany.typeform.com/to/abc123
+        }
+
+        // Go to Website
+        function goToWebsite() {
+            window.location.href = 'https://www.carcrashlawyerai.co.uk';
+        }
+
+        // Modal Functions
+        function openWitnessModal() {
+            document.getElementById('witnessModal').classList.add('active');
+        }
+
+        function openVehicleModal() {
+            document.getElementById('vehicleModal').classList.add('active');
+        }
+
+        function closeModal(modalId) {
+            document.getElementById(modalId).classList.remove('active');
+            // Clear form
+            document.querySelector(`#${modalId} form`).reset();
+            // Hide error message
+            document.querySelector(`#${modalId} .error-message`).classList.remove('show');
+        }
+
+        // Handle Witness Form Submission
+        document.getElementById('witnessForm').addEventListener('submit', async (e) => {
+            e.preventDefault();
+
+            const form = e.target;
+            const errorDiv = document.getElementById('witnessError');
+
+            // Show loading state
+            form.classList.add('loading');
+
+            try {
+                const witnessData = {
+                    incident_id: incidentId,
+                    create_user_id: userId,
+                    witness_name: form.witnessName.value,
+                    witness_address: form.witnessAddress.value,
+                    witness_mobile: form.witnessMobile.value,
+                    witness_email: form.witnessEmail.value || null,
+                    witness_statement: form.witnessStatement.value
+                };
+
+                const { data, error } = await supabase
+                    .from('witness_reports')
+                    .insert([witnessData]);
+
+                if (error) throw error;
+
+                // Success - close modal and show confirmation
+                closeModal('witnessModal');
+                alert('Witness information saved successfully!');
+
+            } catch (error) {
+                console.error('Error saving witness:', error);
+                errorDiv.textContent = 'Failed to save witness information. Please try again.';
+                errorDiv.classList.add('show');
+            } finally {
+                form.classList.remove('loading');
+            }
+        });
+
+        // Handle Vehicle Form Submission
+        document.getElementById('vehicleForm').addEventListener('submit', async (e) => {
+            e.preventDefault();
+
+            const form = e.target;
+            const errorDiv = document.getElementById('vehicleError');
+
+            // Show loading state
+            form.classList.add('loading');
+
+            try {
+                const vehicleData = {
+                    incident_report_id: parseInt(incidentId) || null,
+                    create_user_id: userId,
+                    additional_driver_name: form.driverName.value,
+                    additional_driver_address: form.driverAddress.value,
+                    additional_driver_mobile: form.driverMobile.value,
+                    additional_driver_email: form.driverEmail.value || null,
+                    additional_registration_number: form.vehicleReg.value,
+                    additional_make_of_vehicle: form.vehicleMake.value,
+                    additional_model_of_vehicle: form.vehicleModel.value,
+                    additional_vehicle_colour: form.vehicleColor.value || null,
+                    additional_insurance_company: form.insuranceCompany.value || null,
+                    additional_policy_number: form.insurancePolicy.value || null,
+                    submit_date: new Date().toISOString()
+                };
+
+                const { data, error } = await supabase
+                    .from('additional_vehicles')
+                    .insert([vehicleData]);
+
+                if (error) throw error;
+
+                // Success - close modal and show confirmation
+                closeModal('vehicleModal');
+                alert('Vehicle information saved successfully!');
+
+            } catch (error) {
+                console.error('Error saving vehicle:', error);
+                errorDiv.textContent = 'Failed to save vehicle information. Please try again.';
+                errorDiv.classList.add('show');
+            } finally {
+                form.classList.remove('loading');
+            }
+        });
+
+        // Close modal when clicking outside
+        window.onclick = function(event) {
+            if (event.target.classList.contains('modal')) {
+                event.target.classList.remove('active');
+            }
+        }
+    </script>
+</body>
+</html>
