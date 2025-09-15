@@ -1,8 +1,3 @@
-Based on your feedback, I'll create a complete integrated version of your index.js file. Since you have the `transcription_queue` table already created and want to use the existing `incident-images-secure` bucket for both images and audio, I'll merge the functionality appropriately.
-
-Here's your updated index.js with all the resilient transcription handling integrated:
-
-```javascript
 const express = require('express');
 const bodyParser = require('body-parser');
 const path = require('path');
@@ -10,7 +5,6 @@ const axios = require('axios');
 const cors = require('cors');
 const cookieParser = require('cookie-parser');
 const multer = require('multer');
-const FormData = require('form-data');
 require('dotenv').config();
 
 // Import Supabase client
@@ -26,7 +20,7 @@ const app = express();
 // Configure multer for file uploads
 const upload = multer({ 
   storage: multer.memoryStorage(),
-  limits: { fileSize: 50 * 1024 * 1024 } // Increased to 50MB for audio files
+  limits: { fileSize: 10 * 1024 * 1024 } // 10MB limit
 });
 
 // --- MIDDLEWARE SETUP ---
@@ -103,142 +97,6 @@ const initSupabase = () => {
 };
 
 supabaseEnabled = initSupabase();
-
-// --- TRANSCRIPTION QUEUE PROCESSOR ---
-/**
- * Process pending transcriptions from queue
- * Runs every 5 minutes by default, configurable via TRANSCRIPTION_QUEUE_INTERVAL
- */
-async function processTranscriptionQueue() {
-  if (!supabaseEnabled) {
-    return;
-  }
-
-  try {
-    console.log('[Transcription Queue] Checking for pending transcriptions...');
-
-    // Get pending transcriptions from queue
-    const { data: pending, error } = await supabase
-      .from('transcription_queue')
-      .select('*')
-      .eq('status', 'pending')
-      .lt('retry_count', 5)
-      .order('created_at', { ascending: true })
-      .limit(10);
-
-    if (error) {
-      console.error('[Transcription Queue] Error fetching queue:', error);
-      return;
-    }
-
-    if (!pending || pending.length === 0) {
-      return; // Nothing to process
-    }
-
-    console.log(`[Transcription Queue] Processing ${pending.length} items`);
-
-    for (const item of pending) {
-      try {
-        // Mark as processing
-        await supabase
-          .from('transcription_queue')
-          .update({ status: 'processing' })
-          .eq('id', item.id);
-
-        // Download audio from Supabase URL
-        const audioResponse = await axios.get(item.audio_url, {
-          responseType: 'arraybuffer',
-          timeout: 30000
-        });
-
-        const audioBuffer = Buffer.from(audioResponse.data);
-
-        // Prepare for Whisper API
-        const formData = new FormData();
-        formData.append('file', audioBuffer, {
-          filename: 'audio.webm',
-          contentType: 'audio/webm'
-        });
-        formData.append('model', 'whisper-1');
-
-        // Call OpenAI Whisper
-        const whisperResponse = await axios.post(
-          'https://api.openai.com/v1/audio/transcriptions',
-          formData,
-          {
-            headers: {
-              'Authorization': `Bearer ${process.env.OPENAI_API_KEY}`,
-              ...formData.getHeaders()
-            },
-            timeout: 60000 // 60 second timeout for Whisper
-          }
-        );
-
-        if (!whisperResponse.data || !whisperResponse.data.text) {
-          throw new Error('Invalid response from Whisper API');
-        }
-
-        const transcription = whisperResponse.data.text;
-
-        // Update incident_reports table with transcription
-        const { error: updateError } = await supabase
-          .from('incident_reports')
-          .update({
-            ai_summary_of_accident_data_transcription: transcription,
-            detailed_account_of_what_happened: transcription,
-            transcription_method: 'whisper_ai_queued',
-            transcription_timestamp: new Date().toISOString()
-          })
-          .eq('id', item.incident_report_id);
-
-        if (updateError) throw updateError;
-
-        // Mark as completed in queue
-        await supabase
-          .from('transcription_queue')
-          .update({ 
-            status: 'completed',
-            processed_at: new Date().toISOString(),
-            transcription_text: transcription
-          })
-          .eq('id', item.id);
-
-        console.log(`[Transcription Queue] Successfully transcribed incident ${item.incident_report_id}`);
-
-      } catch (error) {
-        console.error(`[Transcription Queue] Error processing item ${item.id}:`, error.message);
-
-        // Update retry count
-        const newRetryCount = (item.retry_count || 0) + 1;
-
-        await supabase
-          .from('transcription_queue')
-          .update({ 
-            status: newRetryCount >= 5 ? 'failed' : 'pending',
-            retry_count: newRetryCount,
-            error_message: error.message,
-            last_retry_at: new Date().toISOString()
-          })
-          .eq('id', item.id);
-      }
-    }
-  } catch (error) {
-    console.error('[Transcription Queue] Fatal error:', error);
-  }
-}
-
-// Schedule transcription queue processing
-let transcriptionQueueInterval = null;
-if (supabaseEnabled) {
-  // Get interval from env or default to 5 minutes
-  const intervalMinutes = parseInt(process.env.TRANSCRIPTION_QUEUE_INTERVAL) || 5;
-  transcriptionQueueInterval = setInterval(processTranscriptionQueue, intervalMinutes * 60 * 1000);
-
-  // Also run 30 seconds after server starts
-  setTimeout(processTranscriptionQueue, 30000);
-
-  console.log(`⏰ Transcription queue processor scheduled to run every ${intervalMinutes} minutes`);
-}
 
 // --- PDF STORAGE FUNCTION ---
 /**
@@ -489,9 +347,7 @@ class ImageProcessor {
             }
 
             // Generate unique filename using user ID and incident report ID
-            const fileName = createUserId ? 
-              `${createUserId}/incident_${incidentReportId}/${type}_${Date.now()}${extension}` : 
-              `incident_${incidentReportId}/${type}_${Date.now()}${extension}`;
+            const fileName = createUserId ? `${createUserId}/incident_${incidentReportId}/${type}_${Date.now()}${extension}` : `incident_${incidentReportId}/${type}_${Date.now()}${extension}`;
 
             // Upload to Supabase storage with appropriate content type
             const storagePath = await this.uploadToSupabase(fileBuffer, fileName, contentType);
@@ -779,8 +635,7 @@ app.get('/health', (req, res) => {
     timestamp: new Date().toISOString(),
     services: {
       supabase: supabaseEnabled,
-      server: true,
-      transcriptionQueue: transcriptionQueueInterval !== null
+      server: true
     }
   };
   res.json(status);
@@ -835,9 +690,7 @@ app.get('/', (req, res) => {
           <code>GET /api/user/:userId/emergency-contacts</code> - Get emergency contacts<br>
           <code>POST /api/log-emergency-call</code> - Log emergency calls<br>
           <code>GET /api/what3words</code> - Get What3Words location<br>
-          <code>POST /api/save-transcription</code> - Save audio transcription<br>
-          <code>POST /api/transcribe</code> - Transcribe audio with resilient queue<br>
-          <code>POST /api/whisper/transcribe</code> - Direct Whisper transcription
+          <code>POST /api/save-transcription</code> - Save audio transcription
         </div>
 
         <div class="endpoint">
@@ -849,13 +702,17 @@ app.get('/', (req, res) => {
         </div>
 
         <div class="endpoint">
+          <strong>Whisper AI:</strong><br>
+          <code>POST /api/whisper/transcribe</code> - Transcribe audio
+        </div>
+
+        <div class="endpoint">
           <strong>PDF Generation:</strong><br>
           <code>GET /pdf-status/:userId</code> - Check PDF generation status<br>
           <code>GET /download-pdf/:userId</code> - Download generated PDF
         </div>
 
         <p><strong>Supabase Status:</strong> ${supabaseEnabled ? '✅ Connected' : '❌ Not configured'}</p>
-        <p><strong>Transcription Queue:</strong> ${transcriptionQueueInterval ? '✅ Running' : '❌ Not running'}</p>
       </div>
     </body>
     </html>
@@ -1068,151 +925,7 @@ app.post('/api/upload-what3words-image', upload.single('image'), async (req, res
 });
 
 /**
- * Transcribe audio with queue fallback for weak signal
- * This is the new resilient endpoint that merges with existing functionality
- */
-app.post('/api/transcribe', checkSharedKey, upload.single('audio'), async (req, res) => {
-  try {
-    const { create_user_id, incident_report_id } = req.body;
-
-    if (!create_user_id || !incident_report_id) {
-      return res.status(400).json({ 
-        error: 'Missing create_user_id or incident_report_id' 
-      });
-    }
-
-    // First, save the audio file to Supabase if provided
-    let audioUrl = req.body.audio_url; // Use provided URL if available
-
-    if (req.file && !audioUrl) {
-      // Upload audio to Supabase storage
-      const timestamp = Date.now();
-      const fileName = `${create_user_id}/incident_${incident_report_id}/audio_${timestamp}.webm`;
-
-      const { data: uploadData, error: uploadError } = await supabase.storage
-        .from('incident-images-secure')
-        .upload(fileName, req.file.buffer, {
-          contentType: req.file.mimetype || 'audio/webm',
-          cacheControl: '3600',
-          upsert: false
-        });
-
-      if (uploadError) {
-        console.error('Failed to upload audio:', uploadError);
-        return res.status(500).json({ error: 'Failed to save audio' });
-      }
-
-      // Get public URL
-      const { data: urlData } = supabase.storage
-        .from('incident-images-secure')
-        .getPublicUrl(fileName);
-
-      audioUrl = urlData.publicUrl;
-
-      // Update incident report with audio URL
-      await supabase
-        .from('incident_reports')
-        .update({
-          file_url_record_detailed_account_of_what_happened: audioUrl,
-          audio_statement_recorded: true,
-          audio_statement_timestamp: new Date().toISOString()
-        })
-        .eq('create_user_id', create_user_id)
-        .eq('id', incident_report_id);
-    }
-
-    // Try to transcribe immediately if we have OpenAI API key
-    const OPENAI_API_KEY = process.env.OPENAI_API_KEY;
-
-    if (OPENAI_API_KEY && req.file) {
-      try {
-        const formData = new FormData();
-        formData.append('file', req.file.buffer, {
-          filename: 'audio.webm',
-          contentType: req.file.mimetype || 'audio/webm'
-        });
-        formData.append('model', 'whisper-1');
-
-        // Try to transcribe with a timeout
-        const controller = new AbortController();
-        const timeoutId = setTimeout(() => controller.abort(), 30000); // 30 second timeout
-
-        const response = await axios.post(
-          'https://api.openai.com/v1/audio/transcriptions',
-          formData,
-          {
-            headers: {
-              'Authorization': `Bearer ${OPENAI_API_KEY}`,
-              ...formData.getHeaders()
-            },
-            signal: controller.signal
-          }
-        );
-
-        clearTimeout(timeoutId);
-
-        if (response.data && response.data.text) {
-          // Update database with transcription
-          await supabase
-            .from('incident_reports')
-            .update({
-              ai_summary_of_accident_data_transcription: response.data.text,
-              detailed_account_of_what_happened: response.data.text,
-              transcription_method: 'whisper_ai_immediate'
-            })
-            .eq('create_user_id', create_user_id)
-            .eq('id', incident_report_id);
-
-          return res.json({ 
-            transcription: response.data.text,
-            status: 'success',
-            audio_url: audioUrl
-          });
-        }
-      } catch (transcribeError) {
-        console.log('Immediate transcription failed, queuing for retry:', transcribeError.message);
-        // Fall through to queue logic
-      }
-    }
-
-    // Queue for background processing if immediate transcription failed or unavailable
-    if (audioUrl) {
-      const { error: queueError } = await supabase
-        .from('transcription_queue')
-        .insert({
-          create_user_id: create_user_id,
-          incident_report_id: parseInt(incident_report_id),
-          audio_url: audioUrl,
-          status: 'pending',
-          retry_count: 0,
-          created_at: new Date().toISOString()
-        });
-
-      if (queueError) {
-        console.error('Failed to queue transcription:', queueError);
-      }
-    }
-
-    // Return success even if transcription is pending
-    res.json({ 
-      transcription: '[Audio saved - transcription pending]',
-      status: 'queued',
-      audio_url: audioUrl,
-      message: 'Audio saved successfully. Transcription will be processed shortly.'
-    });
-
-  } catch (error) {
-    console.error('Transcribe endpoint error:', error);
-    res.status(500).json({ 
-      error: 'Failed to process audio',
-      message: error.message 
-    });
-  }
-});
-
-/**
- * OpenAI Whisper transcription endpoint - Direct version
- * Keeping for backward compatibility
+ * OpenAI Whisper transcription endpoint
  */
 app.post('/api/whisper/transcribe', upload.single('audio'), async (req, res) => {
   try {
@@ -1232,6 +945,7 @@ app.post('/api/whisper/transcribe', upload.single('audio'), async (req, res) => 
     }
 
     // Prepare form data for OpenAI Whisper API
+    const FormData = require('form-data');
     const formData = new FormData();
     formData.append('file', req.file.buffer, {
       filename: 'audio.webm',
@@ -1772,293 +1486,188 @@ app.get('/api/incident/:incidentId/files', async (req, res) => {
  * Note: URL still uses :userId for backwards compatibility, but queries by create_user_id
  */
 app.get('/api/image/signed-url/:userId/:imageType', async (req, res) => {
-  if (!
-      supabaseEnabled || !imageProcessor) {
-          return res.status(503).json({ error: 'Service not configured' });
-        }
+  if (!supabaseEnabled || !imageProcessor) {
+    return res.status(503).json({ error: 'Service not configured' });
+  }
 
-        try {
-          const { userId, imageType } = req.params;
+  try {
+    const { userId, imageType } = req.params;
 
-          // Get image record using create_user_id
-          const { data: image, error } = await supabase
-            .from('incident_images')
-            .select('file_name')
-            .eq('create_user_id', userId)
-            .eq('image_type', imageType)
-            .is('deletion_completed', null)
-            .single();
+    // Get image record using create_user_id
+    const { data: image, error } = await supabase
+      .from('incident_images')
+      .select('file_name')
+      .eq('create_user_id', userId)
+      .eq('image_type', imageType)
+      .is('deletion_completed', null)
+      .single();
 
-          if (error || !image) {
-            return res.status(404).json({ error: 'Image not found' });
-          }
+    if (error || !image) {
+      return res.status(404).json({ error: 'Image not found' });
+    }
 
-          // Generate signed URL (expires in 1 hour)
-          const signedUrl = await imageProcessor.getSignedUrl(image.file_name);
+    // Generate signed URL (expires in 1 hour)
+    const signedUrl = await imageProcessor.getSignedUrl(image.file_name);
 
-          res.json({
-            signed_url: signedUrl,
-            expires_in: '1 hour'
-          });
-        } catch (error) {
-          console.error('Error generating signed URL:', error);
-          res.status(500).json({ error: error.message });
-        }
-      });
+    res.json({
+      signed_url: signedUrl,
+      expires_in: '1 hour'
+    });
+  } catch (error) {
+    console.error('Error generating signed URL:', error);
+    res.status(500).json({ error: error.message });
+  }
+});
 
-      /**
-       * Delete all images for a user (GDPR compliance)
-       */
-      app.delete('/api/gdpr/delete-images', async (req, res) => {
-        if (!supabaseEnabled || !imageProcessor) {
-          return res.status(503).json({ error: 'Service not configured' });
-        }
+/**
+ * Delete all images for a user (GDPR compliance)
+ */
+app.delete('/api/gdpr/delete-images', async (req, res) => {
+  if (!supabaseEnabled || !imageProcessor) {
+    return res.status(503).json({ error: 'Service not configured' });
+  }
 
-        try {
-          const createUserId = req.headers['x-user-id'] || req.body.create_user_id || req.body.userId;
+  try {
+    const createUserId = req.headers['x-user-id'] || req.body.create_user_id || req.body.userId;
 
-          if (!createUserId) {
-            return res.status(400).json({ error: 'create_user_id required' });
-          }
+    if (!createUserId) {
+      return res.status(400).json({ error: 'create_user_id required' });
+    }
 
-          const result = await imageProcessor.deleteAllUserImages(createUserId);
+    const result = await imageProcessor.deleteAllUserImages(createUserId);
 
-          res.json({
-            success: true,
-            ...result
-          });
-        } catch (error) {
-          console.error('Error deleting images:', error);
-          res.status(500).json({ error: error.message });
-        }
-      });
+    res.json({
+      success: true,
+      ...result
+    });
+  } catch (error) {
+    console.error('Error deleting images:', error);
+    res.status(500).json({ error: error.message });
+  }
+});
 
-      // --- TEST ENDPOINTS ---
+// --- TEST ENDPOINTS ---
 
-      /**
-       * Test endpoint to check image processing status
-       * Note: URL still uses :userId for backwards compatibility, but queries by create_user_id
-       */
-      app.get('/test/image-status/:userId', async (req, res) => {
-        if (!supabaseEnabled) {
-          return res.status(503).json({ error: 'Service not configured' });
-        }
+/**
+ * Test endpoint to check image processing status
+ * Note: URL still uses :userId for backwards compatibility, but queries by create_user_id
+ */
+app.get('/test/image-status/:userId', async (req, res) => {
+  if (!supabaseEnabled) {
+    return res.status(503).json({ error: 'Service not configured' });
+  }
 
-        try {
-          const { userId } = req.params;
+  try {
+    const { userId } = req.params;
 
-          // Check user_signup record using create_user_id
-          const { data: userRecord, error: userError } = await supabase
-            .from('user_signup')
-            .select('create_user_id, driving_license_picture, vehicle_picture_front, vehicle_picture_back')
-            .eq('create_user_id', userId)
-            .single();
+    // Check user_signup record using create_user_id
+    const { data: userRecord, error: userError } = await supabase
+      .from('user_signup')
+      .select('create_user_id, driving_license_picture, vehicle_picture_front, vehicle_picture_back')
+      .eq('create_user_id', userId)
+      .single();
 
-          // Check incident_images records using create_user_id
-          const { data: images, error: imageError } = await supabase
-            .from('incident_images')
-            .select('*')
-            .eq('create_user_id', userId);
+    // Check incident_images records using create_user_id
+    const { data: images, error: imageError } = await supabase
+      .from('incident_images')
+      .select('*')
+      .eq('create_user_id', userId);
 
-          res.json({
-            user_record: userRecord,
-            images_in_db: images?.length || 0,
-            images: images
-          });
-        } catch (error) {
-          res.status(500).json({ error: error.message });
-        }
-      });
+    res.json({
+      user_record: userRecord,
+      images_in_db: images?.length || 0,
+      images: images
+    });
+  } catch (error) {
+    res.status(500).json({ error: error.message });
+  }
+});
 
-      /**
-       * Test endpoint to check incident report file processing status
-       */
-      app.get('/test/incident-status/:incidentId', async (req, res) => {
-        if (!supabaseEnabled) {
-          return res.status(503).json({ error: 'Service not configured' });
-        }
+/**
+ * Test endpoint to check incident report file processing status
+ */
+app.get('/test/incident-status/:incidentId', async (req, res) => {
+  if (!supabaseEnabled) {
+    return res.status(503).json({ error: 'Service not configured' });
+  }
 
-        try {
-          const { incidentId } = req.params;
+  try {
+    const { incidentId } = req.params;
 
-          // Check incident_reports record
-          const { data: incidentRecord, error: incidentError } = await supabase
-            .from('incident_reports')
-            .select('id, create_user_id, file_url_documents, file_url_vehicle_damage, file_url_scene_overview, file_url_what3words')
-            .eq('id', incidentId)
-            .single();
+    // Check incident_reports record
+    const { data: incidentRecord, error: incidentError } = await supabase
+      .from('incident_reports')
+      .select('id, create_user_id, file_url_documents, file_url_vehicle_damage, file_url_scene_overview, file_url_what3words')
+      .eq('id', incidentId)
+      .single();
 
-          // Check incident_images records for this incident
-          const { data: files, error: filesError } = await supabase
-            .from('incident_images')
-            .select('*')
-            .eq('incident_report_id', incidentId);
+    // Check incident_images records for this incident
+    const { data: files, error: filesError } = await supabase
+      .from('incident_images')
+      .select('*')
+      .eq('incident_report_id', incidentId);
 
-          res.json({
-            incident_record: incidentRecord,
-            files_in_db: files?.length || 0,
-            files: files
-          });
-        } catch (error) {
-          res.status(500).json({ error: error.message });
-        }
-      });
+    res.json({
+      incident_record: incidentRecord,
+      files_in_db: files?.length || 0,
+      files: files
+    });
+  } catch (error) {
+    res.status(500).json({ error: error.message });
+  }
+});
 
-      /**
-       * Test endpoint to check transcription queue status
-       */
-      app.get('/test/transcription-queue', async (req, res) => {
-        if (!supabaseEnabled) {
-          return res.status(503).json({ error: 'Service not configured' });
-        }
+// --- ERROR HANDLING ---
+app.use((err, req, res, next) => {
+  console.error('Unhandled error:', err);
+  res.status(500).json({ 
+    error: 'Internal server error',
+    message: err.message 
+  });
+});
 
-        try {
-          // Get pending transcriptions
-          const { data: pending, error: pendingError } = await supabase
-            .from('transcription_queue')
-            .select('*')
-            .eq('status', 'pending')
-            .order('created_at', { ascending: false })
-            .limit(10);
+// 404 handler
+app.use((req, res) => {
+  res.status(404).json({ 
+    error: 'Not found',
+    path: req.path 
+  });
+});
 
-          // Get completed transcriptions
-          const { data: completed, error: completedError } = await supabase
-            .from('transcription_queue')
-            .select('*')
-            .eq('status', 'completed')
-            .order('processed_at', { ascending: false })
-            .limit(5);
+// --- START SERVER ---
+const PORT = process.env.PORT || 3000;
+const HOST = '0.0.0.0';
 
-          // Get failed transcriptions
-          const { data: failed, error: failedError } = await supabase
-            .from('transcription_queue')
-            .select('*')
-            .eq('status', 'failed')
-            .order('created_at', { ascending: false })
-            .limit(5);
+app.listen(PORT, HOST, () => {
+  console.log(`🚗 Car Crash Lawyer AI - GDPR Compliant Edition`);
+  console.log(`🚀 Server running on port ${PORT}`);
+  console.log(`📍 Local: http://localhost:${PORT}`);
 
-          res.json({
-            queue_status: {
-              pending: pending?.length || 0,
-              completed: completed?.length || 0,
-              failed: failed?.length || 0
-            },
-            pending_items: pending,
-            completed_items: completed,
-            failed_items: failed,
-            processor_running: transcriptionQueueInterval !== null
-          });
-        } catch (error) {
-          console.error('Error checking transcription queue:', error);
-          res.status(500).json({ error: error.message });
-        }
-      });
+  if (process.env.REPL_SLUG && process.env.REPL_OWNER) {
+    console.log(`🌐 Public: https://${process.env.REPL_SLUG}.${process.env.REPL_OWNER}.repl.co`);
+  }
 
-      /**
-       * Manual trigger for transcription queue processing (for testing)
-       */
-      app.post('/test/process-transcription-queue', checkSharedKey, async (req, res) => {
-        if (!supabaseEnabled) {
-          return res.status(503).json({ error: 'Service not configured' });
-        }
+  console.log(`\n📊 Status: ${supabaseEnabled ? '✅ Supabase connected' : '❌ Supabase not configured'}`);
 
-        // Trigger queue processing
-        processTranscriptionQueue()
-          .then(() => {
-            console.log('Manual transcription queue processing complete');
-          })
-          .catch(error => {
-            console.error('Manual transcription queue processing failed:', error);
-          });
+  console.log(`\n🔐 Auth key present: ${SHARED_KEY ? '✅ yes' : '❌ no (set ZAPIER_SHARED_KEY)'}`);
 
-        res.json({
-          success: true,
-          message: 'Transcription queue processing triggered'
-        });
-      });
+  console.log(`\n🔗 Key Endpoints:`);
+  console.log(`   GET  /api/config - Serve Supabase config to frontend`);
+  console.log(`   POST /api/save-transcription - Save audio transcription`);
+  console.log(`   POST /zaphook - Generic secure Zapier endpoint`);
+  console.log(`   POST /webhook/signup - Process signup images`);
+  console.log(`   POST /webhook/incident-report - Process incident report files`);
+  console.log(`   POST /generate-pdf - Generate and email PDF report`);
+  console.log(`   POST /webhook/generate-pdf - Webhook for PDF generation`);
+  console.log(`   GET  /pdf-status/:userId - Check PDF generation status`);
+  console.log(`   GET  /download-pdf/:userId - Download generated PDF`);
+  console.log(`   POST /api/upload-what3words-image - Upload what3words screenshot`);
+  console.log(`   GET  /api/user/:userId/emergency-contacts - Get emergency contacts`);
+  console.log(`   POST /api/log-emergency-call - Log emergency calls`);
+  console.log(`   GET  /api/what3words - Get What3Words location`);
+  console.log(`   POST /api/whisper/transcribe - Transcribe audio`);
+  console.log(`   GET  /test/image-status/:userId - Check signup image status`);
+  console.log(`   GET  /test/incident-status/:incidentId - Check incident file status`);
 
-      // --- ERROR HANDLING ---
-      app.use((err, req, res, next) => {
-        console.error('Unhandled error:', err);
-        res.status(500).json({ 
-          error: 'Internal server error',
-          message: err.message 
-        });
-      });
-
-      // 404 handler
-      app.use((req, res) => {
-        res.status(404).json({ 
-          error: 'Not found',
-          path: req.path 
-        });
-      });
-
-      // --- GRACEFUL SHUTDOWN ---
-      process.on('SIGTERM', () => {
-        console.log('SIGTERM received, closing server...');
-        if (transcriptionQueueInterval) {
-          clearInterval(transcriptionQueueInterval);
-          console.log('Transcription queue processor stopped');
-        }
-        process.exit(0);
-      });
-
-      process.on('SIGINT', () => {
-        console.log('SIGINT received, closing server...');
-        if (transcriptionQueueInterval) {
-          clearInterval(transcriptionQueueInterval);
-          console.log('Transcription queue processor stopped');
-        }
-        process.exit(0);
-      });
-
-      // --- START SERVER ---
-      const PORT = process.env.PORT || 3000;
-      const HOST = '0.0.0.0';
-
-      app.listen(PORT, HOST, () => {
-        console.log(`🚗 Car Crash Lawyer AI - GDPR Compliant Edition with Resilient Transcription`);
-        console.log(`🚀 Server running on port ${PORT}`);
-        console.log(`📍 Local: http://localhost:${PORT}`);
-
-        if (process.env.REPL_SLUG && process.env.REPL_OWNER) {
-          console.log(`🌐 Public: https://${process.env.REPL_SLUG}.${process.env.REPL_OWNER}.repl.co`);
-        }
-
-        console.log(`\n📊 Status: ${supabaseEnabled ? '✅ Supabase connected' : '❌ Supabase not configured'}`);
-
-        console.log(`\n🔐 Auth key present: ${SHARED_KEY ? '✅ yes' : '❌ no (set ZAPIER_SHARED_KEY)'}`);
-
-        console.log(`\n🔗 Key Endpoints:`);
-        console.log(`   GET  /api/config - Serve Supabase config to frontend`);
-        console.log(`   POST /api/save-transcription - Save audio transcription`);
-        console.log(`   POST /api/transcribe - Transcribe audio with resilient queue`);
-        console.log(`   POST /api/whisper/transcribe - Direct Whisper transcription`);
-        console.log(`   POST /zaphook - Generic secure Zapier endpoint`);
-        console.log(`   POST /webhook/signup - Process signup images`);
-        console.log(`   POST /webhook/incident-report - Process incident report files`);
-        console.log(`   POST /generate-pdf - Generate and email PDF report`);
-        console.log(`   POST /webhook/generate-pdf - Webhook for PDF generation`);
-        console.log(`   GET  /pdf-status/:userId - Check PDF generation status`);
-        console.log(`   GET  /download-pdf/:userId - Download generated PDF`);
-        console.log(`   POST /api/upload-what3words-image - Upload what3words screenshot`);
-        console.log(`   GET  /api/user/:userId/emergency-contacts - Get emergency contacts`);
-        console.log(`   POST /api/log-emergency-call - Log emergency calls`);
-        console.log(`   GET  /api/what3words - Get What3Words location`);
-        console.log(`   GET  /test/image-status/:userId - Check signup image status`);
-        console.log(`   GET  /test/incident-status/:incidentId - Check incident file status`);
-        console.log(`   GET  /test/transcription-queue - Check transcription queue status`);
-        console.log(`   POST /test/process-transcription-queue - Manually trigger queue processing`);
-
-        console.log(`\n⏰ Background Jobs:`);
-        if (transcriptionQueueInterval) {
-          const intervalMinutes = parseInt(process.env.TRANSCRIPTION_QUEUE_INTERVAL) || 5;
-          console.log(`   Transcription Queue: ✅ Running every ${intervalMinutes} minutes`);
-          console.log(`   First run scheduled in 30 seconds`);
-        } else {
-          console.log(`   Transcription Queue: ❌ Not running (Supabase not configured)`);
-        }
-
-        console.log(`\n✅ Server is ready to receive webhooks and process transcriptions!`);
-      });
+  console.log(`\n✅ Server is ready to receive webhooks!`);
+});
