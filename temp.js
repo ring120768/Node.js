@@ -10,11 +10,6 @@ require('dotenv').config();
 // Import Supabase client
 const { createClient } = require('@supabase/supabase-js');
 
-// Import PDF generation modules
-const { fetchAllData } = require('./lib/dataFetcher');
-const { generatePDF } = require('./lib/pdfGenerator');
-const { sendEmails } = require('./lib/emailService');
-
 const app = express();
 
 // Configure multer for file uploads
@@ -97,64 +92,6 @@ const initSupabase = () => {
 };
 
 supabaseEnabled = initSupabase();
-
-// --- PDF STORAGE FUNCTION ---
-/**
- * Store completed PDF form in database
- */
-async function storeCompletedForm(createUserId, pdfBuffer, allData) {
-  try {
-    // Convert buffer to base64 for storage
-    const pdfBase64 = pdfBuffer.toString('base64');
-
-    // Store in Supabase storage
-    const fileName = `completed_forms/${createUserId}/report_${Date.now()}.pdf`;
-    const { data: storageData, error: storageError } = await supabase.storage
-      .from('incident-images-secure')
-      .upload(fileName, pdfBuffer, {
-        contentType: 'application/pdf',
-        upsert: false
-      });
-
-    let pdfUrl = null;
-    if (storageData && !storageError) {
-      // Generate a long-lived signed URL (1 year)
-      const { data: urlData } = await supabase.storage
-        .from('incident-images-secure')
-        .createSignedUrl(fileName, 31536000); // 1 year
-
-      if (urlData) {
-        pdfUrl = urlData.signedUrl;
-      }
-    }
-
-    // Store record in database
-    const { data, error } = await supabase
-      .from('completed_incident_forms')
-      .insert({
-        create_user_id: createUserId,
-        form_data: allData,
-        pdf_base64: pdfBase64.substring(0, 1000000), // Store first 1MB if needed
-        pdf_url: pdfUrl,
-        generated_at: new Date().toISOString(),
-        sent_to_user: false,
-        sent_to_accounts: false,
-        email_status: {}
-      })
-      .select()
-      .single();
-
-    if (error) {
-      console.error('Error storing completed form:', error);
-      // Don't throw - continue anyway
-    }
-
-    return data || { id: 'temp-' + Date.now() };
-  } catch (error) {
-    console.error('Error in storeCompletedForm:', error);
-    return { id: 'error-' + Date.now() };
-  }
-}
 
 // --- IMAGE PROCESSOR CLASS ---
 class ImageProcessor {
@@ -679,9 +616,7 @@ app.get('/', (req, res) => {
           <code>POST /webhook/signup</code> - Process signup images<br>
           <code>POST /webhook/incident-report</code> - Process incident report files<br>
           <code>POST /webhook/process-images</code> - Alternative image processing endpoint<br>
-          <code>POST /zaphook</code> - Generic secure Zapier endpoint<br>
-          <code>POST /generate-pdf</code> - Generate and email PDF report<br>
-          <code>POST /webhook/generate-pdf</code> - Webhook for PDF generation
+          <code>POST /zaphook</code> - Generic secure Zapier endpoint
         </div>
 
         <div class="endpoint">
@@ -704,12 +639,6 @@ app.get('/', (req, res) => {
         <div class="endpoint">
           <strong>Whisper AI:</strong><br>
           <code>POST /api/whisper/transcribe</code> - Transcribe audio
-        </div>
-
-        <div class="endpoint">
-          <strong>PDF Generation:</strong><br>
-          <code>GET /pdf-status/:userId</code> - Check PDF generation status<br>
-          <code>GET /download-pdf/:userId</code> - Download generated PDF
         </div>
 
         <p><strong>Supabase Status:</strong> ${supabaseEnabled ? '✅ Connected' : '❌ Not configured'}</p>
@@ -1213,209 +1142,6 @@ app.post('/zaphook', checkSharedKey, async (req, res) => {
   }
 });
 
-// --- PDF GENERATION ENDPOINTS ---
-
-/**
- * PDF Generation endpoint - protected with checkSharedKey
- * This is the main endpoint Zapier will call
- */
-app.post('/generate-pdf', checkSharedKey, async (req, res) => {
-  const { create_user_id } = req.body;
-
-  if (!create_user_id) {
-    return res.status(400).json({ 
-      error: 'Missing create_user_id',
-      message: 'Please provide a valid user ID'
-    });
-  }
-
-  if (!supabaseEnabled) {
-    return res.status(503).json({ 
-      error: 'Service not configured',
-      message: 'Supabase is not properly configured'
-    });
-  }
-
-  try {
-    console.log(`📄 Starting PDF generation for: ${create_user_id}`);
-
-    // Step 1: Fetch all data
-    console.log('🔍 Fetching data from Supabase...');
-    const allData = await fetchAllData(create_user_id);
-
-    if (!allData.user || !allData.user.driver_email) {
-      return res.status(404).json({
-        error: 'User not found',
-        message: 'No user data found for the provided ID'
-      });
-    }
-
-    // Step 2: Generate PDF
-    console.log('📝 Generating PDF...');
-    const pdfBuffer = await generatePDF(allData);
-
-    // Step 3: Store in database
-    console.log('💾 Storing completed form...');
-    const storedForm = await storeCompletedForm(create_user_id, pdfBuffer, allData);
-
-    // Step 4: Send emails
-    console.log('📧 Sending emails...');
-    const emailResult = await sendEmails(
-      allData.user.driver_email, 
-      pdfBuffer, 
-      create_user_id
-    );
-
-    // Update the stored form with email status
-    if (storedForm.id && !storedForm.id.startsWith('temp-')) {
-      await supabase
-        .from('completed_incident_forms')
-        .update({
-          sent_to_user: emailResult.success,
-          sent_to_accounts: emailResult.success,
-          email_status: emailResult
-        })
-        .eq('id', storedForm.id);
-    }
-
-    console.log('✅ PDF generation process completed successfully');
-
-    res.json({
-      success: true,
-      message: 'PDF generated and sent successfully',
-      form_id: storedForm.id,
-      create_user_id,
-      email_sent: emailResult.success,
-      timestamp: new Date().toISOString()
-    });
-
-  } catch (error) {
-    console.error('❌ Error in PDF generation:', error);
-    res.status(500).json({ 
-      error: error.message,
-      details: 'Failed to generate PDF. Please check logs.'
-    });
-  }
-});
-
-/**
- * Alternative webhook endpoint for PDF generation
- * Returns immediate response and processes in background
- */
-app.post('/webhook/generate-pdf', checkSharedKey, async (req, res) => {
-  const { create_user_id } = req.body;
-
-  if (!create_user_id) {
-    return res.status(400).json({ 
-      error: 'Missing create_user_id'
-    });
-  }
-
-  // Immediate response for webhook
-  res.status(200).json({ 
-    received: true, 
-    processing: true,
-    message: 'PDF generation started',
-    create_user_id
-  });
-
-  // Process in background
-  try {
-    const allData = await fetchAllData(create_user_id);
-    const pdfBuffer = await generatePDF(allData);
-    await storeCompletedForm(create_user_id, pdfBuffer, allData);
-    await sendEmails(allData.user.driver_email, pdfBuffer, create_user_id);
-    console.log(`✅ Background PDF processing complete for ${create_user_id}`);
-  } catch (error) {
-    console.error(`❌ Background PDF processing failed for ${create_user_id}:`, error);
-  }
-});
-
-/**
- * Check PDF generation status
- */
-app.get('/pdf-status/:userId', checkSharedKey, async (req, res) => {
-  if (!supabaseEnabled) {
-    return res.status(503).json({ error: 'Service not configured' });
-  }
-
-  try {
-    const { userId } = req.params;
-
-    const { data, error } = await supabase
-      .from('completed_incident_forms')
-      .select('*')
-      .eq('create_user_id', userId)
-      .order('generated_at', { ascending: false })
-      .limit(1)
-      .single();
-
-    if (error || !data) {
-      return res.status(404).json({ 
-        error: 'No PDF found',
-        message: 'No generated PDF found for this user'
-      });
-    }
-
-    res.json({
-      success: true,
-      form_id: data.id,
-      generated_at: data.generated_at,
-      sent_to_user: data.sent_to_user,
-      sent_to_accounts: data.sent_to_accounts,
-      pdf_url: data.pdf_url
-    });
-
-  } catch (error) {
-    console.error('Error checking PDF status:', error);
-    res.status(500).json({ error: error.message });
-  }
-});
-
-/**
- * Download generated PDF
- */
-app.get('/download-pdf/:userId', checkSharedKey, async (req, res) => {
-  if (!supabaseEnabled) {
-    return res.status(503).json({ error: 'Service not configured' });
-  }
-
-  try {
-    const { userId } = req.params;
-
-    const { data, error } = await supabase
-      .from('completed_incident_forms')
-      .select('pdf_base64, pdf_url')
-      .eq('create_user_id', userId)
-      .order('generated_at', { ascending: false })
-      .limit(1)
-      .single();
-
-    if (error || !data) {
-      return res.status(404).json({ 
-        error: 'No PDF found'
-      });
-    }
-
-    if (data.pdf_url) {
-      // Redirect to signed URL
-      res.redirect(data.pdf_url);
-    } else if (data.pdf_base64) {
-      // Send base64 as PDF
-      const buffer = Buffer.from(data.pdf_base64, 'base64');
-      res.setHeader('Content-Type', 'application/pdf');
-      res.setHeader('Content-Disposition', `attachment; filename="incident_report_${userId}.pdf"`);
-      res.send(buffer);
-    } else {
-      res.status(404).json({ error: 'PDF data not available' });
-    }
-
-  } catch (error) {
-    console.error('Error downloading PDF:', error);
-    res.status(500).json({ error: error.message });
-  }
-});
-
 // --- IMAGE ACCESS ENDPOINTS ---
 
 /**
@@ -1657,10 +1383,6 @@ app.listen(PORT, HOST, () => {
   console.log(`   POST /zaphook - Generic secure Zapier endpoint`);
   console.log(`   POST /webhook/signup - Process signup images`);
   console.log(`   POST /webhook/incident-report - Process incident report files`);
-  console.log(`   POST /generate-pdf - Generate and email PDF report`);
-  console.log(`   POST /webhook/generate-pdf - Webhook for PDF generation`);
-  console.log(`   GET  /pdf-status/:userId - Check PDF generation status`);
-  console.log(`   GET  /download-pdf/:userId - Download generated PDF`);
   console.log(`   POST /api/upload-what3words-image - Upload what3words screenshot`);
   console.log(`   GET  /api/user/:userId/emergency-contacts - Get emergency contacts`);
   console.log(`   POST /api/log-emergency-call - Log emergency calls`);

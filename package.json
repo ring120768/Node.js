@@ -1,10 +1,11 @@
 {
-  "name": "image-processor",
-  "version": "1.0.0",
-  "description": "Image processor for Car Crash Lawyer AI",
+  "name": "car-crash-lawyer-ai-system",
+  "version": "2.0.0",
+  "description": "Image processor and PDF generator for Car Crash Lawyer AI",
   "main": "index.js",
   "scripts": {
-    "start": "node index.js"
+    "start": "node index.js",
+    "dev": "nodemon index.js"
   },
   "dependencies": {
     "@supabase/supabase-js": "^2.57.4",
@@ -14,7 +15,14 @@
     "cors": "^2.8.5",
     "dotenv": "^16.6.1",
     "express": "^4.21.2",
+    "handlebars": "^4.7.8",
     "multer": "^2.0.2",
-    "path": "^0.12.7"
+    "nodemailer": "^6.9.7",
+    "path": "^0.12.7",
+    "pdf-lib": "^1.17.1",
+    "puppeteer": "^21.6.0"
+  },
+  "devDependencies": {
+    "nodemon": "^3.0.2"
   }
 }

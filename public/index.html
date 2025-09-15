@@ -20,33 +20,32 @@
       position: relative;
     }
 
-    .qr-code {
-      position: absolute;
-      top: 20px;
-      right: 20px;
-      width: 120px;
-      height: 120px;
-      background: white;
-      border-radius: 8px;
-      padding: 8px;
-      box-shadow: 0 4px 10px rgba(0, 0, 0, 0.2);
-    }
 
-    .qr-code img {
-      width: 100%;
-      height: 100%;
-      border-radius: 4px;
+    header {
+      display: flex;
+      justify-content: center;
+      margin-top: 4rem;
+      margin-bottom: 0rem;
     }
 
     header img {
-      max-width: 399px;
+      max-width: 250px;
+      width: 80%;
       height: auto;
-      margin-bottom: 1rem;
       display: block;
+    }
+
+    /* Mobile responsive sizing */
+    @media (max-width: 768px) {
+      header img {
+        max-width: 200px;
+        width: 70%;
+      }
     }
 
     h1 {
       font-size: 3rem;
+      margin-top: 0rem;
       margin-bottom: 0.5rem;
     }
 
@@ -95,10 +94,6 @@
 </head>
 <body>
 
-  <!-- QR Code -->
-  <div class="qr-code">
-    <img src="data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAcIAAAHCCAYAAAB8GMlOAAAAAXNSR0IArs4c6QAAIABJREFUeF7tnQuwVcWVx3/cB4gKCKiAPEQRFXyAj4yPqMQ4mcQ4E2OSSTJJJjOTVGaSyWSSyUwyySSTZJKZJDPJJJNMkklmkklmkklmMslkMpnMJJNMMpnMJJNJZpJJZjLJZDKZTCaTzGQymUwyk8xkMplMJpNJZjKZTCaTyWQymUwmk8lkMplMJpPJZDKZTCaTyWQymUwmk8lkMplMJpPJZDKZTCaTyWQymUwmk8lkMplMJpPJZDKZTCaTyWQymUwmk8lkMplMJpPJZDKZTCaTyWQymUwmk8lkMplMJpPJZDKZTCaTyWQymUwmk8lkMplMJpPJZDKZTCaTyWQymUwmk8lkMplMJpPJZDKZTCaTyWQymUwmk8lkMplMJpPJZDKZTCaTyWQymUwmk8lkMplMJpPJZDKZTCaTyWQymUwmk8lkMplMJpPJZDKZTCaTyWQymUwmk8lkMplMJpPJZDKZTCaTyWQymUwYjC9sJNTcEgEP9IlAAAEP8sGSP+F7+eD3/vZfJj9AP+k//Z7/iJR5/LLfuf8B/7e9zGOvTlbx2KtTpgCJKFMAgAaLzGIgFSQmLwz7GCSKnNjsSsRAktlmG5hImgCJxMbEQOIxKnBBmfTW9rJMgQZuaHvZhXVqLa+n+PYM8UBAP+n/yCvTj1EGpVtZ6eOVaXzEhpMjI1rN5+cIi8yiCQkkOQZJg43VnRMakSImhGG7cIaGcyccWcwE5QpJ1VNe6kB/A9WuACt3K9MOr1eeFJQpgKAU7J7iQDyD8+fGKPQT/R+JNfr8qFKXvDKNf+O7AH+XjRzFNlqfgERm8bEyKfWH+LzFQ7EQJ9EEJoABvnJUYAB2CEYJr/7WKIK9OmWELlc0xNJLqCjIL9PjI/SZDMGEgQjCkNSgCzOtfN4E5oRhGJC0iCRBgaXiUZXXEgokG1fC2GrwrRcfkOTYA6qy7YfNKpByTrwjgkV/6/iQ2pjcYGk0ZwgaGAmXJEgEZAaGIklOJl6TkI1MmLjg+4g8TDBkKKAwgVvgR7i7ByKRBCdRKEBkFSQPFAZYCJJOTUr5tQUKCmKy8y7sIEyJsP8bEJMgkPVFhsM8JkVJgKRBIvUdXu9MKKTMfJY5Qj+J1LdHgElJL8JlEsogfIm8Cj8xYbBBGJwJyESRETKCwgTmBEcJFNksQ0YWI5wJST8oGQAJ4hGXTRJ0BQZCXFOSQQRkGTLJIJxJxhBEBCYQEyIJRAZhTCIZJSRAP0TfCYkJT2H4mBgJ6nMQzKq8Fg8+IqLa6wJEpGkpKMKCHhKkHBOJCIRJEClJ8yKgCJgMFfq2LY3OKBJkJjsLXoJIgwJUQ8yqt4TBNOHjkUJAJMIkRTKRQHh1qgwJEpOYkRQTKjOuPHYZxQ8OE52F0rBhksIjdqE0K5JpZQQ5FdAFR5LIZEKTkAiEVCLxmBxlOJlVJKQTkRcXCUwZP5RwTE0AEKAA2qhIGCRjPKUAkyGJ4EBkOVoXEzm/gAOWUpJSgTEMJiRKj7wIiI4Sgs5EuQJqZhABrGAKNwAJOEIiJJ5KPIRIFNqHqI8MRDwOCYJOGDxhFy6vgQTCPJFcKa6kYhWJkjrr6JdpJ4qkcbFyARmEZlNCJLM8jaBSxlIl/SRyFAiGBCcJlCZLKoY8YSlIEhOO0gKJl4nNwCGWHkIJJzgJEZJJUCAGKSSlJJaiwCb4IIwJGbIsSCcxFSQRLZOZ6qCUJJQJ6hWJo5kF6MJINu8yDwCAJPCpyLKoJrIsCBJxWKCG6hk/JJg6AgdkAi8BAEBN9PJAM4GJfzgGBGNUgQJYdDOsJP5GFyTJJAWEyVmCFhcGGYzLycJQ==" alt="QR Code">
-  </div>
 
   <!-- Logo -->
   <header>
@@ -115,7 +110,6 @@
     <button class="cta-button" onclick="window.location.href='signup.html'">Sign Up</button>
     <button class="cta-button" onclick="window.location.href='incident.html'">Report an Incident</button>
     <button class="cta-button" onclick="window.location.href='demo.html'">Try Demo</button>
-  </div>
 
 </body>
 </html>
