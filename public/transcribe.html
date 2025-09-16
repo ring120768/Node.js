@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Record Incident Statement - Car Crash Lawyer AI</title>
+    <title>Record Your Statement - Car Crash Lawyer AI</title>
     <style>
         * {
             margin: 0;
@@ -15,132 +15,123 @@
             font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, sans-serif;
             background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
             min-height: 100vh;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
             padding: 20px;
-        }
-
-        .container {
-            max-width: 600px;
-            margin: 0 auto;
         }
 
         .header {
             text-align: center;
             color: white;
-            margin-bottom: 30px;
+            margin-bottom: 20px;
         }
 
         .header h1 {
-            font-size: 28px;
-            margin-bottom: 10px;
+            font-size: 20px;
+            font-weight: 400;
+            margin-bottom: 30px;
         }
 
-        .header h1::before {
-            content: "🎯 ";
-        }
-
-        .header p {
-            opacity: 0.9;
-            font-size: 16px;
-        }
-
-        .progress-bar {
+        .progress-indicator {
             display: flex;
             justify-content: center;
-            margin-bottom: 30px;
             align-items: center;
+            gap: 30px;
+            margin-bottom: 30px;
         }
 
-        .progress-step {
+        .step {
             display: flex;
             align-items: center;
+            gap: 10px;
             color: white;
             opacity: 0.6;
         }
 
-        .progress-step.active {
+        .step.active {
             opacity: 1;
         }
 
-        .progress-step .number {
-            width: 30px;
-            height: 30px;
-            background: white;
-            color: #667eea;
+        .step-number {
+            width: 40px;
+            height: 40px;
             border-radius: 50%;
+            background: rgba(255, 255, 255, 0.2);
             display: flex;
             align-items: center;
             justify-content: center;
             font-weight: bold;
-            margin-right: 8px;
         }
 
-        .progress-step:not(:last-child)::after {
-            content: "";
-            width: 50px;
-            height: 2px;
-            background: rgba(255, 255, 255, 0.3);
-            margin: 0 10px;
+        .step.active .step-number {
+            background: white;
+            color: #667eea;
         }
 
-        .card {
+        .main-container {
             background: white;
             border-radius: 20px;
             padding: 30px;
-            box-shadow: 0 10px 40px rgba(0, 0, 0, 0.1);
+            max-width: 600px;
+            width: 100%;
+            box-shadow: 0 20px 60px rgba(0, 0, 0, 0.3);
+        }
+
+        .section-title {
+            font-size: 24px;
+            font-weight: 600;
             margin-bottom: 20px;
+            display: flex;
+            align-items: center;
+            gap: 10px;
         }
 
-        .card h2 {
-            font-size: 22px;
-            margin-bottom: 20px;
-            color: #333;
-        }
-
-        .card h2::before {
-            content: "🎤 ";
-        }
-
-        .instructions {
+        .instructions-box {
             background: #f0f4ff;
             border-left: 4px solid #667eea;
-            padding: 15px;
-            margin-bottom: 20px;
+            padding: 20px;
             border-radius: 8px;
+            margin-bottom: 20px;
         }
 
-        .instructions h3 {
+        .instructions-box h3 {
+            font-size: 18px;
+            margin-bottom: 15px;
             color: #333;
-            margin-bottom: 10px;
-            font-size: 16px;
         }
 
-        .instructions ul {
+        .instructions-box ul {
             list-style: none;
+            padding-left: 0;
+        }
+
+        .instructions-box li {
+            margin-bottom: 10px;
             color: #666;
+            padding-left: 20px;
+            position: relative;
         }
 
-        .instructions li {
-            padding: 5px 0;
-        }
-
-        .instructions li::before {
-            content: "• ";
+        .instructions-box li:before {
+            content: "•";
+            position: absolute;
+            left: 0;
             color: #667eea;
-            font-weight: bold;
         }
 
         .what-to-include {
-            background: #fff9e6;
-            border-left: 4px solid #ffa500;
-            padding: 15px;
-            margin-bottom: 25px;
+            background: #fff4e6;
+            border-left: 4px solid #ff9800;
+            padding: 20px;
             border-radius: 8px;
+            margin-bottom: 30px;
         }
 
         .what-to-include h3 {
-            color: #333;
+            font-size: 18px;
             margin-bottom: 10px;
-            font-size: 16px;
+            color: #333;
         }
 
         .what-to-include p {
@@ -149,9 +140,30 @@
             margin-bottom: 10px;
         }
 
-        .recording-area {
-            text-align: center;
-            padding: 30px 0;
+        .what-to-include ul {
+            list-style: none;
+            padding-left: 0;
+        }
+
+        .what-to-include li {
+            margin-bottom: 8px;
+            color: #666;
+            padding-left: 20px;
+            position: relative;
+        }
+
+        .what-to-include li:before {
+            content: "•";
+            position: absolute;
+            left: 0;
+            color: #ff9800;
+        }
+
+        .recorder-container {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            gap: 20px;
         }
 
         .record-button {
@@ -161,58 +173,51 @@
             background: #dc3545;
             border: none;
             cursor: pointer;
-            position: relative;
+            display: flex;
+            align-items: center;
+            justify-content: center;
             transition: all 0.3s ease;
-            box-shadow: 0 4px 15px rgba(220, 53, 69, 0.3);
+            box-shadow: 0 4px 15px rgba(220, 53, 69, 0.4);
         }
 
-        .record-button:hover:not(:disabled) {
+        .record-button:hover {
             transform: scale(1.05);
-            box-shadow: 0 6px 20px rgba(220, 53, 69, 0.4);
-        }
-
-        .record-button:disabled {
-            opacity: 0.5;
-            cursor: not-allowed;
+            box-shadow: 0 6px 20px rgba(220, 53, 69, 0.5);
         }
 
         .record-button.recording {
-            background: #dc3545;
+            background: #28a745;
             animation: pulse 1.5s infinite;
-        }
-
-        .record-button.processing {
-            background: #ffc107;
         }
 
         @keyframes pulse {
             0% {
-                box-shadow: 0 0 0 0 rgba(220, 53, 69, 0.7);
+                box-shadow: 0 0 0 0 rgba(40, 167, 69, 0.7);
             }
             70% {
-                box-shadow: 0 0 0 20px rgba(220, 53, 69, 0);
+                box-shadow: 0 0 0 20px rgba(40, 167, 69, 0);
             }
             100% {
-                box-shadow: 0 0 0 0 rgba(220, 53, 69, 0);
+                box-shadow: 0 0 0 0 rgba(40, 167, 69, 0);
             }
         }
 
-        .record-icon {
-            font-size: 40px;
-            color: white;
+        .record-button svg {
+            width: 50px;
+            height: 50px;
+            fill: white;
         }
 
-        .status-text {
-            margin-top: 20px;
+        .record-status {
             font-size: 16px;
             color: #666;
+            text-align: center;
         }
 
         .timer {
             font-size: 24px;
             font-weight: bold;
-            color: #dc3545;
-            margin-top: 15px;
+            color: #333;
             display: none;
         }
 
@@ -220,51 +225,32 @@
             display: block;
         }
 
-        .transcription-review {
+        .audio-preview {
             display: none;
-            margin-top: 30px;
-        }
-
-        .transcription-review.active {
-            display: block;
-        }
-
-        .transcription-box {
-            background: #f8f9fa;
-            border: 2px solid #e9ecef;
-            border-radius: 10px;
-            padding: 20px;
-            margin-bottom: 20px;
-        }
-
-        .transcription-box h3 {
-            color: #333;
-            margin-bottom: 15px;
-            font-size: 18px;
-        }
-
-        .transcription-text {
             width: 100%;
-            min-height: 150px;
-            padding: 10px;
-            border: 1px solid #ddd;
-            border-radius: 5px;
-            font-size: 14px;
-            resize: vertical;
-            font-family: inherit;
-        }
-
-        .action-buttons {
-            display: flex;
-            gap: 10px;
-            justify-content: center;
             margin-top: 20px;
         }
 
+        .audio-preview.active {
+            display: block;
+        }
+
+        .action-buttons {
+            display: none;
+            gap: 15px;
+            margin-top: 20px;
+            width: 100%;
+        }
+
+        .action-buttons.active {
+            display: flex;
+        }
+
         .btn {
-            padding: 12px 30px;
+            flex: 1;
+            padding: 12px 24px;
+            border-radius: 8px;
             border: none;
-            border-radius: 25px;
             font-size: 16px;
             font-weight: 600;
             cursor: pointer;
@@ -276,33 +262,29 @@
             color: white;
         }
 
-        .btn-primary:hover:not(:disabled) {
-            background: #5a67d8;
-            transform: translateY(-2px);
-            box-shadow: 0 4px 15px rgba(102, 126, 234, 0.3);
-        }
-
         .btn-secondary {
-            background: #6c757d;
-            color: white;
+            background: #e0e0e0;
+            color: #333;
         }
 
-        .btn-secondary:hover:not(:disabled) {
-            background: #5a6268;
+        .btn:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
         }
 
         .btn:disabled {
             opacity: 0.5;
             cursor: not-allowed;
+            transform: none;
         }
 
         .error-message {
-            background: #f8d7da;
-            color: #721c24;
-            padding: 12px;
-            border-radius: 8px;
-            margin-top: 15px;
             display: none;
+            background: #ffebee;
+            color: #c62828;
+            padding: 15px;
+            border-radius: 8px;
+            margin-top: 20px;
         }
 
         .error-message.active {
@@ -310,44 +292,47 @@
         }
 
         .success-message {
-            background: #d4edda;
-            color: #155724;
-            padding: 12px;
-            border-radius: 8px;
-            margin-top: 15px;
             display: none;
+            background: #e8f5e9;
+            color: #2e7d32;
+            padding: 15px;
+            border-radius: 8px;
+            margin-top: 20px;
         }
 
         .success-message.active {
             display: block;
         }
 
-        .loading-spinner {
-            display: none;
-            margin: 20px auto;
-            width: 40px;
-            height: 40px;
-            border: 4px solid #f3f3f3;
-            border-top: 4px solid #667eea;
+        .loading {
+            display: inline-block;
+            width: 20px;
+            height: 20px;
+            border: 3px solid rgba(255,255,255,.3);
             border-radius: 50%;
-            animation: spin 1s linear infinite;
-        }
-
-        .loading-spinner.active {
-            display: block;
+            border-top-color: #fff;
+            animation: spin 1s ease-in-out infinite;
         }
 
         @keyframes spin {
-            0% { transform: rotate(0deg); }
-            100% { transform: rotate(360deg); }
+            to { transform: rotate(360deg); }
         }
 
-        @media (max-width: 480px) {
-            .header h1 {
-                font-size: 24px;
-            }
+        .debug-info {
+            position: fixed;
+            bottom: 10px;
+            right: 10px;
+            background: rgba(0,0,0,0.8);
+            color: #4CAF50;
+            padding: 10px;
+            border-radius: 5px;
+            font-family: monospace;
+            font-size: 12px;
+            max-width: 300px;
+        }
 
-            .card {
+        @media (max-width: 600px) {
+            .main-container {
                 padding: 20px;
             }
 
@@ -355,91 +340,77 @@
                 width: 100px;
                 height: 100px;
             }
-
-            .record-icon {
-                font-size: 32px;
-            }
-
-            .action-buttons {
-                flex-direction: column;
-            }
-
-            .btn {
-                width: 100%;
-            }
         }
     </style>
 </head>
 <body>
-    <div class="container">
-        <div class="header">
-            <h1>Record Incident Statement</h1>
-            <p>AI-powered scene documentation</p>
+    <div class="header">
+        <h1>AI-powered scene documentation</h1>
+    </div>
+
+    <div class="progress-indicator">
+        <div class="step active">
+            <div class="step-number">1</div>
+            <span>Record</span>
+        </div>
+        <div class="step">
+            <div class="step-number">2</div>
+            <span>Declaration</span>
+        </div>
+        <div class="step">
+            <div class="step-number">3</div>
+            <span>Complete</span>
+        </div>
+    </div>
+
+    <div class="main-container">
+        <div class="section-title">
+            🎙️ Record Your Statement Now
         </div>
 
-        <div class="progress-bar">
-            <div class="progress-step active">
-                <span class="number">1</span>
-                <span>Record</span>
-            </div>
-            <div class="progress-step">
-                <span class="number">2</span>
-                <span>Declaration</span>
-            </div>
-            <div class="progress-step">
-                <span class="number">3</span>
-                <span>Complete</span>
-            </div>
+        <div class="instructions-box">
+            <h3>Quick Instructions:</h3>
+            <ul>
+                <li>Press the red button to start recording</li>
+                <li>Speak clearly about what just happened</li>
+                <li>Press stop when finished (max 5 minutes)</li>
+                <li>AI will automatically transcribe your statement</li>
+            </ul>
         </div>
 
-        <div class="card">
-            <h2>Record Your Statement Now</h2>
+        <div class="what-to-include">
+            <h3>What to Include:</h3>
+            <p>Take your time and describe:</p>
+            <ul>
+                <li>What you were doing before the accident</li>
+                <li>Exactly what happened step by step</li>
+                <li>What you saw, heard, and felt</li>
+                <li>Actions you took after the accident</li>
+                <li>Anything unusual you noticed</li>
+            </ul>
+            <p style="margin-top: 10px;">💡 Speak clearly and don't worry about pausing to think.</p>
+        </div>
 
-            <div class="instructions">
-                <h3>Quick Instructions:</h3>
-                <ul>
-                    <li>Press the red button to start recording</li>
-                    <li>Speak clearly about what just happened</li>
-                    <li>Press stop when finished (max 5 minutes)</li>
-                    <li>AI will automatically transcribe your statement</li>
-                </ul>
-            </div>
+        <div class="recorder-container">
+            <button class="record-button" id="recordButton">
+                <svg id="micIcon" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24">
+                    <path d="M12 14c1.66 0 3-1.34 3-3V5c0-1.66-1.34-3-3-3S9 3.34 9 5v6c0 1.66 1.34 3 3 3z"/>
+                    <path d="M17 11c0 2.76-2.24 5-5 5s-5-2.24-5-5H5c0 3.53 2.61 6.43 6 6.92V21h2v-3.08c3.39-.49 6-3.39 6-6.92h-2z"/>
+                </svg>
+                <svg id="stopIcon" style="display: none;" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24">
+                    <rect x="6" y="6" width="12" height="12" fill="white"/>
+                </svg>
+            </button>
 
-            <div class="what-to-include">
-                <h3>What to Include:</h3>
-                <p>Take your time and describe:</p>
-                <ul>
-                    <li>What you were doing before the accident</li>
-                    <li>Exactly what happened step by step</li>
-                    <li>What you saw, heard, and felt</li>
-                    <li>Actions you took after the accident</li>
-                    <li>Anything unusual you noticed</li>
-                </ul>
-                <p style="margin-top: 10px;">💡 Speak clearly and don't worry about pausing to think.</p>
-            </div>
+            <div class="record-status" id="recordStatus">Press to start recording</div>
 
-            <div class="recording-area">
-                <button id="recordButton" class="record-button">
-                    <span class="record-icon">🎤</span>
-                </button>
-                <p class="status-text" id="statusText">Press to start recording</p>
-                <div class="timer" id="timer">00:00</div>
-                <div class="loading-spinner" id="loadingSpinner"></div>
-            </div>
+            <div class="timer" id="timer">00:00</div>
 
-            <div class="transcription-review" id="transcriptionReview">
-                <div class="transcription-box">
-                    <h3>Your Statement:</h3>
-                    <textarea 
-                        id="transcriptionText" 
-                        class="transcription-text" 
-                        placeholder="Your transcribed statement will appear here..."
-                    ></textarea>
-                </div>
-                <div class="action-buttons">
-                    <button id="reRecordBtn" class="btn btn-secondary">Re-record</button>
-                    <button id="continueBtn" class="btn btn-primary">Continue to Declaration</button>
-                </div>
+            <audio class="audio-preview" id="audioPreview" controls></audio>
+
+            <div class="action-buttons" id="actionButtons">
+                <button class="btn btn-secondary" id="retryButton">Record Again</button>
+                <button class="btn btn-primary" id="submitButton">Submit & Transcribe</button>
             </div>
 
             <div class="error-message" id="errorMessage"></div>
@@ -447,95 +418,30 @@
         </div>
     </div>
 
+    <!-- Debug info (remove in production) -->
+    <div class="debug-info" id="debugInfo" style="display: none;">
+        <div>User ID: <span id="debugUserId">-</span></div>
+        <div>Recording: <span id="debugRecording">false</span></div>
+        <div>Audio Size: <span id="debugAudioSize">0</span></div>
+    </div>
+
     <script>
         // Configuration
-        const CONFIG = {
-            MAX_RECORDING_TIME: 300000, // 5 minutes in milliseconds
-            SUPABASE_URL: '', // Will be fetched from API
-            SUPABASE_ANON_KEY: '', // Will be fetched from API
-            API_BASE_URL: window.location.origin
-        };
+        const API_BASE_URL = window.location.origin;
 
-        // State management
-        let mediaRecorder = null;
-        let audioChunks = [];
-        let recordingStartTime = null;
-        let timerInterval = null;
-        let isRecording = false;
-        let currentUserId = null;
-        let audioBlob = null;
-        let transcriptionData = null;
+        // Get URL parameters - FIXED to use correct parameter names
+        const urlParams = new URLSearchParams(window.location.search);
+        const createUserId = urlParams.get('create_user_id') || 
+                            urlParams.get('userId') || 
+                            localStorage.getItem('create_user_id') ||
+                            generateUUID();
 
-        // DOM elements
-        const recordButton = document.getElementById('recordButton');
-        const statusText = document.getElementById('statusText');
-        const timer = document.getElementById('timer');
-        const errorMessage = document.getElementById('errorMessage');
-        const successMessage = document.getElementById('successMessage');
-        const loadingSpinner = document.getElementById('loadingSpinner');
-        const transcriptionReview = document.getElementById('transcriptionReview');
-        const transcriptionText = document.getElementById('transcriptionText');
-        const reRecordBtn = document.getElementById('reRecordBtn');
-        const continueBtn = document.getElementById('continueBtn');
-
-        // Initialize on page load
-        document.addEventListener('DOMContentLoaded', async () => {
-            await initializeApp();
-            setupEventListeners();
-        });
-
-        // Initialize application
-        async function initializeApp() {
-            try {
-                // Get or create user ID
-                currentUserId = getUserId();
-
-                // Fetch Supabase configuration
-                const response = await fetch(`${CONFIG.API_BASE_URL}/api/config`);
-                if (response.ok) {
-                    const config = await response.json();
-                    CONFIG.SUPABASE_URL = config.supabaseUrl;
-                    CONFIG.SUPABASE_ANON_KEY = config.supabaseAnonKey;
-                }
-
-                // Check browser compatibility
-                if (!navigator.mediaDevices || !navigator.mediaDevices.getUserMedia) {
-                    showError('Your browser does not support audio recording. Please use a modern browser.');
-                    recordButton.disabled = true;
-                }
-            } catch (error) {
-                console.error('Initialization error:', error);
-                showError('Failed to initialize. Please refresh the page.');
-            }
+        // Store for future use
+        if (!localStorage.getItem('create_user_id')) {
+            localStorage.setItem('create_user_id', createUserId);
         }
 
-        // Get or create user ID
-        function getUserId() {
-            // Check URL parameters
-            const urlParams = new URLSearchParams(window.location.search);
-            let userId = urlParams.get('userId') || urlParams.get('create_user_id');
-
-            // Check localStorage
-            if (!userId) {
-                userId = localStorage.getItem('create_user_id');
-            }
-
-            // Check sessionStorage
-            if (!userId) {
-                userId = sessionStorage.getItem('create_user_id');
-            }
-
-            // Generate new UUID if none exists
-            if (!userId) {
-                userId = generateUUID();
-                localStorage.setItem('create_user_id', userId);
-                sessionStorage.setItem('create_user_id', userId);
-            }
-
-            return userId;
-        }
-
-        // Generate UUID v4
+        // Generate UUID if needed
         function generateUUID() {
             return 'xxxxxxxx-xxxx-4xxx-yxxx-xxxxxxxxxxxx'.replace(/[xy]/g, function(c) {
                 const r = Math.random() * 16 | 0;
@@ -544,14 +450,44 @@
             });
         }
 
-        // Setup event listeners
-        function setupEventListeners() {
-            recordButton.addEventListener('click', toggleRecording);
-            reRecordBtn.addEventListener('click', resetRecording);
-            continueBtn.addEventListener('click', proceedToDeclaration);
+        // Audio recording variables
+        let mediaRecorder;
+        let audioChunks = [];
+        let recordingStartTime;
+        let timerInterval;
+        let audioBlob;
+        let isRecording = false;
+
+        // DOM elements
+        const recordButton = document.getElementById('recordButton');
+        const recordStatus = document.getElementById('recordStatus');
+        const timer = document.getElementById('timer');
+        const audioPreview = document.getElementById('audioPreview');
+        const actionButtons = document.getElementById('actionButtons');
+        const retryButton = document.getElementById('retryButton');
+        const submitButton = document.getElementById('submitButton');
+        const errorMessage = document.getElementById('errorMessage');
+        const successMessage = document.getElementById('successMessage');
+        const micIcon = document.getElementById('micIcon');
+        const stopIcon = document.getElementById('stopIcon');
+
+        // Debug elements
+        const debugInfo = document.getElementById('debugInfo');
+        const debugUserId = document.getElementById('debugUserId');
+        const debugRecording = document.getElementById('debugRecording');
+        const debugAudioSize = document.getElementById('debugAudioSize');
+
+        // Show debug info in development
+        if (window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1') {
+            debugInfo.style.display = 'block';
+            debugUserId.textContent = createUserId.substring(0, 8) + '...';
         }
 
-        // Toggle recording
+        // Event listeners
+        recordButton.addEventListener('click', toggleRecording);
+        retryButton.addEventListener('click', resetRecording);
+        submitButton.addEventListener('click', submitRecording);
+
         async function toggleRecording() {
             if (!isRecording) {
                 await startRecording();
@@ -560,9 +496,10 @@
             }
         }
 
-        // Start recording
         async function startRecording() {
             try {
+                console.log('Starting recording...');
+
                 // Reset state
                 audioChunks = [];
                 hideMessages();
@@ -572,262 +509,280 @@
                     audio: {
                         echoCancellation: true,
                         noiseSuppression: true,
-                        autoGainControl: true
+                        sampleRate: 44100
                     } 
                 });
 
-                // Determine best supported format
-                const mimeType = getSupportedMimeType();
+                console.log('Microphone access granted');
 
-                // Create media recorder
+                // Determine the best MIME type
+                let mimeType = 'audio/webm';
+                if (MediaRecorder.isTypeSupported('audio/webm;codecs=opus')) {
+                    mimeType = 'audio/webm;codecs=opus';
+                } else if (MediaRecorder.isTypeSupported('audio/mp4')) {
+                    mimeType = 'audio/mp4';
+                } else if (MediaRecorder.isTypeSupported('audio/mpeg')) {
+                    mimeType = 'audio/mpeg';
+                }
+
+                console.log('Using MIME type:', mimeType);
+
+                // Create MediaRecorder
                 mediaRecorder = new MediaRecorder(stream, { mimeType });
 
                 // Handle data available
                 mediaRecorder.ondataavailable = (event) => {
                     if (event.data.size > 0) {
                         audioChunks.push(event.data);
+                        console.log('Audio chunk received, size:', event.data.size);
                     }
                 };
 
-                // Handle recording stop
-                mediaRecorder.onstop = async () => {
-                    // Create blob from chunks
+                // Handle recording stopped
+                mediaRecorder.onstop = () => {
+                    console.log('Recording stopped, processing audio...');
+
+                    // Create blob
                     audioBlob = new Blob(audioChunks, { type: mimeType });
+                    console.log('Audio blob created, size:', audioBlob.size);
+
+                    // Update debug info
+                    if (debugAudioSize) {
+                        debugAudioSize.textContent = (audioBlob.size / 1024).toFixed(2) + ' KB';
+                    }
+
+                    // Create URL for preview
+                    const audioUrl = URL.createObjectURL(audioBlob);
+                    audioPreview.src = audioUrl;
+                    audioPreview.classList.add('active');
+                    actionButtons.classList.add('active');
 
                     // Stop all tracks
                     stream.getTracks().forEach(track => track.stop());
 
-                    // Process the recording
-                    await processRecording(audioBlob);
+                    recordStatus.textContent = 'Recording complete - ready to submit';
+                };
+
+                // Handle errors
+                mediaRecorder.onerror = (event) => {
+                    console.error('MediaRecorder error:', event);
+                    showError('Recording error occurred. Please try again.');
                 };
 
                 // Start recording
-                mediaRecorder.start();
+                mediaRecorder.start(1000); // Collect data every second
                 isRecording = true;
-                recordingStartTime = Date.now();
 
                 // Update UI
                 recordButton.classList.add('recording');
-                recordButton.innerHTML = '<span class="record-icon">⏹️</span>';
-                statusText.textContent = 'Recording... Click to stop';
-                timer.classList.add('active');
+                micIcon.style.display = 'none';
+                stopIcon.style.display = 'block';
+                recordStatus.textContent = 'Recording... Click to stop';
+
+                // Update debug info
+                if (debugRecording) {
+                    debugRecording.textContent = 'true';
+                }
 
                 // Start timer
+                recordingStartTime = Date.now();
+                timer.classList.add('active');
                 startTimer();
 
-                // Auto-stop after max time
+                // Auto-stop after 5 minutes
                 setTimeout(() => {
                     if (isRecording) {
                         stopRecording();
-                        showError('Maximum recording time reached (5 minutes)');
+                        showError('Maximum recording time of 5 minutes reached');
                     }
-                }, CONFIG.MAX_RECORDING_TIME);
+                }, 5 * 60 * 1000);
+
+                console.log('Recording started successfully');
 
             } catch (error) {
-                console.error('Recording error:', error);
-                showError('Failed to start recording. Please check microphone permissions.');
+                console.error('Error starting recording:', error);
+                showError('Failed to access microphone. Please ensure you have granted permission.');
                 isRecording = false;
-            }
-        }
 
-        // Get supported MIME type
-        function getSupportedMimeType() {
-            const types = [
-                'audio/webm;codecs=opus',
-                'audio/webm',
-                'audio/ogg;codecs=opus',
-                'audio/ogg',
-                'audio/mp4',
-                'audio/mpeg',
-                'audio/wav'
-            ];
-
-            for (const type of types) {
-                if (MediaRecorder.isTypeSupported(type)) {
-                    console.log('Using MIME type:', type);
-                    return type;
+                if (debugRecording) {
+                    debugRecording.textContent = 'error';
                 }
             }
-
-            // Default fallback
-            return 'audio/webm';
         }
 
-        // Stop recording
         function stopRecording() {
             if (mediaRecorder && mediaRecorder.state !== 'inactive') {
+                console.log('Stopping recording...');
                 mediaRecorder.stop();
                 isRecording = false;
 
                 // Update UI
                 recordButton.classList.remove('recording');
-                recordButton.innerHTML = '<span class="record-icon">🎤</span>';
-                statusText.textContent = 'Processing your recording...';
-                timer.classList.remove('active');
+                micIcon.style.display = 'block';
+                stopIcon.style.display = 'none';
 
                 // Stop timer
-                stopTimer();
+                clearInterval(timerInterval);
+
+                // Update debug info
+                if (debugRecording) {
+                    debugRecording.textContent = 'false';
+                }
             }
         }
 
-        // Process recording
-        async function processRecording(blob) {
+        function startTimer() {
+            timerInterval = setInterval(() => {
+                const elapsed = Date.now() - recordingStartTime;
+                const minutes = Math.floor(elapsed / 60000);
+                const seconds = Math.floor((elapsed % 60000) / 1000);
+                timer.textContent = `${String(minutes).padStart(2, '0')}:${String(seconds).padStart(2, '0')}`;
+            }, 1000);
+        }
+
+        function resetRecording() {
+            console.log('Resetting recording...');
+
+            // Clear audio data
+            audioChunks = [];
+            audioBlob = null;
+
+            // Reset UI
+            audioPreview.classList.remove('active');
+            actionButtons.classList.remove('active');
+            timer.classList.remove('active');
+            timer.textContent = '00:00';
+            recordStatus.textContent = 'Press to start recording';
+            hideMessages();
+
+            // Reset button state
+            recordButton.classList.remove('recording');
+            micIcon.style.display = 'block';
+            stopIcon.style.display = 'none';
+
+            // Update debug info
+            if (debugAudioSize) {
+                debugAudioSize.textContent = '0';
+            }
+        }
+
+        async function submitRecording() {
+            if (!audioBlob) {
+                showError('No recording to submit');
+                return;
+            }
+
+            if (!createUserId) {
+                showError('User ID is missing. Please refresh the page.');
+                return;
+            }
+
             try {
+                console.log('Submitting recording...');
+                console.log('User ID:', createUserId);
+                console.log('Audio blob size:', audioBlob.size);
+
                 // Show loading state
-                recordButton.disabled = true;
-                recordButton.classList.add('processing');
-                loadingSpinner.classList.add('active');
-                statusText.textContent = 'Uploading and transcribing...';
+                submitButton.disabled = true;
+                submitButton.innerHTML = '<span class="loading"></span> Processing...';
+                recordStatus.textContent = 'Uploading and transcribing...';
 
-                // Create form data
+                // Create form data - FIXED to use correct parameter names
                 const formData = new FormData();
-                const fileName = `statement_${currentUserId}_${Date.now()}.webm`;
-                formData.append('audio', blob, fileName);
-                formData.append('userId', currentUserId);
-                formData.append('incidentId', currentUserId); // Using same ID for now
+                formData.append('audio', audioBlob, `statement_${Date.now()}.webm`);
+                formData.append('userId', createUserId);  // The endpoint expects 'userId'
+                formData.append('incidentId', createUserId); // Using same as userId for now
+                formData.append('duration', timer.textContent);
 
-                // Upload and transcribe
-                const response = await fetch(`${CONFIG.API_BASE_URL}/api/whisper/transcribe`, {
+                // Submit to transcription endpoint
+                const response = await fetch(`${API_BASE_URL}/api/whisper/transcribe`, {
                     method: 'POST',
                     body: formData
                 });
 
-                if (!response.ok) {
-                    throw new Error('Transcription failed');
-                }
+                console.log('Response status:', response.status);
 
                 const result = await response.json();
-                transcriptionData = result;
-
-                // Show transcription for review
-                showTranscription(result.transcription || result.text);
-
-                // Save transcription to database
-                await saveTranscription(result);
-
-                showSuccess('Recording processed successfully!');
-
-            } catch (error) {
-                console.error('Processing error:', error);
-                showError('Failed to process recording. Please try again.');
-            } finally {
-                // Reset UI state
-                recordButton.disabled = false;
-                recordButton.classList.remove('processing');
-                loadingSpinner.classList.remove('active');
-                statusText.textContent = 'Press to start recording';
-            }
-        }
-
-        // Show transcription for review
-        function showTranscription(text) {
-            transcriptionText.value = text || '';
-            transcriptionReview.classList.add('active');
-            recordButton.style.display = 'none';
-            statusText.style.display = 'none';
-        }
-
-        // Save transcription to database
-        async function saveTranscription(data) {
-            try {
-                const response = await fetch(`${CONFIG.API_BASE_URL}/api/save-transcription`, {
-                    method: 'POST',
-                    headers: {
-                        'Content-Type': 'application/json'
-                    },
-                    body: JSON.stringify({
-                        userId: currentUserId,
-                        incidentId: currentUserId,
-                        transcription: transcriptionText.value,
-                        audioUrl: data.audioUrl || '',
-                        duration: data.duration || 0
-                    })
-                });
+                console.log('Response data:', result);
 
                 if (!response.ok) {
-                    console.error('Failed to save transcription');
-                }
-            } catch (error) {
-                console.error('Save error:', error);
-            }
-        }
-
-        // Reset recording
-        function resetRecording() {
-            // Reset UI
-            transcriptionReview.classList.remove('active');
-            recordButton.style.display = 'block';
-            statusText.style.display = 'block';
-            statusText.textContent = 'Press to start recording';
-            transcriptionText.value = '';
-
-            // Reset state
-            audioChunks = [];
-            audioBlob = null;
-            transcriptionData = null;
-
-            hideMessages();
-        }
-
-        // Proceed to declaration page
-        async function proceedToDeclaration() {
-            try {
-                // Save final transcription if edited
-                if (transcriptionData && transcriptionText.value !== transcriptionData.transcription) {
-                    await saveTranscription({
-                        ...transcriptionData,
-                        transcription: transcriptionText.value
-                    });
+                    throw new Error(result.error || `Server error: ${response.status}`);
                 }
 
-                // Navigate to declaration page
-                window.location.href = `declaration.html?userId=${currentUserId}`;
+                if (result.success) {
+                    showSuccess('Recording successfully submitted and transcribed!');
+
+                    // Show transcription if available
+                    if (result.transcription && result.transcription !== 'Transcription pending - audio file saved successfully') {
+                        recordStatus.innerHTML = `<strong>Transcription:</strong><br>"${result.transcription.substring(0, 100)}..."`;
+                    } else {
+                        recordStatus.textContent = 'Audio saved - transcription will be processed shortly';
+                    }
+
+                    // Redirect after 3 seconds
+                    setTimeout(() => {
+                        window.location.href = `/declaration.html?create_user_id=${createUserId}`;
+                    }, 3000);
+                } else {
+                    throw new Error(result.error || 'Failed to process recording');
+                }
 
             } catch (error) {
-                console.error('Navigation error:', error);
-                showError('Failed to proceed. Please try again.');
+                console.error('Error submitting recording:', error);
+                showError(`Failed to submit: ${error.message}`);
+
+                // Reset submit button
+                submitButton.disabled = false;
+                submitButton.innerHTML = 'Submit & Transcribe';
+                recordStatus.textContent = 'Recording complete - ready to submit';
             }
         }
 
-        // Timer functions
-        function startTimer() {
-            const startTime = Date.now();
-            timerInterval = setInterval(() => {
-                const elapsed = Math.floor((Date.now() - startTime) / 1000);
-                const minutes = Math.floor(elapsed / 60).toString().padStart(2, '0');
-                const seconds = (elapsed % 60).toString().padStart(2, '0');
-                timer.textContent = `${minutes}:${seconds}`;
-            }, 1000);
-        }
-
-        function stopTimer() {
-            if (timerInterval) {
-                clearInterval(timerInterval);
-                timerInterval = null;
-            }
-        }
-
-        // UI Helper functions
         function showError(message) {
+            console.error('Error:', message);
             errorMessage.textContent = message;
             errorMessage.classList.add('active');
+            successMessage.classList.remove('active');
+
             setTimeout(() => {
                 errorMessage.classList.remove('active');
             }, 5000);
         }
 
         function showSuccess(message) {
+            console.log('Success:', message);
             successMessage.textContent = message;
             successMessage.classList.add('active');
-            setTimeout(() => {
-                successMessage.classList.remove('active');
-            }, 3000);
+            errorMessage.classList.remove('active');
         }
 
         function hideMessages() {
             errorMessage.classList.remove('active');
             successMessage.classList.remove('active');
         }
+
+        // Check browser compatibility on load
+        window.addEventListener('DOMContentLoaded', () => {
+            console.log('Page loaded, checking browser compatibility...');
+            console.log('User ID:', createUserId);
+
+            if (!navigator.mediaDevices || !navigator.mediaDevices.getUserMedia) {
+                showError('Your browser does not support audio recording. Please use Chrome, Firefox, or Safari.');
+                recordButton.disabled = true;
+            } else {
+                console.log('Browser supports audio recording');
+            }
+
+            // Test microphone access immediately (optional)
+            navigator.mediaDevices.getUserMedia({ audio: true })
+                .then(stream => {
+                    console.log('Microphone test successful');
+                    stream.getTracks().forEach(track => track.stop());
+                })
+                .catch(err => {
+                    console.warn('Microphone not yet authorized:', err.message);
+                });
+        });
     </script>
 </body>
 </html>
