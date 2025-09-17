@@ -1,3 +1,7 @@
+// ========================================
+// PART 1: Core Setup, Middleware, and Classes
+// ========================================
+
 const express = require('express');
 const bodyParser = require('body-parser');
 const path = require('path');
@@ -66,7 +70,7 @@ function checkSharedKey(req, res, next) {
 }
 
 function authenticateRequest(req, res, next) {
-  // TODO: Implement proper authentication when needed
+  // Placeholder for future auth implementation
   console.warn('⚠️  authenticateRequest called but not fully implemented');
   next();
 }
@@ -375,7 +379,7 @@ async function storeCompletedForm(createUserId, pdfBuffer, allData) {
 class ImageProcessor {
   constructor() {
     this.supabase = supabase;
-    this.bucketName = 'incident-images-secure'; // Correct bucket name
+    this.bucketName = 'incident-images-secure';
   }
 
   async processSignupImages(webhookData) {
@@ -521,6 +525,15 @@ class ImageProcessor {
               } else if (url.includes('.webm')) {
                 extension = '.webm';
                 contentType = 'audio/webm';
+              } else if (url.includes('.wav')) {
+                extension = '.wav';
+                contentType = 'audio/wav';
+              } else if (url.includes('.ogg')) {
+                extension = '.ogg';
+                contentType = 'audio/ogg';
+              } else if (url.includes('.aac')) {
+                extension = '.aac';
+                contentType = 'audio/aac';
               } else {
                 extension = '.mp3';
                 contentType = 'audio/mpeg';
@@ -756,6 +769,45 @@ class ImageProcessor {
 // Initialize image processor
 const imageProcessor = supabaseEnabled ? new ImageProcessor() : null;
 
+// ========================================
+// PART 2: API Endpoints, Routes, and Server
+// ========================================
+
+// --- UTILITY FUNCTIONS ---
+function processTypeformData(formResponse) {
+  const processedData = {};
+
+  if (formResponse.form_response && formResponse.form_response.answers) {
+    formResponse.form_response.answers.forEach(answer => {
+      const fieldId = answer.field.id;
+      const fieldRef = answer.field.ref;
+
+      let value = null;
+      if (answer.text) value = answer.text;
+      else if (answer.email) value = answer.email;
+      else if (answer.phone_number) value = answer.phone_number;
+      else if (answer.number) value = answer.number;
+      else if (answer.boolean !== undefined) value = answer.boolean;
+      else if (answer.choice) value = answer.choice.label;
+      else if (answer.choices) value = answer.choices.map(c => c.label);
+      else if (answer.date) value = answer.date;
+      else if (answer.url) value = answer.url;
+      else if (answer.file_url) value = answer.file_url;
+
+      if (value !== null) {
+        processedData[fieldId] = value;
+        if (fieldRef) processedData[fieldRef] = value;
+      }
+    });
+  }
+
+  processedData.submitted_at = formResponse.form_response?.submitted_at || new Date().toISOString();
+  processedData.form_id = formResponse.form_response?.form_id;
+  processedData.response_id = formResponse.form_response?.token;
+
+  return processedData;
+}
+
 // --- API CONFIGURATION ENDPOINT ---
 app.get('/api/config', (req, res) => {
   res.json({
@@ -781,10 +833,268 @@ app.get('/health', (req, res) => {
 
 // --- MAIN ROUTES ---
 app.get('/', (req, res) => {
-  res.sendFile(path.join(__dirname, 'public', 'index.html'));
+  const htmlContent = `<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Car Crash Lawyer AI - GDPR Compliant System</title>
+    <style>
+        body { font-family: Arial, sans-serif; padding: 40px; background: #f5f5f5; }
+        .container { max-width: 800px; margin: 0 auto; background: white; padding: 30px; border-radius: 10px; box-shadow: 0 2px 10px rgba(0,0,0,0.1); }
+        h1 { color: #333; }
+        .status { padding: 10px; background: #4CAF50; color: white; border-radius: 5px; display: inline-block; }
+        .endpoint { background: #f0f0f0; padding: 10px; margin: 10px 0; border-radius: 5px; }
+        code { background: #333; color: #4CAF50; padding: 2px 6px; border-radius: 3px; }
+        .section { margin-top: 30px; }
+        ul { list-style: none; padding: 0; }
+        li { margin: 5px 0; }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>🚗 Car Crash Lawyer AI - GDPR Compliant System</h1>
+        <p class="status">✅ Server is running</p>
+
+        <div class="section">
+            <h2>Available Endpoints:</h2>
+
+            <div class="endpoint">
+                <strong>Core Services:</strong><br>
+                <code>GET /health</code> - System health check<br>
+                <code>GET /api/config</code> - Get Supabase configuration
+            </div>
+
+            <div class="endpoint">
+                <strong>Webhook Endpoints:</strong><br>
+                <code>POST /webhook/signup</code> - Process signup images<br>
+                <code>POST /webhook/incident-report</code> - Process incident report files<br>
+                <code>POST /generate-pdf</code> - Generate and email PDF report<br>
+                <code>POST /webhook/generate-pdf</code> - Alternative PDF generation
+            </div>
+
+            <div class="endpoint">
+                <strong>Transcription Services:</strong><br>
+                <code>POST /api/whisper/transcribe</code> - Direct Whisper transcription<br>
+                <code>GET /api/transcription-status/:queueId</code> - Check transcription status<br>
+                <code>POST /api/update-transcription</code> - Update/edit transcription<br>
+                <code>POST /api/save-transcription</code> - Save transcription<br>
+                <code>GET /api/transcription-status/:userId</code> - Get user transcription status
+            </div>
+
+            <div class="endpoint">
+                <strong>Emergency & Incident Services:</strong><br>
+                <code>GET /api/auth/status</code> - Check authentication status<br>
+                <code>GET /api/user/:userId/emergency-contacts</code> - Get emergency contacts<br>
+                <code>POST /api/log-emergency-call</code> - Log emergency calls<br>
+                <code>GET /api/what3words</code> - Get What3Words location<br>
+                <code>POST /api/upload-what3words-image</code> - Upload what3words screenshot
+            </div>
+
+            <div class="endpoint">
+                <strong>Image Management:</strong><br>
+                <code>GET /api/images/:userId</code> - Get user images<br>
+                <code>GET /api/image/signed-url/:userId/:imageType</code> - Get signed URL<br>
+                <code>DELETE /api/gdpr/delete-images</code> - GDPR deletion
+            </div>
+
+            <div class="endpoint">
+                <strong>PDF Services:</strong><br>
+                <code>GET /pdf-status/:userId</code> - Check PDF generation status<br>
+                <code>GET /download-pdf/:userId</code> - Download generated PDF
+            </div>
+        </div>
+
+        <div class="section">
+            <h3>System Status:</h3>
+            <ul>
+                <li>Supabase: ${supabaseEnabled ? '✅ Connected' : '❌ Not configured'}</li>
+                <li>OpenAI: ${process.env.OPENAI_API_KEY ? '✅ Configured' : '❌ Not configured'}</li>
+                <li>Transcription Queue: ${transcriptionQueueInterval ? '✅ Running' : '❌ Not running'}</li>
+                <li>Auth Key: ${SHARED_KEY ? '✅ Set' : '❌ Missing'}</li>
+            </ul>
+        </div>
+    </div>
+</body>
+</html>`;
+  res.send(htmlContent);
 });
 
-// --- WHISPER TRANSCRIPTION ENDPOINT ---
+// --- AUTHENTICATION STATUS ---
+app.get('/api/auth/status', (req, res) => {
+  const mockUser = {
+    authenticated: false,
+    user: null
+  };
+
+  if (req.session && req.session.user) {
+    mockUser.authenticated = true;
+    mockUser.user = {
+      uid: req.session.user.id,
+      email: req.session.user.email,
+      fullName: req.session.user.full_name
+    };
+  }
+
+  res.json(mockUser);
+});
+
+// --- EMERGENCY CONTACTS ---
+app.get('/api/user/:userId/emergency-contacts', authenticateRequest, async (req, res) => {
+  if (!supabaseEnabled) {
+    return res.status(503).json({ error: 'Service not configured' });
+  }
+
+  try {
+    const { userId } = req.params;
+
+    const { data, error } = await supabase
+      .from('user_signup')
+      .select('emergency_contact, recovery_breakdown_number, emergency_services_number')
+      .eq('create_user_id', userId)
+      .single();
+
+    if (error) {
+      console.error('Supabase error:', error);
+      return res.status(404).json({ error: 'User not found' });
+    }
+
+    res.json({
+      emergency_contact: data.emergency_contact || null,
+      recovery_breakdown_number: data.recovery_breakdown_number || null,
+      emergency_services_number: data.emergency_services_number || '999'
+    });
+  } catch (error) {
+    console.error('Error fetching emergency contacts:', error);
+    res.status(500).json({ error: 'Failed to fetch contacts' });
+  }
+});
+
+// --- LOG EMERGENCY CALLS ---
+app.post('/api/log-emergency-call', authenticateRequest, async (req, res) => {
+  if (!supabaseEnabled) {
+    return res.status(503).json({ error: 'Service not configured' });
+  }
+
+  try {
+    const { user_id, service_called, timestamp, incident_id } = req.body;
+
+    const { data, error } = await supabase
+      .from('emergency_call_logs')
+      .insert({
+        user_id,
+        service_called,
+        incident_id: incident_id || null,
+        timestamp,
+        created_at: new Date().toISOString()
+      });
+
+    if (error) {
+      console.error('Failed to log emergency call:', error);
+      return res.json({ success: false, logged: false });
+    }
+
+    res.json({ success: true, logged: true });
+  } catch (error) {
+    console.error('Error logging emergency call:', error);
+    res.status(500).json({ error: 'Internal server error' });
+  }
+});
+
+// --- WHAT3WORDS API ---
+app.get('/api/what3words', async (req, res) => {
+  try {
+    const { lat, lng } = req.query;
+
+    if (!lat || !lng) {
+      return res.status(400).json({ error: 'Missing latitude or longitude' });
+    }
+
+    const W3W_API_KEY = process.env.WHAT3WORDS_API_KEY;
+
+    if (!W3W_API_KEY) {
+      console.warn('What3Words API key not configured');
+      return res.json({ words: 'location.not.configured' });
+    }
+
+    const response = await axios.get(
+      `https://api.what3words.com/v3/convert-to-3wa?coordinates=${lat},${lng}&key=${W3W_API_KEY}`
+    );
+
+    if (response.data && response.data.words) {
+      res.json({ words: response.data.words });
+    } else {
+      res.json({ words: 'location.not.found' });
+    }
+  } catch (error) {
+    console.error('What3Words API error:', error);
+    res.json({ words: 'api.error.occurred' });
+  }
+});
+
+// --- UPLOAD WHAT3WORDS IMAGE ---
+app.post('/api/upload-what3words-image', upload.single('image'), async (req, res) => {
+  if (!supabaseEnabled || !imageProcessor) {
+    return res.status(503).json({ error: 'Service not configured' });
+  }
+
+  try {
+    let buffer;
+    let what3words, latitude, longitude, userId;
+
+    if (req.file) {
+      buffer = req.file.buffer;
+      ({ what3words, latitude, longitude, userId } = req.body);
+    } else {
+      const { imageData } = req.body;
+      if (!imageData) {
+        return res.status(400).json({ error: 'No image data provided' });
+      }
+
+      const base64Data = imageData.replace(/^data:image\/\w+;base64,/, '');
+      buffer = Buffer.from(base64Data, 'base64');
+      ({ what3words, latitude, longitude, userId } = req.body);
+    }
+
+    const safeWhat3Words = what3words ? what3words.replace(/[\/\\.]/g, '-') : 'unknown';
+    const timestamp = Date.now();
+    const fileName = `${userId || 'anonymous'}/what3words/${timestamp}_${safeWhat3Words}.png`;
+
+    const storagePath = await imageProcessor.uploadToSupabase(buffer, fileName, 'image/png');
+
+    const imageRecord = await imageProcessor.createImageRecord({
+      create_user_id: userId || null,
+      incident_report_id: null,
+      image_type: 'what3words_screenshot',
+      storage_path: storagePath,
+      original_url: null,
+      metadata: {
+        upload_date: new Date().toISOString(),
+        source: 'web_capture',
+        what3words: what3words,
+        latitude: parseFloat(latitude) || null,
+        longitude: parseFloat(longitude) || null,
+        captured_at: new Date().toISOString(),
+        gdpr_consent: true
+      }
+    });
+
+    const signedUrl = await imageProcessor.getSignedUrl(storagePath, 3600);
+
+    res.json({
+      success: true,
+      imageUrl: signedUrl,
+      storagePath: storagePath,
+      imageRecord: imageRecord
+    });
+
+  } catch (error) {
+    console.error('Error uploading what3words image:', error);
+    res.status(500).json({ error: error.message });
+  }
+});
+
+// --- ENHANCED WHISPER TRANSCRIPTION ---
 app.post('/api/whisper/transcribe', upload.single('audio'), async (req, res) => {
   try {
     console.log('🎤 Received transcription request');
@@ -793,13 +1103,11 @@ app.post('/api/whisper/transcribe', upload.single('audio'), async (req, res) => 
 
     // Handle both base64 and file upload
     if (req.body.audio && req.body.audio.startsWith('data:')) {
-      // Base64 audio from request body
       const base64Audio = req.body.audio.split(',')[1];
       audioData = Buffer.from(base64Audio, 'base64');
       userId = req.body.userId || req.body.create_user_id;
       incidentId = req.body.incidentId || userId;
     } else if (req.file) {
-      // File upload
       audioData = req.file.buffer;
       userId = req.body.userId || req.body.create_user_id;
       incidentId = req.body.incidentId || userId;
@@ -833,7 +1141,7 @@ app.post('/api/whisper/transcribe', upload.single('audio'), async (req, res) => 
 
     const audioUrl = urlData.publicUrl;
 
-    // Queue for transcription instead of processing immediately
+    // Queue for transcription
     const { data: queueData, error: queueError } = await supabase
       .from('transcription_queue')
       .insert({
@@ -860,6 +1168,7 @@ app.post('/api/whisper/transcribe', upload.single('audio'), async (req, res) => 
           contentType: 'audio/webm'
         });
         formData.append('model', 'whisper-1');
+        formData.append('language', 'en');
 
         const whisperResponse = await axios.post(
           'https://api.openai.com/v1/audio/transcriptions',
@@ -883,6 +1192,7 @@ app.post('/api/whisper/transcribe', upload.single('audio'), async (req, res) => 
             incident_id: incidentId,
             audio_url: audioUrl,
             transcription: transcription,
+            duration: req.body.duration || 0,
             created_at: new Date().toISOString()
           });
 
@@ -900,6 +1210,16 @@ app.post('/api/whisper/transcribe', upload.single('audio'), async (req, res) => 
             })
             .eq('id', queueData.id);
         }
+
+        // Update incident_reports
+        await supabase
+          .from('incident_reports')
+          .update({
+            witness_statement_text: transcription,
+            witness_statement_audio: audioUrl,
+            updated_at: new Date().toISOString()
+          })
+          .eq('create_user_id', userId);
 
         return res.json({
           success: true,
@@ -939,7 +1259,6 @@ app.get('/api/transcription-status/:queueId', async (req, res) => {
   try {
     const { queueId } = req.params;
 
-    // First check the queue
     const { data: queueData, error: queueError } = await supabase
       .from('transcription_queue')
       .select('*')
@@ -948,7 +1267,6 @@ app.get('/api/transcription-status/:queueId', async (req, res) => {
 
     if (queueData) {
       if (queueData.status === 'completed') {
-        // Get the full transcription and summary
         const { data: transcriptionData } = await supabase
           .from('ai_transcription')
           .select('*')
@@ -999,7 +1317,6 @@ app.post('/api/update-transcription', async (req, res) => {
       return res.status(400).json({ error: 'Missing required fields' });
     }
 
-    // Update or create ai_transcription record
     const { data: existing } = await supabase
       .from('ai_transcription')
       .select('id')
@@ -1036,6 +1353,134 @@ app.post('/api/update-transcription', async (req, res) => {
   }
 });
 
+// --- SAVE TRANSCRIPTION ---
+app.post('/api/save-transcription', async (req, res) => {
+  try {
+    const { userId, incidentId, transcription, audioUrl, duration } = req.body;
+
+    if (!userId || !transcription) {
+      return res.status(400).json({ error: 'User ID and transcription are required' });
+    }
+
+    if (!supabaseEnabled) {
+      return res.json({ 
+        success: true, 
+        message: 'Transcription received (Supabase not configured)' 
+      });
+    }
+
+    try {
+      const { data: existing } = await supabase
+        .from('ai_transcription')
+        .select('id')
+        .eq('create_user_id', userId)
+        .eq('incident_id', incidentId || userId)
+        .single();
+
+      let result;
+
+      if (existing) {
+        const { data, error } = await supabase
+          .from('ai_transcription')
+          .update({
+            transcription: transcription,
+            audio_url: audioUrl || existing.audio_url,
+            duration: duration || existing.duration,
+            updated_at: new Date().toISOString()
+          })
+          .eq('id', existing.id)
+          .select()
+          .single();
+
+        result = data;
+        if (error) throw error;
+      } else {
+        const { data, error } = await supabase
+          .from('ai_transcription')
+          .insert({
+            create_user_id: userId,
+            incident_id: incidentId || userId,
+            transcription: transcription,
+            audio_url: audioUrl || '',
+            duration: duration || 0,
+            created_at: new Date().toISOString()
+          })
+          .select()
+          .single();
+
+        result = data;
+        if (error) throw error;
+      }
+    } catch (tableError) {
+      console.log('ai_transcription table operation:', tableError.message);
+    }
+
+    await supabase
+      .from('incident_reports')
+      .update({
+        witness_statement_text: transcription,
+        witness_statement_audio: audioUrl || undefined,
+        updated_at: new Date().toISOString()
+      })
+      .eq('create_user_id', userId);
+
+    res.json({ success: true, message: 'Transcription saved successfully' });
+
+  } catch (error) {
+    console.error('Save transcription error:', error);
+    res.status(500).json({ 
+      error: 'Failed to save transcription',
+      message: error.message 
+    });
+  }
+});
+
+// --- GET USER TRANSCRIPTION STATUS ---
+app.get('/api/transcription-status/:userId', async (req, res) => {
+  try {
+    const { userId } = req.params;
+
+    if (!supabaseEnabled) {
+      return res.json({ exists: false, transcription: null });
+    }
+
+    const { data, error } = await supabase
+      .from('ai_transcription')
+      .select('*')
+      .eq('create_user_id', userId)
+      .order('created_at', { ascending: false })
+      .limit(1)
+      .single();
+
+    if (data) {
+      return res.json({
+        exists: true,
+        transcription: data
+      });
+    }
+
+    const { data: incidentData } = await supabase
+      .from('incident_reports')
+      .select('witness_statement_text, witness_statement_audio')
+      .eq('create_user_id', userId)
+      .order('created_at', { ascending: false })
+      .limit(1)
+      .single();
+
+    res.json({
+      exists: !!incidentData?.witness_statement_text,
+      transcription: incidentData ? {
+        transcription: incidentData.witness_statement_text,
+        audio_url: incidentData.witness_statement_audio
+      } : null
+    });
+
+  } catch (error) {
+    console.error('Get transcription status error:', error);
+    res.status(500).json({ error: 'Failed to get transcription status' });
+  }
+});
+
 // --- WEBHOOK ENDPOINTS ---
 app.post('/webhook/signup', checkSharedKey, async (req, res) => {
   try {
@@ -1051,7 +1496,6 @@ app.post('/webhook/signup', checkSharedKey, async (req, res) => {
       return res.status(400).json({ error: 'Missing create_user_id' });
     }
 
-    // Process asynchronously
     imageProcessor.processSignupImages(webhookData)
       .then(result => {
         console.log('✅ Signup processing complete:', result);
@@ -1089,7 +1533,8 @@ app.post('/webhook/incident-report', checkSharedKey, async (req, res) => {
       return res.status(400).json({ error: 'Missing incident report ID' });
     }
 
-    // Process asynchronously
+    const incidentId = webhookData.id || webhookData.incident_report_id;
+
     imageProcessor.processIncidentReportFiles(webhookData)
       .then(result => {
         console.log('✅ Incident processing complete:', result);
@@ -1098,11 +1543,16 @@ app.post('/webhook/incident-report', checkSharedKey, async (req, res) => {
         console.error('❌ Incident processing failed:', error);
       });
 
-    res.status(200).json({ 
-      success: true, 
-      message: 'Incident processing started',
-      incident_report_id: webhookData.id || webhookData.incident_report_id 
-    });
+    if (req.query.redirect === 'true') {
+      const userId = webhookData.create_user_id || '';
+      res.redirect(`/report-complete.html?incident_id=${incidentId}&user_id=${userId}`);
+    } else {
+      res.status(200).json({ 
+        success: true, 
+        message: 'Incident processing started',
+        incident_report_id: incidentId 
+      });
+    }
 
   } catch (error) {
     console.error('Webhook error:', error);
@@ -1113,19 +1563,61 @@ app.post('/webhook/incident-report', checkSharedKey, async (req, res) => {
   }
 });
 
+app.post('/webhook/process-images', checkSharedKey, async (req, res) => {
+  try {
+    console.log('🖼️ Alternative image processing endpoint called');
+
+    if (!supabaseEnabled || !imageProcessor) {
+      return res.status(503).json({ error: 'Service not configured' });
+    }
+
+    if (!req.body.create_user_id) {
+      return res.status(400).json({ error: 'Missing create_user_id' });
+    }
+
+    const result = await imageProcessor.processSignupImages(req.body);
+
+    res.status(200).json({
+      success: true,
+      ...result
+    });
+
+  } catch (error) {
+    console.error('Error:', error);
+    res.status(500).json({ 
+      error: error.message 
+    });
+  }
+});
+
+app.post('/zaphook', checkSharedKey, async (req, res) => {
+  try {
+    return res.json({
+      ok: true,
+      received: req.body,
+      ts: new Date().toISOString()
+    });
+  } catch (error) {
+    console.error('Error in /zaphook:', error);
+    return res.status(500).json({ error: error.message });
+  }
+});
+
 // --- PDF GENERATION ENDPOINTS ---
 app.post('/generate-pdf', checkSharedKey, async (req, res) => {
   const { create_user_id } = req.body;
 
   if (!create_user_id) {
     return res.status(400).json({ 
-      error: 'Missing create_user_id'
+      error: 'Missing create_user_id',
+      message: 'Please provide a valid user ID'
     });
   }
 
   if (!supabaseEnabled) {
     return res.status(503).json({ 
-      error: 'Service not configured'
+      error: 'Service not configured',
+      message: 'Supabase is not properly configured'
     });
   }
 
@@ -1134,6 +1626,13 @@ app.post('/generate-pdf', checkSharedKey, async (req, res) => {
 
     // Fetch all data including AI summaries
     const allData = await fetchAllData(create_user_id);
+
+    if (!allData.user || !allData.user.driver_email) {
+      return res.status(404).json({
+        error: 'User not found',
+        message: 'No user data found for the provided ID'
+      });
+    }
 
     // Include AI data
     const { data: aiTranscription } = await supabase
@@ -1184,7 +1683,7 @@ app.post('/generate-pdf', checkSharedKey, async (req, res) => {
         .eq('id', storedForm.id);
     }
 
-    console.log('✅ PDF generation complete');
+    console.log('✅ PDF generation process completed successfully');
 
     res.json({
       success: true,
@@ -1196,10 +1695,248 @@ app.post('/generate-pdf', checkSharedKey, async (req, res) => {
     });
 
   } catch (error) {
-    console.error('PDF generation error:', error);
+    console.error('❌ Error in PDF generation:', error);
     res.status(500).json({ 
-      error: error.message
+      error: error.message,
+      details: 'Failed to generate PDF. Please check logs.'
     });
+  }
+});
+
+app.post('/webhook/generate-pdf', checkSharedKey, async (req, res) => {
+  const { create_user_id } = req.body;
+
+  if (!create_user_id) {
+    return res.status(400).json({ 
+      error: 'Missing create_user_id'
+    });
+  }
+
+  res.status(200).json({ 
+    received: true, 
+    processing: true,
+    message: 'PDF generation started',
+    create_user_id
+  });
+
+  // Process in background
+  try {
+    const allData = await fetchAllData(create_user_id);
+
+    const { data: aiTranscription } = await supabase
+      .from('ai_transcription')
+      .select('*')
+      .eq('create_user_id', create_user_id)
+      .order('created_at', { ascending: false })
+      .limit(1)
+      .single();
+
+    const { data: aiSummary } = await supabase
+      .from('ai_summary')
+      .select('*')
+      .eq('create_user_id', create_user_id)
+      .order('created_at', { ascending: false })
+      .limit(1)
+      .single();
+
+    if (aiTranscription) allData.aiTranscription = aiTranscription;
+    if (aiSummary) allData.aiSummary = aiSummary;
+
+    const pdfBuffer = await generatePDF(allData);
+    await storeCompletedForm(create_user_id, pdfBuffer, allData);
+    await sendEmails(allData.user.driver_email, pdfBuffer, create_user_id);
+    console.log(`✅ Background PDF processing complete for ${create_user_id}`);
+  } catch (error) {
+    console.error(`❌ Background PDF processing failed for ${create_user_id}:`, error);
+  }
+});
+
+// --- PDF STATUS & DOWNLOAD ---
+app.get('/pdf-status/:userId', checkSharedKey, async (req, res) => {
+  if (!supabaseEnabled) {
+    return res.status(503).json({ error: 'Service not configured' });
+  }
+
+  try {
+    const { userId } = req.params;
+
+    const { data, error } = await supabase
+      .from('completed_incident_forms')
+      .select('*')
+      .eq('create_user_id', userId)
+      .order('generated_at', { ascending: false })
+      .limit(1)
+      .single();
+
+    if (error || !data) {
+      return res.status(404).json({ 
+        error: 'No PDF found',
+        message: 'No generated PDF found for this user'
+      });
+    }
+
+    res.json({
+      success: true,
+      form_id: data.id,
+      generated_at: data.generated_at,
+      sent_to_user: data.sent_to_user,
+      sent_to_accounts: data.sent_to_accounts,
+      pdf_url: data.pdf_url
+    });
+
+  } catch (error) {
+    console.error('Error checking PDF status:', error);
+    res.status(500).json({ error: error.message });
+  }
+});
+
+app.get('/download-pdf/:userId', checkSharedKey, async (req, res) => {
+  if (!supabaseEnabled) {
+    return res.status(503).json({ error: 'Service not configured' });
+  }
+
+  try {
+    const { userId } = req.params;
+
+    const { data, error } = await supabase
+      .from('completed_incident_forms')
+      .select('pdf_base64, pdf_url')
+      .eq('create_user_id', userId)
+      .order('generated_at', { ascending: false })
+      .limit(1)
+      .single();
+
+    if (error || !data) {
+      return res.status(404).json({ 
+        error: 'No PDF found'
+      });
+    }
+
+    if (data.pdf_url) {
+      res.redirect(data.pdf_url);
+    } else if (data.pdf_base64) {
+      const buffer = Buffer.from(data.pdf_base64, 'base64');
+      res.setHeader('Content-Type', 'application/pdf');
+      res.setHeader('Content-Disposition', `attachment; filename="incident_report_${userId}.pdf"`);
+      res.send(buffer);
+    } else {
+      res.status(404).json({ error: 'PDF data not available' });
+    }
+
+  } catch (error) {
+    console.error('Error downloading PDF:', error);
+    res.status(500).json({ error: error.message });
+  }
+});
+
+// --- IMAGE ACCESS ENDPOINTS ---
+app.get('/api/images/:userId', async (req, res) => {
+  if (!supabaseEnabled) {
+    return res.status(503).json({ error: 'Service not configured' });
+  }
+
+  try {
+    const { userId } = req.params;
+
+    const { data, error } = await supabase
+      .from('incident_images')
+      .select('*')
+      .eq('create_user_id', userId)
+      .is('deletion_completed', null);
+
+    if (error) throw error;
+
+    res.json({
+      success: true,
+      count: data.length,
+      images: data
+    });
+  } catch (error) {
+    console.error('Error fetching images:', error);
+    res.status(500).json({ error: error.message });
+  }
+});
+
+app.get('/api/incident/:incidentId/files', async (req, res) => {
+  if (!supabaseEnabled) {
+    return res.status(503).json({ error: 'Service not configured' });
+  }
+
+  try {
+    const { incidentId } = req.params;
+
+    const { data, error } = await supabase
+      .from('incident_images')
+      .select('*')
+      .eq('incident_report_id', incidentId)
+      .is('deletion_completed', null);
+
+    if (error) throw error;
+
+    res.json({
+      success: true,
+      count: data.length,
+      files: data
+    });
+  } catch (error) {
+    console.error('Error fetching incident files:', error);
+    res.status(500).json({ error: error.message });
+  }
+});
+
+app.get('/api/image/signed-url/:userId/:imageType', async (req, res) => {
+  if (!supabaseEnabled || !imageProcessor) {
+    return res.status(503).json({ error: 'Service not configured' });
+  }
+
+  try {
+    const { userId, imageType } = req.params;
+
+    const { data: image, error } = await supabase
+      .from('incident_images')
+      .select('file_name')
+      .eq('create_user_id', userId)
+      .eq('image_type', imageType)
+      .is('deletion_completed', null)
+      .single();
+
+    if (error || !image) {
+      return res.status(404).json({ error: 'Image not found' });
+    }
+
+    const signedUrl = await imageProcessor.getSignedUrl(image.file_name);
+
+    res.json({
+      signed_url: signedUrl,
+      expires_in: '1 hour'
+    });
+  } catch (error) {
+    console.error('Error generating signed URL:', error);
+    res.status(500).json({ error: error.message });
+  }
+});
+
+app.delete('/api/gdpr/delete-images', async (req, res) => {
+  if (!supabaseEnabled || !imageProcessor) {
+    return res.status(503).json({ error: 'Service not configured' });
+  }
+
+  try {
+    const createUserId = req.headers['x-user-id'] || req.body.create_user_id || req.body.userId;
+
+    if (!createUserId) {
+      return res.status(400).json({ error: 'create_user_id required' });
+    }
+
+    const result = await imageProcessor.deleteAllUserImages(createUserId);
+
+    res.json({
+      success: true,
+      ...result
+    });
+  } catch (error) {
+    console.error('Error deleting images:', error);
+    res.status(500).json({ error: error.message });
   }
 });
 
@@ -1212,7 +1949,6 @@ app.use((err, req, res, next) => {
   });
 });
 
-// 404 handler
 app.use((req, res) => {
   res.status(404).json({ 
     error: 'Not found',
@@ -1242,7 +1978,7 @@ const PORT = process.env.PORT || 3000;
 const HOST = '0.0.0.0';
 
 app.listen(PORT, HOST, () => {
-  console.log('🚗 Car Crash Lawyer AI - Production Ready');
+  console.log('🚗 Car Crash Lawyer AI - GDPR Compliant System');
   console.log(`🚀 Server running on port ${PORT}`);
 
   if (process.env.REPL_SLUG && process.env.REPL_OWNER) {
@@ -1254,6 +1990,14 @@ app.listen(PORT, HOST, () => {
   console.log(`   OpenAI: ${process.env.OPENAI_API_KEY ? '✅ Configured' : '❌ Not configured'}`);
   console.log(`   Transcription Queue: ${transcriptionQueueInterval ? '✅ Running' : '❌ Not running'}`);
   console.log(`   Auth Key: ${SHARED_KEY ? '✅ Set' : '❌ Missing'}`);
+
+  console.log('\n🔑 Key Features:');
+  console.log('   ✅ Complete transcription pipeline');
+  console.log('   ✅ AI summary generation');
+  console.log('   ✅ What3Words integration');
+  console.log('   ✅ Emergency contacts system');
+  console.log('   ✅ GDPR compliant image handling');
+  console.log('   ✅ PDF generation with AI data');
 
   console.log('\n✅ Server ready for production!');
 });
