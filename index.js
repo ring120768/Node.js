@@ -747,6 +747,100 @@ function processTypeformData(formResponse) {
     });
   }
 
+  // --- AI SUMMARY GENERATION FUNCTION ---
+  /**
+   * Generate AI summary from transcription text
+   * This populates pages 13-14 of the PDF report
+   */
+  async function generateAISummary(transcriptionText, createUserId, incidentId) {
+    try {
+      if (!process.env.OPENAI_API_KEY || !transcriptionText) {
+        console.log('Cannot generate AI summary - missing API key or transcription');
+        return null;
+      }
+
+      console.log('Generating AI summary for user:', createUserId);
+
+      const response = await axios.post(
+        'https://api.openai.com/v1/chat/completions',
+        {
+          model: 'gpt-3.5-turbo',
+          messages: [
+            {
+              role: 'system',
+              content: 'You are a legal assistant analyzing car accident statements. Provide objective, factual analysis in JSON format.'
+            },
+            {
+              role: 'user',
+              content: `Analyze this car accident witness statement and provide a structured JSON response with the following fields:
+
+                1. summary_text: A clear, concise 2-3 paragraph summary of what happened
+                2. key_points: An array of 5-7 key facts from the statement
+                3. fault_analysis: An objective assessment of fault based on the statement
+                4. contributing_factors: Any environmental, weather, or other contributing factors mentioned
+
+                Statement to analyze: "${transcriptionText}"
+
+                Respond ONLY with valid JSON. No additional text.`
+            }
+          ],
+          temperature: 0.3,
+          max_tokens: 1000
+        },
+        {
+          headers: {
+            'Authorization': `Bearer ${process.env.OPENAI_API_KEY}`,
+            'Content-Type': 'application/json'
+          }
+        }
+      );
+
+      let aiAnalysis;
+      try {
+        const content = response.data.choices[0].message.content;
+        // Clean up response in case it has markdown formatting
+        const cleanContent = content.replace(/```json\n?/g, '').replace(/```\n?/g, '').trim();
+        aiAnalysis = JSON.parse(cleanContent);
+      } catch (parseError) {
+        console.error('Failed to parse AI response as JSON:', parseError);
+        // Fallback structure if AI doesn't return valid JSON
+        aiAnalysis = {
+          summary_text: response.data.choices[0].message.content,
+          key_points: ['See summary for details'],
+          fault_analysis: 'Manual review recommended',
+          contributing_factors: 'See summary text'
+        };
+      }
+
+      // Save to ai_summary table
+      const { data, error } = await supabase
+        .from('ai_summary')
+        .insert({
+          create_user_id: createUserId,
+          incident_id: incidentId || createUserId,
+          summary_text: aiAnalysis.summary_text || '',
+          key_points: aiAnalysis.key_points || [],
+          fault_analysis: aiAnalysis.fault_analysis || '',
+          liability_assessment: aiAnalysis.contributing_factors || '',
+          created_at: new Date().toISOString()
+        })
+        .select()
+        .single();
+
+      if (error) {
+        console.error('Error saving AI summary to database:', error);
+        // Return the analysis even if save fails
+        return aiAnalysis;
+      }
+
+      console.log('AI summary generated and saved successfully');
+      return aiAnalysis;
+
+    } catch (error) {
+      console.error('AI Summary generation error:', error.response?.data || error.message);
+      return null;
+    }
+  }
   processedData.submitted_at = formResponse.form_response?.submitted_at || new Date().toISOString();
   processedData.form_id = formResponse.form_response?.form_id;
   processedData.response_id = formResponse.form_response?.token;
@@ -1577,6 +1671,7 @@ app.post('/webhook/process-images', checkSharedKey, async (req, res) => {
       success: true,
       ...result
     });
+
 
   } catch (error) {
     console.error('Error:', error);
