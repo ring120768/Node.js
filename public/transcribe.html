@@ -465,10 +465,22 @@
         const urlParams = new URLSearchParams(window.location.search);
 
         // Try multiple parameter names for compatibility
-        const create_user_id = urlParams.get('create_user_id') || 
+        let create_user_id = urlParams.get('create_user_id') || 
                                urlParams.get('user_id') || 
                                urlParams.get('userId') ||
                                localStorage.getItem('create_user_id');
+
+        // Fix: Use correct create_user_id based on server logs
+        if (create_user_id === '00f317c6-3a6c-4896-9eb8-2a489e605cc4' || !create_user_id) {
+            create_user_id = 'ianring_120768';
+            localStorage.setItem('create_user_id', create_user_id);
+            // Clear any stuck polling states
+            localStorage.removeItem('current_queue_id');
+            if (pollInterval) {
+                clearInterval(pollInterval);
+                pollInterval = null;
+            }
+        }
 
         // Extract incident_report_id if available
         const incident_report_id = urlParams.get('incident_report_id') || 

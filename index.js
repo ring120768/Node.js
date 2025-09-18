@@ -110,7 +110,6 @@ app.use(bodyParser.json({ limit: '50mb' }));
 app.use(bodyParser.urlencoded({ extended: true, limit: '50mb' }));
 app.use(cookieParser());
 app.use(express.static(path.join(__dirname, 'public')));
-app.use('/uploads', express.static(path.join(__dirname, 'uploads')));
 
 // Apply rate limiting
 app.use('/api/', apiLimiter);
@@ -573,8 +572,8 @@ async function generateAISummary(transcriptionText, createUserId, incidentId) {
   }
 }
 
-// --- ASYNC TRANSCRIPTION PROCESSOR ---
-async function processTranscriptionAsync(queueId, audioUrl, create_user_id, incident_report_id) {
+// --- IMMEDIATE TRANSCRIPTION PROCESSOR (using buffer in memory) ---
+async function processTranscriptionFromBuffer(queueId, audioBuffer, create_user_id, incident_report_id, audioUrl) {
   try {
     // Update status in memory
     transcriptionStatuses.set(queueId, {
@@ -585,15 +584,28 @@ async function processTranscriptionAsync(queueId, audioUrl, create_user_id, inci
       create_user_id: create_user_id
     });
 
-    // Fetch audio from URL
-    const audioResponse = await axios.get(audioUrl, {
-      responseType: 'arraybuffer',
-      timeout: CONSTANTS.RETRY_LIMITS.API_TIMEOUT
-    });
+    let finalAudioBuffer;
+    
+    if (audioBuffer) {
+      // Direct buffer processing (new immediate uploads)
+      Logger.info(`Processing transcription from buffer, size: ${audioBuffer.length} bytes`);
+      finalAudioBuffer = audioBuffer;
+    } else {
+      // Fallback to URL download (legacy items)
+      Logger.info(`Processing transcription from URL: ${audioUrl}`);
+      const audioResponse = await axios.get(audioUrl, {
+        responseType: 'arraybuffer',
+        timeout: CONSTANTS.RETRY_LIMITS.API_TIMEOUT,
+        headers: {
+          'User-Agent': 'CarCrashLawyerAI/1.0'
+        }
+      });
+      finalAudioBuffer = Buffer.from(audioResponse.data);
+    }
 
     // Create form data for Whisper API
     const formData = new FormData();
-    formData.append('file', Buffer.from(audioResponse.data), {
+    formData.append('file', finalAudioBuffer, {
       filename: 'audio.webm',
       contentType: 'audio/webm'
     });
@@ -720,12 +732,21 @@ async function processTranscriptionQueue() {
 
     for (const item of pending) {
       try {
-        // Process transcription
-        await processTranscriptionAsync(
+        // Skip if already processing immediately (new uploads process directly from buffer)
+        const existingStatus = transcriptionStatuses.get(item.id.toString());
+        if (existingStatus && (existingStatus.status === 'completed' || existingStatus.status === 'processing')) {
+          Logger.info(`Skipping queue item ${item.id} - already ${existingStatus.status}`);
+          continue;
+        }
+        
+        // For older items that still need URL-based processing (fallback)
+        Logger.info(`Processing legacy queue item ${item.id} via URL download`);
+        await processTranscriptionFromBuffer(
           item.id,
-          item.audio_url,
+          null, // No buffer available for legacy items
           item.create_user_id,
-          item.incident_report_id
+          item.incident_report_id,
+          item.audio_url
         );
       } catch (error) {
         Logger.error(`Error processing transcription item ${item.id}`, error);
@@ -2009,25 +2030,26 @@ app.get('/api/images/:userId', checkGDPRConsent, async (req, res) => {
             // Generate a unique transcription ID
             const transcriptionId = `trans_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`;
 
-            // Save audio file locally
-            const fileName = `${create_user_id}_recording_${Date.now()}.webm`;
-            const filePath = path.join(__dirname, 'uploads', 'audio', fileName);
-            
-            try {
-              // Ensure directory exists
-              const fs = require('fs').promises;
-              await fs.mkdir(path.dirname(filePath), { recursive: true });
-              
-              // Write audio file
-              await fs.writeFile(filePath, req.file.buffer);
-              Logger.info(`Audio file saved: ${fileName}`);
-            } catch (error) {
-              Logger.error(`File save error: ${error.message}`);
-              return res.status(500).json({ error: 'Failed to save audio file' });
+            // Upload to Supabase incident-audio bucket
+            const fileName = `${create_user_id}/recording_${Date.now()}.webm`;
+            const { data: uploadData, error: uploadError } = await supabase.storage
+              .from('incident-audio')
+              .upload(fileName, req.file.buffer, {
+                contentType: req.file.mimetype,
+                upsert: true
+              });
+
+            if (uploadError) {
+              Logger.error(`Upload error: ${uploadError.message}`);
+              return res.status(500).json({ error: 'Failed to upload audio to Supabase' });
             }
 
-            // Create public URL for the audio file
-            const publicUrl = `/uploads/audio/${fileName}`;
+            // Get the public URL
+            const { data: { publicUrl } } = supabase.storage
+              .from('incident-audio')
+              .getPublicUrl(fileName);
+            
+            Logger.info(`Audio file uploaded to Supabase: ${fileName}`);
 
             // Add to transcription queue with proper data types
             const { data: queueData, error: queueError } = await supabase
@@ -2069,8 +2091,8 @@ app.get('/api/images/:userId', checkGDPRConsent, async (req, res) => {
               create_user_id: create_user_id
             });
 
-            // Process transcription asynchronously
-            processTranscriptionAsync(queueId, publicUrl, create_user_id, req.body.incident_report_id);
+            // Process transcription immediately using the audio buffer in memory
+            processTranscriptionFromBuffer(queueId, req.file.buffer, create_user_id, req.body.incident_report_id, publicUrl);
 
           } catch (error) {
             Logger.error('Transcription error:', error);
