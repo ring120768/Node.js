@@ -3,146 +3,1280 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Transcription Status</title>
+    <meta name="apple-mobile-web-app-capable" content="yes">
+    <meta name="mobile-web-app-capable" content="yes">
+    <title>Record Your Statement - Car Crash Lawyer AI</title>
     <style>
+        /* Base Styles */
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
         body {
-            font-family: Arial, sans-serif;
-            max-width: 800px;
-            margin: 0 auto;
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+            display: flex;
+            justify-content: center;
+            align-items: center;
             padding: 20px;
-            background: #f5f5f5;
+            overflow-x: hidden;
         }
-        .status-card {
+
+        .container {
             background: white;
-            border-radius: 8px;
+            border-radius: 20px;
             padding: 30px;
-            box-shadow: 0 2px 10px rgba(0,0,0,0.1);
-            margin-top: 20px;
+            max-width: 600px;
+            width: 100%;
+            box-shadow: 0 20px 60px rgba(0,0,0,0.3);
+            animation: slideUp 0.5s ease-out;
         }
-        .loading {
+
+        @keyframes slideUp {
+            from {
+                opacity: 0;
+                transform: translateY(30px);
+            }
+            to {
+                opacity: 1;
+                transform: translateY(0);
+            }
+        }
+
+        h1 {
+            color: #333;
             text-align: center;
-            padding: 40px;
+            margin-bottom: 30px;
+            font-size: 24px;
         }
-        .spinner {
-            border: 4px solid #f3f3f3;
-            border-top: 4px solid #3498db;
+
+        /* Progress Indicator */
+        .progress-steps {
+            display: flex;
+            justify-content: space-between;
+            margin: 30px 0;
+            position: relative;
+        }
+
+        .progress-steps::before {
+            content: '';
+            position: absolute;
+            top: 15px;
+            left: 0;
+            right: 0;
+            height: 2px;
+            background: #e0e0e0;
+            z-index: 0;
+        }
+
+        .progress-step {
+            flex: 1;
+            text-align: center;
+            position: relative;
+            z-index: 1;
+        }
+
+        .progress-step .circle {
+            width: 30px;
+            height: 30px;
             border-radius: 50%;
-            width: 40px;
-            height: 40px;
-            animation: spin 1s linear infinite;
-            margin: 0 auto 20px;
-        }
-        @keyframes spin {
-            0% { transform: rotate(0deg); }
-            100% { transform: rotate(360deg); }
-        }
-        .transcription-box {
-            background: #f9f9f9;
-            border: 1px solid #ddd;
-            border-radius: 4px;
-            padding: 15px;
-            margin-top: 20px;
-            min-height: 100px;
-        }
-        .btn {
-            background: #007bff;
+            background: #e0e0e0;
+            margin: 0 auto 8px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
             color: white;
-            padding: 10px 20px;
+            font-weight: bold;
+            font-size: 12px;
+            transition: all 0.3s ease;
+            position: relative;
+            z-index: 2;
+        }
+
+        .progress-step.active .circle {
+            background: #667eea;
+            transform: scale(1.1);
+            box-shadow: 0 0 0 4px rgba(102, 126, 234, 0.2);
+        }
+
+        .progress-step.complete .circle {
+            background: #48bb78;
+            animation: checkmark 0.5s ease;
+        }
+
+        @keyframes checkmark {
+            0% { transform: scale(1); }
+            50% { transform: scale(1.2); }
+            100% { transform: scale(1); }
+        }
+
+        .progress-step.complete .circle::after {
+            content: '✓';
+            position: absolute;
+            color: white;
+            font-size: 16px;
+        }
+
+        .progress-step span {
+            font-size: 12px;
+            color: #666;
+            display: block;
+        }
+
+        .progress-step.active span {
+            color: #667eea;
+            font-weight: 600;
+        }
+
+        .progress-step.complete span {
+            color: #48bb78;
+        }
+
+        /* Connection Line Animation */
+        .progress-line {
+            position: absolute;
+            top: 15px;
+            left: 0;
+            height: 2px;
+            background: #667eea;
+            transition: width 0.5s ease;
+            z-index: 1;
+        }
+
+        /* Info Box */
+        .info-box {
+            background: #f0f7ff;
+            border-left: 4px solid #667eea;
+            padding: 20px;
+            margin: 20px 0;
+            border-radius: 8px;
+            animation: fadeIn 0.8s ease;
+        }
+
+        @keyframes fadeIn {
+            from { opacity: 0; }
+            to { opacity: 1; }
+        }
+
+        .info-box h3 {
+            color: #667eea;
+            margin-bottom: 15px;
+            font-size: 18px;
+        }
+
+        .info-box ul {
+            list-style: none;
+            padding: 0;
+        }
+
+        .info-box li {
+            padding: 8px 0;
+            padding-left: 25px;
+            position: relative;
+            color: #555;
+            line-height: 1.5;
+        }
+
+        .info-box li::before {
+            content: '✓';
+            position: absolute;
+            left: 0;
+            color: #667eea;
+            font-weight: bold;
+        }
+
+        /* Audio Visualizer */
+        .audio-visualizer {
+            height: 80px;
+            background: linear-gradient(135deg, #667eea, #764ba2);
+            border-radius: 12px;
+            display: none;
+            align-items: center;
+            justify-content: center;
+            margin: 20px 0;
+            position: relative;
+            overflow: hidden;
+            padding: 0 20px;
+        }
+
+        .audio-visualizer.active {
+            display: flex;
+        }
+
+        .visualizer-bars {
+            display: flex;
+            align-items: center;
+            gap: 4px;
+            height: 100%;
+        }
+
+        .audio-bar {
+            width: 4px;
+            background: rgba(255, 255, 255, 0.9);
+            border-radius: 2px;
+            transition: height 0.1s ease;
+        }
+
+        @keyframes pulse {
+            0%, 100% { height: 20px; opacity: 0.7; }
+            50% { height: 40px; opacity: 1; }
+        }
+
+        /* Status Messages */
+        #statusMessage {
+            margin: 20px 0;
+            padding: 15px;
+            border-radius: 8px;
+            display: none;
+            animation: slideIn 0.3s ease;
+        }
+
+        @keyframes slideIn {
+            from {
+                opacity: 0;
+                transform: translateX(-20px);
+            }
+            to {
+                opacity: 1;
+                transform: translateX(0);
+            }
+        }
+
+        .status-indicator {
+            display: inline-block;
+            width: 10px;
+            height: 10px;
+            border-radius: 50%;
+            margin-right: 10px;
+            animation: statusPulse 2s infinite;
+        }
+
+        @keyframes statusPulse {
+            0%, 100% { opacity: 1; }
+            50% { opacity: 0.5; }
+        }
+
+        .status-indicator.recording {
+            background: #ef4444;
+        }
+
+        .status-indicator.processing {
+            background: #f59e0b;
+        }
+
+        .status-indicator.complete {
+            background: #10b981;
+        }
+
+        /* Recording Controls */
+        .recording-controls {
+            text-align: center;
+            margin: 30px 0;
+        }
+
+        #recordingStatus {
+            display: none;
+            text-align: center;
+            margin: 20px 0;
+            padding: 20px;
+            background: #fee2e2;
+            border-radius: 12px;
+            animation: fadeIn 0.3s ease;
+        }
+
+        #recordingStatus.active {
+            display: block;
+        }
+
+        .recording-indicator {
+            width: 20px;
+            height: 20px;
+            background: #ef4444;
+            border-radius: 50%;
+            display: inline-block;
+            margin-right: 10px;
+            animation: recordPulse 1.5s infinite;
+        }
+
+        @keyframes recordPulse {
+            0% { box-shadow: 0 0 0 0 rgba(239, 68, 68, 0.4); }
+            70% { box-shadow: 0 0 0 10px rgba(239, 68, 68, 0); }
+            100% { box-shadow: 0 0 0 0 rgba(239, 68, 68, 0); }
+        }
+
+        #duration {
+            font-weight: bold;
+            color: #dc2626;
+            font-size: 18px;
+        }
+
+        /* Buttons */
+        .btn {
+            padding: 12px 30px;
             border: none;
-            border-radius: 4px;
+            border-radius: 8px;
+            font-size: 16px;
+            font-weight: 600;
             cursor: pointer;
+            transition: all 0.3s ease;
+            margin: 5px;
+            position: relative;
+            overflow: hidden;
+        }
+
+        .btn::before {
+            content: '';
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            width: 0;
+            height: 0;
+            border-radius: 50%;
+            background: rgba(255, 255, 255, 0.3);
+            transform: translate(-50%, -50%);
+            transition: width 0.6s, height 0.6s;
+        }
+
+        .btn:active::before {
+            width: 300px;
+            height: 300px;
+        }
+
+        .btn-primary {
+            background: linear-gradient(135deg, #667eea, #764ba2);
+            color: white;
+            box-shadow: 0 4px 15px rgba(102, 126, 234, 0.3);
+        }
+
+        .btn-primary:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 6px 20px rgba(102, 126, 234, 0.4);
+        }
+
+        .btn-primary:disabled {
+            opacity: 0.5;
+            cursor: not-allowed;
+            transform: none;
+        }
+
+        .btn-danger {
+            background: #ef4444;
+            color: white;
+            box-shadow: 0 4px 15px rgba(239, 68, 68, 0.3);
+        }
+
+        .btn-danger:hover {
+            background: #dc2626;
+            transform: translateY(-2px);
+            box-shadow: 0 6px 20px rgba(239, 68, 68, 0.4);
+        }
+
+        #retryButton {
+            display: none;
+            background: #f59e0b;
+            color: white;
+        }
+
+        #retryButton:hover {
+            background: #d97706;
+        }
+
+        /* Audio Playback */
+        #audioPlayback {
+            display: none;
+            width: 100%;
             margin-top: 20px;
+            border-radius: 8px;
         }
-        .btn:hover {
-            background: #0056b3;
+
+        /* Transcription Result */
+        #transcriptionResult {
+            display: none;
+            margin-top: 30px;
+            animation: slideUp 0.5s ease;
         }
-        .error {
-            color: #dc3545;
-            padding: 10px;
-            background: #f8d7da;
-            border-radius: 4px;
-            margin-top: 10px;
+
+        #transcriptionResult h3 {
+            color: #333;
+            margin-bottom: 15px;
+            font-size: 20px;
         }
-        .success {
-            color: #155724;
-            padding: 10px;
+
+        .transcription-box {
+            border: 2px solid #e5e7eb;
+            padding: 20px;
+            border-radius: 8px;
+            min-height: 120px;
+            background: #f9fafb;
+            font-size: 16px;
+            line-height: 1.6;
+            transition: border-color 0.3s ease;
+        }
+
+        .transcription-box:focus {
+            outline: none;
+            border-color: #667eea;
+            box-shadow: 0 0 0 3px rgba(102, 126, 234, 0.1);
+        }
+
+        /* Summary Section */
+        #summarySection {
+            display: none;
+            margin-top: 30px;
+            padding: 20px;
+            background: linear-gradient(135deg, #f0f7ff, #e8f2ff);
+            border-radius: 12px;
+            animation: slideUp 0.5s ease;
+        }
+
+        #summarySection h3 {
+            color: #667eea;
+            margin-bottom: 15px;
+            font-size: 20px;
+        }
+
+        .summary-content {
+            background: white;
+            padding: 15px;
+            border-radius: 8px;
+            margin-bottom: 15px;
+        }
+
+        .key-points {
+            list-style: none;
+            padding: 0;
+        }
+
+        .key-points li {
+            padding: 8px 0;
+            padding-left: 20px;
+            position: relative;
+            border-bottom: 1px solid #f0f0f0;
+        }
+
+        .key-points li:last-child {
+            border-bottom: none;
+        }
+
+        .key-points li::before {
+            content: '▸';
+            position: absolute;
+            left: 0;
+            color: #667eea;
+            font-weight: bold;
+        }
+
+        /* Mobile Optimizations */
+        @media (max-width: 640px) {
+            .container {
+                padding: 20px;
+                border-radius: 0;
+                min-height: 100vh;
+                box-shadow: none;
+            }
+
+            h1 {
+                font-size: 20px;
+            }
+
+            .progress-step span {
+                font-size: 10px;
+            }
+
+            .progress-step .circle {
+                width: 25px;
+                height: 25px;
+                font-size: 10px;
+            }
+
+            .btn {
+                padding: 12px 20px;
+                font-size: 14px;
+                width: 100%;
+                margin: 5px 0;
+            }
+
+            .info-box {
+                padding: 15px;
+            }
+
+            .info-box h3 {
+                font-size: 16px;
+            }
+
+            .info-box li {
+                font-size: 14px;
+                padding: 6px 0;
+            }
+        }
+
+        /* Loading Spinner */
+        .loading-spinner {
+            display: inline-block;
+            width: 20px;
+            height: 20px;
+            border: 3px solid rgba(255,255,255,0.3);
+            border-radius: 50%;
+            border-top-color: white;
+            animation: spin 1s ease-in-out infinite;
+        }
+
+        @keyframes spin {
+            to { transform: rotate(360deg); }
+        }
+
+        /* Accessibility Improvements */
+        .sr-only {
+            position: absolute;
+            width: 1px;
+            height: 1px;
+            padding: 0;
+            margin: -1px;
+            overflow: hidden;
+            clip: rect(0,0,0,0);
+            white-space: nowrap;
+            border-width: 0;
+        }
+
+        /* Touch Feedback for Mobile */
+        @media (hover: none) {
+            .btn:active {
+                transform: scale(0.98);
+            }
+        }
+
+        /* Network Status Indicator */
+        .network-status {
+            position: fixed;
+            top: 10px;
+            right: 10px;
+            padding: 8px 12px;
+            border-radius: 20px;
+            font-size: 12px;
+            font-weight: 600;
+            display: flex;
+            align-items: center;
+            gap: 6px;
+            background: white;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+            z-index: 1000;
+        }
+
+        .network-status.online {
             background: #d4edda;
-            border-radius: 4px;
-            margin-top: 10px;
+            color: #155724;
+        }
+
+        .network-status.offline {
+            background: #f8d7da;
+            color: #721c24;
+        }
+
+        .network-status .dot {
+            width: 8px;
+            height: 8px;
+            border-radius: 50%;
+            animation: statusPulse 2s infinite;
+        }
+
+        .network-status.online .dot {
+            background: #28a745;
+        }
+
+        .network-status.offline .dot {
+            background: #dc3545;
         }
     </style>
 </head>
 <body>
-    <div class="status-card">
-        <h1>Transcription Status</h1>
+    <!-- Network Status Indicator -->
+    <div class="network-status online" id="networkStatus">
+        <span class="dot"></span>
+        <span>Connected</span>
+    </div>
 
-        <div id="statusContainer" class="loading">
-            <div class="spinner"></div>
-            <p>Processing your audio recording...</p>
-            <p><small>This may take a few moments</small></p>
-        </div>
+    <div class="container">
+        <h1>🎤 Record Your Statement</h1>
 
-        <div id="transcriptionContainer" style="display: none;">
-            <h2>Your Transcription</h2>
-            <div class="transcription-box" id="transcriptionText" contenteditable="true">
-                <!-- Transcription will appear here -->
+        <!-- Progress Indicator with Animation -->
+        <div class="progress-steps">
+            <div class="progress-line" id="progressLine" style="width: 0%"></div>
+            <div class="progress-step active" id="step-record">
+                <div class="circle">1</div>
+                <span>Record</span>
             </div>
-            <button class="btn" onclick="confirmTranscription()">Confirm & Continue</button>
-            <p><small>You can edit the transcription above if needed before confirming.</small></p>
+            <div class="progress-step" id="step-upload">
+                <div class="circle">2</div>
+                <span>Upload</span>
+            </div>
+            <div class="progress-step" id="step-transcribe">
+                <div class="circle">3</div>
+                <span>Transcribe</span>
+            </div>
+            <div class="progress-step" id="step-summary">
+                <div class="circle">4</div>
+                <span>AI Summary</span>
+            </div>
         </div>
 
-        <div id="errorContainer" style="display: none;">
-            <div class="error" id="errorMessage"></div>
-            <button class="btn" onclick="window.location.href='/transcribe.html'">Try Again</button>
+        <!-- Instructions -->
+        <div class="info-box">
+            <h3>📋 Recording Guidelines</h3>
+            <ul>
+                <li>Find a quiet location for better accuracy</li>
+                <li>Speak clearly about what happened</li>
+                <li>Include details about time, location, and events</li>
+                <li>Mention any injuries or vehicle damage</li>
+                <li>Recording limit: 5 minutes maximum</li>
+            </ul>
+        </div>
+
+        <!-- What to Include Tips -->
+        <div class="info-box" style="background: #fef3c7; border-left-color: #f59e0b;">
+            <h3>💡 What to Include</h3>
+            <ul>
+                <li>Exact time and date of the accident</li>
+                <li>Weather and road conditions</li>
+                <li>What you saw, heard, and felt</li>
+                <li>Actions taken after the accident</li>
+                <li>Any unusual circumstances</li>
+            </ul>
+        </div>
+
+        <!-- Audio Visualizer -->
+        <div class="audio-visualizer" id="visualizer">
+            <div class="visualizer-bars" id="visualizerBars">
+                <!-- Bars will be generated dynamically -->
+            </div>
+        </div>
+
+        <!-- Status Message -->
+        <div id="statusMessage">
+            <span class="status-indicator"></span>
+            <span id="statusText">Ready to record</span>
+        </div>
+
+        <!-- Recording Status -->
+        <div id="recordingStatus">
+            <div style="display: flex; align-items: center; justify-content: center;">
+                <span class="recording-indicator"></span>
+                <span style="font-weight: 600; color: #dc2626;">Recording in progress</span>
+            </div>
+            <p style="margin-top: 10px;">Duration: <span id="duration">0:00</span> / 5:00</p>
+        </div>
+
+        <!-- Recording Controls -->
+        <div class="recording-controls">
+            <button id="recordButton" class="btn btn-primary">
+                🎤 Start Recording
+            </button>
+            <button id="stopButton" class="btn btn-danger" style="display: none;">
+                ⏹ Stop Recording
+            </button>
+            <button id="retryButton" class="btn">
+                🔄 Record Again
+            </button>
+        </div>
+
+        <!-- Audio Playback -->
+        <audio id="audioPlayback" controls></audio>
+
+        <!-- Transcription Result -->
+        <div id="transcriptionResult">
+            <h3>📝 Your Transcription</h3>
+            <div class="transcription-box" contenteditable="true" id="transcriptionText" placeholder="Your transcription will appear here...">
+            </div>
+            <button class="btn btn-primary" onclick="confirmTranscription()" style="margin-top: 20px;">
+                ✅ Confirm & Continue
+            </button>
+            <p style="text-align: center; color: #666; margin-top: 10px; font-size: 14px;">
+                You can edit the transcription above if needed
+            </p>
+        </div>
+
+        <!-- AI Summary Section -->
+        <div id="summarySection">
+            <h3>🤖 AI Summary</h3>
+            <div class="summary-content">
+                <h4>Summary</h4>
+                <p id="summaryText" style="color: #555; line-height: 1.6;"></p>
+            </div>
+            <div class="summary-content">
+                <h4>Key Points</h4>
+                <ul class="key-points" id="keyPointsList">
+                </ul>
+            </div>
+            <div class="summary-content">
+                <h4>Fault Analysis</h4>
+                <p id="faultAnalysis" style="color: #555; line-height: 1.6;"></p>
+            </div>
         </div>
     </div>
 
     <script>
-        const urlParams = new URLSearchParams(window.location.search);
-        const queueId = urlParams.get('queueId');
-        const userId = urlParams.get('userId');
-        let checkInterval;
-        let checkCount = 0;
-        const maxChecks = 60; // Check for up to 5 minutes
+        // Global Variables
+        let mediaRecorder = null;
+        let audioChunks = [];
+        let recordingStartTime;
+        let durationInterval;
+        let userId = localStorage.getItem('create_user_id') || 'user_' + Date.now();
+        let currentQueueId = null;
+        let ws = null;
+        let reconnectAttempts = 0;
+        let maxReconnectAttempts = 5;
+        let audioContext = null;
+        let analyser = null;
+        let microphone = null;
+        let animationId = null;
 
-        async function checkTranscriptionStatus() {
-            try {
-                const response = await fetch(`/api/transcription-status/${queueId}`);
-                const data = await response.json();
+        // Store user ID for future use
+        localStorage.setItem('create_user_id', userId);
 
-                if (data.status === 'completed' && data.transcription) {
-                    clearInterval(checkInterval);
-                    showTranscription(data.transcription);
-                } else if (data.status === 'failed') {
-                    clearInterval(checkInterval);
-                    showError(data.error || 'Transcription failed');
-                } else if (checkCount >= maxChecks) {
-                    clearInterval(checkInterval);
-                    showError('Transcription timeout. Please try again.');
-                }
+        // Network Status Monitoring
+        function updateNetworkStatus() {
+            const statusElement = document.getElementById('networkStatus');
+            const statusText = statusElement.querySelector('span:last-child');
 
-                checkCount++;
-            } catch (error) {
-                console.error('Status check error:', error);
+            if (navigator.onLine) {
+                statusElement.className = 'network-status online';
+                statusText.textContent = 'Connected';
+            } else {
+                statusElement.className = 'network-status offline';
+                statusText.textContent = 'Offline';
             }
         }
 
+        window.addEventListener('online', updateNetworkStatus);
+        window.addEventListener('offline', () => {
+            updateNetworkStatus();
+            showStatus('Network connection lost. Recording will be saved locally.', 'error');
+        });
+
+        // Initialize WebSocket Connection
+        function initWebSocket() {
+            const protocol = window.location.protocol === 'https:' ? 'wss:' : 'ws:';
+            const wsUrl = `${protocol}//${window.location.host}`;
+
+            console.log('Connecting to WebSocket:', wsUrl);
+            ws = new WebSocket(wsUrl);
+
+            ws.onopen = () => {
+                console.log('WebSocket connected successfully');
+                reconnectAttempts = 0;
+
+                // Subscribe to user updates
+                ws.send(JSON.stringify({
+                    type: 'subscribe',
+                    userId: userId
+                }));
+            };
+
+            ws.onmessage = (event) => {
+                try {
+                    const data = JSON.parse(event.data);
+                    console.log('WebSocket message:', data);
+                    handleRealtimeUpdate(data);
+                } catch (error) {
+                    console.error('Error parsing WebSocket message:', error);
+                }
+            };
+
+            ws.onerror = (error) => {
+                console.error('WebSocket error:', error);
+                showStatus('Connection error. Some features may be limited.', 'warning');
+            };
+
+            ws.onclose = () => {
+                console.log('WebSocket disconnected');
+
+                // Attempt to reconnect with exponential backoff
+                if (reconnectAttempts < maxReconnectAttempts) {
+                    reconnectAttempts++;
+                    const delay = Math.min(1000 * Math.pow(2, reconnectAttempts), 30000);
+                    console.log(`Reconnecting in ${delay}ms (attempt ${reconnectAttempts})`);
+                    setTimeout(initWebSocket, delay);
+                }
+            };
+
+            // Heartbeat to keep connection alive
+            setInterval(() => {
+                if (ws && ws.readyState === WebSocket.OPEN) {
+                    ws.send(JSON.stringify({ type: 'ping' }));
+                }
+            }, 30000);
+        }
+
+        // Handle Real-time Updates
+        function handleRealtimeUpdate(data) {
+            console.log('Processing realtime update:', data);
+
+            const statusDiv = document.getElementById('statusMessage');
+            const statusText = document.getElementById('statusText');
+            const statusIndicator = statusDiv.querySelector('.status-indicator');
+
+            statusDiv.style.display = 'block';
+
+            switch(data.status || data.type) {
+                case 'processing':
+                case 'PROCESSING':
+                    updateProgress('step-upload', 'complete');
+                    updateProgress('step-transcribe', 'active');
+                    statusIndicator.className = 'status-indicator processing';
+                    statusText.textContent = data.message || 'Processing your recording...';
+                    statusDiv.style.background = '#fff3e0';
+                    break;
+
+                case 'transcribed':
+                case 'TRANSCRIBED':
+                    updateProgress('step-transcribe', 'complete');
+                    updateProgress('step-summary', 'active');
+                    statusIndicator.className = 'status-indicator processing';
+                    statusText.textContent = 'Generating AI summary...';
+                    statusDiv.style.background = '#e3f2fd';
+
+                    if (data.transcription) {
+                        showTranscription(data.transcription);
+                    }
+                    break;
+
+                case 'generating_summary':
+                case 'GENERATING_SUMMARY':
+                    updateProgress('step-transcribe', 'complete');
+                    updateProgress('step-summary', 'active');
+                    statusIndicator.className = 'status-indicator processing';
+                    statusText.textContent = data.message || 'Creating AI analysis...';
+                    statusDiv.style.background = '#e3f2fd';
+                    break;
+
+                case 'completed':
+                case 'COMPLETED':
+                    updateProgress('step-summary', 'complete');
+                    statusIndicator.className = 'status-indicator complete';
+                    statusText.textContent = 'Processing complete! ✅';
+                    statusDiv.style.background = '#e8f5e9';
+
+                    if (data.transcription) {
+                        showTranscription(data.transcription);
+                    }
+                    if (data.summary) {
+                        showSummary(data.summary);
+                    }
+                    break;
+
+                case 'failed':
+                case 'FAILED':
+                case 'error':
+                    statusIndicator.className = 'status-indicator recording';
+                    statusText.textContent = `Error: ${data.error || data.message || 'Processing failed'}`;
+                    statusDiv.style.background = '#ffebee';
+                    document.getElementById('retryButton').style.display = 'inline-block';
+                    break;
+
+                case 'subscribed':
+                    console.log('Successfully subscribed to updates');
+                    break;
+
+                case 'pong':
+                    // Heartbeat response
+                    break;
+
+                default:
+                    console.log('Unknown update type:', data.type || data.status);
+            }
+        }
+
+        // Update Progress Steps
+        function updateProgress(stepId, status) {
+            const step = document.getElementById(stepId);
+            const allSteps = document.querySelectorAll('.progress-step');
+            const stepIndex = Array.from(allSteps).indexOf(step);
+
+            if (status === 'active') {
+                step.classList.add('active');
+                step.classList.remove('complete');
+
+                // Update progress line
+                const progressLine = document.getElementById('progressLine');
+                progressLine.style.width = `${(stepIndex / 3) * 100}%`;
+
+            } else if (status === 'complete') {
+                step.classList.remove('active');
+                step.classList.add('complete');
+
+                // Update progress line
+                const progressLine = document.getElementById('progressLine');
+                progressLine.style.width = `${((stepIndex + 1) / 4) * 100}%`;
+            }
+        }
+
+        // Initialize Audio Visualizer
+        function initializeVisualizer() {
+            const barsContainer = document.getElementById('visualizerBars');
+
+            // Create visualizer bars
+            for (let i = 0; i < 20; i++) {
+                const bar = document.createElement('div');
+                bar.className = 'audio-bar';
+                bar.style.height = '20px';
+                bar.style.animationDelay = `${i * 0.05}s`;
+                barsContainer.appendChild(bar);
+            }
+        }
+
+        // Animate Visualizer
+        function animateVisualizer() {
+            if (!analyser) return;
+
+            const bars = document.querySelectorAll('.audio-bar');
+            const dataArray = new Uint8Array(analyser.frequencyBinCount);
+
+            function animate() {
+                if (!mediaRecorder || mediaRecorder.state !== 'recording') {
+                    return;
+                }
+
+                analyser.getByteFrequencyData(dataArray);
+
+                bars.forEach((bar, index) => {
+                    const value = dataArray[index * 10] || 0;
+                    const height = Math.max(10, (value / 255) * 60);
+                    bar.style.height = `${height}px`;
+                    bar.style.animation = `pulse ${0.5 + Math.random()}s ease infinite`;
+                });
+
+                animationId = requestAnimationFrame(animate);
+            }
+
+            animate();
+        }
+
+        // Start Recording
+        async function startRecording() {
+            try {
+                // Check browser compatibility
+                if (!navigator.mediaDevices || !navigator.mediaDevices.getUserMedia) {
+                    throw new Error('Your browser does not support audio recording');
+                }
+
+                // Request microphone permission with fallback options
+                const constraints = {
+                    audio: {
+                        echoCancellation: true,
+                        noiseSuppression: true,
+                        autoGainControl: true,
+                        sampleRate: 44100
+                    }
+                };
+
+                const stream = await navigator.mediaDevices.getUserMedia(constraints);
+
+                // Setup audio context for visualization
+                audioContext = new (window.AudioContext || window.webkitAudioContext)();
+                analyser = audioContext.createAnalyser();
+                microphone = audioContext.createMediaStreamSource(stream);
+                analyser.fftSize = 256;
+                microphone.connect(analyser);
+
+                // Determine best mime type
+                const mimeTypes = [
+                    'audio/webm;codecs=opus',
+                    'audio/webm',
+                    'audio/ogg;codecs=opus',
+                    'audio/mp4',
+                    'audio/mpeg'
+                ];
+
+                let selectedMimeType = 'audio/webm';
+                for (const mimeType of mimeTypes) {
+                    if (MediaRecorder.isTypeSupported(mimeType)) {
+                        selectedMimeType = mimeType;
+                        break;
+                    }
+                }
+
+                console.log('Using mime type:', selectedMimeType);
+
+                // Initialize MediaRecorder
+                mediaRecorder = new MediaRecorder(stream, { 
+                    mimeType: selectedMimeType,
+                    audioBitsPerSecond: 128000
+                });
+
+                audioChunks = [];
+
+                mediaRecorder.ondataavailable = (event) => {
+                    if (event.data.size > 0) {
+                        audioChunks.push(event.data);
+                    }
+                };
+
+                mediaRecorder.onstop = handleRecordingComplete;
+
+                mediaRecorder.onerror = (event) => {
+                    console.error('MediaRecorder error:', event);
+                    showStatus('Recording error occurred. Please try again.', 'error');
+                    resetRecordingUI();
+                };
+
+                // Start recording
+                mediaRecorder.start(1000); // Collect data every second
+                recordingStartTime = Date.now();
+
+                // Update UI
+                updateProgress('step-record', 'active');
+                document.getElementById('recordButton').style.display = 'none';
+                document.getElementById('stopButton').style.display = 'inline-block';
+                document.getElementById('recordingStatus').classList.add('active');
+                document.getElementById('visualizer').classList.add('active');
+                document.getElementById('retryButton').style.display = 'none';
+
+                // Start visualizer
+                animateVisualizer();
+
+                // Start duration timer
+                updateDuration();
+                durationInterval = setInterval(updateDuration, 100);
+
+                // Auto-stop after 5 minutes
+                setTimeout(() => {
+                    if (mediaRecorder && mediaRecorder.state === 'recording') {
+                        stopRecording();
+                        showStatus('Maximum recording time reached (5 minutes)', 'info');
+                    }
+                }, 300000);
+
+                showStatus('Recording started', 'info');
+
+            } catch (error) {
+                console.error('Error starting recording:', error);
+
+                if (error.name === 'NotAllowedError') {
+                    showStatus('Microphone permission denied. Please allow microphone access.', 'error');
+                } else if (error.name === 'NotFoundError') {
+                    showStatus('No microphone found. Please connect a microphone.', 'error');
+                } else {
+                    showStatus(`Unable to start recording: ${error.message}`, 'error');
+                }
+
+                resetRecordingUI();
+            }
+        }
+
+        // Stop Recording
+        function stopRecording() {
+            if (mediaRecorder && mediaRecorder.state === 'recording') {
+                mediaRecorder.stop();
+
+                // Stop all tracks
+                mediaRecorder.stream.getTracks().forEach(track => track.stop());
+
+                // Clear interval
+                clearInterval(durationInterval);
+
+                // Stop visualizer
+                if (animationId) {
+                    cancelAnimationFrame(animationId);
+                }
+
+                // Close audio context
+                if (audioContext) {
+                    audioContext.close();
+                    audioContext = null;
+                }
+
+                // Update UI
+                document.getElementById('stopButton').style.display = 'none';
+                document.getElementById('recordingStatus').classList.remove('active');
+                document.getElementById('visualizer').classList.remove('active');
+
+                showStatus('Recording stopped. Processing...', 'info');
+            }
+        }
+
+        // Handle Recording Complete
+        async function handleRecordingComplete() {
+            try {
+                const audioBlob = new Blob(audioChunks, { type: mediaRecorder.mimeType });
+
+                console.log('Recording complete. Blob size:', audioBlob.size);
+
+                // Check if blob is valid
+                if (audioBlob.size === 0) {
+                    throw new Error('Recording is empty');
+                }
+
+                // Show playback
+                const audioUrl = URL.createObjectURL(audioBlob);
+                const audioPlayer = document.getElementById('audioPlayback');
+                audioPlayer.src = audioUrl;
+                audioPlayer.style.display = 'block';
+
+                // Update progress
+                updateProgress('step-record', 'complete');
+                updateProgress('step-upload', 'active');
+
+                // Upload and process
+                await uploadAndProcess(audioBlob);
+
+            } catch (error) {
+                console.error('Error handling recording:', error);
+                showStatus(`Error: ${error.message}`, 'error');
+                document.getElementById('retryButton').style.display = 'inline-block';
+            }
+        }
+
+        // Upload and Process Audio
+        async function uploadAndProcess(audioBlob) {
+            const formData = new FormData();
+            formData.append('audio', audioBlob, 'recording.webm');
+            formData.append('create_user_id', userId);
+
+            const incidentId = localStorage.getItem('incident_report_id');
+            if (incidentId) {
+                formData.append('incident_report_id', incidentId);
+            }
+
+            try {
+                showStatus('Uploading audio...', 'info');
+
+                const response = await fetch('/api/whisper/transcribe', {
+                    method: 'POST',
+                    body: formData
+                });
+
+                const result = await response.json();
+
+                if (!response.ok) {
+                    throw new Error(result.error || `Server error: ${response.status}`);
+                }
+
+                if (result.success && result.queueId) {
+                    currentQueueId = result.queueId;
+
+                    console.log('Upload successful. Queue ID:', currentQueueId);
+
+                    // Subscribe to updates for this queue ID
+                    if (ws && ws.readyState === WebSocket.OPEN) {
+                        ws.send(JSON.stringify({
+                            type: 'subscribe',
+                            queueId: currentQueueId,
+                            userId: userId
+                        }));
+                    }
+
+                    // Update UI
+                    updateProgress('step-upload', 'complete');
+                    updateProgress('step-transcribe', 'active');
+
+                    showStatus('Upload successful! Processing transcription...', 'success');
+
+                    // Start polling as fallback if WebSocket is not connected
+                    if (!ws || ws.readyState !== WebSocket.OPEN) {
+                        startPolling();
+                    }
+
+                } else {
+                    throw new Error(result.error || 'Upload failed');
+                }
+
+            } catch (error) {
+                console.error('Upload error:', error);
+
+                // Handle network errors
+                if (!navigator.onLine) {
+                    showStatus('No internet connection. Please check your connection and try again.', 'error');
+                } else {
+                    showStatus(`Upload failed: ${error.message}`, 'error');
+                }
+
+                document.getElementById('retryButton').style.display = 'inline-block';
+                updateProgress('step-upload', 'active');
+            }
+        }
+
+        // Polling Fallback
+        let pollInterval;
+        let pollCount = 0;
+        const maxPolls = 60; // 5 minutes
+
+        function startPolling() {
+            console.log('Starting status polling for queue:', currentQueueId);
+
+            pollInterval = setInterval(async () => {
+                try {
+                    const response = await fetch(`/api/transcription-status/${currentQueueId}`);
+                    const data = await response.json();
+
+                    console.log('Poll response:', data);
+
+                    if (data.status === 'completed' || data.status === 'COMPLETED') {
+                        clearInterval(pollInterval);
+                        handleRealtimeUpdate(data);
+                    } else if (data.status === 'failed' || data.status === 'FAILED') {
+                        clearInterval(pollInterval);
+                        handleRealtimeUpdate(data);
+                    } else if (pollCount >= maxPolls) {
+                        clearInterval(pollInterval);
+                        showStatus('Processing timeout. Please try again.', 'error');
+                        document.getElementById('retryButton').style.display = 'inline-block';
+                    }
+
+                    pollCount++;
+                } catch (error) {
+                    console.error('Polling error:', error);
+                }
+            }, 5000); // Poll every 5 seconds
+        }
+
+        // Show Transcription
         function showTranscription(text) {
-            document.getElementById('statusContainer').style.display = 'none';
-            document.getElementById('transcriptionContainer').style.display = 'block';
-            document.getElementById('transcriptionText').textContent = text;
+            const transcriptionDiv = document.getElementById('transcriptionResult');
+            const transcriptionText = document.getElementById('transcriptionText');
+
+            transcriptionDiv.style.display = 'block';
+            transcriptionText.textContent = text;
+
+            // Auto-focus for editing
+            transcriptionText.focus();
         }
 
-        function showError(message) {
-            document.getElementById('statusContainer').style.display = 'none';
-            document.getElementById('errorContainer').style.display = 'block';
-            document.getElementById('errorMessage').textContent = message;
+        // Show AI Summary
+        function showSummary(summary) {
+            const summarySection = document.getElementById('summarySection');
+
+            if (summary.summary_text) {
+                document.getElementById('summaryText').textContent = summary.summary_text;
+            }
+
+            if (summary.key_points && Array.isArray(summary.key_points)) {
+                const keyPointsList = document.getElementById('keyPointsList');
+                keyPointsList.innerHTML = '';
+                summary.key_points.forEach(point => {
+                    const li = document.createElement('li');
+                    li.textContent = point;
+                    keyPointsList.appendChild(li);
+                });
+            }
+
+            if (summary.fault_analysis) {
+                document.getElementById('faultAnalysis').textContent = summary.fault_analysis;
+            }
+
+            summarySection.style.display = 'block';
         }
 
+        // Confirm Transcription
         async function confirmTranscription() {
             const editedText = document.getElementById('transcriptionText').textContent;
 
-            // Save the edited transcription
+            if (!editedText.trim()) {
+                showStatus('Please enter or verify the transcription before continuing', 'warning');
+                return;
+            }
+
             try {
                 const response = await fetch('/api/update-transcription', {
                     method: 'POST',
@@ -150,29 +1284,143 @@
                         'Content-Type': 'application/json',
                     },
                     body: JSON.stringify({
-                        queueId: queueId,
+                        queueId: currentQueueId,
                         userId: userId,
                         transcription: editedText
                     })
                 });
 
                 if (response.ok) {
-                    // Redirect to declaration page
-                    window.location.href = `/declaration.html?userId=${userId}`;
+                    showStatus('Transcription saved successfully!', 'success');
+
+                    // Wait briefly then redirect
+                    setTimeout(() => {
+                        window.location.href = `/declaration.html?create_user_id=${userId}&queueId=${currentQueueId}`;
+                    }, 1500);
+                } else {
+                    throw new Error('Failed to save transcription');
                 }
+
             } catch (error) {
-                console.error('Error updating transcription:', error);
-                alert('Error saving transcription');
+                console.error('Error saving transcription:', error);
+                showStatus('Error saving transcription. Please try again.', 'error');
             }
         }
 
-        // Start checking status
-        if (queueId) {
-            checkInterval = setInterval(checkTranscriptionStatus, 5000); // Check every 5 seconds
-            checkTranscriptionStatus(); // Initial check
-        } else {
-            showError('No queue ID provided');
+        // Update Recording Duration
+        function updateDuration() {
+            if (!recordingStartTime) return;
+
+            const elapsed = Math.floor((Date.now() - recordingStartTime) / 1000);
+            const minutes = Math.floor(elapsed / 60);
+            const seconds = elapsed % 60;
+
+            document.getElementById('duration').textContent = 
+                `${minutes}:${seconds.toString().padStart(2, '0')}`;
+
+            // Visual warning as approaching limit
+            if (elapsed > 240) { // 4 minutes
+                document.getElementById('duration').style.color = '#f59e0b';
+            }
+            if (elapsed > 270) { // 4.5 minutes
+                document.getElementById('duration').style.color = '#ef4444';
+            }
         }
+
+        // Show Status Message
+        function showStatus(message, type = 'info') {
+            const statusDiv = document.getElementById('statusMessage');
+            const statusText = document.getElementById('statusText');
+            const statusIndicator = statusDiv.querySelector('.status-indicator');
+
+            statusDiv.style.display = 'block';
+            statusText.textContent = message;
+
+            // Set appropriate styling based on type
+            switch(type) {
+                case 'error':
+                    statusDiv.style.background = '#fee2e2';
+                    statusIndicator.className = 'status-indicator recording';
+                    break;
+                case 'success':
+                    statusDiv.style.background = '#d4edda';
+                    statusIndicator.className = 'status-indicator complete';
+                    break;
+                case 'warning':
+                    statusDiv.style.background = '#fff3cd';
+                    statusIndicator.className = 'status-indicator processing';
+                    break;
+                default:
+                    statusDiv.style.background = '#d1ecf1';
+                    statusIndicator.className = 'status-indicator processing';
+            }
+
+            // Auto-hide info messages after 5 seconds
+            if (type === 'info' || type === 'success') {
+                setTimeout(() => {
+                    if (statusText.textContent === message) {
+                        statusDiv.style.display = 'none';
+                    }
+                }, 5000);
+            }
+        }
+
+        // Reset Recording UI
+        function resetRecordingUI() {
+            document.getElementById('recordButton').style.display = 'inline-block';
+            document.getElementById('stopButton').style.display = 'none';
+            document.getElementById('recordingStatus').classList.remove('active');
+            document.getElementById('visualizer').classList.remove('active');
+            document.getElementById('retryButton').style.display = 'inline-block';
+        }
+
+        // Initialize on Page Load
+        document.addEventListener('DOMContentLoaded', () => {
+            console.log('Initializing transcription page');
+            console.log('User ID:', userId);
+
+            // Initialize components
+            initializeVisualizer();
+            initWebSocket();
+            updateNetworkStatus();
+
+            // Set up event listeners
+            document.getElementById('recordButton').addEventListener('click', startRecording);
+            document.getElementById('stopButton').addEventListener('click', stopRecording);
+            document.getElementById('retryButton').addEventListener('click', () => {
+                location.reload();
+            });
+
+            // Handle visibility change (mobile browsers)
+            document.addEventListener('visibilitychange', () => {
+                if (document.hidden && mediaRecorder && mediaRecorder.state === 'recording') {
+                    console.log('Page hidden while recording - stopping');
+                    stopRecording();
+                }
+            });
+
+            // Prevent accidental navigation during recording
+            window.addEventListener('beforeunload', (e) => {
+                if (mediaRecorder && mediaRecorder.state === 'recording') {
+                    e.preventDefault();
+                    e.returnValue = 'Recording in progress. Are you sure you want to leave?';
+                }
+            });
+
+            // Show initial status
+            showStatus('Ready to record your statement', 'info');
+        });
+
+        // Handle errors globally
+        window.addEventListener('error', (event) => {
+            console.error('Global error:', event.error);
+            showStatus('An unexpected error occurred. Please refresh the page.', 'error');
+        });
+
+        // Handle unhandled promise rejections
+        window.addEventListener('unhandledrejection', (event) => {
+            console.error('Unhandled promise rejection:', event.reason);
+        });
     </script>
 </body>
 </html>
