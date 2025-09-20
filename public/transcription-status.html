@@ -53,6 +53,26 @@
             font-size: 24px;
         }
 
+        /* User Info Badge */
+        .user-info-badge {
+            background: #f0f7ff;
+            border: 1px solid #667eea;
+            border-radius: 8px;
+            padding: 10px 15px;
+            margin-bottom: 20px;
+            font-size: 12px;
+            color: #667eea;
+            display: none;
+        }
+
+        .user-info-badge.visible {
+            display: block;
+        }
+
+        .user-info-badge strong {
+            color: #333;
+        }
+
         /* Progress Indicator */
         .progress-steps {
             display: flex;
@@ -601,6 +621,12 @@
     <div class="container">
         <h1>🎤 Record Your Statement</h1>
 
+        <!-- User Info Badge -->
+        <div class="user-info-badge" id="userInfoBadge">
+            Session ID: <strong id="userIdDisplay"></strong>
+            <span id="incidentDisplay" style="display: none;"> | Incident: <strong id="incidentIdDisplay"></strong></span>
+        </div>
+
         <!-- Progress Indicator with Animation -->
         <div class="progress-steps">
             <div class="progress-line" id="progressLine" style="width: 0%"></div>
@@ -689,7 +715,7 @@
             <h3>📝 Your Transcription</h3>
             <div class="transcription-box" contenteditable="true" id="transcriptionText" placeholder="Your transcription will appear here...">
             </div>
-            <button class="btn btn-primary" onclick="confirmTranscription()" style="margin-top: 20px;">
+            <button class="btn btn-primary" id="confirmButton" style="margin-top: 20px;">
                 ✅ Confirm & Continue
             </button>
             <p style="text-align: center; color: #666; margin-top: 10px; font-size: 14px;">
@@ -717,25 +743,104 @@
     </div>
 
     <script>
-        // Global Variables
-        let mediaRecorder = null;
-        let audioChunks = [];
-        let recordingStartTime;
-        let durationInterval;
-        let userId = localStorage.getItem('create_user_id') || 'user_' + Date.now();
-        let currentQueueId = null;
-        let ws = null;
-        let reconnectAttempts = 0;
-        let maxReconnectAttempts = 5;
-        let audioContext = null;
-        let analyser = null;
-        let microphone = null;
-        let animationId = null;
+        // ============================
+        // Configuration and Global Variables
+        // ============================
+        const CONFIG = {
+            MAX_RECORDING_TIME: 300000, // 5 minutes in milliseconds
+            POLL_INTERVAL: 5000, // 5 seconds
+            MAX_POLLS: 60, // Maximum polling attempts
+            RECONNECT_DELAY_BASE: 1000, // Base delay for reconnection
+            MAX_RECONNECT_ATTEMPTS: 5,
+            HEARTBEAT_INTERVAL: 30000, // 30 seconds
+            VISUALIZER_BARS: 20
+        };
 
-        // Store user ID for future use
-        localStorage.setItem('create_user_id', userId);
+        // Global state management
+        const state = {
+            mediaRecorder: null,
+            audioChunks: [],
+            recordingStartTime: null,
+            durationInterval: null,
+            userId: null,
+            incidentReportId: null,
+            currentQueueId: null,
+            ws: null,
+            reconnectAttempts: 0,
+            audioContext: null,
+            analyser: null,
+            microphone: null,
+            animationId: null,
+            pollInterval: null,
+            pollCount: 0,
+            summaryData: null,
+            isProcessing: false
+        };
 
+        // ============================
+        // User ID and Session Management
+        // ============================
+        function initializeSession() {
+            // Extract parameters from URL
+            const urlParams = new URLSearchParams(window.location.search);
+
+            // Try multiple parameter names for compatibility with webhooks
+            state.userId = urlParams.get('create_user_id') || 
+                          urlParams.get('user_id') || 
+                          urlParams.get('userId') ||
+                          localStorage.getItem('create_user_id');
+
+            // Generate a new user ID if none exists
+            if (!state.userId) {
+                state.userId = 'user_' + Date.now() + '_' + Math.random().toString(36).substr(2, 9);
+                console.warn('No user ID provided, generated session ID:', state.userId);
+            }
+
+            // Store user ID for persistence
+            localStorage.setItem('create_user_id', state.userId);
+
+            // Extract incident report ID if available
+            state.incidentReportId = urlParams.get('incident_report_id') || 
+                                    urlParams.get('incident_id') ||
+                                    localStorage.getItem('current_incident_id');
+
+            if (state.incidentReportId) {
+                localStorage.setItem('current_incident_id', state.incidentReportId);
+            }
+
+            // Update UI with session info
+            updateUserInfoBadge();
+
+            console.log('Session initialized:', {
+                userId: state.userId,
+                incidentId: state.incidentReportId,
+                source: urlParams.get('source') || 'direct'
+            });
+
+            return state.userId;
+        }
+
+        function updateUserInfoBadge() {
+            const badge = document.getElementById('userInfoBadge');
+            const userDisplay = document.getElementById('userIdDisplay');
+            const incidentDisplay = document.getElementById('incidentDisplay');
+            const incidentIdDisplay = document.getElementById('incidentIdDisplay');
+
+            if (state.userId) {
+                badge.classList.add('visible');
+                // Show shortened user ID for privacy
+                userDisplay.textContent = state.userId.substring(0, 12) + '...';
+
+                if (state.incidentReportId) {
+                    incidentDisplay.style.display = 'inline';
+                    incidentIdDisplay.textContent = state.incidentReportId.substring(0, 8) + '...';
+                }
+            }
+        }
+
+        // ============================
         // Network Status Monitoring
+        // ============================
         function updateNetworkStatus() {
             const statusElement = document.getElementById('networkStatus');
             const statusText = statusElement.querySelector('span:last-child');
@@ -746,35 +851,47 @@
             } else {
                 statusElement.className = 'network-status offline';
                 statusText.textContent = 'Offline';
+                showStatus('Network connection lost. Recording will be saved when connection is restored.', 'error');
             }
         }
 
-        window.addEventListener('online', updateNetworkStatus);
-        window.addEventListener('offline', () => {
-            updateNetworkStatus();
-            showStatus('Network connection lost. Recording will be saved locally.', 'error');
-        });
-
-        // Initialize WebSocket Connection
+        // ============================
+        // WebSocket Management
+        // ============================
         function initWebSocket() {
+            if (state.ws && state.ws.readyState === WebSocket.OPEN) {
+                return; // Already connected
+            }
+
             const protocol = window.location.protocol === 'https:' ? 'wss:' : 'ws:';
             const wsUrl = `${protocol}//${window.location.host}`;
 
             console.log('Connecting to WebSocket:', wsUrl);
-            ws = new WebSocket(wsUrl);
 
-            ws.onopen = () => {
+            try {
+                state.ws = new WebSocket(wsUrl);
+                setupWebSocketHandlers();
+            } catch (error) {
+                console.error('WebSocket creation failed:', error);
+                // Continue without WebSocket - use polling fallback
+            }
+        }
+
+        function setupWebSocketHandlers() {
+            if (!state.ws) return;
+
+            state.ws.onopen = () => {
                 console.log('WebSocket connected successfully');
-                reconnectAttempts = 0;
+                state.reconnectAttempts = 0;
 
                 // Subscribe to user updates
-                ws.send(JSON.stringify({
+                state.ws.send(JSON.stringify({
                     type: 'subscribe',
-                    userId: userId
+                    userId: state.userId
                 }));
             };
 
-            ws.onmessage = (event) => {
+            state.ws.onmessage = (event) => {
                 try {
                     const data = JSON.parse(event.data);
                     console.log('WebSocket message:', data);
@@ -784,35 +901,45 @@
                 }
             };
 
-            ws.onerror = (error) => {
+            state.ws.onerror = (error) => {
                 console.error('WebSocket error:', error);
-                showStatus('Connection error. Some features may be limited.', 'warning');
+                // Don't show error to user - fallback to polling
             };
 
-            ws.onclose = () => {
+            state.ws.onclose = () => {
                 console.log('WebSocket disconnected');
-
-                // Attempt to reconnect with exponential backoff
-                if (reconnectAttempts < maxReconnectAttempts) {
-                    reconnectAttempts++;
-                    const delay = Math.min(1000 * Math.pow(2, reconnectAttempts), 30000);
-                    console.log(`Reconnecting in ${delay}ms (attempt ${reconnectAttempts})`);
-                    setTimeout(initWebSocket, delay);
-                }
+                attemptReconnect();
             };
 
-            // Heartbeat to keep connection alive
-            setInterval(() => {
-                if (ws && ws.readyState === WebSocket.OPEN) {
-                    ws.send(JSON.stringify({ type: 'ping' }));
-                }
-            }, 30000);
+            // Setup heartbeat
+            setupHeartbeat();
         }
 
-        // Handle Real-time Updates
-        function handleRealtimeUpdate(data) {
-            console.log('Processing realtime update:', data);
+        function attemptReconnect() {
+            if (state.reconnectAttempts >= CONFIG.MAX_RECONNECT_ATTEMPTS) {
+                console.log('Max reconnection attempts reached, falling back to polling');
+                return;
+            }
 
+            state.reconnectAttempts++;
+            const delay = Math.min(CONFIG.RECONNECT_DELAY_BASE * Math.pow(2, state.reconnectAttempts), 30000);
+
+            console.log(`Reconnecting in ${delay}ms (attempt ${state.reconnectAttempts})`);
+            setTimeout(initWebSocket, delay);
+        }
+
+        function setupHeartbeat() {
+            setInterval(() => {
+                if (state.ws && state.ws.readyState === WebSocket.OPEN) {
+                    state.ws.send(JSON.stringify({ type: 'ping' }));
+                }
+            }, CONFIG.HEARTBEAT_INTERVAL);
+        }
+
+        // ============================
+        // Real-time Update Handling
+        // ============================
+        function handleRealtimeUpdate(data) {
             const statusDiv = document.getElementById('statusMessage');
             const statusText = document.getElementById('statusText');
             const statusIndicator = statusDiv.querySelector('.status-indicator');
@@ -862,7 +989,14 @@
                         showTranscription(data.transcription);
                     }
                     if (data.summary) {
+                        state.summaryData = data.summary;
                         showSummary(data.summary);
+                    }
+
+                    // Enable confirmation button
+                    const confirmBtn = document.getElementById('confirmButton');
+                    if (confirmBtn) {
+                        confirmBtn.disabled = false;
                     }
                     break;
 
@@ -873,6 +1007,7 @@
                     statusText.textContent = `Error: ${data.error || data.message || 'Processing failed'}`;
                     statusDiv.style.background = '#ffebee';
                     document.getElementById('retryButton').style.display = 'inline-block';
+                    state.isProcessing = false;
                     break;
 
                 case 'subscribed':
@@ -888,7 +1023,9 @@
             }
         }
 
-        // Update Progress Steps
+        // ============================
+        // Progress Management
+        // ============================
         function updateProgress(stepId, status) {
             const step = document.getElementById(stepId);
             const allSteps = document.querySelectorAll('.progress-step');
@@ -898,7 +1035,6 @@
                 step.classList.add('active');
                 step.classList.remove('complete');
 
-                // Update progress line
                 const progressLine = document.getElementById('progressLine');
                 progressLine.style.width = `${(stepIndex / 3) * 100}%`;
 
@@ -906,18 +1042,19 @@
                 step.classList.remove('active');
                 step.classList.add('complete');
 
-                // Update progress line
                 const progressLine = document.getElementById('progressLine');
                 progressLine.style.width = `${((stepIndex + 1) / 4) * 100}%`;
             }
         }
 
-        // Initialize Audio Visualizer
+        // ============================
+        // Audio Visualizer
+        // ============================
         function initializeVisualizer() {
             const barsContainer = document.getElementById('visualizerBars');
+            barsContainer.innerHTML = ''; // Clear existing bars
 
-            // Create visualizer bars
-            for (let i = 0; i < 20; i++) {
+            for (let i = 0; i < CONFIG.VISUALIZER_BARS; i++) {
                 const bar = document.createElement('div');
                 bar.className = 'audio-bar';
                 bar.style.height = '20px';
@@ -926,42 +1063,40 @@
             }
         }
 
-        // Animate Visualizer
         function animateVisualizer() {
-            if (!analyser) return;
+            if (!state.analyser) return;
 
             const bars = document.querySelectorAll('.audio-bar');
-            const dataArray = new Uint8Array(analyser.frequencyBinCount);
+            const dataArray = new Uint8Array(state.analyser.frequencyBinCount);
 
             function animate() {
-                if (!mediaRecorder || mediaRecorder.state !== 'recording') {
+                if (!state.mediaRecorder || state.mediaRecorder.state !== 'recording') {
                     return;
                 }
 
-                analyser.getByteFrequencyData(dataArray);
+                state.analyser.getByteFrequencyData(dataArray);
 
                 bars.forEach((bar, index) => {
                     const value = dataArray[index * 10] || 0;
                     const height = Math.max(10, (value / 255) * 60);
                     bar.style.height = `${height}px`;
-                    bar.style.animation = `pulse ${0.5 + Math.random()}s ease infinite`;
                 });
 
-                animationId = requestAnimationFrame(animate);
+                state.animationId = requestAnimationFrame(animate);
             }
 
             animate();
         }
 
-        // Start Recording
+        // ============================
+        // Recording Functions
+        // ============================
         async function startRecording() {
             try {
-                // Check browser compatibility
                 if (!navigator.mediaDevices || !navigator.mediaDevices.getUserMedia) {
                     throw new Error('Your browser does not support audio recording');
                 }
 
-                // Request microphone permission with fallback options
                 const constraints = {
                     audio: {
                         echoCancellation: true,
@@ -974,11 +1109,11 @@
                 const stream = await navigator.mediaDevices.getUserMedia(constraints);
 
                 // Setup audio context for visualization
-                audioContext = new (window.AudioContext || window.webkitAudioContext)();
-                analyser = audioContext.createAnalyser();
-                microphone = audioContext.createMediaStreamSource(stream);
-                analyser.fftSize = 256;
-                microphone.connect(analyser);
+                state.audioContext = new (window.AudioContext || window.webkitAudioContext)();
+                state.analyser = state.audioContext.createAnalyser();
+                state.microphone = state.audioContext.createMediaStreamSource(stream);
+                state.analyser.fftSize = 256;
+                state.microphone.connect(state.analyser);
 
                 // Determine best mime type
                 const mimeTypes = [
@@ -1000,30 +1135,30 @@
                 console.log('Using mime type:', selectedMimeType);
 
                 // Initialize MediaRecorder
-                mediaRecorder = new MediaRecorder(stream, { 
+                state.mediaRecorder = new MediaRecorder(stream, { 
                     mimeType: selectedMimeType,
                     audioBitsPerSecond: 128000
                 });
 
-                audioChunks = [];
+                state.audioChunks = [];
 
-                mediaRecorder.ondataavailable = (event) => {
+                state.mediaRecorder.ondataavailable = (event) => {
                     if (event.data.size > 0) {
-                        audioChunks.push(event.data);
+                        state.audioChunks.push(event.data);
                     }
                 };
 
-                mediaRecorder.onstop = handleRecordingComplete;
+                state.mediaRecorder.onstop = handleRecordingComplete;
 
-                mediaRecorder.onerror = (event) => {
+                state.mediaRecorder.onerror = (event) => {
                     console.error('MediaRecorder error:', event);
                     showStatus('Recording error occurred. Please try again.', 'error');
                     resetRecordingUI();
                 };
 
                 // Start recording
-                mediaRecorder.start(1000); // Collect data every second
-                recordingStartTime = Date.now();
+                state.mediaRecorder.start(1000); // Collect data every second
+                state.recordingStartTime = Date.now();
 
                 // Update UI
                 updateProgress('step-record', 'active');
@@ -1038,15 +1173,15 @@
 
                 // Start duration timer
                 updateDuration();
-                durationInterval = setInterval(updateDuration, 100);
+                state.durationInterval = setInterval(updateDuration, 100);
 
                 // Auto-stop after 5 minutes
                 setTimeout(() => {
-                    if (mediaRecorder && mediaRecorder.state === 'recording') {
+                    if (state.mediaRecorder && state.mediaRecorder.state === 'recording') {
                         stopRecording();
                         showStatus('Maximum recording time reached (5 minutes)', 'info');
                     }
-                }, 300000);
+                }, CONFIG.MAX_RECORDING_TIME);
 
                 showStatus('Recording started', 'info');
 
@@ -1065,26 +1200,25 @@
             }
         }
 
-        // Stop Recording
         function stopRecording() {
-            if (mediaRecorder && mediaRecorder.state === 'recording') {
-                mediaRecorder.stop();
+            if (state.mediaRecorder && state.mediaRecorder.state === 'recording') {
+                state.mediaRecorder.stop();
 
                 // Stop all tracks
-                mediaRecorder.stream.getTracks().forEach(track => track.stop());
+                state.mediaRecorder.stream.getTracks().forEach(track => track.stop());
 
                 // Clear interval
-                clearInterval(durationInterval);
+                clearInterval(state.durationInterval);
 
                 // Stop visualizer
-                if (animationId) {
-                    cancelAnimationFrame(animationId);
+                if (state.animationId) {
+                    cancelAnimationFrame(state.animationId);
                 }
 
                 // Close audio context
-                if (audioContext) {
-                    audioContext.close();
-                    audioContext = null;
+                if (state.audioContext) {
+                    state.audioContext.close();
+                    state.audioContext = null;
                 }
 
                 // Update UI
@@ -1096,14 +1230,14 @@
             }
         }
 
-        // Handle Recording Complete
         async function handleRecordingComplete() {
             try {
-                const audioBlob = new Blob(audioChunks, { type: mediaRecorder.mimeType });
+                const audioBlob = new Blob(state.audioChunks, { 
+                    type: state.mediaRecorder.mimeType || 'audio/webm' 
+                });
 
                 console.log('Recording complete. Blob size:', audioBlob.size);
 
-                // Check if blob is valid
                 if (audioBlob.size === 0) {
                     throw new Error('Recording is empty');
                 }
@@ -1128,19 +1262,21 @@
             }
         }
 
-        // Upload and Process Audio
+        // ============================
+        // Upload and Processing
+        // ============================
         async function uploadAndProcess(audioBlob) {
             const formData = new FormData();
             formData.append('audio', audioBlob, 'recording.webm');
-            formData.append('create_user_id', userId);
+            formData.append('create_user_id', state.userId);
 
-            const incidentId = localStorage.getItem('incident_report_id');
-            if (incidentId) {
-                formData.append('incident_report_id', incidentId);
+            if (state.incidentReportId) {
+                formData.append('incident_report_id', state.incidentReportId);
             }
 
             try {
                 showStatus('Uploading audio...', 'info');
+                state.isProcessing = true;
 
                 const response = await fetch('/api/whisper/transcribe', {
                     method: 'POST',
@@ -1154,16 +1290,16 @@
                 }
 
                 if (result.success && result.queueId) {
-                    currentQueueId = result.queueId;
+                    state.currentQueueId = result.queueId;
 
-                    console.log('Upload successful. Queue ID:', currentQueueId);
+                    console.log('Upload successful. Queue ID:', state.currentQueueId);
 
                     // Subscribe to updates for this queue ID
-                    if (ws && ws.readyState === WebSocket.OPEN) {
-                        ws.send(JSON.stringify({
+                    if (state.ws && state.ws.readyState === WebSocket.OPEN) {
+                        state.ws.send(JSON.stringify({
                             type: 'subscribe',
-                            queueId: currentQueueId,
-                            userId: userId
+                            queueId: state.currentQueueId,
+                            userId: state.userId
                         }));
                     }
 
@@ -1174,7 +1310,7 @@
                     showStatus('Upload successful! Processing transcription...', 'success');
 
                     // Start polling as fallback if WebSocket is not connected
-                    if (!ws || ws.readyState !== WebSocket.OPEN) {
+                    if (!state.ws || state.ws.readyState !== WebSocket.OPEN) {
                         startPolling();
                     }
 
@@ -1184,8 +1320,8 @@
 
             } catch (error) {
                 console.error('Upload error:', error);
+                state.isProcessing = false;
 
-                // Handle network errors
                 if (!navigator.onLine) {
                     showStatus('No internet connection. Please check your connection and try again.', 'error');
                 } else {
@@ -1197,41 +1333,43 @@
             }
         }
 
+        // ============================
         // Polling Fallback
-        let pollInterval;
-        let pollCount = 0;
-        const maxPolls = 60; // 5 minutes
-
+        // ============================
         function startPolling() {
-            console.log('Starting status polling for queue:', currentQueueId);
+            console.log('Starting status polling for queue:', state.currentQueueId);
+            state.pollCount = 0;
 
-            pollInterval = setInterval(async () => {
+            state.pollInterval = setInterval(async () => {
                 try {
-                    const response = await fetch(`/api/transcription-status/${currentQueueId}`);
+                    const response = await fetch(`/api/transcription-status/${state.currentQueueId}`);
                     const data = await response.json();
 
                     console.log('Poll response:', data);
 
                     if (data.status === 'completed' || data.status === 'COMPLETED') {
-                        clearInterval(pollInterval);
+                        clearInterval(state.pollInterval);
                         handleRealtimeUpdate(data);
                     } else if (data.status === 'failed' || data.status === 'FAILED') {
-                        clearInterval(pollInterval);
+                        clearInterval(state.pollInterval);
                         handleRealtimeUpdate(data);
-                    } else if (pollCount >= maxPolls) {
-                        clearInterval(pollInterval);
+                    } else if (state.pollCount >= CONFIG.MAX_POLLS) {
+                        clearInterval(state.pollInterval);
                         showStatus('Processing timeout. Please try again.', 'error');
                         document.getElementById('retryButton').style.display = 'inline-block';
+                        state.isProcessing = false;
                     }
 
-                    pollCount++;
+                    state.pollCount++;
                 } catch (error) {
                     console.error('Polling error:', error);
                 }
-            }, 5000); // Poll every 5 seconds
+            }, CONFIG.POLL_INTERVAL);
         }
 
-        // Show Transcription
+        // ============================
+        // Transcription and Summary Display
+        // ============================
         function showTranscription(text) {
             const transcriptionDiv = document.getElementById('transcriptionResult');
             const transcriptionText = document.getElementById('transcriptionText');
@@ -1243,7 +1381,6 @@
             transcriptionText.focus();
         }
 
-        // Show AI Summary
         function showSummary(summary) {
             const summarySection = document.getElementById('summarySection');
 
@@ -1268,7 +1405,9 @@
             summarySection.style.display = 'block';
         }
 
-        // Confirm Transcription
+        // ============================
+        // Confirmation and Save
+        // ============================
         async function confirmTranscription() {
             const editedText = document.getElementById('transcriptionText').textContent;
 
@@ -1277,57 +1416,95 @@
                 return;
             }
 
+            // Disable button to prevent double-submission
+            const confirmBtn = document.getElementById('confirmButton');
+            confirmBtn.disabled = true;
+            confirmBtn.innerHTML = '<span class="loading-spinner"></span> Saving...';
+
             try {
+                showStatus('Saving transcription...', 'info');
+
                 const response = await fetch('/api/update-transcription', {
                     method: 'POST',
                     headers: {
                         'Content-Type': 'application/json',
                     },
                     body: JSON.stringify({
-                        queueId: currentQueueId,
-                        userId: userId,
-                        transcription: editedText
+                        queueId: state.currentQueueId,
+                        userId: state.userId,
+                        create_user_id: state.userId, // Include both for compatibility
+                        transcription: editedText,
+                        incident_report_id: state.incidentReportId || null
                     })
                 });
 
                 if (response.ok) {
+                    const result = await response.json();
                     showStatus('Transcription saved successfully!', 'success');
 
-                    // Wait briefly then redirect
+                    // Store data in localStorage for declaration page
+                    localStorage.setItem('transcription_confirmed', 'true');
+                    localStorage.setItem('last_transcription', editedText);
+                    if (result.summary || state.summaryData) {
+                        localStorage.setItem('last_summary', JSON.stringify(result.summary || state.summaryData));
+                    }
+
+                    // Build redirect URL with all parameters
+                    const params = new URLSearchParams({
+                        create_user_id: state.userId,
+                        status: 'confirmed'
+                    });
+
+                    if (state.currentQueueId) {
+                        params.append('queue_id', state.currentQueueId);
+                    }
+
+                    if (state.incidentReportId) {
+                        params.append('incident_report_id', state.incidentReportId);
+                    }
+
+                    // Redirect to declaration page
                     setTimeout(() => {
-                        window.location.href = `/declaration.html?create_user_id=${userId}&queueId=${currentQueueId}`;
+                        window.location.href = `/declaration.html?${params.toString()}`;
                     }, 1500);
+
                 } else {
-                    throw new Error('Failed to save transcription');
+                    const error = await response.json();
+                    throw new Error(error.error || 'Failed to save transcription');
                 }
 
             } catch (error) {
                 console.error('Error saving transcription:', error);
                 showStatus('Error saving transcription. Please try again.', 'error');
+
+                // Re-enable button
+                confirmBtn.disabled = false;
+                confirmBtn.innerHTML = '✅ Confirm & Continue';
             }
         }
 
-        // Update Recording Duration
+        // ============================
+        // UI Helper Functions
+        // ============================
         function updateDuration() {
-            if (!recordingStartTime) return;
+            if (!state.recordingStartTime) return;
 
-            const elapsed = Math.floor((Date.now() - recordingStartTime) / 1000);
+            const elapsed = Math.floor((Date.now() - state.recordingStartTime) / 1000);
             const minutes = Math.floor(elapsed / 60);
             const seconds = elapsed % 60;
 
-            document.getElementById('duration').textContent = 
-                `${minutes}:${seconds.toString().padStart(2, '0')}`;
+            const durationElement = document.getElementById('duration');
+            durationElement.textContent = `${minutes}:${seconds.toString().padStart(2, '0')}`;
 
             // Visual warning as approaching limit
             if (elapsed > 240) { // 4 minutes
-                document.getElementById('duration').style.color = '#f59e0b';
+                durationElement.style.color = '#f59e0b';
             }
             if (elapsed > 270) { // 4.5 minutes
-                document.getElementById('duration').style.color = '#ef4444';
+                durationElement.style.color = '#ef4444';
             }
         }
 
-        // Show Status Message
         function showStatus(message, type = 'info') {
             const statusDiv = document.getElementById('statusMessage');
             const statusText = document.getElementById('statusText');
@@ -1365,7 +1542,6 @@
             }
         }
 
-        // Reset Recording UI
         function resetRecordingUI() {
             document.getElementById('recordButton').style.display = 'inline-block';
             document.getElementById('stopButton').style.display = 'none';
@@ -1374,10 +1550,31 @@
             document.getElementById('retryButton').style.display = 'inline-block';
         }
 
-        // Initialize on Page Load
+        function resetRecording() {
+            // Clear state
+            state.audioChunks = [];
+            state.currentQueueId = null;
+            state.summaryData = null;
+            state.isProcessing = false;
+
+            // Clear polling
+            if (state.pollInterval) {
+                clearInterval(state.pollInterval);
+                state.pollInterval = null;
+            }
+
+            // Reset UI
+            location.reload(); // Simple reload for complete reset
+        }
+
+        // ============================
+        // Event Listeners and Initialization
+        // ============================
         document.addEventListener('DOMContentLoaded', () => {
-            console.log('Initializing transcription page');
-            console.log('User ID:', userId);
+            console.log('Initializing recording page');
+
+            // Initialize session
+            initializeSession();
 
             // Initialize components
             initializeVisualizer();
@@ -1387,13 +1584,16 @@
             // Set up event listeners
             document.getElementById('recordButton').addEventListener('click', startRecording);
             document.getElementById('stopButton').addEventListener('click', stopRecording);
-            document.getElementById('retryButton').addEventListener('click', () => {
-                location.reload();
-            });
+            document.getElementById('retryButton').addEventListener('click', resetRecording);
+            document.getElementById('confirmButton').addEventListener('click', confirmTranscription);
+
+            // Network status monitoring
+            window.addEventListener('online', updateNetworkStatus);
+            window.addEventListener('offline', updateNetworkStatus);
 
             // Handle visibility change (mobile browsers)
             document.addEventListener('visibilitychange', () => {
-                if (document.hidden && mediaRecorder && mediaRecorder.state === 'recording') {
+                if (document.hidden && state.mediaRecorder && state.mediaRecorder.state === 'recording') {
                     console.log('Page hidden while recording - stopping');
                     stopRecording();
                 }
@@ -1401,23 +1601,42 @@
 
             // Prevent accidental navigation during recording
             window.addEventListener('beforeunload', (e) => {
-                if (mediaRecorder && mediaRecorder.state === 'recording') {
+                if (state.mediaRecorder && state.mediaRecorder.state === 'recording') {
                     e.preventDefault();
                     e.returnValue = 'Recording in progress. Are you sure you want to leave?';
+                }
+
+                if (state.isProcessing) {
+                    e.preventDefault();
+                    e.returnValue = 'Processing in progress. Are you sure you want to leave?';
+                }
+            });
+
+            // Cleanup on page unload
+            window.addEventListener('unload', () => {
+                if (state.pollInterval) {
+                    clearInterval(state.pollInterval);
+                }
+                if (state.ws) {
+                    state.ws.close();
                 }
             });
 
             // Show initial status
             showStatus('Ready to record your statement', 'info');
+
+            console.log('Initialization complete');
         });
 
-        // Handle errors globally
+        // Global error handlers
         window.addEventListener('error', (event) => {
             console.error('Global error:', event.error);
-            showStatus('An unexpected error occurred. Please refresh the page.', 'error');
+            // Don't show error to user for minor issues
+            if (event.error && event.error.message && event.error.message.includes('ResizeObserver')) {
+                return; // Ignore ResizeObserver errors
+            }
         });
 
-        // Handle unhandled promise rejections
         window.addEventListener('unhandledrejection', (event) => {
             console.error('Unhandled promise rejection:', event.reason);
         });
