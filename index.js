@@ -1749,20 +1749,18 @@ app.get('/health', async (req, res) => {
     timestamp: new Date().toISOString(),
     services: {
       supabase: supabaseEnabled && externalServices.supabase,
-      supabase_realtime: ex
-      // Continuing from the health check...
-
-            supabase_realtime: externalServices.supabase_realtime,
-            server: true,
-            transcriptionQueue: transcriptionQueueInterval !== null,
-            openai: !!process.env.OPENAI_API_KEY && externalServices.openai,
-            websocket: wss.clients.size,
-            websocket_sessions: {
-              queue: activeSessions.size,
-              users: userSessions.size
-            },
-            gdprCompliant: true,
-            what3words: externalServices.what3words
+      supabase_realtime: externalServices.supabase_realtime,
+      server: true,
+      transcriptionQueue: transcriptionQueueInterval !== null,
+      openai: !!process.env.OPENAI_API_KEY && externalServices.openai,
+      websocket: wss.clients.size,
+      websocket_sessions: {
+        queue: activeSessions.size,
+        users: userSessions.size
+      },
+      gdprCompliant: true,
+      what
+      what3words: externalServices.what3words
           },
           fixes: {
             bufferToStream: 'FIXED - Using Readable.from() with knownLength',
