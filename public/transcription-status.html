@@ -774,7 +774,8 @@
             pollInterval: null,
             pollCount: 0,
             summaryData: null,
-            isProcessing: false
+            isProcessing: false,
+            isRedirecting: false // NEW: Track redirect state
         };
 
         // ============================
@@ -908,7 +909,10 @@
 
             state.ws.onclose = () => {
                 console.log('WebSocket disconnected');
-                attemptReconnect();
+                // Only attempt reconnect if not redirecting
+                if (!state.isRedirecting) {
+                    attemptReconnect();
+                }
             };
 
             // Setup heartbeat
@@ -930,14 +934,14 @@
 
         function setupHeartbeat() {
             setInterval(() => {
-                if (state.ws && state.ws.readyState === WebSocket.OPEN) {
+                if (state.ws && state.ws.readyState === WebSocket.OPEN && !state.isRedirecting) {
                     state.ws.send(JSON.stringify({ type: 'ping' }));
                 }
             }, CONFIG.HEARTBEAT_INTERVAL);
         }
 
         // ============================
-        // Real-time Update Handling
+        // Real-time Update Handling (FIXED)
         // ============================
         function handleRealtimeUpdate(data) {
             const statusDiv = document.getElementById('statusMessage');
@@ -985,6 +989,10 @@
                     statusText.textContent = 'Processing complete! ✅';
                     statusDiv.style.background = '#e8f5e9';
 
+                    // FIX: Clear the processing flag when completed
+                    state.isProcessing = false;
+                    console.log('Processing completed, isProcessing set to false');
+
                     if (data.transcription) {
                         showTranscription(data.transcription);
                     }
@@ -998,6 +1006,12 @@
                     if (confirmBtn) {
                         confirmBtn.disabled = false;
                     }
+
+                    // Clear polling if active
+                    if (state.pollInterval) {
+                        clearInterval(state.pollInterval);
+                        state.pollInterval = null;
+                    }
                     break;
 
                 case 'failed':
@@ -1007,7 +1021,16 @@
                     statusText.textContent = `Error: ${data.error || data.message || 'Processing failed'}`;
                     statusDiv.style.background = '#ffebee';
                     document.getElementById('retryButton').style.display = 'inline-block';
+
+                    // FIX: Clear the processing flag on error
                     state.isProcessing = false;
+                    console.log('Processing failed, isProcessing set to false');
+
+                    // Clear polling if active
+                    if (state.pollInterval) {
+                        clearInterval(state.pollInterval);
+                        state.pollInterval = null;
+                    }
                     break;
 
                 case 'subscribed':
@@ -1277,6 +1300,7 @@
             try {
                 showStatus('Uploading audio...', 'info');
                 state.isProcessing = true;
+                console.log('Upload started, isProcessing set to true');
 
                 const response = await fetch('/api/whisper/transcribe', {
                     method: 'POST',
@@ -1321,6 +1345,7 @@
             } catch (error) {
                 console.error('Upload error:', error);
                 state.isProcessing = false;
+                console.log('Upload error, isProcessing set to false');
 
                 if (!navigator.onLine) {
                     showStatus('No internet connection. Please check your connection and try again.', 'error');
@@ -1334,7 +1359,7 @@
         }
 
         // ============================
-        // Polling Fallback
+        // Polling Fallback (IMPROVED)
         // ============================
         function startPolling() {
             console.log('Starting status polling for queue:', state.currentQueueId);
@@ -1349,20 +1374,27 @@
 
                     if (data.status === 'completed' || data.status === 'COMPLETED') {
                         clearInterval(state.pollInterval);
-                        handleRealtimeUpdate(data);
+                        state.pollInterval = null;
+                        handleRealtimeUpdate({...data, status: 'completed'});
                     } else if (data.status === 'failed' || data.status === 'FAILED') {
                         clearInterval(state.pollInterval);
-                        handleRealtimeUpdate(data);
+                        state.pollInterval = null;
+                        handleRealtimeUpdate({...data, status: 'failed'});
+                    } else if (data.status === 'transcribed' || data.status === 'TRANSCRIBED') {
+                        handleRealtimeUpdate({...data, status: 'transcribed'});
                     } else if (state.pollCount >= CONFIG.MAX_POLLS) {
                         clearInterval(state.pollInterval);
+                        state.pollInterval = null;
                         showStatus('Processing timeout. Please try again.', 'error');
                         document.getElementById('retryButton').style.display = 'inline-block';
                         state.isProcessing = false;
+                        console.log('Polling timeout, isProcessing set to false');
                     }
 
                     state.pollCount++;
                 } catch (error) {
                     console.error('Polling error:', error);
+                    // Don't clear polling on network errors
                 }
             }, CONFIG.POLL_INTERVAL);
         }
@@ -1406,13 +1438,19 @@
         }
 
         // ============================
-        // Confirmation and Save
+        // Confirmation and Save (FIXED)
         // ============================
         async function confirmTranscription() {
             const editedText = document.getElementById('transcriptionText').textContent;
 
             if (!editedText.trim()) {
                 showStatus('Please enter or verify the transcription before continuing', 'warning');
+                return;
+            }
+
+            // Prevent double-submission
+            if (state.isRedirecting) {
+                console.log('Already redirecting, ignoring additional confirm click');
                 return;
             }
 
@@ -1442,6 +1480,11 @@
                     const result = await response.json();
                     showStatus('Transcription saved successfully!', 'success');
 
+                    // FIX: Clear the processing flag and set redirecting flag
+                    state.isProcessing = false;
+                    state.isRedirecting = true;
+                    console.log('Save successful, isProcessing=false, isRedirecting=true');
+
                     // Store data in localStorage for declaration page
                     localStorage.setItem('transcription_confirmed', 'true');
                     localStorage.setItem('last_transcription', editedText);
@@ -1463,10 +1506,26 @@
                         params.append('incident_report_id', state.incidentReportId);
                     }
 
+                    // FIX: Remove the beforeunload listener before redirect
+                    window.removeEventListener('beforeunload', handleBeforeUnload);
+
+                    // Clean up WebSocket before redirect
+                    if (state.ws) {
+                        state.ws.close();
+                        state.ws = null;
+                    }
+
+                    // Clear any active polling
+                    if (state.pollInterval) {
+                        clearInterval(state.pollInterval);
+                        state.pollInterval = null;
+                    }
+
                     // Redirect to declaration page
+                    console.log('Redirecting to declaration page...');
                     setTimeout(() => {
                         window.location.href = `/declaration.html?${params.toString()}`;
-                    }, 1500);
+                    }, 1000); // Reduced delay for better UX
 
                 } else {
                     const error = await response.json();
@@ -1476,6 +1535,11 @@
             } catch (error) {
                 console.error('Error saving transcription:', error);
                 showStatus('Error saving transcription. Please try again.', 'error');
+
+                // FIX: Clear processing and redirecting flags on error
+                state.isProcessing = false;
+                state.isRedirecting = false;
+                console.log('Save error, isProcessing=false, isRedirecting=false');
 
                 // Re-enable button
                 confirmBtn.disabled = false;
@@ -1535,7 +1599,7 @@
             // Auto-hide info messages after 5 seconds
             if (type === 'info' || type === 'success') {
                 setTimeout(() => {
-                    if (statusText.textContent === message) {
+                    if (statusText.textContent === message && !state.isRedirecting) {
                         statusDiv.style.display = 'none';
                     }
                 }, 5000);
@@ -1556,6 +1620,7 @@
             state.currentQueueId = null;
             state.summaryData = null;
             state.isProcessing = false;
+            state.isRedirecting = false;
 
             // Clear polling
             if (state.pollInterval) {
@@ -1565,6 +1630,31 @@
 
             // Reset UI
             location.reload(); // Simple reload for complete reset
+        }
+
+        // ============================
+        // FIX: Extract beforeunload handler
+        // ============================
+        function handleBeforeUnload(e) {
+            // Check if we're in the middle of redirecting
+            if (state.isRedirecting) {
+                console.log('Redirecting, allowing navigation');
+                return; // Allow navigation during redirect
+            }
+
+            // Check for active recording
+            if (state.mediaRecorder && state.mediaRecorder.state === 'recording') {
+                e.preventDefault();
+                e.returnValue = 'Recording in progress. Are you sure you want to leave?';
+                return e.returnValue;
+            }
+
+            // Check for processing state
+            if (state.isProcessing) {
+                e.preventDefault();
+                e.returnValue = 'Processing in progress. Are you sure you want to leave?';
+                return e.returnValue;
+            }
         }
 
         // ============================
@@ -1599,25 +1689,15 @@
                 }
             });
 
-            // Prevent accidental navigation during recording
-            window.addEventListener('beforeunload', (e) => {
-                if (state.mediaRecorder && state.mediaRecorder.state === 'recording') {
-                    e.preventDefault();
-                    e.returnValue = 'Recording in progress. Are you sure you want to leave?';
-                }
-
-                if (state.isProcessing) {
-                    e.preventDefault();
-                    e.returnValue = 'Processing in progress. Are you sure you want to leave?';
-                }
-            });
+            // FIX: Use the extracted handler function
+            window.addEventListener('beforeunload', handleBeforeUnload);
 
             // Cleanup on page unload
             window.addEventListener('unload', () => {
                 if (state.pollInterval) {
                     clearInterval(state.pollInterval);
                 }
-                if (state.ws) {
+                if (state.ws && !state.isRedirecting) {
                     state.ws.close();
                 }
             });
