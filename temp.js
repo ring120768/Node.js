@@ -1097,7 +1097,6 @@ async function processTranscriptionFromBuffer(queueId, audioBuffer, create_user_
     // Save to ai_transcription table with ONLY columns that exist
     const transcriptionData = {
       create_user_id: create_user_id,
-      incident_report_id: incident_report_id || null,
       transcription_text: transcription,
       audio_url: audioUrl || null,
       created_at: new Date().toISOString()
@@ -3071,7 +3070,6 @@ app.post('/api/update-transcription', checkGDPRConsent, async (req, res) => {
         .from('ai_transcription')
         .insert({
           create_user_id: userId,
-          incident_report_id: null,
           transcription_text: transcription,
           audio_url: '',
           created_at: new Date().toISOString()
@@ -3150,7 +3148,6 @@ app.post('/api/save-transcription', checkGDPRConsent, async (req, res) => {
       .from('ai_transcription')
       .select('id, audio_url')
       .eq('create_user_id', userId)
-      .eq('incident_report_id', incidentId || null)
       .single();
 
     let result;
@@ -3174,7 +3171,6 @@ app.post('/api/save-transcription', checkGDPRConsent, async (req, res) => {
         .from('ai_transcription')
         .insert({
           create_user_id: userId,
-          incident_report_id: incidentId || null,
           transcription_text: transcription,
           audio_url: audioUrl || '',
           created_at: new Date().toISOString()
