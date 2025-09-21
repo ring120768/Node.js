@@ -100,7 +100,7 @@ const Logger = {
 const app = express();
 const server = http.createServer(app);
 
-// FIX 1: Set trust proxy to resolve the X-Forwarded-For warning
+// Set trust proxy to resolve the X-Forwarded-For warning
 app.set('trust proxy', true);
 
 // Configure multer for file uploads with enhanced error handling
@@ -125,14 +125,14 @@ const upload = multer({
   }
 });
 
-// Enhanced rate limiting middleware - FIX: Added trustProxy option
+// Enhanced rate limiting middleware
 const apiLimiter = rateLimit({
   windowMs: 15 * 60 * 1000, // 15 minutes
   max: 100, // limit each IP to 100 requests per windowMs
   message: 'Too many requests from this IP, please try again later.',
   standardHeaders: true,
   legacyHeaders: false,
-  trustProxy: true, // FIX: Added this
+  trustProxy: true,
   skip: (req) => {
     // Skip rate limiting for health checks
     return req.path === '/health';
@@ -145,7 +145,7 @@ const strictLimiter = rateLimit({
   message: 'Rate limit exceeded for this operation.',
   standardHeaders: true,
   legacyHeaders: false,
-  trustProxy: true // FIX: Added this
+  trustProxy: true
 });
 
 // --- MIDDLEWARE SETUP ---
@@ -189,7 +189,7 @@ app.use((req, res, next) => {
     Logger.debug('User ID', { userId: userId.substring(0, 8) + '...' }); // Partially redact for security
   }
 
-  // Store IP for GDPR audit logging - with better fallback
+  // Store IP for GDPR audit logging
   req.clientIp = req.ip || 
                  req.connection?.remoteAddress || 
                  req.headers['x-forwarded-for']?.split(',')[0].trim() || 
@@ -300,7 +300,7 @@ function authenticateRequest(req, res, next) {
   next();
 }
 
-// --- SUPABASE SETUP WITH SCHEMA REFRESH FIX ---
+// --- SUPABASE SETUP WITH SCHEMA REFRESH ---
 let supabase = null;
 let supabaseEnabled = false;
 let realtimeChannels = {};
@@ -315,7 +315,7 @@ const initSupabase = () => {
   }
 
   try {
-    // FIX 2: Add schema refresh headers
+    // Add schema refresh headers
     supabase = createClient(url, key, {
       auth: {
         autoRefreshToken: false,
@@ -332,7 +332,7 @@ const initSupabase = () => {
       global: {
         headers: {
           'x-client-info': 'car-crash-lawyer-ai',
-          'x-refresh-schema': 'true' // FIX: Force schema refresh
+          'x-refresh-schema': 'true' // Force schema refresh
         }
       }
     });
@@ -351,7 +351,7 @@ const initSupabase = () => {
   }
 };
 
-// OPTIONAL: Initialize Supabase Realtime for better updates
+// Initialize Supabase Realtime for better updates
 function initializeSupabaseRealtime() {
   if (!supabaseEnabled) return;
 
@@ -415,7 +415,7 @@ function initializeSupabaseRealtime() {
   }
 }
 
-// OPTIONAL: Handle realtime transcription updates
+// Handle realtime transcription updates
 function handleRealtimeTranscriptionUpdate(payload) {
   try {
     const { eventType, new: newData, old: oldData, table } = payload;
@@ -429,7 +429,7 @@ function handleRealtimeTranscriptionUpdate(payload) {
       transcription = newData?.transcription_text;
     } else if (table === 'ai_transcription') {
       userId = newData?.create_user_id;
-      transcription = newData?.transcription_text; // FIX: Use correct column name
+      transcription = newData?.transcription_text;
       status = 'transcribed';
     }
 
@@ -470,7 +470,7 @@ function handleRealtimeTranscriptionUpdate(payload) {
   }
 }
 
-// OPTIONAL: Handle realtime summary updates
+// Handle realtime summary updates
 function handleRealtimeSummaryUpdate(payload) {
   try {
     const { new: summaryData } = payload;
@@ -816,7 +816,7 @@ function broadcastTranscriptionUpdate(queueId, data) {
   }
 }
 
-// --- AI SUMMARY GENERATION FUNCTION WITH FIXED COLUMN MAPPING ---
+// --- FIXED AI SUMMARY GENERATION FUNCTION ---
 async function generateAISummary(transcriptionText, createUserId, incidentId) {
   try {
     if (!process.env.OPENAI_API_KEY || !transcriptionText) {
@@ -848,7 +848,6 @@ async function generateAISummary(transcriptionText, createUserId, incidentId) {
             1. summary_text: A clear, concise 2-3 paragraph summary of what happened
             2. key_points: An array of 5-7 key facts from the statement
             3. fault_analysis: An objective assessment of fault based on the statement
-            4. contributing_factors: Any environmental, weather, or other contributing factors mentioned
 
             Statement to analyze: "${transcriptionText}"
 
@@ -878,8 +877,7 @@ async function generateAISummary(transcriptionText, createUserId, incidentId) {
       aiAnalysis = {
         summary_text: response.data.choices[0].message.content,
         key_points: ['See summary for details'],
-        fault_analysis: 'Manual review recommended',
-        contributing_factors: 'See summary text'
+        fault_analysis: 'Manual review recommended'
       };
     }
 
@@ -887,50 +885,29 @@ async function generateAISummary(transcriptionText, createUserId, incidentId) {
     aiAnalysis = {
       summary_text: aiAnalysis.summary_text || 'Summary generation failed',
       key_points: Array.isArray(aiAnalysis.key_points) ? aiAnalysis.key_points : [],
-      fault_analysis: aiAnalysis.fault_analysis || 'Unable to determine',
-      contributing_factors: aiAnalysis.contributing_factors || 'None identified'
+      fault_analysis: aiAnalysis.fault_analysis || 'Unable to determine'
     };
 
-    // FIX 3: Save to ai_summary table with correct column names
+    // Save to ai_summary table - ONLY use columns that exist
+    const summaryData = {
+      create_user_id: createUserId,
+      incident_id: incidentId || createUserId,
+      summary_text: aiAnalysis.summary_text,
+      key_points: aiAnalysis.key_points,
+      created_at: new Date().toISOString()
+    };
+
+    // Try to save with basic columns first
     const { data, error } = await supabase
       .from('ai_summary')
-      .insert({
-        create_user_id: createUserId,
-        incident_id: incidentId || createUserId,
-        summary_text: aiAnalysis.summary_text,
-        key_points: aiAnalysis.key_points,
-        fault_analysis: aiAnalysis.fault_analysis,
-        // Map contributing_factors to severity_assessment for now  
-        severity_assessment: aiAnalysis.contributing_factors,
-        // Also check if liability_assessment column exists
-        liability_assessment: aiAnalysis.contributing_factors,
-        created_at: new Date().toISOString()
-      })
+      .insert(summaryData)
       .select()
       .single();
 
     if (error) {
-      Logger.error('Error saving AI summary to database', error);
-      // Try without the problematic columns
-      if (error.message.includes('column')) {
-        const { data: retryData } = await supabase
-          .from('ai_summary')
-          .insert({
-            create_user_id: createUserId,
-            incident_id: incidentId || createUserId,
-            summary_text: aiAnalysis.summary_text,
-            key_points: aiAnalysis.key_points,
-            created_at: new Date().toISOString()
-          })
-          .select()
-          .single();
-
-        if (retryData) {
-          Logger.success('AI summary saved with basic fields');
-          return aiAnalysis;
-        }
-      }
-      return aiAnalysis; // Return analysis even if save fails
+      Logger.error('Error saving AI summary to database:', error);
+      // Don't fail - return the analysis anyway
+      return aiAnalysis;
     }
 
     Logger.success('AI summary generated and saved successfully');
@@ -942,7 +919,7 @@ async function generateAISummary(transcriptionText, createUserId, incidentId) {
   }
 }
 
-// Enhanced transcription processor with better error handling and FIXED column names
+// --- FIXED TRANSCRIPTION PROCESSOR ---
 async function processTranscriptionFromBuffer(queueId, audioBuffer, create_user_id, incident_report_id, audioUrl) {
   let retryCount = 0;
 
@@ -1100,7 +1077,7 @@ async function processTranscriptionFromBuffer(queueId, audioBuffer, create_user_
       create_user_id: create_user_id
     });
 
-    // Update database - FIX: transcription_text should now be text type
+    // Update database
     const { error: queueUpdateError } = await supabase
       .from('transcription_queue')
       .update({
@@ -1116,40 +1093,24 @@ async function processTranscriptionFromBuffer(queueId, audioBuffer, create_user_
       Logger.error('Error updating transcription_queue:', queueUpdateError);
     }
 
-    // FIX: Save to ai_transcription table with correct column names
+    // Save to ai_transcription table with ONLY columns that exist
+    const transcriptionData = {
+      create_user_id: create_user_id,
+      incident_report_id: incident_report_id || null,
+      transcription_text: transcription,
+      audio_url: audioUrl || null,
+      created_at: new Date().toISOString()
+    };
+
     const { data: transcriptionRecord, error: saveError } = await supabase
       .from('ai_transcription')
-      .insert([{
-        create_user_id: create_user_id,
-        incident_report_id: incident_report_id || null,
-        transcription_text: transcription,
-        audio_url: audioUrl, // Now using correct column
-        audio_storage_path: audioUrl, // Also save path if column exists
-        created_at: new Date().toISOString()
-      }])
+      .insert([transcriptionData])
       .select()
       .single();
 
     if (saveError) {
       Logger.error('Error saving to ai_transcription:', saveError);
-      // Try without audio_storage_path if it doesn't exist
-      if (saveError.message.includes('audio_storage_path')) {
-        const { data: retryRecord } = await supabase
-          .from('ai_transcription')
-          .insert([{
-            create_user_id: create_user_id,
-            incident_report_id: incident_report_id || null,
-            transcription_text: transcription,
-            audio_url: audioUrl,
-            created_at: new Date().toISOString()
-          }])
-          .select()
-          .single();
-
-        if (retryRecord) {
-          Logger.success('Transcription saved without audio_storage_path');
-        }
-      }
+      // Continue anyway - don't fail the whole process
     } else {
       Logger.success('Transcription saved to ai_transcription table');
     }
@@ -1915,7 +1876,7 @@ app.get('/api/config', (req, res) => {
   });
 });
 
-// Enhanced health check endpoint with fixed syntax
+// Enhanced health check endpoint
 app.get('/health', async (req, res) => {
   const externalServices = await checkExternalServices();
 
@@ -1934,16 +1895,13 @@ app.get('/health', async (req, res) => {
         users: userSessions.size
       },
       gdprCompliant: true,
-      what3words: externalServices.what3words  // FIXED: No duplicate declaration
+      what3words: externalServices.what3words
     },
     fixes: {
-      bufferToStream: 'FIXED - Using Readable.from() with knownLength',
-      transcriptionProcessing: 'FIXED - source.on error resolved',
-      syntaxError: 'FIXED - Removed duplicate what3words declaration',
-      trustProxy: 'FIXED - Express trust proxy enabled',
-      columnMapping: 'FIXED - Database column names corrected',
-      schemaRefresh: 'FIXED - Schema cache refreshed on init',
-      recordingRedirects: 'ADDED - Unified recording interface redirects'
+      ai_summary_columns: 'FIXED - Using only existing database columns',
+      transcription_saving: 'FIXED - Removed non-existent column references',
+      file_redirect: 'ADDED - transcription-status.html redirect to transcription.html',
+      error_handling: 'IMPROVED - More graceful error recovery'
     }
   };
 
@@ -2126,7 +2084,7 @@ app.get('/api/gdpr/export/:userId', checkSharedKey, async (req, res) => {
   }
 });
 
-// NEW: Manual queue processing endpoint for testing
+// Manual queue processing endpoint for testing
 app.get('/api/process-queue-now', checkSharedKey, async (req, res) => {
   Logger.info('Manual queue processing triggered');
 
@@ -2155,7 +2113,7 @@ app.get('/api/process-queue-now', checkSharedKey, async (req, res) => {
   }
 });
 
-// NEW: Test OpenAI API endpoint
+// Test OpenAI API endpoint
 app.get('/api/test-openai', async (req, res) => {
   try {
     const response = await axios.get(
@@ -2182,7 +2140,7 @@ app.get('/api/test-openai', async (req, res) => {
   }
 });
 
-// NEW: Test transcription queue endpoint
+// Test transcription queue endpoint
 app.get('/test/transcription-queue', async (req, res) => {
   if (!supabaseEnabled) {
     return res.status(503).json({ error: 'Service not configured' });
@@ -2221,19 +2179,33 @@ app.post('/test/process-transcription-queue', checkSharedKey, async (req, res) =
 });
 
 // ========================================
-// NEW RECORDING INTERFACE REDIRECT ROUTES
+// RECORDING INTERFACE REDIRECT ROUTES
 // ========================================
 
 /**
  * Unified recording endpoint redirects
- * All recording-related URLs redirect to the main transcription-status.html page
+ * All recording-related URLs redirect to the main transcription.html page
  * with preserved query parameters for user and incident tracking
  */
+
+// NEW: Redirect from old name to new name (transcription-status.html → transcription.html)
+app.get('/transcription-status.html', (req, res) => {
+  const queryString = req.originalUrl.split('?')[1] || '';
+  const redirectUrl = `/transcription.html${queryString ? '?' + queryString : ''}`;
+
+  Logger.info('File redirect', {
+    from: '/transcription-status.html',
+    to: redirectUrl,
+    params: queryString
+  });
+
+  res.redirect(redirectUrl);
+});
 
 // Redirect /record to main recording interface
 app.get('/record', (req, res) => {
   const queryString = req.originalUrl.split('?')[1] || '';
-  const redirectUrl = `/transcription-status.html${queryString ? '?' + queryString : ''}`;
+  const redirectUrl = `/transcription.html${queryString ? '?' + queryString : ''}`;
 
   Logger.info('Recording redirect', {
     from: '/record',
@@ -2247,7 +2219,7 @@ app.get('/record', (req, res) => {
 // Redirect /transcribe to main recording interface
 app.get('/transcribe', (req, res) => {
   const queryString = req.originalUrl.split('?')[1] || '';
-  const redirectUrl = `/transcription-status.html${queryString ? '?' + queryString : ''}`;
+  const redirectUrl = `/transcription.html${queryString ? '?' + queryString : ''}`;
 
   Logger.info('Recording redirect', {
     from: '/transcribe',
@@ -2258,24 +2230,10 @@ app.get('/transcribe', (req, res) => {
   res.redirect(redirectUrl);
 });
 
-// Redirect /transcribe.html to main recording interface
-app.get('/transcribe.html', (req, res) => {
-  const queryString = req.originalUrl.split('?')[1] || '';
-  const redirectUrl = `/transcription-status.html${queryString ? '?' + queryString : ''}`;
-
-  Logger.info('Recording redirect', {
-    from: '/transcribe.html',
-    to: redirectUrl,
-    params: queryString
-  });
-
-  res.redirect(redirectUrl);
-});
-
 // Alternative recording endpoint for backward compatibility
 app.get('/recording', (req, res) => {
   const queryString = req.originalUrl.split('?')[1] || '';
-  const redirectUrl = `/transcription-status.html${queryString ? '?' + queryString : ''}`;
+  const redirectUrl = `/transcription.html${queryString ? '?' + queryString : ''}`;
 
   Logger.info('Recording redirect', {
     from: '/recording',
@@ -2289,7 +2247,7 @@ app.get('/recording', (req, res) => {
 // Webhook-specific recording endpoint
 app.get('/webhook/record', (req, res) => {
   const queryString = req.originalUrl.split('?')[1] || '';
-  const redirectUrl = `/transcription-status.html${queryString ? '?' + queryString : ''}`;
+  const redirectUrl = `/transcription.html${queryString ? '?' + queryString : ''}`;
 
   Logger.info('Recording redirect', {
     from: '/webhook/record',
@@ -2331,29 +2289,28 @@ app.get('/', (req, res) => {
         <p class="status">✅ Server is running - All fixes applied</p>
 
         <div class="section">
-            <h2>🔧 Critical Fixes Applied:</h2>
+            <h2>🔧 Latest Fixes Applied:</h2>
             <div class="endpoint">
-                <strong>All Issues Resolved</strong> <span class="fix-badge">FIXED</span><br>
-                <p>✅ Unified recording interface with redirects</p>
-                <p>✅ Fixed duplicate what3words declaration in health endpoint</p>
-                <p>✅ Buffer to Stream conversion working correctly</p>
-                <p>✅ Enhanced error handling throughout the application</p>
-                <p>✅ Improved input validation and sanitization</p>
-                <p>✅ Express trust proxy enabled</p>
-                <p>✅ Database column mapping corrected</p>
-                <p>✅ Schema cache refreshed on initialization</p>
+                <strong>Database Column Issues Resolved</strong> <span class="fix-badge">FIXED</span><br>
+                <p>✅ AI Summary now uses only existing columns</p>
+                <p>✅ Transcription saving uses correct column names</p>
+                <p>✅ Removed references to non-existent columns</p>
+                <p>✅ Added transcription-status.html → transcription.html redirect</p>
             </div>
         </div>
 
         <div class="section">
-            <h2>🎤 Recording Interface Redirects:</h2>
+            <h2>🎤 Recording Interface:</h2>
             <div class="endpoint">
-                <strong>Unified Recording Access Points:</strong> <span class="new-badge">NEW</span><br>
-                <code>GET /record</code> → Redirects to /transcription-status.html<br>
-                <code>GET /transcribe</code> → Redirects to /transcription-status.html<br>
-                <code>GET /transcribe.html</code> → Redirects to /transcription-status.html<br>
-                <code>GET /recording</code> → Redirects to /transcription-status.html<br>
-                <code>GET /webhook/record</code> → Redirects to /transcription-status.html<br>
+                <strong>Main Recording Page:</strong> <span class="fix-badge">UNIFIED</span><br>
+                <code>GET /transcription.html</code> - Main recording interface<br>
+                <code>GET /transcription-status.html</code> → Redirects to /transcription.html<br>
+                <br>
+                <strong>Recording Access Points:</strong><br>
+                <code>GET /record</code> → Redirects to /transcription.html<br>
+                <code>GET /transcribe</code> → Redirects to /transcription.html<br>
+                <code>GET /recording</code> → Redirects to /transcription.html<br>
+                <code>GET /webhook/record</code> → Redirects to /transcription.html<br>
                 <p style="margin-top: 10px; color: #666;">All URL parameters are preserved during redirects</p>
             </div>
         </div>
@@ -2363,12 +2320,12 @@ app.get('/', (req, res) => {
 
             <div class="endpoint">
                 <strong>Core Services:</strong><br>
-                <code>GET /health</code> - System health check with service status <span class="fix-badge">FIXED</span><br>
+                <code>GET /health</code> - System health check with service status <span class="fix-badge">UPDATED</span><br>
                 <code>GET /api/config</code> - Get Supabase configuration<br>
                 <code>GET /api/debug/user/:userId</code> - Debug user data (GDPR logged)<br>
-                <code>GET /api/test-openai</code> - Test OpenAI API key validity <span class="new-badge">NEW</span><br>
-                <code>GET /api/process-queue-now</code> - Manually trigger queue processing <span class="new-badge">NEW</span><br>
-                <code>GET /test/transcription-queue</code> - View queue status <span class="new-badge">NEW</span>
+                <code>GET /api/test-openai</code> - Test OpenAI API key validity<br>
+                <code>GET /api/process-queue-now</code> - Manually trigger queue processing<br>
+                <code>GET /test/transcription-queue</code> - View queue status
             </div>
 
             <div class="endpoint">
@@ -2386,33 +2343,12 @@ app.get('/', (req, res) => {
             </div>
 
             <div class="endpoint">
-                <strong>Transcription Services (GDPR Compliant):</strong> <span class="fix-badge">ENHANCED</span><br>
+                <strong>Transcription Services (GDPR Compliant):</strong> <span class="fix-badge">FIXED</span><br>
                 <code>POST /api/whisper/transcribe</code> - Direct Whisper transcription<br>
                 <code>GET /api/transcription-status/:queueId</code> - Check transcription status<br>
                 <code>POST /api/update-transcription</code> - Update/edit transcription<br>
                 <code>POST /api/save-transcription</code> - Save transcription<br>
                 <code>GET /api/user/:userId/latest-transcription</code> - Get user's latest transcription
-            </div>
-
-            <div class="endpoint">
-                <strong>Emergency & Incident Services:</strong><br>
-                <code>GET /api/auth/status</code> - Check authentication status<br>
-                <code>GET /api/user/:userId/emergency-contacts</code> - Get emergency contacts<br>
-                <code>POST /api/log-emergency-call</code> - Log emergency calls<br>
-                <code>GET /api/what3words</code> - Get What3Words location<br>
-                <code>POST /api/upload-what3words-image</code> - Upload what3words screenshot
-            </div>
-
-            <div class="endpoint">
-                <strong>Image Management:</strong><br>
-                <code>GET /api/images/:userId</code> - Get user images<br>
-                <code>GET /api/image/signed-url/:userId/:imageType</code> - Get signed URL
-            </div>
-
-            <div class="endpoint">
-                <strong>PDF Services:</strong><br>
-                <code>GET /pdf-status/:userId</code> - Check PDF generation status<br>
-                <code>GET /download-pdf/:userId</code> - Download generated PDF
             </div>
         </div>
 
@@ -2968,8 +2904,6 @@ app.post('/api/whisper/transcribe', upload.single('audio'), async (req, res) => 
         retry_count: 0,
         created_at: new Date().toISOString(),
         error_message: null,
-        audio_storage_path: fileName,
-        audio_file_id: null,
         transcription_id: null
       }])
       .select()
@@ -3435,220 +3369,218 @@ app.post('/webhook/incident-report', checkSharedKey, async (req, res) => {
 
     const incidentId = webhookData.id || webhookData.incident_report_id;
 
-    // Log GDPR
     // Log GDPR activity
-        await logGDPRActivity(webhookData.create_user_id, 'INCIDENT_REPORT_PROCESSING', {
-          source: 'webhook',
-          incident_id: incidentId,
-          has_files: true
-        }, req);
+    await logGDPRActivity(webhookData.create_user_id, 'INCIDENT_REPORT_PROCESSING', {
+      source: 'webhook',
+      incident_id: incidentId,
+      has_files: true
+    }, req);
 
-        // Process files asynchronously
-        imageProcessor.processIncidentReportFiles(webhookData)
-          .then(result => {
-            Logger.success('✅ Incident report processing complete', result);
-          })
-          .catch(error => {
-            Logger.error('❌ Incident report processing failed', error);
-          });
+    // Process files asynchronously
+    imageProcessor.processIncidentReportFiles(webhookData)
+      .then(result => {
+        Logger.success('✅ Incident report processing complete', result);
+      })
+      .catch(error => {
+        Logger.error('❌ Incident report processing failed', error);
+      });
 
-        res.status(200).json({ 
-          success: true, 
-          message: 'Incident report processing started',
-          incident_report_id: incidentId,
-          create_user_id: webhookData.create_user_id,
-          requestId: req.requestId 
-        });
-
-      } catch (error) {
-        Logger.error('Webhook error', error);
-        res.status(500).json({ 
-          success: false, 
-          error: error.message,
-          requestId: req.requestId 
-        });
-      }
+    res.status(200).json({ 
+      success: true, 
+      message: 'Incident report processing started',
+      incident_report_id: incidentId,
+      create_user_id: webhookData.create_user_id,
+      requestId: req.requestId 
     });
 
-    // PDF GENERATION ENDPOINTS
-    app.post('/generate-pdf', checkSharedKey, async (req, res) => {
-      if (!fetchAllData || !generatePDF || !sendEmails) {
-        return res.status(503).json({ 
-          error: 'PDF generation not configured',
-          requestId: req.requestId 
-        });
-      }
-
-      try {
-        const { create_user_id } = req.body;
-
-        if (!create_user_id) {
-          return res.status(400).json({ 
-            error: 'Missing create_user_id',
-            requestId: req.requestId 
-          });
-        }
-
-        Logger.info('📄 PDF generation requested', { userId: create_user_id });
-
-        // Log GDPR activity
-        await logGDPRActivity(create_user_id, 'PDF_GENERATION', {
-          source: 'api'
-        }, req);
-
-        // Fetch all data
-        const allData = await fetchAllData(create_user_id);
-
-        if (!allData || !allData.userSignup) {
-          return res.status(404).json({ 
-            error: 'User data not found',
-            requestId: req.requestId 
-          });
-        }
-
-        // Generate PDF
-        const pdfBuffer = await generatePDF(allData);
-
-        // Store completed form
-        const formRecord = await storeCompletedForm(create_user_id, pdfBuffer, allData);
-
-        // Send emails
-        const emailResult = await sendEmails({
-          userEmail: allData.userSignup.email,
-          userName: allData.userSignup.full_name,
-          pdfBuffer: pdfBuffer,
-          formId: formRecord.id
-        });
-
-        res.json({
-          success: true,
-          message: 'PDF generated and sent successfully',
-          formId: formRecord.id,
-          emailsSent: emailResult.sent,
-          requestId: req.requestId
-        });
-
-      } catch (error) {
-        Logger.error('PDF generation error', error);
-        res.status(500).json({ 
-          error: 'Failed to generate PDF',
-          details: error.message,
-          requestId: req.requestId 
-        });
-      }
+  } catch (error) {
+    Logger.error('Webhook error', error);
+    res.status(500).json({ 
+      success: false, 
+      error: error.message,
+      requestId: req.requestId 
     });
+  }
+});
 
-    app.post('/webhook/generate-pdf', checkSharedKey, async (req, res) => {
-      // Alias for generate-pdf endpoint
-      return app._router.handle(
-        Object.assign(req, { url: '/generate-pdf', path: '/generate-pdf' }),
-        res
-      );
+// PDF GENERATION ENDPOINTS
+app.post('/generate-pdf', checkSharedKey, async (req, res) => {
+  if (!fetchAllData || !generatePDF || !sendEmails) {
+    return res.status(503).json({ 
+      error: 'PDF generation not configured',
+      requestId: req.requestId 
     });
+  }
 
-    // --- ERROR HANDLING MIDDLEWARE ---
-    app.use((err, req, res, next) => {
-      if (err.name === 'MulterError') {
-        if (err.code === 'LIMIT_FILE_SIZE') {
-          return res.status(400).json({ 
-            error: 'File size too large. Maximum size: 50MB for audio, 10MB for images',
-            code: 'FILE_TOO_LARGE',
-            requestId: req.requestId 
-          });
-        }
-        return res.status(400).json({ 
-          error: `Upload error: ${err.message}`,
-          code: err.code,
-          requestId: req.requestId 
-        });
-      }
+  try {
+    const { create_user_id } = req.body;
 
-      Logger.error('Unhandled error', err);
-      res.status(500).json({ 
-        error: 'Internal server error',
-        message: process.env.NODE_ENV === 'development' ? err.message : 'An error occurred',
+    if (!create_user_id) {
+      return res.status(400).json({ 
+        error: 'Missing create_user_id',
         requestId: req.requestId 
       });
-    });
-
-    // 404 handler - must be last
-    app.use((req, res) => {
-      res.status(404).json({ 
-        error: 'Not found',
-        path: req.path,
-        method: req.method,
-        requestId: req.requestId 
-      });
-    });
-
-    // --- SERVER STARTUP ---
-    const PORT = process.env.PORT || 3000;
-
-    // Graceful shutdown handler
-    process.on('SIGTERM', gracefulShutdown);
-    process.on('SIGINT', gracefulShutdown);
-
-    async function gracefulShutdown(signal) {
-      Logger.info(`⚠️ ${signal} received, starting graceful shutdown...`);
-
-      // Stop accepting new connections
-      server.close(() => {
-        Logger.info('HTTP server closed');
-      });
-
-      // Close WebSocket connections
-      wss.clients.forEach((ws) => {
-        ws.close(1001, 'Server shutting down');
-      });
-
-      // Clear intervals
-      if (transcriptionQueueInterval) {
-        clearInterval(transcriptionQueueInterval);
-      }
-      clearInterval(wsHeartbeat);
-
-      // Cleanup Supabase realtime channels
-      if (realtimeChannels.transcriptionChannel) {
-        supabase.removeChannel(realtimeChannels.transcriptionChannel);
-      }
-      if (realtimeChannels.summaryChannel) {
-        supabase.removeChannel(realtimeChannels.summaryChannel);
-      }
-
-      // Wait for pending operations
-      await new Promise(resolve => setTimeout(resolve, 5000));
-
-      Logger.info('Graceful shutdown complete');
-      process.exit(0);
     }
 
-    // Start the server
-    server.listen(PORT, () => {
-      Logger.success(`🚀 Server running on port ${PORT}`);
-      Logger.info(`📊 Environment: ${process.env.NODE_ENV || 'development'}`);
-      Logger.info(`🔐 GDPR Compliance: ACTIVE`);
-      Logger.info(`🗄️ Supabase: ${supabaseEnabled ? 'CONNECTED' : 'DISABLED'}`);
-      Logger.info(`🤖 OpenAI: ${process.env.OPENAI_API_KEY ? 'CONFIGURED' : 'NOT CONFIGURED'}`);
-      Logger.info(`🔄 Transcription Queue: ${transcriptionQueueInterval ? 'RUNNING' : 'DISABLED'}`);
-      Logger.info(`🔌 WebSocket: ACTIVE`);
-      Logger.info(`🎤 Recording Interface: UNIFIED with redirects`);
-      Logger.info(`⚡ Realtime Updates: ${realtimeChannels.transcriptionChannel ? 'ENABLED' : 'DISABLED (optional)'}`);
+    Logger.info('📄 PDF generation requested', { userId: create_user_id });
 
-      if (!SHARED_KEY) {
-        Logger.warn('⚠️ ZAPIER_SHARED_KEY not set - authentication disabled');
-      }
+    // Log GDPR activity
+    await logGDPRActivity(create_user_id, 'PDF_GENERATION', {
+      source: 'api'
+    }, req);
 
-      // List available endpoints
-      Logger.info('📍 Key endpoints:');
-      Logger.info('  - GET  /health - System health check');
-      Logger.info('  - GET  /record → /transcription-status.html');
-      Logger.info('  - GET  /transcribe → /transcription-status.html');
-      Logger.info('  - POST /api/whisper/transcribe - Process audio');
-      Logger.info('  - POST /webhook/signup - Process signup');
-      Logger.info('  - POST /webhook/incident-report - Process incident');
+    // Fetch all data
+    const allData = await fetchAllData(create_user_id);
 
-      Logger.success('✅ All systems operational - Ready to serve requests');
+    if (!allData || !allData.userSignup) {
+      return res.status(404).json({ 
+        error: 'User data not found',
+        requestId: req.requestId 
+      });
+    }
+
+    // Generate PDF
+    const pdfBuffer = await generatePDF(allData);
+
+    // Store completed form
+    const formRecord = await storeCompletedForm(create_user_id, pdfBuffer, allData);
+
+    // Send emails
+    const emailResult = await sendEmails({
+      userEmail: allData.userSignup.email,
+      userName: allData.userSignup.full_name,
+      pdfBuffer: pdfBuffer,
+      formId: formRecord.id
     });
 
-    // Export for testing
-    module.exports = { app, server };
+    res.json({
+      success: true,
+      message: 'PDF generated and sent successfully',
+      formId: formRecord.id,
+      emailsSent: emailResult.sent,
+      requestId: req.requestId
+    });
+
+  } catch (error) {
+    Logger.error('PDF generation error', error);
+    res.status(500).json({ 
+      error: 'Failed to generate PDF',
+      details: error.message,
+      requestId: req.requestId 
+    });
+  }
+});
+
+app.post('/webhook/generate-pdf', checkSharedKey, async (req, res) => {
+  // Alias for generate-pdf endpoint
+  return app._router.handle(
+    Object.assign(req, { url: '/generate-pdf', path: '/generate-pdf' }),
+    res
+  );
+});
+
+          // --- ERROR HANDLING MIDDLEWARE --- (continued)
+          app.use((err, req, res, next) => {
+            if (err.name === 'MulterError') {
+              if (err.code === 'LIMIT_FILE_SIZE') {
+                return res.status(400).json({ 
+                  error: 'File size too large. Maximum size: 50MB for audio, 10MB for images',
+                  code: 'FILE_TOO_LARGE',
+                  requestId: req.requestId 
+                });
+              }
+              return res.status(400).json({ 
+                error: `Upload error: ${err.message}`,
+                code: err.code,
+                requestId: req.requestId 
+              });
+            }
+
+            Logger.error('Unhandled error', err);
+            res.status(500).json({ 
+              error: 'Internal server error',
+              message: process.env.NODE_ENV === 'development' ? err.message : 'An error occurred',
+              requestId: req.requestId 
+            });
+          });
+
+          // 404 handler - must be last
+          app.use((req, res) => {
+            res.status(404).json({ 
+              error: 'Not found',
+              path: req.path,
+              method: req.method,
+              requestId: req.requestId 
+            });
+          });
+
+          // --- SERVER STARTUP ---
+          const PORT = process.env.PORT || 3000;
+
+          // Graceful shutdown handler
+          process.on('SIGTERM', gracefulShutdown);
+          process.on('SIGINT', gracefulShutdown);
+
+          async function gracefulShutdown(signal) {
+            Logger.info(`⚠️ ${signal} received, starting graceful shutdown...`);
+
+            // Stop accepting new connections
+            server.close(() => {
+              Logger.info('HTTP server closed');
+            });
+
+            // Close WebSocket connections
+            wss.clients.forEach((ws) => {
+              ws.close(1001, 'Server shutting down');
+            });
+
+            // Clear intervals
+            if (transcriptionQueueInterval) {
+              clearInterval(transcriptionQueueInterval);
+            }
+            clearInterval(wsHeartbeat);
+
+            // Cleanup Supabase realtime channels
+            if (realtimeChannels.transcriptionChannel) {
+              supabase.removeChannel(realtimeChannels.transcriptionChannel);
+            }
+            if (realtimeChannels.summaryChannel) {
+              supabase.removeChannel(realtimeChannels.summaryChannel);
+            }
+
+            // Wait for pending operations
+            await new Promise(resolve => setTimeout(resolve, 5000));
+
+            Logger.info('Graceful shutdown complete');
+            process.exit(0);
+          }
+
+          // Start the server
+          server.listen(PORT, () => {
+            Logger.success(`🚀 Server running on port ${PORT}`);
+            Logger.info(`📊 Environment: ${process.env.NODE_ENV || 'development'}`);
+            Logger.info(`🔐 GDPR Compliance: ACTIVE`);
+            Logger.info(`🗄️ Supabase: ${supabaseEnabled ? 'CONNECTED' : 'DISABLED'}`);
+            Logger.info(`🤖 OpenAI: ${process.env.OPENAI_API_KEY ? 'CONFIGURED' : 'NOT CONFIGURED'}`);
+            Logger.info(`🔄 Transcription Queue: ${transcriptionQueueInterval ? 'RUNNING' : 'DISABLED'}`);
+            Logger.info(`🔌 WebSocket: ACTIVE`);
+            Logger.info(`🎤 Recording Interface: UNIFIED at /transcription.html`);
+            Logger.info(`⚡ Realtime Updates: ${realtimeChannels.transcriptionChannel ? 'ENABLED' : 'DISABLED (optional)'}`);
+
+            if (!SHARED_KEY) {
+              Logger.warn('⚠️ ZAPIER_SHARED_KEY not set - authentication disabled');
+            }
+
+            // List available endpoints
+            Logger.info('📍 Key endpoints:');
+            Logger.info('  - GET  /health - System health check');
+            Logger.info('  - GET  /transcription.html - Main recording interface');
+            Logger.info('  - POST /api/whisper/transcribe - Process audio');
+            Logger.info('  - POST /webhook/signup - Process signup');
+            Logger.info('  - POST /webhook/incident-report - Process incident');
+
+            Logger.success('✅ All systems operational - Ready to serve requests');
+          });
+
+          // Export for testing
+          module.exports = { app, server };
