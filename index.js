@@ -3478,11 +3478,71 @@ app.post('/generate-pdf', checkSharedKey, async (req, res) => {
 });
 
 app.post('/webhook/generate-pdf', checkSharedKey, async (req, res) => {
-  // Alias for generate-pdf endpoint
-  return app._router.handle(
-    Object.assign(req, { url: '/generate-pdf', path: '/generate-pdf' }),
-    res
-  );
+  // Alias for generate-pdf endpoint - call the same logic
+  if (!fetchAllData || !generatePDF || !sendEmails) {
+    return res.status(503).json({ 
+      error: 'PDF generation not configured',
+      requestId: req.requestId 
+    });
+  }
+
+  try {
+    const { create_user_id } = req.body;
+
+    if (!create_user_id) {
+      return res.status(400).json({ 
+        error: 'Missing create_user_id',
+        requestId: req.requestId 
+      });
+    }
+
+    Logger.info('📄 PDF generation requested via webhook', { userId: create_user_id });
+
+    // Log GDPR activity
+    await logGDPRActivity(create_user_id, 'PDF_GENERATION', {
+      source: 'webhook'
+    }, req);
+
+    // Fetch all data
+    const allData = await fetchAllData(create_user_id);
+
+    if (!allData || !allData.userSignup) {
+      return res.status(404).json({ 
+        error: 'User data not found',
+        requestId: req.requestId 
+      });
+    }
+
+    // Generate PDF
+    const pdfBuffer = await generatePDF(allData);
+
+    // Store completed form
+    const formRecord = await storeCompletedForm(create_user_id, pdfBuffer, allData);
+
+    // Send emails
+    const emailResult = await sendEmails({
+      userEmail: allData.userSignup.email,
+      userName: allData.userSignup.full_name,
+      pdfBuffer: pdfBuffer,
+      formId: formRecord.id
+    });
+
+    res.json({
+      success: true,
+      message: 'PDF generated and sent successfully',
+      formId: formRecord.id,
+      emailsSent: emailResult.sent,
+      requestId: req.requestId
+    });
+
+  } catch (error) {
+    Logger.error('PDF generation error via webhook', error);
+    res.status(500).json({ 
+      error: 'Failed to generate PDF',
+      details: error.message,
+      requestId: req.requestId 
+    });
+  }
 });
 
 // --- ERROR HANDLING MIDDLEWARE ---
