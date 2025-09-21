@@ -3,8 +3,14 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Declaration - Car Crash Lawyer AI</title>
+    <title>Data Sharing Declaration - Car Crash Lawyer AI</title>
     <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
         body {
             font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
             background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
@@ -14,92 +20,476 @@
             align-items: center;
             padding: 20px;
         }
+
         .container {
             background: white;
             border-radius: 20px;
             padding: 40px;
             max-width: 600px;
-            text-align: center;
+            width: 100%;
             box-shadow: 0 20px 60px rgba(0,0,0,0.3);
+            animation: slideIn 0.5s ease;
         }
+
+        @keyframes slideIn {
+            from {
+                opacity: 0;
+                transform: translateY(20px);
+            }
+            to {
+                opacity: 1;
+                transform: translateY(0);
+            }
+        }
+
         h1 {
             color: #333;
+            margin-bottom: 30px;
+            text-align: center;
+            font-size: 28px;
+        }
+
+        .lock-icon {
+            text-align: center;
+            font-size: 48px;
             margin-bottom: 20px;
         }
-        .success {
-            background: #4CAF50;
-            color: white;
-            padding: 20px;
+
+        .declaration-box {
+            background: #f8f9fa;
             border-radius: 10px;
-            margin: 20px 0;
+            padding: 25px;
+            margin-bottom: 30px;
+            border-left: 4px solid #667eea;
         }
+
+        .declaration-box h2 {
+            color: #333;
+            font-size: 20px;
+            margin-bottom: 15px;
+        }
+
+        .declaration-box p {
+            color: #666;
+            line-height: 1.6;
+            margin-bottom: 15px;
+        }
+
+        .declaration-box ul {
+            margin-left: 20px;
+            color: #666;
+            text-align: left;
+        }
+
+        .declaration-box li {
+            margin-bottom: 8px;
+        }
+
+        .consent-question {
+            background: #fff3cd;
+            border: 2px solid #ffc107;
+            border-radius: 10px;
+            padding: 20px;
+            margin-bottom: 25px;
+            text-align: center;
+        }
+
+        .consent-question h3 {
+            color: #856404;
+            font-size: 18px;
+            margin-bottom: 10px;
+            font-weight: 600;
+        }
+
+        .button-group {
+            display: flex;
+            gap: 15px;
+            justify-content: center;
+            margin-bottom: 20px;
+        }
+
         .btn {
-            background: #667eea;
+            padding: 15px 40px;
+            border: none;
+            border-radius: 8px;
+            font-size: 16px;
+            font-weight: 600;
+            cursor: pointer;
+            text-decoration: none;
+            display: inline-block;
+            transition: all 0.3s ease;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+            flex: 1;
+        }
+
+        .btn-yes {
+            background: #28a745;
+            color: white;
+        }
+
+        .btn-yes:hover {
+            background: #218838;
+            transform: translateY(-2px);
+            box-shadow: 0 5px 15px rgba(40, 167, 69, 0.3);
+        }
+
+        .btn-no {
+            background: #dc3545;
+            color: white;
+        }
+
+        .btn-no:hover {
+            background: #c82333;
+            transform: translateY(-2px);
+            box-shadow: 0 5px 15px rgba(220, 53, 69, 0.3);
+        }
+
+        .warning-modal {
+            display: none;
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(0,0,0,0.5);
+            z-index: 1000;
+            animation: fadeIn 0.3s ease;
+        }
+
+        @keyframes fadeIn {
+            from { opacity: 0; }
+            to { opacity: 1; }
+        }
+
+        .warning-content {
+            background: white;
+            border-radius: 15px;
+            padding: 30px;
+            max-width: 500px;
+            margin: 100px auto;
+            position: relative;
+            animation: slideDown 0.3s ease;
+        }
+
+        @keyframes slideDown {
+            from {
+                transform: translateY(-50px);
+                opacity: 0;
+            }
+            to {
+                transform: translateY(0);
+                opacity: 1;
+            }
+        }
+
+        .warning-header {
+            color: #dc3545;
+            font-size: 24px;
+            margin-bottom: 20px;
+            text-align: center;
+        }
+
+        .warning-text {
+            color: #333;
+            line-height: 1.6;
+            margin-bottom: 20px;
+        }
+
+        .warning-implications {
+            background: #f8d7da;
+            border-left: 4px solid #dc3545;
+            padding: 15px;
+            margin: 20px 0;
+            border-radius: 5px;
+        }
+
+        .warning-implications ul {
+            margin: 10px 0 0 20px;
+            color: #721c24;
+        }
+
+        .warning-buttons {
+            display: flex;
+            gap: 15px;
+            justify-content: center;
+        }
+
+        .btn-reconsider {
+            background: #ffc107;
+            color: #333;
+            padding: 12px 30px;
+            border: none;
+            border-radius: 8px;
+            font-size: 16px;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.3s ease;
+        }
+
+        .btn-reconsider:hover {
+            background: #e0a800;
+            transform: translateY(-2px);
+        }
+
+        .btn-confirm-no {
+            background: #6c757d;
             color: white;
             padding: 12px 30px;
             border: none;
             border-radius: 8px;
             font-size: 16px;
+            font-weight: 600;
             cursor: pointer;
-            text-decoration: none;
-            display: inline-block;
-            margin: 10px;
+            transition: all 0.3s ease;
         }
-        .btn:hover {
-            background: #5569d8;
+
+        .btn-confirm-no:hover {
+            background: #5a6268;
+        }
+
+        .gdpr-note {
+            font-size: 12px;
+            color: #999;
+            text-align: center;
+            margin-top: 20px;
+            padding-top: 20px;
+            border-top: 1px solid #e9ecef;
+        }
+
+        .success-animation {
+            display: none;
+            text-align: center;
+            padding: 40px;
+        }
+
+        .checkmark {
+            font-size: 60px;
+            color: #28a745;
+            margin-bottom: 20px;
+            animation: scaleIn 0.5s ease;
+        }
+
+        @keyframes scaleIn {
+            from {
+                transform: scale(0);
+            }
+            to {
+                transform: scale(1);
+            }
+        }
+
+        @media (max-width: 640px) {
+            .container {
+                padding: 20px;
+                border-radius: 0;
+                min-height: 100vh;
+                box-shadow: none;
+            }
+
+            h1 {
+                font-size: 24px;
+            }
+
+            .button-group {
+                flex-direction: column;
+            }
+
+            .btn {
+                width: 100%;
+            }
         }
     </style>
 </head>
 <body>
-    <div class="container">
-        <h1>✅ Recording Submitted Successfully!</h1>
-        <div class="success">
-            <h2>Your statement has been recorded and is being processed</h2>
-            <p>The AI is transcribing and analyzing your statement. This usually takes 10-30 seconds.</p>
-        </div>
-        <p>What happens next:</p>
-        <ul style="text-align: left; max-width: 400px; margin: 20px auto;">
-            <li>✅ Audio uploaded to secure storage</li>
-            <li>⏳ AI transcription in progress</li>
-            <li>⏳ Legal summary being generated</li>
-            <li>⏳ PDF report will be created</li>
-        </ul>
-        <div style="margin-top: 30px;">
-            <a href="/transcribe.html" class="btn">Record Another Statement</a>
-            <a href="/" class="btn">Back to Home</a>
+    <div class="container" id="mainContainer">
+        <div class="lock-icon">🔒</div>
+        <h1>Data Sharing Declaration</h1>
+
+        <div class="declaration-box">
+            <h2>Important: Your Data & Your Claim</h2>
+            <p>Your incident report has been successfully recorded and transcribed. To proceed with your claim, we need your consent to share this data with relevant parties.</p>
+            <p><strong>Your data will be shared with:</strong></p>
+            <ul>
+                <li>✓ Legal representatives handling your case</li>
+                <li>✓ Insurance companies (as required for your claim)</li>
+                <li>✓ Medical professionals (if injuries are involved)</li>
+                <li>✓ Authorized third parties necessary for claim processing</li>
+            </ul>
+            <p><strong>Your data is protected under GDPR regulations and will only be used for processing your claim.</strong></p>
         </div>
 
-        <div style="margin-top: 30px; padding: 20px; background: #f0f0f0; border-radius: 10px;">
-            <h3>Debug Info:</h3>
-            <p>User ID: <span id="userId">Loading...</span></p>
-            <p>Check Supabase tables:</p>
-            <ul style="text-align: left; font-size: 14px;">
-                <li><code>ai_transcription</code> - Should have your audio and text</li>
-                <li><code>ai_summary</code> - Should have the AI analysis</li>
-            </ul>
+        <div class="consent-question">
+            <h3>Do you agree to share your incident report data to progress your claim?</h3>
+        </div>
+
+        <div class="button-group">
+            <button class="btn btn-yes" onclick="handleConsent(true)">
+                YES, I AGREE
+            </button>
+            <button class="btn btn-no" onclick="handleConsent(false)">
+                NO, I DO NOT AGREE
+            </button>
+        </div>
+
+        <p class="gdpr-note">
+            This consent is specific to your current incident report. You can withdraw consent at any time by contacting us, 
+            though this may affect our ability to process your claim. Reference: <span id="refNum"></span>
+        </p>
+    </div>
+
+    <!-- Warning Modal -->
+    <div id="warningModal" class="warning-modal">
+        <div class="warning-content">
+            <div class="warning-header">
+                ⚠️ Important Notice
+            </div>
+            <div class="warning-text">
+                <strong>You've selected not to share your data.</strong>
+                <p>Please understand that without your consent to share the incident report data with third parties, we cannot progress your claim.</p>
+            </div>
+            <div class="warning-implications">
+                <strong>This means we will be unable to:</strong>
+                <ul>
+                    <li>Process your accident claim</li>
+                    <li>Contact insurance companies on your behalf</li>
+                    <li>Provide legal representation</li>
+                    <li>Seek compensation for your damages</li>
+                </ul>
+            </div>
+            <p style="text-align: center; color: #666; margin: 20px 0;">
+                Would you like to reconsider your choice?
+            </p>
+            <div class="warning-buttons">
+                <button class="btn-reconsider" onclick="reconsider()">
+                    Yes, Let Me Reconsider
+                </button>
+                <button class="btn-confirm-no" onclick="confirmNoConsent()">
+                    No, I Understand
+                </button>
+            </div>
         </div>
     </div>
 
+    <!-- Success Animation (hidden initially) -->
+    <div id="successAnimation" class="success-animation">
+        <div class="checkmark">✅</div>
+        <h2 style="color: #28a745;">Thank You!</h2>
+        <p style="color: #666;">Your consent has been recorded. Redirecting to complete your report...</p>
+    </div>
+
     <script>
-        // Get user ID from URL
+        // Get user ID and incident ID from URL or localStorage
         const urlParams = new URLSearchParams(window.location.search);
-        const userId = urlParams.get('create_user_id') || localStorage.getItem('create_user_id') || 'Unknown';
-        document.getElementById('userId').textContent = userId;
+        const userId = urlParams.get('create_user_id') || localStorage.getItem('create_user_id');
+        const incidentId = urlParams.get('incident_report_id') || 
+                         urlParams.get('incident_id') || 
+                         localStorage.getItem('current_incident_id');
 
-        // Check transcription status after 5 seconds
-        setTimeout(async () => {
+        // Display reference number
+        if (incidentId) {
+            document.getElementById('refNum').textContent = `CCL-${incidentId}`;
+        } else if (userId) {
+            document.getElementById('refNum').textContent = `CCL-${userId.substring(0, 8)}`;
+        }
+
+        function handleConsent(agreed) {
+            if (agreed) {
+                // User agreed - log consent and show success
+                logConsent(true);
+
+                // Hide main container and show success animation
+                document.getElementById('mainContainer').style.display = 'none';
+                document.getElementById('successAnimation').style.display = 'block';
+
+                // Redirect to report-complete page after 2 seconds
+                setTimeout(() => {
+                    const redirectParams = new URLSearchParams({
+                        create_user_id: userId,
+                        consent_given: 'true'
+                    });
+
+                    if (incidentId) {
+                        redirectParams.append('incident_id', incidentId);
+                    }
+
+                    window.location.href = `/report-complete.html?${redirectParams.toString()}`;
+                }, 2000);
+
+            } else {
+                // User disagreed - show warning modal
+                document.getElementById('warningModal').style.display = 'block';
+            }
+        }
+
+        function reconsider() {
+            // Close modal and let user choose again
+            document.getElementById('warningModal').style.display = 'none';
+        }
+
+        function confirmNoConsent() {
+            // User confirmed they don't want to share data
+            logConsent(false);
+
+            // Update the main container with a final message
+            document.getElementById('warningModal').style.display = 'none';
+            document.getElementById('mainContainer').innerHTML = `
+                <div style="text-align: center; padding: 40px;">
+                    <div style="font-size: 48px; color: #dc3545; margin-bottom: 20px;">❌</div>
+                    <h2 style="color: #333; margin-bottom: 20px;">Consent Not Given</h2>
+                    <p style="color: #666; margin-bottom: 20px;">
+                        Your data will not be shared with any third parties and your claim cannot be processed.
+                    </p>
+                    <p style="color: #666; margin-bottom: 30px;">
+                        If you change your mind, you can start a new claim at any time.
+                    </p>
+                    <a href="/" class="btn" style="background: #667eea; color: white; padding: 12px 30px; text-decoration: none; display: inline-block; border-radius: 8px;">
+                        Return to Home
+                    </a>
+                </div>
+            `;
+        }
+
+        async function logConsent(agreed) {
+            // Log the consent decision to your backend
             try {
-                const response = await fetch(`/api/transcription-status/${userId}`);
-                const data = await response.json();
+                const response = await fetch('/api/gdpr/log-consent', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'X-Api-Key': 'your-shared-key' // Replace with your actual API key
+                    },
+                    body: JSON.stringify({
+                        create_user_id: userId,
+                        incident_id: incidentId,
+                        consent_type: 'data_sharing_for_claim',
+                        consent_given: agreed,
+                        consent_date: new Date().toISOString(),
+                        page: 'declaration.html'
+                    })
+                });
 
-                if (data.exists && data.transcription) {
-                    console.log('Transcription found:', data.transcription);
-                    // You could display the transcription here if you want
+                if (!response.ok) {
+                    console.error('Failed to log consent, but continuing...');
                 }
             } catch (error) {
-                console.error('Error checking transcription:', error);
+                console.error('Error logging consent:', error);
+                // Continue with flow even if logging fails
             }
-        }, 5000);
+        }
+
+        // Check if user got here properly
+        if (!userId) {
+            alert('Session expired or invalid access. Please start over.');
+            window.location.href = '/';
+        }
+
+        // Log page load
+        console.log('Declaration page loaded with:', {
+            userId: userId,
+            incidentId: incidentId,
+            status: urlParams.get('status')
+        });
     </script>
 </body>
 </html>
