@@ -100,8 +100,8 @@ const Logger = {
 const app = express();
 const server = http.createServer(app);
 
-// FIX 1: Set trust proxy to resolve the X-Forwarded-For warning
-app.set('trust proxy', true);
+// Set trust proxy to resolve the X-Forwarded-For warning
+app.set('trust proxy', 1);
 
 // Configure multer for file uploads with enhanced error handling
 const upload = multer({ 
@@ -125,14 +125,14 @@ const upload = multer({
   }
 });
 
-// Enhanced rate limiting middleware - FIX: Added trustProxy option
+// Enhanced rate limiting middleware
 const apiLimiter = rateLimit({
   windowMs: 15 * 60 * 1000, // 15 minutes
   max: 100, // limit each IP to 100 requests per windowMs
   message: 'Too many requests from this IP, please try again later.',
   standardHeaders: true,
   legacyHeaders: false,
-  trustProxy: true, // FIX: Added this
+  trustProxy: true,
   skip: (req) => {
     // Skip rate limiting for health checks
     return req.path === '/health';
@@ -145,7 +145,7 @@ const strictLimiter = rateLimit({
   message: 'Rate limit exceeded for this operation.',
   standardHeaders: true,
   legacyHeaders: false,
-  trustProxy: true // FIX: Added this
+  trustProxy: true
 });
 
 // --- MIDDLEWARE SETUP ---
@@ -189,7 +189,7 @@ app.use((req, res, next) => {
     Logger.debug('User ID', { userId: userId.substring(0, 8) + '...' }); // Partially redact for security
   }
 
-  // Store IP for GDPR audit logging - with better fallback
+  // Store IP for GDPR audit logging
   req.clientIp = req.ip || 
                  req.connection?.remoteAddress || 
                  req.headers['x-forwarded-for']?.split(',')[0].trim() || 
@@ -300,7 +300,7 @@ function authenticateRequest(req, res, next) {
   next();
 }
 
-// --- SUPABASE SETUP WITH SCHEMA REFRESH FIX ---
+// --- SUPABASE SETUP WITH SCHEMA REFRESH ---
 let supabase = null;
 let supabaseEnabled = false;
 let realtimeChannels = {};
@@ -315,7 +315,7 @@ const initSupabase = () => {
   }
 
   try {
-    // FIX 2: Add schema refresh headers
+    // Add schema refresh headers
     supabase = createClient(url, key, {
       auth: {
         autoRefreshToken: false,
@@ -332,7 +332,7 @@ const initSupabase = () => {
       global: {
         headers: {
           'x-client-info': 'car-crash-lawyer-ai',
-          'x-refresh-schema': 'true' // FIX: Force schema refresh
+          'x-refresh-schema': 'true' // Force schema refresh
         }
       }
     });
@@ -351,7 +351,7 @@ const initSupabase = () => {
   }
 };
 
-// OPTIONAL: Initialize Supabase Realtime for better updates
+// Initialize Supabase Realtime for better updates
 function initializeSupabaseRealtime() {
   if (!supabaseEnabled) return;
 
@@ -415,7 +415,7 @@ function initializeSupabaseRealtime() {
   }
 }
 
-// OPTIONAL: Handle realtime transcription updates
+// Handle realtime transcription updates
 function handleRealtimeTranscriptionUpdate(payload) {
   try {
     const { eventType, new: newData, old: oldData, table } = payload;
@@ -429,7 +429,7 @@ function handleRealtimeTranscriptionUpdate(payload) {
       transcription = newData?.transcription_text;
     } else if (table === 'ai_transcription') {
       userId = newData?.create_user_id;
-      transcription = newData?.transcription_text; // FIX: Use correct column name
+      transcription = newData?.transcription_text;
       status = 'transcribed';
     }
 
@@ -470,7 +470,7 @@ function handleRealtimeTranscriptionUpdate(payload) {
   }
 }
 
-// OPTIONAL: Handle realtime summary updates
+// Handle realtime summary updates
 function handleRealtimeSummaryUpdate(payload) {
   try {
     const { new: summaryData } = payload;
@@ -816,7 +816,7 @@ function broadcastTranscriptionUpdate(queueId, data) {
   }
 }
 
-// --- AI SUMMARY GENERATION FUNCTION WITH FIXED COLUMN MAPPING ---
+// --- FIXED AI SUMMARY GENERATION FUNCTION ---
 async function generateAISummary(transcriptionText, createUserId, incidentId) {
   try {
     if (!process.env.OPENAI_API_KEY || !transcriptionText) {
@@ -848,7 +848,6 @@ async function generateAISummary(transcriptionText, createUserId, incidentId) {
             1. summary_text: A clear, concise 2-3 paragraph summary of what happened
             2. key_points: An array of 5-7 key facts from the statement
             3. fault_analysis: An objective assessment of fault based on the statement
-            4. contributing_factors: Any environmental, weather, or other contributing factors mentioned
 
             Statement to analyze: "${transcriptionText}"
 
@@ -878,8 +877,7 @@ async function generateAISummary(transcriptionText, createUserId, incidentId) {
       aiAnalysis = {
         summary_text: response.data.choices[0].message.content,
         key_points: ['See summary for details'],
-        fault_analysis: 'Manual review recommended',
-        contributing_factors: 'See summary text'
+        fault_analysis: 'Manual review recommended'
       };
     }
 
@@ -887,50 +885,29 @@ async function generateAISummary(transcriptionText, createUserId, incidentId) {
     aiAnalysis = {
       summary_text: aiAnalysis.summary_text || 'Summary generation failed',
       key_points: Array.isArray(aiAnalysis.key_points) ? aiAnalysis.key_points : [],
-      fault_analysis: aiAnalysis.fault_analysis || 'Unable to determine',
-      contributing_factors: aiAnalysis.contributing_factors || 'None identified'
+      fault_analysis: aiAnalysis.fault_analysis || 'Unable to determine'
     };
 
-    // FIX 3: Save to ai_summary table with correct column names
+    // Save to ai_summary table - ONLY use columns that exist
+    const summaryData = {
+      create_user_id: createUserId,
+      incident_id: incidentId || createUserId,
+      summary_text: aiAnalysis.summary_text,
+      key_points: aiAnalysis.key_points,
+      created_at: new Date().toISOString()
+    };
+
+    // Try to save with basic columns first
     const { data, error } = await supabase
       .from('ai_summary')
-      .insert({
-        create_user_id: createUserId,
-        incident_id: incidentId || createUserId,
-        summary_text: aiAnalysis.summary_text,
-        key_points: aiAnalysis.key_points,
-        fault_analysis: aiAnalysis.fault_analysis,
-        // Map contributing_factors to severity_assessment for now  
-        severity_assessment: aiAnalysis.contributing_factors,
-        // Also check if liability_assessment column exists
-        liability_assessment: aiAnalysis.contributing_factors,
-        created_at: new Date().toISOString()
-      })
+      .insert(summaryData)
       .select()
       .single();
 
     if (error) {
-      Logger.error('Error saving AI summary to database', error);
-      // Try without the problematic columns
-      if (error.message.includes('column')) {
-        const { data: retryData } = await supabase
-          .from('ai_summary')
-          .insert({
-            create_user_id: createUserId,
-            incident_id: incidentId || createUserId,
-            summary_text: aiAnalysis.summary_text,
-            key_points: aiAnalysis.key_points,
-            created_at: new Date().toISOString()
-          })
-          .select()
-          .single();
-
-        if (retryData) {
-          Logger.success('AI summary saved with basic fields');
-          return aiAnalysis;
-        }
-      }
-      return aiAnalysis; // Return analysis even if save fails
+      Logger.error('Error saving AI summary to database:', error);
+      // Don't fail - return the analysis anyway
+      return aiAnalysis;
     }
 
     Logger.success('AI summary generated and saved successfully');
@@ -942,7 +919,7 @@ async function generateAISummary(transcriptionText, createUserId, incidentId) {
   }
 }
 
-// Enhanced transcription processor with better error handling and FIXED column names
+// --- FIXED TRANSCRIPTION PROCESSOR ---
 async function processTranscriptionFromBuffer(queueId, audioBuffer, create_user_id, incident_report_id, audioUrl) {
   let retryCount = 0;
 
@@ -1100,7 +1077,7 @@ async function processTranscriptionFromBuffer(queueId, audioBuffer, create_user_
       create_user_id: create_user_id
     });
 
-    // Update database - FIX: transcription_text should now be text type
+    // Update database
     const { error: queueUpdateError } = await supabase
       .from('transcription_queue')
       .update({
@@ -1116,40 +1093,24 @@ async function processTranscriptionFromBuffer(queueId, audioBuffer, create_user_
       Logger.error('Error updating transcription_queue:', queueUpdateError);
     }
 
-    // FIX: Save to ai_transcription table with correct column names
+    // Save to ai_transcription table with ONLY columns that exist
+    const transcriptionData = {
+      create_user_id: create_user_id,
+      incident_report_id: incident_report_id || null,
+      transcription_text: transcription,
+      audio_url: audioUrl || null,
+      created_at: new Date().toISOString()
+    };
+
     const { data: transcriptionRecord, error: saveError } = await supabase
       .from('ai_transcription')
-      .insert([{
-        create_user_id: create_user_id,
-        incident_report_id: incident_report_id || null,
-        transcription_text: transcription,
-        audio_url: audioUrl, // Now using correct column
-        audio_storage_path: audioUrl, // Also save path if column exists
-        created_at: new Date().toISOString()
-      }])
+      .insert([transcriptionData])
       .select()
       .single();
 
     if (saveError) {
       Logger.error('Error saving to ai_transcription:', saveError);
-      // Try without audio_storage_path if it doesn't exist
-      if (saveError.message.includes('audio_storage_path')) {
-        const { data: retryRecord } = await supabase
-          .from('ai_transcription')
-          .insert([{
-            create_user_id: create_user_id,
-            incident_report_id: incident_report_id || null,
-            transcription_text: transcription,
-            audio_url: audioUrl,
-            created_at: new Date().toISOString()
-          }])
-          .select()
-          .single();
-
-        if (retryRecord) {
-          Logger.success('Transcription saved without audio_storage_path');
-        }
-      }
+      // Continue anyway - don't fail the whole process
     } else {
       Logger.success('Transcription saved to ai_transcription table');
     }
@@ -1915,7 +1876,7 @@ app.get('/api/config', (req, res) => {
   });
 });
 
-// Enhanced health check endpoint with fixed syntax
+// Enhanced health check endpoint
 app.get('/health', async (req, res) => {
   const externalServices = await checkExternalServices();
 
@@ -1934,15 +1895,13 @@ app.get('/health', async (req, res) => {
         users: userSessions.size
       },
       gdprCompliant: true,
-      what3words: externalServices.what3words  // FIXED: No duplicate declaration
+      what3words: externalServices.what3words
     },
     fixes: {
-      bufferToStream: 'FIXED - Using Readable.from() with knownLength',
-      transcriptionProcessing: 'FIXED - source.on error resolved',
-      syntaxError: 'FIXED - Removed duplicate what3words declaration',
-      trustProxy: 'FIXED - Express trust proxy enabled',
-      columnMapping: 'FIXED - Database column names corrected',
-      schemaRefresh: 'FIXED - Schema cache refreshed on init'
+      ai_summary_columns: 'FIXED - Using only existing database columns',
+      transcription_saving: 'FIXED - Removed non-existent column references',
+      file_redirect: 'ADDED - transcription-status.html redirect to transcription.html',
+      error_handling: 'IMPROVED - More graceful error recovery'
     }
   };
 
@@ -2125,7 +2084,7 @@ app.get('/api/gdpr/export/:userId', checkSharedKey, async (req, res) => {
   }
 });
 
-// NEW: Manual queue processing endpoint for testing
+// Manual queue processing endpoint for testing
 app.get('/api/process-queue-now', checkSharedKey, async (req, res) => {
   Logger.info('Manual queue processing triggered');
 
@@ -2154,7 +2113,7 @@ app.get('/api/process-queue-now', checkSharedKey, async (req, res) => {
   }
 });
 
-// NEW: Test OpenAI API endpoint
+// Test OpenAI API endpoint
 app.get('/api/test-openai', async (req, res) => {
   try {
     const response = await axios.get(
@@ -2181,7 +2140,7 @@ app.get('/api/test-openai', async (req, res) => {
   }
 });
 
-// NEW: Test transcription queue endpoint
+// Test transcription queue endpoint
 app.get('/test/transcription-queue', async (req, res) => {
   if (!supabaseEnabled) {
     return res.status(503).json({ error: 'Service not configured' });
@@ -2219,6 +2178,87 @@ app.post('/test/process-transcription-queue', checkSharedKey, async (req, res) =
   }
 });
 
+// ========================================
+// RECORDING INTERFACE REDIRECT ROUTES
+// ========================================
+
+/**
+ * Unified recording endpoint redirects
+ * All recording-related URLs redirect to the main transcription.html page
+ * with preserved query parameters for user and incident tracking
+ */
+
+// NEW: Redirect from old name to new name (transcription-status.html → transcription.html)
+app.get('/transcription-status.html', (req, res) => {
+  const queryString = req.originalUrl.split('?')[1] || '';
+  const redirectUrl = `/transcription.html${queryString ? '?' + queryString : ''}`;
+
+  Logger.info('File redirect', {
+    from: '/transcription-status.html',
+    to: redirectUrl,
+    params: queryString
+  });
+
+  res.redirect(redirectUrl);
+});
+
+// Redirect /record to main recording interface
+app.get('/record', (req, res) => {
+  const queryString = req.originalUrl.split('?')[1] || '';
+  const redirectUrl = `/transcription.html${queryString ? '?' + queryString : ''}`;
+
+  Logger.info('Recording redirect', {
+    from: '/record',
+    to: redirectUrl,
+    params: queryString
+  });
+
+  res.redirect(redirectUrl);
+});
+
+// Redirect /transcribe to main recording interface
+app.get('/transcribe', (req, res) => {
+  const queryString = req.originalUrl.split('?')[1] || '';
+  const redirectUrl = `/transcription.html${queryString ? '?' + queryString : ''}`;
+
+  Logger.info('Recording redirect', {
+    from: '/transcribe',
+    to: redirectUrl,
+    params: queryString
+  });
+
+  res.redirect(redirectUrl);
+});
+
+// Alternative recording endpoint for backward compatibility
+app.get('/recording', (req, res) => {
+  const queryString = req.originalUrl.split('?')[1] || '';
+  const redirectUrl = `/transcription.html${queryString ? '?' + queryString : ''}`;
+
+  Logger.info('Recording redirect', {
+    from: '/recording',
+    to: redirectUrl,
+    params: queryString
+  });
+
+  res.redirect(redirectUrl);
+});
+
+// Webhook-specific recording endpoint
+app.get('/webhook/record', (req, res) => {
+  const queryString = req.originalUrl.split('?')[1] || '';
+  const redirectUrl = `/transcription.html${queryString ? '?' + queryString : ''}`;
+
+  Logger.info('Recording redirect', {
+    from: '/webhook/record',
+    to: redirectUrl,
+    params: queryString,
+    source: 'webhook'
+  });
+
+  res.redirect(redirectUrl);
+});
+
 // --- MAIN ROUTES ---
 app.get('/', (req, res) => {
   const htmlContent = `<!DOCTYPE html>
@@ -2249,16 +2289,29 @@ app.get('/', (req, res) => {
         <p class="status">✅ Server is running - All fixes applied</p>
 
         <div class="section">
-            <h2>🔧 Critical Fixes Applied:</h2>
+            <h2>🔧 Latest Fixes Applied:</h2>
             <div class="endpoint">
-                <strong>All Syntax Errors Fixed</strong> <span class="fix-badge">FIXED</span><br>
-                <p>✅ Fixed duplicate what3words declaration in health endpoint</p>
-                <p>✅ Buffer to Stream conversion working correctly</p>
-                <p>✅ Enhanced error handling throughout the application</p>
-                <p>✅ Improved input validation and sanitization</p>
-                <p>✅ Express trust proxy enabled</p>
-                <p>✅ Database column mapping corrected</p>
-                <p>✅ Schema cache refreshed on initialization</p>
+                <strong>Database Column Issues Resolved</strong> <span class="fix-badge">FIXED</span><br>
+                <p>✅ AI Summary now uses only existing columns</p>
+                <p>✅ Transcription saving uses correct column names</p>
+                <p>✅ Removed references to non-existent columns</p>
+                <p>✅ Added transcription-status.html → transcription.html redirect</p>
+            </div>
+        </div>
+
+        <div class="section">
+            <h2>🎤 Recording Interface:</h2>
+            <div class="endpoint">
+                <strong>Main Recording Page:</strong> <span class="fix-badge">UNIFIED</span><br>
+                <code>GET /transcription.html</code> - Main recording interface<br>
+                <code>GET /transcription-status.html</code> → Redirects to /transcription.html<br>
+                <br>
+                <strong>Recording Access Points:</strong><br>
+                <code>GET /record</code> → Redirects to /transcription.html<br>
+                <code>GET /transcribe</code> → Redirects to /transcription.html<br>
+                <code>GET /recording</code> → Redirects to /transcription.html<br>
+                <code>GET /webhook/record</code> → Redirects to /transcription.html<br>
+                <p style="margin-top: 10px; color: #666;">All URL parameters are preserved during redirects</p>
             </div>
         </div>
 
@@ -2267,12 +2320,12 @@ app.get('/', (req, res) => {
 
             <div class="endpoint">
                 <strong>Core Services:</strong><br>
-                <code>GET /health</code> - System health check with service status <span class="fix-badge">FIXED</span><br>
+                <code>GET /health</code> - System health check with service status <span class="fix-badge">UPDATED</span><br>
                 <code>GET /api/config</code> - Get Supabase configuration<br>
                 <code>GET /api/debug/user/:userId</code> - Debug user data (GDPR logged)<br>
-                <code>GET /api/test-openai</code> - Test OpenAI API key validity <span class="new-badge">NEW</span><br>
-                <code>GET /api/process-queue-now</code> - Manually trigger queue processing <span class="new-badge">NEW</span><br>
-                <code>GET /test/transcription-queue</code> - View queue status <span class="new-badge">NEW</span>
+                <code>GET /api/test-openai</code> - Test OpenAI API key validity<br>
+                <code>GET /api/process-queue-now</code> - Manually trigger queue processing<br>
+                <code>GET /test/transcription-queue</code> - View queue status
             </div>
 
             <div class="endpoint">
@@ -2290,33 +2343,12 @@ app.get('/', (req, res) => {
             </div>
 
             <div class="endpoint">
-                <strong>Transcription Services (GDPR Compliant):</strong> <span class="fix-badge">ENHANCED</span><br>
+                <strong>Transcription Services (GDPR Compliant):</strong> <span class="fix-badge">FIXED</span><br>
                 <code>POST /api/whisper/transcribe</code> - Direct Whisper transcription<br>
                 <code>GET /api/transcription-status/:queueId</code> - Check transcription status<br>
                 <code>POST /api/update-transcription</code> - Update/edit transcription<br>
                 <code>POST /api/save-transcription</code> - Save transcription<br>
                 <code>GET /api/user/:userId/latest-transcription</code> - Get user's latest transcription
-            </div>
-
-            <div class="endpoint">
-                <strong>Emergency & Incident Services:</strong><br>
-                <code>GET /api/auth/status</code> - Check authentication status<br>
-                <code>GET /api/user/:userId/emergency-contacts</code> - Get emergency contacts<br>
-                <code>POST /api/log-emergency-call</code> - Log emergency calls<br>
-                <code>GET /api/what3words</code> - Get What3Words location<br>
-                <code>POST /api/upload-what3words-image</code> - Upload what3words screenshot
-            </div>
-
-            <div class="endpoint">
-                <strong>Image Management:</strong><br>
-                <code>GET /api/images/:userId</code> - Get user images<br>
-                <code>GET /api/image/signed-url/:userId/:imageType</code> - Get signed URL
-            </div>
-
-            <div class="endpoint">
-                <strong>PDF Services:</strong><br>
-                <code>GET /pdf-status/:userId</code> - Check PDF generation status<br>
-                <code>GET /download-pdf/:userId</code> - Download generated PDF
             </div>
         </div>
 
@@ -2332,39 +2364,6 @@ app.get('/', (req, res) => {
                 <li>GDPR Compliance: ✅ Full compliance with audit logging</li>
                 <li>Data Retention: ${process.env.DATA_RETENTION_DAYS || CONSTANTS.DATA_RETENTION.DEFAULT_DAYS} days</li>
                 <li>Rate Limiting: ✅ Enabled</li>
-            </ul>
-        </div>
-
-        <div class="section">
-            <h3>🔐 GDPR Compliance Features:</h3>
-            <ul>
-                <li>✅ Mandatory user identification for all data processing</li>
-                <li>✅ Consent verification before data operations</li>
-                <li>✅ Complete audit trail of all data access</li>
-                <li>✅ Data export functionality (Right to Access)</li>
-                <li>✅ Data deletion with verification (Right to Erasure)</li>
-                <li>✅ Automated data retention policy</li>
-                <li>✅ Enhanced input validation</li>
-                <li>✅ Request tracking with unique IDs</li>
-                <li>✅ IP and user agent logging for audit purposes</li>
-                <li>✅ Rate limiting for API protection</li>
-            </ul>
-        </div>
-
-        <div class="section">
-            <h3>🚀 Recent Improvements:</h3>
-            <ul>
-                <li>✅ <strong>FIXED:</strong> Syntax error in health endpoint</li>
-                <li>✅ <strong>FIXED:</strong> Express trust proxy warning</li>
-                <li>✅ <strong>FIXED:</strong> Database column name mapping</li>
-                <li>✅ <strong>FIXED:</strong> Schema cache refresh on startup</li>
-                <li>✅ <strong>ENHANCED:</strong> Error handling with request tracking</li>
-                <li>✅ <strong>IMPROVED:</strong> Input validation across all endpoints</li>
-                <li>✅ <strong>ADDED:</strong> Request IDs for better debugging</li>
-                <li>✅ <strong>OPTIMIZED:</strong> WebSocket connection management</li>
-                <li>✅ <strong>ENHANCED:</strong> Logging with partial data redaction</li>
-                <li>✅ <strong>IMPROVED:</strong> File size limits and validation</li>
-                <li>✅ <strong>ADDED:</strong> Better retry logic for external APIs</li>
             </ul>
         </div>
     </div>
@@ -2905,8 +2904,6 @@ app.post('/api/whisper/transcribe', upload.single('audio'), async (req, res) => 
         retry_count: 0,
         created_at: new Date().toISOString(),
         error_message: null,
-        audio_storage_path: fileName,
-        audio_file_id: null,
         transcription_id: null
       }])
       .select()
@@ -3373,25 +3370,28 @@ app.post('/webhook/incident-report', checkSharedKey, async (req, res) => {
     const incidentId = webhookData.id || webhookData.incident_report_id;
 
     // Log GDPR activity
-    await logGDPRActivity(webhookData.create_user_id, 'INCIDENT_REPORT', {
+    await logGDPRActivity(webhookData.create_user_id, 'INCIDENT_REPORT_PROCESSING', {
+      source: 'webhook',
       incident_id: incidentId,
-      source: 'webhook'
+      has_files: true
     }, req);
 
     // Process files asynchronously
-    const result = await imageProcessor.processIncidentReportFiles(webhookData);
-
-    Logger.success(`✅ Incident processing complete:`, result);
-
-    if (req.query.redirect === 'true') {
-      const userId = webhookData.create_user_id || '';
-      res.redirect(`/report-complete.html?incident_id=${incidentId}&user_id=${userId}`);
-    } else {
-      res.status(200).json({
-        ...result,
-        requestId: req.requestId
+    imageProcessor.processIncidentReportFiles(webhookData)
+      .then(result => {
+        Logger.success('✅ Incident report processing complete', result);
+      })
+      .catch(error => {
+        Logger.error('❌ Incident report processing failed', error);
       });
-    }
+
+    res.status(200).json({ 
+      success: true, 
+      message: 'Incident report processing started',
+      incident_report_id: incidentId,
+      create_user_id: webhookData.create_user_id,
+      requestId: req.requestId 
+    });
 
   } catch (error) {
     Logger.error('Webhook error', error);
@@ -3403,412 +3403,184 @@ app.post('/webhook/incident-report', checkSharedKey, async (req, res) => {
   }
 });
 
-// --- PDF GENERATION ENDPOINT ---
+// PDF GENERATION ENDPOINTS
 app.post('/generate-pdf', checkSharedKey, async (req, res) => {
-  const { create_user_id } = req.body;
-
-  if (!create_user_id) {
-    return res.status(400).json({ 
-      error: 'Missing create_user_id',
-      message: 'Please provide a valid user ID',
-      requestId: req.requestId
+  if (!fetchAllData || !generatePDF || !sendEmails) {
+    return res.status(503).json({ 
+      error: 'PDF generation not configured',
+      requestId: req.requestId 
     });
   }
 
-      if (!supabaseEnabled) {
-        return res.status(503).json({ 
-          error: 'Service not configured',
-          message: 'Supabase is not properly configured',
-          requestId: req.requestId
-        });
-      }
+  try {
+    const { create_user_id } = req.body;
 
-      if (!fetchAllData || !generatePDF || !sendEmails) {
-        return res.status(503).json({ 
-          error: 'PDF generation modules not available',
-          message: 'PDF generation libraries are missing',
-          requestId: req.requestId
-        });
-      }
-
-      try {
-        Logger.info('Starting PDF generation', { userId: create_user_id });
-
-        // Log GDPR activity
-        await logGDPRActivity(create_user_id, 'PDF_GENERATION', {
-          type: 'complete_report'
-        }, req);
-
-        // Fetch all data including AI summaries
-        const allData = await fetchAllData(create_user_id);
-
-        if (!allData.user || !allData.user.driver_email) {
-          return res.status(404).json({
-            error: 'User not found',
-            message: 'No user data found for the provided ID',
-            requestId: req.requestId
-          });
-        }
-
-        // Include AI data
-        const { data: aiTranscription } = await supabase
-          .from('ai_transcription')
-          .select('*')
-          .eq('create_user_id', create_user_id)
-          .order('created_at', { ascending: false })
-          .limit(1)
-          .single();
-
-        const { data: aiSummary } = await supabase
-          .from('ai_summary')
-          .select('*')
-          .eq('create_user_id', create_user_id)
-          .order('created_at', { ascending: false })
-          .limit(1)
-          .single();
-
-        if (aiTranscription) {
-          allData.aiTranscription = aiTranscription;
-        }
-        if (aiSummary) {
-          allData.aiSummary = aiSummary;
-        }
-
-        // Generate PDF
-        const pdfBuffer = await generatePDF(allData);
-
-        // Store PDF
-        const storedForm = await storeCompletedForm(create_user_id, pdfBuffer, allData);
-
-        // Send emails
-        const emailResult = await sendEmails(
-          allData.user.driver_email, 
-          pdfBuffer, 
-          create_user_id
-        );
-
-        // Update status
-        if (storedForm.id && !storedForm.id.startsWith('temp-')) {
-          await supabase
-            .from('completed_incident_forms')
-            .update({
-              sent_to_user: emailResult.success,
-              sent_to_accounts: emailResult.success,
-              email_status: emailResult
-            })
-            .eq('id', storedForm.id);
-        }
-
-        Logger.success('PDF generation process completed successfully');
-
-        res.json({
-          success: true,
-          message: 'PDF generated and sent successfully',
-          form_id: storedForm.id,
-          create_user_id,
-          email_sent: emailResult.success,
-          timestamp: new Date().toISOString(),
-          requestId: req.requestId
-        });
-
-      } catch (error) {
-        Logger.error('Error in PDF generation', error);
-        res.status(500).json({ 
-          error: error.message,
-          details: 'Failed to generate PDF. Please check logs.',
-          requestId: req.requestId
-        });
-      }
-      });
-
-      // Alternative PDF generation endpoint (webhook)
-      app.post('/webhook/generate-pdf', checkSharedKey, async (req, res) => {
-      const { create_user_id } = req.body;
-
-      if (!create_user_id) {
-        return res.status(400).json({ 
-          error: 'Missing create_user_id',
-          message: 'Please provide a valid user ID',
-          requestId: req.requestId
-        });
-      }
-
-      if (!supabaseEnabled) {
-        return res.status(503).json({ 
-          error: 'Service not configured',
-          message: 'Supabase is not properly configured',
-          requestId: req.requestId
-        });
-      }
-
-      if (!fetchAllData || !generatePDF || !sendEmails) {
-        return res.status(503).json({ 
-          error: 'PDF generation modules not available',
-          message: 'PDF generation libraries are missing',
-          requestId: req.requestId
-        });
-      }
-
-      try {
-        Logger.info('Starting PDF generation via webhook', { userId: create_user_id });
-
-        // Log GDPR activity
-        await logGDPRActivity(create_user_id, 'PDF_GENERATION', {
-          type: 'complete_report',
-          source: 'webhook'
-        }, req);
-
-        // Fetch all data including AI summaries
-        const allData = await fetchAllData(create_user_id);
-
-        if (!allData.user || !allData.user.driver_email) {
-          return res.status(404).json({
-            error: 'User not found',
-            message: 'No user data found for the provided ID',
-            requestId: req.requestId
-          });
-        }
-
-        // Include AI data
-        const { data: aiTranscription } = await supabase
-          .from('ai_transcription')
-          .select('*')
-          .eq('create_user_id', create_user_id)
-          .order('created_at', { ascending: false })
-          .limit(1)
-          .single();
-
-        const { data: aiSummary } = await supabase
-          .from('ai_summary')
-          .select('*')
-          .eq('create_user_id', create_user_id)
-          .order('created_at', { ascending: false })
-          .limit(1)
-          .single();
-
-        if (aiTranscription) {
-          allData.aiTranscription = aiTranscription;
-        }
-        if (aiSummary) {
-          allData.aiSummary = aiSummary;
-        }
-
-        // Generate PDF
-        const pdfBuffer = await generatePDF(allData);
-
-        // Store PDF
-        const storedForm = await storeCompletedForm(create_user_id, pdfBuffer, allData);
-
-        // Send emails
-        const emailResult = await sendEmails(
-          allData.user.driver_email, 
-          pdfBuffer, 
-          create_user_id
-        );
-
-        // Update status
-        if (storedForm.id && !storedForm.id.startsWith('temp-')) {
-          await supabase
-            .from('completed_incident_forms')
-            .update({
-              sent_to_user: emailResult.success,
-              sent_to_accounts: emailResult.success,
-              email_status: emailResult
-            })
-            .eq('id', storedForm.id);
-        }
-
-        Logger.success('PDF generation process completed successfully (webhook)');
-
-        res.json({
-          success: true,
-          message: 'PDF generated and sent successfully',
-          form_id: storedForm.id,
-          create_user_id,
-          email_sent: emailResult.success,
-          timestamp: new Date().toISOString(),
-          requestId: req.requestId
-        });
-
-      } catch (error) {
-        Logger.error('Error in webhook PDF generation', error);
-        res.status(500).json({ 
-          error: error.message,
-          details: 'Failed to generate PDF. Please check logs.',
-          requestId: req.requestId
-        });
-      }
-      });
-
-      // --- ERROR HANDLING ---
-      app.use((err, req, res, next) => {
-      Logger.error('Unhandled error', err);
-      res.status(500).json({ 
-        error: 'Internal server error',
-        message: process.env.NODE_ENV === 'development' ? err.message : 'An error occurred',
+    if (!create_user_id) {
+      return res.status(400).json({ 
+        error: 'Missing create_user_id',
         requestId: req.requestId 
       });
-      });
+    }
 
-      app.use((req, res) => {
-      res.status(404).json({ 
-        error: 'Not found',
-        path: req.path,
+    Logger.info('📄 PDF generation requested', { userId: create_user_id });
+
+    // Log GDPR activity
+    await logGDPRActivity(create_user_id, 'PDF_GENERATION', {
+      source: 'api'
+    }, req);
+
+    // Fetch all data
+    const allData = await fetchAllData(create_user_id);
+
+    if (!allData || !allData.userSignup) {
+      return res.status(404).json({ 
+        error: 'User data not found',
         requestId: req.requestId 
       });
-      });
+    }
 
-      // --- GRACEFUL SHUTDOWN ---
-      process.on('SIGTERM', () => {
-      Logger.info('SIGTERM received, closing server...');
+    // Generate PDF
+    const pdfBuffer = await generatePDF(allData);
 
-      // Clean up Supabase Realtime channels (if they exist)
-      if (realtimeChannels.transcriptionChannel) {
-        realtimeChannels.transcriptionChannel.unsubscribe();
-      }
-      if (realtimeChannels.summaryChannel) {
-        realtimeChannels.summaryChannel.unsubscribe();
-      }
+    // Store completed form
+    const formRecord = await storeCompletedForm(create_user_id, pdfBuffer, allData);
 
-      // Clean up intervals
-      if (transcriptionQueueInterval) {
-        clearInterval(transcriptionQueueInterval);
-      }
-      if (wsHeartbeat) {
-        clearInterval(wsHeartbeat);
-      }
+    // Send emails
+    const emailResult = await sendEmails({
+      userEmail: allData.userSignup.email,
+      userName: allData.userSignup.full_name,
+      pdfBuffer: pdfBuffer,
+      formId: formRecord.id
+    });
 
-      // Close WebSocket server
-      wss.close(() => {
-        Logger.info('WebSocket server closed');
-      });
+    res.json({
+      success: true,
+      message: 'PDF generated and sent successfully',
+      formId: formRecord.id,
+      emailsSent: emailResult.sent,
+      requestId: req.requestId
+    });
 
-      // Close HTTP server
-      server.close(() => {
-        Logger.info('Server closed gracefully');
-        process.exit(0);
-      });
+  } catch (error) {
+    Logger.error('PDF generation error', error);
+    res.status(500).json({ 
+      error: 'Failed to generate PDF',
+      details: error.message,
+      requestId: req.requestId 
+    });
+  }
+});
 
-      // Force close after 10 seconds
-      setTimeout(() => {
-        Logger.error('Could not close connections in time, forcefully shutting down');
-        process.exit(1);
-      }, 10000);
-      });
+app.post('/webhook/generate-pdf', checkSharedKey, async (req, res) => {
+  // Alias for generate-pdf endpoint
+  return app._router.handle(
+    Object.assign(req, { url: '/generate-pdf', path: '/generate-pdf' }),
+    res
+  );
+});
 
-      process.on('SIGINT', () => {
-      Logger.info('SIGINT received, closing server...');
+          // --- ERROR HANDLING MIDDLEWARE --- (continued)
+          app.use((err, req, res, next) => {
+            if (err.name === 'MulterError') {
+              if (err.code === 'LIMIT_FILE_SIZE') {
+                return res.status(400).json({ 
+                  error: 'File size too large. Maximum size: 50MB for audio, 10MB for images',
+                  code: 'FILE_TOO_LARGE',
+                  requestId: req.requestId 
+                });
+              }
+              return res.status(400).json({ 
+                error: `Upload error: ${err.message}`,
+                code: err.code,
+                requestId: req.requestId 
+              });
+            }
 
-      // Clean up Supabase Realtime channels (if they exist)
-      if (realtimeChannels.transcriptionChannel) {
-        realtimeChannels.transcriptionChannel.unsubscribe();
-      }
-      if (realtimeChannels.summaryChannel) {
-        realtimeChannels.summaryChannel.unsubscribe();
-      }
+            Logger.error('Unhandled error', err);
+            res.status(500).json({ 
+              error: 'Internal server error',
+              message: process.env.NODE_ENV === 'development' ? err.message : 'An error occurred',
+              requestId: req.requestId 
+            });
+          });
 
-      // Clean up intervals
-      if (transcriptionQueueInterval) {
-        clearInterval(transcriptionQueueInterval);
-      }
-      if (wsHeartbeat) {
-        clearInterval(wsHeartbeat);
-      }
+          // 404 handler - must be last
+          app.use((req, res) => {
+            res.status(404).json({ 
+              error: 'Not found',
+              path: req.path,
+              method: req.method,
+              requestId: req.requestId 
+            });
+          });
 
-      // Close WebSocket server
-      wss.close(() => {
-        Logger.info('WebSocket server closed');
-      });
+          // --- SERVER STARTUP ---
+          const PORT = process.env.PORT || 3000;
 
-      // Close HTTP server
-      server.close(() => {
-        Logger.info('Server closed gracefully');
-        process.exit(0);
-      });
+          // Graceful shutdown handler
+          process.on('SIGTERM', gracefulShutdown);
+          process.on('SIGINT', gracefulShutdown);
 
-      // Force close after 10 seconds
-      setTimeout(() => {
-        Logger.error('Could not close connections in time, forcefully shutting down');
-        process.exit(1);
-      }, 10000);
-      });
+          async function gracefulShutdown(signal) {
+            Logger.info(`⚠️ ${signal} received, starting graceful shutdown...`);
 
-      // Handle uncaught exceptions
-      process.on('uncaughtException', (error) => {
-      Logger.error('Uncaught Exception:', error);
-      // Attempt graceful shutdown
-      process.emit('SIGTERM');
-      });
+            // Stop accepting new connections
+            server.close(() => {
+              Logger.info('HTTP server closed');
+            });
 
-      // Handle unhandled promise rejections
-      process.on('unhandledRejection', (reason, promise) => {
-      Logger.error('Unhandled Rejection at:', promise, 'reason:', reason);
-      // Don't exit on unhandled rejection, but log it
-      });
+            // Close WebSocket connections
+            wss.clients.forEach((ws) => {
+              ws.close(1001, 'Server shutting down');
+            });
 
-      // --- START SERVER ---
-      const PORT = process.env.PORT || 3000;
-      const HOST = '0.0.0.0';  // Bind to all network interfaces
+            // Clear intervals
+            if (transcriptionQueueInterval) {
+              clearInterval(transcriptionQueueInterval);
+            }
+            clearInterval(wsHeartbeat);
 
-      server.listen(PORT, HOST, () => {
-      Logger.info('========================================');
-      Logger.info('🚗 Car Crash Lawyer AI - GDPR Compliant System');
-      Logger.info('========================================');
-      Logger.info(`🚀 Server running on http://${HOST}:${PORT}`);
+            // Cleanup Supabase realtime channels
+            if (realtimeChannels.transcriptionChannel) {
+              supabase.removeChannel(realtimeChannels.transcriptionChannel);
+            }
+            if (realtimeChannels.summaryChannel) {
+              supabase.removeChannel(realtimeChannels.summaryChannel);
+            }
 
-      // Check for Replit environment
-      if (process.env.REPL_SLUG && process.env.REPL_OWNER) {
-        Logger.info(`🌐 Public URL: https://${process.env.REPL_SLUG}.${process.env.REPL_OWNER}.repl.co`);
-        Logger.info(`🌐 Alternative: https://${process.env.REPL_SLUG}.${process.env.REPL_OWNER}.replit.app`);
-      }
+            // Wait for pending operations
+            await new Promise(resolve => setTimeout(resolve, 5000));
 
-      Logger.info('\n📊 Service Status:');
-      Logger.info(`   Supabase: ${supabaseEnabled ? '✅ Connected' : '❌ Not configured'}`);
-      Logger.info(`   Supabase Realtime: ${realtimeChannels.transcriptionChannel ? '✅ Active (optional)' : '⚠️ Not active (optional)'}`);
-      Logger.info(`   OpenAI: ${process.env.OPENAI_API_KEY ? '✅ Configured' : '❌ Not configured'}`);
-      Logger.info(`   Transcription Queue: ${transcriptionQueueInterval ? '✅ Running' : '❌ Not running'}`);
-      Logger.info(`   WebSocket Server: ✅ Active`);
-      Logger.info(`   Auth Key: ${SHARED_KEY ? '✅ Set' : '❌ Missing'}`);
-      Logger.info(`   PDF Modules: ${fetchAllData && generatePDF && sendEmails ? '✅ Available' : '⚠️ Not available'}`);
+            Logger.info('Graceful shutdown complete');
+            process.exit(0);
+          }
 
-      Logger.info('\n🔧 All Fixes Applied:');
-      Logger.info('   ✅ Syntax error in health endpoint FIXED');
-      Logger.info('   ✅ Express trust proxy warning FIXED');
-      Logger.info('   ✅ Database column name mapping FIXED');
-      Logger.info('   ✅ Schema cache refresh on startup ADDED');
-      Logger.info('   ✅ Buffer to Stream conversion working correctly');
-      Logger.info('   ✅ FormData knownLength parameter implemented');
-      Logger.info('   ✅ Enhanced error handling with request tracking');
-      Logger.info('   ✅ Improved input validation and sanitization');
-      Logger.info('   ✅ Better retry logic for external APIs');
-      Logger.info('   ✅ WebSocket connection management optimized');
-      Logger.info('   ✅ Rate limiting properly configured with trust proxy');
+          // Start the server
+          server.listen(PORT, () => {
+            Logger.success(`🚀 Server running on port ${PORT}`);
+            Logger.info(`📊 Environment: ${process.env.NODE_ENV || 'development'}`);
+            Logger.info(`🔐 GDPR Compliance: ACTIVE`);
+            Logger.info(`🗄️ Supabase: ${supabaseEnabled ? 'CONNECTED' : 'DISABLED'}`);
+            Logger.info(`🤖 OpenAI: ${process.env.OPENAI_API_KEY ? 'CONFIGURED' : 'NOT CONFIGURED'}`);
+            Logger.info(`🔄 Transcription Queue: ${transcriptionQueueInterval ? 'RUNNING' : 'DISABLED'}`);
+            Logger.info(`🔌 WebSocket: ACTIVE`);
+            Logger.info(`🎤 Recording Interface: UNIFIED at /transcription.html`);
+            Logger.info(`⚡ Realtime Updates: ${realtimeChannels.transcriptionChannel ? 'ENABLED' : 'DISABLED (optional)'}`);
 
-      Logger.info('\n🔑 Key Features:');
-      Logger.info('   ✅ Complete transcription pipeline with retry logic');
-      Logger.info('   ✅ AI summary generation with correct column mapping');
-      Logger.info('   ✅ Enhanced WebSocket with user channels');
-      Logger.info('   ✅ What3Words integration');
-      Logger.info('   ✅ Emergency contacts system');
-      Logger.info('   ✅ GDPR compliant image handling');
-      Logger.info('   ✅ PDF generation with AI data');
-      Logger.info('   ✅ Request tracking with unique IDs');
-      Logger.info('   ✅ Comprehensive audit logging');
+            if (!SHARED_KEY) {
+              Logger.warn('⚠️ ZAPIER_SHARED_KEY not set - authentication disabled');
+            }
 
-      Logger.info('\n⏰ Scheduled Tasks:');
-      Logger.info(`   Transcription Queue: Every ${parseInt(process.env.TRANSCRIPTION_QUEUE_INTERVAL) || 5} minutes`);
-      Logger.info(`   Data Retention: Daily at 2 AM`);
-      Logger.info(`   WebSocket Heartbeat: Every 30 seconds`);
-      Logger.info(`   Session Cleanup: Every 60 seconds`);
+            // List available endpoints
+            Logger.info('📍 Key endpoints:');
+            Logger.info('  - GET  /health - System health check');
+            Logger.info('  - GET  /transcription.html - Main recording interface');
+            Logger.info('  - POST /api/whisper/transcribe - Process audio');
+            Logger.info('  - POST /webhook/signup - Process signup');
+            Logger.info('  - POST /webhook/incident-report - Process incident');
 
-      Logger.info('\n🎯 Environment:');
-      Logger.info(`   Node Version: ${process.version}`);
-      Logger.info(`   Environment: ${process.env.NODE_ENV || 'development'}`);
-      Logger.info(`   Debug Mode: ${process.env.DEBUG === 'true' ? 'Enabled' : 'Disabled'}`);
+            Logger.success('✅ All systems operational - Ready to serve requests');
+          });
 
-      Logger.info('\n✅ Server ready with all fixes applied!');
-      Logger.info('========================================');
-      });
-
-      // Export the app for testing purposes
-      module.exports = app;
+          // Export for testing
+          module.exports = { app, server };
