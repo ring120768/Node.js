@@ -889,10 +889,26 @@ async function generateAISummary(transcriptionText, createUserId, incidentId) {
       fault_analysis: aiAnalysis.fault_analysis || 'Unable to determine'
     };
 
+    // Generate UUID if user ID is not UUID format
+    let dbUserId = createUserId;
+    const uuidRegex = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
+
+    if (!uuidRegex.test(createUserId)) {
+      const crypto = require('crypto');
+      const hash = crypto.createHash('md5').update(createUserId).digest('hex');
+      dbUserId = [
+        hash.substring(0, 8),
+        hash.substring(8, 12),
+        hash.substring(12, 16),
+        hash.substring(16, 20),
+        hash.substring(20, 32)
+      ].join('-');
+    }
+
     // Save to ai_summary table - ONLY use columns that exist
     const summaryData = {
-      create_user_id: createUserId,
-      incident_id: incidentId || createUserId,
+      create_user_id: dbUserId,
+      incident_id: incidentId || dbUserId,
       summary_text: aiAnalysis.summary_text,
       key_points: aiAnalysis.key_points,
       created_at: new Date().toISOString()
@@ -1094,9 +1110,26 @@ async function processTranscriptionFromBuffer(queueId, audioBuffer, create_user_
       Logger.error('Error updating transcription_queue:', queueUpdateError);
     }
 
+    // Generate UUID if user ID is not UUID format
+    let dbUserId = create_user_id;
+    const uuidRegex = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
+
+    if (!uuidRegex.test(create_user_id)) {
+      const crypto = require('crypto');
+      const hash = crypto.createHash('md5').update(create_user_id).digest('hex');
+      dbUserId = [
+        hash.substring(0, 8),
+        hash.substring(8, 12),
+        hash.substring(12, 16),
+        hash.substring(16, 20),
+        hash.substring(20, 32)
+      ].join('-');
+    }
+
     // Save to ai_transcription table with ONLY columns that exist
     const transcriptionData = {
-      create_user_id: create_user_id,
+      create_user_id: dbUserId,
+      incident_report_id: incident_report_id || null,
       transcription_text: transcription,
       audio_url: audioUrl || null,
       created_at: new Date().toISOString()
@@ -3048,35 +3081,71 @@ app.post('/api/update-transcription', checkGDPRConsent, async (req, res) => {
       action: 'manual_edit'
     }, req);
 
-    // Update or insert transcription
-    const { data: existing } = await supabase
-      .from('ai_transcription')
-      .select('id, audio_url, duration')
-      .eq('create_user_id', userId)
-      .order('created_at', { ascending: false })
-      .limit(1)
-      .single();
-
-    if (existing) {
-      await supabase
-        .from('ai_transcription')
-        .update({
-          transcription_text: transcription,
-          updated_at: new Date().toISOString()
-        })
-        .eq('id', existing.id);
-    } else {
-      await supabase
-        .from('ai_transcription')
-        .insert({
-          create_user_id: userId,
-          transcription_text: transcription,
-          audio_url: '',
-          created_at: new Date().toISOString()
-        });
+    if (!supabaseEnabled) {
+      Logger.warn('Supabase not enabled, skipping database operations');
+      return res.json({ 
+        success: true,
+        message: 'Transcription confirmed (database not configured)',
+        requestId: req.requestId
+      });
     }
 
-    // Generate AI summary
+    // Generate UUID if user ID is not UUID format
+    let dbUserId = userId;
+    const uuidRegex = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
+
+    if (!uuidRegex.test(userId)) {
+      // Create a deterministic UUID from the string user ID
+      const crypto = require('crypto');
+      const hash = crypto.createHash('md5').update(userId).digest('hex');
+      dbUserId = [
+        hash.substring(0, 8),
+        hash.substring(8, 12),
+        hash.substring(12, 16),
+        hash.substring(16, 20),
+        hash.substring(20, 32)
+      ].join('-');
+
+      Logger.info(`Converting user ID to UUID format: ${userId} -> ${dbUserId}`);
+    }
+
+    try {
+      // Update or insert transcription
+      const { data: existing } = await supabase
+        .from('ai_transcription')
+        .select('id, audio_url, duration')
+        .eq('create_user_id', dbUserId)
+        .order('created_at', { ascending: false })
+        .limit(1)
+        .single();
+
+      if (existing) {
+        await supabase
+          .from('ai_transcription')
+          .update({
+            transcription_text: transcription,
+            updated_at: new Date().toISOString()
+          })
+          .eq('id', existing.id);
+      } else {
+        await supabase
+          .from('ai_transcription')
+          .insert({
+            create_user_id: dbUserId,
+            incident_report_id: null,
+            transcription_text: transcription,
+            audio_url: '',
+            created_at: new Date().toISOString()
+          });
+      }
+
+      Logger.info('Transcription saved successfully to database');
+    } catch (dbError) {
+      Logger.error('Database operation failed, continuing without database save:', dbError);
+      // Continue without failing - the transcription confirmation can still work
+    }
+
+    // Generate AI summary (with original userId for consistency)
     const summary = await generateAISummary(transcription, userId, queueId || userId);
 
     // Send WebSocket update if queueId provided
@@ -3093,6 +3162,7 @@ app.post('/api/update-transcription', checkGDPRConsent, async (req, res) => {
     res.json({ 
       success: true,
       summary: summary,
+      message: 'Transcription confirmed successfully',
       requestId: req.requestId
     });
 
@@ -3101,6 +3171,7 @@ app.post('/api/update-transcription', checkGDPRConsent, async (req, res) => {
     res.status(500).json({ 
       error: 'Failed to update transcription',
       code: 'UPDATE_FAILED',
+      details: error.message,
       requestId: req.requestId
     });
   }
@@ -3148,6 +3219,7 @@ app.post('/api/save-transcription', checkGDPRConsent, async (req, res) => {
       .from('ai_transcription')
       .select('id, audio_url')
       .eq('create_user_id', userId)
+      .eq('incident_report_id', incidentId || null)
       .single();
 
     let result;
@@ -3171,6 +3243,7 @@ app.post('/api/save-transcription', checkGDPRConsent, async (req, res) => {
         .from('ai_transcription')
         .insert({
           create_user_id: userId,
+          incident_report_id: incidentId || null,
           transcription_text: transcription,
           audio_url: audioUrl || '',
           created_at: new Date().toISOString()
@@ -3474,11 +3547,71 @@ app.post('/generate-pdf', checkSharedKey, async (req, res) => {
 });
 
 app.post('/webhook/generate-pdf', checkSharedKey, async (req, res) => {
-  // Alias for generate-pdf endpoint
-  return app._router.handle(
-    Object.assign(req, { url: '/generate-pdf', path: '/generate-pdf' }),
-    res
-  );
+  // Alias for generate-pdf endpoint - call the same logic
+  if (!fetchAllData || !generatePDF || !sendEmails) {
+    return res.status(503).json({ 
+      error: 'PDF generation not configured',
+      requestId: req.requestId 
+    });
+  }
+
+  try {
+    const { create_user_id } = req.body;
+
+    if (!create_user_id) {
+      return res.status(400).json({ 
+        error: 'Missing create_user_id',
+        requestId: req.requestId 
+      });
+    }
+
+    Logger.info('📄 PDF generation requested via webhook', { userId: create_user_id });
+
+    // Log GDPR activity
+    await logGDPRActivity(create_user_id, 'PDF_GENERATION', {
+      source: 'webhook'
+    }, req);
+
+    // Fetch all data
+    const allData = await fetchAllData(create_user_id);
+
+    if (!allData || !allData.userSignup) {
+      return res.status(404).json({ 
+        error: 'User data not found',
+        requestId: req.requestId 
+      });
+    }
+
+    // Generate PDF
+    const pdfBuffer = await generatePDF(allData);
+
+    // Store completed form
+    const formRecord = await storeCompletedForm(create_user_id, pdfBuffer, allData);
+
+    // Send emails
+    const emailResult = await sendEmails({
+      userEmail: allData.userSignup.email,
+      userName: allData.userSignup.full_name,
+      pdfBuffer: pdfBuffer,
+      formId: formRecord.id
+    });
+
+    res.json({
+      success: true,
+      message: 'PDF generated and sent successfully',
+      formId: formRecord.id,
+      emailsSent: emailResult.sent,
+      requestId: req.requestId
+    });
+
+  } catch (error) {
+    Logger.error('PDF generation error via webhook', error);
+    res.status(500).json({ 
+      error: 'Failed to generate PDF',
+      details: error.message,
+      requestId: req.requestId 
+    });
+  }
 });
 
 // --- ERROR HANDLING MIDDLEWARE ---

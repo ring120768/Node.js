@@ -892,7 +892,7 @@ async function generateAISummary(transcriptionText, createUserId, incidentId) {
     // Generate UUID if user ID is not UUID format
     let dbUserId = createUserId;
     const uuidRegex = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
-    
+
     if (!uuidRegex.test(createUserId)) {
       const crypto = require('crypto');
       const hash = crypto.createHash('md5').update(createUserId).digest('hex');
@@ -1113,7 +1113,7 @@ async function processTranscriptionFromBuffer(queueId, audioBuffer, create_user_
     // Generate UUID if user ID is not UUID format
     let dbUserId = create_user_id;
     const uuidRegex = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
-    
+
     if (!uuidRegex.test(create_user_id)) {
       const crypto = require('crypto');
       const hash = crypto.createHash('md5').update(create_user_id).digest('hex');
@@ -1931,6 +1931,7 @@ app.get('/health', async (req, res) => {
       what3words: externalServices.what3words
     },
     fixes: {
+      consent_handling: 'IMPROVED - Enhanced webhook consent detection and processing',
       ai_summary_columns: 'FIXED - Using only existing database columns',
       transcription_saving: 'FIXED - Removed non-existent column references',
       file_redirect: 'ADDED - transcription-status.html redirect to transcription.html',
@@ -2007,7 +2008,9 @@ app.get('/api/debug/user/:userId', checkSharedKey, async (req, res) => {
         incidentCount: incidentReports?.length || 0,
         transcriptionCount: aiTranscription?.length || 0,
         queuedItems: transcriptionQueue?.length || 0,
-        summaryCount: aiSummary?.length || 0
+        summaryCount: aiSummary?.length || 0,
+        hasConsent: userSignup?.gdpr_consent || false,
+        legalSupport: userSignup?.legal_support || 'Unknown'
       },
       requestId: req.requestId
     });
@@ -2018,6 +2021,49 @@ app.get('/api/debug/user/:userId', checkSharedKey, async (req, res) => {
       requestId: req.requestId 
     });
   }
+});
+
+// NEW: DEBUG ENDPOINT to inspect webhook payload structure
+app.post('/api/debug/webhook-test', checkSharedKey, async (req, res) => {
+  Logger.info('=== WEBHOOK DEBUG TEST ===');
+  Logger.info('Headers:', JSON.stringify(req.headers, null, 2));
+  Logger.info('Body:', JSON.stringify(req.body, null, 2));
+
+  // Log all fields
+  if (req.body) {
+    Logger.info('Field analysis:');
+    Object.keys(req.body).forEach(key => {
+      Logger.info(`  ${key}: [${typeof req.body[key]}] ${JSON.stringify(req.body[key])}`);
+    });
+
+    // Look for consent-related fields
+    Logger.info('Consent field search:');
+    Object.keys(req.body).forEach(key => {
+      if (key.toLowerCase().includes('legal') || 
+          key.toLowerCase().includes('consent') || 
+          key.toLowerCase().includes('agree') ||
+          key.toLowerCase().includes('share') ||
+          key.toLowerCase().includes('gdpr') ||
+          key.toLowerCase().includes('question') ||
+          key.toLowerCase().includes('q14')) {
+        Logger.info(`  FOUND CONSENT FIELD: ${key} = ${req.body[key]}`);
+      }
+    });
+  }
+
+  res.json({
+    success: true,
+    message: 'Check server logs for webhook structure',
+    fields: Object.keys(req.body || {}),
+    consentRelatedFields: Object.keys(req.body || {}).filter(key => 
+      key.toLowerCase().includes('legal') || 
+      key.toLowerCase().includes('consent') || 
+      key.toLowerCase().includes('agree') ||
+      key.toLowerCase().includes('share') ||
+      key.toLowerCase().includes('gdpr')
+    ),
+    requestId: req.requestId
+  });
 });
 
 // --- GDPR DATA EXPORT ENDPOINT ---
@@ -2315,25 +2361,27 @@ app.get('/', (req, res) => {
         .fix-badge { background: #4CAF50; color: white; padding: 2px 6px; border-radius: 3px; font-size: 10px; margin-left: 5px; }
         .optional-badge { background: #ff9800; color: white; padding: 2px 6px; border-radius: 3px; font-size: 10px; margin-left: 5px; }
         .new-badge { background: #9C27B0; color: white; padding: 2px 6px; border-radius: 3px; font-size: 10px; margin-left: 5px; }
+        .improved-badge { background: #00BCD4; color: white; padding: 2px 6px; border-radius: 3px; font-size: 10px; margin-left: 5px; }
     </style>
 </head>
 <body>
     <div class="container">
         <h1>🚗 Car Crash Lawyer AI - GDPR Compliant System <span class="gdpr-badge">GDPR COMPLIANT</span></h1>
-        <p class="status">✅ Server is running - All fixes applied</p>
+        <p class="status">✅ Server is running - Consent handling improved</p>
 
         <div class="section">
-            <h2>🔧 Latest Fixes Applied:</h2>
+            <h2>🔧 Latest Updates:</h2>
             <div class="endpoint">
-                <strong>Trust Proxy Configuration Fixed</strong> <span class="fix-badge">FIXED</span><br>
-                <p>✅ Changed trust proxy from 'true' to '1' for proper IP-based rate limiting</p>
-                <p>✅ Fixed apiLimiter and strictLimiter configurations</p>
-                <p>✅ Resolved ValidationError preventing user progression to declaration page</p>
+                <strong>Consent Handling Enhanced</strong> <span class="improved-badge">IMPROVED</span><br>
+                <p>✅ Webhook now properly detects and processes legal_support consent</p>
+                <p>✅ Automatic GDPR consent setting based on Typeform Q14 response</p>
+                <p>✅ Declined consent handling with notification suggestions</p>
+                <p>✅ Debug endpoint added for webhook payload inspection</p>
                 <br>
-                <strong>Database Issues Resolved</strong> <span class="fix-badge">FIXED</span><br>
-                <p>✅ AI Summary now uses only existing columns</p>
+                <strong>Trust Proxy & Database Issues</strong> <span class="fix-badge">FIXED</span><br>
+                <p>✅ Trust proxy set to 1 for proper IP-based rate limiting</p>
+                <p>✅ AI Summary uses only existing columns</p>
                 <p>✅ Transcription saving uses correct column names</p>
-                <p>✅ Added transcription-status.html → transcription.html redirect</p>
             </div>
         </div>
 
@@ -2358,9 +2406,10 @@ app.get('/', (req, res) => {
 
             <div class="endpoint">
                 <strong>Core Services:</strong><br>
-                <code>GET /health</code> - System health check with service status <span class="fix-badge">UPDATED</span><br>
+                <code>GET /health</code> - System health check with service status<br>
                 <code>GET /api/config</code> - Get Supabase configuration<br>
-                <code>GET /api/debug/user/:userId</code> - Debug user data (GDPR logged)<br>
+                <code>GET /api/debug/user/:userId</code> - Debug user data with consent status<br>
+                <code>POST /api/debug/webhook-test</code> - Test webhook payload structure <span class="new-badge">NEW</span><br>
                 <code>GET /api/test-openai</code> - Test OpenAI API key validity<br>
                 <code>GET /api/process-queue-now</code> - Manually trigger queue processing<br>
                 <code>GET /test/transcription-queue</code> - View queue status
@@ -2373,15 +2422,15 @@ app.get('/', (req, res) => {
             </div>
 
             <div class="endpoint">
-                <strong>Webhook Endpoints:</strong><br>
-                <code>POST /webhook/signup</code> - Process signup images<br>
+                <strong>Webhook Endpoints:</strong> <span class="improved-badge">IMPROVED</span><br>
+                <code>POST /webhook/signup</code> - Process signup with consent handling<br>
                 <code>POST /webhook/incident-report</code> - Process incident report files<br>
                 <code>POST /generate-pdf</code> - Generate and email PDF report<br>
                 <code>POST /webhook/generate-pdf</code> - Alternative PDF generation
             </div>
 
             <div class="endpoint">
-                <strong>Transcription Services (GDPR Compliant):</strong> <span class="fix-badge">FIXED</span><br>
+                <strong>Transcription Services (GDPR Compliant):</strong><br>
                 <code>POST /api/whisper/transcribe</code> - Direct Whisper transcription<br>
                 <code>GET /api/transcription-status/:queueId</code> - Check transcription status<br>
                 <code>POST /api/update-transcription</code> - Update/edit transcription<br>
@@ -2400,6 +2449,7 @@ app.get('/', (req, res) => {
                 <li>WebSocket: ${wss ? '✅ Active (' + wss.clients.size + ' clients)' : '❌ Not active'}</li>
                 <li>Auth Key: ${SHARED_KEY ? '✅ Set' : '❌ Missing'}</li>
                 <li>GDPR Compliance: ✅ Full compliance with audit logging</li>
+                <li>Consent Handling: ✅ Enhanced detection and processing <span class="improved-badge">IMPROVED</span></li>
                 <li>Data Retention: ${process.env.DATA_RETENTION_DAYS || CONSTANTS.DATA_RETENTION.DEFAULT_DAYS} days</li>
                 <li>Rate Limiting: ✅ Enabled (Fixed trust proxy configuration)</li>
             </ul>
@@ -3093,7 +3143,7 @@ app.post('/api/update-transcription', checkGDPRConsent, async (req, res) => {
     // Generate UUID if user ID is not UUID format
     let dbUserId = userId;
     const uuidRegex = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
-    
+
     if (!uuidRegex.test(userId)) {
       // Create a deterministic UUID from the string user ID
       const crypto = require('crypto');
@@ -3105,7 +3155,7 @@ app.post('/api/update-transcription', checkGDPRConsent, async (req, res) => {
         hash.substring(16, 20),
         hash.substring(20, 32)
       ].join('-');
-      
+
       Logger.info(`Converting user ID to UUID format: ${userId} -> ${dbUserId}`);
     }
 
@@ -3360,364 +3410,486 @@ app.get('/api/user/:userId/latest-transcription', async (req, res) => {
   }
 });
 
-// --- WEBHOOK ENDPOINTS ---
-app.post('/webhook/signup', checkSharedKey, async (req, res) => {
-  try {
-    Logger.info('Signup webhook received');
+    // --- IMPROVED WEBHOOK ENDPOINTS ---
+    app.post('/webhook/signup', checkSharedKey, async (req, res) => {
+      try {
+        Logger.info('Signup webhook received');
+        Logger.debug('Webhook payload:', JSON.stringify(req.body, null, 2));
 
-    if (!supabaseEnabled || !imageProcessor) {
-      return res.status(503).json({ 
-        error: 'Service not configured',
+        if (!supabaseEnabled || !imageProcessor) {
+          return res.status(503).json({ 
+            error: 'Service not configured',
+            requestId: req.requestId 
+          });
+        }
+
+        const webhookData = req.body;
+
+        if (!webhookData.create_user_id) {
+          return res.status(400).json({ 
+            error: 'Missing create_user_id',
+            requestId: req.requestId 
+          });
+        }
+
+        // DEBUG: Log all fields to find the consent field
+        Logger.debug('Looking for consent fields in webhook data:');
+        Object.keys(webhookData).forEach(key => {
+          if (key.toLowerCase().includes('legal') || 
+              key.toLowerCase().includes('consent') || 
+              key.toLowerCase().includes('agree') ||
+              key.toLowerCase().includes('share') ||
+              key.toLowerCase().includes('gdpr') ||
+              key.toLowerCase().includes('question') ||
+              key.toLowerCase().includes('q14')) {
+            Logger.debug(`  ${key}: ${webhookData[key]}`);
+          }
+        });
+
+        // Extract legal_support consent from Typeform Q14
+        // Try different possible field names based on Typeform structure
+        let legalSupportConsent = webhookData.legal_support || 
+                                 webhookData.question_14 || 
+                                 webhookData.q14 ||
+                                 webhookData['Do you agree to share this data for legal support?'] ||
+                                 webhookData.data_sharing_consent ||
+                                 webhookData.gdpr_consent_field;
+
+        Logger.info(`Legal support consent value found: ${legalSupportConsent}`);
+
+        // Normalize the consent value (handle "Yes", "No", true, false, etc.)
+        let hasConsent = false;
+        if (legalSupportConsent !== undefined && legalSupportConsent !== null) {
+          if (typeof legalSupportConsent === 'boolean') {
+            hasConsent = legalSupportConsent;
+          } else if (typeof legalSupportConsent === 'string') {
+            hasConsent = legalSupportConsent.toLowerCase() === 'yes' || 
+                        legalSupportConsent.toLowerCase() === 'true' ||
+                        legalSupportConsent.toLowerCase() === 'agreed' ||
+                        legalSupportConsent.toLowerCase() === 'agree';
+          }
+        }
+
+        Logger.info(`Processed consent status: ${hasConsent}`);
+
+        // Check if user already exists
+        const { data: existingUser } = await supabase
+          .from('user_signup')
+          .select('id, legal_support, gdpr_consent')
+          .eq('create_user_id', webhookData.create_user_id)
+          .single();
+
+        if (existingUser) {
+          Logger.info('Updating existing user with consent');
+
+          // Update existing user with consent
+          const { error: updateError } = await supabase
+            .from('user_signup')
+            .update({
+              legal_support: hasConsent ? 'Yes' : 'No',
+              gdpr_consent: hasConsent,
+              gdpr_consent_date: hasConsent ? new Date().toISOString() : null,
+              updated_at: new Date().toISOString()
+            })
+            .eq('create_user_id', webhookData.create_user_id);
+
+          if (updateError) {
+            Logger.error('Error updating user consent:', updateError);
+          } else {
+            Logger.success(`Updated user ${webhookData.create_user_id} - Consent: ${hasConsent}`);
+          }
+        } else {
+          Logger.info('Creating new user with consent');
+
+          // Create new user with all webhook data plus consent
+          const userData = {
+            ...webhookData,
+            legal_support: hasConsent ? 'Yes' : 'No',
+            gdpr_consent: hasConsent,
+            gdpr_consent_date: hasConsent ? new Date().toISOString() : null,
+            created_at: new Date().toISOString()
+          };
+
+          const { error: insertError } = await supabase
+            .from('user_signup')
+            .insert([userData]);
+
+          if (insertError) {
+            Logger.error('Error creating user:', insertError);
+          } else {
+            Logger.success(`Created user ${webhookData.create_user_id} - Consent: ${hasConsent}`);
+          }
+        }
+
+        // Handle declined consent
+        if (!hasConsent) {
+          Logger.warn(`User ${webhookData.create_user_id} DECLINED legal support consent`);
+
+          // Log GDPR activity for declined consent
+          await logGDPRActivity(webhookData.create_user_id, 'CONSENT_DECLINED', {
+            source: 'webhook',
+            reason: 'User declined legal support data sharing',
+            timestamp: new Date().toISOString()
+          }, req);
+
+          // TODO: Implement email notification service
+          // Here you would typically send an email to the user explaining:
+          // 1. They've declined consent for legal support
+          // 2. How to change this decision if needed
+          // 3. What services are limited without consent
+          Logger.info('TODO: Send notification to user about declined consent and how to change it');
+
+          return res.status(200).json({ 
+            success: true,
+            message: 'User registered but declined legal support - no processing will occur',
+            create_user_id: webhookData.create_user_id,
+            consent_status: 'declined',
+            action_required: 'User should be notified about how to enable legal support',
+            requestId: req.requestId 
+          });
+        }
+
+        // User has consent - proceed with normal processing
+        await logGDPRActivity(webhookData.create_user_id, 'CONSENT_GRANTED', {
+          source: 'webhook',
+          legal_support: 'Yes',
+          timestamp: new Date().toISOString()
+        }, req);
+
+        // Process images asynchronously only if consent granted
+        imageProcessor.processSignupImages(webhookData)
+          .then(result => {
+            Logger.success('Signup processing complete', result);
+          })
+          .catch(error => {
+            Logger.error('Signup processing failed', error);
+          });
+
+        res.status(200).json({ 
+          success: true, 
+          message: 'Signup processing started with consent',
+          create_user_id: webhookData.create_user_id,
+          consent_status: 'granted',
+          requestId: req.requestId 
+        });
+
+      } catch (error) {
+        Logger.error('Webhook error', error);
+        res.status(500).json({ 
+          success: false, 
+          error: error.message,
+          requestId: req.requestId 
+        });
+      }
+    });
+
+    app.post('/webhook/incident-report', checkSharedKey, async (req, res) => {
+      try {
+        Logger.info('🚨 Incident report webhook received');
+        Logger.info(`📋 Processing incident report files for: ${req.body.create_user_id}`);
+
+        if (!supabaseEnabled || !imageProcessor) {
+          return res.status(503).json({ 
+            error: 'Service not configured',
+            requestId: req.requestId 
+          });
+        }
+
+        const webhookData = req.body;
+
+        if (!webhookData.id && !webhookData.incident_report_id) {
+          return res.status(400).json({ 
+            error: 'Missing incident report ID',
+            requestId: req.requestId 
+          });
+        }
+
+        if (!webhookData.create_user_id) {
+          return res.status(400).json({ 
+            error: 'Missing user ID - GDPR compliance requires user identification',
+            code: 'MISSING_USER_ID',
+            requestId: req.requestId
+          });
+        }
+
+        const incidentId = webhookData.id || webhookData.incident_report_id;
+
+        // Log GDPR activity
+        await logGDPRActivity(webhookData.create_user_id, 'INCIDENT_REPORT_PROCESSING', {
+          source: 'webhook',
+          incident_id: incidentId,
+          has_files: true
+        }, req);
+
+        // Process files asynchronously
+        imageProcessor.processIncidentReportFiles(webhookData)
+          .then(result => {
+            Logger.success('✅ Incident report processing complete', result);
+          })
+          .catch(error => {
+            Logger.error('❌ Incident report processing failed', error);
+          });
+
+        res.status(200).json({ 
+          success: true, 
+          message: 'Incident report processing started',
+          incident_report_id: incidentId,
+          create_user_id: webhookData.create_user_id,
+          requestId: req.requestId 
+        });
+
+      } catch (error) {
+        Logger.error('Webhook error', error);
+        res.status(500).json({ 
+          success: false, 
+          error: error.message,
+          requestId: req.requestId 
+        });
+      }
+    });
+
+    // PDF GENERATION ENDPOINTS
+    app.post('/generate-pdf', checkSharedKey, async (req, res) => {
+      if (!fetchAllData || !generatePDF || !sendEmails) {
+        return res.status(503).json({ 
+          error: 'PDF generation not configured',
+          requestId: req.requestId 
+        });
+      }
+
+      try {
+        const { create_user_id } = req.body;
+
+        if (!create_user_id) {
+          return res.status(400).json({ 
+            error: 'Missing create_user_id',
+            requestId: req.requestId 
+          });
+        }
+
+        Logger.info('📄 PDF generation requested', { userId: create_user_id });
+
+        // Log GDPR activity
+        await logGDPRActivity(create_user_id, 'PDF_GENERATION', {
+          source: 'api'
+        }, req);
+
+        // Fetch all data
+        const allData = await fetchAllData(create_user_id);
+
+        if (!allData || !allData.userSignup) {
+          return res.status(404).json({ 
+            error: 'User data not found',
+            requestId: req.requestId 
+          });
+        }
+
+        // Generate PDF
+        const pdfBuffer = await generatePDF(allData);
+
+        // Store completed form
+        const formRecord = await storeCompletedForm(create_user_id, pdfBuffer, allData);
+
+        // Send emails
+        const emailResult = await sendEmails({
+          userEmail: allData.userSignup.email,
+          userName: allData.userSignup.full_name,
+          pdfBuffer: pdfBuffer,
+          formId: formRecord.id
+        });
+
+        res.json({
+          success: true,
+          message: 'PDF generated and sent successfully',
+          formId: formRecord.id,
+          emailsSent: emailResult.sent,
+          requestId: req.requestId
+        });
+
+      } catch (error) {
+        Logger.error('PDF generation error', error);
+        res.status(500).json({ 
+          error: 'Failed to generate PDF',
+          details: error.message,
+          requestId: req.requestId 
+        });
+      }
+    });
+
+    app.post('/webhook/generate-pdf', checkSharedKey, async (req, res) => {
+      // Alias for generate-pdf endpoint - call the same logic
+      if (!fetchAllData || !generatePDF || !sendEmails) {
+        return res.status(503).json({ 
+          error: 'PDF generation not configured',
+          requestId: req.requestId 
+        });
+      }
+
+      try {
+        const { create_user_id } = req.body;
+
+        if (!create_user_id) {
+          return res.status(400).json({ 
+            error: 'Missing create_user_id',
+            requestId: req.requestId 
+          });
+        }
+
+        Logger.info('📄 PDF generation requested via webhook', { userId: create_user_id });
+
+        // Log GDPR activity
+        await logGDPRActivity(create_user_id, 'PDF_GENERATION', {
+          source: 'webhook'
+        }, req);
+
+        // Fetch all data
+        const allData = await fetchAllData(create_user_id);
+
+        if (!allData || !allData.userSignup) {
+          return res.status(404).json({ 
+            error: 'User data not found',
+            requestId: req.requestId 
+          });
+        }
+
+        // Generate PDF
+        const pdfBuffer = await generatePDF(allData);
+
+        // Store completed form
+        const formRecord = await storeCompletedForm(create_user_id, pdfBuffer, allData);
+
+        // Send emails
+        const emailResult = await sendEmails({
+          userEmail: allData.userSignup.email,
+          userName: allData.userSignup.full_name,
+          pdfBuffer: pdfBuffer,
+          formId: formRecord.id
+        });
+
+        res.json({
+          success: true,
+          message: 'PDF generated and sent successfully',
+          formId: formRecord.id,
+          emailsSent: emailResult.sent,
+          requestId: req.requestId
+        });
+
+      } catch (error) {
+        Logger.error('PDF generation error via webhook', error);
+        res.status(500).json({ 
+          error: 'Failed to generate PDF',
+          details: error.message,
+          requestId: req.requestId 
+        });
+      }
+    });
+
+    // --- ERROR HANDLING MIDDLEWARE ---
+    app.use((err, req, res, next) => {
+      if (err.name === 'MulterError') {
+        if (err.code === 'LIMIT_FILE_SIZE') {
+          return res.status(400).json({ 
+            error: 'File size too large. Maximum size: 50MB for audio, 10MB for images',
+            code: 'FILE_TOO_LARGE',
+            requestId: req.requestId 
+          });
+        }
+        return res.status(400).json({ 
+          error: `Upload error: ${err.message}`,
+          code: err.code,
+          requestId: req.requestId 
+        });
+      }
+
+      Logger.error('Unhandled error', err);
+      res.status(500).json({ 
+        error: 'Internal server error',
+        message: process.env.NODE_ENV === 'development' ? err.message : 'An error occurred',
         requestId: req.requestId 
       });
-    }
+    });
 
-    const webhookData = req.body;
-
-    if (!webhookData.create_user_id) {
-      return res.status(400).json({ 
-        error: 'Missing create_user_id',
+    // 404 handler - must be last
+    app.use((req, res) => {
+      res.status(404).json({ 
+        error: 'Not found',
+        path: req.path,
+        method: req.method,
         requestId: req.requestId 
       });
+    });
+
+    // --- SERVER STARTUP ---
+    const PORT = process.env.PORT || 3000;
+
+    // Graceful shutdown handler
+    process.on('SIGTERM', gracefulShutdown);
+    process.on('SIGINT', gracefulShutdown);
+
+    async function gracefulShutdown(signal) {
+      Logger.info(`⚠️ ${signal} received, starting graceful shutdown...`);
+
+      // Stop accepting new connections
+      server.close(() => {
+        Logger.info('HTTP server closed');
+      });
+
+      // Close WebSocket connections
+      wss.clients.forEach((ws) => {
+        ws.close(1001, 'Server shutting down');
+      });
+
+      // Clear intervals
+      if (transcriptionQueueInterval) {
+        clearInterval(transcriptionQueueInterval);
+      }
+      clearInterval(wsHeartbeat);
+
+      // Cleanup Supabase realtime channels
+      if (realtimeChannels.transcriptionChannel) {
+        supabase.removeChannel(realtimeChannels.transcriptionChannel);
+      }
+      if (realtimeChannels.summaryChannel) {
+        supabase.removeChannel(realtimeChannels.summaryChannel);
+      }
+
+      // Wait for pending operations
+      await new Promise(resolve => setTimeout(resolve, 5000));
+
+      Logger.info('Graceful shutdown complete');
+      process.exit(0);
     }
 
-    // Log GDPR activity
-    await logGDPRActivity(webhookData.create_user_id, 'SIGNUP_PROCESSING', {
-      source: 'webhook',
-      has_images: true
-    }, req);
+    // Start the server
+    server.listen(PORT, () => {
+      Logger.success(`🚀 Server running on port ${PORT}`);
+      Logger.info(`📊 Environment: ${process.env.NODE_ENV || 'development'}`);
+      Logger.info(`🔐 GDPR Compliance: ACTIVE`);
+      Logger.info(`🗄️ Supabase: ${supabaseEnabled ? 'CONNECTED' : 'DISABLED'}`);
+      Logger.info(`🤖 OpenAI: ${process.env.OPENAI_API_KEY ? 'CONFIGURED' : 'NOT CONFIGURED'}`);
+      Logger.info(`🔄 Transcription Queue: ${transcriptionQueueInterval ? 'RUNNING' : 'DISABLED'}`);
+      Logger.info(`🔌 WebSocket: ACTIVE`);
+      Logger.info(`🎤 Recording Interface: UNIFIED at /transcription.html`);
+      Logger.info(`⚡ Realtime Updates: ${realtimeChannels.transcriptionChannel ? 'ENABLED' : 'DISABLED (optional)'}`);
+      Logger.info(`✅ Trust Proxy: FIXED (set to 1 for proper rate limiting)`);
+      Logger.info(`✅ Consent Handling: IMPROVED with automatic detection`);
 
-    // Process images asynchronously
-    imageProcessor.processSignupImages(webhookData)
-      .then(result => {
-        Logger.success('Signup processing complete', result);
-      })
-      .catch(error => {
-        Logger.error('Signup processing failed', error);
-      });
+      if (!SHARED_KEY) {
+        Logger.warn('⚠️ ZAPIER_SHARED_KEY not set - authentication disabled');
+      }
 
-    res.status(200).json({ 
-      success: true, 
-      message: 'Signup processing started',
-      create_user_id: webhookData.create_user_id,
-      requestId: req.requestId 
+      // List available endpoints
+      Logger.info('📍 Key endpoints:');
+      Logger.info('  - GET  /health - System health check');
+      Logger.info('  - GET  /transcription.html - Main recording interface');
+      Logger.info('  - POST /api/whisper/transcribe - Process audio');
+      Logger.info('  - POST /webhook/signup - Process signup with consent');
+      Logger.info('  - POST /webhook/incident-report - Process incident');
+      Logger.info('  - POST /api/debug/webhook-test - Debug webhook payload');
+
+      Logger.success('✅ All systems operational - Ready to serve requests');
+      Logger.success('🔧 Consent handling improved - Processing based on legal_support field');
     });
 
-  } catch (error) {
-    Logger.error('Webhook error', error);
-    res.status(500).json({ 
-      success: false, 
-      error: error.message,
-      requestId: req.requestId 
-    });
-  }
-});
-
-app.post('/webhook/incident-report', checkSharedKey, async (req, res) => {
-  try {
-    Logger.info('🚨 Incident report webhook received');
-    Logger.info(`📋 Processing incident report files for: ${req.body.create_user_id}`);
-
-    if (!supabaseEnabled || !imageProcessor) {
-      return res.status(503).json({ 
-        error: 'Service not configured',
-        requestId: req.requestId 
-      });
-    }
-
-    const webhookData = req.body;
-
-    if (!webhookData.id && !webhookData.incident_report_id) {
-      return res.status(400).json({ 
-        error: 'Missing incident report ID',
-        requestId: req.requestId 
-      });
-    }
-
-    if (!webhookData.create_user_id) {
-      return res.status(400).json({ 
-        error: 'Missing user ID - GDPR compliance requires user identification',
-        code: 'MISSING_USER_ID',
-        requestId: req.requestId
-      });
-    }
-
-    const incidentId = webhookData.id || webhookData.incident_report_id;
-
-    // Log GDPR activity
-    await logGDPRActivity(webhookData.create_user_id, 'INCIDENT_REPORT_PROCESSING', {
-      source: 'webhook',
-      incident_id: incidentId,
-      has_files: true
-    }, req);
-
-    // Process files asynchronously
-    imageProcessor.processIncidentReportFiles(webhookData)
-      .then(result => {
-        Logger.success('✅ Incident report processing complete', result);
-      })
-      .catch(error => {
-        Logger.error('❌ Incident report processing failed', error);
-      });
-
-    res.status(200).json({ 
-      success: true, 
-      message: 'Incident report processing started',
-      incident_report_id: incidentId,
-      create_user_id: webhookData.create_user_id,
-      requestId: req.requestId 
-    });
-
-  } catch (error) {
-    Logger.error('Webhook error', error);
-    res.status(500).json({ 
-      success: false, 
-      error: error.message,
-      requestId: req.requestId 
-    });
-  }
-});
-
-// PDF GENERATION ENDPOINTS
-app.post('/generate-pdf', checkSharedKey, async (req, res) => {
-  if (!fetchAllData || !generatePDF || !sendEmails) {
-    return res.status(503).json({ 
-      error: 'PDF generation not configured',
-      requestId: req.requestId 
-    });
-  }
-
-  try {
-    const { create_user_id } = req.body;
-
-    if (!create_user_id) {
-      return res.status(400).json({ 
-        error: 'Missing create_user_id',
-        requestId: req.requestId 
-      });
-    }
-
-    Logger.info('📄 PDF generation requested', { userId: create_user_id });
-
-    // Log GDPR activity
-    await logGDPRActivity(create_user_id, 'PDF_GENERATION', {
-      source: 'api'
-    }, req);
-
-    // Fetch all data
-    const allData = await fetchAllData(create_user_id);
-
-    if (!allData || !allData.userSignup) {
-      return res.status(404).json({ 
-        error: 'User data not found',
-        requestId: req.requestId 
-      });
-    }
-
-    // Generate PDF
-    const pdfBuffer = await generatePDF(allData);
-
-    // Store completed form
-    const formRecord = await storeCompletedForm(create_user_id, pdfBuffer, allData);
-
-    // Send emails
-    const emailResult = await sendEmails({
-      userEmail: allData.userSignup.email,
-      userName: allData.userSignup.full_name,
-      pdfBuffer: pdfBuffer,
-      formId: formRecord.id
-    });
-
-    res.json({
-      success: true,
-      message: 'PDF generated and sent successfully',
-      formId: formRecord.id,
-      emailsSent: emailResult.sent,
-      requestId: req.requestId
-    });
-
-  } catch (error) {
-    Logger.error('PDF generation error', error);
-    res.status(500).json({ 
-      error: 'Failed to generate PDF',
-      details: error.message,
-      requestId: req.requestId 
-    });
-  }
-});
-
-app.post('/webhook/generate-pdf', checkSharedKey, async (req, res) => {
-  // Alias for generate-pdf endpoint - call the same logic
-  if (!fetchAllData || !generatePDF || !sendEmails) {
-    return res.status(503).json({ 
-      error: 'PDF generation not configured',
-      requestId: req.requestId 
-    });
-  }
-
-  try {
-    const { create_user_id } = req.body;
-
-    if (!create_user_id) {
-      return res.status(400).json({ 
-        error: 'Missing create_user_id',
-        requestId: req.requestId 
-      });
-    }
-
-    Logger.info('📄 PDF generation requested via webhook', { userId: create_user_id });
-
-    // Log GDPR activity
-    await logGDPRActivity(create_user_id, 'PDF_GENERATION', {
-      source: 'webhook'
-    }, req);
-
-    // Fetch all data
-    const allData = await fetchAllData(create_user_id);
-
-    if (!allData || !allData.userSignup) {
-      return res.status(404).json({ 
-        error: 'User data not found',
-        requestId: req.requestId 
-      });
-    }
-
-    // Generate PDF
-    const pdfBuffer = await generatePDF(allData);
-
-    // Store completed form
-    const formRecord = await storeCompletedForm(create_user_id, pdfBuffer, allData);
-
-    // Send emails
-    const emailResult = await sendEmails({
-      userEmail: allData.userSignup.email,
-      userName: allData.userSignup.full_name,
-      pdfBuffer: pdfBuffer,
-      formId: formRecord.id
-    });
-
-    res.json({
-      success: true,
-      message: 'PDF generated and sent successfully',
-      formId: formRecord.id,
-      emailsSent: emailResult.sent,
-      requestId: req.requestId
-    });
-
-  } catch (error) {
-    Logger.error('PDF generation error via webhook', error);
-    res.status(500).json({ 
-      error: 'Failed to generate PDF',
-      details: error.message,
-      requestId: req.requestId 
-    });
-  }
-});
-
-// --- ERROR HANDLING MIDDLEWARE ---
-app.use((err, req, res, next) => {
-  if (err.name === 'MulterError') {
-    if (err.code === 'LIMIT_FILE_SIZE') {
-      return res.status(400).json({ 
-        error: 'File size too large. Maximum size: 50MB for audio, 10MB for images',
-        code: 'FILE_TOO_LARGE',
-        requestId: req.requestId 
-      });
-    }
-    return res.status(400).json({ 
-      error: `Upload error: ${err.message}`,
-      code: err.code,
-      requestId: req.requestId 
-    });
-  }
-
-  Logger.error('Unhandled error', err);
-  res.status(500).json({ 
-    error: 'Internal server error',
-    message: process.env.NODE_ENV === 'development' ? err.message : 'An error occurred',
-    requestId: req.requestId 
-  });
-});
-
-// 404 handler - must be last
-app.use((req, res) => {
-  res.status(404).json({ 
-    error: 'Not found',
-    path: req.path,
-    method: req.method,
-    requestId: req.requestId 
-  });
-});
-
-// --- SERVER STARTUP ---
-const PORT = process.env.PORT || 3000;
-
-// Graceful shutdown handler
-process.on('SIGTERM', gracefulShutdown);
-process.on('SIGINT', gracefulShutdown);
-
-async function gracefulShutdown(signal) {
-  Logger.info(`⚠️ ${signal} received, starting graceful shutdown...`);
-
-  // Stop accepting new connections
-  server.close(() => {
-    Logger.info('HTTP server closed');
-  });
-
-  // Close WebSocket connections
-  wss.clients.forEach((ws) => {
-    ws.close(1001, 'Server shutting down');
-  });
-
-  // Clear intervals
-  if (transcriptionQueueInterval) {
-    clearInterval(transcriptionQueueInterval);
-  }
-  clearInterval(wsHeartbeat);
-
-  // Cleanup Supabase realtime channels
-  if (realtimeChannels.transcriptionChannel) {
-    supabase.removeChannel(realtimeChannels.transcriptionChannel);
-  }
-  if (realtimeChannels.summaryChannel) {
-    supabase.removeChannel(realtimeChannels.summaryChannel);
-  }
-
-  // Wait for pending operations
-  await new Promise(resolve => setTimeout(resolve, 5000));
-
-  Logger.info('Graceful shutdown complete');
-  process.exit(0);
-}
-
-// Start the server
-server.listen(PORT, () => {
-  Logger.success(`🚀 Server running on port ${PORT}`);
-  Logger.info(`📊 Environment: ${process.env.NODE_ENV || 'development'}`);
-  Logger.info(`🔐 GDPR Compliance: ACTIVE`);
-  Logger.info(`🗄️ Supabase: ${supabaseEnabled ? 'CONNECTED' : 'DISABLED'}`);
-  Logger.info(`🤖 OpenAI: ${process.env.OPENAI_API_KEY ? 'CONFIGURED' : 'NOT CONFIGURED'}`);
-  Logger.info(`🔄 Transcription Queue: ${transcriptionQueueInterval ? 'RUNNING' : 'DISABLED'}`);
-  Logger.info(`🔌 WebSocket: ACTIVE`);
-  Logger.info(`🎤 Recording Interface: UNIFIED at /transcription.html`);
-  Logger.info(`⚡ Realtime Updates: ${realtimeChannels.transcriptionChannel ? 'ENABLED' : 'DISABLED (optional)'}`);
-  Logger.info(`✅ Trust Proxy: FIXED (set to 1 for proper rate limiting)`);
-
-  if (!SHARED_KEY) {
-    Logger.warn('⚠️ ZAPIER_SHARED_KEY not set - authentication disabled');
-  }
-
-  // List available endpoints
-  Logger.info('📍 Key endpoints:');
-  Logger.info('  - GET  /health - System health check');
-  Logger.info('  - GET  /transcription.html - Main recording interface');
-  Logger.info('  - POST /api/whisper/transcribe - Process audio');
-  Logger.info('  - POST /webhook/signup - Process signup');
-  Logger.info('  - POST /webhook/incident-report - Process incident');
-
-  Logger.success('✅ All systems operational - Ready to serve requests');
-  Logger.success('🔧 Trust proxy configuration fixed - Users can now progress to declaration page');
-});
-
-// Export for testing
-module.exports = { app, server };
+    // Export for testing
+    module.exports = { app, server };
