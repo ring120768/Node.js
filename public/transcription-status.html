@@ -6,6 +6,10 @@
     <meta name="apple-mobile-web-app-capable" content="yes">
     <meta name="mobile-web-app-capable" content="yes">
     <title>Record Your Statement - Car Crash Lawyer AI</title>
+
+    <!-- Supabase Client Library -->
+    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+
     <style>
         /* Base Styles */
         * {
@@ -51,6 +55,27 @@
             text-align: center;
             margin-bottom: 30px;
             font-size: 24px;
+        }
+
+        /* GDPR Notice */
+        .gdpr-notice {
+            background: #e8f4fd;
+            border: 1px solid #2196F3;
+            border-radius: 8px;
+            padding: 12px;
+            margin-bottom: 20px;
+            font-size: 13px;
+            color: #0c5460;
+            display: none;
+        }
+
+        .gdpr-notice.visible {
+            display: block;
+        }
+
+        .gdpr-notice a {
+            color: #0056b3;
+            text-decoration: underline;
         }
 
         /* User Info Badge */
@@ -621,6 +646,13 @@
     <div class="container">
         <h1>🎤 Record Your Statement</h1>
 
+        <!-- GDPR Notice -->
+        <div class="gdpr-notice" id="gdprNotice">
+            <strong>Privacy Notice:</strong> Your audio recording will be processed using AI transcription services. 
+            By recording, you consent to this processing. Your data is protected under GDPR. 
+            <a href="https://carcrashlawyerai.com/privacy-policy" target="_blank">Learn more</a>
+        </div>
+
         <!-- User Info Badge -->
         <div class="user-info-badge" id="userInfoBadge">
             Session ID: <strong id="userIdDisplay"></strong>
@@ -744,6 +776,210 @@
 
     <script>
         // ============================
+        // Configuration Management
+        // ============================
+        async function getConfig() {
+            const cached = sessionStorage.getItem('app_config');
+            if (cached) {
+                return JSON.parse(cached);
+            }
+
+            try {
+                const response = await fetch('/api/config');
+                const config = await response.json();
+                sessionStorage.setItem('app_config', JSON.stringify(config));
+                return config;
+            } catch (error) {
+                console.error('Failed to fetch config:', error);
+                return {
+                    apiKey: 'fallback-key',
+                    environment: 'production'
+                };
+            }
+        }
+
+        // App configuration holder
+        let appConfig = null;
+        let supabase = null;
+
+        // ============================
+        // Supabase Configuration
+        // ============================
+        async function initializeSupabase() {
+            if (supabase) return supabase;
+
+            try {
+                const config = await getConfig();
+
+                if (config.supabaseUrl && config.supabaseAnonKey) {
+                    supabase = window.supabase.createClient(
+                        config.supabaseUrl,
+                        config.supabaseAnonKey
+                    );
+                    console.log('Supabase initialized successfully');
+                }
+                return supabase;
+            } catch (error) {
+                console.error('Failed to initialize Supabase:', error);
+                return null;
+            }
+        }
+
+        // Initialize configuration
+        async function initializeConfig() {
+            try {
+                appConfig = await getConfig();
+                console.log('Configuration loaded:', appConfig);
+
+                // Update any config-dependent settings
+                if (appConfig.maxRecordingTime) {
+                    CONFIG.MAX_RECORDING_TIME = appConfig.maxRecordingTime;
+                }
+                if (appConfig.pollInterval) {
+                    CONFIG.POLL_INTERVAL = appConfig.pollInterval;
+                }
+                if (appConfig.transcriptionQueueInterval) {
+                    CONFIG.TRANSCRIPTION_QUEUE_INTERVAL = appConfig.transcriptionQueueInterval * 60000;
+                }
+
+                return appConfig;
+            } catch (error) {
+                console.error('Failed to load configuration:', error);
+                appConfig = {
+                    apiKey: 'fallback-key',
+                    environment: 'production'
+                };
+                return appConfig;
+            }
+        }
+
+        // ============================
+        // Enhanced GDPR Consent Management
+        // ============================
+        async function logConsent(consentType, agreed) {
+            try {
+                const apiKey = appConfig?.apiKey || 'fallback-key';
+
+                const response = await fetch('/api/gdpr/log-consent', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'X-Api-Key': apiKey
+                    },
+                    body: JSON.stringify({
+                        create_user_id: state.userId,
+                        incident_id: state.incidentReportId,
+                        consent_type: consentType,
+                        consent_given: agreed,
+                        consent_date: new Date().toISOString(),
+                        page: 'transcription-status.html'
+                    })
+                });
+
+                if (!response.ok) {
+                    console.error('Failed to log consent, but continuing...');
+                } else {
+                    const result = await response.json();
+                    console.log('Consent logged:', result);
+
+                    // Update localStorage for quick checks
+                    localStorage.setItem(`gdpr_consent_${consentType}`, agreed ? 'true' : 'false');
+                    localStorage.setItem('gdpr_consent_date', new Date().toISOString());
+                }
+            } catch (error) {
+                console.error('Error logging consent:', error);
+            }
+        }
+
+        async function checkGDPRConsent(userId) {
+            // Quick check from localStorage first
+            const localConsent = localStorage.getItem('gdpr_consent');
+            if (localConsent === 'true') {
+                return true;
+            }
+
+            if (!supabase || !userId) return false;
+
+            try {
+                // Check gdpr_consent table
+                const { data, error } = await supabase
+                    .from('gdpr_consent')
+                    .select('gdpr_consent, gdpr_consent_date')
+                    .eq('create_user_id', userId)
+                    .order('gdpr_consent_date', { ascending: false })
+                    .limit(1)
+                    .single();
+
+                if (error || !data) {
+                    // Check user_signup table as fallback
+                    const { data: userData } = await supabase
+                        .from('user_signup')
+                        .select('gdpr_consent, legal_support')
+                        .eq('create_user_id', userId)
+                        .single();
+
+                    const hasConsent = userData?.gdpr_consent === true || 
+                                      userData?.legal_support === 'Yes';
+
+                    if (hasConsent) {
+                        localStorage.setItem('gdpr_consent', 'true');
+                    }
+
+                    return hasConsent;
+                }
+
+                const hasConsent = data.gdpr_consent === true;
+
+                if (hasConsent) {
+                    localStorage.setItem('gdpr_consent', 'true');
+                    localStorage.setItem('gdpr_consent_date', data.gdpr_consent_date);
+                }
+
+                return hasConsent;
+            } catch (error) {
+                console.error('Error checking GDPR consent:', error);
+                return false;
+            }
+        }
+
+        // Use before any data operations
+        async function performDataOperation(operation, data) {
+            const hasConsent = await checkGDPRConsent(state.userId);
+
+            if (!hasConsent) {
+                // Build redirect URL with return info
+                const returnUrl = encodeURIComponent(window.location.href);
+                const params = new URLSearchParams({
+                    create_user_id: state.userId,
+                    require_consent: 'true',
+                    return_url: returnUrl,
+                    operation: operation
+                });
+
+                if (state.incidentReportId) {
+                    params.append('incident_report_id', state.incidentReportId);
+                }
+
+                // Redirect to declaration page for consent
+                window.location.href = `/declaration.html?${params.toString()}`;
+                return false;
+            }
+
+            // Proceed with operation
+            console.log(`GDPR consent verified, proceeding with ${operation}`);
+            return true;
+        }
+
+        // GDPR Compliance Wrapper
+        async function withGDPRConsent(operation, callback) {
+            const canProceed = await performDataOperation(operation);
+            if (canProceed && callback) {
+                return callback();
+            }
+            return canProceed;
+        }
+
+        // ============================
         // Configuration and Global Variables
         // ============================
         const CONFIG = {
@@ -815,7 +1051,8 @@
             console.log('Session initialized:', {
                 userId: state.userId,
                 incidentId: state.incidentReportId,
-                source: urlParams.get('source') || 'direct'
+                source: urlParams.get('source') || 'direct',
+                config: appConfig
             });
 
             return state.userId;
@@ -1109,9 +1346,18 @@
         }
 
         // ============================
-        // Recording Functions
+        // Recording Functions with GDPR Check
         // ============================
         async function startRecording() {
+            // Check GDPR consent before recording
+            const hasConsent = await performDataOperation('audio_recording');
+            if (!hasConsent) {
+                return; // Will redirect to consent page
+            }
+
+            // Log audio recording consent
+            await logConsent('audio_recording', true);
+
             try {
                 if (!navigator.mediaDevices || !navigator.mediaDevices.getUserMedia) {
                     throw new Error('Your browser does not support audio recording');
@@ -1283,9 +1529,15 @@
         }
 
         // ============================
-        // Upload and Processing
+        // Upload and Processing with GDPR
         // ============================
         async function uploadAndProcess(audioBlob) {
+            // Check GDPR consent before uploading
+            const hasConsent = await performDataOperation('data_processing');
+            if (!hasConsent) {
+                return;
+            }
+
             const formData = new FormData();
             formData.append('audio', audioBlob, 'recording.webm');
             formData.append('create_user_id', state.userId);
@@ -1299,8 +1551,15 @@
                 state.isProcessing = true;
                 console.log('Upload started, isProcessing set to true');
 
+                // Add API key from config if available
+                const headers = {};
+                if (appConfig?.apiKey) {
+                    headers['X-Api-Key'] = appConfig.apiKey;
+                }
+
                 const response = await fetch('/api/whisper/transcribe', {
                     method: 'POST',
+                    headers: headers,
                     body: formData
                 });
 
@@ -1435,13 +1694,19 @@
         }
 
         // ============================
-        // Confirmation and Save - FIXED FOR DECLARATION REDIRECT
+        // Confirmation and Save with GDPR
         // ============================
         async function confirmTranscription() {
             const editedText = document.getElementById('transcriptionText').textContent;
 
             if (!editedText.trim()) {
                 showStatus('Please enter or verify the transcription before continuing', 'warning');
+                return;
+            }
+
+            // Check GDPR consent before saving
+            const hasConsent = await performDataOperation('data_storage');
+            if (!hasConsent) {
                 return;
             }
 
@@ -1459,12 +1724,18 @@
             try {
                 showStatus('Saving transcription...', 'info');
 
+                // Use API key from config if available
+                const headers = {
+                    'Content-Type': 'application/json'
+                };
+                if (appConfig?.apiKey) {
+                    headers['X-Api-Key'] = appConfig.apiKey;
+                }
+
                 // First, update the transcription if it was edited
                 const updateResponse = await fetch('/api/update-transcription', {
                     method: 'POST',
-                    headers: {
-                        'Content-Type': 'application/json',
-                    },
+                    headers: headers,
                     body: JSON.stringify({
                         queueId: state.currentQueueId,
                         userId: state.userId,
@@ -1481,9 +1752,7 @@
                 // Then save the transcription
                 const saveResponse = await fetch('/api/save-transcription', {
                     method: 'POST',
-                    headers: {
-                        'Content-Type': 'application/json',
-                    },
+                    headers: headers,
                     body: JSON.stringify({
                         queueId: state.currentQueueId,
                         userId: state.userId,
@@ -1677,11 +1946,29 @@
         // ============================
         // Event Listeners and Initialization
         // ============================
-        document.addEventListener('DOMContentLoaded', () => {
+        document.addEventListener('DOMContentLoaded', async () => {
             console.log('Initializing recording page');
+
+            // Initialize configuration first
+            await initializeConfig();
+
+            // Initialize Supabase
+            await initializeSupabase();
 
             // Initialize session
             initializeSession();
+
+            // Check GDPR consent on page load
+            if (appConfig?.gdpr?.consentRequired) {
+                const hasConsent = await checkGDPRConsent(state.userId);
+
+                if (!hasConsent && appConfig?.gdpr?.checkBeforeOperations) {
+                    // Show GDPR notice
+                    document.getElementById('gdprNotice').classList.add('visible');
+                }
+
+                console.log('GDPR consent status:', hasConsent);
+            }
 
             // Initialize components
             initializeVisualizer();

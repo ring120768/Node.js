@@ -4,6 +4,10 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Data Sharing Declaration - Car Crash Lawyer AI</title>
+
+    <!-- Supabase Client Library -->
+    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+
     <style>
         * {
             margin: 0;
@@ -279,6 +283,27 @@
             }
         }
 
+        .loading-indicator {
+            display: none;
+            text-align: center;
+            padding: 20px;
+        }
+
+        .spinner {
+            border: 3px solid #f3f3f3;
+            border-top: 3px solid #667eea;
+            border-radius: 50%;
+            width: 40px;
+            height: 40px;
+            animation: spin 1s linear infinite;
+            margin: 0 auto;
+        }
+
+        @keyframes spin {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
+        }
+
         @media (max-width: 640px) {
             .container {
                 padding: 20px;
@@ -306,36 +331,43 @@
         <div class="lock-icon">🔒</div>
         <h1>Data Sharing Declaration</h1>
 
-        <div class="declaration-box">
-            <h2>Important: Your Data & Your Claim</h2>
-            <p>Your incident report has been successfully recorded and transcribed. To proceed with your claim, we need your consent to share this data with relevant parties.</p>
-            <p><strong>Your data will be shared with:</strong></p>
-            <ul>
-                <li>✓ Legal representatives handling your case</li>
-                <li>✓ Insurance companies (as required for your claim)</li>
-                <li>✓ Medical professionals (if injuries are involved)</li>
-                <li>✓ Authorized third parties necessary for claim processing</li>
-            </ul>
-            <p><strong>Your data is protected under GDPR regulations and will only be used for processing your claim.</strong></p>
+        <div class="loading-indicator" id="loadingIndicator">
+            <div class="spinner"></div>
+            <p style="margin-top: 20px; color: #666;">Checking your consent status...</p>
         </div>
 
-        <div class="consent-question">
-            <h3>Do you agree to share your incident report data to progress your claim?</h3>
-        </div>
+        <div id="consentContent" style="display: none;">
+            <div class="declaration-box">
+                <h2>Important: Your Data & Your Claim</h2>
+                <p>Your incident report has been successfully recorded and transcribed. To proceed with your claim, we need your consent to share this data with relevant parties.</p>
+                <p><strong>Your data will be shared with:</strong></p>
+                <ul>
+                    <li>✓ Legal representatives handling your case</li>
+                    <li>✓ Insurance companies (as required for your claim)</li>
+                    <li>✓ Medical professionals (if injuries are involved)</li>
+                    <li>✓ Authorized third parties necessary for claim processing</li>
+                </ul>
+                <p><strong>Your data is protected under GDPR regulations and will only be used for processing your claim.</strong></p>
+            </div>
 
-        <div class="button-group">
-            <button class="btn btn-yes" onclick="handleConsent(true)">
-                YES, I AGREE
-            </button>
-            <button class="btn btn-no" onclick="handleConsent(false)">
-                NO, I DO NOT AGREE
-            </button>
-        </div>
+            <div class="consent-question">
+                <h3>Do you agree to share your incident report data to progress your claim?</h3>
+            </div>
 
-        <p class="gdpr-note">
-            This consent is specific to your current incident report. You can withdraw consent at any time by contacting us, 
-            though this may affect our ability to process your claim. Reference: <span id="refNum"></span>
-        </p>
+            <div class="button-group">
+                <button class="btn btn-yes" onclick="handleConsent(true)">
+                    YES, I AGREE
+                </button>
+                <button class="btn btn-no" onclick="handleConsent(false)">
+                    NO, I DO NOT AGREE
+                </button>
+            </div>
+
+            <p class="gdpr-note">
+                This consent is specific to your current incident report. You can withdraw consent at any time by contacting us, 
+                though this may affect our ability to process your claim. Reference: <span id="refNum"></span>
+            </p>
+        </div>
     </div>
 
     <!-- Warning Modal -->
@@ -379,85 +411,95 @@
     </div>
 
     <script>
-        // Get user ID and incident ID from URL or localStorage
+        // ============================
+        // Configuration Management
+        // ============================
+        async function getConfig() {
+            const cached = sessionStorage.getItem('app_config');
+            if (cached) {
+                return JSON.parse(cached);
+            }
+
+            try {
+                const response = await fetch('/api/config');
+                const config = await response.json();
+                sessionStorage.setItem('app_config', JSON.stringify(config));
+                return config;
+            } catch (error) {
+                console.error('Failed to fetch config:', error);
+                return {
+                    apiKey: 'fallback-key',
+                    environment: 'production'
+                };
+            }
+        }
+
+        // App configuration holder
+        let appConfig = null;
+        let supabase = null;
+
+        // ============================
+        // Supabase Configuration
+        // ============================
+        async function initializeSupabase() {
+            if (supabase) return supabase;
+
+            try {
+                const config = await getConfig();
+
+                if (config.supabaseUrl && config.supabaseAnonKey) {
+                    supabase = window.supabase.createClient(
+                        config.supabaseUrl,
+                        config.supabaseAnonKey
+                    );
+                    console.log('Supabase initialized successfully');
+                }
+                return supabase;
+            } catch (error) {
+                console.error('Failed to initialize Supabase:', error);
+                return null;
+            }
+        }
+
+        // Initialize configuration on page load
+        async function initializeConfig() {
+            try {
+                appConfig = await getConfig();
+                console.log('Configuration loaded:', appConfig);
+                return appConfig;
+            } catch (error) {
+                console.error('Failed to load configuration:', error);
+                appConfig = {
+                    apiKey: 'fallback-key',
+                    environment: 'production'
+                };
+                return appConfig;
+            }
+        }
+
+        // ============================
+        // Session Management
+        // ============================
         const urlParams = new URLSearchParams(window.location.search);
         const userId = urlParams.get('create_user_id') || localStorage.getItem('create_user_id');
         const incidentId = urlParams.get('incident_report_id') || 
                          urlParams.get('incident_id') || 
                          localStorage.getItem('current_incident_id');
+        const returnUrl = urlParams.get('return_url');
+        const requireConsent = urlParams.get('require_consent') === 'true';
 
-        // Display reference number
-        if (incidentId) {
-            document.getElementById('refNum').textContent = `CCL-${incidentId}`;
-        } else if (userId) {
-            document.getElementById('refNum').textContent = `CCL-${userId.substring(0, 8)}`;
-        }
-
-        function handleConsent(agreed) {
-            if (agreed) {
-                // User agreed - log consent and show success
-                logConsent(true);
-
-                // Hide main container and show success animation
-                document.getElementById('mainContainer').style.display = 'none';
-                document.getElementById('successAnimation').style.display = 'block';
-
-                // Redirect to report-complete page after 2 seconds
-                setTimeout(() => {
-                    const redirectParams = new URLSearchParams({
-                        create_user_id: userId,
-                        consent_given: 'true'
-                    });
-
-                    if (incidentId) {
-                        redirectParams.append('incident_id', incidentId);
-                    }
-
-                    window.location.href = `/report-complete.html?${redirectParams.toString()}`;
-                }, 2000);
-
-            } else {
-                // User disagreed - show warning modal
-                document.getElementById('warningModal').style.display = 'block';
-            }
-        }
-
-        function reconsider() {
-            // Close modal and let user choose again
-            document.getElementById('warningModal').style.display = 'none';
-        }
-
-        function confirmNoConsent() {
-            // User confirmed they don't want to share data
-            logConsent(false);
-
-            // Update the main container with a final message
-            document.getElementById('warningModal').style.display = 'none';
-            document.getElementById('mainContainer').innerHTML = `
-                <div style="text-align: center; padding: 40px;">
-                    <div style="font-size: 48px; color: #dc3545; margin-bottom: 20px;">❌</div>
-                    <h2 style="color: #333; margin-bottom: 20px;">Consent Not Given</h2>
-                    <p style="color: #666; margin-bottom: 20px;">
-                        Your data will not be shared with any third parties and your claim cannot be processed.
-                    </p>
-                    <p style="color: #666; margin-bottom: 30px;">
-                        If you change your mind, you can start a new claim at any time.
-                    </p>
-                    <a href="/" class="btn" style="background: #667eea; color: white; padding: 12px 30px; text-decoration: none; display: inline-block; border-radius: 8px;">
-                        Return to Home
-                    </a>
-                </div>
-            `;
-        }
-
+        // ============================
+        // Enhanced GDPR Consent Management
+        // ============================
         async function logConsent(agreed) {
-            // Log the consent decision to your backend
             try {
+                const apiKey = appConfig?.apiKey || 'fallback-key';
+
                 const response = await fetch('/api/gdpr/log-consent', {
                     method: 'POST',
                     headers: {
                         'Content-Type': 'application/json',
-                        'X-Api-Key': 'your-shared-key' // Replace with your actual API key
+                        'X-Api-Key': apiKey
                     },
                     body: JSON.stringify({
                         create_user_id: userId,
@@ -471,6 +513,13 @@
 
                 if (!response.ok) {
                     console.error('Failed to log consent, but continuing...');
+                } else {
+                    const result = await response.json();
+                    console.log('Consent logged:', result);
+
+                    // Update localStorage for quick checks
+                    localStorage.setItem('gdpr_consent', agreed ? 'true' : 'false');
+                    localStorage.setItem('gdpr_consent_date', new Date().toISOString());
                 }
             } catch (error) {
                 console.error('Error logging consent:', error);
@@ -478,17 +527,187 @@
             }
         }
 
-        // Check if user got here properly
-        if (!userId) {
-            alert('Session expired or invalid access. Please start over.');
-            window.location.href = '/';
+        async function checkGDPRConsent(userId) {
+            // Quick check from localStorage first
+            const localConsent = localStorage.getItem('gdpr_consent');
+            if (localConsent === 'true' && !requireConsent) {
+                return true;
+            }
+
+            if (!supabase || !userId) return false;
+
+            try {
+                // Check gdpr_consent table
+                const { data, error } = await supabase
+                    .from('gdpr_consent')
+                    .select('gdpr_consent, gdpr_consent_date')
+                    .eq('create_user_id', userId)
+                    .order('gdpr_consent_date', { ascending: false })
+                    .limit(1)
+                    .single();
+
+                if (error || !data) {
+                    // Check user_signup table as fallback
+                    const { data: userData } = await supabase
+                        .from('user_signup')
+                        .select('gdpr_consent, legal_support')
+                        .eq('create_user_id', userId)
+                        .single();
+
+                    const hasConsent = userData?.gdpr_consent === true || 
+                                      userData?.legal_support === 'Yes';
+
+                    if (hasConsent) {
+                        localStorage.setItem('gdpr_consent', 'true');
+                    }
+
+                    return hasConsent;
+                }
+
+                const hasConsent = data.gdpr_consent === true;
+
+                if (hasConsent) {
+                    localStorage.setItem('gdpr_consent', 'true');
+                    localStorage.setItem('gdpr_consent_date', data.gdpr_consent_date);
+                }
+
+                return hasConsent;
+            } catch (error) {
+                console.error('Error checking GDPR consent:', error);
+                return false;
+            }
         }
 
-        // Log page load
-        console.log('Declaration page loaded with:', {
-            userId: userId,
-            incidentId: incidentId,
-            status: urlParams.get('status')
+        // ============================
+        // Consent Handling
+        // ============================
+        function handleConsent(agreed) {
+            if (agreed) {
+                // User agreed - log consent and show success
+                logConsent(true);
+
+                // Hide main container and show success animation
+                document.getElementById('mainContainer').style.display = 'none';
+                document.getElementById('successAnimation').style.display = 'block';
+
+                // Determine redirect URL
+                let redirectUrl = returnUrl ? decodeURIComponent(returnUrl) : null;
+
+                if (!redirectUrl) {
+                    const redirectParams = new URLSearchParams({
+                        create_user_id: userId,
+                        consent_given: 'true'
+                    });
+
+                    if (incidentId) {
+                        redirectParams.append('incident_id', incidentId);
+                    }
+
+                    redirectUrl = `https://carcrashlawyerai.com/report-complete.html?${redirectParams.toString()}`;
+                }
+
+                // Redirect after 2 seconds
+                setTimeout(() => {
+                    window.location.href = redirectUrl;
+                }, 2000);
+
+            } else {
+                // User disagreed - show warning modal
+                document.getElementById('warningModal').style.display = 'block';
+            }
+        }
+
+        function reconsider() {
+            document.getElementById('warningModal').style.display = 'none';
+        }
+
+        function confirmNoConsent() {
+            logConsent(false);
+
+            document.getElementById('warningModal').style.display = 'none';
+            document.getElementById('mainContainer').innerHTML = `
+                <div style="text-align: center; padding: 40px;">
+                    <div style="font-size: 48px; color: #dc3545; margin-bottom: 20px;">❌</div>
+                    <h2 style="color: #333; margin-bottom: 20px;">Consent Not Given</h2>
+                    <p style="color: #666; margin-bottom: 20px;">
+                        Your data will not be shared with any third parties and your claim cannot be processed.
+                    </p>
+                    <p style="color: #666; margin-bottom: 30px;">
+                        If you change your mind, you can start a new claim at any time.
+                    </p>
+                    <a href="https://carcrashlawyerai.com/" class="btn" style="background: #667eea; color: white; padding: 12px 30px; text-decoration: none; display: inline-block; border-radius: 8px;">
+                        Return to Home
+                    </a>
+                </div>
+            `;
+        }
+
+        // ============================
+        // Page Initialization
+        // ============================
+        document.addEventListener('DOMContentLoaded', async () => {
+            // Show loading indicator
+            document.getElementById('loadingIndicator').style.display = 'block';
+
+            // Initialize configuration first
+            await initializeConfig();
+
+            // Initialize Supabase
+            await initializeSupabase();
+
+            // Check if user got here properly
+            if (!userId) {
+                alert('Session expired or invalid access. Please start over.');
+                window.location.href = 'https://carcrashlawyerai.com/';
+                return;
+            }
+
+            // Display reference number
+            if (incidentId) {
+                document.getElementById('refNum').textContent = `CCL-${incidentId}`;
+            } else if (userId) {
+                document.getElementById('refNum').textContent = `CCL-${userId.substring(0, 8)}`;
+            }
+
+            // Check existing consent if configured
+            if (appConfig?.gdpr?.consentRequired && !requireConsent) {
+                const hasConsent = await checkGDPRConsent(userId);
+
+                if (hasConsent) {
+                    console.log('User already has GDPR consent, proceeding...');
+                    // Automatically proceed if they already have consent
+                    document.getElementById('loadingIndicator').style.display = 'none';
+                    document.getElementById('mainContainer').style.display = 'none';
+                    document.getElementById('successAnimation').style.display = 'block';
+
+                    setTimeout(() => {
+                        const redirectParams = new URLSearchParams({
+                            create_user_id: userId,
+                            consent_given: 'true'
+                        });
+
+                        if (incidentId) {
+                            redirectParams.append('incident_id', incidentId);
+                        }
+
+                        window.location.href = `https://carcrashlawyerai.com/report-complete.html?${redirectParams.toString()}`;
+                    }, 1500);
+                    return;
+                }
+            }
+
+            // Hide loading indicator and show consent form
+            document.getElementById('loadingIndicator').style.display = 'none';
+            document.getElementById('consentContent').style.display = 'block';
+
+            // Log page load
+            console.log('Declaration page loaded with:', {
+                userId: userId,
+                incidentId: incidentId,
+                status: urlParams.get('status'),
+                requireConsent: requireConsent,
+                config: appConfig
+            });
         });
     </script>
 </body>
