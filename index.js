@@ -3720,7 +3720,7 @@ app.post('/api/whisper/transcribe', upload.single('audio'), async (req, res) => 
     if (gdprModule) {
       const consentStatus = await gdprModule.checkConsentStatus(create_user_id);
       if (!consentStatus.has_consent) {
-        Logger.warn(`🚫 No consent for user ${create_user_id} - processing with audit log`);
+        Logger.info(`🚫 No consent for user ${create_user_id} - processing with audit log`);
         // Log the processing without consent for audit purposes
         await gdprModule.auditLog(create_user_id, 'AUDIO_PROCESSING_NO_CONSENT', {
           type: 'transcription',
