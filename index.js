@@ -1090,6 +1090,74 @@ async function generateAISummary(transcriptionText, createUserId, incidentId) {
   }
 }
 
+// --- LEGAL NARRATIVE GENERATOR ---
+async function generateLegalNarrative(transcriptionText, incidentData, userId) {
+  try {
+    if (!process.env.OPENAI_API_KEY) {
+      Logger.info('Cannot generate legal narrative - missing API key');
+      return null;
+    }
+
+    Logger.info('Generating legal narrative for user', { userId });
+
+    const response = await axios.post(
+      'https://api.openai.com/v1/chat/completions',
+      {
+        model: 'gpt-4-turbo-preview',
+        messages: [
+          {
+            role: 'system',
+            content: 'You are a legal assistant specialized in personal injury claims. Generate a formal legal narrative suitable for insurance claims and legal proceedings. Use UK legal terminology and format. Be objective, factual, and professional.'
+          },
+          {
+            role: 'user',
+            content: `Based on this witness statement and incident data, create a formal legal narrative for a UK personal injury claim.
+            
+            Witness Statement: ${transcriptionText}
+            
+            Incident Data: ${JSON.stringify(incidentData, null, 2)}
+            
+            Format as a professional legal document with clear sections for:
+            1. FACTS - Chronological account of events
+            2. LIABILITY ANALYSIS - Assessment of fault and negligence
+            3. DAMAGES - Summary of losses and injuries
+            4. CONCLUSION - Professional summary
+            
+            Use formal legal language appropriate for UK courts and insurance proceedings.`
+          }
+        ],
+        temperature: 0.2,
+        max_tokens: 2000
+      },
+      {
+        headers: {
+          'Authorization': `Bearer ${process.env.OPENAI_API_KEY}`,
+          'Content-Type': 'application/json'
+        },
+        timeout: 30000
+      }
+    );
+
+    const legalNarrative = response.data.choices[0].message.content;
+    Logger.success('Legal narrative generated successfully');
+
+    // Log GDPR activity for legal document generation
+    if (userId) {
+      await logGDPRActivity(userId, 'LEGAL_NARRATIVE_GENERATED', {
+        type: 'legal_document',
+        length: legalNarrative.length,
+        has_incident_data: !!incidentData
+      });
+    }
+
+    return legalNarrative;
+
+  } catch (error) {
+    Logger.error('Legal narrative generation error', error.response?.data || error);
+    return null;
+  }
+}
+
 // --- FIXED TRANSCRIPTION PROCESSOR ---
 async function processTranscriptionFromBuffer(queueId, audioBuffer, create_user_id, incident_report_id, audioUrl) {
   let retryCount = 0;
@@ -2035,6 +2103,85 @@ app.post('/api/consent/test-extraction', checkSharedKey, async (req, res) => {
   }
 });
 
+// Generate legal narrative endpoint
+app.post('/api/generate-legal-narrative', checkSharedKey, checkGDPRConsent, async (req, res) => {
+  try {
+    const { userId, transcriptionText, incidentData } = req.body;
+
+    if (!userId) {
+      return res.status(400).json({
+        error: 'User ID required for GDPR compliance',
+        code: 'MISSING_USER_ID',
+        requestId: req.requestId
+      });
+    }
+
+    if (!transcriptionText) {
+      return res.status(400).json({
+        error: 'Transcription text required',
+        code: 'MISSING_TRANSCRIPTION',
+        requestId: req.requestId
+      });
+    }
+
+    Logger.info('Legal narrative generation requested', { userId });
+
+    // Generate the legal narrative
+    const legalNarrative = await generateLegalNarrative(transcriptionText, incidentData, userId);
+
+    if (!legalNarrative) {
+      return res.status(500).json({
+        error: 'Failed to generate legal narrative',
+        code: 'GENERATION_FAILED',
+        requestId: req.requestId
+      });
+    }
+
+    // Save to database if Supabase is enabled
+    if (supabaseEnabled) {
+      try {
+        const { error: saveError } = await supabase
+          .from('legal_narratives')
+          .insert({
+            create_user_id: userId,
+            incident_report_id: incidentData?.incident_id || null,
+            transcription_text: transcriptionText,
+            incident_data: incidentData || {},
+            legal_narrative: legalNarrative,
+            generated_at: new Date().toISOString(),
+            ai_model: 'gpt-4-turbo-preview'
+          });
+
+        if (saveError) {
+          Logger.warn('Could not save legal narrative to database:', saveError);
+          // Continue anyway - return the narrative even if save fails
+        } else {
+          Logger.success('Legal narrative saved to database');
+        }
+      } catch (dbError) {
+        Logger.warn('Database operation failed for legal narrative:', dbError);
+        // Continue anyway
+      }
+    }
+
+    res.json({
+      success: true,
+      legalNarrative: legalNarrative,
+      userId: userId,
+      generatedAt: new Date().toISOString(),
+      requestId: req.requestId
+    });
+
+  } catch (error) {
+    Logger.error('Legal narrative endpoint error:', error);
+    res.status(500).json({
+      error: 'Failed to generate legal narrative',
+      details: error.message,
+      requestId: req.requestId
+    });
+  }
+});
+
 Logger.info('✅ Consent management endpoints registered');
 
 // --- UTILITY FUNCTIONS ---
@@ -2705,8 +2852,9 @@ app.get('/', (req, res) => {
                 <code>GET /api/transcription-status/:queueId</code> - Check transcription status<br>
                 <code>POST /api/update-transcription</code> - Update/edit transcription<br>
                 <code>POST /api/save-transcription</code> - Save transcription<br>
-                <code>GET /api/user/:userId/latest-transcription</code> - Get user's latest transcription
-            </div>
+                <code>GET /api/user/:userId/latest-transcription</code> - Get user's latest transcription<br>
+                <code>POST /api/generate-legal-narrative</code> - Generate formal legal narrative <span class="new-badge">NEW</span>
+            </div></div>
         </div>
 
         <div class="section">
@@ -4192,6 +4340,7 @@ server.listen(PORT, () => {
   Logger.info('  - POST /api/gdpr/consent - Grant consent');
   Logger.info('  - POST /api/gdpr/dsr - Submit data request');
   Logger.info('  - GET  /api/gdpr/admin/dashboard - Admin compliance view');
+  Logger.info('  - POST /api/generate-legal-narrative - Generate formal legal narrative');
 
   Logger.success('✅ All systems operational with GDPR compliance - Ready to serve requests');
   Logger.success('🔧 GDPR Module integrated - Full privacy law compliance enabled');
