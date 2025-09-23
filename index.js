@@ -2609,7 +2609,11 @@ app.get('/', (req, res) => {
                 <code>POST /api/debug/webhook-search</code> - Search stored webhooks<br>
                 <code>GET /api/test-openai</code> - Test OpenAI API key validity<br>
                 <code>GET /api/process-queue-now</code> - Manually trigger queue processing<br>
-                <code>GET /test/transcription-queue</code> - View queue status
+                <code>GET /test/transcription-queue</code> - View queue status<br>
+                <br>
+                <strong>Consent Management:</strong> <span class="new-badge">NEW</span><br>
+                <code>GET /api/consent/summary/:userId</code> - Get consent summary for user<br>
+                <code>POST /api/consent/test-extraction</code> - Test consent extraction from webhook
             </div>
 
             <div class="endpoint">
