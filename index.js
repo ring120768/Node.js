@@ -2858,8 +2858,7 @@ app.get('/api/test-openai', async (req, res) => {
       requestId: req.requestId
     });
   } catch (error) {
-    res.status(401).json({
-      status: 'OpenAI API key issue',
+    res.status(401).json({      status: 'OpenAI API key issue',
       error: error.response?.data || error.message,
       requestId: req.requestId
     });
@@ -3899,7 +3898,7 @@ app.post('/api/update-transcription', checkGDPRConsent, async (req, res) => {
 
     if (!userId) {
       return res.status(400).json({
-        error: 'User ID required for GDPR compliance',
+        error: 'User ID required',
         code: 'MISSING_USER_ID',
         requestId: req.requestId
       });
@@ -3912,6 +3911,9 @@ app.post('/api/update-transcription', checkGDPRConsent, async (req, res) => {
         requestId: req.requestId
       });
     }
+
+    // Consent check removed - handled client-side
+    console.log(`Processing transcription update for user: ${userId}`);
 
     Logger.info('Updating transcription', { userId, queueId });
 
