@@ -1916,14 +1916,15 @@ if (gdprModule) {
 app.get('/api/consent/summary/:userId', checkSharedKey, async (req, res) => {
   if (!consentManager) {
     return res.status(503).json({ 
-      error: 'Consent manager not initialized',
+      error: 'Module not initialized',
+      module: 'consentManager',
       requestId: req.requestId 
     });
   }
-  
+
   try {
     const summary = await consentManager.getConsentSummary(req.params.userId);
-    
+
     res.json({
       success: true,
       ...summary,
@@ -1943,14 +1944,15 @@ app.get('/api/consent/summary/:userId', checkSharedKey, async (req, res) => {
 app.post('/api/consent/test-extraction', checkSharedKey, async (req, res) => {
   if (!consentManager) {
     return res.status(503).json({ 
-      error: 'Consent manager not initialized',
+      error: 'Module not initialized',
+      module: 'consentManager',
       requestId: req.requestId 
     });
   }
-  
+
   try {
     const consentData = consentManager.extractConsentFromWebhook(req.body);
-    
+
     res.json({
       success: true,
       extraction: consentData,
@@ -2240,7 +2242,8 @@ app.post('/api/debug/webhook-test', checkSharedKey, async (req, res) => {
 app.get('/api/debug/webhook-history', checkSharedKey, async (req, res) => {
   if (!webhookDebugger) {
     return res.status(503).json({
-      error: 'Webhook debugger not initialized',
+      error: 'Module not initialized',
+      module: 'webhookDebugger',
       requestId: req.requestId
     });
   }
@@ -2260,7 +2263,8 @@ app.get('/api/debug/webhook-history', checkSharedKey, async (req, res) => {
 app.get('/api/debug/webhook/:webhookId', checkSharedKey, async (req, res) => {
   if (!webhookDebugger) {
     return res.status(503).json({
-      error: 'Webhook debugger not initialized',
+      error: 'Module not initialized',
+      module: 'webhookDebugger',
       requestId: req.requestId
     });
   }
@@ -2285,7 +2289,8 @@ app.get('/api/debug/webhook/:webhookId', checkSharedKey, async (req, res) => {
 app.post('/api/debug/webhook-search', checkSharedKey, async (req, res) => {
   if (!webhookDebugger) {
     return res.status(503).json({
-      error: 'Webhook debugger not initialized',
+      error: 'Module not initialized',
+      module: 'webhookDebugger',
       requestId: req.requestId
     });
   }
@@ -2600,7 +2605,7 @@ app.get('/', (req, res) => {
 
             <div class="endpoint">
                 <strong>Core Services:</strong><br>
-                <code>GET /health</code> - System health check with service status<br>
+                <code>GET /health</code> - System health check<br>
                 <code>GET /api/config</code> - Get Supabase configuration<br>
                 <code>GET /api/debug/user/:userId</code> - Debug user data with consent status<br>
                 <code>POST /api/debug/webhook-test</code> - Test webhook payload structure<br>
@@ -3397,7 +3402,7 @@ app.post('/api/update-transcription', checkGDPRConsent, async (req, res) => {
       // Update or insert transcription
       const { data: existing } = await supabase
         .from('ai_transcription')
-        .select('id, audio_url, duration')
+        .select('id, audio_url')
         .eq('create_user_id', dbUserId)
         .order('created_at', { ascending: false })
         .limit(1)
@@ -4055,14 +4060,14 @@ async function gracefulShutdown(signal) {
     });
   }
 
-  // Stop accepting new connections
-  server.close(() => {
-    Logger.info('HTTP server closed');
-  });
-
   // Close WebSocket connections
   wss.clients.forEach((ws) => {
     ws.close(1001, 'Server shutting down');
+  });
+
+  // Close the HTTP server
+  server.close(() => {
+    Logger.info('HTTP server closed');
   });
 
   // Clear intervals
