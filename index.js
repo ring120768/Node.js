@@ -3695,6 +3695,34 @@ app.post('/webhook/signup', checkSharedKey, async (req, res) => {
     Logger.info('Signup webhook received');
     Logger.debug('Webhook payload:', JSON.stringify(req.body, null, 2));
 
+    // Debug with enhanced debugger
+    if (webhookDebugger) {
+      const analysis = webhookDebugger.analyzeWebhook(req, { store: true });
+      Logger.info('Webhook analysis:', {
+        provider: analysis.provider,
+        userId: analysis.fields.userId,
+        hasConsent: !!analysis.fields.consent
+      });
+    }
+
+    // ENHANCED CONSENT DETECTION
+    let consentResult = { hasConsent: false };
+    
+    if (consentManager) {
+      // Use enhanced consent detection
+      const consentData = consentManager.extractConsentFromWebhook(webhookData);
+      Logger.info('Consent analysis:', consentData);
+      
+      // Update consent in database
+      consentResult = await consentManager.validateAndUpdateConsent(
+        webhookData.create_user_id,
+        consentData,
+        req
+      );
+      
+      Logger.info(`Enhanced consent status for ${webhookData.create_user_id}: ${consentResult.consent}`);
+    }
+
     if (!supabaseEnabled || !imageProcessor) {
       return res.status(503).json({
         error: 'Service not configured',
