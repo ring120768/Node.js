@@ -1,0 +1,98 @@
+# Fix Remaining GDPR Blocking Issues in index.js
+
+## Task 1: Remove remaining checkGDPRConsent middleware from routes
+
+Find and fix these lines:
+
+1. **Line 3636** - Remove checkGDPRConsent:
+   FROM: `app.post('/api/update-transcription', checkGDPRConsent, async (req, res) => {`
+   TO: `app.post('/api/update-transcription', async (req, res) => {`
+
+2. **Line 2736** - Remove checkGDPRConsent:
+   FROM: `app.post('/api/generate-legal-narrative', checkSharedKey, checkGDPRConsent, async (req, res) => {`
+   TO: `app.post('/api/generate-legal-narrative', checkSharedKey, async (req, res) => {`
+
+3. **Line 3289** - Remove checkGDPRConsent:
+   FROM: `app.get('/download-pdf/:userId', checkGDPRConsent, async (req, res) => {`
+   TO: `app.get('/download-pdf/:userId', async (req, res) => {`
+
+4. **Line 3224** - Remove checkGDPRConsent:
+   FROM: `app.get('/api/images/:userId', checkGDPRConsent, async (req, res) => {`
+   TO: `app.get('/api/images/:userId', async (req, res) => {`
+
+5. **Line 3255** - Remove checkGDPRConsent:
+   FROM: `app.get('/api/image/signed-url/:userId/:imageType', checkGDPRConsent, async (req, res) => {`
+   TO: `app.get('/api/image/signed-url/:userId/:imageType', async (req, res) => {`
+
+## Task 2: Make the checkGDPRConsent function non-blocking
+
+Find the checkGDPRConsent function around line 2600 and replace it entirely with:
+```javascript
+// --- GDPR CONSENT CHECK MIDDLEWARE (NON-BLOCKING VERSION) ---
+async function checkGDPRConsent(req, res, next) {
+  const userId = req.body?.userId || 
+                 req.body?.create_user_id || 
+                 req.params?.userId ||
+                 req.query?.userId;
+
+  if (!userId) {
+    // No user ID - can't check consent, allow through
+    req.hasConsent = true;
+    req.gdprStatus = 'no_user_id';
+    return next();
+  }
+
+  // Use GDPR module if available
+  if (gdprModule) {
+    try {
+      const consentStatus = await gdprModule.checkConsentStatus(userId);
+      req.hasConsent = consentStatus.has_consent;
+      req.gdprConsent = consentStatus;
+      
+      // LOG but don't block
+      if (!consentStatus.has_consent) {
+        console.log(`User ${userId} lacks consent for ${req.path} - allowing anyway`);
+        req.needsConsent = true;
+      }
+    } catch (error) {
+      console.error('GDPR consent check error:', error);
+      req.hasConsent = true; // Default to allow on error
+    }
+    
+    return next(); // ALWAYS continue
+  }
+
+  // Fallback check if GDPR module not available
+  if (supabaseEnabled) {
+    try {
+      const { data: user } = await supabase
+        .from('user_signup')
+        .select('gdpr_consent, gdpr_consent_date, legal_support')
+        .eq('create_user_id', userId)
+        .single();
+
+      req.hasConsent = !!(user?.gdpr_consent || user?.legal_support === 'Yes');
+      req.gdprConsent = {
+        granted: req.hasConsent,
+        date: user?.gdpr_consent_date
+      };
+
+      if (!req.hasConsent) {
+        console.log(`User ${userId} lacks consent - logging for audit but allowing request`);
+        await logGDPRActivity(userId, 'CONSENT_CHECK_FAILED', {
+          reason: 'No consent found',
+          ip: req.clientIp,
+          requestId: req.requestId,
+          allowed_anyway: true
+        }, req);
+      }
+    } catch (error) {
+      console.error('GDPR consent check error:', error);
+      req.hasConsent = true; // Default to allow
+    }
+  } else {
+    req.hasConsent = true; // No Supabase, allow through
+  }
+
+  next(); // ALWAYS continue - never block
+}
