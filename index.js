@@ -373,14 +373,21 @@ if (supabaseEnabled) {
 let consentManager = null;
 let webhookDebugger = null;
 
-if (supabaseEnabled) {
-  // Initialize Consent Manager
-  consentManager = new ConsentManager(supabase, Logger);
-  Logger.success('✅ Consent Manager initialized');
-
-  // Initialize Webhook Debugger
-  webhookDebugger = new WebhookDebugger(supabase, Logger);
-  Logger.success('✅ Webhook Debugger initialized');
+if (supabaseEnabled && supabase) {
+  try {
+    // Initialize Consent Manager
+    consentManager = new ConsentManager(supabase, Logger);
+    Logger.success('✅ Consent Manager initialized');
+    
+    // Initialize Webhook Debugger
+    webhookDebugger = new WebhookDebugger(supabase, Logger);
+    Logger.success('✅ Webhook Debugger initialized');
+  } catch (error) {
+    Logger.error('Failed to initialize enhanced modules:', error);
+    // Modules remain null, fallback logic will handle
+  }
+} else {
+  Logger.warn('Enhanced modules not initialized - Supabase not available');
 }
 
 // ========================================
