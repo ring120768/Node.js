@@ -1356,7 +1356,28 @@ class GDPRComplianceModule {
       res.json(this.generateCookiePolicy());
     });
 
-    // Cross-border transfers tracking
+    // Cross-border transfers tracking - user-specific endpoint
+    router.get('/api/gdpr/cross-border-transfers/:userId', async (req, res) => {
+      try {
+        const { data, error } = await this.supabase
+          .from('cross_border_transfers')
+          .select('*')
+          .eq('user_id', req.params.userId)
+          .order('transfer_date', { ascending: false });
+
+        if (error) throw error;
+        
+        res.json({
+          success: true,
+          transfers: data || [],
+          count: data?.length || 0
+        });
+      } catch (error) {
+        res.status(500).json({ error: error.message });
+      }
+    });
+
+    // Cross-border transfers tracking - admin overview
     router.get('/api/gdpr/cross-border-transfers', async (req, res) => {
       try {
         const { start, end } = req.query;
@@ -1386,35 +1407,33 @@ class GDPRComplianceModule {
       }
     });
 
+    // Record cross-border transfer
     router.post('/api/gdpr/cross-border-transfers', async (req, res) => {
       try {
-        const transferData = {
-          user_id: req.body.userId,
-          data_categories: req.body.dataCategories,
-          destination_country: req.body.destinationCountry,
-          transfer_purpose: req.body.transferPurpose,
-          legal_basis: req.body.legalBasis,
-          safeguards: req.body.safeguards,
-          data_recipient: req.body.dataRecipient,
+        const { userId, destination, dataCategories, safeguards, purpose } = req.body;
+        
+        const transfer = {
+          user_id: userId,
+          destination_country: destination,
+          data_categories: dataCategories,
+          transfer_mechanism: safeguards,
+          purpose: purpose,
           transfer_date: new Date().toISOString(),
-          consent_status: req.body.consentStatus || 'required',
-          adequacy_decision: req.body.adequacyDecision || false
+          legal_basis: req.body.legalBasis || 'consent'
         };
 
         const { data, error } = await this.supabase
           .from('cross_border_transfers')
-          .insert([transferData])
+          .insert([transfer])
           .select()
           .single();
 
         if (error) throw error;
-
-        // Log the transfer
-        await this.auditLog(req.body.userId, 'CROSS_BORDER_TRANSFER', {
-          transfer_id: data.id,
-          destination: req.body.destinationCountry,
-          purpose: req.body.transferPurpose
-        });
+        
+        await this.auditLog(userId, 'CROSS_BORDER_TRANSFER', {
+          destination: destination,
+          transfer_id: data.id
+        }, req);
 
         res.json({ success: true, transfer_id: data.id });
       } catch (error) {
