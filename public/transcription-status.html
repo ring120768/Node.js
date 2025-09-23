@@ -803,7 +803,7 @@
             </div>
             <div class="progress-step" id="step-summary">
                 <div class="circle">4</div>
-                <span>AI Summary</span>
+                <span>AI Transcription</span>
             </div>
         </div>
 
@@ -826,7 +826,7 @@
                 <li>Exact time and date of the accident</li>
                 <li>Weather and road conditions</li>
                 <li>What you saw, heard, and felt</li>
-                <li>Actions taken after the accident</li>
+                <li>Actions after the accident</li>
                 <li>Any unusual circumstances</li>
             </ul>
         </div>
@@ -884,7 +884,7 @@
 
         <!-- AI Summary Section -->
         <div id="summarySection">
-            <h3>🤖 AI Summary</h3>
+            <h3>🤖 AI Transcription</h3>
             <div class="summary-content">
                 <h4>Summary</h4>
                 <p id="summaryText" style="color: #555; line-height: 1.6;"></p>
@@ -1325,7 +1325,7 @@
                     updateProgress('step-transcribe', 'complete');
                     updateProgress('step-summary', 'active');
                     statusIndicator.className = 'status-indicator processing';
-                    statusText.textContent = 'Generating AI summary...';
+                    statusText.textContent = 'Generating AI transcription...';
                     statusDiv.style.background = '#e3f2fd';
 
                     if (data.transcription) {
@@ -1884,11 +1884,6 @@
                     const result = await saveResponse.json();
                     showStatus('Transcription saved successfully! Redirecting to declaration...', 'success');
 
-                    // Clear processing flag and set redirecting flag
-                    state.isProcessing = false;
-                    state.isRedirecting = true;
-                    console.log('Save successful, redirecting to declaration page');
-
                     // Store data in localStorage for declaration page
                     localStorage.setItem('transcription_confirmed', 'true');
                     localStorage.setItem('last_transcription', editedText);
@@ -1940,11 +1935,6 @@
             } catch (error) {
                 console.error('Error saving transcription:', error);
                 showStatus('Error saving transcription. Please try again.', 'error');
-
-                // Clear processing and redirecting flags on error
-                state.isProcessing = false;
-                state.isRedirecting = false;
-                console.log('Save error, flags reset');
 
                 // Re-enable button
                 confirmBtn.disabled = false;
