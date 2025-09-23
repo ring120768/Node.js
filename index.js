@@ -2160,9 +2160,9 @@ app.post('/api/debug/webhook-test', checkSharedKey, async (req, res) => {
   }
 
   // Use enhanced debugger
-  const analysis = webhookDebugger.analyzeWebhook(req, { 
-    store: true, 
-    log: true 
+  const analysis = webhookDebugger.analyzeWebhook(req, {
+    store: true,
+    log: true
   });
 
   Logger.info('=== ENHANCED WEBHOOK ANALYSIS ===');
@@ -2183,9 +2183,9 @@ app.post('/api/debug/webhook-test', checkSharedKey, async (req, res) => {
 // Add new endpoint to view recent webhooks
 app.get('/api/debug/webhook-history', checkSharedKey, async (req, res) => {
   if (!webhookDebugger) {
-    return res.status(503).json({ 
+    return res.status(503).json({
       error: 'Webhook debugger not initialized',
-      requestId: req.requestId 
+      requestId: req.requestId
     });
   }
 
@@ -2203,18 +2203,18 @@ app.get('/api/debug/webhook-history', checkSharedKey, async (req, res) => {
 // Add endpoint to get specific webhook analysis
 app.get('/api/debug/webhook/:webhookId', checkSharedKey, async (req, res) => {
   if (!webhookDebugger) {
-    return res.status(503).json({ 
+    return res.status(503).json({
       error: 'Webhook debugger not initialized',
-      requestId: req.requestId 
+      requestId: req.requestId
     });
   }
 
   const webhook = webhookDebugger.getWebhook(req.params.webhookId);
 
   if (!webhook) {
-    return res.status(404).json({ 
+    return res.status(404).json({
       error: 'Webhook not found',
-      requestId: req.requestId 
+      requestId: req.requestId
     });
   }
 
@@ -2228,9 +2228,9 @@ app.get('/api/debug/webhook/:webhookId', checkSharedKey, async (req, res) => {
 // Search webhooks
 app.post('/api/debug/webhook-search', checkSharedKey, async (req, res) => {
   if (!webhookDebugger) {
-    return res.status(503).json({ 
+    return res.status(503).json({
       error: 'Webhook debugger not initialized',
-      requestId: req.requestId 
+      requestId: req.requestId
     });
   }
 
@@ -3590,7 +3590,7 @@ app.get('/api/user/:userId/latest-transcription', async (req, res) => {
 app.post('/webhook/signup', checkSharedKey, async (req, res) => {
   try {
     Logger.info('Signup webhook received');
-    const webhookData = req.body;
+    let webhookData = req.body; // Use let here as it might be reassigned or modified
     Logger.debug('Webhook payload:', JSON.stringify(webhookData, null, 2));
 
     // Debug with enhanced debugger
