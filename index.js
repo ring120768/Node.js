@@ -413,7 +413,7 @@ if (supabaseEnabled && supabase) {
     // Initialize Consent Manager
     consentManager = new ConsentManager(supabase, Logger);
     Logger.success('✅ Consent Manager initialized');
-    
+
     // Initialize Webhook Debugger
     webhookDebugger = new WebhookDebugger(supabase, Logger);
     Logger.success('✅ Webhook Debugger initialized');
@@ -780,21 +780,21 @@ setInterval(() => {
   if (webhookDebugger && webhookDebugger.webhookStore) {
     const storeSize = webhookDebugger.webhookStore.size;
     const maxSize = parseInt(process.env.WEBHOOK_STORE_MAX_SIZE) || 1000;
-    
+
     if (storeSize > maxSize) {
       Logger.warn(`Webhook store size (${storeSize}) exceeds limit (${maxSize}), triggering cleanup`);
-      
+
       // Get oldest webhooks and remove them
       const webhooksArray = Array.from(webhookDebugger.webhookStore.entries());
       const sortedWebhooks = webhooksArray.sort((a, b) => 
         new Date(a[1].timestamp) - new Date(b[1].timestamp)
       );
-      
+
       const toRemove = storeSize - (maxSize * 0.8); // Keep 80% after cleanup
       for (let i = 0; i < toRemove; i++) {
         webhookDebugger.webhookStore.delete(sortedWebhooks[i][0]);
       }
-      
+
       Logger.info(`Cleaned up ${toRemove} old webhooks, new size: ${webhookDebugger.webhookStore.size}`);
     }
   }
@@ -1112,17 +1112,17 @@ async function generateLegalNarrative(transcriptionText, incidentData, userId) {
           {
             role: 'user',
             content: `Based on this witness statement and incident data, create a formal legal narrative for a UK personal injury claim.
-            
+
             Witness Statement: ${transcriptionText}
-            
+
             Incident Data: ${JSON.stringify(incidentData, null, 2)}
-            
+
             Format as a professional legal document with clear sections for:
             1. FACTS - Chronological account of events
             2. LIABILITY ANALYSIS - Assessment of fault and negligence
             3. DAMAGES - Summary of losses and injuries
             4. CONCLUSION - Professional summary
-            
+
             Use formal legal language appropriate for UK courts and insurance proceedings.`
           }
         ],
@@ -2400,14 +2400,14 @@ async function prepareAccidentDataForNarrative(userId, incidentId = null) {
       full_name: userData.full_name,
       email: userData.email,
       phone_number: userData.phone_number,
-      
+
       // Vehicle information
       vehicle_make: userData.vehicle_make,
       vehicle_model: userData.vehicle_model,
       vehicle_color: userData.vehicle_color,
       vehicle_registration: userData.vehicle_registration,
       vehicle_year: userData.vehicle_year,
-      
+
       // Incident details
       incident_date: incidentData?.incident_date,
       incident_time: incidentData?.incident_time,
@@ -2417,7 +2417,7 @@ async function prepareAccidentDataForNarrative(userId, incidentId = null) {
       road_conditions: incidentData?.road_conditions,
       speed_limit: incidentData?.speed_limit,
       estimated_speed: incidentData?.estimated_speed,
-      
+
       // Other party information
       other_driver_name: incidentData?.other_driver_name,
       other_driver_contact: incidentData?.other_driver_contact,
@@ -2427,25 +2427,25 @@ async function prepareAccidentDataForNarrative(userId, incidentId = null) {
       other_vehicle_color: incidentData?.other_vehicle_color,
       other_insurance_company: incidentData?.other_insurance_company,
       other_policy_number: incidentData?.other_policy_number,
-      
+
       // Damage and injuries
       vehicle_damage_description: incidentData?.vehicle_damage_description,
       injuries_sustained: incidentData?.injuries_sustained,
       medical_attention_required: incidentData?.medical_attention_required,
-      
+
       // Police and witnesses
       police_attended: incidentData?.police_attended,
       police_reference: incidentData?.police_reference,
       witnesses_present: incidentData?.witnesses_present,
       witness_details: incidentData?.witness_details,
-      
+
       // Insurance details
       insurance_company: userData.insurance_company,
       policy_number: userData.policy_number,
-      
+
       // AI transcription if available
       ai_transcription: transcriptionData?.transcription_text || incidentData?.detailed_account_of_what_happened,
-      
+
       // Additional info
       anything_else_important: incidentData?.anything_else_important
     };
@@ -2867,7 +2867,7 @@ app.get('/api/test-openai', async (req, res) => {
 // AI summary generation test endpoint
 app.post('/api/generate-ai-summary', checkSharedKey, async (req, res) => {
   const { transcription, userId, incidentId } = req.body;
-  
+
   if (!transcription || !userId) {
     return res.status(400).json({
       error: 'Missing required fields (transcription and userId are required)',
@@ -2877,16 +2877,16 @@ app.post('/api/generate-ai-summary', checkSharedKey, async (req, res) => {
 
   try {
     Logger.info('AI summary generation test requested', { userId, incidentId });
-    
+
     const summary = await generateAISummary(transcription, userId, incidentId);
-    
+
     if (!summary) {
       return res.status(500).json({
         error: 'AI summary generation returned null (check OpenAI API key and transcription length)',
         requestId: req.requestId
       });
     }
-    
+
     res.json({
       success: true,
       summary,
