@@ -1,0 +1,697 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Review AI Summary - Car Crash Lawyer AI</title>
+
+    <!-- Supabase Client Library -->
+    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            padding: 20px;
+        }
+
+        .container {
+            background: white;
+            border-radius: 20px;
+            padding: 40px;
+            max-width: 900px;
+            width: 100%;
+            box-shadow: 0 20px 60px rgba(0,0,0,0.3);
+            animation: slideIn 0.5s ease;
+        }
+
+        @keyframes slideIn {
+            from {
+                opacity: 0;
+                transform: translateY(20px);
+            }
+            to {
+                opacity: 1;
+                transform: translateY(0);
+            }
+        }
+
+        h1 {
+            color: #333;
+            margin-bottom: 10px;
+            text-align: center;
+            font-size: 28px;
+        }
+
+        .subtitle {
+            text-align: center;
+            color: #666;
+            margin-bottom: 30px;
+            font-size: 14px;
+        }
+
+        .ai-badge {
+            background: linear-gradient(135deg, #667eea, #764ba2);
+            color: white;
+            padding: 5px 15px;
+            border-radius: 20px;
+            font-size: 12px;
+            font-weight: 600;
+            display: inline-block;
+            margin-bottom: 20px;
+            animation: pulse 2s infinite;
+        }
+
+        @keyframes pulse {
+            0%, 100% { opacity: 1; }
+            50% { opacity: 0.8; }
+        }
+
+        .narrative-container {
+            background: #f8f9fa;
+            border-radius: 10px;
+            padding: 25px;
+            margin-bottom: 30px;
+            border-left: 4px solid #667eea;
+            position: relative;
+        }
+
+        .narrative-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 20px;
+        }
+
+        .narrative-title {
+            font-size: 18px;
+            font-weight: 600;
+            color: #333;
+        }
+
+        .word-count {
+            background: #e3f2fd;
+            color: #1976d2;
+            padding: 5px 10px;
+            border-radius: 5px;
+            font-size: 12px;
+            font-weight: 600;
+        }
+
+        .narrative-text {
+            width: 100%;
+            min-height: 400px;
+            padding: 20px;
+            border: 2px solid #e0e0e0;
+            border-radius: 8px;
+            font-size: 15px;
+            line-height: 1.8;
+            font-family: 'Georgia', serif;
+            background: white;
+            resize: vertical;
+            transition: border-color 0.3s ease;
+        }
+
+        .narrative-text:focus {
+            outline: none;
+            border-color: #667eea;
+            box-shadow: 0 0 0 3px rgba(102, 126, 234, 0.1);
+        }
+
+        .narrative-text.readonly {
+            background: #f5f5f5;
+            cursor: not-allowed;
+        }
+
+        .info-box {
+            background: #fff3cd;
+            border: 1px solid #ffc107;
+            color: #856404;
+            padding: 15px;
+            border-radius: 8px;
+            margin-bottom: 20px;
+            font-size: 14px;
+        }
+
+        .info-box strong {
+            display: block;
+            margin-bottom: 5px;
+        }
+
+        .loading-state {
+            text-align: center;
+            padding: 60px 20px;
+        }
+
+        .spinner {
+            border: 4px solid #f3f3f3;
+            border-top: 4px solid #667eea;
+            border-radius: 50%;
+            width: 50px;
+            height: 50px;
+            animation: spin 1s linear infinite;
+            margin: 0 auto 20px;
+        }
+
+        @keyframes spin {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
+        }
+
+        .error-state {
+            background: #fee2e2;
+            border: 2px solid #dc3545;
+            color: #991b1b;
+            padding: 20px;
+            border-radius: 10px;
+            text-align: center;
+            margin-bottom: 20px;
+        }
+
+        .button-group {
+            display: flex;
+            gap: 15px;
+            justify-content: center;
+            margin-top: 30px;
+            flex-wrap: wrap;
+        }
+
+        .btn {
+            padding: 15px 40px;
+            border: none;
+            border-radius: 8px;
+            font-size: 16px;
+            font-weight: 600;
+            cursor: pointer;
+            text-decoration: none;
+            display: inline-block;
+            transition: all 0.3s ease;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+            position: relative;
+        }
+
+        .btn:disabled {
+            opacity: 0.6;
+            cursor: not-allowed;
+        }
+
+        .btn-primary {
+            background: linear-gradient(135deg, #667eea, #764ba2);
+            color: white;
+        }
+
+        .btn-primary:hover:not(:disabled) {
+            transform: translateY(-2px);
+            box-shadow: 0 5px 15px rgba(102, 126, 234, 0.3);
+        }
+
+        .btn-secondary {
+            background: #6c757d;
+            color: white;
+        }
+
+        .btn-secondary:hover:not(:disabled) {
+            background: #5a6268;
+            transform: translateY(-2px);
+        }
+
+        .btn-outline {
+            background: transparent;
+            color: #667eea;
+            border: 2px solid #667eea;
+        }
+
+        .btn-outline:hover:not(:disabled) {
+            background: #667eea;
+            color: white;
+        }
+
+        .edit-mode-indicator {
+            display: none;
+            background: #fef3c7;
+            color: #92400e;
+            padding: 10px;
+            border-radius: 5px;
+            margin-bottom: 15px;
+            text-align: center;
+            font-size: 14px;
+            font-weight: 600;
+        }
+
+        .edit-mode-indicator.active {
+            display: block;
+        }
+
+        .features-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+            gap: 15px;
+            margin-bottom: 30px;
+        }
+
+        .feature-item {
+            background: #f0f7ff;
+            padding: 15px;
+            border-radius: 8px;
+            border-left: 3px solid #667eea;
+        }
+
+        .feature-item h4 {
+            color: #667eea;
+            font-size: 14px;
+            margin-bottom: 5px;
+        }
+
+        .feature-item p {
+            color: #666;
+            font-size: 12px;
+        }
+
+        .success-banner {
+            display: none;
+            background: #d4edda;
+            border: 1px solid #28a745;
+            color: #155724;
+            padding: 15px;
+            border-radius: 8px;
+            margin-bottom: 20px;
+            animation: slideDown 0.5s ease;
+        }
+
+        @keyframes slideDown {
+            from {
+                opacity: 0;
+                transform: translateY(-20px);
+            }
+            to {
+                opacity: 1;
+                transform: translateY(0);
+            }
+        }
+
+        @media (max-width: 640px) {
+            .container {
+                padding: 20px;
+                border-radius: 0;
+                min-height: 100vh;
+                box-shadow: none;
+            }
+
+            h1 {
+                font-size: 24px;
+            }
+
+            .narrative-text {
+                min-height: 300px;
+                font-size: 14px;
+            }
+
+            .button-group {
+                flex-direction: column;
+            }
+
+            .btn {
+                width: 100%;
+            }
+
+            .features-grid {
+                grid-template-columns: 1fr;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="ai-badge">🤖 AI Generated Summary</div>
+        <h1>Legal Narrative Review</h1>
+        <p class="subtitle">Review and edit your AI-generated incident summary before proceeding</p>
+
+        <!-- Success Banner -->
+        <div class="success-banner" id="successBanner">
+            ✅ Narrative saved successfully!
+        </div>
+
+        <!-- Error State -->
+        <div class="error-state" id="errorState" style="display: none;">
+            <strong>Error Loading Summary</strong>
+            <p id="errorMessage"></p>
+            <button class="btn btn-primary" onclick="regenerateNarrative()" style="margin-top: 15px;">
+                🔄 Try Again
+            </button>
+        </div>
+
+        <!-- Info Box -->
+        <div class="info-box">
+            <strong>📋 Important Information:</strong>
+            This is an AI-generated legal narrative based on your incident report. Please review it carefully and make any necessary corrections before proceeding.
+        </div>
+
+        <!-- Features Grid -->
+        <div class="features-grid">
+            <div class="feature-item">
+                <h4>✅ UK Legal Format</h4>
+                <p>Formatted for UK insurers and solicitors</p>
+            </div>
+            <div class="feature-item">
+                <h4>📝 First Person</h4>
+                <p>Written from your perspective</p>
+            </div>
+            <div class="feature-item">
+                <h4>⚖️ Factual Only</h4>
+                <p>No speculation or fault attribution</p>
+            </div>
+            <div class="feature-item">
+                <h4>📊 Comprehensive</h4>
+                <p>Includes all relevant details</p>
+            </div>
+        </div>
+
+        <!-- Loading State -->
+        <div class="loading-state" id="loadingState">
+            <div class="spinner"></div>
+            <h3>Generating Your Legal Narrative...</h3>
+            <p style="color: #666; margin-top: 10px;">This may take a moment</p>
+        </div>
+
+        <!-- Narrative Container -->
+        <div class="narrative-container" id="narrativeContainer" style="display: none;">
+            <div class="narrative-header">
+                <span class="narrative-title">Your Legal Narrative</span>
+                <span class="word-count" id="wordCount">0 words</span>
+            </div>
+
+            <div class="edit-mode-indicator" id="editIndicator">
+                ✏️ Edit mode - Make your changes below
+            </div>
+
+            <textarea 
+                class="narrative-text" 
+                id="narrativeText" 
+                placeholder="Your legal narrative will appear here..."
+                readonly
+            ></textarea>
+        </div>
+
+        <!-- Button Group -->
+        <div class="button-group" id="buttonGroup" style="display: none;">
+            <button class="btn btn-outline" id="editButton" onclick="toggleEditMode()">
+                ✏️ Edit Narrative
+            </button>
+            <button class="btn btn-secondary" id="saveButton" onclick="saveNarrative()" style="display: none;">
+                💾 Save Changes
+            </button>
+            <button class="btn btn-primary" id="continueButton" onclick="proceedToDeclaration()">
+                Continue to Declaration →
+            </button>
+        </div>
+    </div>
+
+    <script>
+        // Global state
+        const state = {
+            userId: null,
+            incidentId: null,
+            narrative: '',
+            isEditing: false,
+            isSaving: false,
+            hasChanges: false,
+            config: null
+        };
+
+        // Get configuration
+        async function getConfig() {
+            try {
+                const cached = sessionStorage.getItem('app_config');
+                if (cached) return JSON.parse(cached);
+
+                const response = await fetch('/api/config');
+                const config = await response.json();
+                sessionStorage.setItem('app_config', JSON.stringify(config));
+                return config;
+            } catch (error) {
+                console.error('Config error:', error);
+                return { apiKey: 'fallback-key' };
+            }
+        }
+
+        // Initialize session
+        function initializeSession() {
+            const urlParams = new URLSearchParams(window.location.search);
+
+            state.userId = urlParams.get('create_user_id') || 
+                          urlParams.get('user_id') || 
+                          localStorage.getItem('create_user_id');
+
+            state.incidentId = urlParams.get('incident_report_id') || 
+                              urlParams.get('incident_id') ||
+                              localStorage.getItem('current_incident_id');
+
+            if (!state.userId) {
+                console.error('No user ID found');
+                showError('Session expired. Please start over.');
+                return false;
+            }
+
+            console.log('Session initialized:', {
+                userId: state.userId,
+                incidentId: state.incidentId
+            });
+
+            return true;
+        }
+
+        // Generate or fetch narrative
+        async function loadNarrative() {
+            const loadingState = document.getElementById('loadingState');
+            const narrativeContainer = document.getElementById('narrativeContainer');
+            const buttonGroup = document.getElementById('buttonGroup');
+            const errorState = document.getElementById('errorState');
+
+            try {
+                // Check if we already have a narrative
+                const existingNarrative = localStorage.getItem('legal_narrative');
+                if (existingNarrative) {
+                    state.narrative = existingNarrative;
+                    displayNarrative(existingNarrative);
+                    return;
+                }
+
+                // Get transcription from previous step
+                const transcription = localStorage.getItem('last_transcription');
+
+                // Generate new narrative
+                const response = await fetch('/api/generate-legal-narrative', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'X-Api-Key': state.config?.apiKey || 'fallback-key'
+                    },
+                    body: JSON.stringify({
+                        create_user_id: state.userId,
+                        incident_report_id: state.incidentId,
+                        transcription_text: transcription,
+                        target_length: "350-500 words",
+                        include_evidence_section: true
+                    })
+                });
+
+                if (!response.ok) {
+                    throw new Error(`Failed to generate narrative: ${response.status}`);
+                }
+
+                const result = await response.json();
+
+                if (result.success && result.narrative) {
+                    state.narrative = result.narrative;
+                    localStorage.setItem('legal_narrative', result.narrative);
+                    displayNarrative(result.narrative);
+                } else {
+                    throw new Error(result.error || 'Failed to generate narrative');
+                }
+
+            } catch (error) {
+                console.error('Error loading narrative:', error);
+                loadingState.style.display = 'none';
+                errorState.style.display = 'block';
+                document.getElementById('errorMessage').textContent = error.message;
+            }
+        }
+
+        // Display narrative
+        function displayNarrative(narrative) {
+            const loadingState = document.getElementById('loadingState');
+            const narrativeContainer = document.getElementById('narrativeContainer');
+            const buttonGroup = document.getElementById('buttonGroup');
+            const narrativeText = document.getElementById('narrativeText');
+
+            loadingState.style.display = 'none';
+            narrativeContainer.style.display = 'block';
+            buttonGroup.style.display = 'flex';
+
+            narrativeText.value = narrative;
+            updateWordCount();
+        }
+
+        // Toggle edit mode
+        function toggleEditMode() {
+            const narrativeText = document.getElementById('narrativeText');
+            const editButton = document.getElementById('editButton');
+            const saveButton = document.getElementById('saveButton');
+            const editIndicator = document.getElementById('editIndicator');
+
+            state.isEditing = !state.isEditing;
+
+            if (state.isEditing) {
+                narrativeText.readOnly = false;
+                narrativeText.classList.remove('readonly');
+                editButton.textContent = '❌ Cancel Edit';
+                saveButton.style.display = 'inline-block';
+                editIndicator.classList.add('active');
+                narrativeText.focus();
+            } else {
+                narrativeText.readOnly = true;
+                narrativeText.classList.add('readonly');
+                editButton.textContent = '✏️ Edit Narrative';
+                saveButton.style.display = 'none';
+                editIndicator.classList.remove('active');
+
+                // Restore original if cancelled
+                if (state.hasChanges) {
+                    narrativeText.value = state.narrative;
+                    state.hasChanges = false;
+                }
+            }
+        }
+
+        // Update word count
+        function updateWordCount() {
+            const narrativeText = document.getElementById('narrativeText').value;
+            const wordCount = narrativeText.trim().split(/\s+/).length;
+            document.getElementById('wordCount').textContent = `${wordCount} words`;
+        }
+
+        // Save narrative
+        async function saveNarrative() {
+            if (state.isSaving) return;
+
+            state.isSaving = true;
+            const saveButton = document.getElementById('saveButton');
+            const successBanner = document.getElementById('successBanner');
+            const narrativeText = document.getElementById('narrativeText');
+
+            saveButton.disabled = true;
+            saveButton.textContent = 'Saving...';
+
+            try {
+                const updatedNarrative = narrativeText.value;
+
+                const response = await fetch('/api/update-legal-narrative', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'X-Api-Key': state.config?.apiKey || 'fallback-key'
+                    },
+                    body: JSON.stringify({
+                        create_user_id: state.userId,
+                        incident_report_id: state.incidentId,
+                        narrative_text: updatedNarrative
+                    })
+                });
+
+                if (!response.ok) {
+                    throw new Error('Failed to save narrative');
+                }
+
+                // Update state and storage
+                state.narrative = updatedNarrative;
+                localStorage.setItem('legal_narrative', updatedNarrative);
+
+                // Show success
+                successBanner.style.display = 'block';
+                setTimeout(() => {
+                    successBanner.style.display = 'none';
+                }, 3000);
+
+                // Exit edit mode
+                toggleEditMode();
+                state.hasChanges = false;
+
+            } catch (error) {
+                console.error('Error saving narrative:', error);
+                alert('Failed to save changes. Please try again.');
+            } finally {
+                state.isSaving = false;
+                saveButton.disabled = false;
+                saveButton.textContent = '💾 Save Changes';
+            }
+        }
+
+        // Regenerate narrative
+        async function regenerateNarrative() {
+            if (confirm('Are you sure you want to regenerate the narrative? Any edits will be lost.')) {
+                localStorage.removeItem('legal_narrative');
+                location.reload();
+            }
+        }
+
+        // Proceed to declaration
+        function proceedToDeclaration() {
+            // Save current narrative to storage
+            const narrativeText = document.getElementById('narrativeText').value;
+            localStorage.setItem('legal_narrative', narrativeText);
+            localStorage.setItem('legal_narrative_confirmed', 'true');
+
+            // Build redirect URL
+            const params = new URLSearchParams({
+                create_user_id: state.userId,
+                incident_report_id: state.incidentId || '',
+                operation: 'final_consent',
+                status: 'narrative_complete'
+            });
+
+            window.location.href = `/declaration.html?${params.toString()}`;
+        }
+
+        // Initialize page
+        document.addEventListener('DOMContentLoaded', async () => {
+            console.log('Initializing AI Summary Review page');
+
+            // Load configuration
+            state.config = await getConfig();
+
+            // Initialize session
+            if (!initializeSession()) {
+                return;
+            }
+
+            // Track changes
+            document.getElementById('narrativeText').addEventListener('input', () => {
+                state.hasChanges = true;
+                updateWordCount();
+            });
+
+            // Prevent navigation if changes
+            window.addEventListener('beforeunload', (e) => {
+                if (state.hasChanges) {
+                    e.preventDefault();
+                    e.returnValue = 'You have unsaved changes. Are you sure you want to leave?';
+                }
+            });
+
+            // Load or generate narrative
+            await loadNarrative();
+        });
+    </script>
+</body>
+</html>

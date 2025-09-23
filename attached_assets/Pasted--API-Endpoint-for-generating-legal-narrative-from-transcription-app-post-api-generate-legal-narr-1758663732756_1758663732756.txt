@@ -1,0 +1,131 @@
+// API Endpoint for generating legal narrative from transcription
+app.post('/api/generate-legal-narrative', async (req, res) => {
+    console.log('📝 Legal narrative generation request received');
+
+    try {
+        const { 
+            create_user_id, 
+            incident_report_id,
+            transcription_text,
+            target_length = "350-500 words",
+            include_evidence_section = true
+        } = req.body;
+
+        if (!create_user_id) {
+            return res.status(400).json({ 
+                success: false, 
+                error: 'User ID is required' 
+            });
+        }
+
+        // If we have transcription text, update it in the database first
+        if (transcription_text && incident_report_id) {
+            await supabase
+                .from('incident_reports')
+                .update({
+                    detailed_account_of_what_happened: transcription_text
+                })
+                .eq('id', incident_report_id);
+        }
+
+        // Import the AI summary generator
+        const { generateAndSaveLegalNarrative } = require('./lib/aiSummaryGenerator');
+
+        // Generate the legal narrative
+        const narrative = await generateAndSaveLegalNarrative(
+            create_user_id,
+            incident_report_id,
+            {
+                target_length,
+                include_evidence_section,
+                include_missing_notes: true
+            }
+        );
+
+        // Also save to legal_narratives table for easy access
+        const { error: saveError } = await supabase
+            .from('legal_narratives')
+            .upsert({
+                user_id: create_user_id,
+                incident_id: incident_report_id,
+                narrative_text: narrative,
+                created_at: new Date().toISOString(),
+                updated_at: new Date().toISOString()
+            }, {
+                onConflict: 'user_id,incident_id'
+            });
+
+        if (saveError) {
+            console.error('Error saving to legal_narratives:', saveError);
+        }
+
+        res.json({
+            success: true,
+            narrative: narrative,
+            message: 'Legal narrative generated successfully'
+        });
+
+    } catch (error) {
+        console.error('Error generating legal narrative:', error);
+        res.status(500).json({
+            success: false,
+            error: error.message || 'Failed to generate legal narrative'
+        });
+    }
+});
+
+// API Endpoint to update/save edited legal narrative
+app.post('/api/update-legal-narrative', async (req, res) => {
+    try {
+        const { 
+            create_user_id, 
+            incident_report_id,
+            narrative_text
+        } = req.body;
+
+        if (!create_user_id || !narrative_text) {
+            return res.status(400).json({ 
+                success: false, 
+                error: 'User ID and narrative text are required' 
+            });
+        }
+
+        // Update in legal_narratives table
+        const { error } = await supabase
+            .from('legal_narratives')
+            .upsert({
+                user_id: create_user_id,
+                incident_id: incident_report_id,
+                narrative_text: narrative_text,
+                updated_at: new Date().toISOString()
+            }, {
+                onConflict: 'user_id,incident_id'
+            });
+
+        if (error) throw error;
+
+        // Also update in ai_summary table
+        await supabase
+            .from('ai_summary')
+            .upsert({
+                create_user_id,
+                incident_id: incident_report_id,
+                summary_text: narrative_text,
+                updated_at: new Date().toISOString()
+            }, {
+                onConflict: 'create_user_id,incident_id'
+            });
+
+        res.json({
+            success: true,
+            message: 'Legal narrative updated successfully'
+        });
+
+    } catch (error) {
+        console.error('Error updating legal narrative:', error);
+        res.status(500).json({
+            success: false,
+            error: error.message || 'Failed to update legal narrative'
+        });
+    }
+});
