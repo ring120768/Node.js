@@ -1070,35 +1070,33 @@
                 const hasConsent = await checkGDPRConsent(state.userId);
 
                 if (!hasConsent) {
-                    // Show consent requirement message
-                    showStatus('GDPR consent required before recording. Redirecting...', 'warning');
-
-                    // Build consent URL with return path
-                    const returnUrl = encodeURIComponent(window.location.href);
-                    const params = new URLSearchParams({
-                        create_user_id: state.userId,
-                        require_consent: 'true',
-                        return_url: returnUrl,
-                        operation: 'audio_recording'
-                    });
-
-                    if (state.incidentReportId) {
-                        params.append('incident_report_id', state.incidentReportId);
-                    }
-
-                    // Redirect to consent page
-                    setTimeout(() => {
-                        window.location.href = `/declaration.html?${params.toString()}`;
-                    }, 2000);
-
+                    // Show consent banner instead of redirecting immediately
+                    showConsentBanner();
                     return false;
                 }
 
                 return true;
             } catch (error) {
-                Logger.error('Error checking consent before recording:', error);
+                console.error('Error checking consent before recording:', error);
                 showStatus('Unable to verify consent. Please try again.', 'error');
                 return false;
+            }
+        }
+
+        // Show consent banner
+        function showConsentBanner() {
+            const consentBanner = document.getElementById('consentBanner');
+            const recordButton = document.getElementById('recordButton');
+            
+            if (consentBanner) {
+                consentBanner.style.display = 'block';
+                
+                // Hide the record button until consent is given
+                if (recordButton) {
+                    recordButton.style.display = 'none';
+                }
+                
+                showStatus('Please review and accept the privacy notice to continue', 'info');
             }
         }
 
@@ -1494,9 +1492,9 @@
         // ============================
         async function startRecording() {
             // Check GDPR consent before recording
-            const hasConsent = await performDataOperation('audio_recording');
+            const hasConsent = await checkGDPRConsentBeforeRecording();
             if (!hasConsent) {
-                return; // Will redirect to consent page
+                return; // Will show consent banner
             }
 
             // Log audio recording consent
@@ -2206,15 +2204,14 @@
             initializeSession();
 
             // Check GDPR consent on page load
-            if (appConfig?.gdpr?.consentRequired) {
-                const hasConsent = await checkGDPRConsent(state.userId);
+            const hasConsent = await checkGDPRConsent(state.userId);
+            console.log('GDPR consent status:', hasConsent);
 
-                if (!hasConsent && appConfig?.gdpr?.checkBeforeOperations) {
-                    // Show GDPR notice
-                    document.getElementById('gdprNotice').classList.add('visible');
-                }
-
-                console.log('GDPR consent status:', hasConsent);
+            if (!hasConsent) {
+                // Show consent banner immediately if no consent
+                showConsentBanner();
+                // Also show GDPR notice
+                document.getElementById('gdprNotice').classList.add('visible');
             }
 
             // Initialize components
@@ -2237,7 +2234,19 @@
                 agreeRecordButton.addEventListener('click', async () => {
                     await logConsent('recording_consent', true);
                     consentBanner.style.display = 'none';
-                    startRecording();
+                    
+                    // Show the record button again
+                    const recordButton = document.getElementById('recordButton');
+                    if (recordButton) {
+                        recordButton.style.display = 'inline-block';
+                    }
+                    
+                    showStatus('Consent granted. You can now start recording.', 'success');
+                    
+                    // Auto-start recording since user just agreed
+                    setTimeout(() => {
+                        startRecording();
+                    }, 1000);
                 });
             }
 
