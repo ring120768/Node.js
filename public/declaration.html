@@ -125,6 +125,12 @@
             text-transform: uppercase;
             letter-spacing: 0.5px;
             flex: 1;
+            position: relative;
+        }
+
+        .btn:disabled {
+            opacity: 0.6;
+            cursor: not-allowed;
         }
 
         .btn-yes {
@@ -132,7 +138,7 @@
             color: white;
         }
 
-        .btn-yes:hover {
+        .btn-yes:hover:not(:disabled) {
             background: #218838;
             transform: translateY(-2px);
             box-shadow: 0 5px 15px rgba(40, 167, 69, 0.3);
@@ -143,7 +149,7 @@
             color: white;
         }
 
-        .btn-no:hover {
+        .btn-no:hover:not(:disabled) {
             background: #c82333;
             transform: translateY(-2px);
             box-shadow: 0 5px 15px rgba(220, 53, 69, 0.3);
@@ -304,6 +310,22 @@
             100% { transform: rotate(360deg); }
         }
 
+        .error-banner {
+            background: #fee2e2;
+            border: 2px solid #dc3545;
+            color: #991b1b;
+            padding: 15px;
+            border-radius: 10px;
+            text-align: center;
+            margin-bottom: 20px;
+            display: none;
+        }
+
+        .error-banner.show {
+            display: block;
+            animation: slideDown 0.5s ease-out;
+        }
+
         @media (max-width: 640px) {
             .container {
                 padding: 20px;
@@ -336,6 +358,8 @@
             <p style="margin-top: 20px; color: #666;">Checking your consent status...</p>
         </div>
 
+        <div class="error-banner" id="errorBanner"></div>
+
         <div id="consentContent" style="display: none;">
             <div class="declaration-box">
                 <h2>Important: Your Data & Your Claim</h2>
@@ -355,10 +379,10 @@
             </div>
 
             <div class="button-group">
-                <button class="btn btn-yes" onclick="handleConsent(true)">
+                <button class="btn btn-yes" id="btnYes">
                     YES, I AGREE
                 </button>
-                <button class="btn btn-no" onclick="handleConsent(false)">
+                <button class="btn btn-no" id="btnNo">
                     NO, I DO NOT AGREE
                 </button>
             </div>
@@ -393,10 +417,10 @@
                 Would you like to reconsider your choice?
             </p>
             <div class="warning-buttons">
-                <button class="btn-reconsider" onclick="reconsider()">
+                <button class="btn-reconsider" id="btnReconsider">
                     Yes, Let Me Reconsider
                 </button>
-                <button class="btn-confirm-no" onclick="confirmNoConsent()">
+                <button class="btn-confirm-no" id="btnConfirmNo">
                     No, I Understand
                 </button>
             </div>
@@ -412,328 +436,691 @@
 
     <script>
         // ============================
+        // Application State Management
+        // ============================
+        const AppState = {
+            config: null,
+            supabase: null,
+            session: {
+                userId: null,
+                incidentId: null,
+                returnUrl: null,
+                operation: null,
+                requireConsent: false
+            },
+            ui: {
+                isProcessing: false,
+                consentChecked: false
+            },
+            debug: true // Set to false in production
+        };
+
+        // ============================
+        // Utility Functions
+        // ============================
+        const Utils = {
+            log: function(message, data = null) {
+                if (AppState.debug) {
+                    if (data) {
+                        console.log(`[Declaration] ${message}`, data);
+                    } else {
+                        console.log(`[Declaration] ${message}`);
+                    }
+                }
+            },
+
+            error: function(message, error = null) {
+                console.error(`[Declaration Error] ${message}`, error);
+            },
+
+            showError: function(message) {
+                const errorBanner = document.getElementById('errorBanner');
+                if (errorBanner) {
+                    errorBanner.textContent = message;
+                    errorBanner.classList.add('show');
+                    setTimeout(() => {
+                        errorBanner.classList.remove('show');
+                    }, 5000);
+                }
+            },
+
+            sanitizeUrl: function(url) {
+                try {
+                    const parsed = new URL(url, window.location.origin);
+                    // Only allow same-origin or relative URLs for security
+                    if (parsed.origin === window.location.origin) {
+                        return parsed.href;
+                    }
+                    return '/report-complete.html';
+                } catch (e) {
+                    return '/report-complete.html';
+                }
+            },
+
+            generateReferenceId: function(userId, incidentId) {
+                if (incidentId) {
+                    return `CCL-${incidentId.substring(0, 8).toUpperCase()}`;
+                } else if (userId) {
+                    return `CCL-${userId.substring(0, 8).toUpperCase()}`;
+                }
+                return `CCL-${Date.now()}`;
+            }
+        };
+
+        // ============================
         // Configuration Management
         // ============================
-        async function getConfig() {
-            const cached = sessionStorage.getItem('app_config');
-            if (cached) {
-                return JSON.parse(cached);
-            }
+        const ConfigManager = {
+            async load() {
+                try {
+                    // Check session storage first
+                    const cached = sessionStorage.getItem('app_config');
+                    if (cached) {
+                        const config = JSON.parse(cached);
+                        Utils.log('Config loaded from cache', config);
+                        return config;
+                    }
 
-            try {
-                const response = await fetch('/api/config');
-                const config = await response.json();
-                sessionStorage.setItem('app_config', JSON.stringify(config));
-                return config;
-            } catch (error) {
-                console.error('Failed to fetch config:', error);
-                return {
-                    apiKey: 'fallback-key',
-                    environment: 'production'
-                };
-            }
-        }
+                    // Fetch from server
+                    const response = await fetch('/api/config');
+                    if (!response.ok) {
+                        throw new Error(`Config fetch failed: ${response.status}`);
+                    }
 
-        // App configuration holder
-        let appConfig = null;
-        let supabase = null;
+                    const config = await response.json();
 
-        // ============================
-        // Supabase Configuration
-        // ============================
-        async function initializeSupabase() {
-            if (supabase) return supabase;
+                    // Validate config
+                    if (!config || typeof config !== 'object') {
+                        throw new Error('Invalid config format');
+                    }
 
-            try {
-                const config = await getConfig();
+                    // Cache for session
+                    sessionStorage.setItem('app_config', JSON.stringify(config));
+                    Utils.log('Config loaded from server', config);
+                    return config;
 
-                if (config.supabaseUrl && config.supabaseAnonKey) {
-                    supabase = window.supabase.createClient(
-                        config.supabaseUrl,
-                        config.supabaseAnonKey
-                    );
-                    console.log('Supabase initialized successfully');
+                } catch (error) {
+                    Utils.error('Failed to load configuration', error);
+                    // Return minimal fallback config
+                    return {
+                        apiKey: 'fallback-key',
+                        environment: 'production',
+                        features: {
+                            gdpr: true
+                        }
+                    };
                 }
-                return supabase;
-            } catch (error) {
-                console.error('Failed to initialize Supabase:', error);
-                return null;
             }
-        }
-
-        // Initialize configuration on page load
-        async function initializeConfig() {
-            try {
-                appConfig = await getConfig();
-                console.log('Configuration loaded:', appConfig);
-                return appConfig;
-            } catch (error) {
-                console.error('Failed to load configuration:', error);
-                appConfig = {
-                    apiKey: 'fallback-key',
-                    environment: 'production'
-                };
-                return appConfig;
-            }
-        }
+        };
 
         // ============================
         // Session Management
         // ============================
-        const urlParams = new URLSearchParams(window.location.search);
-        const userId = urlParams.get('create_user_id') || localStorage.getItem('create_user_id');
-        const incidentId = urlParams.get('incident_report_id') || 
-                         urlParams.get('incident_id') || 
-                         localStorage.getItem('current_incident_id');
-        const returnUrl = urlParams.get('return_url');
-        const requireConsent = urlParams.get('require_consent') === 'true';
+        const SessionManager = {
+            initialize() {
+                const urlParams = new URLSearchParams(window.location.search);
+
+                // Extract user ID from multiple possible sources
+                AppState.session.userId = 
+                    urlParams.get('create_user_id') || 
+                    urlParams.get('user_id') ||
+                    localStorage.getItem('create_user_id') ||
+                    sessionStorage.getItem('create_user_id');
+
+                // Extract incident ID
+                AppState.session.incidentId = 
+                    urlParams.get('incident_report_id') || 
+                    urlParams.get('incident_id') ||
+                    localStorage.getItem('current_incident_id') ||
+                    sessionStorage.getItem('incident_id');
+
+                // Extract other parameters
+                AppState.session.returnUrl = urlParams.get('return_url');
+                AppState.session.operation = urlParams.get('operation');
+                AppState.session.requireConsent = urlParams.get('require_consent') === 'true';
+
+                // Persist session data
+                if (AppState.session.userId) {
+                    localStorage.setItem('create_user_id', AppState.session.userId);
+                    sessionStorage.setItem('create_user_id', AppState.session.userId);
+                }
+
+                if (AppState.session.incidentId) {
+                    localStorage.setItem('current_incident_id', AppState.session.incidentId);
+                    sessionStorage.setItem('incident_id', AppState.session.incidentId);
+                }
+
+                Utils.log('Session initialized', AppState.session);
+                return AppState.session;
+            },
+
+            isValid() {
+                return !!AppState.session.userId;
+            }
+        };
 
         // ============================
-        // Enhanced GDPR Consent Management
+        // Supabase Management
         // ============================
-        async function logConsent(agreed) {
-            try {
-                const apiKey = appConfig?.apiKey || 'fallback-key';
+        const SupabaseManager = {
+            async initialize() {
+                try {
+                    if (!AppState.config?.supabaseUrl || !AppState.config?.supabaseAnonKey) {
+                        Utils.log('Supabase config not available');
+                        return false;
+                    }
 
-                const response = await fetch('/api/gdpr/log-consent', {
-                    method: 'POST',
-                    headers: {
-                        'Content-Type': 'application/json',
-                        'X-Api-Key': apiKey
-                    },
-                    body: JSON.stringify({
-                        create_user_id: userId,
-                        incident_id: incidentId,
+                    AppState.supabase = window.supabase.createClient(
+                        AppState.config.supabaseUrl,
+                        AppState.config.supabaseAnonKey,
+                        {
+                            auth: {
+                                persistSession: true,
+                                storageKey: 'car-crash-lawyer-auth'
+                            }
+                        }
+                    );
+
+                    Utils.log('Supabase initialized successfully');
+                    return true;
+
+                } catch (error) {
+                    Utils.error('Failed to initialize Supabase', error);
+                    return false;
+                }
+            }
+        };
+
+        // ============================
+        // GDPR Consent Management
+        // ============================
+        const ConsentManager = {
+            async checkExistingConsent(userId) {
+                // Quick check from localStorage
+                const localConsent = localStorage.getItem('gdpr_consent');
+                const consentDate = localStorage.getItem('gdpr_consent_date');
+
+                if (localConsent === 'true' && !AppState.session.requireConsent) {
+                    Utils.log('GDPR consent found in localStorage');
+                    return true;
+                }
+
+                if (!AppState.supabase || !userId) {
+                    Utils.log('Cannot check GDPR consent - missing requirements');
+                    return false;
+                }
+
+                try {
+                    // Check gdpr_consent table first
+                    const { data: consentData, error: consentError } = await AppState.supabase
+                        .from('gdpr_consent')
+                        .select('gdpr_consent, gdpr_consent_date')
+                        .eq('create_user_id', userId)
+                        .order('gdpr_consent_date', { ascending: false })
+                        .limit(1)
+                        .maybeSingle();
+
+                    if (!consentError && consentData?.gdpr_consent === true) {
+                        // Cache the consent
+                        localStorage.setItem('gdpr_consent', 'true');
+                        localStorage.setItem('gdpr_consent_date', consentData.gdpr_consent_date);
+                        Utils.log('GDPR consent found in database');
+                        return true;
+                    }
+
+                    // Fallback: Check user_signup table
+                    const { data: userData, error: userError } = await AppState.supabase
+                        .from('user_signup')
+                        .select('gdpr_consent, legal_support')
+                        .eq('create_user_id', userId)
+                        .maybeSingle();
+
+                    if (!userError && userData) {
+                        const hasConsent = userData.gdpr_consent === true || userData.legal_support === 'Yes';
+
+                        if (hasConsent) {
+                            localStorage.setItem('gdpr_consent', 'true');
+                            localStorage.setItem('gdpr_consent_date', new Date().toISOString());
+                        }
+
+                        Utils.log('GDPR consent from user_signup', hasConsent);
+                        return hasConsent;
+                    }
+
+                    return false;
+
+                } catch (error) {
+                    Utils.error('Error checking GDPR consent', error);
+                    return false;
+                }
+            },
+
+            async logConsent(agreed) {
+                try {
+                    const consentData = {
+                        create_user_id: AppState.session.userId,
+                        incident_id: AppState.session.incidentId,
                         consent_type: 'data_sharing_for_claim',
                         consent_given: agreed,
                         consent_date: new Date().toISOString(),
                         page: 'declaration.html'
-                    })
+                    };
+
+                    // Try to log via API first
+                    const apiKey = AppState.config?.apiKey || 'fallback-key';
+                    const response = await fetch('/api/gdpr/log-consent', {
+                        method: 'POST',
+                        headers: {
+                            'Content-Type': 'application/json',
+                            'X-Api-Key': apiKey
+                        },
+                        body: JSON.stringify(consentData)
+                    });
+
+                    if (response.ok) {
+                        const result = await response.json();
+                        Utils.log('Consent logged via API', result);
+                    } else {
+                        throw new Error(`API consent logging failed: ${response.status}`);
+                    }
+
+                    // Update local storage
+                    if (agreed) {
+                        localStorage.setItem('gdpr_consent', 'true');
+                        localStorage.setItem('gdpr_consent_date', new Date().toISOString());
+                    } else {
+                        localStorage.removeItem('gdpr_consent');
+                        localStorage.removeItem('gdpr_consent_date');
+                    }
+
+                    // Try to log to Supabase as backup
+                    if (AppState.supabase && AppState.session.userId) {
+                        const { data, error } = await AppState.supabase
+                            .from('gdpr_consent')
+                            .insert([{
+                                create_user_id: AppState.session.userId,
+                                gdpr_consent: agreed,
+                                gdpr_consent_date: new Date().toISOString()
+                            }])
+                            .select();
+
+                        if (!error) {
+                            Utils.log('Consent logged to Supabase', data);
+                        }
+                    }
+
+                    return true;
+
+                } catch (error) {
+                    Utils.error('Error logging consent', error);
+                    // Don't fail the flow even if logging fails
+                    return false;
+                }
+            }
+        };
+
+        // ============================
+        // UI Management
+        // ============================
+        const UIManager = {
+            showLoading(show = true) {
+                const indicator = document.getElementById('loadingIndicator');
+                if (indicator) {
+                    indicator.style.display = show ? 'block' : 'none';
+                }
+            },
+
+            showContent() {
+                this.showLoading(false);
+                const content = document.getElementById('consentContent');
+                if (content) {
+                    content.style.display = 'block';
+                }
+            },
+
+            showSuccess(message = 'Your consent has been recorded. Redirecting to complete your report...') {
+                const mainContainer = document.getElementById('mainContainer');
+                const successAnimation = document.getElementById('successAnimation');
+
+                if (mainContainer) mainContainer.style.display = 'none';
+                if (successAnimation) {
+                    successAnimation.style.display = 'block';
+                    const messageEl = successAnimation.querySelector('p');
+                    if (messageEl) messageEl.textContent = message;
+                }
+            },
+
+            disableButtons(disabled = true) {
+                const buttons = document.querySelectorAll('.btn');
+                buttons.forEach(btn => {
+                    btn.disabled = disabled;
+                });
+            },
+
+            updateReferenceNumber() {
+                const refEl = document.getElementById('refNum');
+                if (refEl) {
+                    refEl.textContent = Utils.generateReferenceId(
+                        AppState.session.userId, 
+                        AppState.session.incidentId
+                    );
+                }
+            }
+        };
+
+        // ============================
+        // Navigation Management
+        // ============================
+        const NavigationManager = {
+            buildRedirectUrl() {
+                // Check for explicit return URL first
+                if (AppState.session.returnUrl) {
+                    try {
+                        return Utils.sanitizeUrl(decodeURIComponent(AppState.session.returnUrl));
+                    } catch (e) {
+                        Utils.error('Invalid return URL', e);
+                    }
+                }
+
+                // Build redirect based on operation
+                const params = new URLSearchParams({
+                    create_user_id: AppState.session.userId || '',
+                    consent_given: 'true'
                 });
 
-                if (!response.ok) {
-                    console.error('Failed to log consent, but continuing...');
-                } else {
-                    const result = await response.json();
-                    console.log('Consent logged:', result);
-
-                    // Update localStorage for quick checks
-                    localStorage.setItem('gdpr_consent', agreed ? 'true' : 'false');
-                    localStorage.setItem('gdpr_consent_date', new Date().toISOString());
-                }
-            } catch (error) {
-                console.error('Error logging consent:', error);
-                // Continue with flow even if logging fails
-            }
-        }
-
-        async function checkGDPRConsent(userId) {
-            // Quick check from localStorage first
-            const localConsent = localStorage.getItem('gdpr_consent');
-            if (localConsent === 'true' && !requireConsent) {
-                return true;
-            }
-
-            if (!supabase || !userId) return false;
-
-            try {
-                // Check gdpr_consent table
-                const { data, error } = await supabase
-                    .from('gdpr_consent')
-                    .select('gdpr_consent, gdpr_consent_date')
-                    .eq('create_user_id', userId)
-                    .order('gdpr_consent_date', { ascending: false })
-                    .limit(1)
-                    .single();
-
-                if (error || !data) {
-                    // Check user_signup table as fallback
-                    const { data: userData } = await supabase
-                        .from('user_signup')
-                        .select('gdpr_consent, legal_support')
-                        .eq('create_user_id', userId)
-                        .single();
-
-                    const hasConsent = userData?.gdpr_consent === true || 
-                                      userData?.legal_support === 'Yes';
-
-                    if (hasConsent) {
-                        localStorage.setItem('gdpr_consent', 'true');
-                    }
-
-                    return hasConsent;
+                if (AppState.session.incidentId) {
+                    params.append('incident_id', AppState.session.incidentId);
                 }
 
-                const hasConsent = data.gdpr_consent === true;
+                let basePath = '/report-complete.html';
 
-                if (hasConsent) {
-                    localStorage.setItem('gdpr_consent', 'true');
-                    localStorage.setItem('gdpr_consent_date', data.gdpr_consent_date);
+                if (AppState.session.operation === 'audio_recording') {
+                    basePath = '/transcription-status.html';
+                } else if (AppState.session.operation === 'final_consent') {
+                    params.append('status', 'completed');
                 }
 
-                return hasConsent;
-            } catch (error) {
-                console.error('Error checking GDPR consent:', error);
-                return false;
-            }
-        }
+                return `${basePath}?${params.toString()}`;
+            },
 
-        // ============================
-        // Consent Handling
-        // ============================
-        function handleConsent(agreed) {
-            if (agreed) {
-                // User agreed - log consent and show success
-                logConsent(true);
+            async redirect(url, delay = 2000) {
+                Utils.log(`Redirecting to ${url} in ${delay}ms`);
 
-                // Hide main container and show success animation
-                document.getElementById('mainContainer').style.display = 'none';
-                document.getElementById('successAnimation').style.display = 'block';
-
-                // Determine redirect URL
-                let redirectUrl = returnUrl ? decodeURIComponent(returnUrl) : null;
-
-                if (!redirectUrl) {
-                    // Check if this was for recording operation
-                    const operation = urlParams.get('operation');
-                    
-                    if (operation === 'audio_recording') {
-                        // Return to recording page with consent granted
-                        const redirectParams = new URLSearchParams({
-                            create_user_id: userId,
-                            consent_given: 'true'
-                        });
-                        if (incidentId) {
-                            redirectParams.append('incident_id', incidentId);
-                        }
-                        redirectUrl = `/transcription-status.html?${redirectParams.toString()}`;
-                    } else if (operation === 'final_consent') {
-                        // Final consent before completion - go to report-complete
-                        const redirectParams = new URLSearchParams({
-                            create_user_id: userId,
-                            consent_given: 'true',
-                            status: 'completed'
-                        });
-                        if (incidentId) {
-                            redirectParams.append('incident_id', incidentId);
-                        }
-                        redirectUrl = `/report-complete.html?${redirectParams.toString()}`;
-                    } else {
-                        // Default to completion page
-                        const redirectParams = new URLSearchParams({
-                            create_user_id: userId,
-                            consent_given: 'true'
-                        });
-                        if (incidentId) {
-                            redirectParams.append('incident_id', incidentId);
-                        }
-                        redirectUrl = `/report-complete.html?${redirectParams.toString()}`;
-                    }
-                }
-
-                // Redirect after 2 seconds
-                setTimeout(() => {
-                    window.location.href = redirectUrl;
-                }, 2000);
-
-            } else {
-                // User disagreed - show warning modal
-                document.getElementById('warningModal').style.display = 'block';
-            }
-        }
-
-        function reconsider() {
-            document.getElementById('warningModal').style.display = 'none';
-        }
-
-        function confirmNoConsent() {
-            logConsent(false);
-
-            document.getElementById('warningModal').style.display = 'none';
-            document.getElementById('mainContainer').innerHTML = `
-                <div style="text-align: center; padding: 40px;">
-                    <div style="font-size: 48px; color: #dc3545; margin-bottom: 20px;">❌</div>
-                    <h2 style="color: #333; margin-bottom: 20px;">Consent Not Given</h2>
-                    <p style="color: #666; margin-bottom: 20px;">
-                        Your data will not be shared with any third parties and your claim cannot be processed.
-                    </p>
-                    <p style="color: #666; margin-bottom: 30px;">
-                        If you change your mind, you can start a new claim at any time.
-                    </p>
-                    <a href="https://carcrashlawyerai.com/" class="btn" style="background: #667eea; color: white; padding: 12px 30px; text-decoration: none; display: inline-block; border-radius: 8px;">
-                        Return to Home
-                    </a>
-                </div>
-            `;
-        }
-
-        // ============================
-        // Page Initialization
-        // ============================
-        document.addEventListener('DOMContentLoaded', async () => {
-            // Show loading indicator
-            document.getElementById('loadingIndicator').style.display = 'block';
-
-            // Initialize configuration first
-            await initializeConfig();
-
-            // Initialize Supabase
-            await initializeSupabase();
-
-            // Check if user got here properly
-            if (!userId) {
-                alert('Session expired or invalid access. Please start over.');
-                window.location.href = 'https://carcrashlawyerai.com/';
-                return;
-            }
-
-            // Display reference number
-            if (incidentId) {
-                document.getElementById('refNum').textContent = `CCL-${incidentId}`;
-            } else if (userId) {
-                document.getElementById('refNum').textContent = `CCL-${userId.substring(0, 8)}`;
-            }
-
-            // Check existing consent if configured
-            if (appConfig?.gdpr?.consentRequired && !requireConsent) {
-                const hasConsent = await checkGDPRConsent(userId);
-
-                if (hasConsent) {
-                    console.log('User already has GDPR consent, proceeding...');
-                    // Automatically proceed if they already have consent
-                    document.getElementById('loadingIndicator').style.display = 'none';
-                    document.getElementById('mainContainer').style.display = 'none';
-                    document.getElementById('successAnimation').style.display = 'block';
-
+                return new Promise((resolve) => {
                     setTimeout(() => {
-                        const redirectParams = new URLSearchParams({
-                            create_user_id: userId,
-                            consent_given: 'true'
-                        });
-
-                        if (incidentId) {
-                            redirectParams.append('incident_id', incidentId);
+                        try {
+                            window.location.href = url;
+                            resolve(true);
+                        } catch (error) {
+                            Utils.error('Redirect failed', error);
+                            // Fallback redirect
+                            window.location.href = '/report-complete.html';
+                            resolve(false);
                         }
+                    }, delay);
+                });
+            },
 
-                        window.location.href = `https://carcrashlawyerai.com/report-complete.html?${redirectParams.toString()}`;
-                    }, 1500);
+            goHome() {
+                window.location.href = 'https://carcrashlawyerai.com/';
+            }
+        };
+
+        // ============================
+        // Consent Handler
+        // ============================
+        const ConsentHandler = {
+            async handleConsent(agreed) {
+                if (AppState.ui.isProcessing) {
+                    Utils.log('Already processing consent');
                     return;
                 }
+
+                AppState.ui.isProcessing = true;
+                UIManager.disableButtons(true);
+
+                try {
+                    Utils.log(`User consent: ${agreed ? 'AGREED' : 'DECLINED'}`);
+
+                    if (agreed) {
+                        // Show success immediately for better UX
+                        UIManager.showSuccess();
+
+                        // Log consent (non-blocking)
+                        ConsentManager.logConsent(true).catch(err => {
+                            Utils.error('Consent logging failed but continuing', err);
+                        });
+
+                        // Build redirect URL
+                        const redirectUrl = NavigationManager.buildRedirectUrl();
+
+                        // Redirect after delay
+                        await NavigationManager.redirect(redirectUrl);
+
+                    } else {
+                        // Show warning modal for declined consent
+                        this.showWarningModal();
+                    }
+
+                } catch (error) {
+                    Utils.error('Error handling consent', error);
+                    Utils.showError('An error occurred. Please try again.');
+                    UIManager.disableButtons(false);
+                } finally {
+                    AppState.ui.isProcessing = false;
+                }
+            },
+
+            showWarningModal() {
+                const modal = document.getElementById('warningModal');
+                if (modal) {
+                    modal.style.display = 'block';
+                }
+                UIManager.disableButtons(false);
+            },
+
+            hideWarningModal() {
+                const modal = document.getElementById('warningModal');
+                if (modal) {
+                    modal.style.display = 'none';
+                }
+            },
+
+            async confirmNoConsent() {
+                try {
+                    // Log the declined consent
+                    await ConsentManager.logConsent(false);
+
+                    this.hideWarningModal();
+
+                    // Show final message
+                    const mainContainer = document.getElementById('mainContainer');
+                    if (mainContainer) {
+                        mainContainer.innerHTML = `
+                            <div style="text-align: center; padding: 40px;">
+                                <div style="font-size: 48px; color: #dc3545; margin-bottom: 20px;">❌</div>
+                                <h2 style="color: #333; margin-bottom: 20px;">Consent Not Given</h2>
+                                <p style="color: #666; margin-bottom: 20px;">
+                                    Your data will not be shared with any third parties and your claim cannot be processed.
+                                </p>
+                                <p style="color: #666; margin-bottom: 30px;">
+                                    If you change your mind, you can start a new claim at any time.
+                                </p>
+                                <a href="https://carcrashlawyerai.com/" class="btn" 
+                                   style="background: #667eea; color: white; padding: 12px 30px; 
+                                          text-decoration: none; display: inline-block; border-radius: 8px;">
+                                    Return to Home
+                                </a>
+                            </div>
+                        `;
+                    }
+
+                } catch (error) {
+                    Utils.error('Error confirming no consent', error);
+                }
             }
+        };
 
-            // Hide loading indicator and show consent form
-            document.getElementById('loadingIndicator').style.display = 'none';
-            document.getElementById('consentContent').style.display = 'block';
+        // ============================
+        // Application Initialization
+        // ============================
+        const App = {
+            async initialize() {
+                Utils.log('Initializing application...');
 
-            // Log page load
-            console.log('Declaration page loaded with:', {
-                userId: userId,
-                incidentId: incidentId,
-                status: urlParams.get('status'),
-                requireConsent: requireConsent,
-                config: appConfig
-            });
+                try {
+                    // Initialize session first
+                    SessionManager.initialize();
+
+                    // Check if session is valid
+                    if (!SessionManager.isValid()) {
+                        Utils.error('Invalid session - no user ID found');
+                        UIManager.showLoading(false);
+                        Utils.showError('Session expired or invalid access. Please start over.');
+                        setTimeout(() => NavigationManager.goHome(), 3000);
+                        return;
+                    }
+
+                    // Load configuration
+                    AppState.config = await ConfigManager.load();
+
+                    // Initialize Supabase
+                    const supabaseInitialized = await SupabaseManager.initialize();
+
+                    // Update UI elements
+                    UIManager.updateReferenceNumber();
+
+                    // Check for existing consent if not explicitly required
+                    if (supabaseInitialized && !AppState.session.requireConsent) {
+                        const hasConsent = await ConsentManager.checkExistingConsent(AppState.session.userId);
+
+                        if (hasConsent) {
+                            Utils.log('User already has GDPR consent, auto-redirecting...');
+                            UIManager.showSuccess('Consent already recorded. Redirecting...');
+                            const redirectUrl = NavigationManager.buildRedirectUrl();
+                            await NavigationManager.redirect(redirectUrl, 1500);
+                            return;
+                        }
+                    }
+
+                    // Show consent form
+                    UIManager.showContent();
+
+                    Utils.log('Application initialized successfully', {
+                        hasSupabase: !!AppState.supabase,
+                        sessionValid: SessionManager.isValid(),
+                        config: !!AppState.config
+                    });
+
+                } catch (error) {
+                    Utils.error('Failed to initialize application', error);
+                    UIManager.showLoading(false);
+                    Utils.showError('Failed to initialize. Please refresh the page.');
+                }
+            },
+
+            bindEventListeners() {
+                // Bind consent buttons
+                const btnYes = document.getElementById('btnYes');
+                const btnNo = document.getElementById('btnNo');
+
+                if (btnYes) {
+                    btnYes.addEventListener('click', () => {
+                        ConsentHandler.handleConsent(true);
+                    });
+                }
+
+                if (btnNo) {
+                    btnNo.addEventListener('click', () => {
+                        ConsentHandler.handleConsent(false);
+                    });
+                }
+
+                // Bind modal buttons
+                const btnReconsider = document.getElementById('btnReconsider');
+                const btnConfirmNo = document.getElementById('btnConfirmNo');
+
+                if (btnReconsider) {
+                    btnReconsider.addEventListener('click', () => {
+                        ConsentHandler.hideWarningModal();
+                    });
+                }
+
+                if (btnConfirmNo) {
+                    btnConfirmNo.addEventListener('click', () => {
+                        ConsentHandler.confirmNoConsent();
+                    });
+                }
+
+                // Close modal on outside click
+                window.addEventListener('click', (event) => {
+                    const modal = document.getElementById('warningModal');
+                    if (event.target === modal) {
+                        ConsentHandler.hideWarningModal();
+                    }
+                });
+
+                Utils.log('Event listeners bound');
+            }
+        };
+
+        // ============================
+        // Page Load Handler
+        // ============================
+        document.addEventListener('DOMContentLoaded', () => {
+            Utils.log('DOM Content Loaded');
+
+            // Show loading initially
+            UIManager.showLoading(true);
+
+            // Bind event listeners
+            App.bindEventListeners();
+
+            // Initialize application
+            App.initialize();
         });
+
+        // ============================
+        // Page Visibility Handler
+        // ============================
+        document.addEventListener('visibilitychange', async () => {
+            if (!document.hidden && SessionManager.isValid() && !AppState.ui.consentChecked) {
+                Utils.log('Page became visible, rechecking consent...');
+
+                // Recheck consent when page becomes visible
+                const hasConsent = await ConsentManager.checkExistingConsent(AppState.session.userId);
+
+                if (hasConsent && !AppState.session.requireConsent) {
+                    UIManager.showSuccess('Consent detected. Redirecting...');
+                    const redirectUrl = NavigationManager.buildRedirectUrl();
+                    await NavigationManager.redirect(redirectUrl, 1500);
+                }
+            }
+        });
+
+        // ============================
+        // Error Handlers
+        // ============================
+        window.addEventListener('error', (event) => {
+            Utils.error('Global error caught', event.error);
+        });
+
+        window.addEventListener('unhandledrejection', (event) => {
+            Utils.error('Unhandled promise rejection', event.reason);
+        });
+
+        // ============================
+        // Expose for debugging (remove in production)
+        // ============================
+        if (AppState.debug) {
+            window.AppDebug = {
+                state: AppState,
+                testConsent: (agreed) => ConsentHandler.handleConsent(agreed),
+                checkSession: () => console.log('Session:', AppState.session),
+                forceRedirect: () => NavigationManager.redirect(NavigationManager.buildRedirectUrl(), 0)
+            };
+            Utils.log('Debug mode enabled. Use window.AppDebug for debugging.');
+        }
     </script>
 </body>
 </html>
