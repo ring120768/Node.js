@@ -2184,7 +2184,293 @@ app.post('/api/generate-legal-narrative', checkSharedKey, checkGDPRConsent, asyn
 
 Logger.info('✅ Consent management endpoints registered');
 
+// ========================================
+// LEGAL NARRATIVE ENDPOINTS
+// ========================================
+
+// Generate legal narrative from raw accident data
+app.post('/api/generate-legal-narrative', checkSharedKey, async (req, res) => {
+  try {
+    const { 
+      accidentData, 
+      targetLength, 
+      includeEvidenceSection, 
+      includeMissingNotes,
+      userId 
+    } = req.body;
+
+    if (!accidentData) {
+      return res.status(400).json({
+        error: 'Missing accident data',
+        code: 'MISSING_DATA',
+        requestId: req.requestId
+      });
+    }
+
+    const narrative = await generateLegalNarrative(accidentData, {
+      targetLength,
+      includeEvidenceSection,
+      includeMissingNotes,
+      userId: userId || accidentData.create_user_id
+    });
+
+    if (!narrative) {
+      return res.status(422).json({
+        error: 'Failed to generate narrative',
+        code: 'GENERATION_FAILED',
+        requestId: req.requestId
+      });
+    }
+
+    res.json({
+      success: true,
+      narrative,
+      generated_at: new Date().toISOString(),
+      requestId: req.requestId
+    });
+
+  } catch (error) {
+    Logger.error('Legal narrative endpoint error:', error);
+    res.status(500).json({
+      error: 'Internal server error',
+      message: error.message,
+      requestId: req.requestId
+    });
+  }
+});
+
+// Generate legal narrative from user and incident IDs
+app.post('/api/generate-legal-narrative-from-ids', checkSharedKey, checkGDPRConsent, async (req, res) => {
+  try {
+    const { 
+      userId, 
+      incidentId,
+      targetLength,
+      includeEvidenceSection,
+      includeMissingNotes
+    } = req.body;
+
+    if (!userId) {
+      return res.status(400).json({
+        error: 'Missing user ID',
+        code: 'MISSING_USER_ID',
+        requestId: req.requestId
+      });
+    }
+
+    // Prepare accident data from database
+    const accidentData = await prepareAccidentDataForNarrative(userId, incidentId);
+
+    if (!accidentData) {
+      return res.status(404).json({
+        error: 'No accident data found',
+        code: 'DATA_NOT_FOUND',
+        requestId: req.requestId
+      });
+    }
+
+    const narrative = await generateLegalNarrative(accidentData, {
+      targetLength,
+      includeEvidenceSection,
+      includeMissingNotes,
+      userId
+    });
+
+    res.json({
+      success: true,
+      narrative,
+      data_source: 'database',
+      generated_at: new Date().toISOString(),
+      requestId: req.requestId
+    });
+
+  } catch (error) {
+    Logger.error('Legal narrative from IDs error:', error);
+    res.status(500).json({
+      error: 'Internal server error',
+      message: error.message,
+      requestId: req.requestId
+    });
+  }
+});
+
+// Get saved legal narratives for a user
+app.get('/api/legal-narratives/:userId', checkSharedKey, checkGDPRConsent, async (req, res) => {
+  if (!supabaseEnabled) {
+    return res.status(503).json({
+      error: 'Service not configured',
+      requestId: req.requestId
+    });
+  }
+
+  try {
+    const { userId } = req.params;
+    const { limit = 10, incidentId } = req.query;
+
+    let query = supabase
+      .from('legal_narratives')
+      .select('*')
+      .eq('create_user_id', userId)
+      .order('created_at', { ascending: false })
+      .limit(parseInt(limit));
+
+    if (incidentId) {
+      query = query.eq('incident_report_id', incidentId);
+    }
+
+    const { data, error } = await query;
+
+    if (error) throw error;
+
+    res.json({
+      success: true,
+      narratives: data || [],
+      count: data?.length || 0,
+      requestId: req.requestId
+    });
+
+  } catch (error) {
+    Logger.error('Error fetching legal narratives:', error);
+    res.status(500).json({
+      error: 'Failed to fetch narratives',
+      requestId: req.requestId
+    });
+  }
+});
+
 // --- UTILITY FUNCTIONS ---
+
+// Helper function to prepare accident data for narrative generation
+async function prepareAccidentDataForNarrative(userId, incidentId = null) {
+  try {
+    if (!supabaseEnabled) {
+      Logger.warn('Supabase not enabled - cannot fetch accident data');
+      return null;
+    }
+
+    Logger.info('Preparing accident data for narrative', { userId, incidentId });
+
+    // Fetch user signup data
+    const { data: userData } = await supabase
+      .from('user_signup')
+      .select('*')
+      .eq('create_user_id', userId)
+      .single();
+
+    if (!userData) {
+      Logger.warn('User data not found', { userId });
+      return null;
+    }
+
+    // Fetch incident report data
+    let incidentData = null;
+    if (incidentId) {
+      const { data } = await supabase
+        .from('incident_reports')
+        .select('*')
+        .eq('id', incidentId)
+        .eq('create_user_id', userId)
+        .single();
+      incidentData = data;
+    } else {
+      // Get the latest incident report for the user
+      const { data } = await supabase
+        .from('incident_reports')
+        .select('*')
+        .eq('create_user_id', userId)
+        .order('created_at', { ascending: false })
+        .limit(1)
+        .single();
+      incidentData = data;
+    }
+
+    // Fetch transcription data
+    const { data: transcriptionData } = await supabase
+      .from('ai_transcription')
+      .select('*')
+      .eq('create_user_id', userId)
+      .order('created_at', { ascending: false })
+      .limit(1)
+      .single();
+
+    // Prepare combined accident data
+    const accidentData = {
+      // User information
+      create_user_id: userId,
+      full_name: userData.full_name,
+      email: userData.email,
+      phone_number: userData.phone_number,
+      
+      // Vehicle information
+      vehicle_make: userData.vehicle_make,
+      vehicle_model: userData.vehicle_model,
+      vehicle_color: userData.vehicle_color,
+      vehicle_registration: userData.vehicle_registration,
+      vehicle_year: userData.vehicle_year,
+      
+      // Incident details
+      incident_date: incidentData?.incident_date,
+      incident_time: incidentData?.incident_time,
+      incident_location: incidentData?.incident_location,
+      what3words: incidentData?.what3words,
+      weather_conditions: incidentData?.weather_conditions,
+      road_conditions: incidentData?.road_conditions,
+      speed_limit: incidentData?.speed_limit,
+      estimated_speed: incidentData?.estimated_speed,
+      
+      // Other party information
+      other_driver_name: incidentData?.other_driver_name,
+      other_driver_contact: incidentData?.other_driver_contact,
+      other_vehicle_make: incidentData?.other_vehicle_make,
+      other_vehicle_model: incidentData?.other_vehicle_model,
+      other_vehicle_registration: incidentData?.other_vehicle_registration,
+      other_vehicle_color: incidentData?.other_vehicle_color,
+      other_insurance_company: incidentData?.other_insurance_company,
+      other_policy_number: incidentData?.other_policy_number,
+      
+      // Damage and injuries
+      vehicle_damage_description: incidentData?.vehicle_damage_description,
+      injuries_sustained: incidentData?.injuries_sustained,
+      medical_attention_required: incidentData?.medical_attention_required,
+      
+      // Police and witnesses
+      police_attended: incidentData?.police_attended,
+      police_reference: incidentData?.police_reference,
+      witnesses_present: incidentData?.witnesses_present,
+      witness_details: incidentData?.witness_details,
+      
+      // Insurance details
+      insurance_company: userData.insurance_company,
+      policy_number: userData.policy_number,
+      
+      // AI transcription if available
+      ai_transcription: transcriptionData?.transcription_text || incidentData?.detailed_account_of_what_happened,
+      
+      // Additional info
+      anything_else_important: incidentData?.anything_else_important
+    };
+
+    // Clean up undefined values
+    Object.keys(accidentData).forEach(key => {
+      if (accidentData[key] === undefined || accidentData[key] === null) {
+        delete accidentData[key];
+      }
+    });
+
+    Logger.info('Accident data prepared successfully', { 
+      userId, 
+      incidentId, 
+      fieldCount: Object.keys(accidentData).length 
+    });
+
+    return accidentData;
+
+  } catch (error) {
+    Logger.error('Error preparing accident data for narrative:', error);
+    return null;
+  }
+}
+
 function processTypeformData(formResponse) {
   const processedData = {};
 
