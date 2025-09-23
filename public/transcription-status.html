@@ -514,7 +514,7 @@
             font-weight: bold;
         }
 
-        /* Mobile Optimizations */
+        /* Mobile Responsiveness */
         @media (max-width: 640px) {
             .container {
                 padding: 20px;
@@ -555,6 +555,38 @@
             .info-box li {
                 font-size: 14px;
                 padding: 6px 0;
+            }
+
+            /* Mobile consent banner */
+            .consent-content {
+                flex-direction: column;
+                gap: 15px;
+            }
+
+            .consent-actions {
+                width: 100%;
+                min-width: auto;
+            }
+
+            .consent-icon {
+                text-align: center;
+                font-size: 24px;
+                margin-top: 0;
+            }
+
+            .consent-text h4 {
+                font-size: 16px;
+                text-align: center;
+            }
+
+            .consent-text p,
+            .consent-text li {
+                font-size: 13px;
+            }
+
+            .consent-agree-btn,
+            .consent-decline-btn {
+                width: 100%;
             }
         }
 
@@ -673,6 +705,34 @@
             <strong>Privacy Notice:</strong> Your audio recording will be processed using AI transcription services. 
             By recording, you consent to this processing. Your data is protected under GDPR. 
             <a href="https://carcrashlawyerai.com/privacy-policy" target="_blank">Learn more</a>
+        </div>
+
+        <!-- New GDPR Consent Banner -->
+        <div class="consent-banner" id="consentBanner" style="display: none;">
+            <div class="consent-content">
+                <div class="consent-icon">
+                    <span class="sr-only">Privacy Notice</span>
+                    <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor" width="30" height="30">
+                        <path stroke-linecap="round" stroke-linejoin="round" d="M12 18.75a6 6 0 006-6v-1.5m-6 3.75a6 6 0 01-6-6v-1.5m6 3.75A6 6 0 0012 9m0 3.75A6 6 0 0112 15m-6 3.75H4.5c-4.418 0-8.268 2.939-9.653 7.078a18.07 18.07 0 000 3.596c1.346 4.151 5.196 7.078 9.653 7.078a18.07 18.07 0 009.653-7.078c-1.346-4.15-5.196-7.078-9.653-7.078z" />
+                    </svg>
+                </div>
+                <div class="consent-text">
+                    <h4>Important Privacy Information</h4>
+                    <p>By selecting 'Record Statement', you agree to our use of your voice data for transcription and AI analysis.</p>
+                    <ul>
+                        <li>Your data will be processed according to our <a href="https://carcrashlawyerai.com/privacy-policy" target="_blank">Privacy Policy</a>.</li>
+                        <li>We comply with GDPR regulations to protect your information.</li>
+                    </ul>
+                </div>
+                <div class="consent-actions">
+                    <button id="agreeRecordButton" class="btn btn-primary consent-agree-btn">
+                        ✅ Agree & Record Statement
+                    </button>
+                    <button id="declineButton" class="btn btn-danger consent-decline-btn">
+                        ❌ Decline
+                    </button>
+                </div>
+            </div>
         </div>
 
         <!-- User Info Badge -->
@@ -2167,6 +2227,31 @@
             document.getElementById('stopButton').addEventListener('click', stopRecording);
             document.getElementById('retryButton').addEventListener('click', resetRecording);
             document.getElementById('confirmButton').addEventListener('click', confirmTranscription);
+
+            // GDPR Consent Banner Listeners
+            const consentBanner = document.getElementById('consentBanner');
+            const agreeRecordButton = document.getElementById('agreeRecordButton');
+            const declineButton = document.getElementById('declineButton');
+
+            if (agreeRecordButton) {
+                agreeRecordButton.addEventListener('click', async () => {
+                    await logConsent('recording_consent', true);
+                    consentBanner.style.display = 'none';
+                    startRecording();
+                });
+            }
+
+            if (declineButton) {
+                declineButton.addEventListener('click', async () => {
+                    await logConsent('recording_consent', false);
+                    // Optionally show a message or disable recording functionality
+                    showStatus('You must agree to record. Redirecting to declaration page.', 'warning');
+                    setTimeout(() => {
+                        const returnUrl = encodeURIComponent(window.location.href);
+                        window.location.href = `/declaration.html?create_user_id=${state.userId}&require_consent=true&return_url=${returnUrl}&operation=audio_recording`;
+                    }, 2000);
+                });
+            }
 
             // Network status monitoring
             window.addEventListener('online', updateNetworkStatus);
