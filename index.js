@@ -3177,7 +3177,7 @@ app.get('/', (req, res) => {
 
             <div class="endpoint">
                 <strong>Transcription Services (GDPR Compliant):</strong><br>
-                <code>POST /api/whisper/transcribe</code> - Direct Whisper transcription<br>
+                <code>POST /api/whisper/transcribe</code> - Process audio<br>
                 <code>GET /api/transcription-status/:queueId</code> - Check transcription status<br>
                 <code>POST /api/update-transcription</code> - Update/edit transcription<br>
                 <code>POST /api/save-transcription</code> - Save transcription<br>
