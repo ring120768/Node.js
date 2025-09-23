@@ -1120,6 +1120,75 @@ class GDPRComplianceModule {
   }
 
   // ========================================
+  // CROSS-BORDER TRANSFER TRACKING
+  // ========================================
+
+  async recordCrossBorderTransfer(transferData) {
+    try {
+      const transfer = {
+        user_id: transferData.userId,
+        data_categories: transferData.dataCategories,
+        destination_country: transferData.destinationCountry,
+        transfer_purpose: transferData.transferPurpose,
+        legal_basis: transferData.legalBasis,
+        safeguards: transferData.safeguards,
+        data_recipient: transferData.dataRecipient,
+        transfer_date: new Date().toISOString(),
+        consent_status: transferData.consentStatus || 'required',
+        adequacy_decision: transferData.adequacyDecision || false,
+        volume_estimate: transferData.volumeEstimate,
+        retention_period: transferData.retentionPeriod
+      };
+
+      const { data, error } = await this.supabase
+        .from('cross_border_transfers')
+        .insert([transfer])
+        .select()
+        .single();
+
+      if (error) throw error;
+
+      // Log the transfer for audit purposes
+      await this.auditLog(transferData.userId, 'CROSS_BORDER_TRANSFER', {
+        transfer_id: data.id,
+        destination: transferData.destinationCountry,
+        purpose: transferData.transferPurpose,
+        legal_basis: transferData.legalBasis
+      });
+
+      return { success: true, transfer_id: data.id };
+    } catch (error) {
+      this.logger.error('Error recording cross-border transfer:', error);
+      throw error;
+    }
+  }
+
+  async getCrossBorderTransfers(userId, dateRange = null) {
+    try {
+      let query = this.supabase
+        .from('cross_border_transfers')
+        .select('*')
+        .eq('user_id', userId)
+        .order('transfer_date', { ascending: false });
+
+      if (dateRange?.start) {
+        query = query.gte('transfer_date', dateRange.start);
+      }
+      if (dateRange?.end) {
+        query = query.lte('transfer_date', dateRange.end);
+      }
+
+      const { data, error } = await query;
+      if (error) throw error;
+
+      return data || [];
+    } catch (error) {
+      this.logger.error('Error getting cross-border transfers:', error);
+      throw error;
+    }
+  }
+
+  // ========================================
   // COOKIE CONSENT MANAGEMENT
   // ========================================
 
@@ -1285,6 +1354,150 @@ class GDPRComplianceModule {
     // Cookie policy
     router.get('/api/gdpr/cookie-policy', (req, res) => {
       res.json(this.generateCookiePolicy());
+    });
+
+    // Cross-border transfers tracking
+    router.get('/api/gdpr/cross-border-transfers', async (req, res) => {
+      try {
+        const { start, end } = req.query;
+        const { data, error } = await this.supabase
+          .from('cross_border_transfers')
+          .select('*')
+          .gte('transfer_date', start || new Date(Date.now() - 30 * 24 * 60 * 60 * 1000).toISOString())
+          .lte('transfer_date', end || new Date().toISOString())
+          .order('transfer_date', { ascending: false });
+
+        if (error) throw error;
+
+        const transfersByCountry = this.groupBy(data, 'destination_country');
+        const transfersByPurpose = this.groupBy(data, 'transfer_purpose');
+
+        res.json({
+          transfers: data || [],
+          statistics: {
+            total_transfers: data?.length || 0,
+            by_country: transfersByCountry,
+            by_purpose: transfersByPurpose,
+            period: { start: start || 'last 30 days', end: end || 'now' }
+          }
+        });
+      } catch (error) {
+        res.status(500).json({ error: error.message });
+      }
+    });
+
+    router.post('/api/gdpr/cross-border-transfers', async (req, res) => {
+      try {
+        const transferData = {
+          user_id: req.body.userId,
+          data_categories: req.body.dataCategories,
+          destination_country: req.body.destinationCountry,
+          transfer_purpose: req.body.transferPurpose,
+          legal_basis: req.body.legalBasis,
+          safeguards: req.body.safeguards,
+          data_recipient: req.body.dataRecipient,
+          transfer_date: new Date().toISOString(),
+          consent_status: req.body.consentStatus || 'required',
+          adequacy_decision: req.body.adequacyDecision || false
+        };
+
+        const { data, error } = await this.supabase
+          .from('cross_border_transfers')
+          .insert([transferData])
+          .select()
+          .single();
+
+        if (error) throw error;
+
+        // Log the transfer
+        await this.auditLog(req.body.userId, 'CROSS_BORDER_TRANSFER', {
+          transfer_id: data.id,
+          destination: req.body.destinationCountry,
+          purpose: req.body.transferPurpose
+        });
+
+        res.json({ success: true, transfer_id: data.id });
+      } catch (error) {
+        res.status(500).json({ error: error.message });
+      }
+    });
+
+    // User rights information
+    router.get('/api/gdpr/user-rights/:userId', async (req, res) => {
+      try {
+        const userId = req.params.userId;
+        const consentStatus = await this.checkConsentStatus(userId);
+        const jurisdiction = consentStatus.jurisdiction || await this.detectJurisdiction(req.ip);
+        const applicableLaw = this.getApplicableLaw(jurisdiction);
+        const rights = this.privacyLaws[applicableLaw];
+
+        res.json({
+          user_id: userId,
+          jurisdiction: jurisdiction,
+          applicable_law: applicableLaw,
+          consent_status: consentStatus,
+          rights_available: rights.rights,
+          response_time: `${rights.responseTime} days`,
+          endpoints: {
+            withdraw_consent: '/api/gdpr/withdraw-consent',
+            request_data: '/api/gdpr/dsr',
+            export_data: `/api/gdpr/export/${userId}`,
+            delete_data: `/api/gdpr/user/${userId}`
+          }
+        });
+      } catch (error) {
+        res.status(500).json({ error: error.message });
+      }
+    });
+
+    // Admin dashboard for compliance monitoring
+    router.get('/api/gdpr/admin/dashboard', async (req, res) => {
+      try {
+        const thirtyDaysAgo = new Date();
+        thirtyDaysAgo.setDate(thirtyDaysAgo.getDate() - 30);
+
+        const { data: recentConsents } = await this.supabase
+          .from('gdpr_consent_records')
+          .select('*')
+          .gte('consent_date', thirtyDaysAgo.toISOString());
+
+        const { data: pendingDSRs } = await this.supabase
+          .from('data_subject_requests')
+          .select('*')
+          .eq('request_status', 'pending');
+
+        const { data: recentBreaches } = await this.supabase
+          .from('data_breaches')
+          .select('*')
+          .gte('discovery_date', thirtyDaysAgo.toISOString());
+
+        const { data: overdueDSRs } = await this.supabase
+          .from('data_subject_requests')
+          .select('*')
+          .lt('response_deadline', new Date().toISOString())
+          .eq('request_status', 'pending');
+
+        res.json({
+          dashboard_date: new Date().toISOString(),
+          consent_metrics: {
+            new_consents: recentConsents?.filter(c => c.consent_given).length || 0,
+            withdrawals: recentConsents?.filter(c => c.withdrawal_date).length || 0,
+            by_jurisdiction: this.groupBy(recentConsents, 'jurisdiction')
+          },
+          data_subject_requests: {
+            pending: pendingDSRs?.length || 0,
+            overdue: overdueDSRs?.length || 0,
+            by_type: this.groupBy(pendingDSRs, 'request_type')
+          },
+          compliance_alerts: {
+            overdue_requests: overdueDSRs?.length || 0,
+            recent_breaches: recentBreaches?.length || 0,
+            breach_notifications_due: recentBreaches?.filter(b => b.notification_required && !b.reported_to_authority).length || 0
+          }
+        });
+      } catch (error) {
+        res.status(500).json({ error: error.message });
+      }
     });
 
     return router;
