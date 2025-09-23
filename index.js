@@ -740,6 +740,31 @@ setInterval(() => {
   });
 }, 60000); // Clean up every minute
 
+// Cleanup stale webhooks from memory store
+setInterval(() => {
+  if (webhookDebugger && webhookDebugger.webhookStore) {
+    const storeSize = webhookDebugger.webhookStore.size;
+    const maxSize = parseInt(process.env.WEBHOOK_STORE_MAX_SIZE) || 1000;
+    
+    if (storeSize > maxSize) {
+      Logger.warn(`Webhook store size (${storeSize}) exceeds limit (${maxSize}), triggering cleanup`);
+      
+      // Get oldest webhooks and remove them
+      const webhooksArray = Array.from(webhookDebugger.webhookStore.entries());
+      const sortedWebhooks = webhooksArray.sort((a, b) => 
+        new Date(a[1].timestamp) - new Date(b[1].timestamp)
+      );
+      
+      const toRemove = storeSize - (maxSize * 0.8); // Keep 80% after cleanup
+      for (let i = 0; i < toRemove; i++) {
+        webhookDebugger.webhookStore.delete(sortedWebhooks[i][0]);
+      }
+      
+      Logger.info(`Cleaned up ${toRemove} old webhooks, new size: ${webhookDebugger.webhookStore.size}`);
+    }
+  }
+}, 300000); // Check every 5 minutes
+
 // Handle WebSocket upgrade
 server.on('upgrade', (request, socket, head) => {
   // Add basic authentication check if needed
@@ -2088,7 +2113,10 @@ app.get('/health', async (req, res) => {
   const enhancedModules = {
     consentManager: consentManager !== null,
     webhookDebugger: webhookDebugger !== null,
-    storedWebhooks: webhookDebugger ? webhookDebugger.webhookStore.size : 0
+    storedWebhooks: webhookDebugger ? webhookDebugger.webhookStore.size : 0,
+    webhookStoreStatus: webhookDebugger ? 
+      (webhookDebugger.webhookStore.size > 800 ? 'warning' : 'healthy') : 'n/a',
+    maxWebhookStoreSize: parseInt(process.env.WEBHOOK_STORE_MAX_SIZE) || 1000
   };
 
   const status = {
