@@ -4017,16 +4017,16 @@ app.post('/api/update-transcription', checkGDPRConsent, async (req, res) => {
   }
 });
 
-// SAVE TRANSCRIPTION (GDPR COMPLIANT) endpoint
-app.post('/api/save-transcription', checkGDPRConsent, async (req, res) => {
+// SAVE TRANSCRIPTION endpoint
+app.post('/api/save-transcription', async (req, res) => {
   try {
     const { userId, incidentId, transcription, audioUrl, duration } = req.body;
+    const create_user_id = userId || req.body.create_user_id;
 
-    if (!userId) {
+    if (!create_user_id) {
       return res.status(400).json({
-        error: 'User ID required for GDPR compliance',
+        error: 'User ID required',
         code: 'MISSING_USER_ID',
-        message: 'Personal data cannot be saved without proper user identification',
         requestId: req.requestId
       });
     }
@@ -4039,10 +4039,12 @@ app.post('/api/save-transcription', checkGDPRConsent, async (req, res) => {
       });
     }
 
-    Logger.info('Saving transcription', { userId });
+    // Just log for audit
+    console.log(`Saving transcription for user: ${create_user_id}`);
+    Logger.info('Saving transcription', { userId: create_user_id });
 
-    // Log GDPR activity
-    await logGDPRActivity(userId, 'DATA_SAVE', {
+    // Log GDPR activity for audit purposes
+    await logGDPRActivity(create_user_id, 'DATA_SAVE', {
       type: 'transcription',
       has_audio: !!audioUrl
     }, req);
@@ -4058,7 +4060,7 @@ app.post('/api/save-transcription', checkGDPRConsent, async (req, res) => {
     const { data: existing } = await supabase
       .from('ai_transcription')
       .select('id, audio_url')
-      .eq('create_user_id', userId)
+      .eq('create_user_id', create_user_id)
       .eq('incident_report_id', incidentId || null)
       .single();
 
@@ -4082,7 +4084,7 @@ app.post('/api/save-transcription', checkGDPRConsent, async (req, res) => {
       const { data, error } = await supabase
         .from('ai_transcription')
         .insert({
-          create_user_id: userId,
+          create_user_id: create_user_id,
           incident_report_id: incidentId || null,
           transcription_text: transcription,
           audio_url: audioUrl || '',
@@ -4105,7 +4107,7 @@ app.post('/api/save-transcription', checkGDPRConsent, async (req, res) => {
           updated_at: new Date().toISOString()
         })
         .eq('id', incidentId)
-        .eq('create_user_id', userId);
+        .eq('create_user_id', create_user_id);
     }
 
     res.json({
