@@ -1921,10 +1921,10 @@
                         state.pollInterval = null;
                     }
 
-                    // Redirect to declaration page for GDPR consent
-                    console.log('Redirecting to declaration page...');
+                    // Redirect to AI summary review page
+                    console.log('Redirecting to AI summary review...');
                     setTimeout(() => {
-                        window.location.href = `/declaration.html?${params.toString()}`;
+                        window.location.href = `/ai-summary-review.html?${params.toString()}`;
                     }, 1000);
 
                 } else {
