@@ -1,0 +1,73 @@
+3. Modify AI Summary Generation Flow
+Update your existing generateAISummary function:
+javascript// Modify the existing generateAISummary function
+async function generateAISummary(queueItem, transcriptionText) {
+    try {
+        // Update status to generating
+        await supabase
+            .from('transcription_queue')
+            .update({ 
+                status: TRANSCRIPTION_STATUS.GENERATING_SUMMARY,
+                processing_started_at: new Date().toISOString()
+            })
+            .eq('id', queueItem.id);
+
+        // Generate summary with OpenAI
+        const summary = await generateSummaryWithAI(transcriptionText);
+        
+        // Store the original summary and set status based on preview preference
+        const userPreferences = await getUserPreferences(queueItem.user_id);
+        const previewRequired = userPreferences?.preview_enabled ?? true;
+        
+        const updateData = {
+            ai_summary: summary,
+            original_summary: summary,
+            status: previewRequired ? 
+                TRANSCRIPTION_STATUS.PENDING_REVIEW : 
+                TRANSCRIPTION_STATUS.COMPLETED,
+            preview_required: previewRequired,
+            summary_generated_at: new Date().toISOString()
+        };
+
+        await supabase
+            .from('transcription_queue')
+            .update(updateData)
+            .eq('id', queueItem.id);
+
+        // Send WebSocket notification
+        if (previewRequired) {
+            broadcastToUser(queueItem.user_id, {
+                type: 'SUMMARY_READY_FOR_REVIEW',
+                queueId: queueItem.id,
+                message: 'Your summary is ready for review',
+                previewUrl: `/api/summary/preview/${queueItem.id}`
+            });
+        }
+
+        // Log GDPR activity
+        await GDPR.logActivity(
+            queueItem.user_id,
+            'AI_SUMMARY_GENERATED',
+            'transcription_queue',
+            { 
+                queue_id: queueItem.id,
+                preview_required: previewRequired 
+            }
+        );
+
+        return summary;
+    } catch (error) {
+        Logger.error('Error generating AI summary:', error);
+        throw error;
+    }
+}
+
+// Helper function to get user preferences
+async function getUserPreferences(userId) {
+    const { data } = await supabase
+        .from('user_preferences')
+        .select('preview_enabled')
+        .eq('user_id', userId)
+        .single();
+    return data;
+}

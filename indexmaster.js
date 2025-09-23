@@ -18,6 +18,10 @@ require('dotenv').config();
 // Import rate limiting
 const rateLimit = require('express-rate-limit');
 
+// Import security middleware
+const helmet = require('helmet');
+const compression = require('compression');
+
 // Import Supabase client
 const { createClient } = require('@supabase/supabase-js');
 
@@ -25,6 +29,13 @@ const { createClient } = require('@supabase/supabase-js');
 // GDPR MODULE IMPORT - NEW
 // ========================================
 const GDPRComplianceModule = require('./gdprModule');
+
+// ========================================
+// ENHANCED MODULES - NEW
+// ========================================
+const { CONSTANTS: ENHANCED_CONSTANTS, ConstantHelpers } = require('./constants');
+const ConsentManager = require('./consentManager');
+const WebhookDebugger = require('./webhookDebugger');
 
 // Import PDF generation modules - with error handling
 let fetchAllData, generatePDF, sendEmails;
@@ -36,38 +47,8 @@ try {
   console.warn('PDF generation modules not found - PDF features will be disabled', error.message);
 }
 
-// Constants for better maintainability
-const CONSTANTS = {
-  TRANSCRIPTION_STATUS: {
-    PENDING: 'pending',
-    PROCESSING: 'processing',
-    TRANSCRIBED: 'transcribed',
-    GENERATING_SUMMARY: 'generating_summary',
-    COMPLETED: 'completed',
-    FAILED: 'failed'
-  },
-  RETRY_LIMITS: {
-    TRANSCRIPTION: 5,
-    API_TIMEOUT: 30000,
-    WHISPER_TIMEOUT: 60000
-  },
-  DATA_RETENTION: {
-    DEFAULT_DAYS: 365
-  },
-  WS_MESSAGE_TYPES: {
-    SUBSCRIBE: 'subscribe',
-    UNSUBSCRIBE: 'unsubscribe',
-    PING: 'ping',
-    PONG: 'pong',
-    ERROR: 'error',
-    STATUS: 'status',
-    REALTIME_UPDATE: 'realtime_update'
-  },
-  FILE_SIZE_LIMITS: {
-    AUDIO: 50 * 1024 * 1024, // 50MB
-    IMAGE: 10 * 1024 * 1024  // 10MB
-  }
-};
+// Use enhanced constants from module
+const CONSTANTS = ENHANCED_CONSTANTS;
 
 // Enhanced logging utility with better error handling
 const Logger = {
@@ -109,9 +90,9 @@ const server = http.createServer(app);
 app.set('trust proxy', 1);
 
 // Configure multer for file uploads with enhanced error handling
-const upload = multer({ 
+const upload = multer({
   storage: multer.memoryStorage(),
-  limits: { 
+  limits: {
     fileSize: CONSTANTS.FILE_SIZE_LIMITS.AUDIO,
     files: 5 // Maximum number of files
   },
@@ -155,6 +136,37 @@ const strictLimiter = rateLimit({
 });
 
 // --- MIDDLEWARE SETUP ---
+
+// Security headers with Helmet
+app.use(helmet({
+  contentSecurityPolicy: {
+    directives: {
+      defaultSrc: ["'self'"],
+      styleSrc: ["'self'", "'unsafe-inline'"],
+      scriptSrc: ["'self'", "'unsafe-inline'"],
+      imgSrc: ["'self'", "data:", "https:"],
+      connectSrc: ["'self'", "wss:", "https:"],
+    },
+  },
+  hsts: {
+    maxAge: 31536000,
+    includeSubDomains: true,
+    preload: true
+  }
+}));
+
+// Response compression
+app.use(compression({
+  level: 6,
+  threshold: 100 * 1000, // Only compress responses > 100KB
+  filter: (req, res) => {
+    if (req.headers['x-no-compression']) {
+      return false;
+    }
+    return compression.filter(req, res);
+  }
+}));
+
 app.use(cors({
   origin: process.env.ALLOWED_ORIGINS ? process.env.ALLOWED_ORIGINS.split(',') : '*',
   credentials: true,
@@ -189,16 +201,16 @@ app.use((req, res, next) => {
   Logger.debug(`${req.method} ${sanitizedPath}`, { timestamp });
 
   // Log user ID if present in various locations
-  const userId = req.body?.create_user_id || req.body?.userId || 
+  const userId = req.body?.create_user_id || req.body?.userId ||
                  req.params?.userId || req.query?.userId || req.headers['x-user-id'];
   if (userId) {
     Logger.debug('User ID', { userId: userId.substring(0, 8) + '...' }); // Partially redact for security
   }
 
   // Store IP for GDPR audit logging
-  req.clientIp = req.ip || 
-                 req.connection?.remoteAddress || 
-                 req.headers['x-forwarded-for']?.split(',')[0].trim() || 
+  req.clientIp = req.ip ||
+                 req.connection?.remoteAddress ||
+                 req.headers['x-forwarded-for']?.split(',')[0].trim() ||
                  'unknown';
 
   // Add request ID for tracing
@@ -218,17 +230,17 @@ function checkSharedKey(req, res, next) {
 
   if (!SHARED_KEY) {
     Logger.warn('No ZAPIER_SHARED_KEY/WEBHOOK_API_KEY set');
-    return res.status(503).json({ 
+    return res.status(503).json({
       error: 'Server missing shared key (ZAPIER_SHARED_KEY)',
-      requestId: req.requestId 
+      requestId: req.requestId
     });
   }
 
   if (provided !== SHARED_KEY) {
     Logger.warn('Authentication failed', { ip: req.clientIp });
-    return res.status(401).json({ 
+    return res.status(401).json({
       error: 'Unauthorized',
-      requestId: req.requestId 
+      requestId: req.requestId
     });
   }
 
@@ -388,6 +400,29 @@ supabaseEnabled = initSupabase();
 if (supabaseEnabled) {
   gdprModule = new GDPRComplianceModule(supabase, Logger);
   Logger.success('✅ GDPR Compliance Module initialized');
+}
+
+// ========================================
+// INITIALIZE ENHANCED MODULES - NEW
+// ========================================
+let consentManager = null;
+let webhookDebugger = null;
+
+if (supabaseEnabled && supabase) {
+  try {
+    // Initialize Consent Manager
+    consentManager = new ConsentManager(supabase, Logger);
+    Logger.success('✅ Consent Manager initialized');
+
+    // Initialize Webhook Debugger
+    webhookDebugger = new WebhookDebugger(supabase, Logger);
+    Logger.success('✅ Webhook Debugger initialized');
+  } catch (error) {
+    Logger.error('Failed to initialize enhanced modules:', error);
+    // Modules remain null, fallback logic will handle
+  }
+} else {
+  Logger.warn('Enhanced modules not initialized - Supabase not available');
 }
 
 // ========================================
@@ -629,9 +664,9 @@ async function enforceDataRetention() {
         // Archive the report
         await supabase
           .from('incident_reports')
-          .update({ 
-            archived: true, 
-            archived_at: new Date().toISOString() 
+          .update({
+            archived: true,
+            archived_at: new Date().toISOString()
           })
           .eq('id', report.id);
 
@@ -709,7 +744,7 @@ if (gdprModule && supabaseEnabled) {
 }
 
 // --- WEBSOCKET SETUP ---
-const wss = new WebSocket.Server({ 
+const wss = new WebSocket.Server({
   noServer: true,
   clientTracking: true,
   maxPayload: 10 * 1024 * 1024 // 10MB max message size
@@ -740,6 +775,31 @@ setInterval(() => {
   });
 }, 60000); // Clean up every minute
 
+// Cleanup stale webhooks from memory store
+setInterval(() => {
+  if (webhookDebugger && webhookDebugger.webhookStore) {
+    const storeSize = webhookDebugger.webhookStore.size;
+    const maxSize = parseInt(process.env.WEBHOOK_STORE_MAX_SIZE) || 1000;
+
+    if (storeSize > maxSize) {
+      Logger.warn(`Webhook store size (${storeSize}) exceeds limit (${maxSize}), triggering cleanup`);
+
+      // Get oldest webhooks and remove them
+      const webhooksArray = Array.from(webhookDebugger.webhookStore.entries());
+      const sortedWebhooks = webhooksArray.sort((a, b) => 
+        new Date(a[1].timestamp) - new Date(b[1].timestamp)
+      );
+
+      const toRemove = storeSize - (maxSize * 0.8); // Keep 80% after cleanup
+      for (let i = 0; i < toRemove; i++) {
+        webhookDebugger.webhookStore.delete(sortedWebhooks[i][0]);
+      }
+
+      Logger.info(`Cleaned up ${toRemove} old webhooks, new size: ${webhookDebugger.webhookStore.size}`);
+    }
+  }
+}, 300000); // Check every 5 minutes
+
 // Handle WebSocket upgrade
 server.on('upgrade', (request, socket, head) => {
   // Add basic authentication check if needed
@@ -766,9 +826,9 @@ wss.on('connection', (ws) => {
     try {
       const data = JSON.parse(message);
       ws.messageCount++;
-      Logger.debug('WebSocket message received', { 
-        type: data.type, 
-        messageCount: ws.messageCount 
+      Logger.debug('WebSocket message received', {
+        type: data.type,
+        messageCount: ws.messageCount
       });
 
       switch(data.type) {
@@ -1026,6 +1086,74 @@ async function generateAISummary(transcriptionText, createUserId, incidentId) {
 
   } catch (error) {
     Logger.error('AI Summary generation error', error.response?.data || error);
+    return null;
+  }
+}
+
+// --- LEGAL NARRATIVE GENERATOR ---
+async function generateLegalNarrative(transcriptionText, incidentData, userId) {
+  try {
+    if (!process.env.OPENAI_API_KEY) {
+      Logger.info('Cannot generate legal narrative - missing API key');
+      return null;
+    }
+
+    Logger.info('Generating legal narrative for user', { userId });
+
+    const response = await axios.post(
+      'https://api.openai.com/v1/chat/completions',
+      {
+        model: 'gpt-4-turbo-preview',
+        messages: [
+          {
+            role: 'system',
+            content: 'You are a legal assistant specialized in personal injury claims. Generate a formal legal narrative suitable for insurance claims and legal proceedings. Use UK legal terminology and format. Be objective, factual, and professional.'
+          },
+          {
+            role: 'user',
+            content: `Based on this witness statement and incident data, create a formal legal narrative for a UK personal injury claim.
+
+            Witness Statement: ${transcriptionText}
+
+            Incident Data: ${JSON.stringify(incidentData, null, 2)}
+
+            Format as a professional legal document with clear sections for:
+            1. FACTS - Chronological account of events
+            2. LIABILITY ANALYSIS - Assessment of fault and negligence
+            3. DAMAGES - Summary of losses and injuries
+            4. CONCLUSION - Professional summary
+
+            Use formal legal language appropriate for UK courts and insurance proceedings.`
+          }
+        ],
+        temperature: 0.2,
+        max_tokens: 2000
+      },
+      {
+        headers: {
+          'Authorization': `Bearer ${process.env.OPENAI_API_KEY}`,
+          'Content-Type': 'application/json'
+        },
+        timeout: 30000
+      }
+    );
+
+    const legalNarrative = response.data.choices[0].message.content;
+    Logger.success('Legal narrative generated successfully');
+
+    // Log GDPR activity for legal document generation
+    if (userId) {
+      await logGDPRActivity(userId, 'LEGAL_NARRATIVE_GENERATED', {
+        type: 'legal_document',
+        length: legalNarrative.length,
+        has_incident_data: !!incidentData
+      });
+    }
+
+    return legalNarrative;
+
+  } catch (error) {
+    Logger.error('Legal narrative generation error', error.response?.data || error);
     return null;
   }
 }
@@ -1584,7 +1712,7 @@ class ImageProcessor {
 
   async processIncidentReportFiles(webhookData) {
     try {
-      Logger.info('Processing incident report files', { 
+      Logger.info('Processing incident report files', {
         userId: webhookData.create_user_id,
         incidentId: webhookData.id || webhookData.incident_report_id
       });
@@ -1877,7 +2005,7 @@ class ImageProcessor {
 
       const { error: updateError } = await this.supabase
         .from('incident_images')
-        .update({ 
+        .update({
           deletion_requested: new Date().toISOString(),
           deletion_completed: new Date().toISOString()
         })
@@ -1919,7 +2047,430 @@ if (gdprModule) {
   Logger.info('📋 GDPR routes registered');
 }
 
+// Get consent summary for a user
+app.get('/api/consent/summary/:userId', checkSharedKey, async (req, res) => {
+  if (!consentManager) {
+    return res.status(503).json({ 
+      error: 'Module not initialized',
+      module: 'consentManager',
+      requestId: req.requestId 
+    });
+  }
+
+  try {
+    const summary = await consentManager.getConsentSummary(req.params.userId);
+
+    res.json({
+      success: true,
+      ...summary,
+      requestId: req.requestId
+    });
+  } catch (error) {
+    Logger.error('Error getting consent summary:', error);
+    res.status(500).json({
+      error: 'Failed to get consent summary',
+      details: error.message,
+      requestId: req.requestId
+    });
+  }
+});
+
+// Test consent extraction
+app.post('/api/consent/test-extraction', checkSharedKey, async (req, res) => {
+  if (!consentManager) {
+    return res.status(503).json({ 
+      error: 'Module not initialized',
+      module: 'consentManager',
+      requestId: req.requestId 
+    });
+  }
+
+  try {
+    const consentData = consentManager.extractConsentFromWebhook(req.body);
+
+    res.json({
+      success: true,
+      extraction: consentData,
+      requestId: req.requestId
+    });
+  } catch (error) {
+    Logger.error('Error testing consent extraction:', error);
+    res.status(500).json({
+      error: 'Failed to test consent extraction',
+      details: error.message,
+      requestId: req.requestId
+    });
+  }
+});
+
+// Generate legal narrative endpoint
+app.post('/api/generate-legal-narrative', checkSharedKey, checkGDPRConsent, async (req, res) => {
+  try {
+    const { userId, transcriptionText, incidentData } = req.body;
+
+    if (!userId) {
+      return res.status(400).json({
+        error: 'User ID required for GDPR compliance',
+        code: 'MISSING_USER_ID',
+        requestId: req.requestId
+      });
+    }
+
+    if (!transcriptionText) {
+      return res.status(400).json({
+        error: 'Transcription text required',
+        code: 'MISSING_TRANSCRIPTION',
+        requestId: req.requestId
+      });
+    }
+
+    Logger.info('Legal narrative generation requested', { userId });
+
+    // Generate the legal narrative
+    const legalNarrative = await generateLegalNarrative(transcriptionText, incidentData, userId);
+
+    if (!legalNarrative) {
+      return res.status(500).json({
+        error: 'Failed to generate legal narrative',
+        code: 'GENERATION_FAILED',
+        requestId: req.requestId
+      });
+    }
+
+    // Save to database if Supabase is enabled
+    if (supabaseEnabled) {
+      try {
+        const { error: saveError } = await supabase
+          .from('legal_narratives')
+          .insert({
+            create_user_id: userId,
+            incident_report_id: incidentData?.incident_id || null,
+            transcription_text: transcriptionText,
+            incident_data: incidentData || {},
+            legal_narrative: legalNarrative,
+            generated_at: new Date().toISOString(),
+            ai_model: 'gpt-4-turbo-preview'
+          });
+
+        if (saveError) {
+          Logger.warn('Could not save legal narrative to database:', saveError);
+          // Continue anyway - return the narrative even if save fails
+        } else {
+          Logger.success('Legal narrative saved to database');
+        }
+      } catch (dbError) {
+        Logger.warn('Database operation failed for legal narrative:', dbError);
+        // Continue anyway
+      }
+    }
+
+    res.json({
+      success: true,
+      legalNarrative: legalNarrative,
+      userId: userId,
+      generatedAt: new Date().toISOString(),
+      requestId: req.requestId
+    });
+
+  } catch (error) {
+    Logger.error('Legal narrative endpoint error:', error);
+    res.status(500).json({
+      error: 'Failed to generate legal narrative',
+      details: error.message,
+      requestId: req.requestId
+    });
+  }
+});
+
+Logger.info('✅ Consent management endpoints registered');
+
+// ========================================
+// LEGAL NARRATIVE ENDPOINTS
+// ========================================
+
+// Generate legal narrative from raw accident data
+app.post('/api/generate-legal-narrative', checkSharedKey, async (req, res) => {
+  try {
+    const { 
+      accidentData, 
+      targetLength, 
+      includeEvidenceSection, 
+      includeMissingNotes,
+      userId 
+    } = req.body;
+
+    if (!accidentData) {
+      return res.status(400).json({
+        error: 'Missing accident data',
+        code: 'MISSING_DATA',
+        requestId: req.requestId
+      });
+    }
+
+    const narrative = await generateLegalNarrative(accidentData, {
+      targetLength,
+      includeEvidenceSection,
+      includeMissingNotes,
+      userId: userId || accidentData.create_user_id
+    });
+
+    if (!narrative) {
+      return res.status(422).json({
+        error: 'Failed to generate narrative',
+        code: 'GENERATION_FAILED',
+        requestId: req.requestId
+      });
+    }
+
+    res.json({
+      success: true,
+      narrative,
+      generated_at: new Date().toISOString(),
+      requestId: req.requestId
+    });
+
+  } catch (error) {
+    Logger.error('Legal narrative endpoint error:', error);
+    res.status(500).json({
+      error: 'Internal server error',
+      message: error.message,
+      requestId: req.requestId
+    });
+  }
+});
+
+// Generate legal narrative from user and incident IDs
+app.post('/api/generate-legal-narrative-from-ids', checkSharedKey, checkGDPRConsent, async (req, res) => {
+  try {
+    const { 
+      userId, 
+      incidentId,
+      targetLength,
+      includeEvidenceSection,
+      includeMissingNotes
+    } = req.body;
+
+    if (!userId) {
+      return res.status(400).json({
+        error: 'Missing user ID',
+        code: 'MISSING_USER_ID',
+        requestId: req.requestId
+      });
+    }
+
+    // Prepare accident data from database
+    const accidentData = await prepareAccidentDataForNarrative(userId, incidentId);
+
+    if (!accidentData) {
+      return res.status(404).json({
+        error: 'No accident data found',
+        code: 'DATA_NOT_FOUND',
+        requestId: req.requestId
+      });
+    }
+
+    const narrative = await generateLegalNarrative(accidentData, {
+      targetLength,
+      includeEvidenceSection,
+      includeMissingNotes,
+      userId
+    });
+
+    res.json({
+      success: true,
+      narrative,
+      data_source: 'database',
+      generated_at: new Date().toISOString(),
+      requestId: req.requestId
+    });
+
+  } catch (error) {
+    Logger.error('Legal narrative from IDs error:', error);
+    res.status(500).json({
+      error: 'Internal server error',
+      message: error.message,
+      requestId: req.requestId
+    });
+  }
+});
+
+// Get saved legal narratives for a user
+app.get('/api/legal-narratives/:userId', checkSharedKey, checkGDPRConsent, async (req, res) => {
+  if (!supabaseEnabled) {
+    return res.status(503).json({
+      error: 'Service not configured',
+      requestId: req.requestId
+    });
+  }
+
+  try {
+    const { userId } = req.params;
+    const { limit = 10, incidentId } = req.query;
+
+    let query = supabase
+      .from('legal_narratives')
+      .select('*')
+      .eq('create_user_id', userId)
+      .order('created_at', { ascending: false })
+      .limit(parseInt(limit));
+
+    if (incidentId) {
+      query = query.eq('incident_report_id', incidentId);
+    }
+
+    const { data, error } = await query;
+
+    if (error) throw error;
+
+    res.json({
+      success: true,
+      narratives: data || [],
+      count: data?.length || 0,
+      requestId: req.requestId
+    });
+
+  } catch (error) {
+    Logger.error('Error fetching legal narratives:', error);
+    res.status(500).json({
+      error: 'Failed to fetch narratives',
+      requestId: req.requestId
+    });
+  }
+});
+
 // --- UTILITY FUNCTIONS ---
+
+// Helper function to prepare accident data for narrative generation
+async function prepareAccidentDataForNarrative(userId, incidentId = null) {
+  try {
+    if (!supabaseEnabled) {
+      Logger.warn('Supabase not enabled - cannot fetch accident data');
+      return null;
+    }
+
+    Logger.info('Preparing accident data for narrative', { userId, incidentId });
+
+    // Fetch user signup data
+    const { data: userData } = await supabase
+      .from('user_signup')
+      .select('*')
+      .eq('create_user_id', userId)
+      .single();
+
+    if (!userData) {
+      Logger.warn('User data not found', { userId });
+      return null;
+    }
+
+    // Fetch incident report data
+    let incidentData = null;
+    if (incidentId) {
+      const { data } = await supabase
+        .from('incident_reports')
+        .select('*')
+        .eq('id', incidentId)
+        .eq('create_user_id', userId)
+        .single();
+      incidentData = data;
+    } else {
+      // Get the latest incident report for the user
+      const { data } = await supabase
+        .from('incident_reports')
+        .select('*')
+        .eq('create_user_id', userId)
+        .order('created_at', { ascending: false })
+        .limit(1)
+        .single();
+      incidentData = data;
+    }
+
+    // Fetch transcription data
+    const { data: transcriptionData } = await supabase
+      .from('ai_transcription')
+      .select('*')
+      .eq('create_user_id', userId)
+      .order('created_at', { ascending: false })
+      .limit(1)
+      .single();
+
+    // Prepare combined accident data
+    const accidentData = {
+      // User information
+      create_user_id: userId,
+      full_name: userData.full_name,
+      email: userData.email,
+      phone_number: userData.phone_number,
+
+      // Vehicle information
+      vehicle_make: userData.vehicle_make,
+      vehicle_model: userData.vehicle_model,
+      vehicle_color: userData.vehicle_color,
+      vehicle_registration: userData.vehicle_registration,
+      vehicle_year: userData.vehicle_year,
+
+      // Incident details
+      incident_date: incidentData?.incident_date,
+      incident_time: incidentData?.incident_time,
+      incident_location: incidentData?.incident_location,
+      what3words: incidentData?.what3words,
+      weather_conditions: incidentData?.weather_conditions,
+      road_conditions: incidentData?.road_conditions,
+      speed_limit: incidentData?.speed_limit,
+      estimated_speed: incidentData?.estimated_speed,
+
+      // Other party information
+      other_driver_name: incidentData?.other_driver_name,
+      other_driver_contact: incidentData?.other_driver_contact,
+      other_vehicle_make: incidentData?.other_vehicle_make,
+      other_vehicle_model: incidentData?.other_vehicle_model,
+      other_vehicle_registration: incidentData?.other_vehicle_registration,
+      other_vehicle_color: incidentData?.other_vehicle_color,
+      other_insurance_company: incidentData?.other_insurance_company,
+      other_policy_number: incidentData?.other_policy_number,
+
+      // Damage and injuries
+      vehicle_damage_description: incidentData?.vehicle_damage_description,
+      injuries_sustained: incidentData?.injuries_sustained,
+      medical_attention_required: incidentData?.medical_attention_required,
+
+      // Police and witnesses
+      police_attended: incidentData?.police_attended,
+      police_reference: incidentData?.police_reference,
+      witnesses_present: incidentData?.witnesses_present,
+      witness_details: incidentData?.witness_details,
+
+      // Insurance details
+      insurance_company: userData.insurance_company,
+      policy_number: userData.policy_number,
+
+      // AI transcription if available
+      ai_transcription: transcriptionData?.transcription_text || incidentData?.detailed_account_of_what_happened,
+
+      // Additional info
+      anything_else_important: incidentData?.anything_else_important
+    };
+
+    // Clean up undefined values
+    Object.keys(accidentData).forEach(key => {
+      if (accidentData[key] === undefined || accidentData[key] === null) {
+        delete accidentData[key];
+      }
+    });
+
+    Logger.info('Accident data prepared successfully', { 
+      userId, 
+      incidentId, 
+      fieldCount: Object.keys(accidentData).length 
+    });
+
+    return accidentData;
+
+  } catch (error) {
+    Logger.error('Error preparing accident data for narrative:', error);
+    return null;
+  }
+}
+
 function processTypeformData(formResponse) {
   const processedData = {};
 
@@ -2027,6 +2578,15 @@ app.get('/health', async (req, res) => {
     module: 'not configured'
   };
 
+  const enhancedModules = {
+    consentManager: consentManager !== null,
+    webhookDebugger: webhookDebugger !== null,
+    storedWebhooks: webhookDebugger ? webhookDebugger.webhookStore.size : 0,
+    webhookStoreStatus: webhookDebugger ? 
+      (webhookDebugger.webhookStore.size > 800 ? 'warning' : 'healthy') : 'n/a',
+    maxWebhookStoreSize: parseInt(process.env.WEBHOOK_STORE_MAX_SIZE) || 1000
+  };
+
   const status = {
     status: 'healthy',
     timestamp: new Date().toISOString(),
@@ -2044,6 +2604,7 @@ app.get('/health', async (req, res) => {
       gdpr_compliance: gdprStatus, // NEW
       what3words: externalServices.what3words
     },
+    enhancedModules: enhancedModules,
     compliance: { // NEW
       uk_gdpr: gdprModule ? 'compliant' : 'not configured',
       ccpa_cpra: gdprModule ? 'compliant' : 'not configured',
@@ -2054,7 +2615,7 @@ app.get('/health', async (req, res) => {
       ai_summary_columns: 'FIXED - Using only existing database columns',
       transcription_saving: 'FIXED - Removed non-existent column references',
       file_redirect: 'ADDED - transcription-status.html redirect to transcription.html',
-      trust_proxy_configuration: 'FIXED - Changed from true to 1 for proper IP-based rate limiting',
+      trust_proxy_configuration: 'FIXED - Changed from true to 1 for proper rate limiting',
       error_handling: 'IMPROVED - More graceful error recovery',
       gdpr_module: 'INTEGRATED - Full GDPR compliance module with US privacy laws' // NEW
     }
@@ -2066,9 +2627,9 @@ app.get('/health', async (req, res) => {
 // --- DEBUG ENDPOINT FOR USER DATA (WITH GDPR LOGGING) ---
 app.get('/api/debug/user/:userId', checkSharedKey, async (req, res) => {
   if (!supabaseEnabled) {
-    return res.status(503).json({ 
+    return res.status(503).json({
       error: 'Service not configured',
-      requestId: req.requestId 
+      requestId: req.requestId
     });
   }
 
@@ -2136,225 +2697,115 @@ app.get('/api/debug/user/:userId', checkSharedKey, async (req, res) => {
     });
   } catch (error) {
     Logger.error('Debug endpoint error', error);
-    res.status(500).json({ 
+    res.status(500).json({
       error: error.message,
-      requestId: req.requestId 
+      requestId: req.requestId
     });
   }
 });
 
-// NEW: DEBUG ENDPOINT to inspect webhook payload structure
+// ENHANCED: Debug endpoint with WebhookDebugger module
 app.post('/api/debug/webhook-test', checkSharedKey, async (req, res) => {
-  Logger.info('=== WEBHOOK DEBUG TEST ===');
-  Logger.info('Headers:', JSON.stringify(req.headers, null, 2));
-  Logger.info('Body:', JSON.stringify(req.body, null, 2));
+  if (!webhookDebugger) {
+    // Fallback to basic analysis
+    Logger.info('=== WEBHOOK DEBUG TEST (Basic) ===');
+    Logger.info('Headers:', JSON.stringify(req.headers, null, 2));
+    Logger.info('Body:', JSON.stringify(req.body, null, 2));
 
-  // Log all fields
-  if (req.body) {
-    Logger.info('Field analysis:');
-    Object.keys(req.body).forEach(key => {
-      Logger.info(`  ${key}: [${typeof req.body[key]}] ${JSON.stringify(req.body[key])}`);
+    return res.json({
+      success: true,
+      message: 'Basic webhook analysis (debugger not initialized)',
+      fields: Object.keys(req.body || {}),
+      requestId: req.requestId
     });
+  }
 
-    // Look for consent-related fields
-    Logger.info('Consent field search:');
-    Object.keys(req.body).forEach(key => {
-      if (key.toLowerCase().includes('legal') || 
-          key.toLowerCase().includes('consent') || 
-          key.toLowerCase().includes('agree') ||
-          key.toLowerCase().includes('share') ||
-          key.toLowerCase().includes('gdpr') ||
-          key.toLowerCase().includes('question') ||
-          key.toLowerCase().includes('q14')) {
-        Logger.info(`  FOUND CONSENT FIELD: ${key} = ${req.body[key]}`);
-      }
+  // Use enhanced debugger
+  const analysis = webhookDebugger.analyzeWebhook(req, {
+    store: true,
+    log: true
+  });
+
+  Logger.info('=== ENHANCED WEBHOOK ANALYSIS ===');
+  Logger.info('Provider:', analysis.provider);
+  Logger.info('Structure:', analysis.structure.type);
+  Logger.info('Extracted Fields:', analysis.fields);
+  Logger.info('Validation:', analysis.validation);
+  Logger.info('Recommendations:', analysis.recommendations);
+
+  res.json({
+    success: true,
+    message: 'Enhanced webhook analysis complete',
+    analysis: analysis,
+    requestId: req.requestId
+  });
+});
+
+// Add new endpoint to view recent webhooks
+app.get('/api/debug/webhook-history', checkSharedKey, async (req, res) => {
+  if (!webhookDebugger) {
+    return res.status(503).json({
+      error: 'Module not initialized',
+      module: 'webhookDebugger',
+      requestId: req.requestId
+    });
+  }
+
+  const limit = parseInt(req.query.limit) || 10;
+  const recentWebhooks = webhookDebugger.getRecentWebhooks(limit);
+
+  res.json({
+    success: true,
+    count: recentWebhooks.length,
+    webhooks: recentWebhooks,
+    requestId: req.requestId
+  });
+});
+
+// Add endpoint to get specific webhook analysis
+app.get('/api/debug/webhook/:webhookId', checkSharedKey, async (req, res) => {
+  if (!webhookDebugger) {
+    return res.status(503).json({
+      error: 'Module not initialized',
+      module: 'webhookDebugger',
+      requestId: req.requestId
+    });
+  }
+
+  const webhook = webhookDebugger.getWebhook(req.params.webhookId);
+
+  if (!webhook) {
+    return res.status(404).json({
+      error: 'Webhook not found',
+      requestId: req.requestId
     });
   }
 
   res.json({
     success: true,
-    message: 'Check server logs for webhook structure',
-    fields: Object.keys(req.body || {}),
-    consentRelatedFields: Object.keys(req.body || {}).filter(key => 
-      key.toLowerCase().includes('legal') || 
-      key.toLowerCase().includes('consent') || 
-      key.toLowerCase().includes('agree') ||
-      key.toLowerCase().includes('share') ||
-      key.toLowerCase().includes('gdpr')
-    ),
+    webhook: webhook,
     requestId: req.requestId
   });
 });
 
-// --- GDPR DATA EXPORT ENDPOINT ---
-app.get('/api/gdpr/export/:userId', checkSharedKey, async (req, res) => {
-  if (!supabaseEnabled) {
-    return res.status(503).json({ 
-      error: 'Service not configured',
-      requestId: req.requestId 
-    });
-  }
-
-  const { userId } = req.params;
-
-  try {
-    // Verify user exists and has consent
-    const { data: user } = await supabase
-      .from('user_signup')
-      .select('*')
-      .eq('create_user_id', userId)
-      .single();
-
-    if (!user) {
-      return res.status(404).json({ 
-        error: 'User not found',
-        code: 'USER_NOT_FOUND',
-        requestId: req.requestId
-      });
-    }
-
-    // Collect all user data
-    const userData = {
-      user_profile: user,
-      incident_reports: [],
-      transcriptions: [],
-      ai_summaries: [],
-      images: [],
-      emergency_calls: []
-    };
-
-    // Get incident reports
-    const { data: incidents } = await supabase
-      .from('incident_reports')
-      .select('*')
-      .eq('create_user_id', userId);
-    userData.incident_reports = incidents || [];
-
-    // Get transcriptions
-    const { data: transcriptions } = await supabase
-      .from('ai_transcription')
-      .select('*')
-      .eq('create_user_id', userId);
-    userData.transcriptions = transcriptions || [];
-
-    // Get AI summaries
-    const { data: summaries } = await supabase
-      .from('ai_summary')
-      .select('*')
-      .eq('create_user_id', userId);
-    userData.ai_summaries = summaries || [];
-
-    // Get images
-    const { data: images } = await supabase
-      .from('incident_images')
-      .select('*')
-      .eq('create_user_id', userId);
-    userData.images = images || [];
-
-    // Log the export
-    await logGDPRActivity(userId, 'DATA_EXPORT', {
-      requested_by: req.clientIp,
-      items_exported: {
-        incidents: userData.incident_reports.length,
-        transcriptions: userData.transcriptions.length,
-        images: userData.images.length
-      }
-    }, req);
-
-    // Generate export
-    res.json({
-      export_date: new Date().toISOString(),
-      user_id: userId,
-      data: userData,
-      gdpr_info: {
-        right_to_access: true,
-        right_to_portability: true,
-        export_format: 'JSON'
-      },
-      requestId: req.requestId
-    });
-
-  } catch (error) {
-    Logger.error('GDPR export error', error);
-    res.status(500).json({ 
-      error: 'Failed to export data',
-      code: 'EXPORT_FAILED',
+// Search webhooks
+app.post('/api/debug/webhook-search', checkSharedKey, async (req, res) => {
+  if (!webhookDebugger) {
+    return res.status(503).json({
+      error: 'Module not initialized',
+      module: 'webhookDebugger',
       requestId: req.requestId
     });
   }
-});
 
-// ========================================
-// NEW GDPR USER RIGHTS DASHBOARD - NEW
-// ========================================
-app.get('/api/gdpr/user-rights/:userId', async (req, res) => {
-  if (!gdprModule) {
-    return res.status(503).json({ error: 'GDPR module not configured' });
-  }
+  const results = webhookDebugger.searchWebhooks(req.body);
 
-  try {
-    const { userId } = req.params;
-    const consentStatus = await gdprModule.checkConsentStatus(userId);
-    const applicableLaw = consentStatus.applicable_law || 'UK_GDPR';
-    const rights = gdprModule.privacyLaws[applicableLaw];
-
-    res.json({
-      user_id: userId,
-      jurisdiction: consentStatus.jurisdiction,
-      applicable_law: applicableLaw,
-      consent_status: consentStatus,
-      rights_available: rights.rights,
-      response_time: `${rights.responseTime} days`,
-      endpoints: {
-        withdraw_consent: '/api/gdpr/withdraw-consent',
-        request_data: '/api/gdpr/dsr',
-        export_data: `/api/gdpr/export/${userId}`,
-        delete_data: `/api/gdpr/user/${userId}`
-      }
-    });
-  } catch (error) {
-    res.status(500).json({ error: error.message });
-  }
-});
-
-// ========================================
-// ADMIN DASHBOARD FOR GDPR COMPLIANCE - NEW
-// ========================================
-app.get('/api/gdpr/admin/dashboard', checkSharedKey, async (req, res) => {
-  if (!gdprModule) {
-    return res.status(503).json({ error: 'GDPR module not configured' });
-  }
-
-  try {
-    const thirtyDaysAgo = new Date();
-    thirtyDaysAgo.setDate(thirtyDaysAgo.getDate() - 30);
-
-    const { data: recentConsents } = await supabase
-      .from('gdpr_consent_records')
-      .select('*')
-      .gte('consent_date', thirtyDaysAgo.toISOString());
-
-    const { data: pendingDSRs } = await supabase
-      .from('data_subject_requests')
-      .select('*')
-      .eq('request_status', 'pending');
-
-    res.json({
-      metrics: {
-        consents_last_30_days: recentConsents?.length || 0,
-        pending_requests: pendingDSRs?.length || 0
-      },
-      pending_dsrs: pendingDSRs || [],
-      compliance_status: {
-        gdpr_module: 'active',
-        uk_gdpr: 'compliant',
-        ccpa_cpra: 'compliant',
-        us_state_laws: 'compliant'
-      }
-    });
-  } catch (error) {
-    res.status(500).json({ error: error.message });
-  }
+  res.json({
+    success: true,
+    count: results.length,
+    results: results,
+    requestId: req.requestId
+  });
 });
 
 // Manual queue processing endpoint for testing
@@ -2362,23 +2813,23 @@ app.get('/api/process-queue-now', checkSharedKey, async (req, res) => {
   Logger.info('Manual queue processing triggered');
 
   if (!supabaseEnabled) {
-    return res.status(503).json({ 
+    return res.status(503).json({
       error: 'Service not configured',
-      requestId: req.requestId 
+      requestId: req.requestId
     });
   }
 
   try {
     await processTranscriptionQueue();
-    res.json({ 
-      success: true, 
+    res.json({
+      success: true,
       message: 'Queue processing triggered',
       timestamp: new Date().toISOString(),
       requestId: req.requestId
     });
   } catch (error) {
     Logger.error('Manual queue processing error', error);
-    res.status(500).json({ 
+    res.status(500).json({
       error: 'Failed to process queue',
       message: error.message,
       requestId: req.requestId
@@ -2398,17 +2849,59 @@ app.get('/api/test-openai', async (req, res) => {
         timeout: 5000
       }
     );
-    res.json({ 
-      status: 'OpenAI API key is valid', 
+    res.json({
+      status: 'OpenAI API key is valid',
       models: response.data.data.length,
       timestamp: new Date().toISOString(),
       requestId: req.requestId
     });
   } catch (error) {
-    res.status(401).json({ 
-      status: 'OpenAI API key issue', 
+    res.status(401).json({
+      status: 'OpenAI API key issue',
       error: error.response?.data || error.message,
-      requestId: req.requestId 
+      requestId: req.requestId
+    });
+  }
+});
+
+// AI summary generation test endpoint
+app.post('/api/generate-ai-summary', checkSharedKey, async (req, res) => {
+  const { transcription, userId, incidentId } = req.body;
+
+  if (!transcription || !userId) {
+    return res.status(400).json({
+      error: 'Missing required fields (transcription and userId are required)',
+      requestId: req.requestId
+    });
+  }
+
+  try {
+    Logger.info('AI summary generation test requested', { userId, incidentId });
+
+    const summary = await generateAISummary(transcription, userId, incidentId);
+
+    if (!summary) {
+      return res.status(500).json({
+        error: 'AI summary generation returned null (check OpenAI API key and transcription length)',
+        requestId: req.requestId
+      });
+    }
+
+    res.json({
+      success: true,
+      summary,
+      transcription_length: transcription.length,
+      userId,
+      incidentId: incidentId || null,
+      timestamp: new Date().toISOString(),
+      requestId: req.requestId
+    });
+  } catch (error) {
+    Logger.error('AI summary generation error:', error);
+    res.status(500).json({
+      error: 'Failed to generate summary',
+      details: error.message,
+      requestId: req.requestId
     });
   }
 });
@@ -2532,7 +3025,7 @@ app.get('/webhook/record', (req, res) => {
   res.redirect(redirectUrl);
 });
 
-// --- MAIN ROUTES ---
+// --- MAINROUTES ---
 app.get('/', (req, res) => {
   const gdprBadges = gdprModule ? `
     <span class="privacy-badge">UK GDPR</span>
@@ -2589,7 +3082,7 @@ app.get('/', (req, res) => {
         <div class="gdpr-notice">
             <h3>🔒 Privacy & Compliance Status</h3>
             <p>${gdprBadges}</p>
-            <p>Full compliance with UK GDPR and US state privacy laws. 
+            <p>Full compliance with UK GDPR and US state privacy laws.
                All data processing requires explicit consent.</p>
         </div>` : ''}
 
@@ -2657,13 +3150,20 @@ app.get('/', (req, res) => {
 
             <div class="endpoint">
                 <strong>Core Services:</strong><br>
-                <code>GET /health</code> - System health check with service status<br>
+                <code>GET /health</code> - System health check<br>
                 <code>GET /api/config</code> - Get Supabase configuration<br>
                 <code>GET /api/debug/user/:userId</code> - Debug user data with consent status<br>
                 <code>POST /api/debug/webhook-test</code> - Test webhook payload structure<br>
+                <code>GET /api/debug/webhook-history</code> - View recent webhook activity<br>
+                <code>GET /api/debug/webhook/:webhookId</code> - Get specific webhook analysis<br>
+                <code>POST /api/debug/webhook-search</code> - Search stored webhooks<br>
                 <code>GET /api/test-openai</code> - Test OpenAI API key validity<br>
                 <code>GET /api/process-queue-now</code> - Manually trigger queue processing<br>
-                <code>GET /test/transcription-queue</code> - View queue status
+                <code>GET /test/transcription-queue</code> - View queue status<br>
+                <br>
+                <strong>Consent Management:</strong> <span class="new-badge">NEW</span><br>
+                <code>GET /api/consent/summary/:userId</code> - Get consent summary for user<br>
+                <code>POST /api/consent/test-extraction</code> - Test consent extraction from webhook
             </div>
 
             <div class="endpoint">
@@ -2680,8 +3180,9 @@ app.get('/', (req, res) => {
                 <code>GET /api/transcription-status/:queueId</code> - Check transcription status<br>
                 <code>POST /api/update-transcription</code> - Update/edit transcription<br>
                 <code>POST /api/save-transcription</code> - Save transcription<br>
-                <code>GET /api/user/:userId/latest-transcription</code> - Get user's latest transcription
-            </div>
+                <code>GET /api/user/:userId/latest-transcription</code> - Get user's latest transcription<br>
+                <code>POST /api/generate-legal-narrative</code> - Generate formal legal narrative <span class="new-badge">NEW</span>
+            </div></div>
         </div>
 
         <div class="section">
@@ -2742,9 +3243,9 @@ app.get('/api/auth/status', (req, res) => {
 // --- EMERGENCY CONTACTS ---
 app.get('/api/user/:userId/emergency-contacts', authenticateRequest, async (req, res) => {
   if (!supabaseEnabled) {
-    return res.status(503).json({ 
+    return res.status(503).json({
       error: 'Service not configured',
-      requestId: req.requestId 
+      requestId: req.requestId
     });
   }
 
@@ -2759,9 +3260,9 @@ app.get('/api/user/:userId/emergency-contacts', authenticateRequest, async (req,
 
     if (error) {
       Logger.error('Supabase error', error);
-      return res.status(404).json({ 
+      return res.status(404).json({
         error: 'User not found',
-        requestId: req.requestId 
+        requestId: req.requestId
       });
     }
 
@@ -2773,9 +3274,9 @@ app.get('/api/user/:userId/emergency-contacts', authenticateRequest, async (req,
     });
   } catch (error) {
     Logger.error('Error fetching emergency contacts', error);
-    res.status(500).json({ 
+    res.status(500).json({
       error: 'Failed to fetch contacts',
-      requestId: req.requestId 
+      requestId: req.requestId
     });
   }
 });
@@ -2783,9 +3284,9 @@ app.get('/api/user/:userId/emergency-contacts', authenticateRequest, async (req,
 // LOG EMERGENCY CALLS endpoint
 app.post('/api/log-emergency-call', authenticateRequest, async (req, res) => {
   if (!supabaseEnabled) {
-    return res.status(503).json({ 
+    return res.status(503).json({
       error: 'Service not configured',
-      requestId: req.requestId 
+      requestId: req.requestId
     });
   }
 
@@ -2793,7 +3294,7 @@ app.post('/api/log-emergency-call', authenticateRequest, async (req, res) => {
     const { user_id, service_called, timestamp, incident_id } = req.body;
 
     if (!user_id) {
-      return res.status(400).json({ 
+      return res.status(400).json({
         error: 'User ID required',
         code: 'MISSING_USER_ID',
         requestId: req.requestId
@@ -2812,10 +3313,10 @@ app.post('/api/log-emergency-call', authenticateRequest, async (req, res) => {
 
     if (error) {
       Logger.error('Failed to log emergency call', error);
-      return res.json({ 
-        success: false, 
+      return res.json({
+        success: false,
         logged: false,
-        requestId: req.requestId 
+        requestId: req.requestId
       });
     }
 
@@ -2823,16 +3324,16 @@ app.post('/api/log-emergency-call', authenticateRequest, async (req, res) => {
       service: service_called
     }, req);
 
-    res.json({ 
-      success: true, 
+    res.json({
+      success: true,
       logged: true,
-      requestId: req.requestId 
+      requestId: req.requestId
     });
   } catch (error) {
     Logger.error('Error logging emergency call', error);
-    res.status(500).json({ 
+    res.status(500).json({
       error: 'Internal server error',
-      requestId: req.requestId 
+      requestId: req.requestId
     });
   }
 });
@@ -2843,9 +3344,9 @@ app.get('/api/what3words', async (req, res) => {
     const { lat, lng } = req.query;
 
     if (!lat || !lng) {
-      return res.status(400).json({ 
+      return res.status(400).json({
         error: 'Missing latitude or longitude',
-        requestId: req.requestId 
+        requestId: req.requestId
       });
     }
 
@@ -2853,9 +3354,9 @@ app.get('/api/what3words', async (req, res) => {
 
     if (!W3W_API_KEY) {
       Logger.warn('What3Words API key not configured');
-      return res.json({ 
+      return res.json({
         words: 'location.not.configured',
-        requestId: req.requestId 
+        requestId: req.requestId
       });
     }
 
@@ -2864,21 +3365,21 @@ app.get('/api/what3words', async (req, res) => {
     );
 
     if (response.data && response.data.words) {
-      res.json({ 
+      res.json({
         words: response.data.words,
-        requestId: req.requestId 
+        requestId: req.requestId
       });
     } else {
-      res.json({ 
+      res.json({
         words: 'location.not.found',
-        requestId: req.requestId 
+        requestId: req.requestId
       });
     }
   } catch (error) {
     Logger.error('What3Words API error', error);
-    res.json({ 
+    res.json({
       words: 'api.error.occurred',
-      requestId: req.requestId 
+      requestId: req.requestId
     });
   }
 });
@@ -2886,9 +3387,9 @@ app.get('/api/what3words', async (req, res) => {
 // UPLOAD WHAT3WORDS IMAGE endpoint
 app.post('/api/upload-what3words-image', upload.single('image'), async (req, res) => {
   if (!supabaseEnabled || !imageProcessor) {
-    return res.status(503).json({ 
+    return res.status(503).json({
       error: 'Service not configured',
-      requestId: req.requestId 
+      requestId: req.requestId
     });
   }
 
@@ -2902,9 +3403,9 @@ app.post('/api/upload-what3words-image', upload.single('image'), async (req, res
     } else {
       const { imageData } = req.body;
       if (!imageData) {
-        return res.status(400).json({ 
+        return res.status(400).json({
           error: 'No image data provided',
-          requestId: req.requestId 
+          requestId: req.requestId
         });
       }
 
@@ -2914,7 +3415,7 @@ app.post('/api/upload-what3words-image', upload.single('image'), async (req, res
     }
 
     if (!userId) {
-      return res.status(400).json({ 
+      return res.status(400).json({
         error: 'User ID required for GDPR compliance',
         code: 'MISSING_USER_ID',
         requestId: req.requestId
@@ -2961,9 +3462,9 @@ app.post('/api/upload-what3words-image', upload.single('image'), async (req, res
 
   } catch (error) {
     Logger.error('Error uploading what3words image', error);
-    res.status(500).json({ 
+    res.status(500).json({
       error: error.message,
-      requestId: req.requestId 
+      requestId: req.requestId
     });
   }
 });
@@ -2971,9 +3472,9 @@ app.post('/api/upload-what3words-image', upload.single('image'), async (req, res
 // GET USER IMAGES endpoint
 app.get('/api/images/:userId', checkGDPRConsent, async (req, res) => {
   if (!supabaseEnabled) {
-    return res.status(503).json({ 
+    return res.status(503).json({
       error: 'Service not configured',
-      requestId: req.requestId 
+      requestId: req.requestId
     });
   }
 
@@ -3003,9 +3504,9 @@ app.get('/api/images/:userId', checkGDPRConsent, async (req, res) => {
 
   } catch (error) {
     Logger.error('Error fetching user images', error);
-    res.status(500).json({ 
+    res.status(500).json({
       error: 'Failed to fetch images',
-      requestId: req.requestId 
+      requestId: req.requestId
     });
   }
 });
@@ -3013,9 +3514,9 @@ app.get('/api/images/:userId', checkGDPRConsent, async (req, res) => {
 // GET SIGNED URL endpoint
 app.get('/api/image/signed-url/:userId/:imageType', checkGDPRConsent, async (req, res) => {
   if (!supabaseEnabled || !imageProcessor) {
-    return res.status(503).json({ 
+    return res.status(503).json({
       error: 'Service not configured',
-      requestId: req.requestId 
+      requestId: req.requestId
     });
   }
 
@@ -3024,9 +3525,9 @@ app.get('/api/image/signed-url/:userId/:imageType', checkGDPRConsent, async (req
     const { path } = req.query;
 
     if (!path) {
-      return res.status(400).json({ 
+      return res.status(400).json({
         error: 'Storage path required',
-        requestId: req.requestId 
+        requestId: req.requestId
       });
     }
 
@@ -3046,9 +3547,9 @@ app.get('/api/image/signed-url/:userId/:imageType', checkGDPRConsent, async (req
 
   } catch (error) {
     Logger.error('Error generating signed URL', error);
-    res.status(500).json({ 
+    res.status(500).json({
       error: 'Failed to generate URL',
-      requestId: req.requestId 
+      requestId: req.requestId
     });
   }
 });
@@ -3056,9 +3557,9 @@ app.get('/api/image/signed-url/:userId/:imageType', checkGDPRConsent, async (req
 // GDPR DELETE IMAGES endpoint
 app.delete('/api/gdpr/delete-images', checkSharedKey, async (req, res) => {
   if (!supabaseEnabled || !imageProcessor) {
-    return res.status(503).json({ 
+    return res.status(503).json({
       error: 'Service not configured',
-      requestId: req.requestId 
+      requestId: req.requestId
     });
   }
 
@@ -3066,7 +3567,7 @@ app.delete('/api/gdpr/delete-images', checkSharedKey, async (req, res) => {
     const { userId } = req.body;
 
     if (!userId) {
-      return res.status(400).json({ 
+      return res.status(400).json({
         error: 'User ID required',
         code: 'MISSING_USER_ID',
         requestId: req.requestId
@@ -3083,9 +3584,9 @@ app.delete('/api/gdpr/delete-images', checkSharedKey, async (req, res) => {
 
   } catch (error) {
     Logger.error('Error deleting images', error);
-    res.status(500).json({ 
+    res.status(500).json({
       error: 'Failed to delete images',
-      requestId: req.requestId 
+      requestId: req.requestId
     });
   }
 });
@@ -3093,9 +3594,9 @@ app.delete('/api/gdpr/delete-images', checkSharedKey, async (req, res) => {
 // PDF STATUS endpoint
 app.get('/pdf-status/:userId', async (req, res) => {
   if (!supabaseEnabled) {
-    return res.status(503).json({ 
+    return res.status(503).json({
       error: 'Service not configured',
-      requestId: req.requestId 
+      requestId: req.requestId
     });
   }
 
@@ -3128,9 +3629,9 @@ app.get('/pdf-status/:userId', async (req, res) => {
 
   } catch (error) {
     Logger.error('Error checking PDF status', error);
-    res.status(500).json({ 
+    res.status(500).json({
       error: 'Failed to check status',
-      requestId: req.requestId 
+      requestId: req.requestId
     });
   }
 });
@@ -3138,9 +3639,9 @@ app.get('/pdf-status/:userId', async (req, res) => {
 // DOWNLOAD PDF endpoint
 app.get('/download-pdf/:userId', checkGDPRConsent, async (req, res) => {
   if (!supabaseEnabled) {
-    return res.status(503).json({ 
+    return res.status(503).json({
       error: 'Service not configured',
-      requestId: req.requestId 
+      requestId: req.requestId
     });
   }
 
@@ -3156,9 +3657,9 @@ app.get('/download-pdf/:userId', checkGDPRConsent, async (req, res) => {
       .single();
 
     if (error || !data) {
-      return res.status(404).json({ 
+      return res.status(404).json({
         error: 'PDF not found',
-        requestId: req.requestId 
+        requestId: req.requestId
       });
     }
 
@@ -3172,17 +3673,17 @@ app.get('/download-pdf/:userId', checkGDPRConsent, async (req, res) => {
       res.setHeader('Content-Disposition', `attachment; filename="report_${userId}.pdf"`);
       res.send(buffer);
     } else {
-      res.status(404).json({ 
+      res.status(404).json({
         error: 'PDF data not available',
-        requestId: req.requestId 
+        requestId: req.requestId
       });
     }
 
   } catch (error) {
     Logger.error('Error downloading PDF', error);
-    res.status(500).json({ 
+    res.status(500).json({
       error: 'Failed to download PDF',
-      requestId: req.requestId 
+      requestId: req.requestId
     });
   }
 });
@@ -3195,22 +3696,22 @@ app.post('/api/whisper/transcribe', upload.single('audio'), async (req, res) => 
     Logger.info('🎤 Received transcription request');
 
     if (!req.file) {
-      return res.status(400).json({ 
+      return res.status(400).json({
         error: 'No audio file provided',
-        requestId: req.requestId 
+        requestId: req.requestId
       });
     }
 
     // Extract create_user_id from the request
-    const create_user_id = req.body.create_user_id || 
-                           req.query.create_user_id || 
+    const create_user_id = req.body.create_user_id ||
+                           req.query.create_user_id ||
                            req.headers['x-user-id'];
 
     if (!create_user_id) {
       Logger.info('❌ Missing create_user_id in transcription request');
-      return res.status(400).json({ 
+      return res.status(400).json({
         error: 'create_user_id is required',
-        requestId: req.requestId 
+        requestId: req.requestId
       });
     }
 
@@ -3252,9 +3753,9 @@ app.post('/api/whisper/transcribe', upload.single('audio'), async (req, res) => 
 
     if (uploadError) {
       Logger.error(`Upload error: ${uploadError.message}`);
-      return res.status(500).json({ 
+      return res.status(500).json({
         error: 'Failed to upload audio to Supabase',
-        requestId: req.requestId 
+        requestId: req.requestId
       });
     }
 
@@ -3310,18 +3811,18 @@ app.post('/api/whisper/transcribe', upload.single('audio'), async (req, res) => 
     // Process transcription immediately using the audio buffer in memory
     // This happens asynchronously after the response is sent
     processTranscriptionFromBuffer(
-      queueId, 
-      req.file.buffer, 
-      create_user_id, 
-      req.body.incident_report_id, 
+      queueId,
+      req.file.buffer,
+      create_user_id,
+      req.body.incident_report_id,
       publicUrl
     );
 
   } catch (error) {
     Logger.error('Transcription error:', error);
-    res.status(500).json({ 
+    res.status(500).json({
       error: 'Failed to process audio',
-      requestId: req.requestId 
+      requestId: req.requestId
     });
   }
 });
@@ -3331,9 +3832,9 @@ app.get('/api/transcription-status/:queueId', async (req, res) => {
   const { queueId } = req.params;
 
   if (!queueId || queueId === 'undefined') {
-    return res.status(400).json({ 
+    return res.status(400).json({
       error: 'Invalid queue ID',
-      requestId: req.requestId 
+      requestId: req.requestId
     });
   }
 
@@ -3392,7 +3893,7 @@ app.post('/api/update-transcription', checkGDPRConsent, async (req, res) => {
     const { queueId, userId, transcription } = req.body;
 
     if (!userId) {
-      return res.status(400).json({ 
+      return res.status(400).json({
         error: 'User ID required for GDPR compliance',
         code: 'MISSING_USER_ID',
         requestId: req.requestId
@@ -3400,7 +3901,7 @@ app.post('/api/update-transcription', checkGDPRConsent, async (req, res) => {
     }
 
     if (!transcription) {
-      return res.status(400).json({ 
+      return res.status(400).json({
         error: 'Missing transcription text',
         code: 'MISSING_TRANSCRIPTION',
         requestId: req.requestId
@@ -3417,7 +3918,7 @@ app.post('/api/update-transcription', checkGDPRConsent, async (req, res) => {
 
     if (!supabaseEnabled) {
       Logger.warn('Supabase not enabled, skipping database operations');
-      return res.json({ 
+      return res.json({
         success: true,
         message: 'Transcription confirmed (database not configured)',
         requestId: req.requestId
@@ -3447,7 +3948,7 @@ app.post('/api/update-transcription', checkGDPRConsent, async (req, res) => {
       // Update or insert transcription
       const { data: existing } = await supabase
         .from('ai_transcription')
-        .select('id, audio_url, duration')
+        .select('id, audio_url')
         .eq('create_user_id', dbUserId)
         .order('created_at', { ascending: false })
         .limit(1)
@@ -3493,7 +3994,7 @@ app.post('/api/update-transcription', checkGDPRConsent, async (req, res) => {
       });
     }
 
-    res.json({ 
+    res.json({
       success: true,
       summary: summary,
       message: 'Transcription confirmed successfully',
@@ -3502,7 +4003,7 @@ app.post('/api/update-transcription', checkGDPRConsent, async (req, res) => {
 
   } catch (error) {
     Logger.error('Update transcription error', error);
-    res.status(500).json({ 
+    res.status(500).json({
       error: 'Failed to update transcription',
       code: 'UPDATE_FAILED',
       details: error.message,
@@ -3517,7 +4018,7 @@ app.post('/api/save-transcription', checkGDPRConsent, async (req, res) => {
     const { userId, incidentId, transcription, audioUrl, duration } = req.body;
 
     if (!userId) {
-      return res.status(400).json({ 
+      return res.status(400).json({
         error: 'User ID required for GDPR compliance',
         code: 'MISSING_USER_ID',
         message: 'Personal data cannot be saved without proper user identification',
@@ -3526,7 +4027,7 @@ app.post('/api/save-transcription', checkGDPRConsent, async (req, res) => {
     }
 
     if (!transcription) {
-      return res.status(400).json({ 
+      return res.status(400).json({
         error: 'Transcription text is required',
         code: 'MISSING_TRANSCRIPTION',
         requestId: req.requestId
@@ -3542,10 +4043,10 @@ app.post('/api/save-transcription', checkGDPRConsent, async (req, res) => {
     }, req);
 
     if (!supabaseEnabled) {
-      return res.json({ 
-        success: true, 
+      return res.json({
+        success: true,
         message: 'Transcription received (Supabase not configured)',
-        requestId: req.requestId 
+        requestId: req.requestId
       });
     }
 
@@ -3602,8 +4103,8 @@ app.post('/api/save-transcription', checkGDPRConsent, async (req, res) => {
         .eq('create_user_id', userId);
     }
 
-    res.json({ 
-      success: true, 
+    res.json({
+      success: true,
       message: 'Transcription saved successfully',
       transcription_id: result?.id,
       requestId: req.requestId
@@ -3611,11 +4112,11 @@ app.post('/api/save-transcription', checkGDPRConsent, async (req, res) => {
 
   } catch (error) {
     Logger.error('Save transcription error', error);
-    res.status(500).json({ 
+    res.status(500).json({
       error: 'Failed to save transcription',
       code: 'SAVE_FAILED',
       message: error.message,
-      requestId: req.requestId 
+      requestId: req.requestId
     });
   }
 });
@@ -3627,10 +4128,10 @@ app.get('/api/user/:userId/latest-transcription', async (req, res) => {
     Logger.info('Getting latest transcription', { userId });
 
     if (!supabaseEnabled) {
-      return res.json({ 
-        exists: false, 
+      return res.json({
+        exists: false,
         transcription: null,
-        requestId: req.requestId 
+        requestId: req.requestId
       });
     }
 
@@ -3687,9 +4188,9 @@ app.get('/api/user/:userId/latest-transcription', async (req, res) => {
 
   } catch (error) {
     Logger.error('Get transcription status error', error);
-    res.status(500).json({ 
+    res.status(500).json({
       error: 'Failed to get transcription status',
-      requestId: req.requestId 
+      requestId: req.requestId
     });
   }
 });
@@ -3700,21 +4201,48 @@ app.get('/api/user/:userId/latest-transcription', async (req, res) => {
 app.post('/webhook/signup', checkSharedKey, async (req, res) => {
   try {
     Logger.info('Signup webhook received');
-    Logger.debug('Webhook payload:', JSON.stringify(req.body, null, 2));
+    let webhookData = req.body; // Use let here as it might be reassigned or modified
+    Logger.debug('Webhook payload:', JSON.stringify(webhookData, null, 2));
 
-    if (!supabaseEnabled || !imageProcessor) {
-      return res.status(503).json({ 
-        error: 'Service not configured',
-        requestId: req.requestId 
+    // Debug with enhanced debugger
+    if (webhookDebugger) {
+      const analysis = webhookDebugger.analyzeWebhook(req, { store: true });
+      Logger.info('Webhook analysis:', {
+        provider: analysis.provider,
+        userId: analysis.fields.userId,
+        hasConsent: !!analysis.fields.consent
       });
     }
 
-    const webhookData = req.body;
+    // ENHANCED CONSENT DETECTION
+    let consentResult = { hasConsent: false };
+
+    if (consentManager) {
+      // Use enhanced consent detection
+      const consentData = consentManager.extractConsentFromWebhook(webhookData);
+      Logger.info('Consent analysis:', consentData);
+
+      // Update consent in database
+      consentResult = await consentManager.validateAndUpdateConsent(
+        webhookData.create_user_id,
+        consentData,
+        req
+      );
+
+      Logger.info(`Enhanced consent status for ${webhookData.create_user_id}: ${consentResult.consent}`);
+    }
+
+    if (!supabaseEnabled || !imageProcessor) {
+      return res.status(503).json({
+        error: 'Service not configured',
+        requestId: req.requestId
+      });
+    }
 
     if (!webhookData.create_user_id) {
-      return res.status(400).json({ 
+      return res.status(400).json({
         error: 'Missing create_user_id',
-        requestId: req.requestId 
+        requestId: req.requestId
       });
     }
 
@@ -3723,15 +4251,15 @@ app.post('/webhook/signup', checkSharedKey, async (req, res) => {
       const jurisdiction = await gdprModule.detectJurisdiction(req.clientIp);
 
       // Extract consent from your Typeform field
-      let legalSupportConsent = webhookData.legal_support || 
-                               webhookData.question_14 || 
+      let legalSupportConsent = webhookData.legal_support ||
+                               webhookData.question_14 ||
                                webhookData.gdpr_consent_field ||
                                webhookData['Do you agree to share this data for legal support?'];
 
       let hasConsent = false;
       if (legalSupportConsent !== undefined && legalSupportConsent !== null) {
-        hasConsent = typeof legalSupportConsent === 'boolean' 
-          ? legalSupportConsent 
+        hasConsent = typeof legalSupportConsent === 'boolean'
+          ? legalSupportConsent
           : legalSupportConsent.toLowerCase() === 'yes';
       }
 
@@ -3758,12 +4286,12 @@ app.post('/webhook/signup', checkSharedKey, async (req, res) => {
         Logger.warn(`⚠️ User ${webhookData.create_user_id} DECLINED consent`);
         await gdprModule.restrictDataProcessing(webhookData.create_user_id);
 
-        return res.status(200).json({ 
+        return res.status(200).json({
           success: true,
           message: 'User registered but declined consent - processing restricted',
           create_user_id: webhookData.create_user_id,
           consent_status: 'declined',
-          requestId: req.requestId 
+          requestId: req.requestId
         });
       }
     }
@@ -3807,20 +4335,20 @@ app.post('/webhook/signup', checkSharedKey, async (req, res) => {
         .catch(error => Logger.error('Signup processing failed', error));
     }
 
-    res.status(200).json({ 
-      success: true, 
+    res.status(200).json({
+      success: true,
       message: hasConsent ? 'Signup processing started with GDPR compliance' : 'User registered without consent',
       create_user_id: webhookData.create_user_id,
       consent_status: hasConsent ? 'granted' : 'declined',
-      requestId: req.requestId 
+      requestId: req.requestId
     });
 
   } catch (error) {
     Logger.error('Webhook error', error);
-    res.status(500).json({ 
-      success: false, 
+    res.status(500).json({
+      success: false,
       error: error.message,
-      requestId: req.requestId 
+      requestId: req.requestId
     });
   }
 });
@@ -3831,23 +4359,23 @@ app.post('/webhook/incident-report', checkSharedKey, async (req, res) => {
     Logger.info(`📋 Processing incident report files for: ${req.body.create_user_id}`);
 
     if (!supabaseEnabled || !imageProcessor) {
-      return res.status(503).json({ 
+      return res.status(503).json({
         error: 'Service not configured',
-        requestId: req.requestId 
+        requestId: req.requestId
       });
     }
 
     const webhookData = req.body;
 
     if (!webhookData.id && !webhookData.incident_report_id) {
-      return res.status(400).json({ 
+      return res.status(400).json({
         error: 'Missing incident report ID',
-        requestId: req.requestId 
+        requestId: req.requestId
       });
     }
 
     if (!webhookData.create_user_id) {
-      return res.status(400).json({ 
+      return res.status(400).json({
         error: 'Missing user ID - GDPR compliance requires user identification',
         code: 'MISSING_USER_ID',
         requestId: req.requestId
@@ -3872,20 +4400,20 @@ app.post('/webhook/incident-report', checkSharedKey, async (req, res) => {
         Logger.error('❌ Incident report processing failed', error);
       });
 
-    res.status(200).json({ 
-      success: true, 
+    res.status(200).json({
+      success: true,
       message: 'Incident report processing started',
       incident_report_id: incidentId,
       create_user_id: webhookData.create_user_id,
-      requestId: req.requestId 
+      requestId: req.requestId
     });
 
   } catch (error) {
     Logger.error('Webhook error', error);
-    res.status(500).json({ 
-      success: false, 
+    res.status(500).json({
+      success: false,
       error: error.message,
-      requestId: req.requestId 
+      requestId: req.requestId
     });
   }
 });
@@ -3893,9 +4421,9 @@ app.post('/webhook/incident-report', checkSharedKey, async (req, res) => {
 // PDF GENERATION ENDPOINTS
 app.post('/generate-pdf', checkSharedKey, async (req, res) => {
   if (!fetchAllData || !generatePDF || !sendEmails) {
-    return res.status(503).json({ 
+    return res.status(503).json({
       error: 'PDF generation not configured',
-      requestId: req.requestId 
+      requestId: req.requestId
     });
   }
 
@@ -3903,9 +4431,9 @@ app.post('/generate-pdf', checkSharedKey, async (req, res) => {
     const { create_user_id } = req.body;
 
     if (!create_user_id) {
-      return res.status(400).json({ 
+      return res.status(400).json({
         error: 'Missing create_user_id',
-        requestId: req.requestId 
+        requestId: req.requestId
       });
     }
 
@@ -3920,9 +4448,9 @@ app.post('/generate-pdf', checkSharedKey, async (req, res) => {
     const allData = await fetchAllData(create_user_id);
 
     if (!allData || !allData.userSignup) {
-      return res.status(404).json({ 
+      return res.status(404).json({
         error: 'User data not found',
-        requestId: req.requestId 
+        requestId: req.requestId
       });
     }
 
@@ -3950,10 +4478,10 @@ app.post('/generate-pdf', checkSharedKey, async (req, res) => {
 
   } catch (error) {
     Logger.error('PDF generation error', error);
-    res.status(500).json({ 
+    res.status(500).json({
       error: 'Failed to generate PDF',
       details: error.message,
-      requestId: req.requestId 
+      requestId: req.requestId
     });
   }
 });
@@ -3961,9 +4489,9 @@ app.post('/generate-pdf', checkSharedKey, async (req, res) => {
 app.post('/webhook/generate-pdf', checkSharedKey, async (req, res) => {
   // Alias for generate-pdf endpoint - call the same logic
   if (!fetchAllData || !generatePDF || !sendEmails) {
-    return res.status(503).json({ 
+    return res.status(503).json({
       error: 'PDF generation not configured',
-      requestId: req.requestId 
+      requestId: req.requestId
     });
   }
 
@@ -3971,9 +4499,9 @@ app.post('/webhook/generate-pdf', checkSharedKey, async (req, res) => {
     const { create_user_id } = req.body;
 
     if (!create_user_id) {
-      return res.status(400).json({ 
+      return res.status(400).json({
         error: 'Missing create_user_id',
-        requestId: req.requestId 
+        requestId: req.requestId
       });
     }
 
@@ -3988,9 +4516,9 @@ app.post('/webhook/generate-pdf', checkSharedKey, async (req, res) => {
     const allData = await fetchAllData(create_user_id);
 
     if (!allData || !allData.userSignup) {
-      return res.status(404).json({ 
+      return res.status(404).json({
         error: 'User data not found',
-        requestId: req.requestId 
+        requestId: req.requestId
       });
     }
 
@@ -4018,10 +4546,10 @@ app.post('/webhook/generate-pdf', checkSharedKey, async (req, res) => {
 
   } catch (error) {
     Logger.error('PDF generation error via webhook', error);
-    res.status(500).json({ 
+    res.status(500).json({
       error: 'Failed to generate PDF',
       details: error.message,
-      requestId: req.requestId 
+      requestId: req.requestId
     });
   }
 });
@@ -4030,34 +4558,34 @@ app.post('/webhook/generate-pdf', checkSharedKey, async (req, res) => {
 app.use((err, req, res, next) => {
   if (err.name === 'MulterError') {
     if (err.code === 'LIMIT_FILE_SIZE') {
-      return res.status(400).json({ 
+      return res.status(400).json({
         error: 'File size too large. Maximum size: 50MB for audio, 10MB for images',
         code: 'FILE_TOO_LARGE',
-        requestId: req.requestId 
+        requestId: req.requestId
       });
     }
-    return res.status(400).json({ 
+    return res.status(400).json({
       error: `Upload error: ${err.message}`,
       code: err.code,
-      requestId: req.requestId 
+      requestId: req.requestId
     });
   }
 
   Logger.error('Unhandled error', err);
-  res.status(500).json({ 
+  res.status(500).json({
     error: 'Internal server error',
     message: process.env.NODE_ENV === 'development' ? err.message : 'An error occurred',
-    requestId: req.requestId 
+    requestId: req.requestId
   });
 });
 
 // 404 handler - must be last
 app.use((req, res) => {
-  res.status(404).json({ 
+  res.status(404).json({
     error: 'Not found',
     path: req.path,
     method: req.method,
-    requestId: req.requestId 
+    requestId: req.requestId
   });
 });
 
@@ -4078,14 +4606,14 @@ async function gracefulShutdown(signal) {
     });
   }
 
-  // Stop accepting new connections
-  server.close(() => {
-    Logger.info('HTTP server closed');
-  });
-
   // Close WebSocket connections
   wss.clients.forEach((ws) => {
     ws.close(1001, 'Server shutting down');
+  });
+
+  // Close the HTTP server
+  server.close(() => {
+    Logger.info('HTTP server closed');
   });
 
   // Clear intervals
@@ -4140,6 +4668,7 @@ server.listen(PORT, () => {
   Logger.info('  - POST /api/gdpr/consent - Grant consent');
   Logger.info('  - POST /api/gdpr/dsr - Submit data request');
   Logger.info('  - GET  /api/gdpr/admin/dashboard - Admin compliance view');
+  Logger.info('  - POST /api/generate-legal-narrative - Generate formal legal narrative');
 
   Logger.success('✅ All systems operational with GDPR compliance - Ready to serve requests');
   Logger.success('🔧 GDPR Module integrated - Full privacy law compliance enabled');
