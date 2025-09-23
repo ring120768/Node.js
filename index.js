@@ -2054,7 +2054,7 @@ app.get('/health', async (req, res) => {
       ai_summary_columns: 'FIXED - Using only existing database columns',
       transcription_saving: 'FIXED - Removed non-existent column references',
       file_redirect: 'ADDED - transcription-status.html redirect to transcription.html',
-      trust_proxy_configuration: 'FIXED - Changed from true to 1 for proper IP-based rate limiting',
+      trust_proxy_configuration: 'FIXED - Changed from true to 1 for proper rate limiting',
       error_handling: 'IMPROVED - More graceful error recovery',
       gdpr_module: 'INTEGRATED - Full GDPR compliance module with US privacy laws' // NEW
     }
@@ -2196,6 +2196,50 @@ app.get('/api/debug/webhook-history', checkSharedKey, async (req, res) => {
     success: true,
     count: recentWebhooks.length,
     webhooks: recentWebhooks,
+    requestId: req.requestId
+  });
+});
+
+// Add endpoint to get specific webhook analysis
+app.get('/api/debug/webhook/:webhookId', checkSharedKey, async (req, res) => {
+  if (!webhookDebugger) {
+    return res.status(503).json({ 
+      error: 'Webhook debugger not initialized',
+      requestId: req.requestId 
+    });
+  }
+
+  const webhook = webhookDebugger.getWebhook(req.params.webhookId);
+
+  if (!webhook) {
+    return res.status(404).json({ 
+      error: 'Webhook not found',
+      requestId: req.requestId 
+    });
+  }
+
+  res.json({
+    success: true,
+    webhook: webhook,
+    requestId: req.requestId
+  });
+});
+
+// Search webhooks
+app.post('/api/debug/webhook-search', checkSharedKey, async (req, res) => {
+  if (!webhookDebugger) {
+    return res.status(503).json({ 
+      error: 'Webhook debugger not initialized',
+      requestId: req.requestId 
+    });
+  }
+
+  const results = webhookDebugger.searchWebhooks(req.body);
+
+  res.json({
+    success: true,
+    count: results.length,
+    results: results,
     requestId: req.requestId
   });
 });
@@ -2505,6 +2549,8 @@ app.get('/', (req, res) => {
                 <code>GET /api/debug/user/:userId</code> - Debug user data with consent status<br>
                 <code>POST /api/debug/webhook-test</code> - Test webhook payload structure<br>
                 <code>GET /api/debug/webhook-history</code> - View recent webhook activity<br>
+                <code>GET /api/debug/webhook/:webhookId</code> - Get specific webhook analysis<br>
+                <code>POST /api/debug/webhook-search</code> - Search stored webhooks<br>
                 <code>GET /api/test-openai</code> - Test OpenAI API key validity<br>
                 <code>GET /api/process-queue-now</code> - Manually trigger queue processing<br>
                 <code>GET /test/transcription-queue</code> - View queue status
