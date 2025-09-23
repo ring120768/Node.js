@@ -1090,75 +1090,44 @@ async function generateAISummary(transcriptionText, createUserId, incidentId) {
   }
 }
 
-// ========================================
-// LEGAL NARRATIVE GENERATOR - UK ACCIDENT REPORTS
-// ========================================
-async function generateLegalNarrative(accidentData, options = {}) {
+// --- LEGAL NARRATIVE GENERATOR ---
+async function generateLegalNarrative(transcriptionText, incidentData, userId) {
   try {
     if (!process.env.OPENAI_API_KEY) {
       Logger.info('Cannot generate legal narrative - missing API key');
       return null;
     }
 
-    // Extract options with defaults
-    const {
-      targetLength = '350-500 words',
-      includeEvidenceSection = true,
-      includeMissingNotes = true,
-      userId = accidentData.create_user_id || accidentData.driver_id
-    } = options;
-
-    Logger.info('Generating legal narrative', { 
-      userId, 
-      hasAccidentData: !!accidentData,
-      targetLength 
-    });
-
-    // System prompt for UK accident reports
-    const systemPrompt = `You are a legal summarisation engine for UK road-traffic incidents. Produce a concise, strictly factual FIRST-PERSON narrative of the accident suitable for insurers and solicitors. Use ONLY the data provided in accident_data. Do NOT invent, infer, or speculate. Use UK spelling, plain legal English, and neutral tone (no blame or fault apportionment). Prefer past tense ("I was…", "I drove…", "the road was…").
-
-- Treat checkbox-style values like "On/Off" or "Yes/No" as booleans. If value is "Off", treat as false; if "On" or "Yes", treat as true.
-- Dates/times: reproduce exactly as provided (do not re-interpret time zones). If both date and time exist, put them together.
-- If a MAJOR category is missing (e.g., time/location, accident description, injuries, other party, police, evidence), include a brief sentence like: "Assessed: no data provided / not applicable." Minor missing items may be omitted.
-- Keep personally identifying contact details in-line only where they have clear legal/insurance relevance (e.g., other driver name, policy number). Avoid redundant repetition.
-- Numbers and references (policy numbers, police ref, What3Words, reg plates) must be reproduced verbatim.
-- Length target: ${targetLength}. 
-- ${includeEvidenceSection ? 'End with an optional "Evidence collected" line if requested.' : 'Do not include evidence section.'}
-- Never include headings except the final optional evidence line. No bullet points in the narrative.
-
-ORDER & COVERAGE (weave into a flowing narrative):
-1) Who I am + my vehicle (name if given, license plate, make/model/colour/condition). Seatbelt/airbags if known.
-2) When & where (date, time, exact location incl. What3Words if present). Weather, visibility, road type, speed limit, junction/traffic control, special conditions.
-3) What happened (direction of travel, estimated speed if given, succinct step-by-step account). Avoid speculation.
-4) Damage & mechanical state (to my vehicle; prior damage vs new damage). Recovery if applicable.
-5) Injuries & medical state (only what is checked/declared). If medical attention was required or received, state who by.
-6) Other vehicle/party (driver name, contact if present; vehicle make/model/plate; insurer/policy; observed damage).
-7) Police & breath test (attendance, officer name/badge/force, reference number; test results if provided).
-8) Witnesses (present/absent; contact kept on file if present).
-9) Declaration/consent only if a clear declaration field is provided—otherwise omit.`;
-
-    const userPrompt = `Summarise the following incident data into a strictly factual, first-person narrative per the system rules above.
-
-Parameters:
-- target_length: "${targetLength}"
-- include_evidence_section: ${includeEvidenceSection}
-- include_missing_notes: ${includeMissingNotes}
-
-accident_data (keys match the PDF field names exactly):
-${JSON.stringify(accidentData, null, 2)}`;
-
-    Logger.info('Calling OpenAI API for legal narrative generation');
+    Logger.info('Generating legal narrative for user', { userId });
 
     const response = await axios.post(
       'https://api.openai.com/v1/chat/completions',
       {
         model: 'gpt-4-turbo-preview',
         messages: [
-          { role: 'system', content: systemPrompt },
-          { role: 'user', content: userPrompt }
+          {
+            role: 'system',
+            content: 'You are a legal assistant specialized in personal injury claims. Generate a formal legal narrative suitable for insurance claims and legal proceedings. Use UK legal terminology and format. Be objective, factual, and professional.'
+          },
+          {
+            role: 'user',
+            content: `Based on this witness statement and incident data, create a formal legal narrative for a UK personal injury claim.
+            
+            Witness Statement: ${transcriptionText}
+            
+            Incident Data: ${JSON.stringify(incidentData, null, 2)}
+            
+            Format as a professional legal document with clear sections for:
+            1. FACTS - Chronological account of events
+            2. LIABILITY ANALYSIS - Assessment of fault and negligence
+            3. DAMAGES - Summary of losses and injuries
+            4. CONCLUSION - Professional summary
+            
+            Use formal legal language appropriate for UK courts and insurance proceedings.`
+          }
         ],
-        temperature: 0.3, // Lower temperature for more consistent, factual output
-        max_tokens: 1500,
+        temperature: 0.2,
+        max_tokens: 2000
       },
       {
         headers: {
@@ -1170,19 +1139,14 @@ ${JSON.stringify(accidentData, null, 2)}`;
     );
 
     const legalNarrative = response.data.choices[0].message.content;
-    Logger.success('Legal narrative generated successfully', { 
-      length: legalNarrative.length,
-      targetLength 
-    });
+    Logger.success('Legal narrative generated successfully');
 
     // Log GDPR activity for legal document generation
     if (userId) {
       await logGDPRActivity(userId, 'LEGAL_NARRATIVE_GENERATED', {
-        type: 'uk_accident_report',
+        type: 'legal_document',
         length: legalNarrative.length,
-        target_length: targetLength,
-        has_evidence_section: includeEvidenceSection,
-        data_fields: Object.keys(accidentData).length
+        has_incident_data: !!incidentData
       });
     }
 
