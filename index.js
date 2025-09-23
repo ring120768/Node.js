@@ -377,7 +377,7 @@ if (supabaseEnabled) {
   // Initialize Consent Manager
   consentManager = new ConsentManager(supabase, Logger);
   Logger.success('✅ Consent Manager initialized');
-  
+
   // Initialize Webhook Debugger
   webhookDebugger = new WebhookDebugger(supabase, Logger);
   Logger.success('✅ Webhook Debugger initialized');
@@ -2150,7 +2150,7 @@ app.post('/api/debug/webhook-test', checkSharedKey, async (req, res) => {
     Logger.info('=== WEBHOOK DEBUG TEST (Basic) ===');
     Logger.info('Headers:', JSON.stringify(req.headers, null, 2));
     Logger.info('Body:', JSON.stringify(req.body, null, 2));
-    
+
     return res.json({
       success: true,
       message: 'Basic webhook analysis (debugger not initialized)',
@@ -2158,20 +2158,20 @@ app.post('/api/debug/webhook-test', checkSharedKey, async (req, res) => {
       requestId: req.requestId
     });
   }
-  
+
   // Use enhanced debugger
   const analysis = webhookDebugger.analyzeWebhook(req, { 
     store: true, 
     log: true 
   });
-  
+
   Logger.info('=== ENHANCED WEBHOOK ANALYSIS ===');
   Logger.info('Provider:', analysis.provider);
   Logger.info('Structure:', analysis.structure.type);
   Logger.info('Extracted Fields:', analysis.fields);
   Logger.info('Validation:', analysis.validation);
   Logger.info('Recommendations:', analysis.recommendations);
-  
+
   res.json({
     success: true,
     message: 'Enhanced webhook analysis complete',
@@ -2180,213 +2180,22 @@ app.post('/api/debug/webhook-test', checkSharedKey, async (req, res) => {
   });
 });
 
-// --- GDPR DATA EXPORT ENDPOINT ---
-app.get('/api/gdpr/export/:userId', checkSharedKey, async (req, res) => {
-  if (!supabaseEnabled) {
-    return res.status(503).json({
-      error: 'Service not configured',
-      requestId: req.requestId
-    });
-  }
-
-  const { userId } = req.params;
-
-  try {
-    // Verify user exists and has consent
-    const { data: user } = await supabase
-      .from('user_signup')
-      .select('*')
-      .eq('create_user_id', userId)
-      .single();
-
-    if (!user) {
-      return res.status(404).json({
-        error: 'User not found',
-        code: 'USER_NOT_FOUND',
-        requestId: req.requestId
-      });
-    }
-
-    // Collect all user data
-    const userData = {
-      user_profile: user,
-      incident_reports: [],
-      transcriptions: [],
-      ai_summaries: [],
-      images: [],
-      emergency_calls: []
-    };
-
-    // Get incident reports
-    const { data: incidents } = await supabase
-      .from('incident_reports')
-      .select('*')
-      .eq('create_user_id', userId);
-    userData.incident_reports = incidents || [];
-
-    // Get transcriptions
-    const { data: transcriptions } = await supabase
-      .from('ai_transcription')
-      .select('*')
-      .eq('create_user_id', userId);
-    userData.transcriptions = transcriptions || [];
-
-    // Get AI summaries
-    const { data: summaries } = await supabase
-      .from('ai_summary')
-      .select('*')
-      .eq('create_user_id', userId);
-    userData.ai_summaries = summaries || [];
-
-    // Get images
-    const { data: images } = await supabase
-      .from('incident_images')
-      .select('*')
-      .eq('create_user_id', userId);
-    userData.images = images || [];
-
-    // Log the export
-    await logGDPRActivity(userId, 'DATA_EXPORT', {
-      requested_by: req.clientIp,
-      items_exported: {
-        incidents: userData.incident_reports.length,
-        transcriptions: userData.transcriptions.length,
-        images: userData.images.length
-      }
-    }, req);
-
-    // Generate export
-    res.json({
-      export_date: new Date().toISOString(),
-      user_id: userId,
-      data: userData,
-      gdpr_info: {
-        right_to_access: true,
-        right_to_portability: true,
-        export_format: 'JSON'
-      },
-      requestId: req.requestId
-    });
-
-  } catch (error) {
-    Logger.error('GDPR export error', error);
-    res.status(500).json({
-      error: 'Failed to export data',
-      code: 'EXPORT_FAILED',
-      requestId: req.requestId
-    });
-  }
-});
-
-// ========================================
-// NEW GDPR USER RIGHTS DASHBOARD - NEW
-// ========================================
-app.get('/api/gdpr/user-rights/:userId', async (req, res) => {
-  if (!gdprModule) {
-    return res.status(503).json({ error: 'GDPR module not configured' });
-  }
-
-  try {
-    const { userId } = req.params;
-    const consentStatus = await gdprModule.checkConsentStatus(userId);
-    const applicableLaw = consentStatus.applicable_law || 'UK_GDPR';
-    const rights = gdprModule.privacyLaws[applicableLaw];
-
-    res.json({
-      user_id: userId,
-      jurisdiction: consentStatus.jurisdiction,
-      applicable_law: applicableLaw,
-      consent_status: consentStatus,
-      rights_available: rights.rights,
-      response_time: `${rights.responseTime} days`,
-      endpoints: {
-        withdraw_consent: '/api/gdpr/withdraw-consent',
-        request_data: '/api/gdpr/dsr',
-        export_data: `/api/gdpr/export/${userId}`,
-        delete_data: `/api/gdpr/user/${userId}`
-      }
-    });
-  } catch (error) {
-    res.status(500).json({ error: error.message });
-  }
-});
-
-// ========================================
-// ADMIN DASHBOARD FOR GDPR COMPLIANCE - NEW
-// ========================================
-app.get('/api/gdpr/admin/dashboard', checkSharedKey, async (req, res) => {
-  if (!gdprModule) {
-    return res.status(503).json({ error: 'GDPR module not configured' });
-  }
-
-  try {
-    const thirtyDaysAgo = new Date();
-    thirtyDaysAgo.setDate(thirtyDaysAgo.getDate() - 30);
-
-    const { data: recentConsents } = await supabase
-      .from('gdpr_consent_records')
-      .select('*')
-      .gte('consent_date', thirtyDaysAgo.toISOString());
-
-    const { data: pendingDSRs } = await supabase
-      .from('data_subject_requests')
-      .select('*')
-      .eq('request_status', 'pending');
-
-    res.json({
-      metrics: {
-        consents_last_30_days: recentConsents?.length || 0,
-        pending_requests: pendingDSRs?.length || 0
-      },
-      pending_dsrs: pendingDSRs || [],
-      compliance_status: {
-        gdpr_module: 'active',
-        uk_gdpr: 'compliant',
-        ccpa_cpra: 'compliant',
-        us_state_laws: 'compliant'
-      }
-    });
-  } catch (error) {
-    res.status(500).json({ error: error.message });
-  }
-});
-
-// ========================================
-// ENHANCED CONSENT MANAGEMENT ENDPOINTS
-// ========================================
-
-// Get consent summary for a user
-app.get('/api/consent/summary/:userId', checkSharedKey, async (req, res) => {
-  if (!consentManager) {
+// Add new endpoint to view recent webhooks
+app.get('/api/debug/webhook-history', checkSharedKey, async (req, res) => {
+  if (!webhookDebugger) {
     return res.status(503).json({ 
-      error: 'Consent manager not initialized',
+      error: 'Webhook debugger not initialized',
       requestId: req.requestId 
     });
   }
-  
-  const summary = await consentManager.getConsentSummary(req.params.userId);
-  
-  res.json({
-    success: true,
-    ...summary,
-    requestId: req.requestId
-  });
-});
 
-// Test consent extraction
-app.post('/api/consent/test-extraction', checkSharedKey, async (req, res) => {
-  if (!consentManager) {
-    return res.status(503).json({ 
-      error: 'Consent manager not initialized',
-      requestId: req.requestId 
-    });
-  }
-  
-  const consentData = consentManager.extractConsentFromWebhook(req.body);
-  
+  const limit = parseInt(req.query.limit) || 10;
+  const recentWebhooks = webhookDebugger.getRecentWebhooks(limit);
+
   res.json({
     success: true,
-    extraction: consentData,
+    count: recentWebhooks.length,
+    webhooks: recentWebhooks,
     requestId: req.requestId
   });
 });
@@ -2566,7 +2375,7 @@ app.get('/webhook/record', (req, res) => {
   res.redirect(redirectUrl);
 });
 
-// --- MAIN ROUTES ---
+// --- MAINROUTES ---
 app.get('/', (req, res) => {
   const gdprBadges = gdprModule ? `
     <span class="privacy-badge">UK GDPR</span>
@@ -2695,6 +2504,7 @@ app.get('/', (req, res) => {
                 <code>GET /api/config</code> - Get Supabase configuration<br>
                 <code>GET /api/debug/user/:userId</code> - Debug user data with consent status<br>
                 <code>POST /api/debug/webhook-test</code> - Test webhook payload structure<br>
+                <code>GET /api/debug/webhook-history</code> - View recent webhook activity<br>
                 <code>GET /api/test-openai</code> - Test OpenAI API key validity<br>
                 <code>GET /api/process-queue-now</code> - Manually trigger queue processing<br>
                 <code>GET /test/transcription-queue</code> - View queue status
@@ -3748,19 +3558,19 @@ app.post('/webhook/signup', checkSharedKey, async (req, res) => {
 
     // ENHANCED CONSENT DETECTION
     let consentResult = { hasConsent: false };
-    
+
     if (consentManager) {
       // Use enhanced consent detection
       const consentData = consentManager.extractConsentFromWebhook(webhookData);
       Logger.info('Consent analysis:', consentData);
-      
+
       // Update consent in database
       consentResult = await consentManager.validateAndUpdateConsent(
         webhookData.create_user_id,
         consentData,
         req
       );
-      
+
       Logger.info(`Enhanced consent status for ${webhookData.create_user_id}: ${consentResult.consent}`);
     }
 
