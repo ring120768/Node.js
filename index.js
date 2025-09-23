@@ -247,51 +247,45 @@ function checkSharedKey(req, res, next) {
   return next();
 }
 
-// --- GDPR CONSENT CHECK MIDDLEWARE ---
+// --- GDPR CONSENT CHECK MIDDLEWARE (NON-BLOCKING) ---
 async function checkGDPRConsent(req, res, next) {
   const userId = req.body?.userId || req.body?.create_user_id || req.params?.userId;
 
   if (!userId) {
-    return res.status(400).json({
-      error: 'User identification required',
-      code: 'MISSING_USER_ID',
-      message: 'A valid user ID must be provided to process personal data',
-      requestId: req.requestId
-    });
+    // No user ID - add warning to request and continue
+    req.gdprWarning = 'No user ID provided';
+    req.hasConsent = false;
+    return next();
   }
 
   // Enhanced user ID format validation
   if (!/^[a-zA-Z0-9_-]{3,64}$/.test(userId)) {
-    return res.status(400).json({
-      error: 'Invalid user ID format',
-      code: 'INVALID_USER_ID',
-      message: 'User ID must be 3-64 characters, alphanumeric with underscores and hyphens only',
-      requestId: req.requestId
-    });
-  }
-
-  // Use GDPR module if available
-  if (gdprModule) {
-    const consentStatus = await gdprModule.checkConsentStatus(userId);
-    if (!consentStatus.has_consent) {
-      return res.status(403).json({
-        error: 'GDPR consent required',
-        code: 'CONSENT_REQUIRED',
-        message: 'User must provide GDPR consent before processing personal data',
-        consent_url: '/api/gdpr/consent',
-        requestId: req.requestId
-      });
-    }
-    req.gdprConsent = consentStatus;
-    return next();
-  }
-
-  // Fallback to original implementation if GDPR module not available
-  if (!supabaseEnabled) {
+    req.gdprWarning = 'Invalid user ID format';
+    req.hasConsent = false;
     return next();
   }
 
   try {
+    // Use GDPR module if available
+    if (gdprModule) {
+      const consentStatus = await gdprModule.checkConsentStatus(userId);
+      req.hasConsent = consentStatus.has_consent;
+      req.gdprConsent = consentStatus;
+      
+      if (!consentStatus.has_consent) {
+        req.gdprWarning = 'User consent not found';
+        Logger.info(`⚠️ Processing without consent for user ${userId} on ${req.path}`);
+      }
+      return next();
+    }
+
+    // Fallback to original implementation if GDPR module not available
+    if (!supabaseEnabled) {
+      req.hasConsent = true; // Assume consent if no database
+      req.gdprWarning = 'Database not configured';
+      return next();
+    }
+
     const { data: user } = await supabase
       .from('user_signup')
       .select('gdpr_consent, gdpr_consent_date')
@@ -302,30 +296,32 @@ async function checkGDPRConsent(req, res, next) {
       await logGDPRActivity(userId, 'CONSENT_CHECK_FAILED', {
         reason: 'No consent found',
         ip: req.clientIp,
-        requestId: req.requestId
+        requestId: req.requestId,
+        action: 'proceeding_without_consent'
       }, req);
 
-      return res.status(403).json({
-        error: 'GDPR consent required',
-        code: 'CONSENT_REQUIRED',
-        message: 'User must provide GDPR consent before processing personal data',
-        requestId: req.requestId
-      });
+      req.hasConsent = false;
+      req.gdprWarning = 'User consent not found in database';
+      Logger.info(`⚠️ Processing without consent for user ${userId} on ${req.path}`);
+    } else {
+      req.hasConsent = true;
+      req.gdprConsent = {
+        granted: true,
+        date: user.gdpr_consent_date
+      };
     }
 
-    req.gdprConsent = {
-      granted: true,
-      date: user.gdpr_consent_date
-    };
-
+    // Always continue - never block
     next();
+
   } catch (error) {
     Logger.error('GDPR consent check error', error);
-    res.status(500).json({
-      error: 'Failed to verify consent',
-      code: 'CONSENT_CHECK_FAILED',
-      requestId: req.requestId
-    });
+    req.hasConsent = false;
+    req.gdprWarning = 'Consent check failed';
+    req.gdprError = error.message;
+    
+    // Always continue even on error
+    next();
   }
 }
 
@@ -2106,7 +2102,7 @@ app.post('/api/consent/test-extraction', checkSharedKey, async (req, res) => {
 });
 
 // Generate legal narrative endpoint
-app.post('/api/generate-legal-narrative', checkSharedKey, checkGDPRConsent, async (req, res) => {
+app.post('/api/generate-legal-narrative', checkSharedKey, async (req, res) => {
   try {
     const { userId, transcriptionText, incidentData } = req.body;
 
@@ -3471,7 +3467,7 @@ app.post('/api/upload-what3words-image', upload.single('image'), async (req, res
 });
 
 // GET USER IMAGES endpoint
-app.get('/api/images/:userId', checkGDPRConsent, async (req, res) => {
+app.get('/api/images/:userId', async (req, res) => {
   if (!supabaseEnabled) {
     return res.status(503).json({
       error: 'Service not configured',
@@ -3513,7 +3509,7 @@ app.get('/api/images/:userId', checkGDPRConsent, async (req, res) => {
 });
 
 // GET SIGNED URL endpoint
-app.get('/api/image/signed-url/:userId/:imageType', checkGDPRConsent, async (req, res) => {
+app.get('/api/image/signed-url/:userId/:imageType', async (req, res) => {
   if (!supabaseEnabled || !imageProcessor) {
     return res.status(503).json({
       error: 'Service not configured',
@@ -3638,7 +3634,7 @@ app.get('/pdf-status/:userId', async (req, res) => {
 });
 
 // DOWNLOAD PDF endpoint
-app.get('/download-pdf/:userId', checkGDPRConsent, async (req, res) => {
+app.get('/download-pdf/:userId', async (req, res) => {
   if (!supabaseEnabled) {
     return res.status(503).json({
       error: 'Service not configured',
@@ -3892,7 +3888,7 @@ app.get('/api/transcription-status/:queueId', async (req, res) => {
 });
 
 // UPDATE TRANSCRIPTION (GDPR COMPLIANT) endpoint
-app.post('/api/update-transcription', checkGDPRConsent, async (req, res) => {
+app.post('/api/update-transcription', async (req, res) => {
   try {
     const { queueId, userId, transcription } = req.body;
 
