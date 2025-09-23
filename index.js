@@ -3590,9 +3590,8 @@ app.get('/api/user/:userId/latest-transcription', async (req, res) => {
 app.post('/webhook/signup', checkSharedKey, async (req, res) => {
   try {
     Logger.info('Signup webhook received');
-    Logger.debug('Webhook payload:', JSON.stringify(req.body, null, 2));
-
     const webhookData = req.body;
+    Logger.debug('Webhook payload:', JSON.stringify(webhookData, null, 2));
 
     // Debug with enhanced debugger
     if (webhookDebugger) {
