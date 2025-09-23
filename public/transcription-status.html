@@ -1002,6 +1002,48 @@
         }
 
         // ============================
+        // GDPR Consent Check for Recording
+        // ============================
+        async function checkGDPRConsentBeforeRecording() {
+            try {
+                // Check if user has existing consent
+                const hasConsent = await checkGDPRConsent(state.userId);
+
+                if (!hasConsent) {
+                    // Show consent requirement message
+                    showStatus('GDPR consent required before recording. Redirecting...', 'warning');
+
+                    // Build consent URL with return path
+                    const returnUrl = encodeURIComponent(window.location.href);
+                    const params = new URLSearchParams({
+                        create_user_id: state.userId,
+                        require_consent: 'true',
+                        return_url: returnUrl,
+                        operation: 'audio_recording'
+                    });
+
+                    if (state.incidentReportId) {
+                        params.append('incident_report_id', state.incidentReportId);
+                    }
+
+                    // Redirect to consent page
+                    setTimeout(() => {
+                        window.location.href = `/declaration.html?${params.toString()}`;
+                    }, 2000);
+
+                    return false;
+                }
+
+                return true;
+            } catch (error) {
+                Logger.error('Error checking consent before recording:', error);
+                showStatus('Unable to verify consent. Please try again.', 'error');
+                return false;
+            }
+        }
+
+
+        // ============================
         // Configuration and Global Variables
         // ============================
         const CONFIG = {
@@ -1925,7 +1967,8 @@
                     // Build redirect URL with all parameters
                     const params = new URLSearchParams({
                         create_user_id: state.userId,
-                        status: 'transcription_complete'
+                        status: 'transcription_complete',
+                        operation: 'final_consent'
                     });
 
                     if (state.currentQueueId) {

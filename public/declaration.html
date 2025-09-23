@@ -594,16 +594,41 @@
                 let redirectUrl = returnUrl ? decodeURIComponent(returnUrl) : null;
 
                 if (!redirectUrl) {
-                    const redirectParams = new URLSearchParams({
-                        create_user_id: userId,
-                        consent_given: 'true'
-                    });
-
-                    if (incidentId) {
-                        redirectParams.append('incident_id', incidentId);
+                    // Check if this was for recording operation
+                    const operation = urlParams.get('operation');
+                    
+                    if (operation === 'audio_recording') {
+                        // Return to recording page with consent granted
+                        const redirectParams = new URLSearchParams({
+                            create_user_id: userId,
+                            consent_given: 'true'
+                        });
+                        if (incidentId) {
+                            redirectParams.append('incident_id', incidentId);
+                        }
+                        redirectUrl = `/transcription-status.html?${redirectParams.toString()}`;
+                    } else if (operation === 'final_consent') {
+                        // Final consent before completion - go to report-complete
+                        const redirectParams = new URLSearchParams({
+                            create_user_id: userId,
+                            consent_given: 'true',
+                            status: 'completed'
+                        });
+                        if (incidentId) {
+                            redirectParams.append('incident_id', incidentId);
+                        }
+                        redirectUrl = `/report-complete.html?${redirectParams.toString()}`;
+                    } else {
+                        // Default to completion page
+                        const redirectParams = new URLSearchParams({
+                            create_user_id: userId,
+                            consent_given: 'true'
+                        });
+                        if (incidentId) {
+                            redirectParams.append('incident_id', incidentId);
+                        }
+                        redirectUrl = `/report-complete.html?${redirectParams.toString()}`;
                     }
-
-                    redirectUrl = `https://carcrashlawyerai.com/report-complete.html?${redirectParams.toString()}`;
                 }
 
                 // Redirect after 2 seconds
