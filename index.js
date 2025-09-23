@@ -2578,6 +2578,48 @@ app.get('/api/test-openai', async (req, res) => {
   }
 });
 
+// AI summary generation test endpoint
+app.post('/api/generate-ai-summary', checkSharedKey, async (req, res) => {
+  const { transcription, userId, incidentId } = req.body;
+  
+  if (!transcription || !userId) {
+    return res.status(400).json({
+      error: 'Missing required fields (transcription and userId are required)',
+      requestId: req.requestId
+    });
+  }
+
+  try {
+    Logger.info('AI summary generation test requested', { userId, incidentId });
+    
+    const summary = await generateAISummary(transcription, userId, incidentId);
+    
+    if (!summary) {
+      return res.status(500).json({
+        error: 'AI summary generation returned null (check OpenAI API key and transcription length)',
+        requestId: req.requestId
+      });
+    }
+    
+    res.json({
+      success: true,
+      summary,
+      transcription_length: transcription.length,
+      userId,
+      incidentId: incidentId || null,
+      timestamp: new Date().toISOString(),
+      requestId: req.requestId
+    });
+  } catch (error) {
+    Logger.error('AI summary generation error:', error);
+    res.status(500).json({
+      error: 'Failed to generate summary',
+      details: error.message,
+      requestId: req.requestId
+    });
+  }
+});
+
 // Test transcription queue endpoint
 app.get('/test/transcription-queue', async (req, res) => {
   if (!supabaseEnabled) {
