@@ -688,6 +688,114 @@
         .network-status.offline .dot {
             background: #dc3545;
         }
+
+        /* Enhanced GDPR Consent Banner */
+        .consent-banner {
+            background: #f0f7ff;
+            border: 2px solid #2196F3;
+            border-radius: 12px;
+            padding: 20px;
+            margin: 20px 0;
+            display: none;
+            animation: slideIn 0.3s ease;
+            box-shadow: 0 4px 15px rgba(33, 150, 243, 0.2);
+        }
+
+        .consent-banner.visible {
+            display: block;
+        }
+
+        .consent-content {
+            display: flex;
+            flex-direction: column;
+            gap: 15px;
+            align-items: center;
+        }
+
+        .consent-icon {
+            font-size: 32px;
+            color: #2196F3;
+            margin-bottom: 10px;
+        }
+
+        .consent-text {
+            text-align: center;
+        }
+
+        .consent-text h4 {
+            font-size: 18px;
+            color: #333;
+            margin-bottom: 10px;
+            font-weight: 600;
+        }
+
+        .consent-text p {
+            font-size: 14px;
+            color: #666;
+            line-height: 1.5;
+            margin-bottom: 10px;
+        }
+
+        .consent-text ul {
+            text-align: left;
+            margin: 10px 0;
+            padding-left: 20px;
+        }
+
+        .consent-text li {
+            font-size: 13px;
+            color: #666;
+            margin: 5px 0;
+        }
+
+        .consent-text a {
+            color: #2196F3;
+            text-decoration: none;
+        }
+
+        .consent-text a:hover {
+            text-decoration: underline;
+        }
+
+        .consent-actions {
+            display: flex;
+            gap: 15px;
+            width: 100%;
+            max-width: 400px;
+            margin-top: 15px;
+        }
+
+        .consent-agree-btn,
+        .consent-decline-btn {
+            flex: 1;
+            padding: 12px 20px;
+            border: none;
+            border-radius: 8px;
+            font-size: 14px;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.3s;
+        }
+
+        .consent-agree-btn {
+            background: linear-gradient(135deg, #4CAF50, #45a049);
+            color: white;
+        }
+
+        .consent-agree-btn:hover {
+            background: linear-gradient(135deg, #45a049, #3d8b40);
+            transform: translateY(-1px);
+        }
+
+        .consent-decline-btn {
+            background: #f44336;
+            color: white;
+        }
+
+        .consent-decline-btn:hover {
+            background: #d32f2f;
+            transform: translateY(-1px);
+        }
     </style>
 </head>
 <body>
@@ -707,28 +815,26 @@
             <a href="https://carcrashlawyerai.com/privacy-policy" target="_blank">Learn more</a>
         </div>
 
-        <!-- New GDPR Consent Banner -->
-        <div class="consent-banner" id="consentBanner" style="display: none;">
+        <!-- Enhanced GDPR Consent Banner -->
+        <div class="consent-banner" id="consentBanner">
             <div class="consent-content">
                 <div class="consent-icon">
-                    <span class="sr-only">Privacy Notice</span>
-                    <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor" width="30" height="30">
-                        <path stroke-linecap="round" stroke-linejoin="round" d="M12 18.75a6 6 0 006-6v-1.5m-6 3.75a6 6 0 01-6-6v-1.5m6 3.75A6 6 0 0012 9m0 3.75A6 6 0 0112 15m-6 3.75H4.5c-4.418 0-8.268 2.939-9.653 7.078a18.07 18.07 0 000 3.596c1.346 4.151 5.196 7.078 9.653 7.078a18.07 18.07 0 009.653-7.078c-1.346-4.15-5.196-7.078-9.653-7.078z" />
-                    </svg>
+                    🔒
                 </div>
                 <div class="consent-text">
                     <h4>Important Privacy Information</h4>
-                    <p>By selecting 'Record Statement', you agree to our use of your voice data for transcription and AI analysis.</p>
+                    <p>By selecting 'Agree & Record Statement', you agree to our use of your voice data for transcription and AI analysis.</p>
                     <ul>
-                        <li>Your data will be processed according to our <a href="https://carcrashlawyerai.com/privacy-policy" target="_blank">Privacy Policy</a>.</li>
-                        <li>We comply with GDPR regulations to protect your information.</li>
+                        <li>Your data will be processed according to our <a href="https://carcrashlawyerai.com/privacy-policy" target="_blank">Privacy Policy</a></li>
+                        <li>We comply with GDPR regulations to protect your information</li>
+                        <li>You can withdraw consent at any time</li>
                     </ul>
                 </div>
                 <div class="consent-actions">
-                    <button id="agreeRecordButton" class="btn btn-primary consent-agree-btn">
+                    <button id="agreeRecordButton" class="consent-agree-btn">
                         ✅ Agree & Record Statement
                     </button>
-                    <button id="declineButton" class="btn btn-danger consent-decline-btn">
+                    <button id="declineButton" class="consent-decline-btn">
                         ❌ Decline
                     </button>
                 </div>
@@ -1087,15 +1193,15 @@
         function showConsentBanner() {
             const consentBanner = document.getElementById('consentBanner');
             const recordButton = document.getElementById('recordButton');
-            
+
             if (consentBanner) {
-                consentBanner.style.display = 'block';
+                consentBanner.classList.add('visible');
                 
                 // Hide the record button until consent is given
                 if (recordButton) {
                     recordButton.style.display = 'none';
                 }
-                
+
                 showStatus('Please review and accept the privacy notice to continue', 'info');
             }
         }
@@ -2233,16 +2339,16 @@
             if (agreeRecordButton) {
                 agreeRecordButton.addEventListener('click', async () => {
                     await logConsent('recording_consent', true);
-                    consentBanner.style.display = 'none';
-                    
+                    consentBanner.classList.remove('visible');
+
                     // Show the record button again
                     const recordButton = document.getElementById('recordButton');
                     if (recordButton) {
                         recordButton.style.display = 'inline-block';
                     }
-                    
+
                     showStatus('Consent granted. You can now start recording.', 'success');
-                    
+
                     // Auto-start recording since user just agreed
                     setTimeout(() => {
                         startRecording();
