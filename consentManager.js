@@ -1,244 +1,284 @@
 /**
- * Consent Manager Module
- * Unified consent field detection and management
+ * Consent Manager Module - Simplified Version
+ * Handles consent extraction from webhooks and forms
+ * Works with simplified GDPR module
  */
-
-const { CONSTANTS, ConstantHelpers } = require('./constants');
 
 class ConsentManager {
   constructor(supabase = null, logger = null) {
     this.supabase = supabase;
     this.logger = logger || console;
 
-    // Consent field patterns (case-insensitive)
+    // Simple consent field patterns
     this.consentFieldPatterns = [
-      // Direct consent fields
-      /^gdpr[_\-]?consent/i,
-      /^legal[_\-]?support/i,
-      /^consent[_\-]?given/i,
-      /^data[_\-]?consent/i,
-      /^privacy[_\-]?consent/i,
-      /^agree[_\-]?to[_\-]?(share|process|use)/i,
-      /^accept[_\-]?terms/i,
-      /^opt[_\-]?in/i,
-
-      // Question-based fields (Typeform)
-      /^question[_\-]?14$/i, // Your specific field
-      /^q14$/i,
-
-      // Checkbox or selection fields
-      /consent.*checkbox/i,
-      /agree.*checkbox/i,
-      /terms.*accepted/i,
-
-      // Field containing consent keywords
-      /share.*data.*legal/i,
-      /process.*personal.*data/i,
-      /use.*information/i
+      /consent/i,
+      /gdpr/i,
+      /legal[_\-]?support/i,
+      /agree/i,
+      /accept/i,
+      /opt[_\-]?in/i,
+      /question[_\-]?14$/i,  // Your specific Typeform field
+      /q14$/i
     ];
 
-    // Consent text patterns
-    this.consentTextPatterns = [
-      /i\s+(agree|consent|authorize|allow|permit)/i,
-      /share.*data.*legal\s+support/i,
-      /process.*personal\s+(data|information)/i,
-      /gdpr.*consent/i,
-      /data\s+protection.*agree/i,
-      /privacy.*accept/i
-    ];
+    // Positive consent values
+    this.positiveValues = new Set([
+      'yes', 'true', '1', 'on', 'agreed', 'accepted', 
+      'i agree', 'i consent', 'i accept', 'si', 'oui', 'ja'
+    ]);
 
-    // Multi-language consent values
-    this.consentValues = {
-      positive: [
-        ...CONSTANTS.CONSENT_VALUES.POSITIVE,
-        'oui', 'si', 'ja', 'sim', 'да', // Multi-language yes
-        'i agree', 'i consent', 'i accept'
-      ],
-      negative: [
-        ...CONSTANTS.CONSENT_VALUES.NEGATIVE,
-        'non', 'nein', 'não', 'нет', // Multi-language no
-        'i disagree', 'i do not consent', 'i decline'
-      ]
-    };
+    // Negative consent values  
+    this.negativeValues = new Set([
+      'no', 'false', '0', 'off', 'declined', 'rejected',
+      'i disagree', 'i do not consent', 'non', 'nein'
+    ]);
   }
 
+  // ========================================
+  // MAIN METHODS
+  // ========================================
+
   /**
-   * Extract all consent-related fields from a webhook payload
-   * @param {Object} payload - The webhook payload
-   * @param {string} provider - The webhook provider (optional)
-   * @returns {Object} - Extracted consent information
+   * Extract consent from any webhook payload
+   * Simplified to just find and return consent status
    */
   extractConsentFromWebhook(payload, provider = null) {
     const result = {
       hasConsent: false,
-      consentFields: {},
-      consentTypes: [],
+      consentSource: null,
+      consentValue: null,
+      provider: provider || this.detectProvider(payload),
       timestamp: new Date().toISOString(),
-      provider: provider || ConstantHelpers.detectWebhookProvider({ body: payload }),
-      metadata: {}
+      fields: {}
     };
 
     // Handle Typeform structure
-    if (payload.form_response && payload.form_response.answers) {
-      this.extractTypeformConsent(payload, result);
+    if (this.isTypeformPayload(payload)) {
+      return this.extractTypeformConsent(payload);
     }
 
-    // Handle flat structure
-    this.extractFlatConsent(payload, result);
-
-    // Handle nested structures
-    this.extractNestedConsent(payload, result);
-
-    // Determine overall consent status
-    result.hasConsent = this.determineOverallConsent(result.consentFields);
-
-    // Add consent types based on detected fields
-    result.consentTypes = this.determineConsentTypes(result.consentFields);
+    // Handle generic webhook structure
+    const consentData = this.findConsentInObject(payload);
+    if (consentData.found) {
+      result.hasConsent = consentData.value;
+      result.consentSource = consentData.source;
+      result.consentValue = consentData.originalValue;
+      result.fields = consentData.allFields;
+    }
 
     return result;
   }
 
   /**
-   * Extract consent from Typeform-specific structure
+   * Process Typeform webhook specifically
    */
-  extractTypeformConsent(payload, result) {
-    const answers = payload.form_response.answers;
+  extractTypeformConsent(payload) {
+    const result = {
+      hasConsent: false,
+      consentSource: 'typeform',
+      consentValue: null,
+      provider: 'typeform',
+      timestamp: new Date().toISOString(),
+      fields: {},
+      metadata: {}
+    };
 
-    for (const answer of answers) {
-      const fieldId = answer.field.id;
-      const fieldRef = answer.field.ref;
-      const fieldText = answer.field.title || '';
+    // Store form metadata
+    if (payload.form_response) {
+      result.metadata = {
+        formId: payload.form_response.form_id,
+        responseId: payload.form_response.token,
+        submittedAt: payload.form_response.submitted_at
+      };
 
-      // Check if this is a consent field
-      if (this.isConsentField(fieldId) || 
-          this.isConsentField(fieldRef) || 
-          this.isConsentText(fieldText)) {
+      // Check answers for consent fields
+      const answers = payload.form_response.answers || [];
+      for (const answer of answers) {
+        const fieldId = answer.field?.id;
+        const fieldRef = answer.field?.ref;
+        const fieldTitle = answer.field?.title || '';
 
-        let value = null;
-        if (answer.boolean !== undefined) value = answer.boolean;
-        else if (answer.text) value = answer.text;
-        else if (answer.choice) value = answer.choice.label;
-        else if (answer.choices) value = answer.choices.map(c => c.label).join(', ');
+        // Check if this looks like a consent field
+        if (this.isConsentField(fieldId) || 
+            this.isConsentField(fieldRef) || 
+            this.isConsentField(fieldTitle)) {
 
-        const consentValue = this.parseConsentValue(value);
-
-        result.consentFields[fieldRef || fieldId] = {
-          value: value,
-          parsed: consentValue,
-          fieldType: answer.type,
-          fieldText: fieldText,
-          source: 'typeform_answer'
-        };
-
-        // Store metadata
-        result.metadata.formId = payload.form_response.form_id;
-        result.metadata.responseId = payload.form_response.token;
-        result.metadata.submittedAt = payload.form_response.submitted_at;
-      }
-    }
-
-    // Also check hidden fields
-    if (payload.form_response.hidden) {
-      for (const [key, value] of Object.entries(payload.form_response.hidden)) {
-        if (this.isConsentField(key)) {
+          // Extract the answer value
+          let value = this.extractAnswerValue(answer);
           const consentValue = this.parseConsentValue(value);
-          result.consentFields[`hidden_${key}`] = {
-            value: value,
-            parsed: consentValue,
-            source: 'typeform_hidden'
-          };
+
+          if (consentValue !== null) {
+            result.hasConsent = consentValue;
+            result.consentValue = value;
+            result.fields[fieldRef || fieldId] = {
+              value: value,
+              parsed: consentValue,
+              type: answer.type,
+              title: fieldTitle
+            };
+            break; // Found consent, stop looking
+          }
+        }
+      }
+
+      // Also check hidden fields
+      if (payload.form_response.hidden) {
+        for (const [key, value] of Object.entries(payload.form_response.hidden)) {
+          if (this.isConsentField(key)) {
+            const consentValue = this.parseConsentValue(value);
+            if (consentValue !== null) {
+              result.hasConsent = consentValue;
+              result.consentValue = value;
+              result.fields[`hidden_${key}`] = {
+                value: value,
+                parsed: consentValue,
+                type: 'hidden'
+              };
+            }
+          }
         }
       }
     }
+
+    return result;
   }
 
   /**
-   * Extract consent from flat payload structure
+   * Save consent to database (user_signup table)
    */
-  extractFlatConsent(payload, result) {
-    for (const [key, value] of Object.entries(payload)) {
-      // Skip complex objects
-      if (typeof value === 'object' && value !== null && !Array.isArray(value)) {
-        continue;
-      }
+  async saveConsent(userId, consentData) {
+    if (!this.supabase) {
+      this.logger.error('ConsentManager: Supabase not configured');
+      return { success: false, error: 'Database not configured' };
+    }
 
-      if (this.isConsentField(key)) {
-        const consentValue = this.parseConsentValue(value);
-
-        // Don't overwrite if already found from more specific source
-        if (!result.consentFields[key]) {
-          result.consentFields[key] = {
-            value: value,
-            parsed: consentValue,
-            source: 'flat_field'
-          };
+    try {
+      // Prepare update data
+      const updateData = {
+        gdpr_consent: consentData.hasConsent,
+        gdpr_consent_date: consentData.hasConsent ? new Date().toISOString() : null,
+        legal_support: consentData.hasConsent ? 'Yes' : 'No',
+        consent_source: consentData.consentSource || consentData.provider,
+        consent_metadata: {
+          provider: consentData.provider,
+          timestamp: consentData.timestamp,
+          value: consentData.consentValue,
+          fields: consentData.fields,
+          metadata: consentData.metadata
         }
+      };
+
+      // Update user record
+      const { data, error } = await this.supabase
+        .from('user_signup')
+        .update(updateData)
+        .eq('create_user_id', userId)
+        .select()
+        .single();
+
+      if (error) {
+        // If user doesn't exist, try to create
+        if (error.code === 'PGRST116') {
+          const { data: newUser, error: createError } = await this.supabase
+            .from('user_signup')
+            .insert({
+              create_user_id: userId,
+              ...updateData,
+              created_at: new Date().toISOString()
+            })
+            .select()
+            .single();
+
+          if (createError) throw createError;
+
+          this.logger.info(`Created new user ${userId} with consent: ${consentData.hasConsent}`);
+          return { success: true, created: true, data: newUser };
+        }
+        throw error;
       }
+
+      this.logger.info(`Updated consent for user ${userId}: ${consentData.hasConsent}`);
+      return { success: true, updated: true, data };
+
+    } catch (error) {
+      this.logger.error('ConsentManager: Error saving consent', error);
+      return { success: false, error: error.message };
     }
   }
 
   /**
-   * Extract consent from nested structures
+   * Quick consent update - simplified version
    */
-  extractNestedConsent(payload, result, prefix = '', depth = 0) {
-    // Prevent infinite recursion
-    if (depth > 5) return;
-
-    for (const [key, value] of Object.entries(payload)) {
-      const fullKey = prefix ? `${prefix}.${key}` : key;
-
-      // Skip already processed typeform structure
-      if (key === 'form_response' && depth === 0) continue;
-
-      if (typeof value === 'object' && value !== null && !Array.isArray(value)) {
-        this.extractNestedConsent(value, result, fullKey, depth + 1);
-      } else if (this.isConsentField(key) || this.isConsentField(fullKey)) {
-        const consentValue = this.parseConsentValue(value);
-
-        if (!result.consentFields[fullKey]) {
-          result.consentFields[fullKey] = {
-            value: value,
-            parsed: consentValue,
-            source: 'nested_field'
-          };
-        }
-      }
-    }
+  async updateConsent(userId, hasConsent, source = 'manual') {
+    return this.saveConsent(userId, {
+      hasConsent: hasConsent,
+      consentSource: source,
+      timestamp: new Date().toISOString()
+    });
   }
 
   /**
-   * Check if a field name is consent-related
+   * Get current consent status for a user
+   */
+  async getConsentStatus(userId) {
+    if (!this.supabase) {
+      return { error: 'Database not configured' };
+    }
+
+    try {
+      const { data, error } = await this.supabase
+        .from('user_signup')
+        .select('gdpr_consent, gdpr_consent_date, legal_support, consent_source, consent_metadata')
+        .eq('create_user_id', userId)
+        .single();
+
+      if (error || !data) {
+        return { 
+          exists: false, 
+          hasConsent: false,
+          userId: userId 
+        };
+      }
+
+      // Check multiple consent indicators
+      const hasConsent = !!(
+        data.gdpr_consent === true || 
+        data.gdpr_consent === 'true' ||
+        data.gdpr_consent === 1 ||
+        data.legal_support === 'Yes'
+      );
+
+      return {
+        exists: true,
+        hasConsent: hasConsent,
+        consentDate: data.gdpr_consent_date,
+        legalSupport: data.legal_support === 'Yes',
+        source: data.consent_source,
+        metadata: data.consent_metadata,
+        userId: userId
+      };
+
+    } catch (error) {
+      this.logger.error('ConsentManager: Error getting consent status', error);
+      return { error: error.message };
+    }
+  }
+
+  // ========================================
+  // HELPER METHODS
+  // ========================================
+
+  /**
+   * Check if a field name looks like a consent field
    */
   isConsentField(fieldName) {
     if (!fieldName) return false;
 
-    const field = String(fieldName).trim();
+    const field = String(fieldName).toLowerCase().trim();
 
     // Check against patterns
     for (const pattern of this.consentFieldPatterns) {
       if (pattern.test(field)) {
-        return true;
-      }
-    }
-
-    // Check for exact matches
-    const lowerField = field.toLowerCase();
-    const consentKeywords = [
-      'consent', 'gdpr', 'legal_support', 'agree', 'accept',
-      'authorize', 'permission', 'opt_in', 'optin', 'terms'
-    ];
-
-    return consentKeywords.some(keyword => lowerField.includes(keyword));
-  }
-
-  /**
-   * Check if text contains consent language
-   */
-  isConsentText(text) {
-    if (!text) return false;
-
-    for (const pattern of this.consentTextPatterns) {
-      if (pattern.test(text)) {
         return true;
       }
     }
@@ -250,222 +290,266 @@ class ConsentManager {
    * Parse a consent value to boolean
    */
   parseConsentValue(value) {
-    if (value === null || value === undefined) return null;
-    if (typeof value === 'boolean') return value;
+    if (value === null || value === undefined || value === '') {
+      return null;
+    }
 
+    // Handle boolean directly
+    if (typeof value === 'boolean') {
+      return value;
+    }
+
+    // Convert to string and check
     const strValue = String(value).toLowerCase().trim();
 
     // Check positive values
-    if (this.consentValues.positive.some(pos => strValue.includes(pos))) {
+    if (this.positiveValues.has(strValue)) {
       return true;
     }
 
     // Check negative values
-    if (this.consentValues.negative.some(neg => strValue.includes(neg))) {
+    if (this.negativeValues.has(strValue)) {
       return false;
     }
 
-    // Check for numeric values
-    if (strValue === '1' || strValue === 'true') return true;
-    if (strValue === '0' || strValue === 'false') return false;
+    // Check if it contains positive keywords
+    for (const positive of this.positiveValues) {
+      if (strValue.includes(positive)) {
+        return true;
+      }
+    }
 
-    // Uncertain
+    // Unknown value - return null
     return null;
   }
 
   /**
-   * Determine overall consent status from multiple fields
+   * Extract value from Typeform answer object
    */
-  determineOverallConsent(consentFields) {
-    const parsedValues = Object.values(consentFields)
-      .map(field => field.parsed)
-      .filter(value => value !== null);
-
-    if (parsedValues.length === 0) return false;
-
-    // If any explicit denial, overall is false
-    if (parsedValues.includes(false)) return false;
-
-    // If all are true, overall is true
-    if (parsedValues.every(v => v === true)) return true;
-
-    // Mixed or uncertain
-    return false;
+  extractAnswerValue(answer) {
+    if (answer.boolean !== undefined) return answer.boolean;
+    if (answer.text) return answer.text;
+    if (answer.choice) return answer.choice.label;
+    if (answer.choices) return answer.choices.map(c => c.label).join(', ');
+    if (answer.number !== undefined) return answer.number;
+    return null;
   }
 
   /**
-   * Determine types of consent given
+   * Detect webhook provider from payload structure
    */
-  determineConsentTypes(consentFields) {
-    const types = new Set();
-
-    for (const [fieldName, fieldData] of Object.entries(consentFields)) {
-      if (fieldData.parsed !== true) continue;
-
-      const lowerField = fieldName.toLowerCase();
-
-      if (lowerField.includes('legal') || lowerField.includes('support')) {
-        types.add(CONSTANTS.CONSENT_TYPES.LEGAL_SUPPORT);
-      }
-      if (lowerField.includes('gdpr') || lowerField.includes('data')) {
-        types.add(CONSTANTS.CONSENT_TYPES.DATA_PROCESSING);
-      }
-      if (lowerField.includes('market')) {
-        types.add(CONSTANTS.CONSENT_TYPES.MARKETING);
-      }
-      if (lowerField.includes('emergency')) {
-        types.add(CONSTANTS.CONSENT_TYPES.EMERGENCY_CONTACT);
-      }
-      if (lowerField.includes('third') || lowerField.includes('share')) {
-        types.add(CONSTANTS.CONSENT_TYPES.THIRD_PARTY_SHARING);
-      }
-      if (lowerField.includes('cookie')) {
-        types.add(CONSTANTS.CONSENT_TYPES.COOKIES);
-      }
-    }
-
-    // Default to data processing if consent given but type unclear
-    if (types.size === 0 && this.determineOverallConsent(consentFields)) {
-      types.add(CONSTANTS.CONSENT_TYPES.DATA_PROCESSING);
-    }
-
-    return Array.from(types);
+  detectProvider(payload) {
+    if (payload.form_response?.form_id) return 'typeform';
+    if (payload.webhook?.id) return 'stripe';
+    if (payload.event_type) return 'webhook_generic';
+    return 'unknown';
   }
 
   /**
-   * Validate and update consent in database
+   * Check if payload is from Typeform
    */
-  async validateAndUpdateConsent(userId, consentData, req = null) {
+  isTypeformPayload(payload) {
+    return !!(payload.form_response && payload.form_response.form_id);
+  }
+
+  /**
+   * Recursively find consent in an object
+   */
+  findConsentInObject(obj, depth = 0) {
+    const result = {
+      found: false,
+      value: false,
+      source: null,
+      originalValue: null,
+      allFields: {}
+    };
+
+    if (depth > 5 || !obj || typeof obj !== 'object') {
+      return result;
+    }
+
+    for (const [key, value] of Object.entries(obj)) {
+      // Skip null/undefined values
+      if (value === null || value === undefined) continue;
+
+      // Check if this field is consent-related
+      if (this.isConsentField(key)) {
+        const consentValue = this.parseConsentValue(value);
+        if (consentValue !== null) {
+          result.found = true;
+          result.value = consentValue;
+          result.source = key;
+          result.originalValue = value;
+          result.allFields[key] = value;
+          return result; // Return first found consent
+        }
+      }
+
+      // Recursively check nested objects
+      if (typeof value === 'object' && !Array.isArray(value)) {
+        const nested = this.findConsentInObject(value, depth + 1);
+        if (nested.found) {
+          return nested;
+        }
+      }
+    }
+
+    return result;
+  }
+
+  // ========================================
+  // WEBHOOK PROCESSING
+  // ========================================
+
+  /**
+   * Process webhook and update user consent
+   * This is the main method to call from webhook endpoints
+   */
+  async processWebhookConsent(userId, payload, provider = null) {
+    try {
+      // Extract consent from webhook
+      const consentData = this.extractConsentFromWebhook(payload, provider);
+
+      // Log what we found
+      this.logger.info(`Webhook consent for ${userId}:`, {
+        hasConsent: consentData.hasConsent,
+        source: consentData.consentSource,
+        provider: consentData.provider
+      });
+
+      // Only update if we found clear consent information
+      if (consentData.consentValue !== null) {
+        const saveResult = await this.saveConsent(userId, consentData);
+
+        return {
+          success: saveResult.success,
+          hasConsent: consentData.hasConsent,
+          source: consentData.consentSource,
+          ...saveResult
+        };
+      }
+
+      return {
+        success: false,
+        message: 'No clear consent found in webhook',
+        consentData
+      };
+
+    } catch (error) {
+      this.logger.error('Error processing webhook consent:', error);
+      return {
+        success: false,
+        error: error.message
+      };
+    }
+  }
+
+  // ========================================
+  // EXPRESS MIDDLEWARE
+  // ========================================
+
+  /**
+   * Middleware to extract consent from request body
+   * Non-blocking - just adds consent info to request
+   */
+  middleware() {
+    return async (req, res, next) => {
+      // Skip if no body
+      if (!req.body || Object.keys(req.body).length === 0) {
+        return next();
+      }
+
+      // Try to extract consent from request
+      try {
+        const consentData = this.findConsentInObject(req.body);
+
+        if (consentData.found) {
+          req.consentFound = true;
+          req.consentValue = consentData.value;
+          req.consentSource = consentData.source;
+
+          this.logger.debug(`Consent found in request: ${consentData.value} from ${consentData.source}`);
+        }
+      } catch (error) {
+        this.logger.error('Error checking request for consent:', error);
+      }
+
+      next();
+    };
+  }
+
+  // ========================================
+  // UTILITY METHODS
+  // ========================================
+
+  /**
+   * Batch check consent for multiple users
+   */
+  async checkMultipleUsers(userIds) {
+    if (!this.supabase || !Array.isArray(userIds) || userIds.length === 0) {
+      return [];
+    }
+
+    try {
+      const { data, error } = await this.supabase
+        .from('user_signup')
+        .select('create_user_id, gdpr_consent, legal_support')
+        .in('create_user_id', userIds);
+
+      if (error) throw error;
+
+      const consentMap = {};
+      for (const user of data || []) {
+        consentMap[user.create_user_id] = !!(
+          user.gdpr_consent === true || 
+          user.gdpr_consent === 'true' ||
+          user.legal_support === 'Yes'
+        );
+      }
+
+      return userIds.map(id => ({
+        userId: id,
+        hasConsent: consentMap[id] || false
+      }));
+
+    } catch (error) {
+      this.logger.error('Error checking multiple users:', error);
+      return userIds.map(id => ({
+        userId: id,
+        hasConsent: false,
+        error: true
+      }));
+    }
+  }
+
+  /**
+   * Clear all consent data for a user (for testing)
+   */
+  async clearConsent(userId) {
     if (!this.supabase) {
-      this.logger.warn('ConsentManager: Supabase not configured');
       return { success: false, error: 'Database not configured' };
     }
 
     try {
-      // Check existing consent
-      const { data: existing } = await this.supabase
+      const { error } = await this.supabase
         .from('user_signup')
-        .select('gdpr_consent, gdpr_consent_date, legal_support')
-        .eq('create_user_id', userId)
-        .single();
-
-      const hasNewConsent = consentData.hasConsent;
-      const consentChanged = existing && (existing.gdpr_consent !== hasNewConsent);
-
-      // Update user record
-      const updateData = {
-        gdpr_consent: hasNewConsent,
-        gdpr_consent_date: hasNewConsent ? new Date().toISOString() : null,
-        legal_support: hasNewConsent ? 'Yes' : 'No',
-        consent_metadata: {
-          types: consentData.consentTypes,
-          fields: Object.keys(consentData.consentFields),
-          provider: consentData.provider,
-          timestamp: consentData.timestamp
-        }
-      };
-
-      const { error: updateError } = await this.supabase
-        .from('user_signup')
-        .update(updateData)
+        .update({
+          gdpr_consent: null,
+          gdpr_consent_date: null,
+          legal_support: null,
+          consent_source: null,
+          consent_metadata: null
+        })
         .eq('create_user_id', userId);
 
-      if (updateError) throw updateError;
+      if (error) throw error;
 
-      // Log consent change
-      if (consentChanged) {
-        await this.logConsentChange(userId, existing.gdpr_consent, hasNewConsent, consentData, req);
-      }
-
-      return {
-        success: true,
-        consent: hasNewConsent,
-        changed: consentChanged,
-        types: consentData.consentTypes
-      };
+      this.logger.info(`Cleared consent for user ${userId}`);
+      return { success: true };
 
     } catch (error) {
-      this.logger.error('ConsentManager: Error updating consent', error);
+      this.logger.error('Error clearing consent:', error);
       return { success: false, error: error.message };
-    }
-  }
-
-  /**
-   * Log consent changes for audit trail
-   */
-  async logConsentChange(userId, oldConsent, newConsent, consentData, req) {
-    if (!this.supabase) return;
-
-    const activityType = newConsent 
-      ? CONSTANTS.GDPR_ACTIVITIES.CONSENT_GRANTED 
-      : CONSTANTS.GDPR_ACTIVITIES.CONSENT_WITHDRAWN;
-
-    try {
-      await this.supabase
-        .from('gdpr_audit_log')
-        .insert({
-          user_id: userId,
-          activity_type: activityType,
-          details: {
-            old_consent: oldConsent,
-            new_consent: newConsent,
-            consent_types: consentData.consentTypes,
-            consent_fields: consentData.consentFields,
-            provider: consentData.provider
-          },
-          ip_address: req?.clientIp || 'unknown',
-          user_agent: req?.get('user-agent') || 'unknown',
-          request_id: req?.requestId || null,
-          timestamp: new Date().toISOString()
-        });
-    } catch (error) {
-      this.logger.error('ConsentManager: Error logging consent change', error);
-    }
-  }
-
-  /**
-   * Get consent summary for a user
-   */
-  async getConsentSummary(userId) {
-    if (!this.supabase) {
-      return { error: 'Database not configured' };
-    }
-
-    try {
-      const { data: user } = await this.supabase
-        .from('user_signup')
-        .select('gdpr_consent, gdpr_consent_date, legal_support, consent_metadata')
-        .eq('create_user_id', userId)
-        .single();
-
-      if (!user) {
-        return { exists: false, hasConsent: false };
-      }
-
-      const { data: auditLogs } = await this.supabase
-        .from('gdpr_audit_log')
-        .select('activity_type, timestamp')
-        .eq('user_id', userId)
-        .in('activity_type', [
-          CONSTANTS.GDPR_ACTIVITIES.CONSENT_GRANTED,
-          CONSTANTS.GDPR_ACTIVITIES.CONSENT_WITHDRAWN,
-          CONSTANTS.GDPR_ACTIVITIES.CONSENT_UPDATED
-        ])
-        .order('timestamp', { ascending: false })
-        .limit(10);
-
-      return {
-        exists: true,
-        hasConsent: user.gdpr_consent,
-        consentDate: user.gdpr_consent_date,
-        legalSupport: user.legal_support === 'Yes',
-        consentTypes: user.consent_metadata?.types || [],
-        history: auditLogs || []
-      };
-
-    } catch (error) {
-      this.logger.error('ConsentManager: Error getting consent summary', error);
-      return { error: error.message };
     }
   }
 }
