@@ -2143,45 +2143,39 @@ app.get('/api/debug/user/:userId', checkSharedKey, async (req, res) => {
   }
 });
 
-// NEW: DEBUG ENDPOINT to inspect webhook payload structure
+// ENHANCED: Debug endpoint with WebhookDebugger module
 app.post('/api/debug/webhook-test', checkSharedKey, async (req, res) => {
-  Logger.info('=== WEBHOOK DEBUG TEST ===');
-  Logger.info('Headers:', JSON.stringify(req.headers, null, 2));
-  Logger.info('Body:', JSON.stringify(req.body, null, 2));
-
-  // Log all fields
-  if (req.body) {
-    Logger.info('Field analysis:');
-    Object.keys(req.body).forEach(key => {
-      Logger.info(`  ${key}: [${typeof req.body[key]}] ${JSON.stringify(req.body[key])}`);
-    });
-
-    // Look for consent-related fields
-    Logger.info('Consent field search:');
-    Object.keys(req.body).forEach(key => {
-      if (key.toLowerCase().includes('legal') ||
-          key.toLowerCase().includes('consent') ||
-          key.toLowerCase().includes('agree') ||
-          key.toLowerCase().includes('share') ||
-          key.toLowerCase().includes('gdpr') ||
-          key.toLowerCase().includes('question') ||
-          key.toLowerCase().includes('q14')) {
-        Logger.info(`  FOUND CONSENT FIELD: ${key} = ${req.body[key]}`);
-      }
+  if (!webhookDebugger) {
+    // Fallback to basic analysis
+    Logger.info('=== WEBHOOK DEBUG TEST (Basic) ===');
+    Logger.info('Headers:', JSON.stringify(req.headers, null, 2));
+    Logger.info('Body:', JSON.stringify(req.body, null, 2));
+    
+    return res.json({
+      success: true,
+      message: 'Basic webhook analysis (debugger not initialized)',
+      fields: Object.keys(req.body || {}),
+      requestId: req.requestId
     });
   }
-
+  
+  // Use enhanced debugger
+  const analysis = webhookDebugger.analyzeWebhook(req, { 
+    store: true, 
+    log: true 
+  });
+  
+  Logger.info('=== ENHANCED WEBHOOK ANALYSIS ===');
+  Logger.info('Provider:', analysis.provider);
+  Logger.info('Structure:', analysis.structure.type);
+  Logger.info('Extracted Fields:', analysis.fields);
+  Logger.info('Validation:', analysis.validation);
+  Logger.info('Recommendations:', analysis.recommendations);
+  
   res.json({
     success: true,
-    message: 'Check server logs for webhook structure',
-    fields: Object.keys(req.body || {}),
-    consentRelatedFields: Object.keys(req.body || {}).filter(key =>
-      key.toLowerCase().includes('legal') ||
-      key.toLowerCase().includes('consent') ||
-      key.toLowerCase().includes('agree') ||
-      key.toLowerCase().includes('share') ||
-      key.toLowerCase().includes('gdpr')
-    ),
+    message: 'Enhanced webhook analysis complete',
+    analysis: analysis,
     requestId: req.requestId
   });
 });
