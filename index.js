@@ -368,6 +368,22 @@ if (supabaseEnabled) {
 }
 
 // ========================================
+// INITIALIZE ENHANCED MODULES - NEW
+// ========================================
+let consentManager = null;
+let webhookDebugger = null;
+
+if (supabaseEnabled) {
+  // Initialize Consent Manager
+  consentManager = new ConsentManager(supabase, Logger);
+  Logger.success('✅ Consent Manager initialized');
+  
+  // Initialize Webhook Debugger
+  webhookDebugger = new WebhookDebugger(supabase, Logger);
+  Logger.success('✅ Webhook Debugger initialized');
+}
+
+// ========================================
 // ADD GDPR MIDDLEWARE - NEW
 // ========================================
 if (gdprModule) {
