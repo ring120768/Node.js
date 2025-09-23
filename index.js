@@ -3592,6 +3592,8 @@ app.post('/webhook/signup', checkSharedKey, async (req, res) => {
     Logger.info('Signup webhook received');
     Logger.debug('Webhook payload:', JSON.stringify(req.body, null, 2));
 
+    const webhookData = req.body;
+
     // Debug with enhanced debugger
     if (webhookDebugger) {
       const analysis = webhookDebugger.analyzeWebhook(req, { store: true });
@@ -3626,8 +3628,6 @@ app.post('/webhook/signup', checkSharedKey, async (req, res) => {
         requestId: req.requestId
       });
     }
-
-    const webhookData = req.body;
 
     if (!webhookData.create_user_id) {
       return res.status(400).json({
