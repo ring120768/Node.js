@@ -1,0 +1,47 @@
+🎯 Implementation of Your Legal Narrative Prompt
+Add this to your index.js after the generateAISummary function (around line 1500):
+javascript// ========================================
+// LEGAL NARRATIVE GENERATOR - UK ACCIDENT REPORTS
+// ========================================
+async function generateLegalNarrative(accidentData, options = {}) {
+  try {
+    if (!process.env.OPENAI_API_KEY) {
+      Logger.info('Cannot generate legal narrative - missing API key');
+      return null;
+    }
+
+    // Extract options with defaults
+    const {
+      targetLength = '350-500 words',
+      includeEvidenceSection = true,
+      includeMissingNotes = true,
+      userId = accidentData.create_user_id || accidentData.driver_id
+    } = options;
+
+    Logger.info('Generating legal narrative', { 
+      userId, 
+      hasAccidentData: !!accidentData,
+      targetLength 
+    });
+
+    // System prompt from your template
+    const systemPrompt = `You are a legal summarisation engine for UK road-traffic incidents. Produce a concise, strictly factual FIRST-PERSON narrative of the accident suitable for insurers and solicitors. Use ONLY the data provided in accident_data. Do NOT invent, infer, or speculate. Use UK spelling, plain legal English, and neutral tone (no blame or fault apportionment). Prefer past tense ("I was…", "I drove…", "the road was…").
+- Treat checkbox-style values like "On/Off" or "Yes/No" as booleans. If value is "Off", treat as false; if "On" or "Yes", treat as true.
+- Dates/times: reproduce exactly as provided (do not re-interpret time zones). If both date and time exist, put them together.
+- If a MAJOR category is missing (e.g., time/location, accident description, injuries, other party, police, evidence), include a brief sentence like: "Assessed: no data provided / not applicable." Minor missing items may be omitted.
+- Keep personally identifying contact details in-line only where they have clear legal/insurance relevance (e.g., other driver name, policy number). Avoid redundant repetition.
+- Numbers and references (policy numbers, police ref, What3Words, reg plates) must be reproduced verbatim.
+- Length target: ${targetLength}.
+- End with an optional "Evidence collected" line if requested.
+- Never include headings except the final optional evidence line. No bullet points in the narrative.
+
+ORDER & COVERAGE (weave into a flowing narrative):
+1) Who I am + my vehicle (name if given, license plate, make/model/colour/condition). Seatbelt/airbags if known.
+2) When & where (date, time, exact location incl. What3Words if present). Weather, visibility, road type, speed limit, junction/traffic control, special conditions.
+3) What happened (direction of travel, estimated speed if given, succinct step-by-step account). Avoid speculation.
+4) Damage & mechanical state (to my vehicle; prior damage vs new damage). Recovery if applicable.
+5) Injuries & medical state (only what is checked/declared). If medical attention was required or received, state who by.
+6) Other vehicle/party (driver name, contact if present; vehicle make/model/plate; insurer/policy; observed damage).
+7) Police & breath test (attendance, officer name/badge/force, reference number; test results if provided).
+8) Witnesses (present/absent; contact kept on file if present).
+9) Declaration/consent only if a clear declaration field is provided—otherwise omit.
