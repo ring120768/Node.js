@@ -1912,6 +1912,33 @@ if (gdprModule) {
   Logger.info('📋 GDPR routes registered');
 }
 
+// Get consent summary for a user
+app.get('/api/consent/summary/:userId', checkSharedKey, async (req, res) => {
+  if (!consentManager) {
+    return res.status(503).json({ 
+      error: 'Consent manager not initialized',
+      requestId: req.requestId 
+    });
+  }
+  
+  try {
+    const summary = await consentManager.getConsentSummary(req.params.userId);
+    
+    res.json({
+      success: true,
+      ...summary,
+      requestId: req.requestId
+    });
+  } catch (error) {
+    Logger.error('Error getting consent summary:', error);
+    res.status(500).json({
+      error: 'Failed to get consent summary',
+      details: error.message,
+      requestId: req.requestId
+    });
+  }
+});
+
 // --- UTILITY FUNCTIONS ---
 function processTypeformData(formResponse) {
   const processedData = {};
