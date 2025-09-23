@@ -1939,6 +1939,35 @@ app.get('/api/consent/summary/:userId', checkSharedKey, async (req, res) => {
   }
 });
 
+// Test consent extraction
+app.post('/api/consent/test-extraction', checkSharedKey, async (req, res) => {
+  if (!consentManager) {
+    return res.status(503).json({ 
+      error: 'Consent manager not initialized',
+      requestId: req.requestId 
+    });
+  }
+  
+  try {
+    const consentData = consentManager.extractConsentFromWebhook(req.body);
+    
+    res.json({
+      success: true,
+      extraction: consentData,
+      requestId: req.requestId
+    });
+  } catch (error) {
+    Logger.error('Error testing consent extraction:', error);
+    res.status(500).json({
+      error: 'Failed to test consent extraction',
+      details: error.message,
+      requestId: req.requestId
+    });
+  }
+});
+
+Logger.info('✅ Consent management endpoints registered');
+
 // --- UTILITY FUNCTIONS ---
 function processTypeformData(formResponse) {
   const processedData = {};
