@@ -1155,7 +1155,7 @@
                 try {
                     const data = JSON.parse(event.data);
                     console.log('WebSocket message:', data);
-                    handleRealtimeUpdate(data);
+                    handleWebSocketMessage(data);
                 } catch (error) {
                     console.error('Error parsing WebSocket message:', error);
                 }
@@ -1248,8 +1248,8 @@
                     statusText.textContent = 'Summary ready for review! ✨';
                     statusDiv.style.background = '#e8f4fd';
 
-                    // Show preview button
-                    displayPreviewReady(data);
+                    // Show preview ready section (handled by handleWebSocketMessage)
+                    // displayPreviewReady(data);
 
                     state.isProcessing = false;
                     console.log('Summary ready for review, isProcessing set to false');
@@ -1714,7 +1714,7 @@
         function displayPreviewReady(data) {
             // Create or update preview ready section
             let previewSection = document.getElementById('previewReadySection');
-            
+
             if (!previewSection) {
                 previewSection = document.createElement('div');
                 previewSection.id = 'previewReadySection';
@@ -1728,7 +1728,7 @@
                     text-align: center;
                     animation: slideUp 0.5s ease;
                 `;
-                
+
                 // Insert after status message
                 const statusMessage = document.getElementById('statusMessage');
                 statusMessage.parentNode.insertBefore(previewSection, statusMessage.nextSibling);
@@ -1788,7 +1788,7 @@
                 }
 
                 showStatus('Summary saved successfully!', 'success');
-                
+
                 // Redirect to declaration page after 2 seconds
                 setTimeout(() => {
                     const params = new URLSearchParams({

@@ -786,7 +786,7 @@ setInterval(() => {
 
       // Get oldest webhooks and remove them
       const webhooksArray = Array.from(webhookDebugger.webhookStore.entries());
-      const sortedWebhooks = webhooksArray.sort((a, b) => 
+      const sortedWebhooks = webhooksArray.sort((a, b) =>
         new Date(a[1].timestamp) - new Date(b[1].timestamp)
       );
 
@@ -1401,8 +1401,9 @@ async function processTranscriptionFromBuffer(queueId, audioBuffer, create_user_
             })
             .eq('id', queueId);
 
-          // Send final real-time update
+          // Send final real-time update with enhanced notification
           broadcastTranscriptionUpdate(queueId.toString(), {
+            type: 'TRANSCRIPTION_COMPLETE',
             status: CONSTANTS.TRANSCRIPTION_STATUS.COMPLETED,
             transcription: transcription,
             summary: summary,
@@ -1480,8 +1481,9 @@ async function processTranscriptionFromBuffer(queueId, audioBuffer, create_user_
       Logger.error('Error updating failed status:', updateError);
     }
 
-    // Send error update via WebSocket
+    // Send error update via WebSocket with notification
     broadcastTranscriptionUpdate(queueId.toString(), {
+      type: 'PROCESSING_ERROR',
       status: CONSTANTS.TRANSCRIPTION_STATUS.FAILED,
       error: error.message,
       message: `Transcription failed: ${error.message}`,
@@ -2050,10 +2052,10 @@ if (gdprModule) {
 // Get consent summary for a user
 app.get('/api/consent/summary/:userId', checkSharedKey, async (req, res) => {
   if (!consentManager) {
-    return res.status(503).json({ 
+    return res.status(503).json({
       error: 'Module not initialized',
       module: 'consentManager',
-      requestId: req.requestId 
+      requestId: req.requestId
     });
   }
 
@@ -2078,10 +2080,10 @@ app.get('/api/consent/summary/:userId', checkSharedKey, async (req, res) => {
 // Test consent extraction
 app.post('/api/consent/test-extraction', checkSharedKey, async (req, res) => {
   if (!consentManager) {
-    return res.status(503).json({ 
+    return res.status(503).json({
       error: 'Module not initialized',
       module: 'consentManager',
-      requestId: req.requestId 
+      requestId: req.requestId
     });
   }
 
@@ -2191,12 +2193,12 @@ Logger.info('✅ Consent management endpoints registered');
 // Generate legal narrative from raw accident data
 app.post('/api/generate-legal-narrative', checkSharedKey, async (req, res) => {
   try {
-    const { 
-      accidentData, 
-      targetLength, 
-      includeEvidenceSection, 
+    const {
+      accidentData,
+      targetLength,
+      includeEvidenceSection,
       includeMissingNotes,
-      userId 
+      userId
     } = req.body;
 
     if (!accidentData) {
@@ -2242,8 +2244,8 @@ app.post('/api/generate-legal-narrative', checkSharedKey, async (req, res) => {
 // Generate legal narrative from user and incident IDs
 app.post('/api/generate-legal-narrative-from-ids', checkSharedKey, checkGDPRConsent, async (req, res) => {
   try {
-    const { 
-      userId, 
+    const {
+      userId,
       incidentId,
       targetLength,
       includeEvidenceSection,
@@ -2457,10 +2459,10 @@ async function prepareAccidentDataForNarrative(userId, incidentId = null) {
       }
     });
 
-    Logger.info('Accident data prepared successfully', { 
-      userId, 
-      incidentId, 
-      fieldCount: Object.keys(accidentData).length 
+    Logger.info('Accident data prepared successfully', {
+      userId,
+      incidentId,
+      fieldCount: Object.keys(accidentData).length
     });
 
     return accidentData;
@@ -2582,7 +2584,7 @@ app.get('/health', async (req, res) => {
     consentManager: consentManager !== null,
     webhookDebugger: webhookDebugger !== null,
     storedWebhooks: webhookDebugger ? webhookDebugger.webhookStore.size : 0,
-    webhookStoreStatus: webhookDebugger ? 
+    webhookStoreStatus: webhookDebugger ?
       (webhookDebugger.webhookStore.size > 800 ? 'warning' : 'healthy') : 'n/a',
     maxWebhookStoreSize: parseInt(process.env.WEBHOOK_STORE_MAX_SIZE) || 1000
   };
