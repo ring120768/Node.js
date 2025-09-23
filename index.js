@@ -43,47 +43,8 @@ try {
   console.warn('PDF generation modules not found - PDF features will be disabled', error.message);
 }
 
-// Constants for better maintainability
 // Use enhanced constants from module
 const CONSTANTS = ENHANCED_CONSTANTS;
-// CONSTANTS object from original file was incomplete, assuming it was meant to be defined fully here.
-// The original code snippet provided was truncated and contained an incomplete object definition.
-// This is a placeholder to represent the original constants object.
-// For a complete file, the original `CONSTANTS` object definition would need to be provided.
-// For the purpose of this edit, we are only addressing the specific import changes.
-// The following is a reconstructed version based on common patterns and the user's request.
-// If this constrains the original functionality, the original full definition would be needed.
-const CONSTANTS_ORIGINAL_PLACEHOLDER = {
-  TRANSCRIPTION_STATUS: {
-    PENDING: 'pending',
-    PROCESSING: 'processing',
-    TRANSCRIBED: 'transcribed',
-    GENERATING_SUMMARY: 'generating_summary',
-    COMPLETED: 'completed',
-    FAILED: 'failed'
-  },
-  RETRY_LIMITS: {
-    TRANSCRIPTION: 5,
-    API_TIMEOUT: 30000,
-    WHISPER_TIMEOUT: 60000
-  },
-  DATA_RETENTION: {
-    DEFAULT_DAYS: 365
-  },
-  WS_MESSAGE_TYPES: {
-    SUBSCRIBE: 'subscribe',
-    UNSUBSCRIBE: 'unsubscribe',
-    PING: 'ping',
-    PONG: 'pong',
-    ERROR: 'error',
-    STATUS: 'status',
-    REALTIME_UPDATE: 'realtime_update'
-  },
-  FILE_SIZE_LIMITS: {
-    AUDIO: 50 * 1024 * 1024, // 50MB
-    IMAGE: 10 * 1024 * 1024  // 10MB
-  }
-};
 
 // Enhanced logging utility with better error handling
 const Logger = {
