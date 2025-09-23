@@ -2020,6 +2020,12 @@ app.get('/health', async (req, res) => {
     module: 'not configured'
   };
 
+  const enhancedModules = {
+    consentManager: consentManager !== null,
+    webhookDebugger: webhookDebugger !== null,
+    storedWebhooks: webhookDebugger ? webhookDebugger.webhookStore.size : 0
+  };
+
   const status = {
     status: 'healthy',
     timestamp: new Date().toISOString(),
@@ -2037,6 +2043,7 @@ app.get('/health', async (req, res) => {
       gdpr_compliance: gdprStatus, // NEW
       what3words: externalServices.what3words
     },
+    enhancedModules: enhancedModules,
     compliance: { // NEW
       uk_gdpr: gdprModule ? 'compliant' : 'not configured',
       ccpa_cpra: gdprModule ? 'compliant' : 'not configured',
@@ -2348,6 +2355,46 @@ app.get('/api/gdpr/admin/dashboard', checkSharedKey, async (req, res) => {
   } catch (error) {
     res.status(500).json({ error: error.message });
   }
+});
+
+// ========================================
+// ENHANCED CONSENT MANAGEMENT ENDPOINTS
+// ========================================
+
+// Get consent summary for a user
+app.get('/api/consent/summary/:userId', checkSharedKey, async (req, res) => {
+  if (!consentManager) {
+    return res.status(503).json({ 
+      error: 'Consent manager not initialized',
+      requestId: req.requestId 
+    });
+  }
+  
+  const summary = await consentManager.getConsentSummary(req.params.userId);
+  
+  res.json({
+    success: true,
+    ...summary,
+    requestId: req.requestId
+  });
+});
+
+// Test consent extraction
+app.post('/api/consent/test-extraction', checkSharedKey, async (req, res) => {
+  if (!consentManager) {
+    return res.status(503).json({ 
+      error: 'Consent manager not initialized',
+      requestId: req.requestId 
+    });
+  }
+  
+  const consentData = consentManager.extractConsentFromWebhook(req.body);
+  
+  res.json({
+    success: true,
+    extraction: consentData,
+    requestId: req.requestId
+  });
 });
 
 // Manual queue processing endpoint for testing
