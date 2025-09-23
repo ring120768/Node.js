@@ -2956,24 +2956,10 @@ app.post('/test/process-transcription-queue', checkSharedKey, async (req, res) =
  * with preserved query parameters for user and incident tracking
  */
 
-// NEW: Redirect from old name to new name (transcription-status.html → transcription.html)
-app.get('/transcription-status.html', (req, res) => {
-  const queryString = req.originalUrl.split('?')[1] || '';
-  const redirectUrl = `/transcription.html${queryString ? '?' + queryString : ''}`;
-
-  Logger.info('File redirect', {
-    from: '/transcription-status.html',
-    to: redirectUrl,
-    params: queryString
-  });
-
-  res.redirect(redirectUrl);
-});
-
 // Redirect /record to main recording interface
 app.get('/record', (req, res) => {
   const queryString = req.originalUrl.split('?')[1] || '';
-  const redirectUrl = `/transcription.html${queryString ? '?' + queryString : ''}`;
+  const redirectUrl = `/transcription-status.html${queryString ? '?' + queryString : ''}`;
 
   Logger.info('Recording redirect', {
     from: '/record',
@@ -2987,7 +2973,7 @@ app.get('/record', (req, res) => {
 // Redirect /transcribe to main recording interface
 app.get('/transcribe', (req, res) => {
   const queryString = req.originalUrl.split('?')[1] || '';
-  const redirectUrl = `/transcription.html${queryString ? '?' + queryString : ''}`;
+  const redirectUrl = `/transcription-status.html${queryString ? '?' + queryString : ''}`;
 
   Logger.info('Recording redirect', {
     from: '/transcribe',
@@ -3001,7 +2987,7 @@ app.get('/transcribe', (req, res) => {
 // Alternative recording endpoint for backward compatibility
 app.get('/recording', (req, res) => {
   const queryString = req.originalUrl.split('?')[1] || '';
-  const redirectUrl = `/transcription.html${queryString ? '?' + queryString : ''}`;
+  const redirectUrl = `/transcription-status.html${queryString ? '?' + queryString : ''}`;
 
   Logger.info('Recording redirect', {
     from: '/recording',
@@ -3015,13 +3001,27 @@ app.get('/recording', (req, res) => {
 // Webhook-specific recording endpoint
 app.get('/webhook/record', (req, res) => {
   const queryString = req.originalUrl.split('?')[1] || '';
-  const redirectUrl = `/transcription.html${queryString ? '?' + queryString : ''}`;
+  const redirectUrl = `/transcription-status.html${queryString ? '?' + queryString : ''}`;
 
   Logger.info('Recording redirect', {
     from: '/webhook/record',
     to: redirectUrl,
     params: queryString,
     source: 'webhook'
+  });
+
+  res.redirect(redirectUrl);
+});
+
+// Create a redirect endpoint for transcription.html to the correct file
+app.get('/transcription.html', (req, res) => {
+  const queryString = req.originalUrl.split('?')[1] || '';
+  const redirectUrl = `/transcription-status.html${queryString ? '?' + queryString : ''}`;
+
+  Logger.info('File redirect', {
+    from: '/transcription.html',
+    to: redirectUrl,
+    params: queryString
   });
 
   res.redirect(redirectUrl);
@@ -3135,8 +3135,8 @@ app.get('/', (req, res) => {
             <h2>🎤 Recording Interface:</h2>
             <div class="endpoint">
                 <strong>Main Recording Page:</strong> <span class="fix-badge">UNIFIED</span><br>
-                <code>GET /transcription.html</code> - Main recording interface<br>
-                <code>GET /transcription-status.html</code> → Redirects to /transcription.html<br>
+                <code>GET /transcription-status.html</code> - Main recording interface<br>
+                <code>GET /transcription.html</code> → Redirects to /transcription-status.html<br>
                 <br>
                 <strong>Recording Access Points:</strong><br>
                 <code>GET /record</code> → Redirects to /transcription.html<br>
@@ -4648,7 +4648,7 @@ server.listen(PORT, () => {
   Logger.info(`🤖 OpenAI: ${process.env.OPENAI_API_KEY ? 'CONFIGURED' : 'NOT CONFIGURED'}`);
   Logger.info(`🔄 Transcription Queue: ${transcriptionQueueInterval ? 'RUNNING' : 'DISABLED'}`);
   Logger.info(`🔌 WebSocket: ACTIVE`);
-  Logger.info(`🎤 Recording Interface: UNIFIED at /transcription.html`);
+  Logger.info(`🎤 Recording Interface: UNIFIED at /transcription-status.html`);
   Logger.info(`⚡ Realtime Updates: ${realtimeChannels.transcriptionChannel ? 'ENABLED' : 'DISABLED (optional)'}`);
   Logger.info(`✅ Trust Proxy: FIXED (set to 1 for proper rate limiting)`);
   Logger.info(`✅ Consent Handling: ENHANCED with GDPR module`);
@@ -4662,7 +4662,7 @@ server.listen(PORT, () => {
   // List available endpoints
   Logger.info('📍 Key endpoints:');
   Logger.info('  - GET  /health - System health check');
-  Logger.info('  - GET  /transcription.html - Main recording interface');
+  Logger.info('  - GET  /transcription-status.html - Main recording interface');
   Logger.info('  - POST /api/whisper/transcribe - Process audio');
   Logger.info('  - POST /webhook/signup - Process signup with consent');
   Logger.info('  - POST /webhook/incident-report - Process incident');
