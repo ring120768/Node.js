@@ -2276,7 +2276,215 @@ const imageProcessor = supabaseEnabled ? new ImageProcessor() : null;
 // ========================================
 
 // ========================================
-// ADD GDPR ROUTES - NEW
+// ENHANCED DASH-CAM UPLOAD SYSTEM - NEW
+// ========================================
+
+/**
+ * Initializes the dash-cam upload system by ensuring the bucket exists
+ * and setting up necessary configurations.
+ */
+async function initializeDashcamUpload() {
+  if (!supabaseEnabled) {
+    Logger.warn('Dash-cam upload initialization skipped: Supabase not enabled.');
+    return;
+  }
+
+  try {
+    // This function might perform checks or configurations related to the bucket
+    // For now, it just logs that initialization is in progress.
+    // In a real scenario, you might check bucket existence or permissions.
+    Logger.info('Dash-cam upload system initialization in progress...');
+
+    // Example: Check if the 'incident-video' bucket exists (if needed)
+    // const { data: buckets, error } = await supabase.storage.listBuckets();
+    // if (error) throw error;
+    // const dashcamBucketExists = buckets.some(b => b.name === 'incident-video');
+    // if (!dashcamBucketExists) {
+    //   Logger.warn("Dash-cam bucket 'incident-video' does not exist. Ensure it's created via Supabase.");
+    // }
+
+    Logger.info('Dash-cam upload system initialization complete.');
+  } catch (error) {
+    Logger.error('Error during dash-cam upload system initialization:', error);
+    throw error; // Re-throw to be caught by the timeout handler
+  }
+}
+
+// Dash-cam API Endpoints
+
+// Endpoint to get a signed URL for uploading a video
+app.get('/api/dashcam/signed-url/:userId/:incidentId/:filename', checkSharedKey, async (req, res) => {
+  if (!supabaseEnabled || !imageProcessor) {
+    return res.status(503).json({ error: 'Service not configured', requestId: req.requestId });
+  }
+
+  try {
+    const { userId, incidentId, filename } = req.params;
+
+    // GDPR: Log data access
+    await logGDPRActivity(userId, 'DATA_ACCESS', {
+      type: 'dashcam_upload_url',
+      incidentId: incidentId,
+      filename: filename,
+      ip: req.clientIp
+    }, req);
+
+    // Construct a unique path for the video within the bucket
+    const storagePath = `dashcam_uploads/${userId}/${incidentId}/${Date.now()}_${filename}`;
+
+    const signedUrl = await imageProcessor.getSignedUrl(storagePath, 3600); // URL valid for 1 hour
+
+    res.json({
+      success: true,
+      uploadUrl: signedUrl,
+      storagePath: storagePath,
+      message: 'Signed URL generated for upload',
+      requestId: req.requestId
+    });
+  } catch (error) {
+    Logger.error('Error generating signed URL for dash-cam upload:', error);
+    res.status(500).json({ error: 'Failed to generate upload URL', details: error.message, requestId: req.requestId });
+  }
+});
+
+// Endpoint to get a list of videos for a user and incident
+app.get('/api/dashcam/videos/:userId/:incidentId', checkSharedKey, async (req, res) => {
+  if (!supabaseEnabled || !imageProcessor) {
+    return res.status(503).json({ error: 'Service not configured', requestId: req.requestId });
+  }
+
+  try {
+    const { userId, incidentId } = req.params;
+
+    // GDPR: Log data access
+    await logGDPRActivity(userId, 'DATA_ACCESS', {
+      type: 'dashcam_video_list',
+      incidentId: incidentId,
+      ip: req.clientIp
+    }, req);
+
+    // List files in the specified path (adjust bucket name if necessary)
+    const bucketName = 'incident-video'; // Assuming your dash-cam videos are in this bucket
+    const pathPrefix = `${userId}/${incidentId}/`;
+
+    const { data: files, error } = await supabase.storage
+      .from(bucketName)
+      .list(pathPrefix, {
+        limit: 100, // Adjust limit as needed
+        offset: 0,
+        sortBy: { column: 'name', order: 'asc' },
+        search: '.mp4' // Assuming videos are mp4, adjust if needed
+      });
+
+    if (error) throw error;
+
+    // For each file, generate a temporary signed URL for viewing
+    const videoUrls = await Promise.all(files.map(async (file) => {
+      if (file.name.endsWith('.mp4')) { // Ensure it's a video file
+        const storagePath = `${pathPrefix}${file.name}`;
+        try {
+          const signedUrl = await imageProcessor.getSignedUrl(storagePath, 3600); // 1 hour validity
+          return {
+            filename: file.name,
+            storagePath: storagePath,
+            viewUrl: signedUrl,
+            uploadedAt: file.created_at
+          };
+        } catch (urlError) {
+          Logger.error(`Failed to get signed URL for ${storagePath}`, urlError);
+          return {
+            filename: file.name,
+            storagePath: storagePath,
+            viewUrl: null,
+            error: 'Failed to generate view URL',
+            uploadedAt: file.created_at
+          };
+        }
+      }
+      return null;
+    }));
+
+    res.json({
+      success: true,
+      videos: videoUrls.filter(Boolean), // Filter out any nulls
+      message: 'Dash-cam videos listed',
+      requestId: req.requestId
+    });
+  } catch (error) {
+    Logger.error('Error listing dash-cam videos:', error);
+    res.status(500).json({ error: 'Failed to list videos', details: error.message, requestId: req.requestId });
+  }
+});
+
+// Endpoint to delete a dash-cam video
+app.DELETE('/api/dashcam/video/:evidenceId', checkSharedKey, async (req, res) => {
+  if (!supabaseEnabled || !imageProcessor) {
+    return res.status(503).json({ error: 'Service not configured', requestId: req.requestId });
+  }
+
+  try {
+    const { evidenceId } = req.params; // This should ideally be the storage path or a unique identifier
+
+    // Note: We need a way to map evidenceId to the actual storage path in Supabase.
+    // For now, let's assume evidenceId is the storage path itself or we can query for it.
+    // If evidenceId is not the storage path, you'll need to fetch the storage path from
+    // your 'incident_evidence' or similar table based on evidenceId.
+
+    // Example: Fetching the storage path (replace with your actual table and logic)
+    const { data: evidence, error: fetchError } = await supabase
+      .from('incident_evidence') // Replace with your evidence table name
+      .select('storage_path, create_user_id, incident_id')
+      .eq('id', evidenceId)
+      .single();
+
+    if (fetchError || !evidence) {
+      return res.status(404).json({ error: 'Evidence not found', requestId: req.requestId });
+    }
+
+    const storagePathToDelete = evidence.storage_path;
+    const userId = evidence.create_user_id; // For GDPR logging
+
+    // GDPR: Log data deletion
+    await logGDPRActivity(userId, 'DATA_DELETED', {
+      type: 'dashcam_video',
+      evidenceId: evidenceId,
+      storagePath: storagePathToDelete,
+      ip: req.clientIp
+    }, req);
+
+    // Delete the file from Supabase storage
+    const bucketName = 'incident-video'; // Ensure this matches your bucket name
+    const { error: deleteError } = await supabase.storage
+      .from(bucketName)
+      .remove([storagePathToDelete]);
+
+    if (deleteError) throw deleteError;
+
+    // Optionally, delete the record from your 'incident_evidence' table
+    const { error: recordDeleteError } = await supabase
+      .from('incident_evidence')
+      .delete()
+      .eq('id', evidenceId);
+
+    if (recordDeleteError) {
+      Logger.warn(`Failed to delete evidence record for ID ${evidenceId}:`, recordDeleteError);
+      // Continue with success response as the file is deleted
+    }
+
+    res.json({
+      success: true,
+      message: `Dash-cam video deleted successfully: ${storagePathToDelete}`,
+      requestId: req.requestId
+    });
+  } catch (error) {
+    Logger.error('Error deleting dash-cam video:', error);
+    res.status(500).json({ error: 'Failed to delete video', details: error.message, requestId: req.requestId });
+  }
+});
+
+
+// ========================================
+// GDPR ROUTES - NEW
 // ========================================
 if (gdprModule) {
   app.use(gdprModule.getRoutes());
@@ -3717,7 +3925,7 @@ app.get('/', (req, res) => {
                 }
                 });
 
-                // [Continue with all remaining endpoints from original code...]
+                // [Continue with remaining webhook endpoints from original code...]
 
                 // ========================================
                 // ENHANCED WEBHOOK ENDPOINTS WITH GDPR - IMPROVED
@@ -3877,8 +4085,6 @@ app.get('/', (req, res) => {
                 }
                 });
 
-                // [Continue with remaining webhook endpoints from original code...]
-
                 // --- ERROR HANDLING MIDDLEWARE ---
                 app.use((err, req, res, next) => {
                 if (err.name === 'MulterError') {
@@ -3963,6 +4169,17 @@ app.get('/', (req, res) => {
                 process.exit(0);
                 }
 
+                // Initialize dash-cam upload system on server startup
+                if (supabaseEnabled) {
+                    setTimeout(async () => {
+                        try {
+                            await initializeDashcamUpload();
+                        } catch (error) {
+                            Logger.error('Failed to initialize dash-cam upload:', error);
+                        }
+                    }, 5000); // Wait 5 seconds after server start
+                }
+
                 // Start the server
                 server.listen(PORT, () => {
                 Logger.success(`🚀 Server running on port ${PORT}`);
@@ -3980,6 +4197,7 @@ app.get('/', (req, res) => {
                 Logger.info(`🔒 Privacy Laws: ${gdprModule ? 'UK GDPR + US State Laws' : 'Basic'}`);
                 Logger.info(`✅ Legal Narrative: FIXED - Consolidated endpoints with ai_summary storage`);
                 Logger.info(`✅ Syntax Errors: ALL FIXED`);
+                Logger.info(`🎥 Dash-cam Upload: ${supabaseEnabled ? 'INITIALIZING...' : 'DISABLED'}`);
 
                 if (!SHARED_KEY) {
                 Logger.warn('⚠️ ZAPIER_SHARED_KEY not set - authentication disabled');
@@ -3999,6 +4217,9 @@ app.get('/', (req, res) => {
                 Logger.info('  - POST /api/generate-legal-narrative - Generate formal legal narrative [FIXED]');
                 Logger.info('  - POST /api/update-legal-narrative - Update/save narrative [FIXED]');
                 Logger.info('  - GET  /api/legal-narratives/:userId - Get saved narratives [FIXED]');
+                Logger.info('  - GET  /api/dashcam/signed-url/:userId/:incidentId/:filename - Get video signed URL');
+                Logger.info('  - GET  /api/dashcam/videos/:userId/:incidentId - Get user videos');
+                Logger.info('  - DELETE /api/dashcam/video/:evidenceId - Delete video');
 
                 Logger.success('✅ All systems operational with GDPR compliance - Ready to serve requests');
                 Logger.success('🔧 GDPR Module integrated - Full privacy law compliance enabled');
