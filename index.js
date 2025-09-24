@@ -2417,7 +2417,7 @@ app.get('/api/dashcam/videos/:userId/:incidentId', checkSharedKey, async (req, r
 });
 
 // Endpoint to delete a dash-cam video
-app.DELETE('/api/dashcam/video/:evidenceId', checkSharedKey, async (req, res) => {
+app.delete('/api/dashcam/video/:evidenceId', checkSharedKey, async (req, res) => {
   if (!supabaseEnabled || !imageProcessor) {
     return res.status(503).json({ error: 'Service not configured', requestId: req.requestId });
   }
