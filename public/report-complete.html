@@ -201,6 +201,102 @@
             transform: scale(0.98);
         }
 
+        /* Dash-cam Upload Styles */
+        .dashcam-btn {
+            width: 100%;
+            padding: 15px;
+            background: #8b5cf6;
+            color: white;
+            border: none;
+            border-radius: 10px;
+            font-size: 16px;
+            font-weight: bold;
+            cursor: pointer;
+            margin-bottom: 15px;
+            transition: all 0.3s;
+        }
+
+        .dashcam-btn:hover {
+            background: #7c3aed;
+        }
+
+        .dashcam-btn:active {
+            transform: scale(0.98);
+        }
+
+        .dashcam-btn:disabled {
+            background: #9ca3af;
+            cursor: not-allowed;
+        }
+
+        .dashcam-preview {
+            margin-top: 15px;
+            display: none;
+        }
+
+        .dashcam-preview.active {
+            display: block;
+        }
+
+        .dashcam-preview video {
+            width: 100%;
+            max-height: 200px;
+            border-radius: 10px;
+            background: #000;
+        }
+
+        .dashcam-info {
+            background: #f3f4f6;
+            padding: 10px;
+            border-radius: 8px;
+            margin-top: 10px;
+            font-size: 14px;
+        }
+
+        .dashcam-progress {
+            width: 100%;
+            height: 8px;
+            background: #e5e7eb;
+            border-radius: 4px;
+            margin-top: 10px;
+            overflow: hidden;
+            display: none;
+        }
+
+        .dashcam-progress.active {
+            display: block;
+        }
+
+        .dashcam-progress-bar {
+            height: 100%;
+            background: #8b5cf6;
+            border-radius: 4px;
+            transition: width 0.3s ease;
+            width: 0%;
+        }
+
+        .dashcam-status {
+            text-align: center;
+            margin-top: 10px;
+            font-size: 14px;
+            color: #6b7280;
+            display: none;
+        }
+
+        .dashcam-status.active {
+            display: block;
+        }
+
+        .dashcam-status.success {
+            color: #10b981;
+            font-weight: bold;
+        }
+
+        .dashcam-status.error {
+            color: #ef4444;
+            font-weight: bold;
+        }
+
         .additional-controls {
             display: flex;
             gap: 10px;
@@ -527,6 +623,24 @@
                 📝 Start New Report
             </button>
 
+            <!-- Dash-cam Upload Button -->
+            <button class="dashcam-btn" id="dashcamBtn">
+                📹 Add Dash-cam Video
+            </button>
+
+            <!-- Hidden file input -->
+            <input type="file" id="dashcamInput" accept="video/*" style="display: none;">
+
+            <!-- Dash-cam Preview -->
+            <div class="dashcam-preview" id="dashcamPreview">
+                <video id="dashcamVideo" controls></video>
+                <div class="dashcam-info" id="dashcamInfo"></div>
+                <div class="dashcam-progress" id="dashcamProgress">
+                    <div class="dashcam-progress-bar" id="dashcamProgressBar"></div>
+                </div>
+                <div class="dashcam-status" id="dashcamStatus"></div>
+            </div>
+
             <div class="additional-controls">
                 <button class="additional-btn witness-btn" onclick="openWitnessModal()">
                     👥 Other Witnesses
@@ -678,6 +792,7 @@
         </div>
     </div>
 
+    <script src="dashcamUploader.js"></script>
     <script>
         // ============================
         // Global State Management
@@ -691,6 +806,8 @@
             userProfile: null,
             isInitialized: false
         };
+
+        let dashcamUploader = null;
 
         // ============================
         // Configuration and Initialization
@@ -800,6 +917,133 @@
                 incidentId: appState.incidentId ? appState.incidentId.substring(0, 8) + '...' : null,
                 hasConsent: appState.hasGDPRConsent
             });
+        }
+
+        // ============================
+        // Dash-cam Upload Initialization
+        // ============================
+        function initializeDashcam() {
+            if (appState.userId) {
+                // Initialize the uploader
+                dashcamUploader = new DashcamUploader({
+                    userId: appState.userId,
+                    incidentId: appState.incidentId || 'temp_' + Date.now(),
+                    onProgress: (progress) => {
+                        updateDashcamProgress(progress);
+                    },
+                    onSuccess: (result) => {
+                        showDashcamSuccess('Video uploaded successfully!');
+                        console.log('Dash-cam upload success:', result);
+                    },
+                    onError: (error) => {
+                        showDashcamError(error.message);
+                        console.error('Dash-cam upload error:', error);
+                    }
+                });
+
+                // Setup button click handler
+                document.getElementById('dashcamBtn').addEventListener('click', () => {
+                    if (!appState.hasGDPRConsent) {
+                        alert('Please provide consent to upload dash-cam videos.');
+                        redirectToConsent();
+                        return;
+                    }
+                    document.getElementById('dashcamInput').click();
+                });
+
+                // Setup file input change handler
+                document.getElementById('dashcamInput').addEventListener('change', (event) => {
+                    const file = event.target.files[0];
+                    if (file) {
+                        handleDashcamFile(file);
+                    }
+                });
+            } else {
+                console.warn('User ID not available - dash-cam upload disabled');
+                document.getElementById('dashcamBtn').disabled = true;
+                document.getElementById('dashcamBtn').textContent = '📹 Sign in to upload video';
+            }
+        }
+
+        // Handle dash-cam file selection
+        async function handleDashcamFile(file) {
+            // Show preview
+            showDashcamPreview(file);
+
+            // Upload the file
+            if (dashcamUploader) {
+                try {
+                    await dashcamUploader.uploadVideo(file);
+                } catch (error) {
+                    console.error('Upload failed:', error);
+                }
+            }
+        }
+
+        // Show video preview
+        function showDashcamPreview(file) {
+            const preview = document.getElementById('dashcamPreview');
+            const video = document.getElementById('dashcamVideo');
+            const info = document.getElementById('dashcamInfo');
+
+            // Create object URL for preview
+            const videoUrl = URL.createObjectURL(file);
+            video.src = videoUrl;
+
+            // Show file info
+            const fileSizeMB = (file.size / (1024 * 1024)).toFixed(2);
+            info.innerHTML = `
+                <strong>📹 Video Selected:</strong><br>
+                Name: ${file.name}<br>
+                Size: ${fileSizeMB} MB<br>
+                Type: ${file.type}
+            `;
+
+            preview.classList.add('active');
+        }
+
+        // Update upload progress
+        function updateDashcamProgress(progress) {
+            const progressElement = document.getElementById('dashcamProgress');
+            const progressBar = document.getElementById('dashcamProgressBar');
+            const status = document.getElementById('dashcamStatus');
+
+            progressElement.classList.add('active');
+            status.classList.add('active');
+
+            progressBar.style.width = `${progress}%`;
+            status.textContent = `Uploading... ${Math.round(progress)}%`;
+            status.className = 'dashcam-status active';
+        }
+
+        // Show success message
+        function showDashcamSuccess(message) {
+            const status = document.getElementById('dashcamStatus');
+            const progress = document.getElementById('dashcamProgress');
+
+            progress.classList.remove('active');
+            status.textContent = message;
+            status.className = 'dashcam-status active success';
+
+            // Hide success message after 3 seconds
+            setTimeout(() => {
+                status.classList.remove('active');
+            }, 3000);
+        }
+
+        // Show error message
+        function showDashcamError(message) {
+            const status = document.getElementById('dashcamStatus');
+            const progress = document.getElementById('dashcamProgress');
+
+            progress.classList.remove('active');
+            status.textContent = message;
+            status.className = 'dashcam-status active error';
+
+            // Hide error message after 5 seconds
+            setTimeout(() => {
+                status.classList.remove('active');
+            }, 5000);
         }
 
         // ============================
@@ -1250,6 +1494,9 @@
             if (supabaseInitialized) {
                 // Load user profile and check consent
                 await loadUserProfile();
+
+                // Initialize dash-cam functionality
+                initializeDashcam();
             } else {
                 console.log('Operating without Supabase - limited functionality');
                 // Still allow emergency calls and basic navigation
