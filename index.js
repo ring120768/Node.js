@@ -3447,6 +3447,146 @@ app.get('/', (req, res) => {
         .status { padding: 10px; background: #4CAF50; color: white; border-radius: 5px; display: inline-block; }
         .gdpr-notice {
             background: #2196F3;
+
+
+// ========================================
+// AUDIO EVIDENCE STORAGE ENDPOINT - NO TRANSCRIPTION
+// ========================================
+app.post('/api/store-evidence-audio', upload.single('audio'), async (req, res) => {
+  try {
+    Logger.info('🎤 Audio evidence storage request received');
+
+    if (!req.file) {
+      return res.status(400).json({
+        error: 'No audio file provided',
+        requestId: req.requestId
+      });
+    }
+
+    // Extract metadata from request
+    const user_id = req.body.user_id || req.query.user_id || req.headers['x-user-id'];
+    const incident_id = req.body.incident_id || req.query.incident_id;
+    const timestamp = req.body.timestamp || new Date().toISOString();
+    const latitude = req.body.latitude || null;
+    const longitude = req.body.longitude || null;
+    const accuracy = req.body.accuracy || null;
+    const what3words = req.body.what3words || null;
+
+    if (!user_id) {
+      return res.status(400).json({
+        error: 'user_id is required for evidence storage',
+        requestId: req.requestId
+      });
+    }
+
+    Logger.info(`📁 Storing audio evidence for user: ${user_id}`);
+
+    // GDPR: Log evidence storage activity
+    if (gdprModule) {
+      await gdprModule.auditLog(user_id, 'AUDIO_EVIDENCE_STORED', {
+        type: 'ambient_audio',
+        size: req.file.size,
+        incident_id: incident_id,
+        has_location: !!(latitude && longitude)
+      }, req);
+    }
+
+    // Generate storage path for evidence
+    const evidenceTimestamp = Date.now();
+    const fileName = `${user_id}/evidence/ambient_${evidenceTimestamp}.webm`;
+
+    // Upload to Supabase storage
+    const { data: uploadData, error: uploadError } = await supabase.storage
+      .from('incident-audio')
+      .upload(fileName, req.file.buffer, {
+        contentType: req.file.mimetype,
+        upsert: false
+      });
+
+    if (uploadError) {
+      Logger.error(`Audio evidence upload error: ${uploadError.message}`);
+      return res.status(500).json({
+        error: 'Failed to upload audio evidence',
+        details: uploadError.message,
+        requestId: req.requestId
+      });
+    }
+
+    // Get the public URL
+    const { data: { publicUrl } } = supabase.storage
+      .from('incident-audio')
+      .getPublicUrl(fileName);
+
+    Logger.info(`📁 Audio evidence uploaded: ${fileName}`);
+
+    // Create evidence record in incident_evidence table
+    const evidenceRecord = {
+      user_id: user_id,
+      incident_id: incident_id,
+      kind: 'audio',
+      source: 'ambient_capture',
+      storage_path: fileName,
+      storage_url: publicUrl,
+      file_size: req.file.buffer.length,
+      mime_type: req.file.mimetype,
+      captured_at: timestamp,
+      metadata: {
+        latitude: latitude ? parseFloat(latitude) : null,
+        longitude: longitude ? parseFloat(longitude) : null,
+        accuracy: accuracy ? parseFloat(accuracy) : null,
+        what3words: what3words,
+        duration_estimate: 'unknown',
+        capture_method: 'browser_mediarecorder',
+        device_info: req.get('user-agent')
+      },
+      created_at: new Date().toISOString()
+    };
+
+    const { data: evidenceData, error: evidenceError } = await supabase
+      .from('incident_evidence')
+      .insert([evidenceRecord])
+      .select()
+      .single();
+
+    if (evidenceError) {
+      Logger.error('Evidence record creation error:', evidenceError);
+      // Don't fail completely - the file is still stored
+      return res.json({
+        success: true,
+        evidenceId: `temp_${evidenceTimestamp}`,
+        message: 'Audio evidence stored successfully (record creation partial)',
+        storage_path: fileName,
+        storage_url: publicUrl,
+        warning: 'Evidence table record may be incomplete',
+        requestId: req.requestId
+      });
+    }
+
+    Logger.success(`✅ Audio evidence stored with ID: ${evidenceData.id}`);
+
+    res.json({
+      success: true,
+      evidenceId: evidenceData.id,
+      message: 'Audio evidence captured and secured successfully',
+      storage_path: fileName,
+      storage_url: publicUrl,
+      user_id: user_id,
+      incident_id: incident_id,
+      captured_at: timestamp,
+      requestId: req.requestId
+    });
+
+  } catch (error) {
+    Logger.error('Audio evidence storage error:', error);
+    res.status(500).json({
+      error: 'Failed to store audio evidence',
+      details: error.message,
+      requestId: req.requestId
+    });
+  }
+});
+
+
             color: white;
             padding: 15px;
             border-radius: 5px;

@@ -993,7 +993,7 @@
 
                         mediaRecorder.onstop = async () => {
                             const audioBlob = new Blob(audioChunks, { type: 'audio/webm' });
-                            await sendToWhisper(audioBlob);
+                            await captureAndStoreAudio(audioBlob);
 
                             // Stop all tracks
                             stream.getTracks().forEach(track => track.stop());
@@ -1060,31 +1060,47 @@
             }
         }
 
-        async function sendToWhisper(audioBlob) {
+        async function captureAndStoreAudio(audioBlob) {
             const formData = new FormData();
             formData.append('audio', audioBlob, 'recording.webm');
+            
+            // Add metadata
+            formData.append('user_id', userData?.uid || 'anonymous');
+            formData.append('incident_id', sessionStorage.getItem('currentIncidentId') || Date.now().toString());
+            formData.append('timestamp', new Date().toISOString());
+            
+            // Add location data if available
+            if (userLocation) {
+                formData.append('latitude', userLocation.lat);
+                formData.append('longitude', userLocation.lng);
+                formData.append('accuracy', userLocation.accuracy);
+            }
+            
+            // Add what3words if available
+            if (what3wordsData) {
+                formData.append('what3words', what3wordsData);
+            }
 
             try {
                 const voiceStatus = document.getElementById('voiceStatus');
-                voiceStatus.textContent = 'Transcribing audio with AI...';
+                voiceStatus.textContent = 'Securing audio evidence...';
 
-                const response = await fetch('/api/whisper/transcribe', {
+                const response = await fetch('/api/store-evidence-audio', {
                     method: 'POST',
                     body: formData
                 });
 
                 if (response.ok) {
                     const data = await response.json();
-                    voiceTranscription = data.text;
-                    voiceStatus.textContent = 'Audio transcribed successfully!';
-                    console.log('Transcription received:', voiceTranscription);
+                    voiceStatus.textContent = '✅ Audio evidence captured and secured';
+                    console.log('Audio evidence stored:', data);
                 } else {
-                    voiceStatus.textContent = 'Transcription failed. Audio saved for manual review.';
-                    console.error('Whisper API error:', response.status);
+                    voiceStatus.textContent = '❌ Failed to secure audio evidence';
+                    console.error('Audio storage error:', response.status);
                 }
             } catch (error) {
-                console.error('Whisper transcription error:', error);
-                document.getElementById('voiceStatus').textContent = 'Transcription unavailable. Audio saved.';
+                console.error('Audio storage error:', error);
+                document.getElementById('voiceStatus').textContent = '❌ Failed to secure audio evidence';
             }
         }
 
