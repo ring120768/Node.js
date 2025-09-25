@@ -3484,28 +3484,28 @@ app.post('/api/store-evidence-audio', upload.single('audio'), async (req, res) =
     // GDPR: Log evidence storage activity
     if (gdprModule) {
       await gdprModule.auditLog(user_id, 'AUDIO_EVIDENCE_STORED', {
-        type: 'ambient_audio',
+        type: 'wire_tap_audio',
         size: req.file.size,
         incident_id: incident_id,
         has_location: !!(latitude && longitude)
       }, req);
     }
 
-    // Generate storage path for evidence
-    const fileName = `audio/${user_id}/incident_${incident_id || 'unknown'}/ambient_${Date.now()}.webm`;
+    // Generate storage path for wire-tap evidence
+    const fileName = `${user_id}/incident_${incident_id || 'temp'}/wiretap_${Date.now()}.webm`;
 
-    // Upload to Supabase storage
+    // Upload to Supabase wire-tap storage bucket
     const { data: uploadData, error: uploadError } = await supabase.storage
-      .from('dash-cam-upload')
+      .from('wire-tap')
       .upload(fileName, req.file.buffer, {
         contentType: req.file.mimetype,
         upsert: false
       });
 
     if (uploadError) {
-      Logger.error(`Audio evidence upload error: ${uploadError.message}`);
+      Logger.error(`Wire-tap audio upload error: ${uploadError.message}`);
       return res.status(500).json({
-        error: 'Failed to upload audio evidence',
+        error: 'Failed to upload wire-tap audio evidence',
         details: uploadError.message,
         requestId: req.requestId
       });
@@ -3513,22 +3513,18 @@ app.post('/api/store-evidence-audio', upload.single('audio'), async (req, res) =
 
     // Get the public URL
     const { data: { publicUrl } } = supabase.storage
-      .from('dash-cam-upload')
+      .from('wire-tap')
       .getPublicUrl(fileName);
 
-    Logger.info(`📁 Audio evidence uploaded: ${fileName}`);
+    Logger.info(`📁 Wire-tap audio uploaded: ${fileName}`);
 
-    // Create evidence record in incident_evidence table
+    // Create evidence record in incident_images table
     const evidenceRecord = {
-      user_id: user_id,
-      incident_id: incident_id,
-      kind: 'audio',
-      source: 'ambient_capture',
-      storage_path: fileName,
-      storage_url: publicUrl,
-      file_size: req.file.buffer.length,
-      mime_type: req.file.mimetype,
-      captured_at: timestamp,
+      create_user_id: user_id,
+      incident_report_id: incident_id,
+      image_type: 'wire_tap_audio',
+      file_name: fileName,
+      gdpr_consent: { consent_given: true },
       metadata: {
         latitude: latitude ? parseFloat(latitude) : null,
         longitude: longitude ? parseFloat(longitude) : null,
@@ -3536,24 +3532,29 @@ app.post('/api/store-evidence-audio', upload.single('audio'), async (req, res) =
         what3words: what3words,
         duration_estimate: 'unknown',
         capture_method: 'browser_mediarecorder',
-        device_info: req.get('user-agent')
+        device_info: req.get('user-agent'),
+        file_size: req.file.buffer.length,
+        mime_type: req.file.mimetype,
+        storage_url: publicUrl,
+        captured_at: timestamp
       },
-      created_at: new Date().toISOString()
+      uploaded_at: new Date().toISOString(),
+      is_anonymized: false
     };
 
     const { data: evidenceData, error: evidenceError } = await supabase
-      .from('incident_evidence')
+      .from('incident_images')
       .insert([evidenceRecord])
       .select()
       .single();
 
     if (evidenceError) {
-      Logger.error('Evidence record creation error:', evidenceError);
+      Logger.error('Wire-tap evidence record creation error:', evidenceError);
       // Don't fail completely - the file is still stored
       return res.json({
         success: true,
-        evidenceId: `temp_${evidenceTimestamp}`,
-        message: 'Audio evidence stored successfully (record creation partial)',
+        evidenceId: `temp_${Date.now()}`,
+        message: 'Wire-tap audio stored successfully (record creation partial)',
         storage_path: fileName,
         storage_url: publicUrl,
         warning: 'Evidence table record may be incomplete',
@@ -3561,12 +3562,12 @@ app.post('/api/store-evidence-audio', upload.single('audio'), async (req, res) =
       });
     }
 
-    Logger.success(`✅ Audio evidence stored with ID: ${evidenceData.id}`);
+    Logger.success(`✅ Wire-tap audio evidence stored with ID: ${evidenceData.id}`);
 
     res.json({
       success: true,
       evidenceId: evidenceData.id,
-      message: 'Audio evidence captured and secured successfully',
+      message: 'Wire-tap audio evidence captured and secured successfully',
       storage_path: fileName,
       storage_url: publicUrl,
       user_id: user_id,
