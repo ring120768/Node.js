@@ -3492,12 +3492,11 @@ app.post('/api/store-evidence-audio', upload.single('audio'), async (req, res) =
     }
 
     // Generate storage path for evidence
-    const evidenceTimestamp = Date.now();
-    const fileName = `${user_id}/evidence/ambient_${evidenceTimestamp}.webm`;
+    const fileName = `audio/${user_id}/incident_${incident_id || 'unknown'}/ambient_${Date.now()}.webm`;
 
     // Upload to Supabase storage
     const { data: uploadData, error: uploadError } = await supabase.storage
-      .from('incident-audio')
+      .from('dash-cam-upload')
       .upload(fileName, req.file.buffer, {
         contentType: req.file.mimetype,
         upsert: false
@@ -3514,7 +3513,7 @@ app.post('/api/store-evidence-audio', upload.single('audio'), async (req, res) =
 
     // Get the public URL
     const { data: { publicUrl } } = supabase.storage
-      .from('incident-audio')
+      .from('dash-cam-upload')
       .getPublicUrl(fileName);
 
     Logger.info(`📁 Audio evidence uploaded: ${fileName}`);
