@@ -3425,7 +3425,7 @@ app.get('/transcription.html', (req, res) => {
 });
 
 // --- MAINROUTES ---
-app.get('/', (req, res) => {
+app.get('/status', (req, res) => {
   const gdprBadges = gdprModule ? `
     <span class="privacy-badge">UK GDPR</span>
     <span class="privacy-badge">CCPA/CPRA</span>
