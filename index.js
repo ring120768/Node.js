@@ -253,8 +253,8 @@ async function checkGDPRConsent(req, res, next) {
 
   if (!userId) {
     // No user ID - add warning to request and continue
-    req.gdprWarning = 'No user ID provided';
     req.hasConsent = false;
+    req.gdprWarning = 'No user ID provided';
     return next();
   }
 
@@ -4067,4 +4067,3 @@ server.listen(PORT, () => {
 
 // Export for testing
 module.exports = { app, server, gdprModule };
-```json\n?/g, '').replace(/
