@@ -17,7 +17,7 @@ const supabase = createClient(
 app.get('/api/reports/:userId/pdf', async (req, res) => {
   const { userId } = req.params;
   const requestIP = req.ip;
-
+  
   try {
     // Validate UUID format
     const uuidPattern = /^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i;
@@ -114,7 +114,7 @@ app.get('/api/reports/:userId/pdf', async (req, res) => {
           file.name.toLowerCase().includes(userId.toLowerCase()) && 
           file.name.endsWith('.pdf')
         );
-
+        
         if (userFile) {
           foundFilename = userFile.name;
         }
@@ -143,7 +143,7 @@ app.get('/api/reports/:userId/pdf', async (req, res) => {
 
     // Fetch the PDF file
     const response = await fetch(signedUrlData.signedUrl);
-
+    
     if (!response.ok) {
       return res.status(500).json({ 
         error: 'Unable to retrieve report file',
@@ -178,7 +178,7 @@ app.get('/api/reports/:userId/pdf', async (req, res) => {
 
   } catch (error) {
     console.error('Error retrieving PDF report:', error);
-
+    
     // Log error for debugging
     await supabase.from('gdpr_audit_log').insert({
       user_id: userId || 'unknown',
@@ -203,7 +203,7 @@ app.get('/api/reports/:userId/pdf', async (req, res) => {
  */
 app.get('/api/reports/:userId/status', async (req, res) => {
   const { userId } = req.params;
-
+  
   try {
     // Validate UUID format
     const uuidPattern = /^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i;
