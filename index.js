@@ -1115,7 +1115,7 @@ async function generateLegalNarrative(transcriptionText, incidentData, userId, o
 
     // Prepare incident data if it's actually the options object
     let actualIncidentData = incidentData;
-    if (incidentData && typeof incidentData === 'object' && 
+    if (incidentData && typeof incidentData === 'object' &&
         (incidentData.targetLength || incidentData.includeEvidenceSection !== undefined)) {
       // incidentData is actually options, extract from database
       actualIncidentData = await prepareAccidentDataForNarrative(userId, incidentData.incidentId);
@@ -2573,7 +2573,7 @@ app.post('/api/generate-legal-narrative', checkSharedKey, async (req, res) => {
     const finalIncidentId = incident_report_id || incidentId;
     const finalTranscription = transcription_text || transcriptionText;
     const finalTargetLength = target_length || targetLength || "350-500 words";
-    const finalIncludeEvidence = include_evidence_section !== undefined ? include_evidence_section : 
+    const finalIncludeEvidence = include_evidence_section !== undefined ? include_evidence_section :
                                  includeEvidenceSection !== undefined ? includeEvidenceSection : true;
     const finalIncludeMissing = include_missing_notes !== undefined ? include_missing_notes :
                                 includeMissingNotes !== undefined ? includeMissingNotes : true;
@@ -2596,9 +2596,9 @@ app.post('/api/generate-legal-narrative', checkSharedKey, async (req, res) => {
       });
     }
 
-    Logger.info('📝 Legal narrative generation requested', { 
+    Logger.info('📝 Legal narrative generation requested', {
       userId: finalUserId,
-      incidentId: finalIncidentId 
+      incidentId: finalIncidentId
     });
 
     // If we have transcription text, update it in the database first
@@ -3424,7 +3424,7 @@ app.get('/transcription.html', (req, res) => {
   res.redirect(redirectUrl);
 });
 
-// --- MAIN ROUTES ---
+// --- MAINROUTES ---
 app.get('/', (req, res) => {
   const gdprBadges = gdprModule ? `
     <span class="privacy-badge">UK GDPR</span>
@@ -3447,146 +3447,6 @@ app.get('/', (req, res) => {
         .status { padding: 10px; background: #4CAF50; color: white; border-radius: 5px; display: inline-block; }
         .gdpr-notice {
             background: #2196F3;
-
-
-// ========================================
-// AUDIO EVIDENCE STORAGE ENDPOINT - NO TRANSCRIPTION
-// ========================================
-app.post('/api/store-evidence-audio', upload.single('audio'), async (req, res) => {
-  try {
-    Logger.info('🎤 Audio evidence storage request received');
-
-    if (!req.file) {
-      return res.status(400).json({
-        error: 'No audio file provided',
-        requestId: req.requestId
-      });
-    }
-
-    // Extract metadata from request
-    const user_id = req.body.user_id || req.query.user_id || req.headers['x-user-id'];
-    const incident_id = req.body.incident_id || req.query.incident_id;
-    const timestamp = req.body.timestamp || new Date().toISOString();
-    const latitude = req.body.latitude || null;
-    const longitude = req.body.longitude || null;
-    const accuracy = req.body.accuracy || null;
-    const what3words = req.body.what3words || null;
-
-    if (!user_id) {
-      return res.status(400).json({
-        error: 'user_id is required for evidence storage',
-        requestId: req.requestId
-      });
-    }
-
-    Logger.info(`📁 Storing audio evidence for user: ${user_id}`);
-
-    // GDPR: Log evidence storage activity
-    if (gdprModule) {
-      await gdprModule.auditLog(user_id, 'AUDIO_EVIDENCE_STORED', {
-        type: 'wire_tap_audio',
-        size: req.file.size,
-        incident_id: incident_id,
-        has_location: !!(latitude && longitude)
-      }, req);
-    }
-
-    // Generate storage path for wire-tap evidence
-    const fileName = `${user_id}/incident_${incident_id || 'temp'}/wiretap_${Date.now()}.webm`;
-
-    // Upload to Supabase wire-tap storage bucket
-    const { data: uploadData, error: uploadError } = await supabase.storage
-      .from('wire-tap')
-      .upload(fileName, req.file.buffer, {
-        contentType: req.file.mimetype,
-        upsert: false
-      });
-
-    if (uploadError) {
-      Logger.error(`Wire-tap audio upload error: ${uploadError.message}`);
-      return res.status(500).json({
-        error: 'Failed to upload wire-tap audio evidence',
-        details: uploadError.message,
-        requestId: req.requestId
-      });
-    }
-
-    // Get the public URL
-    const { data: { publicUrl } } = supabase.storage
-      .from('wire-tap')
-      .getPublicUrl(fileName);
-
-    Logger.info(`📁 Wire-tap audio uploaded: ${fileName}`);
-
-    // Create evidence record in incident_images table
-    const evidenceRecord = {
-      create_user_id: user_id,
-      incident_report_id: incident_id,
-      image_type: 'wire_tap_audio',
-      file_name: fileName,
-      gdpr_consent: { consent_given: true },
-      metadata: {
-        latitude: latitude ? parseFloat(latitude) : null,
-        longitude: longitude ? parseFloat(longitude) : null,
-        accuracy: accuracy ? parseFloat(accuracy) : null,
-        what3words: what3words,
-        duration_estimate: 'unknown',
-        capture_method: 'browser_mediarecorder',
-        device_info: req.get('user-agent'),
-        file_size: req.file.buffer.length,
-        mime_type: req.file.mimetype,
-        storage_url: publicUrl,
-        captured_at: timestamp
-      },
-      uploaded_at: new Date().toISOString(),
-      is_anonymized: false
-    };
-
-    const { data: evidenceData, error: evidenceError } = await supabase
-      .from('incident_images')
-      .insert([evidenceRecord])
-      .select()
-      .single();
-
-    if (evidenceError) {
-      Logger.error('Wire-tap evidence record creation error:', evidenceError);
-      // Don't fail completely - the file is still stored
-      return res.json({
-        success: true,
-        evidenceId: `temp_${Date.now()}`,
-        message: 'Wire-tap audio stored successfully (record creation partial)',
-        storage_path: fileName,
-        storage_url: publicUrl,
-        warning: 'Evidence table record may be incomplete',
-        requestId: req.requestId
-      });
-    }
-
-    Logger.success(`✅ Wire-tap audio evidence stored with ID: ${evidenceData.id}`);
-
-    res.json({
-      success: true,
-      evidenceId: evidenceData.id,
-      message: 'Wire-tap audio evidence captured and secured successfully',
-      storage_path: fileName,
-      storage_url: publicUrl,
-      user_id: user_id,
-      incident_id: incident_id,
-      captured_at: timestamp,
-      requestId: req.requestId
-    });
-
-  } catch (error) {
-    Logger.error('Audio evidence storage error:', error);
-    res.status(500).json({
-      error: 'Failed to store audio evidence',
-      details: error.message,
-      requestId: req.requestId
-    });
-  }
-});
-
-
             color: white;
             padding: 15px;
             border-radius: 5px;
@@ -3690,681 +3550,521 @@ app.post('/api/store-evidence-audio', upload.single('audio'), async (req, res) =
                 <code>POST /api/debug/webhook-search</code> - Search stored webhooks<br>
                 <code>GET /api/test-openai</code> - Test OpenAI API key validity<br>
                 <code>GET /api/process-queue-now</code> - Manually trigger queue processing<br>
-                <code>GET /test/transcription-queue</code> - View
-                queue status<br>
-                  <code>POST /test/process-transcription-queue</code> - Manually trigger queue processing<br>
-                  <br>
-                  <strong>Consent Management:</strong> <span class="new-badge">NEW</span><br>
-                  <code>GET /api/consent/summary/:userId</code> - Get consent summary for user<br>
-                  <code>POST /api/consent/test-extraction</code> - Test consent extraction from webhook
-                </div>
-
-                <div class="endpoint">
-                  <strong>Webhook Endpoints:</strong> <span class="improved-badge">IMPROVED</span><br>
-                  <code>POST /webhook/signup</code> - Process signup with GDPR consent<br>
-                  <code>POST /webhook/incident-report</code> - Process incident report files<br>
-                  <code>POST /generate-pdf</code> - Generate and email PDF report<br>
-                  <code>POST /webhook/generate-pdf</code> - Alternative PDF generation
-                </div>
-
-                <div class="endpoint">
-                  <strong>Transcription Services (GDPR Compliant):</strong><br>
-                  <code>POST /api/whisper/transcribe</code> - Process audio<br>
-                  <code>GET /api/transcription-status/:queueId</code> - Check transcription status<br>
-                  <code>POST /api/update-transcription</code> - Update/edit transcription<br>
-                  <code>POST /api/save-transcription</code> - Save transcription<br>
-                  <code>GET /api/user/:userId/latest-transcription</code> - Get user's latest transcription<br>
-                  <code>POST /api/generate-ai-summary</code> - Generate AI summary from transcription
-                </div>
-                </div>
-
-                <div class="section">
-                <h3>Privacy Compliance Status:</h3>
-                <ul>
-                  <li>GDPR Module: ${gdprModule ? '✅ Active' : '❌ Not configured'}</li>
-                  <li>Consent Management: ✅ Implemented</li>
-                  <li>Data Subject Rights: ✅ Automated</li>
-                  <li>Audit Logging: ✅ Comprehensive</li>
-                  <li>Data Retention: ✅ Automated</li>
-                  <li>Breach Management: ${gdprModule ? '✅ Configured' : '❌ Not configured'}</li>
-                  <li>Cross-border Transfers: ${gdprModule ? '✅ Tracked' : '❌ Not configured'}</li>
-                  <li>Cookie Consent: ${gdprModule ? '✅ Implemented' : '❌ Not configured'}</li>
-                  <li>US State Laws: ${gdprModule ? '✅ Full Coverage' : '❌ Not configured'}</li>
-                  <li>Legal Narrative: ✅ Fixed & Operational</li>
-                </ul>
-                </div>
-
-                <div class="section">
-                <h3>System Status:</h3>
-                <ul>
-                  <li>Supabase: ${supabaseEnabled ? '✅ Connected' : '❌ Not configured'}</li>
-                  <li>GDPR Module: ${gdprModule ? '✅ Active' : '❌ Not configured'} <span class="new-badge">NEW</span></li>
-                  <li>Supabase Realtime: ${realtimeChannels.transcriptionChannel ? '✅ Active' : '⚠️ Optional'} <span class="optional-badge">OPTIONAL</span></li>
-                  <li>OpenAI: ${process.env.OPENAI_API_KEY ? '✅ Configured' : '❌ Not configured'}</li>
-                  <li>Transcription Queue: ${transcriptionQueueInterval ? '✅ Running' : '❌ Not running'}</li>
-                  <li>WebSocket: ${wss ? '✅ Active (' + wss.clients.size + ' clients)' : '❌ Not active'}</li>
-                  <li>Auth Key: ${SHARED_KEY ? '✅ Set' : '❌ Missing'}</li>
-                  <li>Data Retention: ${process.env.DATA_RETENTION_DAYS || CONSTANTS.DATA_RETENTION.DEFAULT_DAYS} days</li>
-                  <li>Rate Limiting: ✅ Enabled (Fixed trust proxy configuration)</li>
-                  <li>Compliance Jobs: ${gdprModule ? '✅ Scheduled' : '❌ Not scheduled'} <span class="new-badge">NEW</span></li>
-                  <li>Syntax Errors: ✅ All Fixed <span class="fix-badge">FIXED</span></li>
-                </ul>
-                </div>
-                </div>
-                </body>
-                </html>`;
-                res.send(htmlContent);
-                });
-
-                // --- AUTHENTICATION STATUS ---
-                app.get('/api/auth/status', (req, res) => {
-                const mockUser = {
-                authenticated: false,
-                user: null
-                };
-
-                if (req.session && req.session.user) {
-                mockUser.authenticated = true;
-                mockUser.user = {
-                uid: req.session.user.id,
-                email: req.session.user.email,
-                fullName: req.session.user.full_name
-                };
-                }
-
-                res.json(mockUser);
-                });
-
-                // --- EMERGENCY CONTACTS ---
-                app.get('/api/user/:userId/emergency-contacts', authenticateRequest, async (req, res) => {
-                if (!supabaseEnabled) {
-                return res.status(503).json({
-                error: 'Service not configured',
-                requestId: req.requestId
-                });
-                }
-
-                try {
-                const { userId } = req.params;
-
-                const { data, error } = await supabase
-                .from('user_signup')
-                .select('emergency_contact, recovery_breakdown_number, emergency_services_number')
-                .eq('create_user_id', userId)
-                .single();
-
-                if (error) {
-                Logger.error('Supabase error', error);
-                return res.status(404).json({
-                error: 'User not found',
-                requestId: req.requestId
-                });
-                }
-
-                res.json({
-                emergency_contact: data.emergency_contact || null,
-                recovery_breakdown_number: data.recovery_breakdown_number || null,
-                emergency_services_number: data.emergency_services_number || '999',
-                requestId: req.requestId
-                });
-                } catch (error) {
-                Logger.error('Error fetching emergency contacts', error);
-                res.status(500).json({
-                error: 'Failed to fetch contacts',
-                requestId: req.requestId
-                });
-                }
-                });
-
-                // LOG EMERGENCY CALLS endpoint
-                app.post('/api/log-emergency-call', authenticateRequest, async (req, res) => {
-                if (!supabaseEnabled) {
-                return res.status(503).json({
-                error: 'Service not configured',
-                requestId: req.requestId
-                });
-                }
-
-                try {
-                const { user_id, service_called, timestamp, incident_id } = req.body;
-
-                if (!user_id) {
-                return res.status(400).json({
-                error: 'User ID required',
-                code: 'MISSING_USER_ID',
-                requestId: req.requestId
-                });
-                }
-
-                const { data, error } = await supabase
-                .from('emergency_call_logs')
-                .insert({
-                user_id,
-                service_called,
-                incident_id: incident_id || null,
-                timestamp,
-                created_at: new Date().toISOString()
-                });
-
-                if (error) {
-                Logger.error('Failed to log emergency call', error);
-                return res.json({
-                success: false,
-                logged: false,
-                requestId: req.requestId
-                });
-                }
-
-                await logGDPRActivity(user_id, 'EMERGENCY_CALL_LOGGED', {
-                service: service_called
-                }, req);
-
-                res.json({
-                success: true,
-                logged: true,
-                requestId: req.requestId
-                });
-                } catch (error) {
-                Logger.error('Error logging emergency call', error);
-                res.status(500).json({
-                error: 'Internal server error',
-                requestId: req.requestId
-                });
-                }
-                });
-
-                // WHAT3WORDS endpoint
-                app.get('/api/what3words', async (req, res) => {
-                try {
-                const { lat, lng } = req.query;
-
-                if (!lat || !lng) {
-                return res.status(400).json({
-                error: 'Missing latitude or longitude',
-                requestId: req.requestId
-                });
-                }
-
-                const W3W_API_KEY = process.env.WHAT3WORDS_API_KEY;
-
-                if (!W3W_API_KEY) {
-                Logger.warn('What3Words API key not configured');
-                return res.json({
-                words: 'location.not.configured',
-                requestId: req.requestId
-                });
-                }
-
-                const response = await axios.get(
-                `https://api.what3words.com/v3/convert-to-3wa?coordinates=${lat},${lng}&key=${W3W_API_KEY}`
-                );
-
-                if (response.data && response.data.words) {
-                res.json({
-                words: response.data.words,
-                requestId: req.requestId
-                });
-                } else {
-                res.json({
-                words: 'location.not.found',
-                requestId: req.requestId
-                });
-                }
-                } catch (error) {
-                Logger.error('What3Words API error', error);
-                res.json({
-                words: 'api.error.occurred',
-                requestId: req.requestId
-                });
-                }
-                });
-
-                // Additional endpoints continue as in original code...
-                // [All remaining endpoints from original code remain unchanged]
-
-                // ========================================
-                // ENHANCED WHISPER TRANSCRIPTION WITH GDPR - IMPROVED
-                // ========================================
-                app.post('/api/whisper/transcribe', upload.single('audio'), async (req, res) => {
-                try {
-                Logger.info('🎤 Received transcription request');
-
-                if (!req.file) {
-                return res.status(400).json({
-                error: 'No audio file provided',
-                requestId: req.requestId
-                });
-                }
-
-                // Extract create_user_id from the request
-                const create_user_id = req.body.create_user_id ||
-                             req.query.create_user_id ||
-                             req.headers['x-user-id'];
-
-                if (!create_user_id) {
-                Logger.info('❌ Missing create_user_id in transcription request');
-                return res.status(400).json({
-                error: 'create_user_id is required',
-                requestId: req.requestId
-                });
-                }
-
-                // GDPR: Check consent and log for audit purposes
-                if (gdprModule) {
-                const consentStatus = await gdprModule.checkConsentStatus(create_user_id);
-                if (!consentStatus.has_consent) {
-                Logger.info(`🚫 No consent for user ${create_user_id} - processing with audit log`);
-                // Log the processing without consent for audit purposes
-                await gdprModule.auditLog(create_user_id, 'AUDIO_PROCESSING_NO_CONSENT', {
-                type: 'transcription',
-                size: req.file.size,
-                jurisdiction: consentStatus.jurisdiction || 'unknown',
-                warning: 'Processing without explicit consent'
-                }, req);
-                } else {
-                // Log the processing activity with consent
-                await gdprModule.auditLog(create_user_id, 'AUDIO_PROCESSING', {
-                type: 'transcription',
-                size: req.file.size,
-                jurisdiction: consentStatus.jurisdiction
-                }, req);
-                }
-                }
-
-                // Just log it for audit, don't block
-                console.log(`Processing audio for user ${create_user_id}`);
-
-                Logger.info(`Processing transcription for user: ${create_user_id}`);
-
-                // Generate a unique transcription ID
-                const transcriptionId = `trans_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`;
-
-                // Upload to Supabase incident-audio bucket
-                const fileName = `${create_user_id}/recording_${Date.now()}.webm`;
-                const { data: uploadData, error: uploadError } = await supabase.storage
-                .from('incident-audio')
-                .upload(fileName, req.file.buffer, {
-                contentType: req.file.mimetype,
-                upsert: true
-                });
-
-                if (uploadError) {
-                Logger.error(`Upload error: ${uploadError.message}`);
-                return res.status(500).json({
-                error: 'Failed to upload audio to Supabase',
-                requestId: req.requestId
-                });
-                }
-
-                // Get the public URL
-                const { data: { publicUrl } } = supabase.storage
-                .from('incident-audio')
-                .getPublicUrl(fileName);
-
-                Logger.info(`Audio file uploaded to Supabase: ${fileName}`);
-
-                // Add to transcription queue
-                const { data: queueData, error: queueError } = await supabase
-                .from('transcription_queue')
-                .insert([{
-                create_user_id: create_user_id,
-                incident_report_id: req.body.incident_report_id || null,
-                audio_url: publicUrl,
-                status: CONSTANTS.TRANSCRIPTION_STATUS.PENDING,
-                retry_count: 0,
-                created_at: new Date().toISOString(),
-                error_message: null,
-                transcription_id: null
-                }])
-                .select()
-                .single();
-
-                if (queueError) {
-                Logger.error('Queue error:', queueError);
-                // Don't fail completely - continue with direct transcription
-                }
-
-                const queueId = queueData?.id || transcriptionId;
-
-                // Store in memory for WebSocket updates
-                transcriptionStatuses.set(queueId.toString(), {
-                status: CONSTANTS.TRANSCRIPTION_STATUS.PROCESSING,
-                transcription: null,
-                summary: null,
-                error: null,
-                create_user_id: create_user_id
-                });
-
-                // Return immediately with the queue ID
-                res.json({
-                success: true,
-                message: 'Audio uploaded and queued for transcription',
-                queueId: queueId.toString(),
-                audioUrl: publicUrl,
-                create_user_id: create_user_id,
-                requestId: req.requestId
-                });
-
-                // Process transcription immediately using the audio buffer in memory
-                // This happens asynchronously after the response is sent
-                processTranscriptionFromBuffer(
-                queueId,
-                req.file.buffer,
-                create_user_id,
-                req.body.incident_report_id,
-                publicUrl
-                );
-
-                } catch (error) {
-                Logger.error('Transcription error:', error);
-                res.status(500).json({
-                error: 'Failed to process audio',
-                details: error.message,
-                requestId: req.requestId
-                });
-                }
-                });
-
-                // [Continue with remaining webhook endpoints from original code...]
-
-                // ========================================
-                // ENHANCED WEBHOOK ENDPOINTS WITH GDPR - IMPROVED
-                // ========================================
-                app.post('/webhook/signup', checkSharedKey, async (req, res) => {
-                try {
-                Logger.info('Signup webhook received');
-                let webhookData = req.body;
-                Logger.debug('Webhook payload:', JSON.stringify(webhookData, null, 2));
-
-                // Debug with enhanced debugger
-                if (webhookDebugger) {
-                const analysis = webhookDebugger.analyzeWebhook(req, { store: true });
-                Logger.info('Webhook analysis:', {
-                provider: analysis.provider,
-                userId: analysis.fields.userId,
-                hasConsent: !!analysis.fields.consent
-                });
-                }
-
-                // ENHANCED CONSENT DETECTION
-                let consentResult = { hasConsent: false };
-
-                if (consentManager) {
-                // Use enhanced consent detection
-                const consentData = consentManager.extractConsentFromWebhook(webhookData);
-                Logger.info('Consent analysis:', consentData);
-
-                // Update consent in database
-                consentResult = await consentManager.validateAndUpdateConsent(
-                webhookData.create_user_id,
-                consentData,
-                req
-                );
-
-                Logger.info(`Enhanced consent status for ${webhookData.create_user_id}: ${consentResult.consent}`);
-                }
-
-                if (!supabaseEnabled || !imageProcessor) {
-                return res.status(503).json({
-                error: 'Service not configured',
-                requestId: req.requestId
-                });
-                }
-
-                if (!webhookData.create_user_id) {
-                return res.status(400).json({
-                error: 'Missing create_user_id',
-                requestId: req.requestId
-                });
-                }
-
-                // GDPR ENHANCEMENT: Record consent with full compliance
-                if (gdprModule) {
-                const jurisdiction = await gdprModule.detectJurisdiction(req.clientIp);
-
-                // Extract consent from your Typeform field
-                let legalSupportConsent = webhookData.legal_support ||
-                                 webhookData.question_14 ||
-                                 webhookData.gdpr_consent_field ||
-                                 webhookData['Do you agree to share this data for legal support?'];
-
-                let hasConsent = false;
-                if (legalSupportConsent !== undefined && legalSupportConsent !== null) {
-                hasConsent = typeof legalSupportConsent === 'boolean'
-                ? legalSupportConsent
-                : legalSupportConsent.toLowerCase() === 'yes';
-                }
-
-                Logger.info(`GDPR Consent status for ${webhookData.create_user_id}: ${hasConsent}`);
-
-                if (hasConsent) {
-                // Record consent in GDPR module
-                const consentResult = await gdprModule.recordConsent(webhookData.create_user_id, {
-                type: 'all_processing',
-                method: 'signup_form',
-                text: 'I consent to the processing of my personal data for accident reporting and legal support services.',
-                version: '1.0',
-                source: 'typeform_webhook',
-                ip_address: req.clientIp,
-                user_agent: req.get('user-agent'),
-                form_id: webhookData.form_id,
-                session_id: req.requestId
-                });
-
-                Logger.success(`✅ GDPR consent recorded: ${consentResult.consent_id}`);
-                Logger.info(`📍 Jurisdiction: ${consentResult.jurisdiction}, Law: ${consentResult.applicable_law}`);
-                } else {
-                // User declined consent
-                Logger.warn(`⚠️ User ${webhookData.create_user_id} DECLINED consent`);
-                await gdprModule.restrictDataProcessing(webhookData.create_user_id);
-
-                return res.status(200).json({
-                success: true,
-                message: 'User registered but declined consent - processing restricted',
-                create_user_id: webhookData.create_user_id,
-                consent_status: 'declined',
-                requestId: req.requestId
-                });
-                }
-                }
-
-                // Check if user exists and update
-                const { data: existingUser } = await supabase
-                .from('user_signup')
-                .select('id')
-                .eq('create_user_id', webhookData.create_user_id)
-                .single();
-
-                const hasConsent = webhookData.legal_support === 'Yes' || webhookData.gdpr_consent === true;
-
-                if (existingUser) {
-                await supabase
-                .from('user_signup')
-                .update({
-                ...webhookData,
-                legal_support: hasConsent ? 'Yes' : 'No',
-                gdpr_consent: hasConsent,
-                gdpr_consent_date: hasConsent ? new Date().toISOString() : null,
-                updated_at: new Date().toISOString()
-                })
-                .eq('create_user_id', webhookData.create_user_id);
-                } else {
-                await supabase
-                .from('user_signup')
-                .insert([{
-                ...webhookData,
-                legal_support: hasConsent ? 'Yes' : 'No',
-                gdpr_consent: hasConsent,
-                gdpr_consent_date: hasConsent ? new Date().toISOString() : null,
-                created_at: new Date().toISOString()
-                }]);
-                }
-
-                // Process images only if consent granted
-                if (hasConsent) {
-                imageProcessor.processSignupImages(webhookData)
-                .then(result => Logger.success('Signup processing complete', result))
-                .catch(error => Logger.error('Signup processing failed', error));
-                }
-
-                res.status(200).json({
-                success: true,
-                message: hasConsent ? 'Signup processing started with GDPR compliance' : 'User registered without consent',
-                create_user_id: webhookData.create_user_id,
-                consent_status: hasConsent ? 'granted' : 'declined',
-                requestId: req.requestId
-                });
-
-                } catch (error) {
-                Logger.error('Webhook error', error);
-                res.status(500).json({
-                success: false,
-                error: error.message,
-                requestId: req.requestId
-                });
-                }
-                });
-
-                // --- ERROR HANDLING MIDDLEWARE ---
-                app.use((err, req, res, next) => {
-                if (err.name === 'MulterError') {
-                if (err.code === 'LIMIT_FILE_SIZE') {
-                return res.status(400).json({
-                error: 'File size too large. Maximum size: 50MB for audio, 10MB for images',
-                code: 'FILE_TOO_LARGE',
-                requestId: req.requestId
-                });
-                }
-                return res.status(400).json({
-                error: `Upload error: ${err.message}`,
-                code: err.code,
-                requestId: req.requestId
-                });
-                }
-
-                Logger.error('Unhandled error', err);
-                res.status(500).json({
-                error: 'Internal server error',
-                message: err.message,
-                stack: process.env.NODE_ENV === 'development' ? err.stack : undefined,
-                requestId: req.requestId
-                });
-                });
-
-                // 404 handler - must be last
-                app.use((req, res) => {
-                res.status(404).json({
-                error: 'Not found',
-                path: req.path,
-                method: req.method,
-                requestId: req.requestId
-                });
-                });
-
-                // --- SERVER STARTUP ---
-                const PORT = process.env.PORT || 3000;
-
-                // Graceful shutdown handler
-                process.on('SIGTERM', gracefulShutdown);
-                process.on('SIGINT', gracefulShutdown);
-
-                async function gracefulShutdown(signal) {
-                Logger.info(`⚠️ ${signal} received, starting graceful shutdown...`);
-
-                // Save any pending GDPR audits
-                if (gdprModule) {
-                await gdprModule.auditLog('SYSTEM', 'SYSTEM_SHUTDOWN', {
-                timestamp: new Date().toISOString()
-                });
-                }
-
-                // Close WebSocket connections
-                wss.clients.forEach((ws) => {
-                ws.close(1001, 'Server shutting down');
-                });
-
-                // Close the HTTP server
-                server.close(() => {
-                Logger.info('HTTP server closed');
-                });
-
-                // Clear intervals
-                if (transcriptionQueueInterval) {
-                clearInterval(transcriptionQueueInterval);
-                }
-                clearInterval(wsHeartbeat);
-
-                // Cleanup Supabase realtime channels
-                if (realtimeChannels.transcriptionChannel) {
-                supabase.removeChannel(realtimeChannels.transcriptionChannel);
-                }
-                if (realtimeChannels.summaryChannel) {
-                supabase.removeChannel(realtimeChannels.summaryChannel);
-                }
-
-                // Wait for pending operations
-                await new Promise(resolve => setTimeout(resolve, 5000));
-
-                Logger.info('Graceful shutdown complete');
-                process.exit(0);
-                }
-
-                // Initialize dash-cam upload system on server startup
-                if (supabaseEnabled) {
-                    setTimeout(async () => {
-                        try {
-                            await initializeDashcamUpload();
-                        } catch (error) {
-                            Logger.error('Failed to initialize dash-cam upload:', error);
-                        }
-                    }, 5000); // Wait 5 seconds after server start
-                }
-
-                // Start the server
-                server.listen(PORT, () => {
-                Logger.success(`🚀 Server running on port ${PORT}`);
-                Logger.info(`📊 Environment: ${process.env.NODE_ENV || 'development'}`);
-                Logger.info(`🔐 GDPR Compliance: ${gdprModule ? 'ACTIVE' : 'DISABLED'}`);
-                Logger.info(`🗄️ Supabase: ${supabaseEnabled ? 'CONNECTED' : 'DISABLED'}`);
-                Logger.info(`🤖 OpenAI: ${process.env.OPENAI_API_KEY ? 'CONFIGURED' : 'NOT CONFIGURED'}`);
-                Logger.info(`🔄 Transcription Queue: ${transcriptionQueueInterval ? 'RUNNING' : 'DISABLED'}`);
-                Logger.info(`🔌 WebSocket: ACTIVE`);
-                Logger.info(`🎤 Recording Interface: UNIFIED at /transcription-status.html`);
-                Logger.info(`⚡ Realtime Updates: ${realtimeChannels.transcriptionChannel ? 'ENABLED' : 'DISABLED (optional)'}`);
-                Logger.info(`✅ Trust Proxy: FIXED (set to 1 for proper rate limiting)`);
-                Logger.info(`✅ Consent Handling: ENHANCED with GDPR module`);
-                Logger.info(`🌍 Jurisdiction Detection: ${gdprModule ? 'ENABLED' : 'DISABLED'}`);
-                Logger.info(`🔒 Privacy Laws: ${gdprModule ? 'UK GDPR + US State Laws' : 'Basic'}`);
-                Logger.info(`✅ Legal Narrative: FIXED - Consolidated endpoints with ai_summary storage`);
-                Logger.info(`✅ Syntax Errors: ALL FIXED`);
-                Logger.info(`🎥 Dash-cam Upload: ${supabaseEnabled ? 'INITIALIZING...' : 'DISABLED'}`);
-
-                if (!SHARED_KEY) {
-                Logger.warn('⚠️ ZAPIER_SHARED_KEY not set - authentication disabled');
-                }
-
-                // List available endpoints
-                Logger.info('📍 Key endpoints:');
-                Logger.info('  - GET  /health - System health check');
-                Logger.info('  - GET  /transcription-status.html - Main recording interface');
-                Logger.info('  - POST /api/whisper/transcribe - Process audio');
-                Logger.info('  - POST /webhook/signup - Process signup with consent');
-                Logger.info('  - POST /webhook/incident-report - Process incident');
-                Logger.info('  - GET  /api/gdpr/user-rights/:userId - Privacy rights dashboard');
-                Logger.info('  - POST /api/gdpr/consent - Grant consent');
-                Logger.info('  - POST /api/gdpr/dsr - Submit data request');
-                Logger.info('  - GET  /api/gdpr/admin/dashboard - Admin compliance view');
-                Logger.info('  - POST /api/generate-legal-narrative - Generate formal legal narrative [FIXED]');
-                Logger.info('  - POST /api/update-legal-narrative - Update/save narrative [FIXED]');
-                Logger.info('  - GET  /api/legal-narratives/:userId - Get saved narratives [FIXED]');
-                Logger.info('  - GET  /api/dashcam/signed-url/:userId/:incidentId/:filename - Get video signed URL');
-                Logger.info('  - GET  /api/dashcam/videos/:userId/:incidentId - Get user videos');
-                Logger.info('  - DELETE /api/dashcam/video/:evidenceId - Delete video');
-
-                Logger.success('✅ All systems operational with GDPR compliance - Ready to serve requests');
-                Logger.success('🔧 GDPR Module integrated - Full privacy law compliance enabled');
-                Logger.success('📝 Legal Narrative Generation - Fixed and fully operational');
-                });
-
-                // Export for testing
-                module.exports = { app, server, gdprModule };
+                <code>GET /test/transcription-queue</code> - View queue status<br>
+                <code>POST /test/process-transcription-queue</code> - Manually trigger queue processing<br>
+                <br>
+                <strong>Consent Management:</strong> <span class="new-badge">NEW</span><br>
+                <code>GET /api/consent/summary/:userId</code> - Get consent summary for user<br>
+                <code>POST /api/consent/test-extraction</code> - Test consent extraction from webhook
+            </div>
+
+            <div class="endpoint">
+                <strong>Webhook Endpoints:</strong> <span class="improved-badge">IMPROVED</span><br>
+                <code>POST /webhook/signup</code> - Process signup with GDPR consent<br>
+                <code>POST /webhook/incident-report</code> - Process incident report files<br>
+                <code>POST /generate-pdf</code> - Generate and email PDF report<br>
+                <code>POST /webhook/generate-pdf</code> - Alternative PDF generation
+            </div>
+
+            <div class="endpoint">
+                <strong>Transcription Services (GDPR Compliant):</strong><br>
+                <code>POST /api/whisper/transcribe</code> - Process audio<br>
+                <code>GET /api/transcription-status/:queueId</code> - Check transcription status<br>
+                <code>POST /api/update-transcription</code> - Update/edit transcription<br>
+                <code>POST /api/save-transcription</code> - Save transcription<br>
+                <code>GET /api/user/:userId/latest-transcription</code> - Get user's latest transcription<br>
+                <code>POST /api/generate-ai-summary</code> - Generate AI summary from transcription
+            </div>
+        </div>
+
+        <div class="section">
+            <h3>Privacy Compliance Status:</h3>
+            <ul>
+                <li>GDPR Module: ${gdprModule ? '✅ Active' : '❌ Not configured'}</li>
+                <li>Consent Management: ✅ Implemented</li>
+                <li>Data Subject Rights: ✅ Automated</li>
+                <li>Audit Logging: ✅ Comprehensive</li>
+                <li>Data Retention: ✅ Automated</li>
+                <li>Breach Management: ${gdprModule ? '✅ Configured' : '❌ Not configured'}</li>
+                <li>Cross-border Transfers: ${gdprModule ? '✅ Tracked' : '❌ Not configured'}</li>
+                <li>Cookie Consent: ${gdprModule ? '✅ Implemented' : '❌ Not configured'}</li>
+                <li>US State Laws: ${gdprModule ? '✅ Full Coverage' : '❌ Not configured'}</li>
+                <li>Legal Narrative: ✅ Fixed & Operational</li>
+            </ul>
+        </div>
+
+        <div class="section">
+            <h3>System Status:</h3>
+            <ul>
+                <li>Supabase: ${supabaseEnabled ? '✅ Connected' : '❌ Not configured'}</li>
+                <li>GDPR Module: ${gdprModule ? '✅ Active' : '❌ Not configured'} <span class="new-badge">NEW</span></li>
+                <li>Supabase Realtime: ${realtimeChannels.transcriptionChannel ? '✅ Active' : '⚠️ Optional'} <span class="optional-badge">OPTIONAL</span></li>
+                <li>OpenAI: ${process.env.OPENAI_API_KEY ? '✅ Configured' : '❌ Not configured'}</li>
+                <li>Transcription Queue: ${transcriptionQueueInterval ? '✅ Running' : '❌ Not running'}</li>
+                <li>WebSocket: ${wss ? '✅ Active (' + wss.clients.size + ' clients)' : '❌ Not active'}</li>
+                <li>Auth Key: ${SHARED_KEY ? '✅ Set' : '❌ Missing'}</li>
+                <li>Data Retention: ${process.env.DATA_RETENTION_DAYS || CONSTANTS.DATA_RETENTION.DEFAULT_DAYS} days</li>
+                <li>Rate Limiting: ✅ Enabled (Fixed trust proxy configuration)</li>
+                <li>Compliance Jobs: ${gdprModule ? '✅ Scheduled' : '❌ Not scheduled'} <span class="new-badge">NEW</span></li>
+                <li>Syntax Errors: ✅ All Fixed <span class="fix-badge">FIXED</span></li>
+            </ul>
+        </div>
+    </div>
+</body>
+</html>`;
+  res.send(htmlContent);
+});
+
+// --- AUTHENTICATION STATUS ---
+app.get('/api/auth/status', (req, res) => {
+  const mockUser = {
+    authenticated: false,
+    user: null
+  };
+
+  if (req.session && req.session.user) {
+    mockUser.authenticated = true;
+    mockUser.user = {
+      uid: req.session.user.id,
+      email: req.session.user.email,
+      fullName: req.session.user.full_name
+    };
+  }
+
+  res.json(mockUser);
+});
+
+// --- EMERGENCY CONTACTS ---
+app.get('/api/user/:userId/emergency-contacts', authenticateRequest, async (req, res) => {
+  if (!supabaseEnabled) {
+    return res.status(503).json({
+      error: 'Service not configured',
+      requestId: req.requestId
+    });
+  }
+
+  try {
+    const { userId } = req.params;
+
+    const { data, error } = await supabase
+      .from('user_signup')
+      .select('emergency_contact, recovery_breakdown_number, emergency_services_number')
+      .eq('create_user_id', userId)
+      .single();
+
+    if (error) {
+      Logger.error('Supabase error', error);
+      return res.status(404).json({
+        error: 'User not found',
+        requestId: req.requestId
+      });
+    }
+
+    res.json({
+      emergency_contact: data.emergency_contact || null,
+      recovery_breakdown_number: data.recovery_breakdown_number || null,
+      emergency_services_number: data.emergency_services_number || '999',
+      requestId: req.requestId
+    });
+  } catch (error) {
+    Logger.error('Error fetching emergency contacts', error);
+    res.status(500).json({
+      error: 'Failed to fetch contacts',
+      requestId: req.requestId
+    });
+  }
+});
+
+// LOG EMERGENCY CALLS endpoint
+app.post('/api/log-emergency-call', authenticateRequest, async (req, res) => {
+  if (!supabaseEnabled) {
+    return res.status(503).json({
+      error: 'Service not configured',
+      requestId: req.requestId
+    });
+  }
+
+  try {
+    const { user_id, service_called, timestamp, incident_id } = req.body;
+
+    if (!user_id) {
+      return res.status(400).json({
+        error: 'User ID required',
+        code: 'MISSING_USER_ID',
+        requestId: req.requestId
+      });
+    }
+
+    const { data, error } = await supabase
+      .from('emergency_call_logs')
+      .insert({
+        user_id,
+        service_called,
+        incident_id: incident_id || null,
+        timestamp,
+        created_at: new Date().toISOString()
+      });
+
+    if (error) {
+      Logger.error('Failed to log emergency call', error);
+      return res.json({
+        success: false,
+        logged: false,
+        requestId: req.requestId
+      });
+    }
+
+    await logGDPRActivity(user_id, 'EMERGENCY_CALL_LOGGED', {
+      service: service_called
+    }, req);
+
+    res.json({
+      success: true,
+      logged: true,
+      requestId: req.requestId
+    });
+  } catch (error) {
+    Logger.error('Error logging emergency call', error);
+    res.status(500).json({
+      error: 'Internal server error',
+      requestId: req.requestId
+    });
+  }
+});
+
+// WHAT3WORDS endpoint
+app.get('/api/what3words', async (req, res) => {
+  try {
+    const { lat, lng } = req.query;
+
+    if (!lat || !lng) {
+      return res.status(400).json({
+        error: 'Missing latitude or longitude',
+        requestId: req.requestId
+      });
+    }
+
+    const W3W_API_KEY = process.env.WHAT3WORDS_API_KEY;
+
+    if (!W3W_API_KEY) {
+      Logger.warn('What3Words API key not configured');
+      return res.json({
+        words: 'location.not.configured',
+        requestId: req.requestId
+      });
+    }
+
+    const response = await axios.get(
+      `https://api.what3words.com/v3/convert-to-3wa?coordinates=${lat},${lng}&key=${W3W_API_KEY}`
+    );
+
+    if (response.data && response.data.words) {
+      res.json({
+        words: response.data.words,
+        requestId: req.requestId
+      });
+    } else {
+      res.json({
+        words: 'location.not.found',
+        requestId: req.requestId
+      });
+    }
+  } catch (error) {
+    Logger.error('What3Words API error', error);
+    res.json({
+      words: 'api.error.occurred',
+      requestId: req.requestId
+    });
+  }
+});
+
+// Additional endpoints continue as in original code...
+// [All remaining endpoints from original code remain unchanged]
+
+// ========================================
+// ENHANCED WHISPER TRANSCRIPTION WITH GDPR - IMPROVED
+// ========================================
+app.post('/api/whisper/transcribe', upload.single('audio'), async (req, res) => {
+  try {
+    Logger.info('🎤 Received transcription request');
+
+    if (!req.file) {
+      return res.status(400).json({
+        error: 'No audio file provided',
+        requestId: req.requestId
+      });
+    }
+
+    // Extract create_user_id from the request
+    const create_user_id = req.body.create_user_id ||
+                 req.query.create_user_id ||
+                 req.headers['x-user-id'];
+
+    if (!create_user_id) {
+      Logger.info('❌ Missing create_user_id in transcription request');
+      return res.status(400).json({
+        error: 'create_user_id is required',
+        requestId: req.requestId
+      });
+    }
+
+    // GDPR: Check consent and log for audit purposes
+    if (gdprModule) {
+      const consentStatus = await gdprModule.checkConsentStatus(create_user_id);
+      if (!consentStatus.has_consent) {
+        Logger.info(`🚫 No consent for user ${create_user_id} - processing with audit log`);
+        // Log the processing without consent for audit purposes
+        await gdprModule.auditLog(create_user_id, 'AUDIO_PROCESSING_NO_CONSENT', {
+          type: 'transcription',
+          size: req.file.size,
+          jurisdiction: consentStatus.jurisdiction || 'unknown',
+          warning: 'Processing without explicit consent'
+        }, req);
+      } else {
+        // Log the processing activity with consent
+        await gdprModule.auditLog(create_user_id, 'AUDIO_PROCESSING', {
+          type: 'transcription',
+          size: req.file.size,
+          jurisdiction: consentStatus.jurisdiction
+        }, req);
+      }
+    }
+
+    // Just log it for audit, don't block
+    console.log(`Processing audio for user ${create_user_id}`);
+
+    Logger.info(`Processing transcription for user: ${create_user_id}`);
+
+    // Generate a unique transcription ID
+    const transcriptionId = `trans_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`;
+
+    // Upload to Supabase incident-audio bucket
+    const fileName = `${create_user_id}/recording_${Date.now()}.webm`;
+    const { data: uploadData, error: uploadError } = await supabase.storage
+      .from('incident-audio')
+      .upload(fileName, req.file.buffer, {
+        contentType: req.file.mimetype,
+        upsert: true
+      });
+
+    if (uploadError) {
+      Logger.error(`Upload error: ${uploadError.message}`);
+      return res.status(500).json({
+        error: 'Failed to upload audio to Supabase',
+        requestId: req.requestId
+      });
+    }
+
+    // Get the public URL
+    const { data: { publicUrl } } = supabase.storage
+      .from('incident-audio')
+      .getPublicUrl(fileName);
+
+    Logger.info(`Audio file uploaded to Supabase: ${fileName}`);
+
+    // Add to transcription queue
+    const { data: queueData, error: queueError } = await supabase
+      .from('transcription_queue')
+      .insert([{
+        create_user_id: create_user_id,
+        incident_report_id: req.body.incident_report_id || null,
+        audio_url: publicUrl,
+        status: CONSTANTS.TRANSCRIPTION_STATUS.PENDING,
+        retry_count: 0,
+        created_at: new Date().toISOString(),
+        error_message: null,
+        transcription_id: null
+      }])
+      .select()
+      .single();
+
+    if (queueError) {
+      Logger.error('Queue error:', queueError);
+      // Don't fail completely - continue with direct transcription
+    }
+
+    const queueId = queueData?.id || transcriptionId;
+
+    // Store in memory for WebSocket updates
+    transcriptionStatuses.set(queueId.toString(), {
+      status: CONSTANTS.TRANSCRIPTION_STATUS.PROCESSING,
+      transcription: null,
+      summary: null,
+      error: null,
+      create_user_id: create_user_id
+    });
+
+    // Return immediately with the queue ID
+    res.json({
+      success: true,
+      message: 'Audio uploaded and queued for transcription',
+      queueId: queueId.toString(),
+      audioUrl: publicUrl,
+      create_user_id: create_user_id,
+      requestId: req.requestId
+    });
+
+    // Process transcription immediately using the audio buffer in memory
+    // This happens asynchronously after the response is sent
+    processTranscriptionFromBuffer(
+      queueId,
+      req.file.buffer,
+      create_user_id,
+      req.body.incident_report_id,
+      publicUrl
+    );
+
+  } catch (error) {
+    Logger.error('Transcription error:', error);
+    res.status(500).json({
+      error: 'Failed to process audio',
+      details: error.message,
+      requestId: req.requestId
+    });
+  }
+});
+
+// --- ERROR HANDLING MIDDLEWARE ---
+app.use((err, req, res, next) => {
+  if (err.name === 'MulterError') {
+    if (err.code === 'LIMIT_FILE_SIZE') {
+      return res.status(400).json({
+        error: 'File size too large. Maximum size: 50MB for audio, 10MB for images',
+        code: 'FILE_TOO_LARGE',
+        requestId: req.requestId
+      });
+    }
+    return res.status(400).json({
+      error: `Upload error: ${err.message}`,
+      code: err.code,
+      requestId: req.requestId
+    });
+  }
+
+  Logger.error('Unhandled error', err);
+  res.status(500).json({
+    error: 'Internal server error',
+    message: err.message,
+    stack: process.env.NODE_ENV === 'development' ? err.stack : undefined,
+    requestId: req.requestId
+  });
+});
+
+// 404 handler - must be last
+app.use((req, res) => {
+  res.status(404).json({
+    error: 'Not found',
+    path: req.path,
+    method: req.method,
+    requestId: req.requestId
+  });
+});
+
+// --- SERVER STARTUP ---
+const PORT = process.env.PORT || 3000;
+
+// Graceful shutdown handler
+process.on('SIGTERM', gracefulShutdown);
+process.on('SIGINT', gracefulShutdown);
+
+async function gracefulShutdown(signal) {
+  Logger.info(`⚠️ ${signal} received, starting graceful shutdown...`);
+
+  // Save any pending GDPR audits
+  if (gdprModule) {
+    await gdprModule.auditLog('SYSTEM', 'SYSTEM_SHUTDOWN', {
+      timestamp: new Date().toISOString()
+    });
+  }
+
+  // Close WebSocket connections
+  wss.clients.forEach((ws) => {
+    ws.close(1001, 'Server shutting down');
+  });
+
+  // Close the HTTP server
+  server.close(() => {
+    Logger.info('HTTP server closed');
+  });
+
+  // Clear intervals
+  if (transcriptionQueueInterval) {
+    clearInterval(transcriptionQueueInterval);
+  }
+  clearInterval(wsHeartbeat);
+
+  // Cleanup Supabase realtime channels
+  if (realtimeChannels.transcriptionChannel) {
+    supabase.removeChannel(realtimeChannels.transcriptionChannel);
+  }
+  if (realtimeChannels.summaryChannel) {
+    supabase.removeChannel(realtimeChannels.summaryChannel);
+  }
+
+  // Wait for pending operations
+  await new Promise(resolve => setTimeout(resolve, 5000));
+
+  Logger.info('Graceful shutdown complete');
+  process.exit(0);
+}
+
+// Initialize dash-cam upload system on server startup
+if (supabaseEnabled) {
+  setTimeout(async () => {
+    try {
+      await initializeDashcamUpload();
+    } catch (error) {
+      Logger.error('Failed to initialize dash-cam upload:', error);
+    }
+  }, 5000); // Wait 5 seconds after server start
+}
+
+// Start the server
+server.listen(PORT, () => {
+  Logger.success(`🚀 Server running on port ${PORT}`);
+  Logger.info(`📊 Environment: ${process.env.NODE_ENV || 'development'}`);
+  Logger.info(`🔐 GDPR Compliance: ${gdprModule ? 'ACTIVE' : 'DISABLED'}`);
+  Logger.info(`🗄️ Supabase: ${supabaseEnabled ? 'CONNECTED' : 'DISABLED'}`);
+  Logger.info(`🤖 OpenAI: ${process.env.OPENAI_API_KEY ? 'CONFIGURED' : 'NOT CONFIGURED'}`);
+  Logger.info(`🔄 Transcription Queue: ${transcriptionQueueInterval ? 'RUNNING' : 'DISABLED'}`);
+  Logger.info(`🔌 WebSocket: ACTIVE`);
+  Logger.info(`🎤 Recording Interface: UNIFIED at /transcription-status.html`);
+  Logger.info(`⚡ Realtime Updates: ${realtimeChannels.transcriptionChannel ? 'ENABLED' : 'DISABLED (optional)'}`);
+  Logger.info(`✅ Trust Proxy: FIXED (set to 1 for proper rate limiting)`);
+  Logger.info(`✅ Consent Handling: ENHANCED with GDPR module`);
+  Logger.info(`🌍 Jurisdiction Detection: ${gdprModule ? 'ENABLED' : 'DISABLED'}`);
+  Logger.info(`🔒 Privacy Laws: ${gdprModule ? 'UK GDPR + US State Laws' : 'Basic'}`);
+  Logger.info(`✅ Legal Narrative: FIXED - Consolidated endpoints with ai_summary storage`);
+  Logger.info(`✅ Syntax Errors: ALL FIXED`);
+  Logger.info(`🎥 Dash-cam Upload: ${supabaseEnabled ? 'INITIALIZING...' : 'DISABLED'}`);
+
+  if (!SHARED_KEY) {
+    Logger.warn('⚠️ ZAPIER_SHARED_KEY not set - authentication disabled');
+  }
+
+  // List available endpoints
+  Logger.info('📍 Key endpoints:');
+  Logger.info('  - GET  /health - System health check');
+  Logger.info('  - GET  /transcription-status.html - Main recording interface');
+  Logger.info('  - POST /api/whisper/transcribe - Process audio');
+  Logger.info('  - POST /webhook/signup - Process signup with consent');
+  Logger.info('  - POST /webhook/incident-report - Process incident');
+  Logger.info('  - GET  /api/gdpr/user-rights/:userId - Privacy rights dashboard');
+  Logger.info('  - POST /api/gdpr/consent - Grant consent');
+  Logger.info('  - POST /api/gdpr/dsr - Submit data request');
+  Logger.info('  - GET  /api/gdpr/admin/dashboard - Admin compliance view');
+  Logger.info('  - POST /api/generate-legal-narrative - Generate formal legal narrative [FIXED]');
+  Logger.info('  - POST /api/update-legal-narrative - Update/save narrative [FIXED]');
+  Logger.info('  - GET  /api/legal-narratives/:userId - Get saved narratives [FIXED]');
+  Logger.info('  - GET  /api/dashcam/signed-url/:userId/:incidentId/:filename - Get video signed URL');
+  Logger.info('  - GET  /api/dashcam/videos/:userId/:incidentId - Get user videos');
+  Logger.info('  - DELETE /api/dashcam/video/:evidenceId - Delete video');
+
+  Logger.success('✅ All systems operational with GDPR compliance - Ready to serve requests');
+  Logger.success('🔧 GDPR Module integrated - Full privacy law compliance enabled');
+  Logger.success('📝 Legal Narrative Generation - Fixed and fully operational');
+});
+
+// Export for testing
+module.exports = { app, server, gdprModule };
+```json\n?/g, '').replace(/
