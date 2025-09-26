@@ -20,7 +20,6 @@
       position: relative;
     }
 
-
     header {
       display: flex;
       justify-content: center;
@@ -90,10 +89,21 @@
       background-color: #e6f2fb;
       transform: translateY(-2px);
     }
+
+    /* Mobile responsive - stack buttons vertically on small screens */
+    @media (max-width: 768px) {
+      .cta-buttons {
+        flex-direction: column;
+        align-items: center;
+      }
+
+      .cta-button {
+        min-width: 200px;
+      }
+    }
   </style>
 </head>
 <body>
-
 
   <!-- Logo -->
   <header>
@@ -110,6 +120,8 @@
     <button class="cta-button" onclick="window.location.href='signup.html'">Sign Up</button>
     <button class="cta-button" onclick="window.location.href='incident.html'">Report an Incident</button>
     <button class="cta-button" onclick="window.location.href='demo.html'">Try Demo</button>
+    <button class="cta-button" onclick="window.location.href='access-reports.html'">Access Reports</button>
+  </div>
 
 </body>
 </html>
