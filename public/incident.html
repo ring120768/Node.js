@@ -504,9 +504,6 @@
         <div class="nav-arrow back" onclick="goBack()" title="Go Back">
             <span>←</span>
         </div>
-        <div class="nav-arrow forward" onclick="goForward()" title="Go Forward">
-            <span>→</span>
-        </div>
     </div>
 
     <div class="container">
@@ -640,12 +637,12 @@
         // Navigation functions
         function goBack() {
             // Always go back to the home page from incident.html
-            window.location.href = '/';
+            window.location.href = 'index.html';
         }
 
         function goForward() {
-            // For incident.html, forward should go to safety-check.html
-            window.location.href = 'safety-check.html';
+            // Forward navigation removed - no longer needed
+            return;
         }
 
         // Initialize on page load
