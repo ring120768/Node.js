@@ -2424,35 +2424,33 @@ app.delete('/api/dashcam/video/:evidenceId', checkSharedKey, async (req, res) =>
 
   try {
     const { evidenceId } = req.params;
-    
+
     // Security Enhancement: Input validation to prevent malicious input
     // Check if evidenceId is a valid UUID or numeric ID
     const uuidRegex = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
     const numericRegex = /^\d+$/;
-    
+
     if (!uuidRegex.test(evidenceId) && !numericRegex.test(evidenceId)) {
       Logger.warn(`Invalid evidence ID format attempted: ${evidenceId}`, { ip: req.clientIp });
-      return res.status(400).json({ 
+      return res.status(400).json({
         error: 'Invalid evidence ID format',
         code: 'INVALID_ID_FORMAT',
-        requestId: req.requestId 
+        requestId: req.requestId
       });
     }
-    
+
     // Additional length check to prevent excessively long inputs
     if (evidenceId.length > 100) {
       Logger.warn(`Evidence ID too long: ${evidenceId.length} characters`, { ip: req.clientIp });
-      return res.status(400).json({ 
+      return res.status(400).json({
         error: 'Evidence ID too long',
         code: 'ID_TOO_LONG',
-        requestId: req.requestId 
+        requestId: req.requestId
       });
     }
 
     // Note: We need a way to map evidenceId to the actual storage path in Supabase.
     // For now, let's assume evidenceId is the storage path itself or we can query for it.
-    // If evidenceId is not the storage path, you'll need to fetch the storage path from
-    // your 'incident_evidence' or similar table based on evidenceId.
 
     // Example: Fetching the storage path (replace with your actual table and logic)
     const { data: evidence, error: fetchError } = await supabase
@@ -2463,6 +2461,27 @@ app.delete('/api/dashcam/video/:evidenceId', checkSharedKey, async (req, res) =>
 
     if (fetchError || !evidence) {
       return res.status(404).json({ error: 'Evidence not found', requestId: req.requestId });
+    }
+
+    // ADD: Ownership verification
+    const requestingUserId = req.headers['x-user-id'] || req.body.userId;
+    if (evidence.create_user_id !== requestingUserId) {
+      await logGDPRActivity(requestingUserId, 'UNAUTHORIZED_DELETE_ATTEMPT', {
+        evidenceId: evidenceId,
+        actualOwner: evidence.create_user_id,
+        ip: req.clientIp
+      }, req);
+
+      Logger.warn(`Unauthorized delete attempt: User ${requestingUserId} tried to delete evidence owned by ${evidence.create_user_id}`, {
+        evidenceId: evidenceId,
+        ip: req.clientIp
+      });
+
+      return res.status(403).json({
+        error: 'Unauthorized: You can only delete your own evidence',
+        code: 'OWNERSHIP_VIOLATION',
+        requestId: req.requestId
+      });
     }
 
     const storagePathToDelete = evidence.storage_path;
