@@ -2423,7 +2423,31 @@ app.delete('/api/dashcam/video/:evidenceId', checkSharedKey, async (req, res) =>
   }
 
   try {
-    const { evidenceId } = req.params; // This should ideally be the storage path or a unique identifier
+    const { evidenceId } = req.params;
+    
+    // Security Enhancement: Input validation to prevent malicious input
+    // Check if evidenceId is a valid UUID or numeric ID
+    const uuidRegex = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
+    const numericRegex = /^\d+$/;
+    
+    if (!uuidRegex.test(evidenceId) && !numericRegex.test(evidenceId)) {
+      Logger.warn(`Invalid evidence ID format attempted: ${evidenceId}`, { ip: req.clientIp });
+      return res.status(400).json({ 
+        error: 'Invalid evidence ID format',
+        code: 'INVALID_ID_FORMAT',
+        requestId: req.requestId 
+      });
+    }
+    
+    // Additional length check to prevent excessively long inputs
+    if (evidenceId.length > 100) {
+      Logger.warn(`Evidence ID too long: ${evidenceId.length} characters`, { ip: req.clientIp });
+      return res.status(400).json({ 
+        error: 'Evidence ID too long',
+        code: 'ID_TOO_LONG',
+        requestId: req.requestId 
+      });
+    }
 
     // Note: We need a way to map evidenceId to the actual storage path in Supabase.
     // For now, let's assume evidenceId is the storage path itself or we can query for it.
