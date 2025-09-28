@@ -14,10 +14,52 @@
       flex-direction: column;
       align-items: center;
       justify-content: center;
-      height: 100vh;
+      min-height: 100vh;
       text-align: center;
       padding: 20px;
       position: relative;
+    }
+
+    /* System Status Banner */
+    .system-status {
+      position: fixed;
+      top: 0;
+      left: 0;
+      right: 0;
+      padding: 8px;
+      font-size: 0.85rem;
+      z-index: 1000;
+      transition: all 0.3s ease;
+    }
+
+    .system-status.online {
+      background-color: rgba(16, 185, 129, 0.9);
+    }
+
+    .system-status.offline {
+      background-color: rgba(239, 68, 68, 0.9);
+    }
+
+    .system-status.checking {
+      background-color: rgba(251, 191, 36, 0.9);
+    }
+
+    /* User Status Bar */
+    .user-status {
+      position: fixed;
+      top: 40px;
+      right: 20px;
+      background: rgba(255, 255, 255, 0.2);
+      padding: 8px 16px;
+      border-radius: 20px;
+      font-size: 0.9rem;
+      backdrop-filter: blur(10px);
+      border: 1px solid rgba(255, 255, 255, 0.3);
+      display: none;
+    }
+
+    .user-status.show {
+      display: block;
     }
 
     header {
@@ -32,14 +74,6 @@
       width: 80%;
       height: auto;
       display: block;
-    }
-
-    /* Mobile responsive sizing */
-    @media (max-width: 768px) {
-      header img {
-        max-width: 200px;
-        width: 70%;
-      }
     }
 
     h1 {
@@ -80,18 +114,157 @@
       font-weight: bold;
       font-size: 1rem;
       cursor: pointer;
-      transition: background-color 0.3s ease, transform 0.2s ease;
+      transition: all 0.3s ease;
       min-width: 160px;
       box-shadow: 0 4px 10px rgba(0, 0, 0, 0.1);
+      position: relative;
+      overflow: hidden;
     }
 
     .cta-button:hover {
       background-color: #e6f2fb;
       transform: translateY(-2px);
+      box-shadow: 0 6px 15px rgba(0, 0, 0, 0.2);
     }
 
-    /* Mobile responsive - stack buttons vertically on small screens */
+    .cta-button:disabled {
+      background-color: #ccc;
+      color: #999;
+      cursor: not-allowed;
+      transform: none;
+    }
+
+    .cta-button.loading {
+      pointer-events: none;
+    }
+
+    .cta-button.loading::after {
+      content: '';
+      position: absolute;
+      top: 50%;
+      left: 50%;
+      width: 20px;
+      height: 20px;
+      margin-left: -10px;
+      margin-top: -10px;
+      border: 2px solid transparent;
+      border-top: 2px solid #007acc;
+      border-radius: 50%;
+      animation: spin 1s linear infinite;
+    }
+
+    @keyframes spin {
+      0% { transform: rotate(0deg); }
+      100% { transform: rotate(360deg); }
+    }
+
+    /* Primary action button styling */
+    .cta-button.primary {
+      background: linear-gradient(45deg, #ff6b6b, #ee5a24);
+      color: white;
+      font-weight: bold;
+      box-shadow: 0 4px 15px rgba(255, 107, 107, 0.3);
+    }
+
+    .cta-button.primary:hover {
+      background: linear-gradient(45deg, #ff5252, #e55100);
+      transform: translateY(-3px);
+      box-shadow: 0 8px 25px rgba(255, 107, 107, 0.4);
+    }
+
+    /* Emergency button */
+    .emergency-banner {
+      background: rgba(220, 38, 38, 0.9);
+      color: white;
+      padding: 15px;
+      border-radius: 10px;
+      margin-bottom: 2rem;
+      backdrop-filter: blur(10px);
+      border: 1px solid rgba(255, 255, 255, 0.2);
+      max-width: 500px;
+      width: 100%;
+    }
+
+    .emergency-banner h3 {
+      margin: 0 0 10px 0;
+      font-size: 1.2rem;
+    }
+
+    .emergency-banner p {
+      margin: 0;
+      font-size: 0.9rem;
+      opacity: 0.9;
+    }
+
+    .emergency-button {
+      background: #dc2626;
+      color: white;
+      padding: 12px 24px;
+      border: none;
+      border-radius: 6px;
+      font-weight: bold;
+      cursor: pointer;
+      margin-top: 10px;
+      transition: all 0.3s ease;
+    }
+
+    .emergency-button:hover {
+      background: #b91c1c;
+      transform: scale(1.05);
+    }
+
+    /* GDPR Notice */
+    .gdpr-notice {
+      position: fixed;
+      bottom: 0;
+      left: 0;
+      right: 0;
+      background: rgba(0, 0, 0, 0.9);
+      color: white;
+      padding: 15px;
+      font-size: 0.9rem;
+      z-index: 1000;
+      transform: translateY(100%);
+      transition: transform 0.3s ease;
+    }
+
+    .gdpr-notice.show {
+      transform: translateY(0);
+    }
+
+    .gdpr-buttons {
+      margin-top: 10px;
+      display: flex;
+      gap: 10px;
+      justify-content: center;
+    }
+
+    .gdpr-button {
+      padding: 8px 16px;
+      border: 1px solid white;
+      background: transparent;
+      color: white;
+      border-radius: 4px;
+      cursor: pointer;
+      font-size: 0.85rem;
+    }
+
+    .gdpr-button.accept {
+      background: #10b981;
+      border-color: #10b981;
+    }
+
+    /* Responsive Design */
     @media (max-width: 768px) {
+      header img {
+        max-width: 200px;
+        width: 70%;
+      }
+
+      h1 {
+        font-size: 2.2rem;
+      }
+
       .cta-buttons {
         flex-direction: column;
         align-items: center;
@@ -100,14 +273,78 @@
       .cta-button {
         min-width: 200px;
       }
+
+      .user-status {
+        position: relative;
+        top: auto;
+        right: auto;
+        margin-bottom: 1rem;
+      }
+    }
+
+    /* Loading states */
+    .loading-overlay {
+      position: fixed;
+      top: 0;
+      left: 0;
+      right: 0;
+      bottom: 0;
+      background: rgba(0, 122, 204, 0.9);
+      display: none;
+      align-items: center;
+      justify-content: center;
+      z-index: 2000;
+    }
+
+    .loading-overlay.show {
+      display: flex;
+    }
+
+    .loading-content {
+      text-align: center;
+      color: white;
+    }
+
+    .spinner {
+      width: 50px;
+      height: 50px;
+      border: 5px solid rgba(255, 255, 255, 0.3);
+      border-radius: 50%;
+      border-top-color: white;
+      animation: spin 1s ease-in-out infinite;
+      margin: 0 auto 20px;
     }
   </style>
 </head>
 <body>
+  <!-- System Status Banner -->
+  <div class="system-status checking" id="systemStatus">
+    <span id="statusText">🔍 Checking system status...</span>
+  </div>
+
+  <!-- User Status -->
+  <div class="user-status" id="userStatus">
+    <span id="userStatusText">Loading...</span>
+  </div>
+
+  <!-- Loading Overlay -->
+  <div class="loading-overlay" id="loadingOverlay">
+    <div class="loading-content">
+      <div class="spinner"></div>
+      <p id="loadingText">Loading...</p>
+    </div>
+  </div>
+
+  <!-- Emergency Banner (shown in emergencies) -->
+  <div class="emergency-banner" id="emergencyBanner" style="display: none;">
+    <h3>🚨 Emergency Mode Detected</h3>
+    <p>If this is a medical emergency, call 999 immediately</p>
+    <button class="emergency-button" onclick="callEmergency()">📞 Call 999</button>
+  </div>
 
   <!-- Logo -->
   <header>
-    <img src="logo.png" alt="Car Crash Lawyer AI Logo">
+    <img src="logo.png" alt="Car Crash Lawyer AI Logo" id="logo">
   </header>
 
   <!-- Main Heading -->
@@ -117,11 +354,495 @@
 
   <!-- Call to Action Buttons -->
   <div class="cta-buttons">
-    <button class="cta-button" onclick="window.location.href='signup.html'">Sign Up</button>
-    <button class="cta-button" onclick="window.location.href='incident.html'">Report an Incident</button>
-    <button class="cta-button" onclick="window.location.href='demo.html'">Try Demo</button>
-    <button class="cta-button" onclick="window.location.href='access-reports.html'">Access Reports</button>
+    <button class="cta-button primary" id="reportIncidentBtn" onclick="window.location.href='incident.html'">
+      <span id="reportIncidentText">Report an Incident</span>
+    </button>
+    <button class="cta-button" id="signUpBtn" onclick="window.open('#', '_blank')">
+      <span id="signUpText">Sign Up</span>
+    </button>
+    <button class="cta-button" id="accessReportsBtn" onclick="window.location.href='access-reports.html'">
+      <span id="accessReportsText">Access Reports</span>
+    </button>
+    <button class="cta-button" id="demoBtn" onclick="window.open('#', '_blank')">
+      <span id="demoText">Try Demo</span>
+    </button>
   </div>
 
+  <!-- GDPR Notice -->
+  <div class="gdpr-notice" id="gdprNotice">
+    <p><strong>🔒 Your Privacy Matters</strong></p>
+    <p>We use cookies and AI processing to provide legal assistance. By continuing, you consent to our privacy practices in compliance with UK GDPR.</p>
+    <div class="gdpr-buttons">
+      <button class="gdpr-button accept" onclick="acceptGDPR()">Accept</button>
+      <button class="gdpr-button" onclick="showPrivacyPolicy()">Learn More</button>
+      <button class="gdpr-button" onclick="declineGDPR()">Decline</button>
+    </div>
+  </div>
+
+  <script>
+    // ====================================
+    // CONFIGURATION SECTION
+    // ====================================
+    // 🔧 UPDATE THESE URLs TO MATCH YOUR TYPEFORM LINKS:
+    const TYPEFORM_URLS = {
+      signup: 'https://your-typeform-workspace.typeform.com/to/signup-form-id', // ⚠️ REPLACE with your actual Typeform signup URL
+      demo: 'https://form.typeform.com/to/XMBB3Xhq' // ✅ Demo Typeform URL configured
+    };
+
+    // 📝 To get your Typeform URLs:
+    // 1. Go to your Typeform dashboard
+    // 2. Open your signup/demo form
+    // 3. Click "Share" > "Link" 
+    // 4. Copy the URL and replace the URLs above
+    // Example: 'https://myworkspace.typeform.com/to/abc123def'
+
+    // Global application state
+    let userAuthenticated = false;
+    let userData = null;
+    let systemHealth = null;
+    let gdprConsentGiven = false;
+
+    // Initialize application on page load
+    document.addEventListener('DOMContentLoaded', async () => {
+      console.log('🚀 Car Crash Lawyer AI - Landing Page Initializing...');
+      console.log('📍 Current page:', window.location.href);
+      console.log('🔧 Typeform signup URL:', TYPEFORM_URLS.signup);
+      console.log('🔧 Typeform demo URL:', TYPEFORM_URLS.demo);
+
+      // Check GDPR consent first
+      checkGDPRConsent();
+
+      // Initialize system
+      await initializeSystem();
+
+      // Setup event listeners
+      setupEventListeners();
+
+      console.log('✅ Landing page initialized successfully');
+      console.log('🎯 Report Incident button ready - will navigate to incident.html');
+      console.log('📝 Sign Up button ready - will open Typeform signup in new tab');
+      console.log('📊 Access Reports button ready - will navigate to access-reports.html');
+      console.log('🎮 Try Demo button ready - will open Typeform demo in new tab');
+
+      // Warn if Typeform URLs not configured
+      if (TYPEFORM_URLS.signup.includes('your-typeform-workspace')) {
+        console.warn('⚠️ Please update TYPEFORM_URLS.signup with your actual Typeform signup URL');
+      }
+      if (TYPEFORM_URLS.demo.includes('your-typeform-workspace')) {
+        console.warn('⚠️ Please update TYPEFORM_URLS.demo with your actual Typeform demo URL');
+      }
+    });
+
+    // Check GDPR consent status
+    function checkGDPRConsent() {
+      const consent = localStorage.getItem('gdpr_consent');
+      const consentDate = localStorage.getItem('gdpr_consent_date');
+
+      // Check if consent is valid (within 12 months)
+      if (consent === 'accepted' && consentDate) {
+        const consentTimestamp = new Date(consentDate);
+        const twelveMonthsAgo = new Date();
+        twelveMonthsAgo.setFullYear(twelveMonthsAgo.getFullYear() - 1);
+
+        if (consentTimestamp > twelveMonthsAgo) {
+          gdprConsentGiven = true;
+          return;
+        }
+      }
+
+      // Show GDPR notice if consent not given or expired
+      // But don't block functionality - just inform
+      setTimeout(() => {
+        document.getElementById('gdprNotice').classList.add('show');
+      }, 2000);
+    }
+
+    // Initialize system checks
+    async function initializeSystem() {
+      try {
+        showLoading('Initializing system...');
+
+        // Check system health
+        await checkSystemHealth();
+
+        // Check user authentication if GDPR consent given
+        if (gdprConsentGiven) {
+          await checkUserAuthentication();
+        }
+
+        // Update UI based on state
+        updateUI();
+
+      } catch (error) {
+        console.error('❌ System initialization failed:', error);
+        showSystemStatus('offline', '❌ System offline - Limited functionality');
+      } finally {
+        hideLoading();
+      }
+    }
+
+    // Check system health
+    async function checkSystemHealth() {
+      try {
+        showSystemStatus('checking', '🔍 Checking system status...');
+
+        const response = await fetch('/health', {
+          method: 'GET',
+          headers: {
+            'Content-Type': 'application/json',
+          },
+          timeout: 5000
+        });
+
+        if (response.ok) {
+          systemHealth = await response.json();
+          showSystemStatus('online', '✅ All systems operational');
+          console.log('📊 System health:', systemHealth);
+        } else {
+          throw new Error(`Health check failed: ${response.status}`);
+        }
+
+      } catch (error) {
+        console.error('❌ Health check failed:', error);
+        showSystemStatus('offline', '⚠️ System issues detected');
+        systemHealth = null;
+      }
+    }
+
+    // Check user authentication
+    async function checkUserAuthentication() {
+      try {
+        const response = await fetch('/api/auth/status', {
+          method: 'GET',
+          headers: {
+            'Content-Type': 'application/json',
+          },
+          credentials: 'include'
+        });
+
+        if (response.ok) {
+          const authData = await response.json();
+
+          if (authData.authenticated && authData.user) {
+            userAuthenticated = true;
+            userData = authData.user;
+            showUserStatus(`👋 Welcome back, ${userData.displayName || 'User'}`);
+            console.log('✅ User authenticated:', userData.uid);
+          } else {
+            userAuthenticated = false;
+            userData = null;
+            console.log('ℹ️ User not authenticated');
+          }
+        }
+
+      } catch (error) {
+        console.error('❌ Authentication check failed:', error);
+        userAuthenticated = false;
+        userData = null;
+      }
+    }
+
+    // Update UI based on application state
+    function updateUI() {
+      // Update buttons based on authentication state
+      if (userAuthenticated) {
+        // User is logged in - Sign Up becomes Dashboard
+        document.getElementById('signUpText').textContent = 'Dashboard';
+        document.getElementById('reportIncidentText').textContent = 'Report New Incident';
+        // Access Reports always goes to access-reports.html for all users
+
+        // Show personalized options
+        updateButtonsForAuthenticatedUser();
+      } else {
+        // User not logged in - Sign Up goes to Typeform
+        document.getElementById('signUpText').textContent = 'Sign Up';
+        document.getElementById('reportIncidentText').textContent = 'Report an Incident';
+        // Access Reports always goes to access-reports.html for all users
+
+        // Show standard options
+        updateButtonsForGuestUser();
+      }
+
+      // Enable/disable buttons based on system health
+      if (!systemHealth) {
+        disableSystemDependentButtons();
+      }
+    }
+
+    // Setup event listeners for all buttons
+    function setupEventListeners() {
+      // Report Incident button - enhanced handler with fallback
+      const reportBtn = document.getElementById('reportIncidentBtn');
+      if (reportBtn) {
+        reportBtn.addEventListener('click', (e) => {
+          e.preventDefault(); // Prevent onclick from firing
+          handleReportIncident();
+        });
+      }
+
+      // Sign Up / Dashboard button - Typeform integration
+      const signUpBtn = document.getElementById('signUpBtn');
+      if (signUpBtn) {
+        // Update fallback onclick with actual Typeform URL
+        signUpBtn.setAttribute('onclick', `window.open('${TYPEFORM_URLS.signup}', '_blank'); return false;`);
+        // Remove onclick when enhanced handler takes over
+        signUpBtn.addEventListener('click', (e) => {
+          e.preventDefault(); // Prevent onclick from firing
+          handleSignUpOrDashboard();
+        });
+      }
+
+      // Access Reports button - direct navigation to access-reports.html
+      const accessBtn = document.getElementById('accessReportsBtn');
+      if (accessBtn) {
+        accessBtn.addEventListener('click', (e) => {
+          e.preventDefault(); // Prevent onclick from firing
+          handleAccessReports();
+        });
+      }
+
+      // Demo button - Typeform integration
+      const demoBtn = document.getElementById('demoBtn');
+      if (demoBtn) {
+        // Update fallback onclick with actual Typeform URL
+        demoBtn.setAttribute('onclick', `window.open('${TYPEFORM_URLS.demo}', '_blank'); return false;`);
+        demoBtn.addEventListener('click', (e) => {
+          e.preventDefault(); // Prevent onclick from firing
+          handleDemo();
+        });
+      }
+    }
+
+    // Handle report incident button click
+    async function handleReportIncident() {
+      console.log('🚗 Report Incident button clicked - navigating to incident.html');
+      const button = document.getElementById('reportIncidentBtn');
+
+      setButtonLoading(button, 'Loading incident form...');
+
+      try {
+        // Direct navigation to incident.html
+        navigateToPage('incident.html', 'incident report');
+
+      } catch (error) {
+        console.error('❌ Navigation failed:', error);
+        alert('❌ Unable to load incident report. Please try again.');
+        resetButton(button, 'Report an Incident');
+      }
+    }
+
+    // Handle sign up or dashboard navigation
+    async function handleSignUpOrDashboard() {
+      const button = document.getElementById('signUpBtn');
+
+      if (userAuthenticated) {
+        // Go to dashboard (for authenticated users)
+        setButtonLoading(button, 'Loading dashboard...');
+        navigateToPage('dashboard.html', 'dashboard');
+      } else {
+        // Go to Typeform signup (opens in new tab)
+        console.log('📝 Opening Typeform signup in new tab');
+        setButtonLoading(button, 'Opening signup form...');
+
+        // Open Typeform in new tab
+        window.open(TYPEFORM_URLS.signup, '_blank');
+
+        // Reset button after short delay
+        setTimeout(() => {
+          resetButton(button, 'Sign Up');
+        }, 1000);
+      }
+    }
+
+    // Handle access reports button click
+    async function handleAccessReports() {
+      console.log('📊 Access Reports button clicked - navigating to access-reports.html');
+      const button = document.getElementById('accessReportsBtn');
+
+      setButtonLoading(button, 'Loading reports...');
+
+      // Direct navigation to access-reports.html for all users
+      navigateToPage('access-reports.html', 'access reports');
+    }
+
+    // Handle demo button click
+    async function handleDemo() {
+      console.log('🎮 Opening Typeform demo in new tab');
+      const button = document.getElementById('demoBtn');
+      setButtonLoading(button, 'Opening demo form...');
+
+      // Open Typeform demo in new tab
+      window.open(TYPEFORM_URLS.demo, '_blank');
+
+      // Reset button after short delay
+      setTimeout(() => {
+        resetButton(button, 'Try Demo');
+      }, 1000);
+    }
+
+    // Check if emergency mode should be triggered
+    async function checkEmergencyMode() {
+      // This could check for various emergency indicators
+      // For now, return false unless specific conditions are met
+      return false;
+    }
+
+    // Show emergency banner
+    function showEmergencyBanner() {
+      document.getElementById('emergencyBanner').style.display = 'block';
+      document.getElementById('emergencyBanner').scrollIntoView({ behavior: 'smooth' });
+    }
+
+    // Call emergency services
+    function callEmergency() {
+      if (confirm('This will call 999 Emergency Services. Continue?')) {
+        window.location.href = 'tel:999';
+      }
+    }
+
+    // Navigate to page with loading and error handling
+    function navigateToPage(url, pageName) {
+      showLoading(`Loading ${pageName}...`);
+
+      // Simple direct navigation
+      setTimeout(() => {
+        window.location.href = url;
+      }, 300);
+    }
+
+    // Update buttons for authenticated users
+    function updateButtonsForAuthenticatedUser() {
+      // All users get same behavior: Access Reports → access-reports.html (they'll use their User ID there)
+      console.log('🔐 UI updated for authenticated user - Access Reports will go to access-reports.html');
+    }
+
+    // Update buttons for guest users
+    function updateButtonsForGuestUser() {
+      // All users: Report Incident → incident.html, Sign Up → Typeform, Access Reports → access-reports.html, Demo → Typeform
+      console.log('👤 UI updated for guest user - Sign Up and Demo will open Typeform, Reports go to access-reports.html');
+    }
+
+    // Disable buttons that require system functionality
+    function disableSystemDependentButtons() {
+      // Only disable Report Incident if system is down (Access Reports is a local page, so always available)
+      const buttons = ['reportIncidentBtn'];
+      buttons.forEach(buttonId => {
+        const button = document.getElementById(buttonId);
+        if (button) {
+          button.disabled = true;
+          button.title = 'System temporarily unavailable';
+        }
+      });
+    }
+
+    // GDPR Functions
+    function acceptGDPR() {
+      gdprConsentGiven = true;
+      localStorage.setItem('gdpr_consent', 'accepted');
+      localStorage.setItem('gdpr_consent_date', new Date().toISOString());
+
+      document.getElementById('gdprNotice').classList.remove('show');
+
+      // Record consent with backend
+      recordGDPRConsent('accepted');
+
+      // Re-initialize with consent
+      initializeSystem();
+    }
+
+    function declineGDPR() {
+      gdprConsentGiven = false;
+      localStorage.setItem('gdpr_consent', 'declined');
+      localStorage.setItem('gdpr_consent_date', new Date().toISOString());
+
+      document.getElementById('gdprNotice').classList.remove('show');
+
+      // Record consent with backend
+      recordGDPRConsent('declined');
+
+      // Show limited functionality message
+      alert('⚠️ Some features will be limited without consent. You can change this in settings.');
+    }
+
+    function showPrivacyPolicy() {
+      window.open('privacy-policy.html', '_blank');
+    }
+
+    // Record GDPR consent with backend
+    async function recordGDPRConsent(decision) {
+      try {
+        await fetch('/api/gdpr/consent', {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+          },
+          body: JSON.stringify({
+            decision: decision,
+            timestamp: new Date().toISOString(),
+            page: 'landing'
+          })
+        });
+      } catch (error) {
+        console.error('❌ Failed to record GDPR consent:', error);
+      }
+    }
+
+    // UI Helper Functions
+    function showLoading(message) {
+      document.getElementById('loadingText').textContent = message;
+      document.getElementById('loadingOverlay').classList.add('show');
+    }
+
+    function hideLoading() {
+      document.getElementById('loadingOverlay').classList.remove('show');
+    }
+
+    function showSystemStatus(status, message) {
+      const statusElement = document.getElementById('systemStatus');
+      const textElement = document.getElementById('statusText');
+
+      statusElement.className = `system-status ${status}`;
+      textElement.textContent = message;
+    }
+
+    function showUserStatus(message) {
+      const statusElement = document.getElementById('userStatus');
+      const textElement = document.getElementById('userStatusText');
+
+      textElement.textContent = message;
+      statusElement.classList.add('show');
+    }
+
+    function setButtonLoading(button, text) {
+      const textElement = button.querySelector('span');
+      textElement.textContent = text;
+      button.classList.add('loading');
+      button.disabled = true;
+    }
+
+    function resetButton(button, originalText) {
+      const textElement = button.querySelector('span');
+      textElement.textContent = originalText;
+      button.classList.remove('loading');
+      button.disabled = false;
+    }
+
+    // Error handling for uncaught errors
+    window.addEventListener('error', (event) => {
+      console.error('❌ Uncaught error:', event.error);
+      // Could send error to logging service
+    });
+
+    // Handle online/offline status
+    window.addEventListener('online', () => {
+      console.log('🌐 Connection restored');
+      checkSystemHealth();
+    });
+
+    window.addEventListener('offline', () => {
+      console.log('📵 Connection lost');
+      showSystemStatus('offline', '📵 No internet connection');
+    });
+  </script>
 </body>
 </html>
