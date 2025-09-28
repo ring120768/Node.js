@@ -90,17 +90,17 @@ const UUIDUtils = {
     const uuidRegex = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
     return uuidRegex.test(str);
   },
-  
+
   // Ensure we have a valid UUID (generate deterministic one if needed)
   ensureValidUUID: (userId) => {
     if (!userId) return null;
-    
+
     const uuidRegex = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
-    
+
     if (uuidRegex.test(userId)) {
       return userId;
     }
-    
+
     // For non-UUID user IDs, generate a deterministic UUID
     const crypto = require('crypto');
     const hash = crypto.createHash('md5').update(userId).digest('hex');
@@ -112,7 +112,7 @@ const UUIDUtils = {
       hash.substring(20, 32)
     ].join('-');
   },
-  
+
   // Generate new random UUID
   generateUUID: () => {
     const crypto = require('crypto');
@@ -127,13 +127,13 @@ const Validator = {
     if (!id) return false;
     return /^[a-zA-Z0-9_-]{3,64}$/.test(id);
   },
-  
+
   // Validate email format
   isValidEmail: (email) => {
     if (!email) return false;
     return /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email);
   },
-  
+
   // Validate phone number (UK format)
   isValidPhone: (phone) => {
     if (!phone) return false;
@@ -141,7 +141,7 @@ const Validator = {
     const cleaned = phone.replace(/\s+/g, '');
     return /^(\+44|0)[0-9]{10,11}$/.test(cleaned);
   },
-  
+
   // Sanitize input to prevent XSS
   sanitizeInput: (input) => {
     if (!input) return '';
@@ -149,13 +149,13 @@ const Validator = {
       .replace(/[<>]/g, '')
       .trim();
   },
-  
+
   // Validate incident ID format
   isValidIncidentId: (id) => {
     if (!id) return false;
     return UUIDUtils.isValidUUID(id) || /^\d+$/.test(id);
   },
-  
+
   // Validate file type
   isValidFileType: (mimetype, category) => {
     const allowedTypes = {
@@ -163,7 +163,7 @@ const Validator = {
       image: ['image/jpeg', 'image/png', 'image/webp', 'image/heic', 'image/heif'],
       video: ['video/mp4', 'video/webm', 'video/quicktime']
     };
-    
+
     return allowedTypes[category]?.includes(mimetype) || false;
   }
 };
@@ -218,6 +218,20 @@ const strictLimiter = rateLimit({
   standardHeaders: true,
   legacyHeaders: false,
   trustProxy: 1  // FIXED: Changed from true to 1
+});
+
+// FIXED: Define webhookLimiter for specific webhook endpoints
+const webhookLimiter = rateLimit({
+  windowMs: 15 * 60 * 1000, // 15 minutes
+  max: 50, // Allow 50 webhook requests per window
+  message: 'Too many webhook requests, please try again later.',
+  standardHeaders: true,
+  legacyHeaders: false,
+  trustProxy: 1,
+  skip: (req) => {
+    // Skip rate limiting for health checks
+    return req.path === '/health';
+  }
 });
 
 // --- MIDDLEWARE SETUP ---
@@ -2727,7 +2741,170 @@ app.post('/api/consent/test-extraction', checkSharedKey, async (req, res) => {
     });
   }
 });
-app.post('/webhook/signup-simple', checkSharedKey, async (req, res) => {
+app.post('/webhook/signup', webhookLimiter, checkSharedKey, async (req, res) => {
+  console.log('=======================================');
+  console.log('SIGNUP WEBHOOK - RECEIVED REQUEST');
+  console.log('=======================================');
+
+  try {
+    // Log incoming data
+    console.log('Headers:', req.headers);
+    console.log('Body:', JSON.stringify(req.body, null, 2));
+
+    // Check authentication (already handled by checkSharedKey, but good for explicit logs)
+    if (req.headers['x-api-key'] !== process.env.ZAPIER_SHARED_KEY && req.headers['authorization'] !== `Bearer ${process.env.ZAPIER_SHARED_KEY}`) {
+      console.log('❌ Authentication failed (should not happen here if checkSharedKey passed)');
+      return res.status(401).json({
+        error: 'Unauthorized',
+        message: 'Invalid API key'
+      });
+    }
+    console.log('✅ Authentication successful');
+
+    // Process webhook data
+    const webhookData = req.body;
+
+    // Check for GDPR consent before proceeding
+    if (!req.hasConsent) {
+      const userId = webhookData?.create_user_id || webhookData?.userId; // Try to get user ID for logging
+      const warningMessage = `Processing signup webhook without consent for user ${userId || 'unknown'}.`;
+      console.log(`⚠️ ${warningMessage}`);
+      // Log GDPR activity for processing without consent
+      await logGDPRActivity(userId || 'unknown', 'SIGNUP_WEBHOOK_PROCESSED_WITHOUT_CONSENT', {
+        details: warningMessage,
+        ip: req.clientIp,
+        request_id: req.requestId
+      }, req);
+      // Continue processing, but log the consent issue.
+    }
+
+    // Process images if available
+    if (imageProcessor && webhookData.create_user_id) {
+      console.log('Processing images for signup...');
+      await imageProcessor.processSignupImages(webhookData);
+      console.log('Image processing complete.');
+    } else if (!webhookData.create_user_id) {
+      console.log('Skipping image processing - missing create_user_id');
+    } else {
+      console.log('Skipping image processing - imageProcessor not available');
+    }
+
+    // Log GDPR activity for signup webhook processing
+    const userIdForLog = webhookData?.create_user_id || webhookData?.userId;
+    await logGDPRActivity(userIdForLog || 'unknown', 'SIGNUP_WEBHOOK_PROCESSED', {
+      ip: req.clientIp,
+      request_id: req.requestId,
+      consent_granted: req.hasConsent,
+      consent_warning: req.gdprWarning
+    }, req);
+
+    console.log('✅ Signup webhook processed successfully');
+    return res.status(200).json({
+      success: true,
+      message: 'Signup webhook processed successfully',
+      data: webhookData
+    });
+
+  } catch (error) {
+    Logger.error('❌ Signup webhook error:', error);
+    return res.status(500).json({
+      error: 'Internal server error processing signup webhook',
+      message: error.message,
+      details: error.stack,
+      requestId: req.requestId
+    });
+  }
+});
+
+console.log('✅ Signup webhook endpoint registered at /webhook/signup');
+
+app.post('/webhook/incident-report', webhookLimiter, checkSharedKey, async (req, res) => {
+  console.log('=======================================');
+  console.log('INCIDENT REPORT WEBHOOK - RECEIVED REQUEST');
+  console.log('=======================================');
+
+  try {
+    // Log incoming data
+    console.log('Headers:', req.headers);
+    console.log('Body:', JSON.stringify(req.body, null, 2));
+
+    // Authentication is handled by checkSharedKey
+
+    const webhookData = req.body;
+    const userId = webhookData?.create_user_id || webhookData?.userId;
+    const incidentId = webhookData?.id || webhookData?.incident_report_id;
+
+    if (!userId) {
+      console.log('❌ Missing create_user_id or userId in request body');
+      return res.status(400).json({
+        error: 'Missing create_user_id or userId',
+        message: 'Please provide a valid user identifier'
+      });
+    }
+
+    if (!incidentId) {
+      console.log('❌ Missing incident ID in request body');
+      return res.status(400).json({
+        error: 'Missing incident ID',
+        message: 'Please provide a valid incident identifier'
+      });
+    }
+
+    // GDPR: Check consent and log for audit purposes
+    if (!req.hasConsent) {
+      const warningMessage = `Processing incident report webhook without consent for user ${userId}.`;
+      console.log(`⚠️ ${warningMessage}`);
+      await logGDPRActivity(userId, 'INCIDENT_REPORT_WEBHOOK_PROCESSED_WITHOUT_CONSENT', {
+        incidentId: incidentId,
+        details: warningMessage,
+        ip: req.clientIp,
+        request_id: req.requestId
+      }, req);
+      // Continue processing, but log the consent issue.
+    }
+
+    // Process files if available and imageProcessor is initialized
+    if (imageProcessor) {
+      console.log(`Processing files for incident ${incidentId} and user ${userId}...`);
+      const processingResult = await imageProcessor.processIncidentReportFiles(webhookData);
+      console.log('File processing complete.');
+      // Optionally send processingResult back or just acknowledge
+    } else {
+      console.log('Skipping file processing - imageProcessor not available');
+    }
+
+    // Log GDPR activity for incident report webhook processing
+    await logGDPRActivity(userId, 'INCIDENT_REPORT_WEBHOOK_PROCESSED', {
+      incidentId: incidentId,
+      ip: req.clientIp,
+      request_id: req.requestId,
+      consent_granted: req.hasConsent,
+      consent_warning: req.gdprWarning
+    }, req);
+
+    console.log('✅ Incident report webhook processed successfully');
+    return res.status(200).json({
+      success: true,
+      message: 'Incident report webhook processed successfully',
+      incidentId: incidentId,
+      userId: userId,
+      data: webhookData // Echo back processed data if useful
+    });
+
+  } catch (error) {
+    Logger.error('❌ Incident report webhook error:', error);
+    return res.status(500).json({
+      error: 'Internal server error processing incident report webhook',
+      message: error.message,
+      details: error.stack,
+      requestId: req.requestId
+    });
+  }
+});
+
+console.log('✅ Incident report webhook endpoint registered at /webhook/incident-report');
+
+app.post('/webhook/signup-simple', webhookLimiter, checkSharedKey, async (req, res) => {
   console.log('=======================================');
   console.log('SIMPLE WEBHOOK TEST - RECEIVED REQUEST');
   console.log('=======================================');
