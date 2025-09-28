@@ -437,7 +437,7 @@
 
   <!-- Call to Action Buttons -->
   <div class="cta-buttons">
-    <button class="cta-button primary" id="reportIncidentBtn" onclick="window.open('#', '_blank')">
+    <button class="cta-button primary" id="reportIncidentBtn">
       <span id="reportIncidentText">Report an Incident</span>
     </button>
     <button class="cta-button" id="signUpBtn" onclick="window.open('#', '_blank')">
@@ -704,22 +704,17 @@
 
     // Handle report incident button click
     async function handleReportIncident() {
-      console.log('🚗 Report Incident button clicked - opening Typeform incident report');
+      console.log('🚗 Report Incident button clicked - navigating to incident.html');
       const button = document.getElementById('reportIncidentBtn');
 
-      setButtonLoading(button, 'Opening incident form...');
+      setButtonLoading(button, 'Loading incident form...');
 
       try {
-        // Open Typeform incident report in new tab
-        window.open(TYPEFORM_URLS.incident, '_blank');
-
-        // Reset button after short delay
-        setTimeout(() => {
-          resetButton(button, 'Report an Incident');
-        }, 1000);
+        // Navigate to local incident.html page
+        navigateToPage('incident.html', 'incident report');
 
       } catch (error) {
-        console.error('❌ Failed to open incident form:', error);
+        console.error('❌ Failed to navigate to incident form:', error);
         alert('❌ Unable to open incident report. Please try again.');
         resetButton(button, 'Report an Incident');
       }
