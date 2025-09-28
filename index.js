@@ -4572,4 +4572,12 @@ server.listen(PORT, () => {
 });
 
 // Export for testing
-module.exports = { app, server, gdprModule };
+module.exports = { 
+  app, 
+  server, 
+  gdprModule,
+  // Export for testing
+  UUIDUtils,
+  Validator,
+  Logger
+};
