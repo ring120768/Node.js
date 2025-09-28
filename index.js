@@ -4322,4 +4322,4 @@ server.listen(PORT, () => {
 });
 
 // Export for testing
-module.module.exports = { app, server, gdprModule };
+module.exports = { app, server, gdprModule };
