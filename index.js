@@ -4524,52 +4524,54 @@ if (supabaseEnabled) {
   }, 5000); // Wait 5 seconds after server start
 }
 
-// Start the server
-server.listen(PORT, () => {
-  Logger.success(`🚀 Server running on port ${PORT}`);
-  Logger.info(`📊 Environment: ${process.env.NODE_ENV || 'development'}`);
-  Logger.info(`🔐 GDPR Compliance: ${gdprModule ? 'ACTIVE' : 'DISABLED'}`);
-  Logger.info(`🗄️ Supabase: ${supabaseEnabled ? 'CONNECTED' : 'DISABLED'}`);
-  Logger.info(`🤖 OpenAI: ${process.env.OPENAI_API_KEY ? 'CONFIGURED' : 'NOT CONFIGURED'}`);
-  Logger.info(`🔄 Transcription Queue: ${transcriptionQueueInterval ? 'RUNNING' : 'DISABLED'}`);
-  Logger.info(`🔌 WebSocket: ACTIVE`);
-  Logger.info(`🎤 Recording Interface: UNIFIED at /transcription-status.html`);
-  Logger.info(`⚡ Realtime Updates: ${realtimeChannels.transcriptionChannel ? 'ENABLED' : 'DISABLED (optional)'}`);
-  Logger.info(`✅ Trust Proxy: FIXED (set to 1 for proper rate limiting)`);
-  Logger.info(`✅ Consent Handling: ENHANCED with GDPR module`);
-  Logger.info(`🌍 Jurisdiction Detection: ${gdprModule ? 'ENABLED' : 'DISABLED'}`);
-  Logger.info(`🔒 Privacy Laws: ${gdprModule ? 'UK GDPR + US State Laws' : 'Basic'}`);
-  Logger.info(`✅ Legal Narrative: FIXED - Consolidated endpoints with ai_summary storage`);
-  Logger.info(`✅ Syntax Errors: ALL FIXED`);
-  Logger.info(`🎥 Dash-cam Upload: ${supabaseEnabled ? 'INITIALIZING...' : 'DISABLED'}`);
+// Only start server if not in test mode
+if (process.env.NODE_ENV !== 'test') {
+  server.listen(PORT, () => {
+    Logger.success(`🚀 Server running on port ${PORT}`);
+    Logger.info(`📊 Environment: ${process.env.NODE_ENV || 'development'}`);
+    Logger.info(`🔐 GDPR Compliance: ${gdprModule ? 'ACTIVE' : 'DISABLED'}`);
+    Logger.info(`🗄️ Supabase: ${supabaseEnabled ? 'CONNECTED' : 'DISABLED'}`);
+    Logger.info(`🤖 OpenAI: ${process.env.OPENAI_API_KEY ? 'CONFIGURED' : 'NOT CONFIGURED'}`);
+    Logger.info(`🔄 Transcription Queue: ${transcriptionQueueInterval ? 'RUNNING' : 'DISABLED'}`);
+    Logger.info(`🔌 WebSocket: ACTIVE`);
+    Logger.info(`🎤 Recording Interface: UNIFIED at /transcription-status.html`);
+    Logger.info(`⚡ Realtime Updates: ${realtimeChannels.transcriptionChannel ? 'ENABLED' : 'DISABLED (optional)'}`);
+    Logger.info(`✅ Trust Proxy: FIXED (set to 1 for proper rate limiting)`);
+    Logger.info(`✅ Consent Handling: ENHANCED with GDPR module`);
+    Logger.info(`🌍 Jurisdiction Detection: ${gdprModule ? 'ENABLED' : 'DISABLED'}`);
+    Logger.info(`🔒 Privacy Laws: ${gdprModule ? 'UK GDPR + US State Laws' : 'Basic'}`);
+    Logger.info(`✅ Legal Narrative: FIXED - Consolidated endpoints with ai_summary storage`);
+    Logger.info(`✅ Syntax Errors: ALL FIXED`);
+    Logger.info(`🎥 Dash-cam Upload: ${supabaseEnabled ? 'INITIALIZING...' : 'DISABLED'}`);
 
-  if (!SHARED_KEY) {
-    Logger.warn('⚠️ ZAPIER_SHARED_KEY not set - authentication disabled');
-  }
+    if (!SHARED_KEY) {
+      Logger.warn('⚠️ ZAPIER_SHARED_KEY not set - authentication disabled');
+    }
 
-  // List available endpoints
-  Logger.info('📍 Key endpoints:');
-  Logger.info('  - GET  /health - System health check');
-  Logger.info('  - GET  /transcription-status.html - Main recording interface');
-  Logger.info('  - POST /api/whisper/transcribe - Process audio');
-  Logger.info('  - POST /webhook/signup - Process signup with consent');
-  Logger.info('  - POST /webhook/signup-simple - Simple testing signup endpoint');
-  Logger.info('  - POST /webhook/incident-report - Process incident');
-  Logger.info('  - GET  /api/gdpr/user-rights/:userId - Privacy rights dashboard');
-  Logger.info('  - POST /api/gdpr/consent - Grant consent');
-  Logger.info('  - POST /api/gdpr/dsr - Submit data request');
-  Logger.info('  - GET  /api/gdpr/admin/dashboard - Admin compliance view');
-  Logger.info('  - POST /api/generate-legal-narrative - Generate formal legal narrative [FIXED]');
-  Logger.info('  - POST /api/update-legal-narrative - Update/save narrative [FIXED]');
-  Logger.info('  - GET  /api/legal-narratives/:userId - Get saved narratives [FIXED]');
-  Logger.info('  - GET  /api/dashcam/signed-url/:userId/:incidentId/:filename - Get video signed URL');
-  Logger.info('  - GET  /api/dashcam/videos/:userId/:incidentId - Get user videos');
-  Logger.info('  - DELETE /api/dashcam/video/:evidenceId - Delete video');
+    // List available endpoints
+    Logger.info('📍 Key endpoints:');
+    Logger.info('  - GET  /health - System health check');
+    Logger.info('  - GET  /transcription-status.html - Main recording interface');
+    Logger.info('  - POST /api/whisper/transcribe - Process audio');
+    Logger.info('  - POST /webhook/signup - Process signup with consent');
+    Logger.info('  - POST /webhook/signup-simple - Simple testing signup endpoint');
+    Logger.info('  - POST /webhook/incident-report - Process incident');
+    Logger.info('  - GET  /api/gdpr/user-rights/:userId - Privacy rights dashboard');
+    Logger.info('  - POST /api/gdpr/consent - Grant consent');
+    Logger.info('  - POST /api/gdpr/dsr - Submit data request');
+    Logger.info('  - GET  /api/gdpr/admin/dashboard - Admin compliance view');
+    Logger.info('  - POST /api/generate-legal-narrative - Generate formal legal narrative [FIXED]');
+    Logger.info('  - POST /api/update-legal-narrative - Update/save narrative [FIXED]');
+    Logger.info('  - GET  /api/legal-narratives/:userId - Get saved narratives [FIXED]');
+    Logger.info('  - GET  /api/dashcam/signed-url/:userId/:incidentId/:filename - Get video signed URL');
+    Logger.info('  - GET  /api/dashcam/videos/:userId/:incidentId - Get user videos');
+    Logger.info('  - DELETE /api/dashcam/video/:evidenceId - Delete video');
 
-  Logger.success('✅ All systems operational with GDPR compliance - Ready to serve requests');
-  Logger.success('🔧 GDPR Module integrated - Full privacy law compliance enabled');
-  Logger.success('📝 Legal Narrative Generation - Fixed and fully operational');
-});
+    Logger.success('✅ All systems operational with GDPR compliance - Ready to serve requests');
+    Logger.success('🔧 GDPR Module integrated - Full privacy law compliance enabled');
+    Logger.success('📝 Legal Narrative Generation - Fixed and fully operational');
+  });
+}
 
 // Export for testing
 module.exports = { 
