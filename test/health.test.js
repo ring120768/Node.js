@@ -1,8 +1,19 @@
 
 const request = require('supertest');
-const { app } = require('../index');
 
 describe('Health Check', () => {
+  let app;
+  
+  beforeAll(() => {
+    // Set test environment
+    process.env.NODE_ENV = 'test';
+    process.env.PORT = '3001';
+    
+    // Now require the app after environment is set
+    const index = require('../index');
+    app = index.app;
+  });
+
   test('GET /health should return 200', async () => {
     const response = await request(app)
       .get('/health')
