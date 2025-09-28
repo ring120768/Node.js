@@ -1273,7 +1273,23 @@ async function prepareAccidentDataForNarrative(userId, incidentId = null) {
     // Fetch user signup data
     const { data: userData } = await supabase
       .from('user_signup')
-      .select('*')
+      .select(`
+        create_user_id,
+        email,
+        name,
+        surname,
+        mobile,
+        vehicle_make,
+        vehicle_model,
+        vehicle_color,
+        vehicle_registration,
+        vehicle_year,
+        insurance_company,
+        policy_number,
+        emergency_contact,
+        recovery_breakdown_number,
+        emergency_services_number
+      `)
       .eq('create_user_id', userId)
       .single();
 
@@ -1287,7 +1303,39 @@ async function prepareAccidentDataForNarrative(userId, incidentId = null) {
     if (incidentId) {
       const { data } = await supabase
         .from('incident_reports')
-        .select('*')
+        .select(`
+          id,
+          incident_date,
+          incident_time,
+          incident_location,
+          what3words,
+          weather_conditions,
+          road_conditions,
+          speed_limit,
+          estimated_speed,
+          other_driver_name,
+          other_driver_contact,
+          other_vehicle_make,
+          other_vehicle_model,
+          other_vehicle_registration,
+          other_vehicle_color,
+          other_insurance_company,
+          other_policy_number,
+          vehicle_damage_description,
+          injuries_sustained,
+          medical_attention_required,
+          police_attended,
+          police_reference,
+          witnesses_present,
+          witness_details,
+          anything_else_important,
+          detailed_account_of_what_happened,
+          file_url_documents,
+          file_url_other_vehicle,
+          file_url_scene_overview,
+          file_url_vehicle_damage,
+          file_url_what3words
+        `)
         .eq('id', incidentId)
         .eq('create_user_id', userId)
         .single();
@@ -1296,7 +1344,39 @@ async function prepareAccidentDataForNarrative(userId, incidentId = null) {
       // Get the latest incident report for the user
       const { data } = await supabase
         .from('incident_reports')
-        .select('*')
+        .select(`
+          id,
+          incident_date,
+          incident_time,
+          incident_location,
+          what3words,
+          weather_conditions,
+          road_conditions,
+          speed_limit,
+          estimated_speed,
+          other_driver_name,
+          other_driver_contact,
+          other_vehicle_make,
+          other_vehicle_model,
+          other_vehicle_registration,
+          other_vehicle_color,
+          other_insurance_company,
+          other_policy_number,
+          vehicle_damage_description,
+          injuries_sustained,
+          medical_attention_required,
+          police_attended,
+          police_reference,
+          witnesses_present,
+          witness_details,
+          anything_else_important,
+          detailed_account_of_what_happened,
+          file_url_documents,
+          file_url_other_vehicle,
+          file_url_scene_overview,
+          file_url_vehicle_damage,
+          file_url_what3words
+        `)
         .eq('create_user_id', userId)
         .order('created_at', { ascending: false })
         .limit(1)
@@ -1307,7 +1387,7 @@ async function prepareAccidentDataForNarrative(userId, incidentId = null) {
     // Fetch transcription data
     const { data: transcriptionData } = await supabase
       .from('ai_transcription')
-      .select('*')
+      .select('transcription_text')
       .eq('create_user_id', userId)
       .order('created_at', { ascending: false })
       .limit(1)
@@ -1317,9 +1397,10 @@ async function prepareAccidentDataForNarrative(userId, incidentId = null) {
     const accidentData = {
       // User information
       create_user_id: userId,
-      full_name: userData.full_name,
       email: userData.email,
-      phone_number: userData.phone_number,
+      name: userData.name,
+      surname: userData.surname,
+      mobile: userData.mobile,
 
       // Vehicle information
       vehicle_make: userData.vehicle_make,
@@ -1368,7 +1449,19 @@ async function prepareAccidentDataForNarrative(userId, incidentId = null) {
       ai_transcription: transcriptionData?.transcription_text || incidentData?.detailed_account_of_what_happened,
 
       // Additional info
-      anything_else_important: incidentData?.anything_else_important
+      anything_else_important: incidentData?.anything_else_important,
+
+      // Files (store URLs for convenience)
+      file_url_documents: incidentData?.file_url_documents,
+      file_url_other_vehicle: incidentData?.file_url_other_vehicle,
+      file_url_scene_overview: incidentData?.file_url_scene_overview,
+      file_url_vehicle_damage: incidentData?.file_url_vehicle_damage,
+      file_url_what3words: incidentData?.file_url_what3words,
+
+      // Emergency Contact Info
+      emergency_contact: userData.emergency_contact,
+      recovery_breakdown_number: userData.recovery_breakdown_number,
+      emergency_services_number: userData.emergency_services_number
     };
 
     // Clean up undefined values
@@ -1392,7 +1485,7 @@ async function prepareAccidentDataForNarrative(userId, incidentId = null) {
   }
 }
 
-// --- FIXED TRANSCRIPTION PROCESSOR ---
+// --- PROCESSED TRANSCRIPTION FROM BUFFER FUNCTION ---
 async function processTranscriptionFromBuffer(queueId, audioBuffer, create_user_id, incident_report_id, audioUrl) {
   let retryCount = 0;
 
@@ -1861,7 +1954,7 @@ class ImageProcessor {
       // Verify user exists
       const { data: user } = await this.supabase
         .from('user_signup')
-        .select('create_user_id')
+        .select('create_user_id, name, surname, email, mobile')
         .eq('create_user_id', webhookData.create_user_id)
         .single();
 
@@ -1899,7 +1992,7 @@ class ImageProcessor {
               metadata: {
                 upload_date: new Date().toISOString(),
                 source: 'typeform_signup',
-                gdpr_consent: true
+                gdpr_consent: true // Assuming consent is handled elsewhere
               }
             });
 
@@ -2008,7 +2101,7 @@ class ImageProcessor {
                 extension = '.webp';
                 contentType = 'image/webp';
               } else {
-                extension = '.jpg';
+                extension = '.jpg'; // Default to jpg if extension unknown but treated as image
                 contentType = 'image/jpeg';
               }
             } else {
@@ -2032,7 +2125,7 @@ class ImageProcessor {
                 extension = '.aac';
                 contentType = 'audio/aac';
               } else {
-                extension = '.mp3';
+                extension = '.mp3'; // Default to mp3 if extension unknown but treated as audio
                 contentType = 'audio/mpeg';
               }
             }
@@ -2054,7 +2147,7 @@ class ImageProcessor {
                 file_type: isImage ? 'image' : 'audio',
                 file_extension: extension,
                 content_type: contentType,
-                gdpr_consent: true
+                gdpr_consent: true // Assuming consent is handled elsewhere
               }
             });
 
@@ -2174,7 +2267,7 @@ class ImageProcessor {
         incident_report_id: imageData.incident_report_id || null,
         image_type: imageData.image_type,
         file_name: imageData.storage_path,
-        gdpr_consent: { consent_given: true },
+        gdpr_consent: { consent_given: true }, // Assuming consent is handled and verified
         metadata: imageData.metadata,
         uploaded_at: new Date().toISOString(),
         is_anonymized: false
@@ -2589,9 +2682,6 @@ app.post('/api/consent/test-extraction', checkSharedKey, async (req, res) => {
     });
   }
 });
-// ========================================
-// SIMPLE TEST ENDPOINT FOR WEBHOOK TESTING
-// ========================================
 app.post('/webhook/signup-simple', async (req, res) => {
   console.log('=======================================');
   console.log('SIMPLE WEBHOOK TEST - RECEIVED REQUEST');
@@ -2606,9 +2696,9 @@ app.post('/webhook/signup-simple', async (req, res) => {
     const authKey = req.headers['x-api-key'] || req.headers['authorization'];
     if (authKey !== process.env.ZAPIER_SHARED_KEY) {
       console.log('❌ Authentication failed');
-      return res.status(401).json({ 
+      return res.status(401).json({
         error: 'Unauthorized',
-        message: 'Invalid API key' 
+        message: 'Invalid API key'
       });
     }
     console.log('✅ Authentication successful');
@@ -2622,54 +2712,83 @@ app.post('/webhook/signup-simple', async (req, res) => {
       console.log('Testing Supabase connection...');
 
       try {
+        // Generate UUID for id field (required)
+        const crypto = require('crypto');
+        const userId = crypto.randomUUID();
+
+        // Split name into first and last if provided as single string
+        let firstName = 'Test';
+        let lastName = 'User';
+
+        if (name) {
+          if (name.includes(' ')) {
+            const nameParts = name.split(' ');
+            firstName = nameParts[0];
+            lastName = nameParts.slice(1).join(' ');
+          } else {
+            firstName = name;
+            lastName = 'User';
+          }
+        }
+
+        const insertData = {
+          id: userId,  // Required UUID field
+          create_user_id: `test_${Date.now()}`, // Required field
+          email: email || 'test@example.com',   // Required field
+          name: firstName,      // First name
+          surname: lastName,    // Last name
+          mobile: phone || null,  // Phone field is actually 'mobile'
+          gdpr_consent: true,
+          gdpr_consent_date: new Date().toISOString(),
+          created_at: new Date().toISOString(),
+          submit_date: new Date().toISOString()
+        };
+
+        console.log('Inserting data:', insertData);
+
         const { data, error } = await supabase
           .from('user_signup')
-          .insert({
-            email: email || 'test@example.com',
-            name: name || 'Test User',
-            phone: phone || '000-000-0000',
-            gdpr_consent: true,
-            created_at: new Date().toISOString()
-          })
+          .insert(insertData)
           .select()
           .single();
 
         if (error) {
           console.log('⚠️ Supabase error:', error.message);
-          return res.status(503).json({ 
+          console.log('Error details:', error);
+          return res.status(503).json({
             error: 'Database error',
-            details: error.message 
+            details: error.message
           });
         }
 
         console.log('✅ Data saved:', data);
-        return res.status(200).json({ 
+        return res.status(200).json({
           success: true,
           message: 'Test webhook processed successfully',
-          data: data 
+          data: data
         });
       } catch (dbError) {
         console.log('Database error:', dbError);
-        return res.status(503).json({ 
+        return res.status(503).json({
           error: 'Database connection failed',
-          details: dbError.message 
+          details: dbError.message
         });
       }
     } else {
       // No Supabase - just echo back
       console.log('⚠️ Supabase not configured - returning echo');
-      return res.status(200).json({ 
+      return res.status(200).json({
         success: true,
         message: 'Webhook received (no database)',
-        received: req.body 
+        received: req.body
       });
     }
 
   } catch (error) {
     console.error('❌ Webhook error:', error);
-    return res.status(500).json({ 
+    return res.status(500).json({
       error: 'Internal server error',
-      message: error.message 
+      message: error.message
     });
   }
 });
@@ -3171,7 +3290,15 @@ app.get('/api/debug/user/:userId', checkSharedKey, async (req, res) => {
 
     const { data: userSignup, error: userError } = await supabase
       .from('user_signup')
-      .select('*')
+      .select(`
+        create_user_id,
+        email,
+        name,
+        surname,
+        mobile,
+        gdpr_consent,
+        legal_support
+      `)
       .eq('create_user_id', userId)
       .single();
     checks.user_signup = { data: userSignup, error: userError };
@@ -3369,9 +3496,7 @@ app.get('/api/test-openai', async (req, res) => {
     const response = await axios.get(
       'https://api.openai.com/v1/models',
       {
-        headers: {
-          'Authorization': `Bearer ${process.env.OPENAI_API_KEY}`
-        },
+        headers: { 'Authorization': `Bearer ${process.env.OPENAI_API_KEY}` },
         timeout: 5000
       }
     );
@@ -3777,7 +3902,7 @@ app.get('/api/user/:userId/emergency-contacts', authenticateRequest, async (req,
 
     const { data, error } = await supabase
       .from('user_signup')
-      .select('emergency_contact, recovery_breakdown_number, emergency_services_number')
+      .select('emergency_contact, recovery_breakdown_number, emergency_services_number, mobile') // Added mobile
       .eq('create_user_id', userId)
       .single();
 
@@ -3793,6 +3918,7 @@ app.get('/api/user/:userId/emergency-contacts', authenticateRequest, async (req,
       emergency_contact: data.emergency_contact || null,
       recovery_breakdown_number: data.recovery_breakdown_number || null,
       emergency_services_number: data.emergency_services_number || '999',
+      mobile: data.mobile || null, // Added mobile
       requestId: req.requestId
     });
   } catch (error) {
@@ -4196,4 +4322,4 @@ server.listen(PORT, () => {
 });
 
 // Export for testing
-module.exports = { app, server, gdprModule };
+module.module.exports = { app, server, gdprModule };
