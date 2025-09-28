@@ -2946,33 +2946,33 @@ app.post('/webhook/incident-report', webhookLimiter, checkSharedKey, async (req,
 console.log('✅ Incident report webhook endpoint registered at /webhook/incident-report');
 
 app.post('/webhook/signup-simple', webhookLimiter, checkSharedKey, async (req, res) => {
-  console.log('=======================================');
-  console.log('SIMPLE WEBHOOK TEST - RECEIVED REQUEST');
-  console.log('=======================================');
+  Logger.info('=======================================');
+  Logger.info('SIMPLE WEBHOOK TEST - RECEIVED REQUEST');
+  Logger.info('=======================================');
 
   try {
     // Log incoming data
-    console.log('Headers:', req.headers);
-    console.log('Body:', JSON.stringify(req.body, null, 2));
+    Logger.debug('Headers:', req.headers);
+    Logger.debug('Body:', JSON.stringify(req.body, null, 2));
 
     // Check authentication
     const authKey = req.headers['x-api-key'] || req.headers['authorization'];
     if (authKey !== process.env.ZAPIER_SHARED_KEY) {
-      console.log('❌ Authentication failed');
+      Logger.warn('Authentication failed');
       return res.status(401).json({
         error: 'Unauthorized',
         message: 'Invalid API key'
       });
     }
-    console.log('✅ Authentication successful');
+    Logger.success('Authentication successful');
 
     // Extract basic data
     const { email, name, phone } = req.body;
-    console.log('Extracted:', { email, name, phone });
+    Logger.debug('Extracted:', { email, name, phone });
 
     // Simple Supabase test if available
     if (supabaseEnabled && supabase) {
-      console.log('Testing Supabase connection...');
+      Logger.info('Testing Supabase connection...');
 
       try {
         // Generate UUID for id field (required)
