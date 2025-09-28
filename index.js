@@ -3006,7 +3006,7 @@ app.post('/webhook/signup-simple', webhookLimiter, checkSharedKey, async (req, r
           submit_date: new Date().toISOString()
         };
 
-        Logger.debug('Inserting data:', insertData);
+        console.log('Inserting data:', insertData);
 
         const { data, error } = await supabase
           .from('user_signup')
@@ -3015,22 +3015,22 @@ app.post('/webhook/signup-simple', webhookLimiter, checkSharedKey, async (req, r
           .single();
 
         if (error) {
-          Logger.error('Supabase error:', error.message);
-          Logger.debug('Error details:', error);
+          console.log('⚠️ Supabase error:', error.message);
+          console.log('Error details:', error);
           return res.status(503).json({
             error: 'Database error',
             details: error.message
           });
         }
 
-        Logger.success('Data saved:', data);
+        console.log('✅ Data saved:', data);
         return res.status(200).json({
           success: true,
           message: 'Test webhook processed successfully',
           data: data
         });
       } catch (dbError) {
-        Logger.error('Database error:', dbError);
+        console.log('Database error:', dbError);
         return res.status(503).json({
           error: 'Database connection failed',
           details: dbError.message
@@ -3038,7 +3038,7 @@ app.post('/webhook/signup-simple', webhookLimiter, checkSharedKey, async (req, r
       }
     } else {
       // No Supabase - just echo back
-      Logger.warn('Supabase not configured - returning echo');
+      console.log('⚠️ Supabase not configured - returning echo');
       return res.status(200).json({
         success: true,
         message: 'Webhook received (no database)',
@@ -3047,7 +3047,7 @@ app.post('/webhook/signup-simple', webhookLimiter, checkSharedKey, async (req, r
     }
 
   } catch (error) {
-    Logger.error('Webhook error:', error);
+    console.error('❌ Webhook error:', error);
     return res.status(500).json({
       error: 'Internal server error',
       message: error.message
@@ -3055,7 +3055,7 @@ app.post('/webhook/signup-simple', webhookLimiter, checkSharedKey, async (req, r
   }
 });
 
-Logger.success('Simple webhook test endpoint registered at /webhook/signup-simple');
+console.log('✅ Simple webhook test endpoint registered at /webhook/signup-simple');
 // ========================================
 // CONSOLIDATED LEGAL NARRATIVE ENDPOINT - FIXED
 // ========================================
@@ -4336,7 +4336,7 @@ app.post('/api/whisper/transcribe', upload.single('audio'), async (req, res) => 
     }
 
     // Just log it for audit, don't block
-    Logger.debug(`Processing audio for user ${create_user_id}`);
+    console.log(`Processing audio for user ${create_user_id}`);
 
     Logger.info(`Processing transcription for user: ${create_user_id}`);
 
