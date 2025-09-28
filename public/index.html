@@ -4,6 +4,10 @@
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <title>Car Crash Lawyer AI</title>
+
+  <!-- Privacy Management Scripts -->
+  <script src="/js/privacy-manager.js"></script>
+  <script src="/js/cookie-manager.js"></script>
   <style>
     body {
       margin: 0;
@@ -213,45 +217,136 @@
       transform: scale(1.05);
     }
 
-    /* GDPR Notice */
-    .gdpr-notice {
+    /* Enhanced Privacy Notice */
+    .privacy-notice {
       position: fixed;
       bottom: 0;
       left: 0;
       right: 0;
-      background: rgba(0, 0, 0, 0.9);
+      background: rgba(0, 0, 0, 0.95);
       color: white;
-      padding: 15px;
+      padding: 20px;
       font-size: 0.9rem;
       z-index: 1000;
       transform: translateY(100%);
       transition: transform 0.3s ease;
+      backdrop-filter: blur(10px);
     }
 
-    .gdpr-notice.show {
+    .privacy-notice.show {
       transform: translateY(0);
     }
 
-    .gdpr-buttons {
-      margin-top: 10px;
+    .privacy-content {
+      max-width: 1200px;
+      margin: 0 auto;
+      display: flex;
+      flex-direction: column;
+      gap: 15px;
+    }
+
+    .privacy-header {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      flex-wrap: wrap;
+      gap: 15px;
+    }
+
+    .privacy-text {
+      flex: 1;
+      min-width: 300px;
+    }
+
+    .privacy-text h4 {
+      margin: 0 0 8px 0;
+      font-size: 1rem;
+      color: #4a90e2;
+    }
+
+    .privacy-text p {
+      margin: 0;
+      line-height: 1.4;
+      color: rgba(255, 255, 255, 0.9);
+    }
+
+    .jurisdiction-indicator {
+      background: rgba(74, 144, 226, 0.2);
+      border: 1px solid #4a90e2;
+      padding: 8px 16px;
+      border-radius: 20px;
+      font-size: 0.8rem;
+      color: #4a90e2;
+      font-weight: 500;
+    }
+
+    .privacy-buttons {
       display: flex;
       gap: 10px;
+      flex-wrap: wrap;
       justify-content: center;
     }
 
-    .gdpr-button {
-      padding: 8px 16px;
-      border: 1px solid white;
+    .privacy-button {
+      padding: 10px 20px;
+      border: 1px solid rgba(255, 255, 255, 0.3);
       background: transparent;
       color: white;
-      border-radius: 4px;
+      border-radius: 6px;
       cursor: pointer;
       font-size: 0.85rem;
+      transition: all 0.3s ease;
+      text-decoration: none;
+      display: inline-block;
     }
 
-    .gdpr-button.accept {
+    .privacy-button:hover {
+      background: rgba(255, 255, 255, 0.1);
+      border-color: rgba(255, 255, 255, 0.5);
+      color: white;
+      text-decoration: none;
+    }
+
+    .privacy-button.accept {
       background: #10b981;
       border-color: #10b981;
+      color: white;
+    }
+
+    .privacy-button.accept:hover {
+      background: #059669;
+      border-color: #059669;
+    }
+
+    .privacy-button.primary {
+      background: #4a90e2;
+      border-color: #4a90e2;
+      color: white;
+    }
+
+    .privacy-button.primary:hover {
+      background: #357abd;
+      border-color: #357abd;
+    }
+
+    .privacy-links {
+      display: flex;
+      gap: 15px;
+      justify-content: center;
+      flex-wrap: wrap;
+      padding-top: 15px;
+      border-top: 1px solid rgba(255, 255, 255, 0.2);
+    }
+
+    .privacy-links a {
+      color: rgba(255, 255, 255, 0.7);
+      text-decoration: none;
+      font-size: 0.8rem;
+      transition: color 0.3s ease;
+    }
+
+    .privacy-links a:hover {
+      color: white;
     }
 
     /* Touch Feedback for Mobile */
@@ -324,6 +419,21 @@
 
       .nav-arrow span {
         font-size: 20px;
+      }
+
+      .privacy-header {
+        flex-direction: column;
+        text-align: center;
+      }
+
+      .privacy-buttons {
+        justify-content: center;
+      }
+
+      .privacy-links {
+        flex-direction: column;
+        align-items: center;
+        gap: 8px;
       }
     }
 
@@ -451,14 +561,32 @@
     </button>
   </div>
 
-  <!-- GDPR Notice -->
-  <div class="gdpr-notice" id="gdprNotice">
-    <p><strong>🔒 Your Privacy Matters</strong></p>
-    <p>We use cookies and AI processing to provide legal assistance. By continuing, you consent to our privacy practices in compliance with UK GDPR.</p>
-    <div class="gdpr-buttons">
-      <button class="gdpr-button accept" onclick="acceptGDPR()">Accept</button>
-      <button class="gdpr-button" onclick="showPrivacyPolicy()">Learn More</button>
-      <button class="gdpr-button" onclick="declineGDPR()">Decline</button>
+  <!-- Enhanced Privacy Notice -->
+  <div class="privacy-notice" id="privacyNotice">
+    <div class="privacy-content">
+      <div class="privacy-header">
+        <div class="privacy-text">
+          <h4>🔒 Your Privacy Matters</h4>
+          <p>We use cookies and AI processing to provide legal assistance. By continuing, you consent to our privacy practices in compliance with <span id="jurisdictionText">UK GDPR</span>.</p>
+        </div>
+        <div class="jurisdiction-indicator" id="jurisdictionIndicator">
+          Detecting location...
+        </div>
+      </div>
+
+      <div class="privacy-buttons">
+        <button class="privacy-button accept" onclick="acceptPrivacy()">Accept All</button>
+        <a href="/privacy-policy.html" class="privacy-button primary" target="_blank">Privacy Policy</a>
+        <a href="/privacy-dashboard.html" class="privacy-button" target="_blank">Manage Preferences</a>
+        <button class="privacy-button" onclick="declinePrivacy()">Decline Non-Essential</button>
+      </div>
+
+      <div class="privacy-links">
+        <a href="/terms-of-service.html" target="_blank">Terms of Service</a>
+        <a href="/cookie-policy.html" target="_blank">Cookie Policy</a>
+        <a href="/privacy-dashboard.html" target="_blank">Privacy Dashboard</a>
+        <a href="mailto:privacy@carcrashlawyerai.com">Contact Privacy Team</a>
+      </div>
     </div>
   </div>
 
@@ -484,7 +612,8 @@
     let userAuthenticated = false;
     let userData = null;
     let systemHealth = null;
-    let gdprConsentGiven = false;
+    let privacyConsentGiven = false;
+    let userJurisdiction = 'UK'; // Default to UK
 
     // Page navigation history
     const pageHistory = [];
@@ -500,8 +629,11 @@
       // Add current page to history
       addPageToHistory(window.location.href);
 
-      // Check GDPR consent first
-      checkGDPRConsent();
+      // Detect jurisdiction first
+      await detectJurisdiction();
+
+      // Check privacy consent status
+      checkPrivacyConsent();
 
       // Initialize system
       await initializeSystem();
@@ -524,27 +656,71 @@
       }
     });
 
-    // Check GDPR consent status
-    function checkGDPRConsent() {
-      const consent = localStorage.getItem('gdpr_consent');
-      const consentDate = localStorage.getItem('gdpr_consent_date');
+    // Detect user jurisdiction using geolocation
+    async function detectJurisdiction() {
+      const jurisdictionIndicator = document.getElementById('jurisdictionIndicator');
+      const jurisdictionText = document.getElementById('jurisdictionText');
 
-      // Check if consent is valid (within 12 months)
+      try {
+        if (navigator.geolocation) {
+          const position = await new Promise((resolve, reject) => {
+            navigator.geolocation.getCurrentPosition(resolve, reject, {
+              timeout: 5000,
+              enableHighAccuracy: false
+            });
+          });
+
+          const lat = position.coords.latitude;
+          const lon = position.coords.longitude;
+
+          // Simple US detection - approximate boundaries
+          const isUS = (lat >= 24 && lat <= 49 && lon >= -125 && lon <= -66);
+
+          if (isUS) {
+            userJurisdiction = 'US';
+            jurisdictionIndicator.textContent = '🇺🇸 US Privacy Laws Apply';
+            jurisdictionText.textContent = 'US Privacy Laws';
+            console.log('📍 Jurisdiction detected: United States');
+          } else {
+            userJurisdiction = 'UK';
+            jurisdictionIndicator.textContent = '🇬🇧 UK GDPR Applies';
+            jurisdictionText.textContent = 'UK GDPR';
+            console.log('📍 Jurisdiction detected: United Kingdom');
+          }
+        } else {
+          throw new Error('Geolocation not supported');
+        }
+      } catch (error) {
+        // Default to UK (more restrictive)
+        userJurisdiction = 'UK';
+        jurisdictionIndicator.textContent = '🇬🇧 UK GDPR Applies (Default)';
+        jurisdictionText.textContent = 'UK GDPR';
+        console.log('📍 Geolocation failed, defaulting to UK jurisdiction');
+      }
+    }
+
+    // Check privacy consent status
+    function checkPrivacyConsent() {
+      const consent = localStorage.getItem('privacyConsent');
+      const consentDate = localStorage.getItem('privacyConsentDate');
+
+      // Check if consent is valid (within 6 months)
       if (consent === 'accepted' && consentDate) {
         const consentTimestamp = new Date(consentDate);
-        const twelveMonthsAgo = new Date();
-        twelveMonthsAgo.setFullYear(twelveMonthsAgo.getFullYear() - 1);
+        const sixMonthsAgo = new Date();
+        sixMonthsAgo.setMonth(sixMonthsAgo.getMonth() - 6);
 
-        if (consentTimestamp > twelveMonthsAgo) {
-          gdprConsentGiven = true;
+        if (consentTimestamp > sixMonthsAgo) {
+          privacyConsentGiven = true;
+          console.log('✅ Valid privacy consent found');
           return;
         }
       }
 
-      // Show GDPR notice if consent not given or expired
-      // But don't block functionality - just inform
+      // Show privacy notice if consent not given or expired
       setTimeout(() => {
-        document.getElementById('gdprNotice').classList.add('show');
+        document.getElementById('privacyNotice').classList.add('show');
+        console.log('📋 Showing privacy consent notice');
       }, 2000);
     }
 
@@ -556,8 +732,8 @@
         // Check system health
         await checkSystemHealth();
 
-        // Check user authentication if GDPR consent given
-        if (gdprConsentGiven) {
+        // Check user authentication if privacy consent given
+        if (privacyConsentGiven) {
           await checkUserAuthentication();
         }
 
@@ -640,7 +816,6 @@
         // User is logged in - Sign Up becomes Dashboard
         document.getElementById('signUpText').textContent = 'Dashboard';
         document.getElementById('reportIncidentText').textContent = 'Report New Incident';
-        // Access Reports always goes to access-reports.html for all users
 
         // Show personalized options
         updateButtonsForAuthenticatedUser();
@@ -648,7 +823,6 @@
         // User not logged in - Sign Up goes to Typeform
         document.getElementById('signUpText').textContent = 'Sign Up';
         document.getElementById('reportIncidentText').textContent = 'Report an Incident';
-        // Access Reports always goes to access-reports.html for all users
 
         // Show standard options
         updateButtonsForGuestUser();
@@ -843,19 +1017,17 @@
 
     // Update buttons for authenticated users
     function updateButtonsForAuthenticatedUser() {
-      // All users get same behavior: Access Reports → access-reports.html (they'll use their User ID there)
       console.log('🔐 UI updated for authenticated user - Access Reports will go to access-reports.html');
     }
 
     // Update buttons for guest users
     function updateButtonsForGuestUser() {
-      // All users: Report Incident → incident.html, Sign Up → Typeform, Access Reports → access-reports.html, Demo → Typeform
       console.log('👤 UI updated for guest user - Sign Up and Demo will open Typeform, Reports go to access-reports.html');
     }
 
     // Disable buttons that require system functionality
     function disableSystemDependentButtons() {
-      // Only disable Report Incident if system is down (Access Reports is a local page, so always available)
+      // Only disable Report Incident if system is down
       const buttons = ['reportIncidentBtn'];
       buttons.forEach(buttonId => {
         const button = document.getElementById(buttonId);
@@ -866,55 +1038,79 @@
       });
     }
 
-    // GDPR Functions
-    function acceptGDPR() {
-      gdprConsentGiven = true;
-      localStorage.setItem('gdpr_consent', 'accepted');
-      localStorage.setItem('gdpr_consent_date', new Date().toISOString());
+    // ====================================
+    // ENHANCED PRIVACY FUNCTIONS
+    // ====================================
 
-      document.getElementById('gdprNotice').classList.remove('show');
+    // Accept privacy consent
+    async function acceptPrivacy() {
+      privacyConsentGiven = true;
+      localStorage.setItem('privacyConsent', 'accepted');
+      localStorage.setItem('privacyConsentDate', new Date().toISOString());
+
+      // Hide privacy notice
+      document.getElementById('privacyNotice').classList.remove('show');
 
       // Record consent with backend
-      recordGDPRConsent('accepted');
+      await recordPrivacyConsent('accepted');
 
       // Re-initialize with consent
-      initializeSystem();
+      await initializeSystem();
+
+      console.log('✅ Privacy consent accepted');
     }
 
-    function declineGDPR() {
-      gdprConsentGiven = false;
-      localStorage.setItem('gdpr_consent', 'declined');
-      localStorage.setItem('gdpr_consent_date', new Date().toISOString());
+    // Decline non-essential privacy processing
+    async function declinePrivacy() {
+      privacyConsentGiven = false;
+      localStorage.setItem('privacyConsent', 'declined');
+      localStorage.setItem('privacyConsentDate', new Date().toISOString());
 
-      document.getElementById('gdprNotice').classList.remove('show');
+      // Hide privacy notice
+      document.getElementById('privacyNotice').classList.remove('show');
 
       // Record consent with backend
-      recordGDPRConsent('declined');
+      await recordPrivacyConsent('declined');
 
       // Show limited functionality message
-      alert('⚠️ Some features will be limited without consent. You can change this in settings.');
+      setTimeout(() => {
+        alert('⚠️ Some features will be limited without consent. You can manage preferences in our Privacy Dashboard.');
+      }, 500);
+
+      console.log('❌ Privacy consent declined - limited functionality mode');
     }
 
-    function showPrivacyPolicy() {
-      window.open('privacy-policy.html', '_blank');
-    }
-
-    // Record GDPR consent with backend
-    async function recordGDPRConsent(decision) {
+    // Record privacy consent with backend
+    async function recordPrivacyConsent(decision) {
       try {
-        await fetch('/api/gdpr/consent', {
+        const response = await fetch('/api/gdpr/consent', {
           method: 'POST',
           headers: {
             'Content-Type': 'application/json',
           },
           body: JSON.stringify({
-            decision: decision,
+            consent_type: 'privacy_general',
+            consent_status: decision,
             timestamp: new Date().toISOString(),
-            page: 'landing'
+            user_id: localStorage.getItem('userId') || 'anonymous',
+            source: 'landing_page',
+            jurisdiction: userJurisdiction,
+            preferences: {
+              essential: true,
+              analytics: decision === 'accepted',
+              marketing: decision === 'accepted',
+              ai_processing: decision === 'accepted'
+            }
           })
         });
+
+        if (response.ok) {
+          console.log('✅ Privacy consent recorded with backend');
+        } else {
+          console.warn('⚠️ Failed to record privacy consent with backend');
+        }
       } catch (error) {
-        console.error('❌ Failed to record GDPR consent:', error);
+        console.error('❌ Failed to record privacy consent:', error);
       }
     }
 

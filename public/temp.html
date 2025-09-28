@@ -254,6 +254,79 @@
       border-color: #10b981;
     }
 
+    /* Touch Feedback for Mobile */
+    @media (hover: none) {
+      .btn:active {
+        transform: scale(0.98);
+      }
+    }
+
+    /* Navigation Arrows */
+    .nav-arrows {
+      position: fixed;
+      top: 50%;
+      left: 0;
+      right: 0;
+      transform: translateY(-50%);
+      z-index: 1000;
+      pointer-events: none;
+    }
+
+    .nav-arrow {
+      position: absolute;
+      width: 50px;
+      height: 50px;
+      background: rgba(255, 255, 255, 0.9);
+      border-radius: 50%;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      cursor: pointer;
+      pointer-events: auto;
+      transition: all 0.3s ease;
+      box-shadow: 0 4px 15px rgba(0, 0, 0, 0.2);
+      backdrop-filter: blur(10px);
+    }
+
+    .nav-arrow:hover {
+      background: rgba(255, 255, 255, 1);
+      transform: scale(1.1);
+      box-shadow: 0 6px 20px rgba(0, 0, 0, 0.3);
+    }
+
+    .nav-arrow.back {
+      left: 20px;
+    }
+
+    .nav-arrow.forward {
+      right: 20px;
+    }
+
+    .nav-arrow span {
+      font-size: 24px;
+      font-weight: bold;
+      color: #007acc;
+    }
+
+    @media (max-width: 768px) {
+      .nav-arrow {
+        width: 40px;
+        height: 40px;
+      }
+
+      .nav-arrow.back {
+        left: 10px;
+      }
+
+      .nav-arrow.forward {
+        right: 10px;
+      }
+
+      .nav-arrow span {
+        font-size: 20px;
+      }
+    }
+
     /* Responsive Design */
     @media (max-width: 768px) {
       header img {
@@ -327,6 +400,16 @@
     <span id="userStatusText">Loading...</span>
   </div>
 
+  <!-- Navigation Arrows -->
+  <div class="nav-arrows">
+    <div class="nav-arrow back" id="backArrow" onclick="goBack()">
+      <span>←</span>
+    </div>
+    <div class="nav-arrow forward" id="forwardArrow" onclick="goForward()">
+      <span>→</span>
+    </div>
+  </div>
+
   <!-- Loading Overlay -->
   <div class="loading-overlay" id="loadingOverlay">
     <div class="loading-content">
@@ -354,7 +437,7 @@
 
   <!-- Call to Action Buttons -->
   <div class="cta-buttons">
-    <button class="cta-button primary" id="reportIncidentBtn" onclick="window.location.href='incident.html'">
+    <button class="cta-button primary" id="reportIncidentBtn">
       <span id="reportIncidentText">Report an Incident</span>
     </button>
     <button class="cta-button" id="signUpBtn" onclick="window.open('#', '_blank')">
@@ -385,14 +468,15 @@
     // ====================================
     // 🔧 UPDATE THESE URLs TO MATCH YOUR TYPEFORM LINKS:
     const TYPEFORM_URLS = {
-      signup: 'https://your-typeform-workspace.typeform.com/to/signup-form-id', // ⚠️ REPLACE with your actual Typeform signup URL
-      demo: 'https://your-typeform-workspace.typeform.com/to/demo-form-id' // ⚠️ REPLACE with your actual Typeform demo URL
+      signup: 'https://form.typeform.com/to/b03aFxEO#user_id=xxxxx&product_id=xxxxx&auth_code=xxxxx', // ✅ Signup Typeform URL configured
+      demo: 'https://form.typeform.com/to/XMBB3Xhq', // ✅ Demo Typeform URL configured
+      incident: 'https://form.typeform.com/to/WvM2ejru#user_id=xxxxx&product_id=xxxxx&auth_code=xxxxx&email=xxxxx&car_crash_user_id=xxxxx&first_name=xxxxx&last_name=xxxxx' // ✅ Incident Report Typeform URL configured
     };
 
     // 📝 To get your Typeform URLs:
     // 1. Go to your Typeform dashboard
     // 2. Open your signup/demo form
-    // 3. Click "Share" > "Link" 
+    // 3. Click "Share" > "Link"
     // 4. Copy the URL and replace the URLs above
     // Example: 'https://myworkspace.typeform.com/to/abc123def'
 
@@ -402,12 +486,19 @@
     let systemHealth = null;
     let gdprConsentGiven = false;
 
+    // Page navigation history
+    const pageHistory = [];
+    let currentPageIndex = -1;
+
     // Initialize application on page load
     document.addEventListener('DOMContentLoaded', async () => {
       console.log('🚀 Car Crash Lawyer AI - Landing Page Initializing...');
       console.log('📍 Current page:', window.location.href);
       console.log('🔧 Typeform signup URL:', TYPEFORM_URLS.signup);
       console.log('🔧 Typeform demo URL:', TYPEFORM_URLS.demo);
+
+      // Add current page to history
+      addPageToHistory(window.location.href);
 
       // Check GDPR consent first
       checkGDPRConsent();
@@ -419,7 +510,7 @@
       setupEventListeners();
 
       console.log('✅ Landing page initialized successfully');
-      console.log('🎯 Report Incident button ready - will navigate to incident.html');
+      console.log('🎯 Report Incident button ready - will open Typeform incident report in new tab');
       console.log('📝 Sign Up button ready - will open Typeform signup in new tab');
       console.log('📊 Access Reports button ready - will navigate to access-reports.html');
       console.log('🎮 Try Demo button ready - will open Typeform demo in new tab');
@@ -567,15 +658,18 @@
       if (!systemHealth) {
         disableSystemDependentButtons();
       }
+
+      // Update navigation arrow visibility
+      updateNavigationArrows();
     }
 
-    // Setup event listeners for all buttons
+    // Setup event listeners for all buttons and navigation
     function setupEventListeners() {
-      // Report Incident button - enhanced handler with fallback
+      // Report Incident button - Typeform integration
       const reportBtn = document.getElementById('reportIncidentBtn');
       if (reportBtn) {
         reportBtn.addEventListener('click', (e) => {
-          e.preventDefault(); // Prevent onclick from firing
+          e.preventDefault(); // Prevent default onclick behavior
           handleReportIncident();
         });
       }
@@ -583,11 +677,8 @@
       // Sign Up / Dashboard button - Typeform integration
       const signUpBtn = document.getElementById('signUpBtn');
       if (signUpBtn) {
-        // Update fallback onclick with actual Typeform URL
-        signUpBtn.setAttribute('onclick', `window.open('${TYPEFORM_URLS.signup}', '_blank'); return false;`);
-        // Remove onclick when enhanced handler takes over
         signUpBtn.addEventListener('click', (e) => {
-          e.preventDefault(); // Prevent onclick from firing
+          e.preventDefault(); // Prevent default onclick behavior
           handleSignUpOrDashboard();
         });
       }
@@ -596,7 +687,7 @@
       const accessBtn = document.getElementById('accessReportsBtn');
       if (accessBtn) {
         accessBtn.addEventListener('click', (e) => {
-          e.preventDefault(); // Prevent onclick from firing
+          e.preventDefault(); // Prevent default onclick behavior
           handleAccessReports();
         });
       }
@@ -604,10 +695,8 @@
       // Demo button - Typeform integration
       const demoBtn = document.getElementById('demoBtn');
       if (demoBtn) {
-        // Update fallback onclick with actual Typeform URL
-        demoBtn.setAttribute('onclick', `window.open('${TYPEFORM_URLS.demo}', '_blank'); return false;`);
         demoBtn.addEventListener('click', (e) => {
-          e.preventDefault(); // Prevent onclick from firing
+          e.preventDefault(); // Prevent default onclick behavior
           handleDemo();
         });
       }
@@ -621,12 +710,12 @@
       setButtonLoading(button, 'Loading incident form...');
 
       try {
-        // Direct navigation to incident.html
+        // Navigate to local incident.html page
         navigateToPage('incident.html', 'incident report');
 
       } catch (error) {
-        console.error('❌ Navigation failed:', error);
-        alert('❌ Unable to load incident report. Please try again.');
+        console.error('❌ Failed to navigate to incident form:', error);
+        alert('❌ Unable to open incident report. Please try again.');
         resetButton(button, 'Report an Incident');
       }
     }
@@ -680,6 +769,45 @@
       }, 1000);
     }
 
+    // Navigation arrow functions
+    function goBack() {
+      if (pageHistory.length > 1 && currentPageIndex > 0) {
+        currentPageIndex--;
+        window.location.href = pageHistory[currentPageIndex];
+        updateNavigationArrows();
+      }
+    }
+
+    function goForward() {
+      if (currentPageIndex < pageHistory.length - 1) {
+        currentPageIndex++;
+        window.location.href = pageHistory[currentPageIndex];
+        updateNavigationArrows();
+      }
+    }
+
+    function addPageToHistory(url) {
+      // Remove any forward history if we are navigating back
+      if (currentPageIndex < pageHistory.length - 1) {
+        pageHistory.splice(currentPageIndex + 1);
+      }
+      pageHistory.push(url);
+      currentPageIndex = pageHistory.length - 1;
+      updateNavigationArrows();
+    }
+
+    function updateNavigationArrows() {
+      const backArrow = document.getElementById('backArrow');
+      const forwardArrow = document.getElementById('forwardArrow');
+
+      if (backArrow) {
+        backArrow.style.display = (pageHistory.length > 1 && currentPageIndex > 0) ? 'flex' : 'none';
+      }
+      if (forwardArrow) {
+        forwardArrow.style.display = (currentPageIndex < pageHistory.length - 1) ? 'flex' : 'none';
+      }
+    }
+
     // Check if emergency mode should be triggered
     async function checkEmergencyMode() {
       // This could check for various emergency indicators
@@ -703,6 +831,9 @@
     // Navigate to page with loading and error handling
     function navigateToPage(url, pageName) {
       showLoading(`Loading ${pageName}...`);
+
+      // Add page to history before navigating
+      addPageToHistory(url);
 
       // Simple direct navigation
       setTimeout(() => {
