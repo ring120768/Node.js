@@ -3573,6 +3573,20 @@ app.post('/api/debug/webhook-test', checkSharedKey, async (req, res) => {
     log: true
   });
 
+  // Immediate cleanup if store is too large
+  if (webhookDebugger.webhookStore && webhookDebugger.webhookStore.size > 1000) {
+    // Remove oldest entries immediately
+    const webhooksArray = Array.from(webhookDebugger.webhookStore.entries());
+    const sortedWebhooks = webhooksArray.sort((a, b) => 
+      new Date(a[1].timestamp) - new Date(b[1].timestamp)
+    );
+    
+    // Remove oldest entry
+    webhookDebugger.webhookStore.delete(sortedWebhooks[0][0]);
+    
+    Logger.debug('Webhook store cleaned - removed oldest entry');
+  }
+
   Logger.info('=== ENHANCED WEBHOOK ANALYSIS ===');
   Logger.info('Provider:', analysis.provider);
   Logger.info('Structure:', analysis.structure.type);
