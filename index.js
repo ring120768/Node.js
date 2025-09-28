@@ -47,6 +47,45 @@ try {
   console.warn('PDF generation modules not found - PDF features will be disabled', error.message);
 }
 
+// --- ENVIRONMENT VARIABLE VALIDATION ---
+const validateEnvironment = () => {
+  const requiredVars = {
+    'SUPABASE_URL': 'Database connection URL',
+    'SUPABASE_SERVICE_ROLE_KEY': 'Database service key',
+    'OPENAI_API_KEY': 'OpenAI API for transcription and AI summaries',
+    'ZAPIER_SHARED_KEY': 'Webhook authentication key'
+  };
+  
+  const missingVars = [];
+  const configuredVars = [];
+  
+  for (const [varName, description] of Object.entries(requiredVars)) {
+    if (!process.env[varName]) {
+      missingVars.push(`${varName} (${description})`);
+    } else {
+      configuredVars.push(varName);
+    }
+  }
+  
+  if (missingVars.length > 0) {
+    console.warn('⚠️ WARNING: Missing environment variables:');
+    missingVars.forEach(v => console.warn(`  - ${v}`));
+  }
+  
+  if (configuredVars.length > 0) {
+    console.log('✅ Configured environment variables:', configuredVars.join(', '));
+  }
+  
+  return {
+    isValid: missingVars.length === 0,
+    missing: missingVars,
+    configured: configuredVars
+  };
+};
+
+// Run validation
+const envValidation = validateEnvironment();
+
 // Use enhanced constants from module
 const CONSTANTS = ENHANCED_CONSTANTS;
 
