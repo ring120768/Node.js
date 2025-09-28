@@ -4,9 +4,9 @@ const testData = JSON.parse(fs.readFileSync('./test-simple.json', 'utf8'));
 const API_KEY = process.env.ZAPIER_SHARED_KEY;
 
 const options = {
-  hostname: 'localhost',
-  port: 5000,  // Use port 5000 for Replit
-  path: '/webhook/signup-simple',  // Use the simple endpoint for testing
+  hostname: 'localhost',  // ← Use localhost for internal testing
+  port: 5000,            // ← Changed to 5000
+  path: '/webhook/signup-simple',
   method: 'POST',
   headers: {
     'Content-Type': 'application/json',
