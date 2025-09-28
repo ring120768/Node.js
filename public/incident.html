@@ -639,15 +639,13 @@
 
         // Navigation functions
         function goBack() {
-            if (window.history.length > 1) {
-                window.history.back();
-            } else {
-                window.location.href = '/';
-            }
+            // Always go back to the home page from incident.html
+            window.location.href = '/';
         }
 
         function goForward() {
-            window.history.forward();
+            // For incident.html, forward should go to safety-check.html
+            window.location.href = 'safety-check.html';
         }
 
         // Initialize on page load
