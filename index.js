@@ -2679,7 +2679,7 @@ app.post('/api/consent/test-extraction', checkSharedKey, async (req, res) => {
     });
   }
 });
-app.post('/webhook/signup-simple', async (req, res) => {
+app.post('/webhook/signup-simple', checkSharedKey, async (req, res) => {
   console.log('=======================================');
   console.log('SIMPLE WEBHOOK TEST - RECEIVED REQUEST');
   console.log('=======================================');
