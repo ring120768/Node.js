@@ -83,6 +83,43 @@ const Logger = {
   }
 };
 
+// --- UUID UTILITIES ---
+const UUIDUtils = {
+  // Check if string is valid UUID v4
+  isValidUUID: (str) => {
+    const uuidRegex = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
+    return uuidRegex.test(str);
+  },
+  
+  // Ensure we have a valid UUID (generate deterministic one if needed)
+  ensureValidUUID: (userId) => {
+    if (!userId) return null;
+    
+    const uuidRegex = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
+    
+    if (uuidRegex.test(userId)) {
+      return userId;
+    }
+    
+    // For non-UUID user IDs, generate a deterministic UUID
+    const crypto = require('crypto');
+    const hash = crypto.createHash('md5').update(userId).digest('hex');
+    return [
+      hash.substring(0, 8),
+      hash.substring(8, 12),
+      hash.substring(12, 16),
+      hash.substring(16, 20),
+      hash.substring(20, 32)
+    ].join('-');
+  },
+  
+  // Generate new random UUID
+  generateUUID: () => {
+    const crypto = require('crypto');
+    return crypto.randomUUID();
+  }
+};
+
 const app = express();
 const server = http.createServer(app);
 
@@ -1050,20 +1087,7 @@ async function generateAISummary(transcriptionText, createUserId, incidentId) {
     };
 
     // Generate UUID if user ID is not UUID format
-    let dbUserId = createUserId;
-    const uuidRegex = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
-
-    if (!uuidRegex.test(createUserId)) {
-      const crypto = require('crypto');
-      const hash = crypto.createHash('md5').update(createUserId).digest('hex');
-      dbUserId = [
-        hash.substring(0, 8),
-        hash.substring(8, 12),
-        hash.substring(12, 16),
-        hash.substring(16, 20),
-        hash.substring(20, 32)
-      ].join('-');
-    }
+    const dbUserId = UUIDUtils.ensureValidUUID(createUserId);
 
     // Save to ai_summary table - ONLY use columns that exist
     const summaryData = {
@@ -1178,20 +1202,7 @@ async function generateLegalNarrative(transcriptionText, incidentData, userId, o
     if (supabaseEnabled && userId) {
       try {
         // Generate UUID if user ID is not UUID format
-        let dbUserId = userId;
-        const uuidRegex = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
-
-        if (!uuidRegex.test(userId)) {
-          const crypto = require('crypto');
-          const hash = crypto.createHash('md5').update(userId).digest('hex');
-          dbUserId = [
-            hash.substring(0, 8),
-            hash.substring(8, 12),
-            hash.substring(12, 16),
-            hash.substring(16, 20),
-            hash.substring(20, 32)
-          ].join('-');
-        }
+        const dbUserId = UUIDUtils.ensureValidUUID(userId);
 
         // Update existing or insert new
         const { data: existing } = await supabase
@@ -1660,20 +1671,7 @@ async function processTranscriptionFromBuffer(queueId, audioBuffer, create_user_
     }
 
     // Generate UUID if user ID is not UUID format
-    let dbUserId = create_user_id;
-    const uuidRegex = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
-
-    if (!uuidRegex.test(create_user_id)) {
-      const crypto = require('crypto');
-      const hash = crypto.createHash('md5').update(create_user_id).digest('hex');
-      dbUserId = [
-        hash.substring(0, 8),
-        hash.substring(8, 12),
-        hash.substring(12, 16),
-        hash.substring(16, 20),
-        hash.substring(20, 32)
-      ].join('-');
-    }
+    const dbUserId = UUIDUtils.ensureValidUUID(create_user_id);
 
     // Save to ai_transcription table with ONLY columns that exist
     const transcriptionData = {
@@ -2520,10 +2518,9 @@ app.delete('/api/dashcam/video/:evidenceId', checkSharedKey, async (req, res) =>
 
     // Security Enhancement: Input validation to prevent malicious input
     // Check if evidenceId is a valid UUID or numeric ID
-    const uuidRegex = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
     const numericRegex = /^\d+$/;
 
-    if (!uuidRegex.test(evidenceId) && !numericRegex.test(evidenceId)) {
+    if (!UUIDUtils.isValidUUID(evidenceId) && !numericRegex.test(evidenceId)) {
       Logger.warn(`Invalid evidence ID format attempted: ${evidenceId}`, { ip: req.clientIp });
       return res.status(400).json({
         error: 'Invalid evidence ID format',
@@ -2713,8 +2710,7 @@ app.post('/webhook/signup-simple', async (req, res) => {
 
       try {
         // Generate UUID for id field (required)
-        const crypto = require('crypto');
-        const userId = crypto.randomUUID();
+        const userId = UUIDUtils.generateUUID();
 
         // Split name into first and last if provided as single string
         let firstName = 'Test';
@@ -2936,20 +2932,7 @@ app.post('/api/update-legal-narrative', checkSharedKey, async (req, res) => {
     }
 
     // Generate UUID if user ID is not UUID format
-    let dbUserId = finalUserId;
-    const uuidRegex = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
-
-    if (!uuidRegex.test(finalUserId)) {
-      const crypto = require('crypto');
-      const hash = crypto.createHash('md5').update(finalUserId).digest('hex');
-      dbUserId = [
-        hash.substring(0, 8),
-        hash.substring(8, 12),
-        hash.substring(12, 16),
-        hash.substring(16, 20),
-        hash.substring(20, 32)
-      ].join('-');
-    }
+    const dbUserId = UUIDUtils.ensureValidUUID(finalUserId);
 
     // Update in ai_summary table
     const { error } = await supabase
@@ -2999,20 +2982,7 @@ app.get('/api/legal-narratives/:userId', checkSharedKey, checkGDPRConsent, async
     const { limit = 10, incidentId } = req.query;
 
     // Generate UUID if user ID is not UUID format
-    let dbUserId = userId;
-    const uuidRegex = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
-
-    if (!uuidRegex.test(userId)) {
-      const crypto = require('crypto');
-      const hash = crypto.createHash('md5').update(userId).digest('hex');
-      dbUserId = [
-        hash.substring(0, 8),
-        hash.substring(8, 12),
-        hash.substring(12, 16),
-        hash.substring(16, 20),
-        hash.substring(20, 32)
-      ].join('-');
-    }
+    const dbUserId = UUIDUtils.ensureValidUUID(userId);
 
     let query = supabase
       .from('ai_summary')
