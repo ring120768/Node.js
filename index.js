@@ -3604,6 +3604,7 @@ app.get('/status', (req, res) => {
             <div class="endpoint">
                 <strong>Webhook Endpoints:</strong> <span class="improved-badge">IMPROVED</span><br>
                 <code>POST /webhook/signup</code> - Process signup with GDPR consent<br>
+                <code>POST /webhook/signup-simple</code> - Simple testing endpoint for signup<br>
                 <code>POST /webhook/incident-report</code> - Process incident report files<br>
                 <code>POST /generate-pdf</code> - Generate and email PDF report<br>
                 <code>POST /webhook/generate-pdf</code> - Alternative PDF generation
@@ -4091,6 +4092,7 @@ server.listen(PORT, () => {
   Logger.info('  - GET  /transcription-status.html - Main recording interface');
   Logger.info('  - POST /api/whisper/transcribe - Process audio');
   Logger.info('  - POST /webhook/signup - Process signup with consent');
+  Logger.info('  - POST /webhook/signup-simple - Simple testing signup endpoint');
   Logger.info('  - POST /webhook/incident-report - Process incident');
   Logger.info('  - GET  /api/gdpr/user-rights/:userId - Privacy rights dashboard');
   Logger.info('  - POST /api/gdpr/consent - Grant consent');
