@@ -501,7 +501,9 @@ const initSupabase = () => {
         }
       },
       db: {
-        schema: 'public'
+        schema: 'public',
+        poolSize: 10,  // Add connection pooling
+        connectionTimeoutMillis: 10000  // Add connection timeout
       },
       global: {
         headers: {
