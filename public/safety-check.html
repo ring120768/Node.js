@@ -146,9 +146,85 @@
             font-size: 14px;
             margin-top: 5px;
         }
+
+        /* Navigation Arrows */
+        .nav-arrows {
+            position: fixed;
+            top: 50%;
+            left: 0;
+            right: 0;
+            transform: translateY(-50%);
+            z-index: 1000;
+            pointer-events: none;
+        }
+
+        .nav-arrow {
+            position: absolute;
+            width: 50px;
+            height: 50px;
+            background: rgba(255, 255, 255, 0.9);
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            cursor: pointer;
+            pointer-events: auto;
+            transition: all 0.3s ease;
+            box-shadow: 0 4px 15px rgba(0, 0, 0, 0.2);
+            backdrop-filter: blur(10px);
+        }
+
+        .nav-arrow:hover {
+            background: rgba(255, 255, 255, 1);
+            transform: scale(1.1);
+            box-shadow: 0 6px 20px rgba(0, 0, 0, 0.3);
+        }
+
+        .nav-arrow.back {
+            left: 20px;
+        }
+
+        .nav-arrow.forward {
+            right: 20px;
+        }
+
+        .nav-arrow span {
+            font-size: 24px;
+            font-weight: bold;
+            color: #dc2626;
+        }
+
+        @media (max-width: 768px) {
+            .nav-arrow {
+                width: 40px;
+                height: 40px;
+            }
+
+            .nav-arrow.back {
+                left: 10px;
+            }
+
+            .nav-arrow.forward {
+                right: 10px;
+            }
+
+            .nav-arrow span {
+                font-size: 20px;
+            }
+        }
     </style>
 </head>
 <body>
+    <!-- Navigation Arrows -->
+    <div class="nav-arrows">
+        <div class="nav-arrow back" onclick="goBack()" title="Go Back">
+            <span>←</span>
+        </div>
+        <div class="nav-arrow forward" onclick="goForward()" title="Go Forward">
+            <span>→</span>
+        </div>
+    </div>
+
     <div class="container">
         <h1>First, are you safe right now?</h1>
         <p class="subtitle">Be honest with yourself!</p>
@@ -202,6 +278,19 @@
     </div>
 
     <script>
+        // Navigation functions
+        function goBack() {
+            if (window.history.length > 1) {
+                window.history.back();
+            } else {
+                window.location.href = '/';
+            }
+        }
+
+        function goForward() {
+            window.history.forward();
+        }
+
         // Get incident data from previous page
         const incidentData = JSON.parse(sessionStorage.getItem('incidentData') || '{}');
         console.log('Incident data received:', incidentData);

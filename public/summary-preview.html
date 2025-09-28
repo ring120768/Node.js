@@ -342,11 +342,82 @@
             border: 1px solid #f5c6cb;
             display: block;
         }
+
+        /* Navigation Arrows */
+        .nav-arrows {
+            position: fixed;
+            top: 50%;
+            left: 0;
+            right: 0;
+            transform: translateY(-50%);
+            z-index: 1000;
+            pointer-events: none;
+        }
+
+        .nav-arrow {
+            position: absolute;
+            width: 50px;
+            height: 50px;
+            background: rgba(255, 255, 255, 0.9);
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            cursor: pointer;
+            pointer-events: auto;
+            transition: all 0.3s ease;
+            box-shadow: 0 4px 15px rgba(0, 0, 0, 0.2);
+            backdrop-filter: blur(10px);
+        }
+
+        .nav-arrow:hover {
+            background: rgba(255, 255, 255, 1);
+            transform: scale(1.1);
+            box-shadow: 0 6px 20px rgba(0, 0, 0, 0.3);
+        }
+
+        .nav-arrow.back {
+            left: 20px;
+        }
+
+        .nav-arrow.forward {
+            right: 20px;
+        }
+
+        .nav-arrow span {
+            font-size: 24px;
+            font-weight: bold;
+            color: #667eea;
+        }
+
+        @media (max-width: 768px) {
+            .nav-arrow {
+                width: 40px;
+                height: 40px;
+            }
+
+            .nav-arrow.back {
+                left: 10px;
+            }
+
+            .nav-arrow.forward {
+                right: 10px;
+            }
+
+            .nav-arrow span {
+                font-size: 20px;
+            }
+        }
     </style>
 </head>
 <body>
     <div class="loading-overlay" id="loadingOverlay">
         <div class="spinner"></div>
+    </div>
+
+    <div class="nav-arrows">
+        <div class="nav-arrow back" id="backArrow" onclick="goBack()"><span>&#9664;</span></div>
+        <div class="nav-arrow forward" id="forwardArrow" onclick="goForward()"><span>&#9654;</span></div>
     </div>
 
     <div class="container">
@@ -438,6 +509,7 @@
 
             await loadPreview();
             loadPreviewPreference();
+            updateNavigationArrows();
         });
 
         async function loadPreview() {
@@ -606,6 +678,26 @@
                     messageArea.style.display = 'none';
                 }, 5000);
             }
+        }
+
+        // Navigation Arrow Functions (Placeholder)
+        function goBack() {
+            // Logic to navigate to the previous page or item
+            console.log("Going back...");
+            // Example: window.history.back(); or redirect to a previous item
+        }
+
+        function goForward() {
+            // Logic to navigate to the next page or item
+            console.log("Going forward...");
+            // Example: window.history.forward(); or redirect to a next item
+        }
+
+        function updateNavigationArrows() {
+            // Logic to determine if back/forward arrows should be enabled/disabled
+            // based on current page context or available items.
+            // For now, they are always visible.
+            // Example: Check if there's a previous/next queueId
         }
     </script>
 </body>
