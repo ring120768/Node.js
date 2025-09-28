@@ -120,6 +120,54 @@ const UUIDUtils = {
   }
 };
 
+// --- INPUT VALIDATION UTILITIES ---
+const Validator = {
+  // Validate user ID format
+  isValidUserId: (id) => {
+    if (!id) return false;
+    return /^[a-zA-Z0-9_-]{3,64}$/.test(id);
+  },
+  
+  // Validate email format
+  isValidEmail: (email) => {
+    if (!email) return false;
+    return /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email);
+  },
+  
+  // Validate phone number (UK format)
+  isValidPhone: (phone) => {
+    if (!phone) return false;
+    // Remove spaces and check if it's a valid UK phone
+    const cleaned = phone.replace(/\s+/g, '');
+    return /^(\+44|0)[0-9]{10,11}$/.test(cleaned);
+  },
+  
+  // Sanitize input to prevent XSS
+  sanitizeInput: (input) => {
+    if (!input) return '';
+    return String(input)
+      .replace(/[<>]/g, '')
+      .trim();
+  },
+  
+  // Validate incident ID format
+  isValidIncidentId: (id) => {
+    if (!id) return false;
+    return UUIDUtils.isValidUUID(id) || /^\d+$/.test(id);
+  },
+  
+  // Validate file type
+  isValidFileType: (mimetype, category) => {
+    const allowedTypes = {
+      audio: ['audio/webm', 'audio/mp3', 'audio/mpeg', 'audio/wav', 'audio/ogg', 'audio/mp4', 'audio/m4a', 'audio/aac'],
+      image: ['image/jpeg', 'image/png', 'image/webp', 'image/heic', 'image/heif'],
+      video: ['video/mp4', 'video/webm', 'video/quicktime']
+    };
+    
+    return allowedTypes[category]?.includes(mimetype) || false;
+  }
+};
+
 const app = express();
 const server = http.createServer(app);
 
