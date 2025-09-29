@@ -4500,6 +4500,15 @@ app.post('/api/whisper/transcribe', upload.single('audio'), async (req, res) => 
 
 // --- ERROR HANDLING MIDDLEWARE ---
 app.use((err, req, res, next) => {
+  // Add before existing error handling
+  if (err.message && err.message.includes('consent required')) {
+    return res.status(403).json({
+      success: false,
+      error: err.message,
+      requiresConsent: true
+    });
+  }
+
   if (err.name === 'MulterError') {
     if (err.code === 'LIMIT_FILE_SIZE') {
       return res.status(400).json({
