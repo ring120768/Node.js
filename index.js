@@ -4307,7 +4307,7 @@ app.post('/api/log-emergency-call', authenticateRequest, async (req, res) => {
   }
 });
 
-// WHAT3WORDS endpoint
+// WHAT3WORDS endpoint (no consent required for location services)
 app.get('/api/what3words', async (req, res) => {
   try {
     const { lat, lng } = req.query;
@@ -4315,40 +4315,53 @@ app.get('/api/what3words', async (req, res) => {
     if (!lat || !lng) {
       return res.status(400).json({
         error: 'Missing latitude or longitude',
-        requestId: req.requestId
+        words: 'coordinates.required'
       });
     }
 
     const W3W_API_KEY = process.env.WHAT3WORDS_API_KEY;
 
     if (!W3W_API_KEY) {
-      Logger.warn('What3Words API key not configured');
+      console.warn('What3Words API key not configured');
       return res.json({
         words: 'location.not.configured',
-        requestId: req.requestId
+        error: 'API key missing'
       });
     }
 
+    console.log(`📍 What3Words request: lat=${lat}, lng=${lng}`);
+
+    // Call What3Words API
     const response = await axios.get(
-      `https://api.what3words.com/v3/convert-to-3wa?coordinates=${lat},${lng}&key=${W3W_API_KEY}`
+      'https://api.what3words.com/v3/convert-to-3wa',
+      {
+        params: {
+          coordinates: `${lat},${lng}`,
+          key: W3W_API_KEY
+        },
+        timeout: 5000
+      }
     );
 
     if (response.data && response.data.words) {
-      res.json({
+      console.log(`✅ What3Words: ${response.data.words}`);
+      return res.json({
         words: response.data.words,
-        requestId: req.requestId
-      });
-    } else {
-      res.json({
-        words: 'location.not.found',
-        requestId: req.requestId
+        country: response.data.country,
+        nearestPlace: response.data.nearestPlace
       });
     }
-  } catch (error) {
-    Logger.error('What3Words API error', error);
+
     res.json({
+      words: 'location.not.found',
+      error: 'No words returned'
+    });
+
+  } catch (error) {
+    console.error('❌ What3Words error:', error.message);
+    res.status(500).json({
       words: 'api.error.occurred',
-      requestId: req.requestId
+      error: error.message
     });
   }
 });
