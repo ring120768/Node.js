@@ -2831,54 +2831,6 @@ app.post('/webhook/signup', webhookLimiter, checkSharedKey, async (req, res) => 
       // Continue processing, but log the consent issue.
     }
 
-    // Extract consent from webhook using ConsentManager
-    let extractedConsent = null;
-    if (consentManager && webhookData) {
-      try {
-        extractedConsent = consentManager.extractConsentFromWebhook(webhookData);
-        console.log('Extracted consent from webhook:', {
-          hasConsent: extractedConsent.hasConsent,
-          source: extractedConsent.consentSource,
-          provider: extractedConsent.provider
-        });
-
-        // Save consent with ConsentManager if found
-        if (extractedConsent.consentValue !== null && webhookData.create_user_id) {
-          const saveResult = await consentManager.saveConsent(webhookData.create_user_id, extractedConsent);
-          console.log('ConsentManager save result:', saveResult);
-        }
-      } catch (error) {
-        console.error('Error extracting consent from webhook:', error);
-      }
-    }
-
-    // Also save with new privacy handler for checkbox UI compatibility
-    if (extractedConsent && extractedConsent.hasConsent && privacyHandler) {
-      const mockReq = {
-        body: {
-          user_id: extractedConsent.userId || webhookData.create_user_id,
-          consent_type: 'webhook_consent',
-          preferences: {
-            essential: true,
-            analytics: extractedConsent.analytics || false,
-            marketing: extractedConsent.marketing || false,
-            ai_processing: extractedConsent.aiProcessing || true
-          },
-          source: 'typeform_webhook',
-          consent_action: 'webhook_submission'
-        },
-        ip: req.ip,
-        headers: req.headers
-      };
-      
-      const mockRes = {
-        json: (data) => console.log('Privacy consent saved:', data),
-        status: (code) => ({ json: (data) => console.log('Privacy consent error:', data) })
-      };
-      
-      await privacyHandler.recordConsent(mockReq, mockRes);
-    }
-
     // Process images if available
     if (imageProcessor && webhookData.create_user_id) {
       console.log('Processing images for signup...');
@@ -2895,9 +2847,8 @@ app.post('/webhook/signup', webhookLimiter, checkSharedKey, async (req, res) => 
     await logGDPRActivity(userIdForLog || 'unknown', 'SIGNUP_WEBHOOK_PROCESSED', {
       ip: req.clientIp,
       request_id: req.requestId,
-      consent_granted: req.hasConsent || extractedConsent?.hasConsent,
-      consent_warning: req.gdprWarning,
-      extracted_consent: extractedConsent
+      consent_granted: req.hasConsent,
+      consent_warning: req.gdprWarning
     }, req);
 
     console.log('✅ Signup webhook processed successfully');
@@ -3515,9 +3466,6 @@ app.get('/health', async (req, res) => {
     module: 'not configured'
   };
 
-  // Add privacy system status
-  const privacySystemHealthy = privacyHandler ? true : false;
-
   const enhancedModules = {
     consentManager: consentManager !== null,
     webhookDebugger: webhookDebugger !== null,
@@ -3541,12 +3489,7 @@ app.get('/health', async (req, res) => {
         queue: activeSessions.size,
         users: userSessions.size
       },
-      gdpr_compliance: {
-        ...gdprStatus,
-        consentManager: consentManager !== null,
-        gdprModule: gdprModule !== null,
-        privacyHandler: privacySystemHealthy
-      },
+      gdpr_compliance: gdprStatus,
       what3words: externalServices.what3words
     },
     enhancedModules: enhancedModules,
@@ -4500,15 +4443,6 @@ app.post('/api/whisper/transcribe', upload.single('audio'), async (req, res) => 
 
 // --- ERROR HANDLING MIDDLEWARE ---
 app.use((err, req, res, next) => {
-  // Add before existing error handling
-  if (err.message && err.message.includes('consent required')) {
-    return res.status(403).json({
-      success: false,
-      error: err.message,
-      requiresConsent: true
-    });
-  }
-
   if (err.name === 'MulterError') {
     if (err.code === 'LIMIT_FILE_SIZE') {
       return res.status(400).json({
@@ -4650,13 +4584,6 @@ if (process.env.NODE_ENV !== 'test') {
     Logger.success('📝 Legal Narrative Generation - Fixed and fully operational');
   });
 }
-
-// Log registered privacy endpoints for testing
-console.log('📋 Privacy Consent System Ready:');
-console.log('  POST /api/gdpr/consent - Record consent');
-console.log('  GET /api/gdpr/consent/:userId - Get consent status');
-console.log('  POST /api/gdpr/consent/check - Bulk consent check');
-console.log('  DELETE /api/gdpr/consent/:userId - Revoke consent');
 
 // Export for testing
 module.exports = { 
