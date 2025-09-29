@@ -542,6 +542,17 @@
             <button class="find-me-btn" id="findMeBtn">
                 📍 Find Me!
             </button>
+            
+            <div id="locationHelp" style="display: none; background: #f0f8ff; padding: 10px; border-radius: 8px; margin-top: 10px; font-size: 14px;">
+                <strong>📍 Need help with location?</strong><br>
+                <p style="margin: 5px 0;">If location isn't working:</p>
+                <ul style="margin: 5px 0; padding-left: 20px;">
+                    <li>Allow location permissions when prompted</li>
+                    <li>Check your browser settings</li>
+                    <li>Enter location manually in the report form</li>
+                </ul>
+                <button onclick="document.getElementById('locationHelp').style.display='none'" style="background: #4CAF50; color: white; border: none; padding: 5px 10px; border-radius: 4px; cursor: pointer; font-size: 12px;">Got it</button>
+            </div>
 
             <!-- Dash-cam Upload Button -->
             <button class="dashcam-btn" id="dashcamBtn">
@@ -915,9 +926,32 @@
             findMeBtn.addEventListener('click', async function() {
                 console.log('📍 Find Me button clicked');
                 const btn = this;
-                btn.innerHTML = '<span class="loading-spinner"></span> Locating...';
+                
+                // Check if geolocation is supported
+                if (!navigator.geolocation) {
+                    alert('Geolocation is not supported by this browser. Please enter your location manually.');
+                    return;
+                }
+
+                // Check current permission status
+                if (navigator.permissions) {
+                    try {
+                        const permission = await navigator.permissions.query({name: 'geolocation'});
+                        console.log('📍 Geolocation permission status:', permission.state);
+                        
+                        if (permission.state === 'denied') {
+                            alert('Location access is blocked. Please:\n\n1. Click the location icon in your browser\'s address bar\n2. Select "Allow" for location access\n3. Refresh this page and try again\n\nOr manually enter your location in the incident report.');
+                            return;
+                        }
+                    } catch (error) {
+                        console.log('📍 Permission API not available, proceeding with location request');
+                    }
+                }
+
+                btn.innerHTML = '<span class="loading-spinner"></span> Requesting Location...';
                 btn.disabled = true;
 
+                // Request location with high accuracy
                 navigator.geolocation.getCurrentPosition(
                     async (position) => {
                         userLocation = {
@@ -982,6 +1016,10 @@
                         // Fetch What3Words
                         try {
                             console.log('🔍 Fetching What3Words for:', userLocation.lat, userLocation.lng);
+                            
+                            // Update UI to show what3words is loading
+                            document.getElementById('what3wordsText').textContent = '///loading.location.words';
+                            
                             const w3wResponse = await fetch(`/api/what3words?lat=${userLocation.lat}&lng=${userLocation.lng}`);
                             
                             if (!w3wResponse.ok) {
@@ -991,18 +1029,20 @@
                             const w3wData = await w3wResponse.json();
                             console.log('📍 What3Words response:', w3wData);
                             
-                            if (w3wData.words) {
+                            if (w3wData.words && w3wData.words !== 'location.not.configured' && w3wData.words !== 'location.not.found') {
                                 what3wordsData = w3wData.words;
                                 document.getElementById('what3wordsText').textContent = `///${w3wData.words}`;
                                 document.getElementById('w3wTimestamp').textContent = new Date().toLocaleString();
                                 console.log('✅ What3Words updated:', w3wData.words);
                             } else {
-                                console.warn('⚠️ No words in What3Words response');
-                                document.getElementById('what3wordsText').textContent = '///location.not.available';
+                                console.warn('⚠️ What3Words not available:', w3wData.words);
+                                document.getElementById('what3wordsText').textContent = w3wData.words ? `///${w3wData.words}` : '///location.not.available';
+                                document.getElementById('w3wTimestamp').textContent = 'Service unavailable';
                             }
                         } catch (error) {
                             console.error('❌ What3Words error:', error);
-                            document.getElementById('what3wordsText').textContent = '///location.error.occurred';
+                            document.getElementById('what3wordsText').textContent = '///service.error.occurred';
+                            document.getElementById('w3wTimestamp').textContent = 'Service error';
                         }
 
                         // Show location section
@@ -1021,19 +1061,31 @@
                         btn.textContent = '📍 Location Failed';
                         btn.disabled = false;
 
-                        let errorMessage = 'Unable to get your location. ';
+                        let errorMessage = '';
+                        let actionMessage = '';
+                        
                         switch(error.code) {
                             case error.PERMISSION_DENIED:
-                                errorMessage += 'Please enable location permissions.';
+                                errorMessage = 'Location access was denied.';
+                                actionMessage = '\n\nTo enable location:\n• Chrome/Edge: Click the location icon (🗺️) in the address bar and select "Allow"\n• Firefox: Click the shield icon and enable location\n• Safari: Go to Settings > Privacy & Security > Location Services\n\nAfter enabling, refresh this page and try again.';
                                 break;
                             case error.POSITION_UNAVAILABLE:
-                                errorMessage += 'Location information unavailable.';
+                                errorMessage = 'Your location could not be determined.';
+                                actionMessage = '\n\nTry:\n• Moving to an area with better GPS signal\n• Enabling Wi-Fi for better location accuracy\n• Using the manual location entry in the report';
                                 break;
                             case error.TIMEOUT:
-                                errorMessage += 'Location request timed out.';
+                                errorMessage = 'Location request timed out.';
+                                actionMessage = '\n\nTry:\n• Ensuring good internet connection\n• Moving to an area with better signal\n• Clicking "Try Again" below';
                                 break;
+                            default:
+                                errorMessage = 'An unknown error occurred while getting your location.';
+                                actionMessage = '\n\nPlease try again or enter your location manually in the incident report.';
                         }
-                        alert(errorMessage);
+                        
+                        alert(errorMessage + actionMessage);
+                        
+                        // Show location help section
+                        document.getElementById('locationHelp').style.display = 'block';
 
                         setTimeout(() => {
                             btn.textContent = '📍 Try Again';
