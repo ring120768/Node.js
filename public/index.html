@@ -1054,6 +1054,11 @@
       // Record consent with backend
       await recordPrivacyConsent('accepted');
 
+      // Also accept all cookies if cookie manager is available
+      if (window.cookieManager) {
+        await window.cookieManager.acceptAllCookies();
+      }
+
       // Re-initialize with consent
       await initializeSystem();
 
