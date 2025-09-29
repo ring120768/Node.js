@@ -56,10 +56,10 @@ const validateEnvironment = () => {
     'OPENAI_API_KEY': 'OpenAI API for transcription and AI summaries',
     'ZAPIER_SHARED_KEY': 'Webhook authentication key'
   };
-  
+
   const missingVars = [];
   const configuredVars = [];
-  
+
   for (const [varName, description] of Object.entries(requiredVars)) {
     if (!process.env[varName]) {
       missingVars.push(`${varName} (${description})`);
@@ -67,16 +67,16 @@ const validateEnvironment = () => {
       configuredVars.push(varName);
     }
   }
-  
+
   if (missingVars.length > 0) {
     console.warn('⚠️ WARNING: Missing environment variables:');
     missingVars.forEach(v => console.warn(`  - ${v}`));
   }
-  
+
   if (configuredVars.length > 0) {
     console.log('✅ Configured environment variables:', configuredVars.join(', '));
   }
-  
+
   return {
     isValid: missingVars.length === 0,
     missing: missingVars,
@@ -3633,10 +3633,10 @@ app.post('/api/debug/webhook-test', checkSharedKey, async (req, res) => {
     const sortedWebhooks = webhooksArray.sort((a, b) => 
       new Date(a[1].timestamp) - new Date(b[1].timestamp)
     );
-    
+
     // Remove oldest entry
     webhookDebugger.webhookStore.delete(sortedWebhooks[0][0]);
-    
+
     Logger.debug('Webhook store cleaned - removed oldest entry');
   }
 
@@ -4132,64 +4132,122 @@ app.get('/status', (req, res) => {
 });
 
 // --- AUTHENTICATION STATUS ---
-app.get('/api/auth/status', (req, res) => {
-  const mockUser = {
-    authenticated: false,
-    user: null
-  };
+// This section is replaced by the new incidentEndpoints implementation
+// app.get('/api/auth/status', (req, res) => {
+//   const mockUser = {
+//     authenticated: false,
+//     user: null
+//   };
 
-  if (req.session && req.session.user) {
-    mockUser.authenticated = true;
-    mockUser.user = {
-      uid: req.session.user.id,
-      email: req.session.user.email,
-      fullName: req.session.user.full_name
-    };
-  }
+//   if (req.session && req.session.user) {
+//     mockUser.authenticated = true;
+//     mockUser.user = {
+//       uid: req.session.user.id,
+//       email: req.session.user.email,
+//       fullName: req.session.user.full_name
+//     };
+//   }
 
-  res.json(mockUser);
-});
+//   res.json(mockUser);
+// });
 
 // --- EMERGENCY CONTACTS ---
-app.get('/api/user/:userId/emergency-contacts', authenticateRequest, async (req, res) => {
-  if (!supabaseEnabled) {
-    return res.status(503).json({
-      error: 'Service not configured',
-      requestId: req.requestId
-    });
+// This section is replaced by the new incidentEndpoints implementation
+// app.get('/api/user/:userId/emergency-contacts', authenticateRequest, async (req, res) => {
+//   if (!supabaseEnabled) {
+//     return res.status(503).json({
+//       error: 'Service not configured',
+//       requestId: req.requestId
+//     });
+//   }
+
+//   try {
+//     const { userId } = req.params;
+
+//     const { data, error } = await supabase
+//       .from('user_signup')
+//       .select('emergency_contact, recovery_breakdown_number, emergency_services_number, mobile') // Added mobile
+//       .eq('create_user_id', userId)
+//       .single();
+
+//     if (error) {
+//       Logger.error('Supabase error', error);
+//       return res.status(404).json({
+//         error: 'User not found',
+//         requestId: req.requestId
+//       });
+//     }
+
+//     res.json({
+//       emergency_contact: data.emergency_contact || null,
+//       recovery_breakdown_number: data.recovery_breakdown_number || null,
+//       emergency_services_number: data.emergency_services_number || '999',
+//       mobile: data.mobile || null, // Added mobile
+//       requestId: req.requestId,
+//     });
+//   } catch (error) {
+//     Logger.error('Error fetching emergency contacts', error);
+//     res.status(500).json({
+//       error: 'Failed to fetch contacts',
+//       requestId: req.requestId
+//     });
+//   }
+// });
+
+// ========================================
+// INCIDENT ENDPOINTS INITIALIZATION
+// ========================================
+// Add after line 323 where other modules are initialized
+const IncidentEndpoints = require('./lib/incidentEndpoints');
+let incidentEndpoints = null;
+
+if (supabaseEnabled) {
+  incidentEndpoints = new IncidentEndpoints(supabase);
+  Logger.success('✅ Incident endpoints module initialized');
+}
+
+// ========================================
+// ADD INCIDENT ENDPOINTS AFTER LINE 2100 (API ENDPOINTS)
+// ========================================
+
+// Missing authentication status endpoint
+app.get('/api/auth/status', async (req, res) => {
+  if (!incidentEndpoints) {
+    return res.json({ authenticated: false });
   }
+  return incidentEndpoints.getAuthStatus(req, res);
+});
 
-  try {
-    const { userId } = req.params;
-
-    const { data, error } = await supabase
-      .from('user_signup')
-      .select('emergency_contact, recovery_breakdown_number, emergency_services_number, mobile') // Added mobile
-      .eq('create_user_id', userId)
-      .single();
-
-    if (error) {
-      Logger.error('Supabase error', error);
-      return res.status(404).json({
-        error: 'User not found',
-        requestId: req.requestId
-      });
-    }
-
-    res.json({
-      emergency_contact: data.emergency_contact || null,
-      recovery_breakdown_number: data.recovery_breakdown_number || null,
-      emergency_services_number: data.emergency_services_number || '999',
-      mobile: data.mobile || null, // Added mobile
-      requestId: req.requestId
-    });
-  } catch (error) {
-    Logger.error('Error fetching emergency contacts', error);
-    res.status(500).json({
-      error: 'Failed to fetch contacts',
-      requestId: req.requestId
-    });
+// Missing emergency contacts endpoint  
+app.get('/api/user/:userId/emergency-contacts', async (req, res) => {
+  if (!incidentEndpoints) {
+    return res.status(503).json({ error: 'Service not configured' });
   }
+  return incidentEndpoints.getEmergencyContacts(req, res);
+});
+
+// Missing store evidence audio endpoint
+app.post('/api/store-evidence-audio', upload.single('audio'), async (req, res) => {
+  if (!incidentEndpoints) {
+    return res.status(503).json({ error: 'Service not configured' });
+  }
+  return incidentEndpoints.storeEvidenceAudio(req, res);
+});
+
+// Missing What3Words image upload endpoint
+app.post('/api/upload-what3words-image', upload.single('image'), async (req, res) => {
+  if (!incidentEndpoints) {
+    return res.status(503).json({ error: 'Service not configured' });
+  }
+  return incidentEndpoints.uploadWhat3WordsImage(req, res);
+});
+
+// Missing dashcam upload endpoint
+app.post('/api/upload-dashcam', upload.single('video'), async (req, res) => {
+  if (!incidentEndpoints) {
+    return res.status(503).json({ error: 'Service not configured' });
+  }
+  return incidentEndpoints.uploadDashcam(req, res);
 });
 
 // LOG EMERGENCY CALLS endpoint
