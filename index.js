@@ -36,6 +36,7 @@ const GDPRComplianceModule = require('./gdprModule');
 const { CONSTANTS: ENHANCED_CONSTANTS, ConstantHelpers } = require('./constants');
 const ConsentManager = require('./consentManager');
 const WebhookDebugger = require('./webhookDebugger');
+const PrivacyConsentHandler = require('./privacyConsentHandler');
 
 // Import PDF generation modules - with error handling
 let fetchAllData, generatePDF, sendEmails;
