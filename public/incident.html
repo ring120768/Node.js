@@ -501,7 +501,7 @@
 <body>
     <!-- Navigation Arrows -->
     <div class="nav-arrows">
-        <div class="nav-arrow back" onclick="goBack()" title="Go Back">
+        <div class="nav-arrow back" onclick="goBack()" title="Go Back to Homepage">
             <span>←</span>
         </div>
     </div>
@@ -545,7 +545,7 @@
 
             <!-- Dash-cam Upload Button -->
             <button class="dashcam-btn" id="dashcamBtn">
-                📹 Add Dash-cam Video
+                📹 Add Dashcam Video here!
             </button>
 
             <!-- Hidden file input -->
@@ -636,7 +636,7 @@
 
         // Navigation functions
         function goBack() {
-            // Always go back to the home page from incident.html
+            // Always return to homepage when back arrow is clicked
             window.location.href = '/';
         }
 
@@ -647,15 +647,19 @@
 
         // Initialize on page load
         document.addEventListener('DOMContentLoaded', async () => {
-            console.log('Initializing incident report page...');
-            await checkUserAuthentication();
+            console.log('🚀 Initializing incident report page...');
+            
+            // Set up basic event listeners first
             setupEmergencyButtons();
             setupLocationButton();
             setupVoiceRecording();
             setupContinueButton();
-
-            // Initialize dash-cam uploader
+            
+            // Then check authentication and initialize dash-cam
+            await checkUserAuthentication();
             initializeDashcam();
+            
+            console.log('✅ All incident page functionality initialized');
         });
 
         // Initialize dash-cam functionality
@@ -703,7 +707,7 @@
             } else {
                 console.warn('User ID not available - dash-cam upload disabled');
                 document.getElementById('dashcamBtn').disabled = true;
-                document.getElementById('dashcamBtn').textContent = '📹 Sign in to upload video';
+                document.getElementById('dashcamBtn').textContent = '📹 Upload Dashcam Here!';
             }
         }
 
@@ -861,27 +865,55 @@
 
         // Setup emergency buttons with default behavior
         function setupEmergencyButtons() {
+            console.log('🚨 Setting up emergency buttons...');
+            
             // Default 999 button
-            document.getElementById('emergency999Btn').onclick = function() {
-                if (confirm('This will call 999 Emergency Services. Continue?')) {
-                    window.location.href = 'tel:999';
-                }
-            };
+            const emergency999Btn = document.getElementById('emergency999Btn');
+            if (emergency999Btn) {
+                emergency999Btn.onclick = function() {
+                    console.log('🚨 Emergency 999 button clicked');
+                    if (confirm('This will call 999 Emergency Services. Continue?')) {
+                        window.location.href = 'tel:999';
+                    }
+                };
+                console.log('✅ Emergency 999 button setup complete');
+            }
 
             // Default recovery button
-            document.getElementById('recoveryBtn').onclick = function() {
-                alert('Please wait while we load your recovery service details...');
-            };
+            const recoveryBtn = document.getElementById('recoveryBtn');
+            if (recoveryBtn) {
+                recoveryBtn.onclick = function() {
+                    console.log('🚗 Recovery button clicked');
+                    alert('Please wait while we load your recovery service details...');
+                };
+                console.log('✅ Recovery button setup complete');
+            }
 
             // Default emergency contact button
-            document.getElementById('emergencyContactBtn').onclick = function() {
-                alert('Please wait while we load your emergency contact details...');
-            };
+            const emergencyContactBtn = document.getElementById('emergencyContactBtn');
+            if (emergencyContactBtn) {
+                emergencyContactBtn.onclick = function() {
+                    console.log('👤 Emergency contact button clicked');
+                    alert('Please wait while we load your emergency contact details...');
+                };
+                console.log('✅ Emergency contact button setup complete');
+            }
+            
+            console.log('✅ All emergency buttons configured');
         }
 
         // Setup Find Me button
         function setupLocationButton() {
-            document.getElementById('findMeBtn').addEventListener('click', async function() {
+            console.log('📍 Setting up location button...');
+            const findMeBtn = document.getElementById('findMeBtn');
+            
+            if (!findMeBtn) {
+                console.error('❌ Find Me button not found in DOM');
+                return;
+            }
+            
+            findMeBtn.addEventListener('click', async function() {
+                console.log('📍 Find Me button clicked');
                 const btn = this;
                 btn.innerHTML = '<span class="loading-spinner"></span> Locating...';
                 btn.disabled = true;
@@ -949,17 +981,27 @@
 
                         // Fetch What3Words
                         try {
+                            console.log('🔍 Fetching What3Words for:', userLocation.lat, userLocation.lng);
                             const w3wResponse = await fetch(`/api/what3words?lat=${userLocation.lat}&lng=${userLocation.lng}`);
+                            
+                            if (!w3wResponse.ok) {
+                                throw new Error(`HTTP ${w3wResponse.status}: ${w3wResponse.statusText}`);
+                            }
+                            
                             const w3wData = await w3wResponse.json();
+                            console.log('📍 What3Words response:', w3wData);
+                            
                             if (w3wData.words) {
                                 what3wordsData = w3wData.words;
                                 document.getElementById('what3wordsText').textContent = `///${w3wData.words}`;
                                 document.getElementById('w3wTimestamp').textContent = new Date().toLocaleString();
+                                console.log('✅ What3Words updated:', w3wData.words);
                             } else {
+                                console.warn('⚠️ No words in What3Words response');
                                 document.getElementById('what3wordsText').textContent = '///location.not.available';
                             }
                         } catch (error) {
-                            console.error('What3Words error:', error);
+                            console.error('❌ What3Words error:', error);
                             document.getElementById('what3wordsText').textContent = '///location.error.occurred';
                         }
 
@@ -1058,9 +1100,15 @@
 
         // Setup voice recording
         function setupVoiceRecording() {
+            console.log('🎤 Setting up voice recording...');
             const voiceBtn = document.getElementById('voiceBtn');
             const dontRecordBtn = document.getElementById('dontRecordBtn');
             const voiceStatus = document.getElementById('voiceStatus');
+            
+            if (!voiceBtn || !dontRecordBtn) {
+                console.error('❌ Voice recording buttons not found in DOM');
+                return;
+            }
 
             voiceBtn.addEventListener('click', async function() {
                 if (!isRecording) {
@@ -1147,19 +1195,19 @@
         async function captureAndStoreAudio(audioBlob) {
             const formData = new FormData();
             formData.append('audio', audioBlob, 'recording.webm');
-            
+
             // Add metadata
             formData.append('user_id', userData?.uid || 'anonymous');
             formData.append('incident_id', sessionStorage.getItem('currentIncidentId') || Date.now().toString());
             formData.append('timestamp', new Date().toISOString());
-            
+
             // Add location data if available
             if (userLocation) {
                 formData.append('latitude', userLocation.lat);
                 formData.append('longitude', userLocation.lng);
                 formData.append('accuracy', userLocation.accuracy);
             }
-            
+
             // Add what3words if available
             if (what3wordsData) {
                 formData.append('what3words', what3wordsData);
@@ -1190,7 +1238,16 @@
 
         // Setup continue button with what3words upload
         function setupContinueButton() {
-            document.getElementById('continueBtn').addEventListener('click', async function() {
+            console.log('⏭️ Setting up continue button...');
+            const continueBtn = document.getElementById('continueBtn');
+            
+            if (!continueBtn) {
+                console.error('❌ Continue button not found in DOM');
+                return;
+            }
+            
+            continueBtn.addEventListener('click', async function() {
+                console.log('⏭️ Continue button clicked');
                 this.disabled = true;
                 this.textContent = 'Processing...';
 
