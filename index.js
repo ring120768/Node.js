@@ -3515,6 +3515,9 @@ app.get('/health', async (req, res) => {
     module: 'not configured'
   };
 
+  // Add privacy system status
+  const privacySystemHealthy = privacyHandler ? true : false;
+
   const enhancedModules = {
     consentManager: consentManager !== null,
     webhookDebugger: webhookDebugger !== null,
@@ -3538,7 +3541,12 @@ app.get('/health', async (req, res) => {
         queue: activeSessions.size,
         users: userSessions.size
       },
-      gdpr_compliance: gdprStatus,
+      gdpr_compliance: {
+        ...gdprStatus,
+        consentManager: consentManager !== null,
+        gdprModule: gdprModule !== null,
+        privacyHandler: privacySystemHealthy
+      },
       what3words: externalServices.what3words
     },
     enhancedModules: enhancedModules,
