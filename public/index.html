@@ -217,57 +217,259 @@
       transform: scale(1.05);
     }
 
-    /* Enhanced Privacy Notice */
-    .privacy-notice {
+    /* ===================================== */
+    /* NEW SIMPLIFIED PRIVACY MODAL STYLES  */
+    /* ===================================== */
+    .privacy-modal {
       position: fixed;
       bottom: 0;
       left: 0;
       right: 0;
-      background: rgba(0, 0, 0, 0.95);
-      color: white;
-      padding: 20px;
-      font-size: 0.9rem;
+      background: white;
+      color: #333;
+      box-shadow: 0 -4px 20px rgba(0, 0, 0, 0.15);
       z-index: 1000;
       transform: translateY(100%);
       transition: transform 0.3s ease;
-      backdrop-filter: blur(10px);
+      max-height: 80vh;
+      overflow-y: auto;
     }
 
-    .privacy-notice.show {
+    .privacy-modal.show {
       transform: translateY(0);
     }
 
-    .privacy-content {
-      max-width: 1200px;
+    .privacy-modal-content {
+      padding: 25px;
+      max-width: 800px;
       margin: 0 auto;
-      display: flex;
-      flex-direction: column;
-      gap: 15px;
     }
 
-    .privacy-header {
+    .privacy-modal-header {
       display: flex;
       align-items: center;
       justify-content: space-between;
-      flex-wrap: wrap;
-      gap: 15px;
+      margin-bottom: 20px;
+      padding-bottom: 15px;
+      border-bottom: 2px solid #e0e0e0;
     }
 
-    .privacy-text {
+    .privacy-modal-title {
+      font-size: 1.4rem;
+      font-weight: 600;
+      color: #1e3c72;
+      display: flex;
+      align-items: center;
+      gap: 10px;
+    }
+
+    .privacy-modal-close {
+      background: none;
+      border: none;
+      font-size: 1.5rem;
+      color: #666;
+      cursor: pointer;
+      padding: 5px;
+      transition: color 0.3s;
+    }
+
+    .privacy-modal-close:hover {
+      color: #333;
+    }
+
+    .privacy-intro {
+      margin-bottom: 20px;
+      color: #555;
+      line-height: 1.5;
+    }
+
+    .privacy-categories {
+      margin: 20px 0;
+    }
+
+    .privacy-category {
+      background: #f8f9fa;
+      border-radius: 8px;
+      padding: 15px;
+      margin-bottom: 10px;
+      border: 1px solid #e0e0e0;
+      transition: all 0.3s ease;
+    }
+
+    .privacy-category:hover {
+      background: #f0f4f8;
+      border-color: #2a5298;
+    }
+
+    .privacy-category-header {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      cursor: pointer;
+    }
+
+    .privacy-category-info {
       flex: 1;
-      min-width: 300px;
     }
 
-    .privacy-text h4 {
-      margin: 0 0 8px 0;
-      font-size: 1rem;
-      color: #4a90e2;
+    .privacy-category-title {
+      font-weight: 600;
+      color: #333;
+      margin-bottom: 5px;
+      display: flex;
+      align-items: center;
+      gap: 8px;
     }
 
-    .privacy-text p {
-      margin: 0;
+    .privacy-category-description {
+      font-size: 0.9rem;
+      color: #666;
       line-height: 1.4;
-      color: rgba(255, 255, 255, 0.9);
+    }
+
+    .privacy-checkbox-wrapper {
+      display: flex;
+      align-items: center;
+    }
+
+    /* Privacy checkbox styles with better cross-browser support */
+    .privacy-checkbox {
+      width: 48px;
+      height: 24px;
+      background: #ccc;
+      border-radius: 12px;
+      position: relative;
+      cursor: pointer;
+      transition: background 0.3s;
+    }
+
+    .privacy-checkbox input {
+      display: none;
+    }
+
+    .privacy-checkbox-slider {
+      position: absolute;
+      top: 2px;
+      left: 2px;
+      width: 20px;
+      height: 20px;
+      background: white;
+      border-radius: 50%;
+      transition: transform 0.3s;
+      box-shadow: 0 2px 4px rgba(0, 0, 0, 0.2);
+    }
+
+    /* When checkbox is checked, move slider */
+    .privacy-checkbox input:checked ~ .privacy-checkbox-slider {
+      transform: translateX(24px);
+    }
+
+    /* Modern browsers - use :has() selector */
+    .privacy-checkbox:has(input:checked) {
+      background: #4CAF50;
+    }
+
+    /* Fallback for all browsers - use JavaScript-applied class */
+    .privacy-checkbox.checked {
+      background: #4CAF50 !important;
+    }
+
+    .privacy-checkbox.disabled {
+      opacity: 0.6;
+      cursor: not-allowed;
+    }
+
+    /* Essential is always on and green */
+    .privacy-category.essential .privacy-checkbox {
+      background: #4CAF50 !important;
+      cursor: not-allowed;
+    }
+
+    .privacy-actions {
+      display: flex;
+      gap: 10px;
+      margin-top: 20px;
+      padding-top: 20px;
+      border-top: 1px solid #e0e0e0;
+      flex-wrap: wrap;
+    }
+
+    .privacy-btn {
+      padding: 10px 20px;
+      border: none;
+      border-radius: 6px;
+      font-weight: 500;
+      cursor: pointer;
+      transition: all 0.3s;
+      font-size: 0.95rem;
+    }
+
+    .privacy-btn-primary {
+      background: #2a5298;
+      color: white;
+      flex: 1;
+      min-width: 150px;
+    }
+
+    .privacy-btn-primary:hover {
+      background: #1e3c72;
+      transform: translateY(-1px);
+    }
+
+    .privacy-btn-accept-all {
+      background: #4CAF50;
+      color: white;
+      flex: 1;
+      min-width: 150px;
+    }
+
+    .privacy-btn-accept-all:hover {
+      background: #45a049;
+      transform: translateY(-1px);
+    }
+
+    .privacy-btn-secondary {
+      background: #f0f0f0;
+      color: #333;
+      border: 1px solid #ddd;
+    }
+
+    .privacy-btn-secondary:hover {
+      background: #e0e0e0;
+    }
+
+    .privacy-links {
+      margin-top: 15px;
+      padding-top: 15px;
+      border-top: 1px solid #e0e0e0;
+      text-align: center;
+    }
+
+    .privacy-links a {
+      color: #2a5298;
+      text-decoration: none;
+      margin: 0 10px;
+      font-size: 0.9rem;
+    }
+
+    .privacy-links a:hover {
+      text-decoration: underline;
+    }
+
+    .privacy-badge {
+      display: inline-flex;
+      align-items: center;
+      padding: 2px 8px;
+      background: #e3f2fd;
+      color: #1976d2;
+      border-radius: 12px;
+      font-size: 0.75rem;
+      font-weight: 500;
+    }
+
+    .privacy-badge.required {
+      background: #fff3e0;
+      color: #f57c00;
     }
 
     .jurisdiction-indicator {
@@ -275,85 +477,9 @@
       border: 1px solid #4a90e2;
       padding: 8px 16px;
       border-radius: 20px;
-      font-size: 0.8rem;
+      font-size: 0.85rem;
       color: #4a90e2;
       font-weight: 500;
-    }
-
-    .privacy-buttons {
-      display: flex;
-      gap: 10px;
-      flex-wrap: wrap;
-      justify-content: center;
-    }
-
-    .privacy-button {
-      padding: 10px 20px;
-      border: 1px solid rgba(255, 255, 255, 0.3);
-      background: transparent;
-      color: white;
-      border-radius: 6px;
-      cursor: pointer;
-      font-size: 0.85rem;
-      transition: all 0.3s ease;
-      text-decoration: none;
-      display: inline-block;
-    }
-
-    .privacy-button:hover {
-      background: rgba(255, 255, 255, 0.1);
-      border-color: rgba(255, 255, 255, 0.5);
-      color: white;
-      text-decoration: none;
-    }
-
-    .privacy-button.accept {
-      background: #10b981;
-      border-color: #10b981;
-      color: white;
-    }
-
-    .privacy-button.accept:hover {
-      background: #059669;
-      border-color: #059669;
-    }
-
-    .privacy-button.primary {
-      background: #4a90e2;
-      border-color: #4a90e2;
-      color: white;
-    }
-
-    .privacy-button.primary:hover {
-      background: #357abd;
-      border-color: #357abd;
-    }
-
-    .privacy-links {
-      display: flex;
-      gap: 15px;
-      justify-content: center;
-      flex-wrap: wrap;
-      padding-top: 15px;
-      border-top: 1px solid rgba(255, 255, 255, 0.2);
-    }
-
-    .privacy-links a {
-      color: rgba(255, 255, 255, 0.7);
-      text-decoration: none;
-      font-size: 0.8rem;
-      transition: color 0.3s ease;
-    }
-
-    .privacy-links a:hover {
-      color: white;
-    }
-
-    /* Touch Feedback for Mobile */
-    @media (hover: none) {
-      .btn:active {
-        transform: scale(0.98);
-      }
     }
 
     /* Navigation Arrows */
@@ -403,68 +529,6 @@
       color: #007acc;
     }
 
-    @media (max-width: 768px) {
-      .nav-arrow {
-        width: 40px;
-        height: 40px;
-      }
-
-      .nav-arrow.back {
-        left: 10px;
-      }
-
-      .nav-arrow.forward {
-        right: 10px;
-      }
-
-      .nav-arrow span {
-        font-size: 20px;
-      }
-
-      .privacy-header {
-        flex-direction: column;
-        text-align: center;
-      }
-
-      .privacy-buttons {
-        justify-content: center;
-      }
-
-      .privacy-links {
-        flex-direction: column;
-        align-items: center;
-        gap: 8px;
-      }
-    }
-
-    /* Responsive Design */
-    @media (max-width: 768px) {
-      header img {
-        max-width: 200px;
-        width: 70%;
-      }
-
-      h1 {
-        font-size: 2.2rem;
-      }
-
-      .cta-buttons {
-        flex-direction: column;
-        align-items: center;
-      }
-
-      .cta-button {
-        min-width: 200px;
-      }
-
-      .user-status {
-        position: relative;
-        top: auto;
-        right: auto;
-        margin-bottom: 1rem;
-      }
-    }
-
     /* Loading states */
     .loading-overlay {
       position: fixed;
@@ -496,6 +560,115 @@
       border-top-color: white;
       animation: spin 1s ease-in-out infinite;
       margin: 0 auto 20px;
+    }
+
+    /* Notification styles for privacy confirmations */
+    .notification {
+      position: fixed;
+      top: 80px;
+      right: 20px;
+      padding: 16px 24px;
+      border-radius: 8px;
+      box-shadow: 0 4px 12px rgba(0,0,0,0.15);
+      z-index: 10000;
+      font-size: 14px;
+      font-weight: 500;
+      animation: slideIn 0.3s ease;
+      max-width: 350px;
+    }
+
+    .notification.success {
+      background: #4CAF50;
+      color: white;
+    }
+
+    .notification.error {
+      background: #f44336;
+      color: white;
+    }
+
+    @keyframes slideIn {
+      from {
+        transform: translateX(100%);
+        opacity: 0;
+      }
+      to {
+        transform: translateX(0);
+        opacity: 1;
+      }
+    }
+
+    @keyframes slideOut {
+      from {
+        transform: translateX(0);
+        opacity: 1;
+      }
+      to {
+        transform: translateX(100%);
+        opacity: 0;
+      }
+    }
+
+    /* Responsive Design */
+    @media (max-width: 768px) {
+      header img {
+        max-width: 200px;
+        width: 70%;
+      }
+
+      h1 {
+        font-size: 2.2rem;
+      }
+
+      .cta-buttons {
+        flex-direction: column;
+        align-items: center;
+      }
+
+      .cta-button {
+        min-width: 200px;
+      }
+
+      .user-status {
+        position: relative;
+        top: auto;
+        right: auto;
+        margin-bottom: 1rem;
+      }
+
+      .nav-arrow {
+        width: 40px;
+        height: 40px;
+      }
+
+      .nav-arrow.back {
+        left: 10px;
+      }
+
+      .nav-arrow.forward {
+        right: 10px;
+      }
+
+      .nav-arrow span {
+        font-size: 20px;
+      }
+
+      .privacy-modal-content {
+        padding: 20px;
+      }
+
+      .privacy-modal-header {
+        flex-direction: column;
+        align-items: flex-start;
+      }
+
+      .privacy-actions {
+        flex-direction: column;
+      }
+
+      .privacy-btn {
+        width: 100%;
+      }
     }
   </style>
 </head>
@@ -561,31 +734,124 @@
     </button>
   </div>
 
-  <!-- Enhanced Privacy Notice -->
-  <div class="privacy-notice" id="privacyNotice">
-    <div class="privacy-content">
-      <div class="privacy-header">
-        <div class="privacy-text">
-          <h4>🔒 Your Privacy Matters</h4>
-          <p>We use cookies and AI processing to provide legal assistance. By continuing, you consent to our privacy practices in compliance with <span id="jurisdictionText">UK GDPR</span>.</p>
+  <!-- NEW SIMPLIFIED PRIVACY MODAL -->
+  <div class="privacy-modal" id="privacyModal">
+    <div class="privacy-modal-content">
+      <div class="privacy-modal-header">
+        <div class="privacy-modal-title">
+          🔒 Privacy & Cookie Preferences
         </div>
-        <div class="jurisdiction-indicator" id="jurisdictionIndicator">
-          Detecting location...
+        <button class="privacy-modal-close" id="privacyModalClose" aria-label="Close">×</button>
+      </div>
+
+      <div class="privacy-intro">
+        We use cookies and similar technologies to provide our AI-powered legal services. 
+        Please select which types of cookies you'd like to accept. You can change your preferences anytime.
+      </div>
+
+      <div class="jurisdiction-indicator" id="jurisdictionIndicator">
+        Detecting location...
+      </div>
+
+      <div class="privacy-categories">
+        <!-- Essential Cookies (Always On) -->
+        <div class="privacy-category essential">
+          <div class="privacy-category-header">
+            <div class="privacy-category-info">
+              <div class="privacy-category-title">
+                Essential Cookies
+                <span class="privacy-badge required">Required</span>
+              </div>
+              <div class="privacy-category-description">
+                Required for basic site functionality, security, and authentication. Cannot be disabled.
+              </div>
+            </div>
+            <div class="privacy-checkbox-wrapper">
+              <label class="privacy-checkbox checked disabled" id="essential-toggle">
+                <input type="checkbox" id="essential-cookies" checked disabled>
+                <span class="privacy-checkbox-slider"></span>
+              </label>
+            </div>
+          </div>
+        </div>
+
+        <!-- Analytics Cookies -->
+        <div class="privacy-category">
+          <div class="privacy-category-header">
+            <div class="privacy-category-info">
+              <div class="privacy-category-title">
+                📊 Analytics Cookies
+              </div>
+              <div class="privacy-category-description">
+                Help us understand how visitors interact with our website to improve user experience.
+              </div>
+            </div>
+            <div class="privacy-checkbox-wrapper">
+              <label class="privacy-checkbox" id="analytics-toggle">
+                <input type="checkbox" id="analytics-cookies">
+                <span class="privacy-checkbox-slider"></span>
+              </label>
+            </div>
+          </div>
+        </div>
+
+        <!-- AI Processing -->
+        <div class="privacy-category">
+          <div class="privacy-category-header">
+            <div class="privacy-category-info">
+              <div class="privacy-category-title">
+                🤖 AI Processing
+              </div>
+              <div class="privacy-category-description">
+                Enables AI-powered features like transcription and legal document generation using OpenAI.
+              </div>
+            </div>
+            <div class="privacy-checkbox-wrapper">
+              <label class="privacy-checkbox" id="ai-processing-toggle">
+                <input type="checkbox" id="ai-processing-cookies">
+                <span class="privacy-checkbox-slider"></span>
+              </label>
+            </div>
+          </div>
+        </div>
+
+        <!-- Marketing Cookies -->
+        <div class="privacy-category">
+          <div class="privacy-category-header">
+            <div class="privacy-category-info">
+              <div class="privacy-category-title">
+                🎯 Marketing Cookies
+              </div>
+              <div class="privacy-category-description">
+                Used to show relevant ads and measure marketing campaign effectiveness.
+              </div>
+            </div>
+            <div class="privacy-checkbox-wrapper">
+              <label class="privacy-checkbox" id="marketing-toggle">
+                <input type="checkbox" id="marketing-cookies">
+                <span class="privacy-checkbox-slider"></span>
+              </label>
+            </div>
+          </div>
         </div>
       </div>
 
-      <div class="privacy-buttons">
-        <button class="privacy-button accept" onclick="acceptPrivacy()">Accept All</button>
-        <a href="/privacy-policy.html" class="privacy-button primary" target="_blank">Privacy Policy</a>
-        <a href="/privacy-dashboard.html" class="privacy-button" target="_blank">Manage Preferences</a>
-        <button class="privacy-button" onclick="declinePrivacy()">Decline Non-Essential</button>
+      <div class="privacy-actions">
+        <button class="privacy-btn privacy-btn-accept-all" id="acceptAllBtn">
+          ✓ Accept All
+        </button>
+        <button class="privacy-btn privacy-btn-primary" id="savePreferencesBtn">
+          Save My Preferences
+        </button>
+        <button class="privacy-btn privacy-btn-secondary" id="essentialOnlyBtn">
+          Essential Only
+        </button>
       </div>
 
       <div class="privacy-links">
-        <a href="/terms-of-service.html" target="_blank">Terms of Service</a>
+        <a href="/privacy-policy.html" target="_blank">Privacy Policy</a>
         <a href="/cookie-policy.html" target="_blank">Cookie Policy</a>
         <a href="/privacy-dashboard.html" target="_blank">Privacy Dashboard</a>
-        <a href="mailto:privacy@carcrashlawyerai.com">Contact Privacy Team</a>
       </div>
     </div>
   </div>
@@ -594,37 +860,52 @@
     // ====================================
     // CONFIGURATION SECTION
     // ====================================
-    // 🔧 UPDATE THESE URLs TO MATCH YOUR TYPEFORM LINKS:
     const TYPEFORM_URLS = {
-      signup: 'https://form.typeform.com/to/b03aFxEO#user_id=xxxxx&product_id=xxxxx&auth_code=xxxxx', // ✅ Signup Typeform URL configured
-      demo: 'https://form.typeform.com/to/XMBB3Xhq', // ✅ Demo Typeform URL configured
-      incident: 'https://form.typeform.com/to/WvM2ejru#user_id=xxxxx&product_id=xxxxx&auth_code=xxxxx&email=xxxxx&car_crash_user_id=xxxxx&first_name=xxxxx&last_name=xxxxx' // ✅ Incident Report Typeform URL configured
+      signup: 'https://form.typeform.com/to/b03aFxEO#user_id=xxxxx&product_id=xxxxx&auth_code=xxxxx',
+      demo: 'https://form.typeform.com/to/XMBB3Xhq',
+      incident: 'https://form.typeform.com/to/WvM2ejru#user_id=xxxxx&product_id=xxxxx&auth_code=xxxxx&email=xxxxx&car_crash_user_id=xxxxx&first_name=xxxxx&last_name=xxxxx'
     };
 
-    // 📝 To get your Typeform URLs:
-    // 1. Go to your Typeform dashboard
-    // 2. Open your signup/demo form
-    // 3. Click "Share" > "Link"
-    // 4. Copy the URL and replace the URLs above
-    // Example: 'https://myworkspace.typeform.com/to/abc123def'
+    // ====================================
+    // PRIVACY MANAGEMENT STATE
+    // ====================================
+    let privacyPreferences = {
+      essential: true,
+      analytics: false,
+      ai_processing: false,
+      marketing: false
+    };
 
-    // Global application state
+    let userJurisdiction = 'UK';
+    let currentUserId = null;
+    let consentId = null;
+    let privacyConsentGiven = false;
+
+    // ====================================
+    // APPLICATION STATE
+    // ====================================
     let userAuthenticated = false;
     let userData = null;
     let systemHealth = null;
-    let privacyConsentGiven = false;
-    let userJurisdiction = 'UK'; // Default to UK
 
     // Page navigation history
     const pageHistory = [];
     let currentPageIndex = -1;
 
-    // Initialize application on page load
+    // ====================================
+    // INITIALIZATION
+    // ====================================
     document.addEventListener('DOMContentLoaded', async () => {
-      console.log('🚀 Car Crash Lawyer AI - Landing Page Initializing...');
-      console.log('📍 Current page:', window.location.href);
-      console.log('🔧 Typeform signup URL:', TYPEFORM_URLS.signup);
-      console.log('🔧 Typeform demo URL:', TYPEFORM_URLS.demo);
+      console.log('🚀 Car Crash Lawyer AI - Initializing...');
+
+      // Attach privacy modal event listeners
+      attachPrivacyEventListeners();
+
+      // Initialize user ID
+      currentUserId = localStorage.getItem('userId') || generateAnonymousId();
+      if (!localStorage.getItem('userId')) {
+        localStorage.setItem('userId', currentUserId);
+      }
 
       // Add current page to history
       addPageToHistory(window.location.href);
@@ -632,8 +913,8 @@
       // Detect jurisdiction first
       await detectJurisdiction();
 
-      // Check privacy consent status
-      checkPrivacyConsent();
+      // Check existing consent from Supabase
+      await checkExistingConsent();
 
       // Initialize system
       await initializeSystem();
@@ -641,26 +922,122 @@
       // Setup event listeners
       setupEventListeners();
 
-      console.log('✅ Landing page initialized successfully');
-      console.log('🎯 Report Incident button ready - will open Typeform incident report in new tab');
-      console.log('📝 Sign Up button ready - will open Typeform signup in new tab');
-      console.log('📊 Access Reports button ready - will navigate to access-reports.html');
-      console.log('🎮 Try Demo button ready - will open Typeform demo in new tab');
-
-      // Warn if Typeform URLs not configured
-      if (TYPEFORM_URLS.signup.includes('your-typeform-workspace')) {
-        console.warn('⚠️ Please update TYPEFORM_URLS.signup with your actual Typeform signup URL');
-      }
-      if (TYPEFORM_URLS.demo.includes('your-typeform-workspace')) {
-        console.warn('⚠️ Please update TYPEFORM_URLS.demo with your actual Typeform demo URL');
-      }
+      console.log('✅ Application initialized successfully');
     });
 
-    // Detect user jurisdiction using geolocation
-    async function detectJurisdiction() {
-      const jurisdictionIndicator = document.getElementById('jurisdictionIndicator');
-      const jurisdictionText = document.getElementById('jurisdictionText');
+    // Attach event listeners for privacy modal
+    function attachPrivacyEventListeners() {
+      console.log('🔧 Attaching privacy modal event listeners...');
 
+      // Close button
+      const closeBtn = document.getElementById('privacyModalClose');
+      if (closeBtn) {
+        closeBtn.addEventListener('click', closePrivacyModal);
+      }
+
+      // Accept All button
+      const acceptBtn = document.getElementById('acceptAllBtn');
+      if (acceptBtn) {
+        acceptBtn.addEventListener('click', acceptAllPrivacy);
+      }
+
+      // Save Preferences button
+      const saveBtn = document.getElementById('savePreferencesBtn');
+      if (saveBtn) {
+        saveBtn.addEventListener('click', savePrivacyPreferences);
+      }
+
+      // Essential Only button
+      const essentialBtn = document.getElementById('essentialOnlyBtn');
+      if (essentialBtn) {
+        essentialBtn.addEventListener('click', rejectNonEssential);
+      }
+
+      // Analytics checkbox
+      const analyticsCheck = document.getElementById('analytics-cookies');
+      if (analyticsCheck) {
+        analyticsCheck.addEventListener('change', () => toggleCategory('analytics'));
+      }
+
+      // AI Processing checkbox
+      const aiCheck = document.getElementById('ai-processing-cookies');
+      if (aiCheck) {
+        aiCheck.addEventListener('change', () => toggleCategory('ai_processing'));
+      }
+
+      // Marketing checkbox
+      const marketingCheck = document.getElementById('marketing-cookies');
+      if (marketingCheck) {
+        marketingCheck.addEventListener('change', () => toggleCategory('marketing'));
+      }
+
+      console.log('✅ Privacy event listeners attached');
+    }
+
+    // ====================================
+    // PRIVACY CONSENT MANAGEMENT
+    // ====================================
+
+    // Generate anonymous user ID
+    function generateAnonymousId() {
+      return `anon_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`;
+    }
+
+    // Check existing consent from Supabase
+    async function checkExistingConsent() {
+      try {
+        console.log('📊 Checking for existing consent...');
+
+        const response = await fetch(`/api/gdpr/consent/${currentUserId}`, {
+          method: 'GET',
+          headers: {
+            'Content-Type': 'application/json'
+          }
+        });
+
+        if (response.ok) {
+          const data = await response.json();
+
+          if (data.hasConsent && !data.expired) {
+            // Valid consent found
+            privacyPreferences = data.preferences;
+            consentId = data.consent_id;
+            userJurisdiction = data.jurisdiction || 'UK';
+            privacyConsentGiven = true;
+
+            console.log('✅ Valid consent found:', data);
+
+            // Update UI and apply preferences
+            setTimeout(() => {
+              updatePrivacyCheckboxes();
+            }, 100);
+            applyPrivacyPreferences();
+
+            return true;
+          }
+        }
+
+        console.log('📋 No valid consent found - will show privacy modal');
+
+        // Show privacy modal after delay
+        setTimeout(() => {
+          showPrivacyModal();
+        }, 2000);
+
+        return false;
+
+      } catch (error) {
+        console.error('❌ Error checking consent:', error);
+        // Show privacy modal on error
+        setTimeout(() => {
+          showPrivacyModal();
+        }, 2000);
+        return false;
+      }
+    }
+
+    // Detect user jurisdiction
+    async function detectJurisdiction() {
       try {
         if (navigator.geolocation) {
           const position = await new Promise((resolve, reject) => {
@@ -673,63 +1050,312 @@
           const lat = position.coords.latitude;
           const lon = position.coords.longitude;
 
-          // Simple US detection - approximate boundaries
+          // Simple US detection
           const isUS = (lat >= 24 && lat <= 49 && lon >= -125 && lon <= -66);
 
-          if (isUS) {
-            userJurisdiction = 'US';
-            jurisdictionIndicator.textContent = '🇺🇸 US Privacy Laws Apply';
-            jurisdictionText.textContent = 'US Privacy Laws';
-            console.log('📍 Jurisdiction detected: United States');
-          } else {
-            userJurisdiction = 'UK';
-            jurisdictionIndicator.textContent = '🇬🇧 UK GDPR Applies';
-            jurisdictionText.textContent = 'UK GDPR';
-            console.log('📍 Jurisdiction detected: United Kingdom');
+          userJurisdiction = isUS ? 'US' : 'UK';
+
+          // Update jurisdiction indicator
+          const indicator = document.getElementById('jurisdictionIndicator');
+          if (indicator) {
+            indicator.textContent = userJurisdiction === 'US' 
+              ? '🇺🇸 US Privacy Laws Apply' 
+              : '🇬🇧 UK GDPR Applies';
           }
-        } else {
-          throw new Error('Geolocation not supported');
+
+          console.log(`📍 Jurisdiction detected: ${userJurisdiction}`);
         }
       } catch (error) {
-        // Default to UK (more restrictive)
         userJurisdiction = 'UK';
-        jurisdictionIndicator.textContent = '🇬🇧 UK GDPR Applies (Default)';
-        jurisdictionText.textContent = 'UK GDPR';
-        console.log('📍 Geolocation failed, defaulting to UK jurisdiction');
+        const indicator = document.getElementById('jurisdictionIndicator');
+        if (indicator) {
+          indicator.textContent = '🇬🇧 UK GDPR Applies (Default)';
+        }
+        console.log('📍 Defaulting to UK jurisdiction');
       }
     }
 
-    // Check privacy consent status
-    function checkPrivacyConsent() {
-      const consent = localStorage.getItem('privacyConsent');
-      const consentDate = localStorage.getItem('privacyConsentDate');
+    // Show privacy modal
+    function showPrivacyModal() {
+      const modal = document.getElementById('privacyModal');
+      modal.classList.add('show');
 
-      // Check if any consent decision has been made (accepted or declined)
-      if (consent && consentDate) {
-        const consentTimestamp = new Date(consentDate);
-        const sixMonthsAgo = new Date();
-        sixMonthsAgo.setMonth(sixMonthsAgo.getMonth() - 6);
+      // Ensure all checkboxes are properly initialized
+      setTimeout(() => {
+        updatePrivacyCheckboxes();
+      }, 100);
 
-        if (consentTimestamp > sixMonthsAgo) {
-          if (consent === 'accepted') {
-            privacyConsentGiven = true;
-            console.log('✅ Valid privacy consent found');
-          } else {
-            privacyConsentGiven = false;
-            console.log('📋 Privacy consent declined - limited mode');
-          }
-          return; // Don't show notice if decision already made
+      console.log('📋 Privacy modal displayed');
+    }
+
+    // Close privacy modal
+    function closePrivacyModal() {
+      const modal = document.getElementById('privacyModal');
+      modal.classList.remove('show');
+    }
+
+    // Update checkbox UI
+    function updatePrivacyCheckboxes() {
+      // Handle analytics
+      const analyticsCheckbox = document.getElementById('analytics-cookies');
+      const analyticsToggle = document.getElementById('analytics-toggle');
+      if (analyticsCheckbox && analyticsToggle) {
+        analyticsCheckbox.checked = privacyPreferences.analytics;
+        if (privacyPreferences.analytics) {
+          analyticsToggle.classList.add('checked');
+        } else {
+          analyticsToggle.classList.remove('checked');
         }
       }
 
-      // Only show privacy notice if no recent decision has been made
-      setTimeout(() => {
-        document.getElementById('privacyNotice').classList.add('show');
-        console.log('📋 Showing privacy consent notice');
-      }, 2000);
+      // Handle AI processing
+      const aiCheckbox = document.getElementById('ai-processing-cookies');
+      const aiToggle = document.getElementById('ai-processing-toggle');
+      if (aiCheckbox && aiToggle) {
+        aiCheckbox.checked = privacyPreferences.ai_processing;
+        if (privacyPreferences.ai_processing) {
+          aiToggle.classList.add('checked');
+        } else {
+          aiToggle.classList.remove('checked');
+        }
+      }
+
+      // Handle marketing
+      const marketingCheckbox = document.getElementById('marketing-cookies');
+      const marketingToggle = document.getElementById('marketing-toggle');
+      if (marketingCheckbox && marketingToggle) {
+        marketingCheckbox.checked = privacyPreferences.marketing;
+        if (privacyPreferences.marketing) {
+          marketingToggle.classList.add('checked');
+        } else {
+          marketingToggle.classList.remove('checked');
+        }
+      }
     }
 
-    // Initialize system checks
+    // Toggle individual category
+    function toggleCategory(category) {
+      privacyPreferences[category] = !privacyPreferences[category];
+
+      // Map category to correct element IDs
+      let checkboxId, toggleId;
+      if (category === 'ai_processing') {
+        checkboxId = 'ai-processing-cookies';
+        toggleId = 'ai-processing-toggle';
+      } else {
+        checkboxId = `${category}-cookies`;
+        toggleId = `${category}-toggle`;
+      }
+
+      // Update the specific toggle immediately
+      const checkboxInput = document.getElementById(checkboxId);
+      const toggleElement = document.getElementById(toggleId);
+
+      if (checkboxInput && toggleElement) {
+        checkboxInput.checked = privacyPreferences[category];
+
+        if (privacyPreferences[category]) {
+          toggleElement.classList.add('checked');
+        } else {
+          toggleElement.classList.remove('checked');
+        }
+      }
+
+      console.log(`📝 ${category} toggled to:`, privacyPreferences[category]);
+    }
+
+    // Accept all cookies
+    async function acceptAllPrivacy() {
+      console.log('✅ Accept All clicked');
+
+      privacyPreferences = {
+        essential: true,
+        analytics: true,
+        ai_processing: true,
+        marketing: true
+      };
+
+      // Update all toggles to show green
+      updatePrivacyCheckboxes();
+
+      const success = await saveConsentToSupabase('accepted_all');
+
+      if (success) {
+        privacyConsentGiven = true;
+        applyPrivacyPreferences();
+        closePrivacyModal();
+        showNotification('✅ All cookies accepted');
+        await initializeSystem(); // Re-initialize with consent
+      } else {
+        showNotification('❌ Error saving preferences. Please try again.', 'error');
+      }
+    }
+
+    // Save current preferences
+    async function savePrivacyPreferences() {
+      console.log('💾 Save Preferences clicked');
+
+      // Ensure UI is synced before saving
+      updatePrivacyCheckboxes();
+
+      const success = await saveConsentToSupabase('custom_preferences');
+
+      if (success) {
+        privacyConsentGiven = true;
+        applyPrivacyPreferences();
+        closePrivacyModal();
+        showNotification('✅ Privacy preferences saved');
+        await initializeSystem(); // Re-initialize with consent
+      } else {
+        showNotification('❌ Error saving preferences. Please try again.', 'error');
+      }
+    }
+
+    // Reject non-essential cookies
+    async function rejectNonEssential() {
+      console.log('🚫 Essential Only clicked');
+
+      privacyPreferences = {
+        essential: true,
+        analytics: false,
+        ai_processing: false,
+        marketing: false
+      };
+
+      // Update all toggles to show grey (off)
+      updatePrivacyCheckboxes();
+
+      const success = await saveConsentToSupabase('essential_only');
+
+      if (success) {
+        privacyConsentGiven = false;
+        applyPrivacyPreferences();
+        closePrivacyModal();
+        showNotification('✅ Only essential cookies enabled');
+      } else {
+        showNotification('❌ Error saving preferences. Please try again.', 'error');
+      }
+    }
+
+    // Save consent to Supabase
+    async function saveConsentToSupabase(action) {
+      try {
+        console.log(`📤 Saving consent to Supabase: ${action}`);
+
+        const response = await fetch('/api/gdpr/consent', {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json'
+          },
+          body: JSON.stringify({
+            user_id: currentUserId,
+            consent_type: 'privacy_preferences',
+            consent_action: action,
+            preferences: privacyPreferences,
+            timestamp: new Date().toISOString(),
+            source: 'privacy_modal',
+            jurisdiction: userJurisdiction,
+            session_id: sessionStorage.getItem('sessionId') || null
+          })
+        });
+
+        if (response.ok) {
+          const data = await response.json();
+          consentId = data.consent_id;
+
+          console.log('✅ Consent saved to Supabase:', data);
+
+          // Also save to localStorage for quick access
+          localStorage.setItem('privacyPreferences', JSON.stringify(privacyPreferences));
+          localStorage.setItem('privacyConsentDate', new Date().toISOString());
+          localStorage.setItem('consentId', consentId);
+
+          return true;
+        } else {
+          const error = await response.json();
+          console.error('❌ Supabase save failed:', error);
+          return false;
+        }
+
+      } catch (error) {
+        console.error('❌ Error saving to Supabase:', error);
+        return false;
+      }
+    }
+
+    // Apply privacy preferences
+    function applyPrivacyPreferences() {
+      console.log('🔧 Applying privacy preferences:', privacyPreferences);
+
+      // Handle Analytics
+      if (!privacyPreferences.analytics) {
+        window['ga-disable-GA_MEASUREMENT_ID'] = true;
+        document.cookie = '_ga=; expires=Thu, 01 Jan 1970 00:00:00 UTC; path=/;';
+        document.cookie = '_gid=; expires=Thu, 01 Jan 1970 00:00:00 UTC; path=/;';
+        console.log('📊 Analytics disabled');
+      } else {
+        window['ga-disable-GA_MEASUREMENT_ID'] = false;
+        console.log('📊 Analytics enabled');
+      }
+
+      // Handle Marketing
+      if (!privacyPreferences.marketing) {
+        clearMarketingCookies();
+        console.log('🎯 Marketing cookies disabled');
+      }
+
+      // Handle AI Processing
+      window.aiProcessingEnabled = privacyPreferences.ai_processing;
+
+      if (!privacyPreferences.ai_processing) {
+        console.log('🤖 AI processing disabled');
+        const aiButtons = document.querySelectorAll('[data-requires-ai]');
+        aiButtons.forEach(button => {
+          button.disabled = true;
+          button.title = 'AI processing consent required';
+        });
+      } else {
+        console.log('🤖 AI processing enabled');
+        const aiButtons = document.querySelectorAll('[data-requires-ai]');
+        aiButtons.forEach(button => {
+          button.disabled = false;
+          button.title = '';
+        });
+      }
+    }
+
+    // Clear marketing cookies
+    function clearMarketingCookies() {
+      const marketingCookies = [
+        '_fbp', '_fbc', '__hssc', '__hssrc', '__hstc', 'hubspotutk',
+        '_gcl_au', '_gcl_aw', 'IDE', 'test_cookie', '_pin_unauth', 'muc_ads'
+      ];
+
+      marketingCookies.forEach(cookieName => {
+        document.cookie = `${cookieName}=; expires=Thu, 01 Jan 1970 00:00:00 UTC; path=/;`;
+        document.cookie = `${cookieName}=; expires=Thu, 01 Jan 1970 00:00:00 UTC; path=/; domain=.${window.location.hostname}`;
+      });
+    }
+
+    // Show notification
+    function showNotification(message, type = 'success') {
+      const notification = document.createElement('div');
+      notification.className = `notification ${type}`;
+      notification.textContent = message;
+
+      document.body.appendChild(notification);
+
+      setTimeout(() => {
+        notification.style.animation = 'slideOut 0.3s ease';
+        setTimeout(() => {
+          document.body.removeChild(notification);
+        }, 300);
+      }, 3000);
+    }
+
+    // ====================================
+    // SYSTEM INITIALIZATION
+    // ====================================
     async function initializeSystem() {
       try {
         showLoading('Initializing system...');
@@ -762,8 +1388,7 @@
           method: 'GET',
           headers: {
             'Content-Type': 'application/json',
-          },
-          timeout: 5000
+          }
         });
 
         if (response.ok) {
@@ -816,139 +1441,113 @@
 
     // Update UI based on application state
     function updateUI() {
-      // Update buttons based on authentication state
       if (userAuthenticated) {
-        // User is logged in - Sign Up becomes Dashboard
         document.getElementById('signUpText').textContent = 'Dashboard';
         document.getElementById('reportIncidentText').textContent = 'Report New Incident';
-
-        // Show personalized options
         updateButtonsForAuthenticatedUser();
       } else {
-        // User not logged in - Sign Up goes to Typeform
         document.getElementById('signUpText').textContent = 'Sign Up';
         document.getElementById('reportIncidentText').textContent = 'Report an Incident';
-
-        // Show standard options
         updateButtonsForGuestUser();
       }
 
-      // Enable/disable buttons based on system health
       if (!systemHealth) {
         disableSystemDependentButtons();
       }
 
-      // Update navigation arrow visibility
       updateNavigationArrows();
     }
 
-    // Setup event listeners for all buttons and navigation
+    // Setup event listeners
     function setupEventListeners() {
-      // Report Incident button - Typeform integration
       const reportBtn = document.getElementById('reportIncidentBtn');
       if (reportBtn) {
         reportBtn.addEventListener('click', (e) => {
-          e.preventDefault(); // Prevent default onclick behavior
+          e.preventDefault();
           handleReportIncident();
         });
       }
 
-      // Sign Up / Dashboard button - Typeform integration
       const signUpBtn = document.getElementById('signUpBtn');
       if (signUpBtn) {
         signUpBtn.addEventListener('click', (e) => {
-          e.preventDefault(); // Prevent default onclick behavior
+          e.preventDefault();
           handleSignUpOrDashboard();
         });
       }
 
-      // Access Reports button - direct navigation to access-reports.html
       const accessBtn = document.getElementById('accessReportsBtn');
       if (accessBtn) {
         accessBtn.addEventListener('click', (e) => {
-          e.preventDefault(); // Prevent default onclick behavior
+          e.preventDefault();
           handleAccessReports();
         });
       }
 
-      // Demo button - Typeform integration
       const demoBtn = document.getElementById('demoBtn');
       if (demoBtn) {
         demoBtn.addEventListener('click', (e) => {
-          e.preventDefault(); // Prevent default onclick behavior
+          e.preventDefault();
           handleDemo();
         });
       }
     }
 
-    // Handle report incident button click
+    // ====================================
+    // BUTTON HANDLERS
+    // ====================================
     async function handleReportIncident() {
-      console.log('🚗 Report Incident button clicked - navigating to incident.html');
-      const button = document.getElementById('reportIncidentBtn');
+      // Check AI processing consent
+      if (!privacyPreferences.ai_processing) {
+        if (confirm('AI processing consent is required for incident reporting. Would you like to update your privacy preferences?')) {
+          showPrivacyModal();
+          return;
+        }
+      }
 
+      console.log('🚗 Report Incident clicked');
+      const button = document.getElementById('reportIncidentBtn');
       setButtonLoading(button, 'Loading incident form...');
 
-      try {
-        // Navigate to local incident.html page
-        navigateToPage('incident.html', 'incident report');
-
-      } catch (error) {
-        console.error('❌ Failed to navigate to incident form:', error);
-        alert('❌ Unable to open incident report. Please try again.');
-        resetButton(button, 'Report an Incident');
-      }
+      navigateToPage('incident.html', 'incident report');
     }
 
-    // Handle sign up or dashboard navigation
     async function handleSignUpOrDashboard() {
       const button = document.getElementById('signUpBtn');
 
       if (userAuthenticated) {
-        // Go to dashboard (for authenticated users)
         setButtonLoading(button, 'Loading dashboard...');
         navigateToPage('dashboard.html', 'dashboard');
       } else {
-        // Go to Typeform signup (opens in new tab)
-        console.log('📝 Opening Typeform signup in new tab');
+        console.log('📝 Opening Typeform signup');
         setButtonLoading(button, 'Opening signup form...');
-
-        // Open Typeform in new tab
         window.open(TYPEFORM_URLS.signup, '_blank');
-
-        // Reset button after short delay
         setTimeout(() => {
           resetButton(button, 'Sign Up');
         }, 1000);
       }
     }
 
-    // Handle access reports button click
     async function handleAccessReports() {
-      console.log('📊 Access Reports button clicked - navigating to access-reports.html');
+      console.log('📊 Access Reports clicked');
       const button = document.getElementById('accessReportsBtn');
-
       setButtonLoading(button, 'Loading reports...');
-
-      // Direct navigation to access-reports.html for all users
       navigateToPage('access-reports.html', 'access reports');
     }
 
-    // Handle demo button click
     async function handleDemo() {
-      console.log('🎮 Opening Typeform demo in new tab');
+      console.log('🎮 Opening Typeform demo');
       const button = document.getElementById('demoBtn');
       setButtonLoading(button, 'Opening demo form...');
-
-      // Open Typeform demo in new tab
       window.open(TYPEFORM_URLS.demo, '_blank');
-
-      // Reset button after short delay
       setTimeout(() => {
         resetButton(button, 'Try Demo');
       }, 1000);
     }
 
-    // Navigation arrow functions
+    // ====================================
+    // NAVIGATION FUNCTIONS
+    // ====================================
     function goBack() {
       if (pageHistory.length > 1 && currentPageIndex > 0) {
         currentPageIndex--;
@@ -966,7 +1565,6 @@
     }
 
     function addPageToHistory(url) {
-      // Remove any forward history if we are navigating back
       if (currentPageIndex < pageHistory.length - 1) {
         pageHistory.splice(currentPageIndex + 1);
       }
@@ -987,52 +1585,40 @@
       }
     }
 
-    // Check if emergency mode should be triggered
-    async function checkEmergencyMode() {
-      // This could check for various emergency indicators
-      // For now, return false unless specific conditions are met
-      return false;
+    function navigateToPage(url, pageName) {
+      showLoading(`Loading ${pageName}...`);
+      addPageToHistory(url);
+      setTimeout(() => {
+        window.location.href = url;
+      }, 300);
     }
 
-    // Show emergency banner
+    // ====================================
+    // EMERGENCY FUNCTIONS
+    // ====================================
     function showEmergencyBanner() {
       document.getElementById('emergencyBanner').style.display = 'block';
       document.getElementById('emergencyBanner').scrollIntoView({ behavior: 'smooth' });
     }
 
-    // Call emergency services
     function callEmergency() {
       if (confirm('This will call 999 Emergency Services. Continue?')) {
         window.location.href = 'tel:999';
       }
     }
 
-    // Navigate to page with loading and error handling
-    function navigateToPage(url, pageName) {
-      showLoading(`Loading ${pageName}...`);
-
-      // Add page to history before navigating
-      addPageToHistory(url);
-
-      // Simple direct navigation
-      setTimeout(() => {
-        window.location.href = url;
-      }, 300);
-    }
-
-    // Update buttons for authenticated users
+    // ====================================
+    // UI HELPER FUNCTIONS
+    // ====================================
     function updateButtonsForAuthenticatedUser() {
-      console.log('🔐 UI updated for authenticated user - Access Reports will go to access-reports.html');
+      console.log('🔐 UI updated for authenticated user');
     }
 
-    // Update buttons for guest users
     function updateButtonsForGuestUser() {
-      console.log('👤 UI updated for guest user - Sign Up and Demo will open Typeform, Reports go to access-reports.html');
+      console.log('👤 UI updated for guest user');
     }
 
-    // Disable buttons that require system functionality
     function disableSystemDependentButtons() {
-      // Only disable Report Incident if system is down
       const buttons = ['reportIncidentBtn'];
       buttons.forEach(buttonId => {
         const button = document.getElementById(buttonId);
@@ -1043,123 +1629,6 @@
       });
     }
 
-    // ====================================
-    // ENHANCED PRIVACY FUNCTIONS
-    // ====================================
-
-    // Accept privacy consent
-    async function acceptPrivacy() {
-      try {
-        privacyConsentGiven = true;
-        localStorage.setItem('privacyConsent', 'accepted');
-        localStorage.setItem('privacyConsentDate', new Date().toISOString());
-
-        // Hide privacy notice immediately
-        document.getElementById('privacyNotice').classList.remove('show');
-
-        // Show loading for user feedback
-        showLoading('Saving privacy preferences...');
-
-        // Record consent with backend
-        await recordPrivacyConsent('accepted');
-
-        // Also accept all cookies if cookie manager is available
-        if (window.cookieManager) {
-          await window.cookieManager.acceptAllCookies();
-        }
-
-        // Re-initialize with consent
-        await initializeSystem();
-
-        console.log('✅ Privacy consent accepted - all cookies enabled');
-        
-        // Hide loading
-        hideLoading();
-
-      } catch (error) {
-        console.error('❌ Error accepting privacy consent:', error);
-        hideLoading();
-        
-        // Show error but don't re-show privacy notice
-        alert('⚠️ Privacy preferences saved locally, but there was an issue syncing with our servers. Your preferences are still active.');
-      }
-    }
-
-    // Decline non-essential privacy processing
-    async function declinePrivacy() {
-      try {
-        privacyConsentGiven = false;
-        localStorage.setItem('privacyConsent', 'declined');
-        localStorage.setItem('privacyConsentDate', new Date().toISOString());
-
-        // Hide privacy notice immediately
-        document.getElementById('privacyNotice').classList.remove('show');
-
-        // Show loading
-        showLoading('Saving privacy preferences...');
-
-        // Record consent with backend
-        await recordPrivacyConsent('declined');
-
-        // Decline cookies if cookie manager is available
-        if (window.cookieManager) {
-          await window.cookieManager.declineNonEssentialCookies();
-        }
-
-        console.log('❌ Privacy consent declined - limited functionality mode');
-        
-        // Hide loading
-        hideLoading();
-
-        // Show limited functionality message
-        setTimeout(() => {
-          alert('⚠️ Some features will be limited without consent. You can manage preferences in our Privacy Dashboard.');
-        }, 500);
-
-      } catch (error) {
-        console.error('❌ Error declining privacy consent:', error);
-        hideLoading();
-        
-        // Show error but don't re-show privacy notice
-        alert('⚠️ Privacy preferences saved locally.');
-      }
-    }
-
-    // Record privacy consent with backend
-    async function recordPrivacyConsent(decision) {
-      try {
-        const response = await fetch('/api/gdpr/consent', {
-          method: 'POST',
-          headers: {
-            'Content-Type': 'application/json',
-          },
-          body: JSON.stringify({
-            consent_type: 'privacy_general',
-            consent_status: decision,
-            timestamp: new Date().toISOString(),
-            user_id: localStorage.getItem('userId') || 'anonymous',
-            source: 'landing_page',
-            jurisdiction: userJurisdiction,
-            preferences: {
-              essential: true,
-              analytics: decision === 'accepted',
-              marketing: decision === 'accepted',
-              ai_processing: decision === 'accepted'
-            }
-          })
-        });
-
-        if (response.ok) {
-          console.log('✅ Privacy consent recorded with backend');
-        } else {
-          console.warn('⚠️ Failed to record privacy consent with backend');
-        }
-      } catch (error) {
-        console.error('❌ Failed to record privacy consent:', error);
-      }
-    }
-
-    // UI Helper Functions
     function showLoading(message) {
       document.getElementById('loadingText').textContent = message;
       document.getElementById('loadingOverlay').classList.add('show');
@@ -1199,13 +1668,13 @@
       button.disabled = false;
     }
 
-    // Error handling for uncaught errors
+    // ====================================
+    // ERROR HANDLING
+    // ====================================
     window.addEventListener('error', (event) => {
       console.error('❌ Uncaught error:', event.error);
-      // Could send error to logging service
     });
 
-    // Handle online/offline status
     window.addEventListener('online', () => {
       console.log('🌐 Connection restored');
       checkSystemHealth();
@@ -1215,6 +1684,18 @@
       console.log('📵 Connection lost');
       showSystemStatus('offline', '📵 No internet connection');
     });
+
+    // ====================================
+    // MAKE FUNCTIONS GLOBALLY AVAILABLE
+    // ====================================
+    // These are kept for backwards compatibility and debugging
+    window.goBack = goBack;
+    window.goForward = goForward;
+    window.callEmergency = callEmergency;
+
+    // Privacy functions for debugging
+    window.testPrivacyModal = showPrivacyModal;
+    window.testAcceptAll = acceptAllPrivacy;
   </script>
 </body>
 </html>
