@@ -531,6 +531,13 @@ const initSupabase = () => {
 // Initialize Supabase
 supabaseEnabled = initSupabase();
 
+// Initialize Privacy Consent Handler
+const privacyHandler = new PrivacyConsentHandler(
+    process.env.SUPABASE_URL,
+    process.env.SUPABASE_SERVICE_ROLE_KEY
+);
+console.log('✅ Privacy Consent Handler initialized');
+
 // ========================================
 // INITIALIZE GDPR MODULE - NEW
 // ========================================
