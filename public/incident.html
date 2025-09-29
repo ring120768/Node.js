@@ -6,7 +6,6 @@
     <title>Car Crash Lawyer AI - Report Incident</title>
     <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
     <script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
-    <!-- Supabase Client -->
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
     <style>
         * {
@@ -51,165 +50,345 @@
             box-shadow: 0 10px 30px rgba(0,0,0,0.2);
         }
 
-        .voice-controls {
+        /* Enhanced Location Status Card */
+        .location-status-card {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            padding: 20px;
+            border-radius: 15px;
+            margin-bottom: 20px;
+            box-shadow: 0 10px 30px rgba(0,0,0,0.2);
+            display: none;
+        }
+
+        .location-status-card.active {
+            display: block;
+        }
+
+        .location-status-header {
             display: flex;
+            align-items: center;
+            justify-content: space-between;
+            margin-bottom: 15px;
+        }
+
+        .location-status-title {
+            font-size: 18px;
+            font-weight: bold;
+        }
+
+        .location-status-indicator {
+            width: 12px;
+            height: 12px;
+            background: #10b981;
+            border-radius: 50%;
+            animation: pulse 2s infinite;
+        }
+
+        .location-status-indicator.searching {
+            background: #f59e0b;
+        }
+
+        .location-status-indicator.error {
+            background: #ef4444;
+            animation: none;
+        }
+
+        @keyframes pulse {
+            0% {
+                box-shadow: 0 0 0 0 rgba(16, 185, 129, 0.7);
+            }
+            70% {
+                box-shadow: 0 0 0 10px rgba(16, 185, 129, 0);
+            }
+            100% {
+                box-shadow: 0 0 0 0 rgba(16, 185, 129, 0);
+            }
+        }
+
+        .location-status-details {
+            display: grid;
+            gap: 10px;
+        }
+
+        .status-item {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            padding: 8px 12px;
+            background: rgba(255, 255, 255, 0.1);
+            border-radius: 8px;
+            font-size: 14px;
+        }
+
+        .status-item.success {
+            background: rgba(16, 185, 129, 0.2);
+        }
+
+        .status-item.pending {
+            background: rgba(245, 158, 11, 0.2);
+        }
+
+        .status-item.error {
+            background: rgba(239, 68, 68, 0.2);
+        }
+
+        .status-icon {
+            font-size: 18px;
+        }
+
+        .status-text {
+            flex: 1;
+        }
+
+        .status-value {
+            font-weight: bold;
+        }
+
+        /* Enhanced Find Me Button */
+        .find-me-btn {
+            width: 100%;
+            padding: 18px;
+            background: linear-gradient(135deg, #06b6d4 0%, #0891b2 100%);
+            color: white;
+            border: none;
+            border-radius: 12px;
+            font-size: 18px;
+            font-weight: bold;
+            cursor: pointer;
+            margin-bottom: 15px;
+            transition: all 0.3s ease;
+            position: relative;
+            overflow: hidden;
+        }
+
+        .find-me-btn:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 10px 20px rgba(6, 182, 212, 0.3);
+        }
+
+        .find-me-btn:active {
+            transform: translateY(0);
+        }
+
+        .find-me-btn:disabled {
+            background: #9ca3af;
+            cursor: not-allowed;
+            transform: none;
+        }
+
+        .find-me-btn.locating {
+            background: linear-gradient(135deg, #f59e0b 0%, #d97706 100%);
+            animation: locatingPulse 1.5s ease-in-out infinite;
+        }
+
+        @keyframes locatingPulse {
+            0%, 100% {
+                opacity: 1;
+            }
+            50% {
+                opacity: 0.8;
+            }
+        }
+
+        .find-me-btn.success {
+            background: linear-gradient(135deg, #10b981 0%, #059669 100%);
+        }
+
+        .find-me-btn.error {
+            background: linear-gradient(135deg, #ef4444 0%, #dc2626 100%);
+        }
+
+        /* Permission Helper Card */
+        .permission-helper {
+            display: none;
+            background: #fef3c7;
+            border: 2px solid #f59e0b;
+            border-radius: 12px;
+            padding: 15px;
+            margin-bottom: 15px;
+        }
+
+        .permission-helper.active {
+            display: block;
+        }
+
+        .permission-helper h4 {
+            color: #92400e;
+            margin-bottom: 10px;
+            font-size: 16px;
+        }
+
+        .permission-helper ol {
+            margin: 10px 0 10px 20px;
+            color: #78350f;
+            font-size: 14px;
+        }
+
+        .permission-helper li {
+            margin: 5px 0;
+        }
+
+        .retry-btn {
+            background: #f59e0b;
+            color: white;
+            border: none;
+            padding: 8px 16px;
+            border-radius: 6px;
+            cursor: pointer;
+            font-weight: bold;
+            font-size: 14px;
+        }
+
+        /* What3Words Display Enhanced */
+        .what3words-display {
+            background: linear-gradient(135deg, #dc2626 0%, #b91c1c 100%);
+            color: white;
+            padding: 20px;
+            border-radius: 12px;
+            text-align: center;
+            margin-bottom: 15px;
+            font-size: 20px;
+            font-weight: bold;
+            position: relative;
+            box-shadow: 0 4px 15px rgba(220, 38, 38, 0.3);
+            transition: all 0.3s ease;
+        }
+
+        .what3words-display.loading {
+            background: linear-gradient(135deg, #6b7280 0%, #4b5563 100%);
+            animation: shimmer 2s infinite;
+        }
+
+        @keyframes shimmer {
+            0% {
+                opacity: 0.8;
+            }
+            50% {
+                opacity: 1;
+            }
+            100% {
+                opacity: 0.8;
+            }
+        }
+
+        .what3words-display.error {
+            background: linear-gradient(135deg, #991b1b 0%, #7f1d1d 100%);
+        }
+
+        .what3words-retry {
+            margin-top: 10px;
+            font-size: 12px;
+            opacity: 0.8;
+        }
+
+        .what3words-retry button {
+            background: rgba(255, 255, 255, 0.2);
+            border: 1px solid rgba(255, 255, 255, 0.3);
+            color: white;
+            padding: 4px 8px;
+            border-radius: 4px;
+            cursor: pointer;
+            font-size: 11px;
+        }
+
+        /* Map Container Enhanced */
+        #map {
+            height: 250px;
+            border-radius: 12px;
+            margin-bottom: 15px;
+            box-shadow: 0 4px 10px rgba(0,0,0,0.1);
+            position: relative;
+            background: #f3f4f6;
+        }
+
+        #map.loading::after {
+            content: 'Loading map...';
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            color: #6b7280;
+            font-size: 14px;
+        }
+
+        /* Accuracy Badge */
+        .accuracy-badge {
+            display: inline-flex;
+            align-items: center;
+            gap: 5px;
+            padding: 6px 12px;
+            border-radius: 20px;
+            font-size: 13px;
+            font-weight: bold;
+            color: white;
+            margin-bottom: 15px;
+        }
+
+        .accuracy-badge.high {
+            background: linear-gradient(135deg, #10b981 0%, #059669 100%);
+        }
+
+        .accuracy-badge.medium {
+            background: linear-gradient(135deg, #f59e0b 0%, #d97706 100%);
+        }
+
+        .accuracy-badge.low {
+            background: linear-gradient(135deg, #ef4444 0%, #dc2626 100%);
+        }
+
+        /* Voice and Video Controls Enhanced */
+        .media-controls {
+            display: grid;
             gap: 10px;
             margin-bottom: 20px;
         }
 
-        .voice-btn, .record-btn {
-            flex: 1;
+        .media-btn {
             padding: 15px;
             border: none;
             border-radius: 10px;
             font-weight: bold;
             font-size: 16px;
             cursor: pointer;
+            transition: all 0.3s ease;
             display: flex;
             align-items: center;
             justify-content: center;
-            transition: transform 0.2s;
+            gap: 10px;
         }
 
         .voice-btn {
-            background: #10b981;
+            background: linear-gradient(135deg, #10b981 0%, #059669 100%);
             color: white;
         }
 
         .voice-btn.recording {
-            background: #ef4444;
+            background: linear-gradient(135deg, #ef4444 0%, #dc2626 100%);
+            animation: recordPulse 1.5s ease-in-out infinite;
         }
 
-        .record-btn {
-            background: #ef4444;
+        @keyframes recordPulse {
+            0%, 100% {
+                box-shadow: 0 0 0 0 rgba(239, 68, 68, 0.4);
+            }
+            50% {
+                box-shadow: 0 0 0 10px rgba(239, 68, 68, 0);
+            }
+        }
+
+        .dashcam-btn {
+            background: linear-gradient(135deg, #8b5cf6 0%, #7c3aed 100%);
             color: white;
         }
 
-        .voice-btn:active, .record-btn:active {
-            transform: scale(0.98);
-        }
-
-        .location-section {
-            display: none;
-        }
-
-        .location-section.active {
-            display: block;
-        }
-
-        .location-section h2 {
-            font-size: 18px;
-            margin-bottom: 15px;
-            display: flex;
-            align-items: center;
-        }
-
-        .location-section h2::before {
-            content: "📍";
-            margin-right: 8px;
-        }
-
-        .address {
-            background: #f3f4f6;
-            padding: 12px;
-            border-radius: 8px;
-            margin-bottom: 15px;
-            font-size: 14px;
-            line-height: 1.5;
-        }
-
-        .what3words-display {
-            background: #dc2626;
-            color: white;
-            padding: 15px;
-            border-radius: 10px;
-            text-align: center;
-            margin-bottom: 15px;
-            font-size: 18px;
-            font-weight: bold;
-            position: relative;
-        }
-
-        .what3words-display .timestamp {
-            font-size: 10px;
-            opacity: 0.8;
-            margin-top: 5px;
-        }
-
-        #map {
-            height: 200px;
-            border-radius: 10px;
-            margin-bottom: 15px;
-        }
-
-        .location-accuracy {
-            background: #10b981;
-            color: white;
-            padding: 8px;
-            border-radius: 5px;
-            text-align: center;
-            font-size: 14px;
-            margin-bottom: 10px;
-        }
-
-        .location-accuracy.medium {
-            background: #f59e0b;
-        }
-
-        .location-accuracy.low {
-            background: #ef4444;
-        }
-
-        .coordinates {
-            display: grid;
-            grid-template-columns: 1fr 1fr;
-            gap: 10px;
-            font-size: 14px;
-        }
-
-        .coord-item {
-            background: #f9fafb;
-            padding: 10px;
-            border-radius: 8px;
-        }
-
-        .coord-label {
-            color: #6b7280;
-            font-size: 12px;
-        }
-
-        .coord-value {
-            font-weight: bold;
-            margin-top: 5px;
-        }
-
+        /* Emergency Panel Enhanced */
         .emergency-panel {
-            background: #fef2f2;
+            background: linear-gradient(135deg, #fef2f2 0%, #fee2e2 100%);
             border: 2px solid #dc2626;
             border-radius: 15px;
             padding: 20px;
             margin-bottom: 20px;
-        }
-
-        .emergency-header {
-            text-align: center;
-            margin-bottom: 15px;
-        }
-
-        .emergency-header h3 {
-            color: #dc2626;
-            font-size: 20px;
-            margin-bottom: 5px;
-        }
-
-        .emergency-header p {
-            color: #7f1d1d;
-            font-size: 14px;
-        }
-
-        .emergency-buttons {
-            display: grid;
-            gap: 10px;
         }
 
         .emergency-btn {
@@ -221,174 +400,34 @@
             display: flex;
             align-items: center;
             justify-content: center;
+            gap: 10px;
             cursor: pointer;
             transition: all 0.3s;
             box-shadow: 0 4px 6px rgba(0,0,0,0.1);
+            margin-bottom: 10px;
         }
 
-        .emergency-btn:active {
-            transform: scale(0.98);
-            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+        .emergency-btn:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 6px 12px rgba(0,0,0,0.15);
         }
 
         .emergency-btn.critical {
-            background: #dc2626;
+            background: linear-gradient(135deg, #dc2626 0%, #b91c1c 100%);
             color: white;
         }
 
         .emergency-btn.recovery {
-            background: #f59e0b;
+            background: linear-gradient(135deg, #f59e0b 0%, #d97706 100%);
             color: white;
         }
 
         .emergency-btn.contact {
-            background: #3b82f6;
+            background: linear-gradient(135deg, #3b82f6 0%, #2563eb 100%);
             color: white;
         }
 
-        .btn-icon {
-            margin-right: 10px;
-            font-size: 24px;
-        }
-
-        .continue-btn {
-            width: 100%;
-            padding: 18px;
-            background: #10b981;
-            color: white;
-            border: none;
-            border-radius: 10px;
-            font-size: 18px;
-            font-weight: bold;
-            cursor: pointer;
-            transition: background 0.3s;
-            margin-bottom: 10px;
-        }
-
-        .continue-btn:hover {
-            background: #059669;
-        }
-
-        .continue-btn:disabled {
-            background: #9ca3af;
-            cursor: not-allowed;
-        }
-
-        .find-me-btn {
-            width: 100%;
-            padding: 15px;
-            background: #06b6d4;
-            color: white;
-            border: none;
-            border-radius: 10px;
-            font-size: 16px;
-            font-weight: bold;
-            cursor: pointer;
-            margin-bottom: 15px;
-        }
-
-        /* Dash-cam Upload Styles */
-        .dashcam-btn {
-            width: 100%;
-            padding: 15px;
-            background: #8b5cf6;
-            color: white;
-            border: none;
-            border-radius: 10px;
-            font-size: 16px;
-            font-weight: bold;
-            cursor: pointer;
-            margin-bottom: 15px;
-            transition: all 0.3s;
-        }
-
-        .dashcam-btn:hover {
-            background: #7c3aed;
-        }
-
-        .dashcam-btn:active {
-            transform: scale(0.98);
-        }
-
-        .dashcam-btn:disabled {
-            background: #9ca3af;
-            cursor: not-allowed;
-        }
-
-        .dashcam-preview {
-            margin-top: 15px;
-            display: none;
-        }
-
-        .dashcam-preview.active {
-            display: block;
-        }
-
-        .dashcam-preview video {
-            width: 100%;
-            max-height: 200px;
-            border-radius: 10px;
-            background: #000;
-        }
-
-        .dashcam-info {
-            background: #f3f4f6;
-            padding: 10px;
-            border-radius: 8px;
-            margin-top: 10px;
-            font-size: 14px;
-        }
-
-        .dashcam-progress {
-            width: 100%;
-            height: 8px;
-            background: #e5e7eb;
-            border-radius: 4px;
-            margin-top: 10px;
-            overflow: hidden;
-            display: none;
-        }
-
-        .dashcam-progress.active {
-            display: block;
-        }
-
-        .dashcam-progress-bar {
-            height: 100%;
-            background: #8b5cf6;
-            border-radius: 4px;
-            transition: width 0.3s ease;
-            width: 0%;
-        }
-
-        .dashcam-status {
-            text-align: center;
-            margin-top: 10px;
-            font-size: 14px;
-            color: #6b7280;
-            display: none;
-        }
-
-        .dashcam-status.active {
-            display: block;
-        }
-
-        .dashcam-status.success {
-            color: #10b981;
-            font-weight: bold;
-        }
-
-        .dashcam-status.error {
-            color: #ef4444;
-            font-weight: bold;
-        }
-
-        .helper-text {
-            text-align: center;
-            color: #6b7280;
-            font-size: 14px;
-        }
-
+        /* Loading States */
         .loading-spinner {
             display: inline-block;
             width: 20px;
@@ -403,107 +442,60 @@
             to { transform: rotate(360deg); }
         }
 
-        .voice-status {
-            text-align: center;
-            padding: 10px;
-            background: #fef3c7;
-            border-radius: 8px;
-            margin-top: 10px;
-            font-size: 14px;
-            display: none;
+        /* Continue Button Enhanced */
+        .continue-btn {
+            width: 100%;
+            padding: 18px;
+            background: linear-gradient(135deg, #10b981 0%, #059669 100%);
+            color: white;
+            border: none;
+            border-radius: 12px;
+            font-size: 18px;
+            font-weight: bold;
+            cursor: pointer;
+            transition: all 0.3s;
+            margin-bottom: 10px;
         }
 
-        .voice-status.active {
-            display: block;
+        .continue-btn:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 10px 20px rgba(16, 185, 129, 0.3);
         }
 
-        @media (max-width: 390px) {
-            body {
-                padding: 15px;
-            }
-
-            .header h1 {
-                font-size: 20px;
-            }
-
-            .card {
-                padding: 15px;
-            }
+        .continue-btn:disabled {
+            background: #9ca3af;
+            cursor: not-allowed;
+            transform: none;
         }
 
-        /* Navigation Arrows */
-        .nav-arrows {
-            position: fixed;
-            top: 50%;
-            left: 0;
-            right: 0;
-            transform: translateY(-50%);
-            z-index: 1000;
-            pointer-events: none;
-        }
-
+        /* Navigation */
         .nav-arrow {
-            position: absolute;
-            width: 50px;
-            height: 50px;
-            background: rgba(255, 255, 255, 0.9);
+            position: fixed;
+            top: 20px;
+            left: 20px;
+            width: 40px;
+            height: 40px;
+            background: rgba(255, 255, 255, 0.95);
             border-radius: 50%;
             display: flex;
             align-items: center;
             justify-content: center;
             cursor: pointer;
-            pointer-events: auto;
-            transition: all 0.3s ease;
-            box-shadow: 0 4px 15px rgba(0, 0, 0, 0.2);
-            backdrop-filter: blur(10px);
+            box-shadow: 0 4px 10px rgba(0,0,0,0.2);
+            transition: all 0.3s;
+            z-index: 1000;
         }
 
         .nav-arrow:hover {
-            background: rgba(255, 255, 255, 1);
+            background: white;
             transform: scale(1.1);
-            box-shadow: 0 6px 20px rgba(0, 0, 0, 0.3);
-        }
-
-        .nav-arrow.back {
-            left: 20px;
-        }
-
-        .nav-arrow.forward {
-            right: 20px;
-        }
-
-        .nav-arrow span {
-            font-size: 24px;
-            font-weight: bold;
-            color: #667eea;
-        }
-
-        @media (max-width: 390px) {
-            .nav-arrow {
-                width: 40px;
-                height: 40px;
-            }
-
-            .nav-arrow.back {
-                left: 10px;
-            }
-
-            .nav-arrow.forward {
-                right: 10px;
-            }
-
-            .nav-arrow span {
-                font-size: 20px;
-            }
         }
     </style>
 </head>
 <body>
-    <!-- Navigation Arrows -->
-    <div class="nav-arrows">
-        <div class="nav-arrow back" onclick="goBack()" title="Go Back to Homepage">
-            <span>←</span>
-        </div>
+    <!-- Navigation -->
+    <div class="nav-arrow" onclick="goBack()" title="Go Back">
+        <span style="font-size: 20px; font-weight: bold; color: #667eea;">←</span>
     </div>
 
     <div class="container">
@@ -512,117 +504,124 @@
             <p>Secure, AI-powered incident documentation</p>
         </div>
 
-        <!-- Emergency Actions Panel -->
-        <div class="card emergency-panel">
-            <div class="emergency-header">
-                <h3>🚨 Emergency Actions</h3>
-                <p>Tap to call emergency services</p>
+        <!-- Location Status Card (Hidden by default) -->
+        <div class="location-status-card" id="locationStatusCard">
+            <div class="location-status-header">
+                <div class="location-status-title">Location Services</div>
+                <div class="location-status-indicator" id="statusIndicator"></div>
             </div>
-
-            <div class="emergency-buttons">
-                <button class="emergency-btn critical" id="emergency999Btn">
-                    <span class="btn-icon">📞</span>
-                    <span>Call 999 - Emergency Services</span>
-                </button>
-
-                <button class="emergency-btn recovery" id="recoveryBtn">
-                    <span class="btn-icon">🚗</span>
-                    <span>Call Recovery Service</span>
-                </button>
-
-                <button class="emergency-btn contact" id="emergencyContactBtn">
-                    <span class="btn-icon">👤</span>
-                    <span>Call Emergency Contact</span>
-                </button>
+            <div class="location-status-details" id="statusDetails">
+                <!-- Status items will be dynamically added here -->
             </div>
         </div>
 
-        <!-- Location Controls -->
-        <div class="card">
-            <button class="find-me-btn" id="findMeBtn">
-                📍 Find Me!
-            </button>
-            
-            <div id="locationHelp" style="display: none; background: #f0f8ff; padding: 10px; border-radius: 8px; margin-top: 10px; font-size: 14px;">
-                <strong>📍 Need help with location?</strong><br>
-                <p style="margin: 5px 0;">If location isn't working:</p>
-                <ul style="margin: 5px 0; padding-left: 20px;">
-                    <li>Allow location permissions when prompted</li>
-                    <li>Check your browser settings</li>
-                    <li>Enter location manually in the report form</li>
-                </ul>
-                <button onclick="document.getElementById('locationHelp').style.display='none'" style="background: #4CAF50; color: white; border: none; padding: 5px 10px; border-radius: 4px; cursor: pointer; font-size: 12px;">Got it</button>
+        <!-- Emergency Actions Panel -->
+        <div class="emergency-panel">
+            <div style="text-align: center; margin-bottom: 15px;">
+                <h3 style="color: #dc2626; font-size: 20px; margin-bottom: 5px;">🚨 Emergency Actions</h3>
+                <p style="color: #7f1d1d; font-size: 14px;">Tap to call emergency services</p>
             </div>
 
-            <!-- Dash-cam Upload Button -->
-            <button class="dashcam-btn" id="dashcamBtn">
-                📹 Add Dashcam Video here!
+            <button class="emergency-btn critical" id="emergency999Btn">
+                <span style="font-size: 24px;">📞</span>
+                <span>Call 999 - Emergency Services</span>
             </button>
+
+            <button class="emergency-btn recovery" id="recoveryBtn">
+                <span style="font-size: 24px;">🚗</span>
+                <span>Call Recovery Service</span>
+            </button>
+
+            <button class="emergency-btn contact" id="emergencyContactBtn">
+                <span style="font-size: 24px;">👤</span>
+                <span>Call Emergency Contact</span>
+            </button>
+        </div>
+
+        <!-- Location and Media Controls -->
+        <div class="card">
+            <button class="find-me-btn" id="findMeBtn">
+                <span id="findMeBtnIcon">📍</span>
+                <span id="findMeBtnText">Find My Location</span>
+            </button>
+
+            <div class="permission-helper" id="permissionHelper">
+                <h4>📍 Enable Location Access</h4>
+                <ol>
+                    <li>Click the location icon in your browser's address bar</li>
+                    <li>Select "Allow" for location access</li>
+                    <li>Click the button below to retry</li>
+                </ol>
+                <button class="retry-btn" onclick="retryLocation()">Retry Location</button>
+            </div>
+
+            <div class="media-controls">
+                <button class="media-btn dashcam-btn" id="dashcamBtn">
+                    <span>📹</span>
+                    <span>Add Dashcam Video</span>
+                </button>
+
+                <button class="media-btn voice-btn" id="voiceBtn">
+                    <span id="voiceBtnIcon">🎤</span>
+                    <span id="voiceBtnText">Record Voice Statement</span>
+                </button>
+            </div>
 
             <!-- Hidden file input -->
             <input type="file" id="dashcamInput" accept="video/*" style="display: none;">
 
-            <!-- Dash-cam Preview -->
-            <div class="dashcam-preview" id="dashcamPreview">
-                <video id="dashcamVideo" controls></video>
-                <div class="dashcam-info" id="dashcamInfo"></div>
-                <div class="dashcam-progress" id="dashcamProgress">
+            <!-- Dashcam Preview -->
+            <div class="dashcam-preview" id="dashcamPreview" style="display: none;">
+                <video id="dashcamVideo" controls style="width: 100%; border-radius: 10px; margin-bottom: 10px;"></video>
+                <div class="dashcam-info" id="dashcamInfo" style="background: #f3f4f6; padding: 10px; border-radius: 8px; font-size: 14px;"></div>
+                <div class="dashcam-progress" id="dashcamProgress" style="display: none;">
                     <div class="dashcam-progress-bar" id="dashcamProgressBar"></div>
                 </div>
-                <div class="dashcam-status" id="dashcamStatus"></div>
-            </div>
-
-            <div class="voice-controls">
-                <button class="voice-btn" id="voiceBtn">
-                    🎤 Activate Whisper Voice
-                </button>
-                <button class="record-btn" id="dontRecordBtn">
-                    ⛔ Don't Record
-                </button>
-            </div>
-
-            <div class="voice-status" id="voiceStatus">
-                Recording in progress...
+                <div class="dashcam-status" id="dashcamStatus" style="display: none;"></div>
             </div>
         </div>
 
-        <!-- Location Information -->
-        <div class="card location-section" id="locationSection">
-            <h2>Incident Location</h2>
+        <!-- Location Information (Hidden by default) -->
+        <div class="card location-section" id="locationSection" style="display: none;">
+            <h2 style="font-size: 18px; margin-bottom: 15px;">📍 Incident Location</h2>
 
-            <div class="address" id="addressDisplay">
+            <div class="accuracy-badge" id="accuracyBadge" style="display: none;">
+                <span>GPS Accuracy:</span>
+                <span id="accuracyValue">-</span>
+            </div>
+
+            <div class="address" style="background: #f3f4f6; padding: 12px; border-radius: 8px; margin-bottom: 15px; font-size: 14px;">
                 <strong>📍 Full Address:</strong><br>
-                <span id="addressText">Fetching address...</span>
+                <span id="addressText">Detecting location...</span>
             </div>
 
             <div class="what3words-display" id="what3wordsDisplay">
-                <div id="what3wordsText">///fetching.words.location</div>
-                <div class="timestamp" id="w3wTimestamp"></div>
-            </div>
-
-            <div id="map"></div>
-
-            <div class="location-accuracy" id="accuracyDisplay">
-                Location Accuracy: <span id="accuracyText">Calculating...</span>
-            </div>
-
-            <div class="coordinates">
-                <div class="coord-item">
-                    <div class="coord-label">Latitude:</div>
-                    <div class="coord-value" id="latValue">-</div>
+                <div id="what3wordsText">///detecting.location.words</div>
+                <div style="font-size: 10px; opacity: 0.8; margin-top: 5px;" id="w3wTimestamp"></div>
+                <div class="what3words-retry" id="w3wRetry" style="display: none;">
+                    <button onclick="retryWhat3Words()">Retry</button>
                 </div>
-                <div class="coord-item">
-                    <div class="coord-label">Longitude:</div>
-                    <div class="coord-value" id="lngValue">-</div>
+            </div>
+
+            <div id="map" class="loading"></div>
+
+            <div class="coordinates" style="display: grid; grid-template-columns: 1fr 1fr; gap: 10px; font-size: 14px;">
+                <div style="background: #f9fafb; padding: 10px; border-radius: 8px;">
+                    <div style="color: #6b7280; font-size: 12px;">Latitude:</div>
+                    <div style="font-weight: bold; margin-top: 5px;" id="latValue">-</div>
+                </div>
+                <div style="background: #f9fafb; padding: 10px; border-radius: 8px;">
+                    <div style="color: #6b7280; font-size: 12px;">Longitude:</div>
+                    <div style="font-weight: bold; margin-top: 5px;" id="lngValue">-</div>
                 </div>
             </div>
         </div>
 
-        <!-- Continue to Report -->
+        <!-- Continue Button -->
         <button class="continue-btn" id="continueBtn">
-            Continue to Incident Report 
+            Continue to Incident Report
         </button>
-        <p class="helper-text">
+        <p style="text-align: center; color: #6b7280; font-size: 14px;">
             Complete the detailed report when safe to do so
         </p>
     </div>
@@ -630,539 +629,368 @@
     <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
     <script src="dashcamUploader.js"></script>
     <script>
-        // Global variables to store collected data
+        // Global variables
         let userData = null;
         let emergencyContacts = null;
         let userLocation = null;
         let what3wordsData = null;
-        let voiceTranscription = null;
         let map = null;
         let marker = null;
         let accuracyCircle = null;
         let mediaRecorder = null;
         let audioChunks = [];
         let isRecording = false;
-        let what3wordsStoragePath = null;
         let dashcamUploader = null;
+        let locationRetryCount = 0;
+        let w3wRetryCount = 0;
 
-        // Navigation functions
-        function goBack() {
-            // Always return to homepage when back arrow is clicked
-            window.location.href = '/';
-        }
-
-        function goForward() {
-            // Forward navigation removed - no longer needed
-            return;
-        }
-
-        // Initialize on page load
+        // Initialize
         document.addEventListener('DOMContentLoaded', async () => {
             console.log('🚀 Initializing incident report page...');
-            
-            // Set up basic event listeners first
             setupEmergencyButtons();
             setupLocationButton();
             setupVoiceRecording();
             setupContinueButton();
-            
-            // Then check authentication and initialize dash-cam
             await checkUserAuthentication();
             initializeDashcam();
-            
-            console.log('✅ All incident page functionality initialized');
+            console.log('✅ All functionality initialized');
         });
 
-        // Initialize dash-cam functionality
-        function initializeDashcam() {
-            // Get current incident ID - you may need to adjust this based on your app flow
-            const currentIncidentId = sessionStorage.getItem('currentIncidentId') || 
-                                    new URLSearchParams(window.location.search).get('incident_id') ||
-                                    'temp_' + Date.now();
-
-            // Get user ID
-            const currentUserId = userData?.uid || 
-                                sessionStorage.getItem('userId') ||
-                                new URLSearchParams(window.location.search).get('user_id');
-
-            if (currentUserId) {
-                // Initialize the uploader
-                dashcamUploader = new DashcamUploader({
-                    userId: currentUserId,
-                    incidentId: currentIncidentId,
-                    onProgress: (progress) => {
-                        updateDashcamProgress(progress);
-                    },
-                    onSuccess: (result) => {
-                        showDashcamSuccess('Video uploaded successfully!');
-                        console.log('Dash-cam upload success:', result);
-                    },
-                    onError: (error) => {
-                        showDashcamError(error.message);
-                        console.error('Dash-cam upload error:', error);
-                    }
-                });
-
-                // Setup button click handler
-                document.getElementById('dashcamBtn').addEventListener('click', () => {
-                    document.getElementById('dashcamInput').click();
-                });
-
-                // Setup file input change handler
-                document.getElementById('dashcamInput').addEventListener('change', (event) => {
-                    const file = event.target.files[0];
-                    if (file) {
-                        handleDashcamFile(file);
-                    }
-                });
-            } else {
-                console.warn('User ID not available - dash-cam upload disabled');
-                document.getElementById('dashcamBtn').disabled = true;
-                document.getElementById('dashcamBtn').textContent = '📹 Upload Dashcam Here!';
-            }
+        // Navigation
+        function goBack() {
+            window.location.href = '/';
         }
 
-        // Handle dash-cam file selection
-        async function handleDashcamFile(file) {
-            // Show preview
-            showDashcamPreview(file);
+        // Location Status Management
+        function showLocationStatus(items) {
+            const card = document.getElementById('locationStatusCard');
+            const details = document.getElementById('statusDetails');
+            const indicator = document.getElementById('statusIndicator');
 
-            // Upload the file
-            if (dashcamUploader) {
-                try {
-                    await dashcamUploader.uploadVideo(file);
-                } catch (error) {
-                    console.error('Upload failed:', error);
-                }
-            }
+            card.classList.add('active');
+            details.innerHTML = '';
+
+            let hasError = false;
+            let isSearching = false;
+
+            items.forEach(item => {
+                const statusItem = document.createElement('div');
+                statusItem.className = `status-item ${item.status}`;
+                statusItem.innerHTML = `
+                    <span class="status-icon">${item.icon}</span>
+                    <span class="status-text">${item.text}</span>
+                    ${item.value ? `<span class="status-value">${item.value}</span>` : ''}
+                `;
+                details.appendChild(statusItem);
+
+                if (item.status === 'error') hasError = true;
+                if (item.status === 'pending') isSearching = true;
+            });
+
+            indicator.className = 'location-status-indicator';
+            if (hasError) indicator.classList.add('error');
+            else if (isSearching) indicator.classList.add('searching');
         }
 
-        // Show video preview
-        function showDashcamPreview(file) {
-            const preview = document.getElementById('dashcamPreview');
-            const video = document.getElementById('dashcamVideo');
-            const info = document.getElementById('dashcamInfo');
-
-            // Create object URL for preview
-            const videoUrl = URL.createObjectURL(file);
-            video.src = videoUrl;
-
-            // Show file info
-            const fileSizeMB = (file.size / (1024 * 1024)).toFixed(2);
-            info.innerHTML = `
-                <strong>📹 Video Selected:</strong><br>
-                Name: ${file.name}<br>
-                Size: ${fileSizeMB} MB<br>
-                Type: ${file.type}
-            `;
-
-            preview.classList.add('active');
-        }
-
-        // Update upload progress
-        function updateDashcamProgress(progress) {
-            const progressElement = document.getElementById('dashcamProgress');
-            const progressBar = document.getElementById('dashcamProgressBar');
-            const status = document.getElementById('dashcamStatus');
-
-            progressElement.classList.add('active');
-            status.classList.add('active');
-
-            progressBar.style.width = `${progress}%`;
-            status.textContent = `Uploading... ${Math.round(progress)}%`;
-            status.className = 'dashcam-status active';
-        }
-
-        // Show success message
-        function showDashcamSuccess(message) {
-            const status = document.getElementById('dashcamStatus');
-            const progress = document.getElementById('dashcamProgress');
-
-            progress.classList.remove('active');
-            status.textContent = message;
-            status.className = 'dashcam-status active success';
-
-            // Hide success message after 3 seconds
-            setTimeout(() => {
-                status.classList.remove('active');
-            }, 3000);
-        }
-
-        // Show error message
-        function showDashcamError(message) {
-            const status = document.getElementById('dashcamStatus');
-            const progress = document.getElementById('dashcamProgress');
-
-            progress.classList.remove('active');
-            status.textContent = message;
-            status.className = 'dashcam-status active error';
-
-            // Hide error message after 5 seconds
-            setTimeout(() => {
-                status.classList.remove('active');
-            }, 5000);
-        }
-
-        // Check user authentication and fetch emergency contacts
-        async function checkUserAuthentication() {
-            try {
-                const authResponse = await fetch('/api/auth/status');
-                if (!authResponse.ok) {
-                    console.warn('Authentication check failed');
-                    return;
-                }
-
-                const authData = await authResponse.json();
-
-                if (authData.authenticated && authData.user && authData.user.uid) {
-                    userData = authData.user;
-                    console.log('User authenticated:', userData.uid);
-
-                    // Fetch emergency contacts
-                    try {
-                        const contactsResponse = await fetch(`/api/user/${userData.uid}/emergency-contacts`);
-                        if (contactsResponse.ok) {
-                            emergencyContacts = await contactsResponse.json();
-                            console.log('Emergency contacts loaded');
-                            updateEmergencyButtons();
-                        }
-                    } catch (error) {
-                        console.error('Failed to fetch emergency contacts:', error);
-                    }
-                } else {
-                    console.warn('User not authenticated');
-                }
-            } catch (error) {
-                console.error('Authentication check error:', error);
-            }
-        }
-
-        // Update emergency buttons with real phone numbers
-        function updateEmergencyButtons() {
-            // 999 Emergency Services
-            document.getElementById('emergency999Btn').onclick = function() {
-                const emergencyNumber = emergencyContacts?.emergency_services_number || '999';
-                if (confirm(`This will call ${emergencyNumber} Emergency Services. Continue?`)) {
-                    window.location.href = `tel:${emergencyNumber}`;
-                }
-            };
-
-            // Recovery Service
-            if (emergencyContacts?.recovery_breakdown_number) {
-                document.getElementById('recoveryBtn').onclick = function() {
-                    if (confirm(`Call recovery service: ${emergencyContacts.recovery_breakdown_number}?`)) {
-                        window.location.href = `tel:${emergencyContacts.recovery_breakdown_number}`;
-                    }
-                };
-            } else {
-                document.getElementById('recoveryBtn').onclick = function() {
-                    alert('No recovery service number available. Please update your profile.');
-                };
-            }
-
-            // Emergency Contact
-            if (emergencyContacts?.emergency_contact) {
-                document.getElementById('emergencyContactBtn').onclick = function() {
-                    if (confirm(`Call emergency contact: ${emergencyContacts.emergency_contact}?`)) {
-                        window.location.href = `tel:${emergencyContacts.emergency_contact}`;
-                    }
-                };
-            } else {
-                document.getElementById('emergencyContactBtn').onclick = function() {
-                    alert('No emergency contact available. Please update your profile.');
-                };
-            }
-        }
-
-        // Setup emergency buttons with default behavior
-        function setupEmergencyButtons() {
-            console.log('🚨 Setting up emergency buttons...');
-            
-            // Default 999 button
-            const emergency999Btn = document.getElementById('emergency999Btn');
-            if (emergency999Btn) {
-                emergency999Btn.onclick = function() {
-                    console.log('🚨 Emergency 999 button clicked');
-                    if (confirm('This will call 999 Emergency Services. Continue?')) {
-                        window.location.href = 'tel:999';
-                    }
-                };
-                console.log('✅ Emergency 999 button setup complete');
-            }
-
-            // Default recovery button
-            const recoveryBtn = document.getElementById('recoveryBtn');
-            if (recoveryBtn) {
-                recoveryBtn.onclick = function() {
-                    console.log('🚗 Recovery button clicked');
-                    alert('Please wait while we load your recovery service details...');
-                };
-                console.log('✅ Recovery button setup complete');
-            }
-
-            // Default emergency contact button
-            const emergencyContactBtn = document.getElementById('emergencyContactBtn');
-            if (emergencyContactBtn) {
-                emergencyContactBtn.onclick = function() {
-                    console.log('👤 Emergency contact button clicked');
-                    alert('Please wait while we load your emergency contact details...');
-                };
-                console.log('✅ Emergency contact button setup complete');
-            }
-            
-            console.log('✅ All emergency buttons configured');
-        }
-
-        // Setup Find Me button
+        // Enhanced Location Button Setup
         function setupLocationButton() {
-            console.log('📍 Setting up location button...');
             const findMeBtn = document.getElementById('findMeBtn');
-            
-            if (!findMeBtn) {
-                console.error('❌ Find Me button not found in DOM');
-                return;
-            }
-            
+
+            if (!findMeBtn) return;
+
             findMeBtn.addEventListener('click', async function() {
-                console.log('📍 Find Me button clicked');
                 const btn = this;
-                
-                // Check if geolocation is supported
+                const btnText = document.getElementById('findMeBtnText');
+                const btnIcon = document.getElementById('findMeBtnIcon');
+
+                // Check geolocation support
                 if (!navigator.geolocation) {
-                    alert('Geolocation is not supported by this browser. Please enter your location manually.');
+                    btn.className = 'find-me-btn error';
+                    btnText.textContent = 'Geolocation Not Supported';
+                    btnIcon.textContent = '❌';
+                    showLocationStatus([
+                        {icon: '❌', text: 'Geolocation not supported', status: 'error'}
+                    ]);
                     return;
                 }
 
-                // Check current permission status
-                if (navigator.permissions) {
-                    try {
-                        const permission = await navigator.permissions.query({name: 'geolocation'});
-                        console.log('📍 Geolocation permission status:', permission.state);
-                        
-                        if (permission.state === 'denied') {
-                            alert('Location access is blocked. Please:\n\n1. Click the location icon in your browser\'s address bar\n2. Select "Allow" for location access\n3. Refresh this page and try again\n\nOr manually enter your location in the incident report.');
-                            return;
-                        }
-                    } catch (error) {
-                        console.log('📍 Permission API not available, proceeding with location request');
-                    }
-                }
-
-                btn.innerHTML = '<span class="loading-spinner"></span> Requesting Location...';
+                // Start locating
+                btn.className = 'find-me-btn locating';
+                btnText.textContent = 'Detecting Location...';
+                btnIcon.textContent = '🔍';
                 btn.disabled = true;
 
-                // Request location with high accuracy
-                navigator.geolocation.getCurrentPosition(
-                    async (position) => {
-                        userLocation = {
-                            lat: position.coords.latitude,
-                            lng: position.coords.longitude,
-                            accuracy: position.coords.accuracy
-                        };
+                showLocationStatus([
+                    {icon: '🔍', text: 'Requesting location access', status: 'pending'},
+                    {icon: '⏳', text: 'Waiting for GPS signal', status: 'pending'}
+                ]);
 
-                        // Update coordinates display
-                        document.getElementById('latValue').textContent = userLocation.lat.toFixed(6);
-                        document.getElementById('lngValue').textContent = userLocation.lng.toFixed(6);
+                try {
+                    const position = await getLocationWithTimeout(10000);
 
-                        // Update accuracy display
-                        const accuracyText = `±${Math.round(userLocation.accuracy)}m`;
-                        document.getElementById('accuracyText').textContent = accuracyText;
+                    userLocation = {
+                        lat: position.coords.latitude,
+                        lng: position.coords.longitude,
+                        accuracy: position.coords.accuracy
+                    };
 
-                        // Update accuracy color based on value
-                        const accuracyDisplay = document.getElementById('accuracyDisplay');
-                        accuracyDisplay.classList.remove('medium', 'low');
-                        if (userLocation.accuracy > 50) accuracyDisplay.classList.add('medium');
-                        if (userLocation.accuracy > 100) accuracyDisplay.classList.add('low');
+                    // Success!
+                    btn.className = 'find-me-btn success';
+                    btnText.textContent = 'Location Found!';
+                    btnIcon.textContent = '✅';
 
-                        // Initialize or update map
-                        if (!map) {
-                            map = L.map('map').setView([userLocation.lat, userLocation.lng], 16);
-                            L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
-                                attribution: '© OpenStreetMap contributors'
-                            }).addTo(map);
-                        } else {
-                            map.setView([userLocation.lat, userLocation.lng], 16);
-                        }
+                    await processLocationSuccess(userLocation);
 
-                        // Update marker
-                        if (marker) marker.remove();
-                        marker = L.marker([userLocation.lat, userLocation.lng]).addTo(map)
-                            .bindPopup('Incident Location').openPopup();
-
-                        // Update accuracy circle
-                        if (accuracyCircle) accuracyCircle.remove();
-                        accuracyCircle = L.circle([userLocation.lat, userLocation.lng], {
-                            radius: userLocation.accuracy,
-                            fillColor: userLocation.accuracy > 100 ? '#ef4444' : 
-                                       userLocation.accuracy > 50 ? '#f59e0b' : '#10b981',
-                            color: userLocation.accuracy > 100 ? '#ef4444' : 
-                                   userLocation.accuracy > 50 ? '#f59e0b' : '#10b981',
-                            fillOpacity: 0.2,
-                            weight: 2
-                        }).addTo(map);
-
-                        // Fetch address
-                        try {
-                            const geoResponse = await fetch(
-                                `https://nominatim.openstreetmap.org/reverse?format=json&lat=${userLocation.lat}&lon=${userLocation.lng}&zoom=18&addressdetails=1`
-                            );
-                            const geoData = await geoResponse.json();
-                            document.getElementById('addressText').textContent = geoData.display_name || 'Address not found';
-                        } catch (error) {
-                            console.error('Geocoding error:', error);
-                            document.getElementById('addressText').textContent = 'Unable to fetch address';
-                        }
-
-                        // Fetch What3Words
-                        try {
-                            console.log('🔍 Fetching What3Words for:', userLocation.lat, userLocation.lng);
-                            
-                            // Update UI to show what3words is loading
-                            document.getElementById('what3wordsText').textContent = '///loading.location.words';
-                            
-                            const w3wResponse = await fetch(`/api/what3words?lat=${userLocation.lat}&lng=${userLocation.lng}`);
-                            
-                            if (!w3wResponse.ok) {
-                                throw new Error(`HTTP ${w3wResponse.status}: ${w3wResponse.statusText}`);
-                            }
-                            
-                            const w3wData = await w3wResponse.json();
-                            console.log('📍 What3Words response:', w3wData);
-                            
-                            if (w3wData.words && w3wData.words !== 'location.not.configured' && w3wData.words !== 'location.not.found') {
-                                what3wordsData = w3wData.words;
-                                document.getElementById('what3wordsText').textContent = `///${w3wData.words}`;
-                                document.getElementById('w3wTimestamp').textContent = new Date().toLocaleString();
-                                console.log('✅ What3Words updated:', w3wData.words);
-                            } else {
-                                console.warn('⚠️ What3Words not available:', w3wData.words);
-                                document.getElementById('what3wordsText').textContent = w3wData.words ? `///${w3wData.words}` : '///location.not.available';
-                                document.getElementById('w3wTimestamp').textContent = 'Service unavailable';
-                            }
-                        } catch (error) {
-                            console.error('❌ What3Words error:', error);
-                            document.getElementById('what3wordsText').textContent = '///service.error.occurred';
-                            document.getElementById('w3wTimestamp').textContent = 'Service error';
-                        }
-
-                        // Show location section
-                        document.getElementById('locationSection').classList.add('active');
-
-                        btn.textContent = '📍 Location Found!';
+                    setTimeout(() => {
+                        btn.className = 'find-me-btn';
+                        btnText.textContent = 'Update Location';
+                        btnIcon.textContent = '📍';
                         btn.disabled = false;
+                    }, 2000);
 
-                        setTimeout(() => {
-                            btn.textContent = '📍 Update Location';
-                        }, 2000);
+                } catch (error) {
+                    handleLocationError(error, btn);
+                }
+            });
+        }
 
+        // Get location with timeout
+        function getLocationWithTimeout(timeout) {
+            return new Promise((resolve, reject) => {
+                const timeoutId = setTimeout(() => {
+                    reject(new Error('Location request timed out'));
+                }, timeout);
+
+                navigator.geolocation.getCurrentPosition(
+                    (position) => {
+                        clearTimeout(timeoutId);
+                        resolve(position);
                     },
                     (error) => {
-                        console.error('Geolocation error:', error);
-                        btn.textContent = '📍 Location Failed';
-                        btn.disabled = false;
-
-                        let errorMessage = '';
-                        let actionMessage = '';
-                        
-                        switch(error.code) {
-                            case error.PERMISSION_DENIED:
-                                errorMessage = 'Location access was denied.';
-                                actionMessage = '\n\nTo enable location:\n• Chrome/Edge: Click the location icon (🗺️) in the address bar and select "Allow"\n• Firefox: Click the shield icon and enable location\n• Safari: Go to Settings > Privacy & Security > Location Services\n\nAfter enabling, refresh this page and try again.';
-                                break;
-                            case error.POSITION_UNAVAILABLE:
-                                errorMessage = 'Your location could not be determined.';
-                                actionMessage = '\n\nTry:\n• Moving to an area with better GPS signal\n• Enabling Wi-Fi for better location accuracy\n• Using the manual location entry in the report';
-                                break;
-                            case error.TIMEOUT:
-                                errorMessage = 'Location request timed out.';
-                                actionMessage = '\n\nTry:\n• Ensuring good internet connection\n• Moving to an area with better signal\n• Clicking "Try Again" below';
-                                break;
-                            default:
-                                errorMessage = 'An unknown error occurred while getting your location.';
-                                actionMessage = '\n\nPlease try again or enter your location manually in the incident report.';
-                        }
-                        
-                        alert(errorMessage + actionMessage);
-                        
-                        // Show location help section
-                        document.getElementById('locationHelp').style.display = 'block';
-
-                        setTimeout(() => {
-                            btn.textContent = '📍 Try Again';
-                        }, 2000);
+                        clearTimeout(timeoutId);
+                        reject(error);
                     },
                     {
                         enableHighAccuracy: true,
-                        timeout: 10000,
+                        timeout: timeout,
                         maximumAge: 0
                     }
                 );
             });
         }
 
-        // Capture and upload what3words screenshot
-        async function captureWhat3Words() {
+        // Process successful location
+        async function processLocationSuccess(location) {
+            // Update coordinates
+            document.getElementById('latValue').textContent = location.lat.toFixed(6);
+            document.getElementById('lngValue').textContent = location.lng.toFixed(6);
+
+            // Update accuracy badge
+            const accuracyBadge = document.getElementById('accuracyBadge');
+            const accuracyValue = document.getElementById('accuracyValue');
+            accuracyBadge.style.display = 'inline-flex';
+            accuracyValue.textContent = `±${Math.round(location.accuracy)}m`;
+
+            if (location.accuracy <= 30) {
+                accuracyBadge.className = 'accuracy-badge high';
+            } else if (location.accuracy <= 100) {
+                accuracyBadge.className = 'accuracy-badge medium';
+            } else {
+                accuracyBadge.className = 'accuracy-badge low';
+            }
+
+            // Show location section
+            document.getElementById('locationSection').style.display = 'block';
+
+            // Initialize map
+            initializeMap(location);
+
+            // Update status
+            const statusItems = [
+                {icon: '✅', text: 'Location detected', status: 'success'},
+                {icon: '📍', text: 'Accuracy', value: `±${Math.round(location.accuracy)}m`, status: location.accuracy <= 100 ? 'success' : 'pending'}
+            ];
+
+            showLocationStatus(statusItems);
+
+            // Fetch address and What3Words in parallel
+            const addressPromise = fetchAddress(location);
+            const w3wPromise = fetchWhat3Words(location);
+
+            await Promise.all([addressPromise, w3wPromise]);
+        }
+
+        // Initialize or update map
+        function initializeMap(location) {
+            const mapElement = document.getElementById('map');
+            mapElement.classList.remove('loading');
+
+            if (!map) {
+                map = L.map('map').setView([location.lat, location.lng], 16);
+                L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+                    attribution: '© OpenStreetMap contributors'
+                }).addTo(map);
+            } else {
+                map.setView([location.lat, location.lng], 16);
+            }
+
+            // Update marker
+            if (marker) marker.remove();
+            marker = L.marker([location.lat, location.lng]).addTo(map)
+                .bindPopup('Incident Location').openPopup();
+
+            // Update accuracy circle
+            if (accuracyCircle) accuracyCircle.remove();
+            const color = location.accuracy <= 30 ? '#10b981' : 
+                         location.accuracy <= 100 ? '#f59e0b' : '#ef4444';
+
+            accuracyCircle = L.circle([location.lat, location.lng], {
+                radius: location.accuracy,
+                fillColor: color,
+                color: color,
+                fillOpacity: 0.2,
+                weight: 2
+            }).addTo(map);
+        }
+
+        // Fetch address
+        async function fetchAddress(location) {
             try {
-                const w3wElement = document.getElementById('what3wordsDisplay');
-
-                if (!w3wElement || !what3wordsData) {
-                    console.log('No what3words data to capture');
-                    return null;
-                }
-
-                // Capture the element
-                const canvas = await html2canvas(w3wElement, {
-                    backgroundColor: '#dc2626',
-                    scale: 2,
-                    logging: false,
-                    useCORS: true
-                });
-
-                // Convert to blob
-                const blob = await new Promise((resolve) => {
-                    canvas.toBlob(resolve, 'image/png', 0.9);
-                });
-
-                // Upload to server
-                const formData = new FormData();
-                formData.append('image', blob, 'what3words.png');
-                formData.append('what3words', what3wordsData);
-                formData.append('latitude', userLocation?.lat || '');
-                formData.append('longitude', userLocation?.lng || '');
-                formData.append('userId', userData?.uid || '');
-
-                const response = await fetch('/api/upload-what3words-image', {
-                    method: 'POST',
-                    body: formData
-                });
-
-                if (response.ok) {
-                    const result = await response.json();
-                    console.log('What3words uploaded:', result);
-                    return result.storagePath;
-                }
-
-                return null;
-
+                const response = await fetch(
+                    `https://nominatim.openstreetmap.org/reverse?format=json&lat=${location.lat}&lon=${location.lng}&zoom=18&addressdetails=1`
+                );
+                const data = await response.json();
+                document.getElementById('addressText').textContent = data.display_name || 'Address not found';
             } catch (error) {
-                console.error('Error capturing what3words:', error);
-                return null;
+                console.error('Geocoding error:', error);
+                document.getElementById('addressText').textContent = 'Unable to fetch address';
             }
         }
 
-        // Setup voice recording
-        function setupVoiceRecording() {
-            console.log('🎤 Setting up voice recording...');
-            const voiceBtn = document.getElementById('voiceBtn');
-            const dontRecordBtn = document.getElementById('dontRecordBtn');
-            const voiceStatus = document.getElementById('voiceStatus');
-            
-            if (!voiceBtn || !dontRecordBtn) {
-                console.error('❌ Voice recording buttons not found in DOM');
-                return;
+        // Enhanced What3Words fetch with retry
+        async function fetchWhat3Words(location) {
+            const display = document.getElementById('what3wordsDisplay');
+            const text = document.getElementById('what3wordsText');
+            const timestamp = document.getElementById('w3wTimestamp');
+            const retry = document.getElementById('w3wRetry');
+
+            display.classList.add('loading');
+            text.textContent = '///loading.location.words';
+            retry.style.display = 'none';
+
+            try {
+                const response = await fetch(`/api/what3words?lat=${location.lat}&lng=${location.lng}`);
+
+                if (!response.ok) throw new Error(`HTTP ${response.status}`);
+
+                const data = await response.json();
+
+                if (data.words && data.words !== 'location.not.configured') {
+                    what3wordsData = data.words;
+                    display.classList.remove('loading', 'error');
+                    text.textContent = `///${data.words}`;
+                    timestamp.textContent = new Date().toLocaleString();
+                } else {
+                    throw new Error('Service unavailable');
+                }
+            } catch (error) {
+                console.error('What3Words error:', error);
+                display.classList.remove('loading');
+                display.classList.add('error');
+                text.textContent = '///service.unavailable';
+                timestamp.textContent = 'Could not fetch What3Words';
+
+                if (w3wRetryCount < 3) {
+                    retry.style.display = 'block';
+                }
+            }
+        }
+
+        // Retry What3Words
+        function retryWhat3Words() {
+            w3wRetryCount++;
+            if (userLocation) {
+                fetchWhat3Words(userLocation);
+            }
+        }
+
+        // Handle location error
+        function handleLocationError(error, btn) {
+            const btnText = document.getElementById('findMeBtnText');
+            const btnIcon = document.getElementById('findMeBtnIcon');
+            const permissionHelper = document.getElementById('permissionHelper');
+
+            btn.className = 'find-me-btn error';
+            btn.disabled = false;
+
+            let errorMessage = '';
+            let showPermissionHelper = false;
+
+            if (error.code === 1 || error.message.includes('denied')) {
+                errorMessage = 'Location access denied';
+                btnText.textContent = 'Permission Denied';
+                btnIcon.textContent = '🚫';
+                showPermissionHelper = true;
+
+                showLocationStatus([
+                    {icon: '🚫', text: 'Location permission denied', status: 'error'},
+                    {icon: '⚠️', text: 'Please enable location access', status: 'pending'}
+                ]);
+            } else if (error.code === 2 || error.message.includes('unavailable')) {
+                errorMessage = 'Location unavailable';
+                btnText.textContent = 'Location Unavailable';
+                btnIcon.textContent = '📵';
+
+                showLocationStatus([
+                    {icon: '📵', text: 'GPS signal not available', status: 'error'},
+                    {icon: '💡', text: 'Try moving to an open area', status: 'pending'}
+                ]);
+            } else if (error.code === 3 || error.message.includes('timeout')) {
+                errorMessage = 'Location timeout';
+                btnText.textContent = 'Request Timed Out';
+                btnIcon.textContent = '⏱️';
+
+                showLocationStatus([
+                    {icon: '⏱️', text: 'Location request timed out', status: 'error'},
+                    {icon: '🔄', text: 'Click to retry', status: 'pending'}
+                ]);
+            } else {
+                errorMessage = 'Location error';
+                btnText.textContent = 'Location Error';
+                btnIcon.textContent = '❌';
+
+                showLocationStatus([
+                    {icon: '❌', text: 'Unknown location error', status: 'error'}
+                ]);
             }
 
+            if (showPermissionHelper) {
+                permissionHelper.classList.add('active');
+            }
+
+            setTimeout(() => {
+                btn.className = 'find-me-btn';
+                btnText.textContent = 'Try Again';
+                btnIcon.textContent = '📍';
+            }, 3000);
+        }
+
+        // Retry location
+        function retryLocation() {
+            document.getElementById('permissionHelper').classList.remove('active');
+            document.getElementById('findMeBtn').click();
+        }
+
+        // Voice Recording Setup
+        function setupVoiceRecording() {
+            const voiceBtn = document.getElementById('voiceBtn');
+
+            if (!voiceBtn) return;
+
             voiceBtn.addEventListener('click', async function() {
+                const btnText = document.getElementById('voiceBtnText');
+                const btnIcon = document.getElementById('voiceBtnIcon');
+
                 if (!isRecording) {
                     try {
                         const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
@@ -1178,155 +1006,172 @@
                         mediaRecorder.onstop = async () => {
                             const audioBlob = new Blob(audioChunks, { type: 'audio/webm' });
                             await captureAndStoreAudio(audioBlob);
-
-                            // Stop all tracks
                             stream.getTracks().forEach(track => track.stop());
                         };
 
                         mediaRecorder.start();
                         isRecording = true;
-                        this.textContent = '⏹️ Stop Recording';
-                        this.classList.add('recording');
-                        voiceStatus.textContent = 'Recording in progress... Speak clearly about the incident.';
-                        voiceStatus.classList.add('active');
-
-                        // Auto-stop after 2 minutes
-                        setTimeout(() => {
-                            if (isRecording) {
-                                stopRecording();
-                            }
-                        }, 120000);
-
+                        voiceBtn.classList.add('recording');
+                        btnText.textContent = 'Stop Recording';
+                        btnIcon.textContent = '⏹️';
                     } catch (error) {
                         console.error('Microphone access error:', error);
-                        alert('Microphone access is required for voice recording. Please check your browser permissions.');
+                        alert('Microphone access is required for voice recording.');
                     }
                 } else {
-                    stopRecording();
-                }
-            });
-
-            dontRecordBtn.addEventListener('click', function() {
-                if (isRecording) {
-                    // Stop recording without saving
-                    isRecording = false;
                     mediaRecorder.stop();
-                    audioChunks = [];
-                    voiceTranscription = null;
-
-                    const voiceBtn = document.getElementById('voiceBtn');
-                    voiceBtn.textContent = '🎤 Activate Whisper Voice';
+                    isRecording = false;
                     voiceBtn.classList.remove('recording');
-
-                    document.getElementById('voiceStatus').classList.remove('active');
+                    btnText.textContent = 'Record Voice Statement';
+                    btnIcon.textContent = '🎤';
                 }
-
-                // Proceed without recording
-                console.log('User chose not to record audio');
             });
         }
 
-        function stopRecording() {
-            if (mediaRecorder && isRecording) {
-                mediaRecorder.stop();
-                isRecording = false;
-
-                const voiceBtn = document.getElementById('voiceBtn');
-                voiceBtn.textContent = '🎤 Activate Whisper Voice';
-                voiceBtn.classList.remove('recording');
-
-                const voiceStatus = document.getElementById('voiceStatus');
-                voiceStatus.textContent = 'Processing audio...';
-
-                setTimeout(() => {
-                    voiceStatus.classList.remove('active');
-                }, 3000);
-            }
-        }
-
+        // Store audio
         async function captureAndStoreAudio(audioBlob) {
             const formData = new FormData();
             formData.append('audio', audioBlob, 'recording.webm');
-
-            // Add metadata
             formData.append('user_id', userData?.uid || 'anonymous');
             formData.append('incident_id', sessionStorage.getItem('currentIncidentId') || Date.now().toString());
             formData.append('timestamp', new Date().toISOString());
 
-            // Add location data if available
             if (userLocation) {
                 formData.append('latitude', userLocation.lat);
                 formData.append('longitude', userLocation.lng);
                 formData.append('accuracy', userLocation.accuracy);
             }
 
-            // Add what3words if available
             if (what3wordsData) {
                 formData.append('what3words', what3wordsData);
             }
 
             try {
-                const voiceStatus = document.getElementById('voiceStatus');
-                voiceStatus.textContent = 'Securing audio evidence...';
-
                 const response = await fetch('/api/store-evidence-audio', {
                     method: 'POST',
                     body: formData
                 });
 
                 if (response.ok) {
-                    const data = await response.json();
-                    voiceStatus.textContent = '✅ Audio evidence captured and secured';
-                    console.log('Audio evidence stored:', data);
-                } else {
-                    voiceStatus.textContent = '❌ Failed to secure audio evidence';
-                    console.error('Audio storage error:', response.status);
+                    console.log('Audio evidence stored successfully');
                 }
             } catch (error) {
                 console.error('Audio storage error:', error);
-                document.getElementById('voiceStatus').textContent = '❌ Failed to secure audio evidence';
             }
         }
 
-        // Setup continue button with what3words upload
-        function setupContinueButton() {
-            console.log('⏭️ Setting up continue button...');
-            const continueBtn = document.getElementById('continueBtn');
-            
-            if (!continueBtn) {
-                console.error('❌ Continue button not found in DOM');
-                return;
+        // Emergency buttons
+        function setupEmergencyButtons() {
+            document.getElementById('emergency999Btn').onclick = function() {
+                if (confirm('This will call 999 Emergency Services. Continue?')) {
+                    window.location.href = 'tel:999';
+                }
+            };
+
+            document.getElementById('recoveryBtn').onclick = function() {
+                if (emergencyContacts?.recovery_breakdown_number) {
+                    if (confirm(`Call recovery: ${emergencyContacts.recovery_breakdown_number}?`)) {
+                        window.location.href = `tel:${emergencyContacts.recovery_breakdown_number}`;
+                    }
+                } else {
+                    alert('No recovery service number available.');
+                }
+            };
+
+            document.getElementById('emergencyContactBtn').onclick = function() {
+                if (emergencyContacts?.emergency_contact) {
+                    if (confirm(`Call contact: ${emergencyContacts.emergency_contact}?`)) {
+                        window.location.href = `tel:${emergencyContacts.emergency_contact}`;
+                    }
+                } else {
+                    alert('No emergency contact available.');
+                }
+            };
+        }
+
+        // Check authentication
+        async function checkUserAuthentication() {
+            try {
+                const response = await fetch('/api/auth/status');
+                if (response.ok) {
+                    const data = await response.json();
+                    if (data.authenticated && data.user) {
+                        userData = data.user;
+
+                        // Fetch emergency contacts
+                        const contactsResponse = await fetch(`/api/user/${userData.uid}/emergency-contacts`);
+                        if (contactsResponse.ok) {
+                            emergencyContacts = await contactsResponse.json();
+                        }
+                    }
+                }
+            } catch (error) {
+                console.error('Auth check error:', error);
             }
-            
-            continueBtn.addEventListener('click', async function() {
-                console.log('⏭️ Continue button clicked');
+        }
+
+        // Initialize dashcam
+        function initializeDashcam() {
+            const currentUserId = userData?.uid || sessionStorage.getItem('userId');
+            const currentIncidentId = sessionStorage.getItem('currentIncidentId') || 'temp_' + Date.now();
+
+            if (currentUserId) {
+                dashcamUploader = new DashcamUploader({
+                    userId: currentUserId,
+                    incidentId: currentIncidentId,
+                    onProgress: (progress) => {
+                        const bar = document.getElementById('dashcamProgressBar');
+                        bar.style.width = `${progress}%`;
+                    },
+                    onSuccess: (result) => {
+                        console.log('Upload success:', result);
+                    },
+                    onError: (error) => {
+                        console.error('Upload error:', error);
+                    }
+                });
+
+                document.getElementById('dashcamBtn').addEventListener('click', () => {
+                    document.getElementById('dashcamInput').click();
+                });
+
+                document.getElementById('dashcamInput').addEventListener('change', (event) => {
+                    const file = event.target.files[0];
+                    if (file) {
+                        handleDashcamFile(file);
+                    }
+                });
+            }
+        }
+
+        // Handle dashcam file
+        async function handleDashcamFile(file) {
+            const preview = document.getElementById('dashcamPreview');
+            const video = document.getElementById('dashcamVideo');
+
+            preview.style.display = 'block';
+            video.src = URL.createObjectURL(file);
+
+            if (dashcamUploader) {
+                await dashcamUploader.uploadVideo(file);
+            }
+        }
+
+        // Continue button
+        function setupContinueButton() {
+            document.getElementById('continueBtn').addEventListener('click', async function() {
                 this.disabled = true;
                 this.textContent = 'Processing...';
 
-                // Capture and upload what3words screenshot
-                if (what3wordsData) {
-                    what3wordsStoragePath = await captureWhat3Words();
-                    console.log('What3words upload result:', what3wordsStoragePath ? 'Success' : 'Failed');
-                }
-
-                // Store all collected data in sessionStorage
                 const incidentData = {
                     userId: userData?.uid || null,
                     location: userLocation,
                     what3words: what3wordsData,
-                    what3wordsStoragePath: what3wordsStoragePath,
-                    voiceTranscription: voiceTranscription,
                     timestamp: new Date().toISOString(),
                     address: document.getElementById('addressText').textContent
                 };
 
-                // Save to sessionStorage
                 sessionStorage.setItem('incidentData', JSON.stringify(incidentData));
-
-                // Log what we're passing
-                console.log('Passing incident data to safety check:', incidentData);
-
-                // Redirect to safety check page
                 window.location.href = 'safety-check.html';
             });
         }
