@@ -1,5 +1,0 @@
-id,create_user_id,incident_report_id,audio_url,status,retry_count,created_at,processed_at,error_message
-5,ianring_120768,,https://yeuldqjggrrhhgozttoo.supabase.co/storage/v1/object/public/incident-audio/ianring_120768/recording_1758173210782.webm,error,0,2025-09-18 05:26:52.462+00,2025-09-18 06:40:07.764+00,"Failed to download audio file: {""__isStorageError"":true,""name"":""StorageUnknownError"",""originalError"":{}}"
-6,ianring_120768,,https://yeuldqjggrrhhgozttoo.supabase.co/storage/v1/object/public/incident-audio/ianring_120768/recording_1758178026684.webm,error,0,2025-09-18 06:47:08.349+00,2025-09-18 06:47:09.65+00,Request failed with status code 400
-7,ianring_120768,,https://yeuldqjggrrhhgozttoo.supabase.co/storage/v1/object/public/incident-audio/ianring_120768/recording_1758178573463.webm,error,0,2025-09-18 06:56:15.052+00,2025-09-18 06:56:18.753+00,audioUrl is not defined
-8,ianring_120768,,https://yeuldqjggrrhhgozttoo.supabase.co/storage/v1/object/public/incident-audio/ianring_120768/recording_1758179057250.webm,pending,0,2025-09-18 07:04:19.104+00,,

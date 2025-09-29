@@ -1,3 +1,0 @@
-id,create_user_id,incident_report_id,audio_url,status,retry_count,created_at,processed_at,error_message
-3,ianring_120768,,https://yeuldqjggrrhhgozttoo.supabase.co/storage/v1/object/public/incident-audio/ianring_120768/recording_1758170767193.webm,error,0,2025-09-18 04:46:08.785+00,2025-09-18 04:46:10.147+00,Request failed with status code 400
-4,ianring_120768,,https://yeuldqjggrrhhgozttoo.supabase.co/storage/v1/object/public/incident-audio/ianring_120768/recording_1758171932094.webm,error,0,2025-09-18 05:05:33.711+00,2025-09-18 05:11:16.082+00,Failed to download audio file: {}
