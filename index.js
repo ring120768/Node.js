@@ -4642,6 +4642,13 @@ if (process.env.NODE_ENV !== 'test') {
   });
 }
 
+// Log registered privacy endpoints for testing
+console.log('📋 Privacy Consent System Ready:');
+console.log('  POST /api/gdpr/consent - Record consent');
+console.log('  GET /api/gdpr/consent/:userId - Get consent status');
+console.log('  POST /api/gdpr/consent/check - Bulk consent check');
+console.log('  DELETE /api/gdpr/consent/:userId - Revoke consent');
+
 // Export for testing
 module.exports = { 
   app, 
