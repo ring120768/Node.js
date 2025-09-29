@@ -2735,6 +2735,10 @@ if (gdprModule) {
   Logger.info('📋 GDPR routes registered');
 }
 
+// Register Privacy Consent Routes
+privacyHandler.registerRoutes(app);
+console.log('✅ Privacy consent routes registered');
+
 // Get consent summary for a user
 app.get('/api/consent/summary/:userId', checkSharedKey, async (req, res) => {
   if (!consentManager) {
