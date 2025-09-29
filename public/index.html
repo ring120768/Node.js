@@ -704,20 +704,25 @@
       const consent = localStorage.getItem('privacyConsent');
       const consentDate = localStorage.getItem('privacyConsentDate');
 
-      // Check if consent is valid (within 6 months)
-      if (consent === 'accepted' && consentDate) {
+      // Check if any consent decision has been made (accepted or declined)
+      if (consent && consentDate) {
         const consentTimestamp = new Date(consentDate);
         const sixMonthsAgo = new Date();
         sixMonthsAgo.setMonth(sixMonthsAgo.getMonth() - 6);
 
         if (consentTimestamp > sixMonthsAgo) {
-          privacyConsentGiven = true;
-          console.log('✅ Valid privacy consent found');
-          return;
+          if (consent === 'accepted') {
+            privacyConsentGiven = true;
+            console.log('✅ Valid privacy consent found');
+          } else {
+            privacyConsentGiven = false;
+            console.log('📋 Privacy consent declined - limited mode');
+          }
+          return; // Don't show notice if decision already made
         }
       }
 
-      // Show privacy notice if consent not given or expired
+      // Only show privacy notice if no recent decision has been made
       setTimeout(() => {
         document.getElementById('privacyNotice').classList.add('show');
         console.log('📋 Showing privacy consent notice');
@@ -1044,45 +1049,80 @@
 
     // Accept privacy consent
     async function acceptPrivacy() {
-      privacyConsentGiven = true;
-      localStorage.setItem('privacyConsent', 'accepted');
-      localStorage.setItem('privacyConsentDate', new Date().toISOString());
+      try {
+        privacyConsentGiven = true;
+        localStorage.setItem('privacyConsent', 'accepted');
+        localStorage.setItem('privacyConsentDate', new Date().toISOString());
 
-      // Hide privacy notice
-      document.getElementById('privacyNotice').classList.remove('show');
+        // Hide privacy notice immediately
+        document.getElementById('privacyNotice').classList.remove('show');
 
-      // Record consent with backend
-      await recordPrivacyConsent('accepted');
+        // Show loading for user feedback
+        showLoading('Saving privacy preferences...');
 
-      // Also accept all cookies if cookie manager is available
-      if (window.cookieManager) {
-        await window.cookieManager.acceptAllCookies();
+        // Record consent with backend
+        await recordPrivacyConsent('accepted');
+
+        // Also accept all cookies if cookie manager is available
+        if (window.cookieManager) {
+          await window.cookieManager.acceptAllCookies();
+        }
+
+        // Re-initialize with consent
+        await initializeSystem();
+
+        console.log('✅ Privacy consent accepted - all cookies enabled');
+        
+        // Hide loading
+        hideLoading();
+
+      } catch (error) {
+        console.error('❌ Error accepting privacy consent:', error);
+        hideLoading();
+        
+        // Show error but don't re-show privacy notice
+        alert('⚠️ Privacy preferences saved locally, but there was an issue syncing with our servers. Your preferences are still active.');
       }
-
-      // Re-initialize with consent
-      await initializeSystem();
-
-      console.log('✅ Privacy consent accepted');
     }
 
     // Decline non-essential privacy processing
     async function declinePrivacy() {
-      privacyConsentGiven = false;
-      localStorage.setItem('privacyConsent', 'declined');
-      localStorage.setItem('privacyConsentDate', new Date().toISOString());
+      try {
+        privacyConsentGiven = false;
+        localStorage.setItem('privacyConsent', 'declined');
+        localStorage.setItem('privacyConsentDate', new Date().toISOString());
 
-      // Hide privacy notice
-      document.getElementById('privacyNotice').classList.remove('show');
+        // Hide privacy notice immediately
+        document.getElementById('privacyNotice').classList.remove('show');
 
-      // Record consent with backend
-      await recordPrivacyConsent('declined');
+        // Show loading
+        showLoading('Saving privacy preferences...');
 
-      // Show limited functionality message
-      setTimeout(() => {
-        alert('⚠️ Some features will be limited without consent. You can manage preferences in our Privacy Dashboard.');
-      }, 500);
+        // Record consent with backend
+        await recordPrivacyConsent('declined');
 
-      console.log('❌ Privacy consent declined - limited functionality mode');
+        // Decline cookies if cookie manager is available
+        if (window.cookieManager) {
+          await window.cookieManager.declineNonEssentialCookies();
+        }
+
+        console.log('❌ Privacy consent declined - limited functionality mode');
+        
+        // Hide loading
+        hideLoading();
+
+        // Show limited functionality message
+        setTimeout(() => {
+          alert('⚠️ Some features will be limited without consent. You can manage preferences in our Privacy Dashboard.');
+        }, 500);
+
+      } catch (error) {
+        console.error('❌ Error declining privacy consent:', error);
+        hideLoading();
+        
+        // Show error but don't re-show privacy notice
+        alert('⚠️ Privacy preferences saved locally.');
+      }
     }
 
     // Record privacy consent with backend
