@@ -1,0 +1,27 @@
+
+{
+  "validUser": {
+    "create_user_id": "test_user_001",
+    "full_name": "John Smith",
+    "email": "john.smith@example.com",
+    "phone_number": "07123456789",
+    "gdpr_consent": true,
+    "legal_support": "Yes"
+  },
+  "validIncident": {
+    "create_user_id": "test_user_001",
+    "incident_date": "2025-01-15",
+    "incident_time": "14:30",
+    "incident_location": "M1 Junction 15, Northampton",
+    "what3words": "filled.count.soap",
+    "weather_conditions": "Clear and dry",
+    "road_conditions": "Good",
+    "detailed_account_of_what_happened": "I was driving in the middle lane when a blue Ford Focus changed lanes suddenly and collided with my rear passenger side."
+  },
+  "narrativeRequest": {
+    "create_user_id": "test_user_001", 
+    "transcription_text": "I was driving on the A1 at approximately 60 mph when the accident occurred. The other vehicle, a red Honda Civic, failed to indicate and moved into my lane, causing a collision.",
+    "target_length": "350-500 words",
+    "include_evidence_section": true
+  }
+}

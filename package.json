@@ -1,3 +1,4 @@
+
 {
   "name": "car-crash-lawyer-ai-system",
   "version": "2.0.0",
@@ -6,7 +7,14 @@
   "scripts": {
     "start": "node index.js",
     "dev": "nodemon index.js",
-    "test": "jest --env=node --detectOpenHandles --forceExit"
+    "test": "jest --env=node --detectOpenHandles --forceExit",
+    "test:unit": "jest test/unit --env=node",
+    "test:integration": "jest test/integration --env=node --detectOpenHandles",
+    "test:production": "NODE_ENV=test jest test/production.test.js --env=node",
+    "test:modules": "node testModules.js",
+    "test:transcription": "node test-transcription.js",
+    "test:watch": "jest --watch --env=node",
+    "test:coverage": "jest --coverage --env=node"
   },
   "dependencies": {
     "@supabase/supabase-js": "^2.57.4",
