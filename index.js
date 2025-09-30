@@ -1907,7 +1907,7 @@ app.get('/status', (req, res) => {
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Car Crash Lawyer AI - Enhanced Privacy Compliance System</title>
+    <title>Car Crash Lawyer AI - Simplified GDPR Compliance System</title>
     <style>
         body { font-family: Arial, sans-serif; padding: 40px; background: #f5f5f5; }
         .container { max-width: 900px; margin: 0 auto; background: white; padding: 30px; border-radius: 10px; box-shadow: 0 2px 10px rgba(0,0,0,0.1); }
@@ -1942,7 +1942,7 @@ app.get('/status', (req, res) => {
 </head>
 <body>
     <div class="container">
-        <h1>🚗 Car Crash Lawyer AI - Enhanced Privacy Compliance System</h1>
+        <h1>🚗 Car Crash Lawyer AI - Simplified GDPR Compliance System</h1>
         <p class="status">✅ Server is running - Simple GDPR Manager Integration</p>
 
         <div class="section">
@@ -1963,10 +1963,9 @@ app.get('/status', (req, res) => {
         </div>
 
         <div class="section">
-            <h2>🛡️ Privacy & GDPR Endpoints:</h2>
+            <h2>🛡️ Simplified GDPR Compliance:</h2>
             <div class="endpoint">
                 <strong>Simple GDPR Manager Routes:</strong> <span class="new-badge">NEW</span><br>
-                <code>POST /api/gdpr/register</code> - Register user for privacy services<br>
                 <code>POST /api/gdpr/consent</code> - Grant/update consent status<br>
                 <code>GET /api/gdpr/status/:userId</code> - Check consent status<br>
                 <code>GET /api/gdpr/export/:userId</code> - Request data export<br>
@@ -2039,13 +2038,13 @@ app.get('/status', (req, res) => {
         </div>
 
         <div class="section">
-            <h3>Privacy Compliance Status:</h3>
+            <h3>GDPR Compliance Status:</h3>
             <ul>
                 <li>Simple GDPR Manager: ${gdprManager ? '✅ Active' : '❌ Not configured'} <span class="new-badge">NEW</span></li>
-                <li>Consent Management: ✅ Implemented</li>
-                <li>Audit Logging: ✅ Comprehensive</li>
-                <li>Data Subject Rights: ✅ Automated</li>
-                <li>Simplified Compliance: ✅ Enabled <span class="new-badge">NEW</span></li>
+                <li>Consent Management: ✅ Simplified Implementation</li>
+                <li>Audit Logging: ✅ Basic Compliance</li>
+                <li>Data Subject Rights: ✅ Automated (Export/Delete)</li>
+                <li>UK GDPR Focus: ✅ Streamlined <span class="new-badge">SIMPLIFIED</span></li>
             </ul>
         </div>
 
