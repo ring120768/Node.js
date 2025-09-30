@@ -1320,6 +1320,7 @@ app.post('/api/generate-legal-narrative-from-ids', checkSharedKey, checkGDPRCons
 
 Logger.info('✅ Consent management endpoints registered');
 
+
 // --- UTILITY FUNCTIONS ---
 
 function processTypeformData(formResponse) {
@@ -2056,7 +2057,7 @@ app.get('/api/debug/transcription-full', checkSharedKey, async (req, res) => {
         .from('transcription_queue')
         .select('status, count(*)')
         .group('status');
-      
+
       const { data: recentQueue } = await supabase
         .from('transcription_queue')
         .select('*')
@@ -2083,12 +2084,12 @@ app.get('/api/debug/transcription-full', checkSharedKey, async (req, res) => {
     try {
       const { data: buckets } = await supabase.storage.listBuckets();
       const audioStorage = buckets?.find(b => b.name === 'incident-audio');
-      
+
       if (audioStorage) {
         const { data: files } = await supabase.storage
           .from('incident-audio')
           .list('', { limit: 5 });
-        
+
         diagnostics.storage_check = {
           bucket_exists: true,
           recent_files: files?.length || 0,
@@ -2107,7 +2108,7 @@ app.get('/api/debug/transcription-full', checkSharedKey, async (req, res) => {
         headers: { 'Authorization': `Bearer ${process.env.OPENAI_API_KEY}` },
         timeout: 5000
       });
-      
+
       diagnostics.openai_test = {
         api_accessible: testResponse.ok,
         status_code: testResponse.status
@@ -2366,7 +2367,8 @@ app.get('/status', (req, res) => {
                 <code>POST /api/update-transcription</code> - Update/edit transcription<br>
                 <code>POST /api/save-transcription</code> - Save transcription<br>
                 <code>GET /api/user/:userId/latest-transcription</code> - Get user's latest transcription<br>
-                <code>POST /api/generate-ai-summary</code> - Generate AI summary from transcription
+                <code>POST /api/generate-ai-summary</code> - Generate AI summary from transcription<br>
+                <strong>NEW:</strong> <code>GET /api/transcription-data</code> - Fetch transcription directly from DB
             </div>
         </div>
 
@@ -2889,6 +2891,7 @@ if (process.env.NODE_ENV !== 'test') {
     Logger.info('  - GET  /api/dashcam/signed-url/:userId/:incidentId/:filename - Get video signed URL');
     Logger.info('  - GET  /api/dashcam/videos/:userId/:incidentId - Get user videos');
     Logger.info('  - DELETE /api/dashcam/video/:evidenceId - Delete video');
+    Logger.info('  - GET  /api/transcription-data - Fetch transcription directly from DB [NEW]');
 
     Logger.success('✅ All systems operational with Simplified GDPR compliance - Ready to serve requests');
     Logger.success('🔧 Simplified GDPR Manager integrated - Privacy compliance enabled');

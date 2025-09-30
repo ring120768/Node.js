@@ -555,23 +555,29 @@
                 console.log('Transcription status response:', statusData);
 
                 // Check if we have a completed transcription
-                if (statusData.success && statusData.status === 'COMPLETED' && statusData.transcription) {
-                    console.log('✅ Transcription found:', statusData.transcription.substring(0, 100) + '...');
-                    currentData.transcription = statusData.transcription;
-                    displayTranscription(statusData.transcription);
-                    
-                    // Update metadata if available
-                    if (statusData.metadata) {
-                        updateMetadata(statusData.metadata);
-                    }
-                    
-                    hideLoadingMessage();
-                    updateStatus('Transcription loaded successfully');
-                    retryCount = 0; // Reset retry count on success
+                if (statusData.success && statusData.status === 'COMPLETED') {
+                    if (statusData.transcription && statusData.transcription.trim() !== '') {
+                        console.log('✅ Transcription found:', statusData.transcription.substring(0, 100) + '...');
+                        currentData.transcription = statusData.transcription;
+                        displayTranscription(statusData.transcription);
+                        
+                        // Update metadata if available
+                        if (statusData.metadata) {
+                            updateMetadata(statusData.metadata);
+                        }
+                        
+                        hideLoadingMessage();
+                        updateStatus('Transcription loaded successfully');
+                        retryCount = 0; // Reset retry count on success
 
-                    // Generate AI summary and legal analysis
-                    await generateAISummary();
-                    await generateLegalAnalysis();
+                        // Generate AI summary and legal analysis
+                        await generateAISummary();
+                        await generateLegalAnalysis();
+                    } else {
+                        console.log('⚠️ Transcription completed but text is empty - checking database directly');
+                        // Try to fetch from database directly
+                        await fetchTranscriptionFromDatabase();
+                    }
                     
                 } else if (statusData.status === 'FAILED' || statusData.error) {
                     console.error('❌ Transcription failed:', statusData.error);
@@ -591,7 +597,7 @@
                     
                 } else {
                     console.error('❌ Unexpected status response:', statusData);
-                    showError(`Unexpected response format: ${JSON.stringify(statusData)}`);
+                    showError(`Unexpected response format. Status: ${statusData.status}, Success: ${statusData.success}, Has transcription: ${!!statusData.transcription}`);
                 }
 
             } catch (error) {
@@ -604,6 +610,57 @@
                 } else {
                     showError(`Failed to load transcription after ${maxRetries} attempts: ${error.message}`);
                 }
+            }
+        }
+
+        // ============================
+        // Fallback Database Fetch
+        // ============================
+        async function fetchTranscriptionFromDatabase() {
+            try {
+                showLoadingMessage('Fetching transcription from database...');
+                
+                const headers = {
+                    'Content-Type': 'application/json'
+                };
+                if (appConfig?.apiKey) {
+                    headers['X-Api-Key'] = appConfig.apiKey;
+                }
+
+                // Try to fetch transcription by user ID and incident ID
+                const dbUrl = `/api/transcription-data?userId=${currentData.userId}&queueId=${currentData.queueId}`;
+                console.log('Fetching transcription from database:', dbUrl);
+                
+                const response = await fetch(dbUrl, {
+                    headers: headers
+                });
+
+                if (!response.ok) {
+                    throw new Error(`Database fetch failed: ${response.status}`);
+                }
+
+                const dbData = await response.json();
+                console.log('Database response:', dbData);
+
+                if (dbData.success && dbData.transcription && dbData.transcription.trim() !== '') {
+                    console.log('✅ Transcription found in database:', dbData.transcription.substring(0, 100) + '...');
+                    currentData.transcription = dbData.transcription;
+                    displayTranscription(dbData.transcription);
+                    
+                    hideLoadingMessage();
+                    updateStatus('Transcription loaded from database');
+                    retryCount = 0;
+
+                    // Generate AI summary and legal analysis
+                    await generateAISummary();
+                    await generateLegalAnalysis();
+                } else {
+                    throw new Error('No transcription found in database');
+                }
+
+            } catch (error) {
+                console.error('Database fetch error:', error);
+                showError(`Failed to retrieve transcription from database: ${error.message}. Please try refreshing the page.`);
             }
         }
 
