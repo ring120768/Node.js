@@ -619,13 +619,15 @@ if (supabaseEnabled && process.env.OPENAI_API_KEY) {
   try {
     transcriptionService = new TranscriptionService(supabase, Logger);
 
-    // Create the wrapper functions
+    // Create the wrapper functions with proper error handling
     processTranscriptionFromBuffer = async (queueId, buffer, userId, incidentId, audioUrl) => {
-      return transcriptionService.processTranscriptionFromBuffer(queueId, buffer, userId, incidentId, audioUrl);
+      Logger.info(`🎯 Using REAL transcription service for queue ${queueId}`);
+      return await transcriptionService.processTranscriptionFromBuffer(queueId, buffer, userId, incidentId, audioUrl);
     };
 
     processTranscriptionQueue = async () => {
-      return transcriptionService.processTranscriptionQueue();
+      Logger.info('🔄 Processing queue with REAL transcription service');
+      return await transcriptionService.processTranscriptionQueue();
     };
 
     Logger.success('✅ Real Transcription Service initialized with OpenAI!');
