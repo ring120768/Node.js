@@ -47,16 +47,18 @@ try {
   console.warn('PDF generation modules not found - PDF features will be disabled', error.message);
 }
 
-// Import mock functions
+// Import the REAL transcription service
+const TranscriptionService = require('./lib/transcriptionService');
+let transcriptionService = null;
+
+// Keep other mock functions for now (for parts not yet implemented)
 const {
   logGDPRActivity,
-  processTranscriptionQueue,
   initializeDashcamUpload,
   generateLegalNarrative,
   prepareAccidentDataForNarrative,
   extractKeyPointsFromNarrative,
-  generateAISummary,
-  processTranscriptionFromBuffer
+  generateAISummary // Remove this if you want to use the one in TranscriptionService
 } = require('./lib/mockFunctions');
 
 // --- ENVIRONMENT VARIABLE VALIDATION ---
@@ -611,6 +613,43 @@ if (supabaseEnabled && supabase) {
 } else {
   Logger.warn('Simplified modules not initialized - Supabase not available');
 }
+
+// ========================================
+// INITIALIZE TRANSCRIPTION SERVICE
+// ========================================
+if (supabaseEnabled && process.env.OPENAI_API_KEY) {
+  try {
+    transcriptionService = new TranscriptionService(supabase, Logger);
+    Logger.success('✅ Transcription Service initialized with OpenAI');
+    
+    // Set up queue processing interval
+    transcriptionQueueInterval = setInterval(() => {
+      transcriptionService.processTranscriptionQueue();
+    }, 30000); // Process every 30 seconds
+    
+  } catch (error) {
+    Logger.error('Failed to initialize transcription service:', error);
+  }
+}
+
+// Create wrapper functions for compatibility
+const processTranscriptionFromBuffer = async (...args) => {
+  if (!transcriptionService) {
+    throw new Error('Transcription service not initialized - check OPENAI_API_KEY');
+  }
+  return transcriptionService.processTranscriptionFromBuffer(...args);
+};
+
+const processTranscriptionQueue = async () => {
+  if (!transcriptionService) {
+    Logger.warn('Transcription service not initialized');
+    return;
+  }
+  return transcriptionService.processTranscriptionQueue();
+};
+
+// Make transcriptionStatuses globally accessible for the service
+global.transcriptionStatuses = transcriptionStatuses;
 
 // ========================================
 // SIMPLIFIED GDPR ENDPOINTS
