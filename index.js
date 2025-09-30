@@ -905,7 +905,7 @@ console.log('✅ Simple webhook test endpoint registered at /webhook/signup-simp
 // ========================================
 // CONSOLIDATED LEGAL NARRATIVE ENDPOINT - FIXED
 // ========================================
-app.post('/api/generate-legal-narrative', checkSharedKey, gdprManager ? gdprManager.requireConsent() : (req, res, next) => next(), async (req, res) => {
+app.post('/api/generate-legal-narrative', checkSharedKey, checkGDPRConsent, async (req, res) => {
   try {
     const {
       create_user_id,
@@ -1634,19 +1634,24 @@ app.get('/api/gdpr/test', async (req, res) => {
     
     // Test consent flow using the actual SimpleGDPRManager methods
     try {
-      // Set consent
+      // Set consent in user_signup table
       const { data: setData, error: setError } = await supabase
-        .rpc('update_user_consent', {
-          p_user_id: testUserId,
-          p_consent: true,
-          p_ip_address: req.clientIp || '127.0.0.1'
-        });
+        .from('user_signup')
+        .upsert({
+          create_user_id: testUserId,
+          gdpr_consent: true,
+          gdpr_consent_date: new Date().toISOString()
+        }, {
+          onConflict: 'create_user_id'
+        })
+        .select()
+        .single();
 
       if (setError) throw setError;
 
-      // Check consent
+      // Check consent from user_signup table
       const { data: checkData, error: checkError } = await supabase
-        .from('gdpr_consent')
+        .from('user_signup')
         .select('gdpr_consent, gdpr_consent_date')
         .eq('create_user_id', testUserId)
         .single();

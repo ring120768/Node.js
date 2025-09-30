@@ -10,13 +10,20 @@ const supabase = createClient(
 async function testGDPR() {
     console.log('Testing GDPR functions...');
 
-    // Test consent update via stored procedure
+    // Test consent update in user_signup table
+    const testUserId = 'test_user_' + Date.now();
+    
     const { data, error } = await supabase
-        .rpc('update_user_consent', {
-            p_user_id: 'test_user_' + Date.now(),
-            p_consent: true,
-            p_ip_address: '127.0.0.1'
-        });
+        .from('user_signup')
+        .upsert({
+            create_user_id: testUserId,
+            gdpr_consent: true,
+            gdpr_consent_date: new Date().toISOString()
+        }, {
+            onConflict: 'create_user_id'
+        })
+        .select()
+        .single();
 
     if (error) {
         console.error('❌ Error:', error);
@@ -24,10 +31,11 @@ async function testGDPR() {
         console.log('✅ Success:', data);
     }
 
-    // Check consent status
+    // Check consent status from user_signup
     const { data: consent } = await supabase
-        .from('gdpr_consent')
-        .select('*')
+        .from('user_signup')
+        .select('create_user_id, gdpr_consent, gdpr_consent_date')
+        .eq('create_user_id', testUserId)
         .limit(5);
 
     console.log('Current consents:', consent);
