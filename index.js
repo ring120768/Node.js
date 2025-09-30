@@ -47,6 +47,18 @@ try {
   console.warn('PDF generation modules not found - PDF features will be disabled', error.message);
 }
 
+// Import mock functions
+const {
+  logGDPRActivity,
+  processTranscriptionQueue,
+  initializeDashcamUpload,
+  generateLegalNarrative,
+  prepareAccidentDataForNarrative,
+  extractKeyPointsFromNarrative,
+  generateAISummary,
+  processTranscriptionFromBuffer
+} = require('./lib/mockFunctions');
+
 // --- ENVIRONMENT VARIABLE VALIDATION ---
 const validateEnvironment = () => {
   const requiredVars = {
@@ -547,6 +559,10 @@ const initSupabase = () => {
 
 // Initialize Supabase
 supabaseEnabled = initSupabase();
+
+// Make variables globally accessible for mock functions
+global.supabase = supabase;
+global.supabaseEnabled = supabaseEnabled;
 
 // ========================================
 // INITIALIZE GDPR SERVICES
@@ -2529,127 +2545,6 @@ let wsHeartbeat = null;
 let activeSessions = new Map();
 let userSessions = new Map();
 let transcriptionStatuses = new Map();
-
-// Mock functions for missing implementations
-async function logGDPRActivity(userId, activity, details, req) {
-  if (supabaseEnabled) {
-    try {
-      await supabase
-        .from('gdpr_audit_log')
-        .insert({
-          create_user_id: userId,
-          activity_type: activity,
-          details: details
-        });
-    } catch (error) {
-      Logger.warn('GDPR audit log failed:', error.message);
-    }
-  }
-}
-
-async function processTranscriptionQueue() {
-  if (!supabaseEnabled) {
-    Logger.warn('Cannot process transcription queue - Supabase not configured');
-    return;
-  }
-
-  Logger.info('Processing transcription queue...');
-
-  try {
-    // Get pending transcriptions from queue
-    const { data: queueItems, error } = await supabase
-      .from('transcription_queue')
-      .select('*')
-      .eq('status', CONSTANTS.TRANSCRIPTION_STATUS.PENDING)
-      .order('created_at', { ascending: true })
-      .limit(5);
-
-    if (error) {
-      Logger.error('Error fetching transcription queue:', error);
-      return;
-    }
-
-    if (!queueItems || queueItems.length === 0) {
-      Logger.debug('No pending transcriptions in queue');
-      return;
-    }
-
-    Logger.info(`Found ${queueItems.length} pending transcriptions`);
-
-    // Process each item in the queue
-    for (const item of queueItems) {
-      try {
-        // Update status to processing
-        await supabase
-          .from('transcription_queue')
-          .update({ status: CONSTANTS.TRANSCRIPTION_STATUS.PROCESSING })
-          .eq('id', item.id);
-
-        // TODO: Implement actual transcription processing
-        // This should download audio from item.audio_url and process with OpenAI Whisper
-        Logger.info(`Processing transcription for queue item ${item.id}`);
-
-        // For now, mark as failed with explanation
-        await supabase
-          .from('transcription_queue')
-          .update({
-            status: CONSTANTS.TRANSCRIPTION_STATUS.FAILED,
-            error_message: 'Transcription processing not yet implemented'
-          })
-          .eq('id', item.id);
-
-      } catch (itemError) {
-        Logger.error(`Error processing queue item ${item.id}:`, itemError);
-
-        // Update retry count and status
-        await supabase
-          .from('transcription_queue')
-          .update({
-            status: CONSTANTS.TRANSCRIPTION_STATUS.FAILED,
-            error_message: itemError.message,
-            retry_count: (item.retry_count || 0) + 1
-          })
-          .eq('id', item.id);
-      }
-    }
-
-  } catch (error) {
-    Logger.error('Error in processTranscriptionQueue:', error);
-  }
-}
-
-async function initializeDashcamUpload() {
-  Logger.info('Initializing dashcam upload...');
-  // Placeholder for dashcam initialization
-}
-
-async function generateLegalNarrative(transcription, data, userId, options) {
-  if (!process.env.OPENAI_API_KEY) {
-    throw new Error('OPENAI_API_KEY not configured - legal narrative generation requires OpenAI API access');
-  }
-
-  // TODO: Implement actual legal narrative generation logic
-  // This should use OpenAI API to generate a comprehensive legal narrative
-  // based on the transcription and accident data provided
-  throw new Error('Legal narrative generation not yet implemented - please use the aiSummaryGenerator module');
-}
-
-async function prepareAccidentDataForNarrative(userId, incidentId) {
-  return { ai_transcription: "Sample transcription data" };
-}
-
-function extractKeyPointsFromNarrative(narrative) {
-  return ["Sample key point 1", "Sample key point 2"];
-}
-
-async function generateAISummary(transcription, userId, incidentId) {
-  return "Sample AI summary for testing purposes.";
-}
-
-async function processTranscriptionFromBuffer(queueId, buffer, userId, incidentId, audioUrl) {
-  Logger.info(`Processing transcription for queue ${queueId}`);
-  // Placeholder for transcription processing
-}
 
 // --- SERVER STARTUP ---
 const PORT = process.env.PORT || 3000;
