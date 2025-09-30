@@ -586,12 +586,66 @@ if (supabaseEnabled && supabase) {
 }
 
 // ========================================
-// ADD GDPR ROUTES
+// SIMPLIFIED GDPR ENDPOINTS
 // ========================================
-if (gdprManager) {
-  gdprManager.registerRoutes(app);
-  Logger.info('📋 GDPR Manager routes registered');
-}
+
+// Simplified GDPR endpoints
+app.get('/api/gdpr/status/:userId', async (req, res) => {
+  try {
+    const { userId } = req.params;
+    const hasConsent = await gdpr.hasValidConsent(userId);
+    const history = await gdpr.getUserGDPRHistory(userId);
+    
+    res.json({
+      user_id: userId,
+      has_consent: hasConsent,
+      recent_requests: history
+    });
+  } catch (error) {
+    res.status(500).json({ error: 'Failed to fetch GDPR status' });
+  }
+});
+
+app.get('/api/gdpr/export/:userId', async (req, res) => {
+  try {
+    const { userId } = req.params;
+    
+    const hasConsent = await gdpr.hasValidConsent(userId);
+    if (!hasConsent) {
+      return res.status(403).json({ error: 'No consent on file' });
+    }
+    
+    const exportData = await gdpr.exportUserData(userId);
+    
+    if (exportData.success) {
+      res.json(exportData);
+    } else {
+      res.status(500).json({ error: exportData.error });
+    }
+  } catch (error) {
+    res.status(500).json({ error: 'Export failed' });
+  }
+});
+
+app.delete('/api/gdpr/delete/:userId', async (req, res) => {
+  try {
+    const { userId } = req.params;
+    const result = await gdpr.deleteUserData(userId);
+    
+    if (result.success) {
+      res.json({
+        message: 'All user data has been deleted',
+        details: result
+      });
+    } else {
+      res.status(500).json({ error: result.error });
+    }
+  } catch (error) {
+    res.status(500).json({ error: 'Deletion failed' });
+  }
+});
+
+Logger.info('📋 Simplified GDPR endpoints registered');
 
 
 app.post('/webhook/signup', webhookLimiter, checkSharedKey, async (req, res) => {
