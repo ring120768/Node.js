@@ -1926,6 +1926,20 @@ app.get('/transcription.html', (req, res) => {
   res.redirect(redirectUrl);
 });
 
+// Add redirect for /transcribe.html specifically
+app.get('/transcribe.html', (req, res) => {
+  const queryString = req.originalUrl.split('?')[1] || '';
+  const redirectUrl = `/transcription-status.html${queryString ? '?' + queryString : ''}`;
+
+  Logger.info('File redirect', {
+    from: '/transcribe.html',
+    to: redirectUrl,
+    params: queryString
+  });
+
+  res.redirect(redirectUrl);
+});
+
 // --- MAINROUTES ---
 app.get('/status', (req, res) => {
   // Removed gdprBadges as it was specific to the old module
