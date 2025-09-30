@@ -438,12 +438,25 @@ async function checkGDPRConsent(req, res, next) {
       .single();
 
     if (!user || !user.gdpr_consent) {
-      await logGDPRActivity(userId, 'CONSENT_CHECK_FAILED', {
-        reason: 'No consent found',
-        ip: req.clientIp,
-        requestId: req.requestId,
-        action: 'proceeding_without_consent'
-      }, req);
+      if (gdprManager) {
+        await gdprManager.auditLog(userId, 'CONSENT_CHECK_FAILED', {
+          reason: 'No consent found',
+          ip: req.clientIp,
+          requestId: req.requestId,
+          action: 'proceeding_without_consent'
+        }, req);
+      } else {
+        await supabase.from('gdpr_audit_log').insert({
+          create_user_id: userId,
+          activity_type: 'CONSENT_CHECK_FAILED',
+          details: {
+            reason: 'No consent found',
+            ip: req.clientIp,
+            requestId: req.requestId,
+            action: 'proceeding_without_consent'
+          }
+        });
+      }
 
       req.hasConsent = false;
       req.gdprWarning = 'User consent not found in database';
@@ -683,11 +696,15 @@ app.post('/webhook/signup', webhookLimiter, checkSharedKey, async (req, res) => 
           request_id: req.requestId
         }, req);
       } else {
-        await logGDPRActivity(userId || 'unknown', 'SIGNUP_WEBHOOK_PROCESSED_WITHOUT_CONSENT', {
-          details: warningMessage,
-          ip: req.clientIp,
-          request_id: req.requestId
-        }, req);
+        await supabase.from('gdpr_audit_log').insert({
+          create_user_id: userId || 'unknown',
+          activity_type: 'SIGNUP_WEBHOOK_PROCESSED_WITHOUT_CONSENT',
+          details: {
+            details: warningMessage,
+            ip: req.clientIp,
+            request_id: req.requestId
+          }
+        });
       }
       // Continue processing, but log the consent issue.
     }
@@ -782,12 +799,16 @@ app.post('/webhook/incident-report', webhookLimiter, checkSharedKey, async (req,
           request_id: req.requestId
         }, req);
       } else {
-        await logGDPRActivity(userId, 'INCIDENT_REPORT_WEBHOOK_PROCESSED_WITHOUT_CONSENT', {
-          incidentId: incidentId,
-          details: warningMessage,
-          ip: req.clientIp,
-          request_id: req.requestId
-        }, req);
+        await supabase.from('gdpr_audit_log').insert({
+          create_user_id: userId,
+          activity_type: 'INCIDENT_REPORT_WEBHOOK_PROCESSED_WITHOUT_CONSENT',
+          details: {
+            incidentId: incidentId,
+            details: warningMessage,
+            ip: req.clientIp,
+            request_id: req.requestId
+          }
+        });
       }
       // Continue processing, but log the consent issue.
     }
@@ -2533,7 +2554,7 @@ async function processTranscriptionQueue() {
   }
 
   Logger.info('Processing transcription queue...');
-  
+
   try {
     // Get pending transcriptions from queue
     const { data: queueItems, error } = await supabase
@@ -2567,11 +2588,11 @@ async function processTranscriptionQueue() {
         // TODO: Implement actual transcription processing
         // This should download audio from item.audio_url and process with OpenAI Whisper
         Logger.info(`Processing transcription for queue item ${item.id}`);
-        
+
         // For now, mark as failed with explanation
         await supabase
           .from('transcription_queue')
-          .update({ 
+          .update({
             status: CONSTANTS.TRANSCRIPTION_STATUS.FAILED,
             error_message: 'Transcription processing not yet implemented'
           })
@@ -2579,11 +2600,11 @@ async function processTranscriptionQueue() {
 
       } catch (itemError) {
         Logger.error(`Error processing queue item ${item.id}:`, itemError);
-        
+
         // Update retry count and status
         await supabase
           .from('transcription_queue')
-          .update({ 
+          .update({
             status: CONSTANTS.TRANSCRIPTION_STATUS.FAILED,
             error_message: itemError.message,
             retry_count: (item.retry_count || 0) + 1
@@ -2606,7 +2627,7 @@ async function generateLegalNarrative(transcription, data, userId, options) {
   if (!process.env.OPENAI_API_KEY) {
     throw new Error('OPENAI_API_KEY not configured - legal narrative generation requires OpenAI API access');
   }
-  
+
   // TODO: Implement actual legal narrative generation logic
   // This should use OpenAI API to generate a comprehensive legal narrative
   // based on the transcription and accident data provided
