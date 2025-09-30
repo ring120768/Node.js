@@ -613,42 +613,48 @@ if (supabaseEnabled && supabase) {
   Logger.warn('Simplified modules not initialized - Supabase not available');
 }
 
-// Make transcriptionStatuses globally accessible for the service
-global.transcriptionStatuses = transcriptionStatuses;
-
-// ========================================
-// INITIALIZE TRANSCRIPTION SERVICE
-// ========================================
+// Initialize Real Transcription Service
 if (supabaseEnabled && process.env.OPENAI_API_KEY) {
   try {
     transcriptionService = new TranscriptionService(supabase, Logger);
-    Logger.success('✅ Transcription Service initialized with OpenAI');
     
-    // Set up queue processing interval
-    transcriptionQueueInterval = setInterval(() => {
-      transcriptionService.processTranscriptionQueue();
-    }, 30000); // Process every 30 seconds
+    // Create the wrapper functions
+    processTranscriptionFromBuffer = async (queueId, buffer, userId, incidentId, audioUrl) => {
+      return transcriptionService.processTranscriptionFromBuffer(queueId, buffer, userId, incidentId, audioUrl);
+    };
+    
+    processTranscriptionQueue = async () => {
+      return transcriptionService.processTranscriptionQueue();
+    };
+    
+    // Make transcriptionStatuses globally available
+    global.transcriptionStatuses = transcriptionStatuses;
+    
+    // Start queue processing
+    if (!transcriptionQueueInterval) {
+      transcriptionQueueInterval = setInterval(() => {
+        processTranscriptionQueue();
+      }, 30000); // Every 30 seconds
+    }
+    
+    Logger.success('✅ Real Transcription Service initialized with OpenAI!');
+    Logger.info(`OpenAI API Key detected: ${process.env.OPENAI_API_KEY.substring(0, 7)}...`);
     
   } catch (error) {
     Logger.error('Failed to initialize transcription service:', error);
+    
+    // Fallback to mock functions
+    const mocks = require('./lib/mockFunctions');
+    processTranscriptionFromBuffer = mocks.processTranscriptionFromBuffer;
+    processTranscriptionQueue = mocks.processTranscriptionQueue;
   }
+} else {
+  // Use mock functions if no OpenAI key
+  Logger.warn('⚠️ Using mock transcription (no OpenAI key or Supabase)');
+  const mocks = require('./lib/mockFunctions');
+  processTranscriptionFromBuffer = mocks.processTranscriptionFromBuffer;
+  processTranscriptionQueue = mocks.processTranscriptionQueue;
 }
-
-// Create wrapper functions for compatibility
-processTranscriptionFromBuffer = async (...args) => {
-  if (!transcriptionService) {
-    throw new Error('Transcription service not initialized - check OPENAI_API_KEY');
-  }
-  return transcriptionService.processTranscriptionFromBuffer(...args);
-};
-
-processTranscriptionQueue = async () => {
-  if (!transcriptionService) {
-    Logger.warn('Transcription service not initialized');
-    return;
-  }
-  return transcriptionService.processTranscriptionQueue();
-};
 
 // ========================================
 // SIMPLIFIED GDPR ENDPOINTS
