@@ -141,14 +141,6 @@
             background: #f8f9fa;
         }
 
-        .cookie-controls {
-            background: #e8f5e8;
-            border: 1px solid #4caf50;
-            padding: 20px;
-            border-radius: 8px;
-            margin: 30px 0;
-        }
-
         .btn {
             background: #2a5298;
             color: white;
@@ -164,22 +156,6 @@
 
         .btn:hover {
             background: #1e3c72;
-        }
-
-        .btn-secondary {
-            background: #6c757d;
-        }
-
-        .btn-secondary:hover {
-            background: #5a6268;
-        }
-
-        .btn-danger {
-            background: #dc3545;
-        }
-
-        .btn-danger:hover {
-            background: #c82333;
         }
 
         .footer-nav {
@@ -205,60 +181,11 @@
             font-size: 0.9rem;
         }
 
-        .toggle-switch {
-            position: relative;
-            display: inline-block;
-            width: 60px;
-            height: 34px;
-            margin: 0 10px;
-        }
-
-        .toggle-switch input {
-            opacity: 0;
-            width: 0;
-            height: 0;
-        }
-
-        .slider {
-            position: absolute;
-            cursor: pointer;
-            top: 0;
-            left: 0;
-            right: 0;
-            bottom: 0;
-            background-color: #ccc;
-            transition: .4s;
-            border-radius: 34px;
-        }
-
-        .slider:before {
-            position: absolute;
-            content: "";
-            height: 26px;
-            width: 26px;
-            left: 4px;
-            bottom: 4px;
-            background-color: white;
-            transition: .4s;
-            border-radius: 50%;
-        }
-
-        input:checked + .slider {
-            background-color: #4caf50;
-        }
-
-        input:checked + .slider:before {
-            transform: translateX(26px);
-        }
-
-        .cookie-preference {
-            display: flex;
-            align-items: center;
-            justify-content: space-between;
-            padding: 15px;
-            border: 1px solid #ddd;
+        .contact-info {
+            background: #f8f9fa;
+            padding: 20px;
             border-radius: 8px;
-            margin: 10px 0;
+            margin: 20px 0;
         }
     </style>
 </head>
@@ -328,49 +255,29 @@
                 </tbody>
             </table>
 
-            <h2>4. Manage Cookie Preferences</h2>
-
-            <div class="cookie-controls">
-                <div class="cookie-preference">
-                    <div>
-                        <strong>Essential Cookies</strong>
-                        <p>Required for basic functionality</p>
-                    </div>
-                    <span style="color: #666;">Always Active</span>
-                </div>
-
-                <div class="cookie-preference">
-                    <div>
-                        <strong>Analytics Cookies</strong>
-                    </div>
-                    <label class="toggle-switch">
-                        <input type="checkbox" id="analyticsToggle" checked>
-                        <span class="slider"></span>
-                    </label>
-                </div>
-
-                <div class="cookie-preference">
-                    <div>
-                        <strong>Marketing Cookies</strong>
-                    </div>
-                    <label class="toggle-switch">
-                        <input type="checkbox" id="marketingToggle">
-                        <span class="slider"></span>
-                    </label>
-                </div>
-
-                <div style="margin-top: 20px;">
-                    <button onclick="savePreferences()" class="btn">Save Preferences</button>
-                    <button onclick="acceptAll()" class="btn">Accept All</button>
-                    <button onclick="rejectAll()" class="btn btn-danger">Reject Non-Essential</button>
-                </div>
-            </div>
+            <h2>4. Managing Cookies</h2>
+            <p>You can control cookies through your browser settings. Most browsers allow you to:</p>
+            <ul>
+                <li>View and delete existing cookies</li>
+                <li>Block cookies from specific websites</li>
+                <li>Block all cookies</li>
+                <li>Set preferences for different types of cookies</li>
+            </ul>
+            <p>Note that disabling certain cookies may affect website functionality.</p>
 
             <h2>5. Browser Controls</h2>
-            <p>You can control cookies through your browser settings. Note that disabling certain cookies may affect website functionality.</p>
+            <p>You can control cookies through your browser settings. Instructions for common browsers:</p>
+            <ul>
+                <li><strong>Chrome:</strong> Settings > Privacy and Security > Cookies and other site data</li>
+                <li><strong>Firefox:</strong> Settings > Privacy & Security > Cookies and Site Data</li>
+                <li><strong>Safari:</strong> Preferences > Privacy > Manage Website Data</li>
+                <li><strong>Edge:</strong> Settings > Cookies and site permissions</li>
+            </ul>
 
             <h2>6. Contact</h2>
-            <p>For cookie-related questions: <a href="mailto:privacy@carcrashlawyerai.com">privacy@carcrashlawyerai.com</a></p>
+            <div class="contact-info">
+                <p>For cookie-related questions: <a href="mailto:privacy@carcrashlawyerai.com">privacy@carcrashlawyerai.com</a></p>
+            </div>
 
             <div class="last-updated">
                 <p><strong>Last Updated:</strong> September 28, 2025</p>
@@ -382,89 +289,7 @@
             <a href="/" class="btn" style="background: #2a5298; color: white; text-decoration: none; margin-right: 15px;">← Back to Home</a>
             <a href="/privacy-policy.html">Privacy Policy</a>
             <a href="/terms-of-service.html">Terms of Service</a>
-            <a href="/privacy-policy.html">Privacy Policy</a>
         </div>
     </div>
-
-    <script>
-        // Load current cookie preferences
-        function loadPreferences() {
-            const preferences = JSON.parse(localStorage.getItem('cookiePreferences') || '{}');
-
-            document.getElementById('analyticsToggle').checked = preferences.analytics !== false;
-            document.getElementById('marketingToggle').checked = preferences.marketing === true;
-        }
-
-        // Save cookie preferences
-        async function savePreferences() {
-            const preferences = {
-                essential: true, // Always true
-                analytics: document.getElementById('analyticsToggle').checked,
-                marketing: document.getElementById('marketingToggle').checked,
-                timestamp: new Date().toISOString()
-            };
-
-            // Save locally
-            localStorage.setItem('cookiePreferences', JSON.stringify(preferences));
-
-            // Send to server for GDPR compliance
-            try {
-                await fetch('/api/gdpr/consent', {
-                    method: 'POST',
-                    headers: {
-                        'Content-Type': 'application/json'
-                    },
-                    body: JSON.stringify({
-                        consent_type: 'cookies',
-                        preferences: preferences,
-                        user_id: localStorage.getItem('userId') || 'anonymous'
-                    })
-                });
-            } catch (error) {
-                console.log('Failed to save preferences to server:', error);
-            }
-
-            alert('Cookie preferences saved successfully!');
-
-            // Apply preferences immediately
-            applyPreferences(preferences);
-        }
-
-        // Accept all cookies
-        function acceptAll() {
-            document.getElementById('analyticsToggle').checked = true;
-            document.getElementById('marketingToggle').checked = true;
-            savePreferences();
-        }
-
-        // Reject non-essential cookies
-        function rejectAll() {
-            document.getElementById('analyticsToggle').checked = false;
-            document.getElementById('marketingToggle').checked = false;
-            savePreferences();
-        }
-
-        // Apply cookie preferences
-        function applyPreferences(preferences) {
-            // Disable/enable analytics tracking
-            if (!preferences.analytics) {
-                // Disable Google Analytics
-                window['ga-disable-GA_MEASUREMENT_ID'] = true;
-            }
-
-            // Disable/enable marketing cookies
-            if (!preferences.marketing) {
-                // Remove marketing-related cookies
-                document.cookie.split(";").forEach(function(c) { 
-                    document.cookie = c.replace(/^ +/, "").replace(/=.*/, "=;expires=" + new Date().toUTCString() + ";path=/"); 
-                });
-            }
-        }
-
-        // Initialize on page load
-        document.addEventListener('DOMContentLoaded', function() {
-            loadPreferences();
-        });
-    </script>
 </body>
 </html>

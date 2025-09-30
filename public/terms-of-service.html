@@ -135,14 +135,6 @@
             background: #1e3c72;
         }
 
-        .btn-secondary {
-            background: #6c757d;
-        }
-
-        .btn-secondary:hover {
-            background: #5a6268;
-        }
-
         .footer-nav {
             text-align: center;
             margin-top: 40px;
@@ -286,49 +278,7 @@
             <a href="/" class="btn" style="background: #2a5298; color: white; text-decoration: none; margin-right: 15px;">← Back to Home</a>
             <a href="/privacy-policy.html">Privacy Policy</a>
             <a href="/cookie-policy.html">Cookie Policy</a>
-            <a href="/privacy-policy.html">Privacy Policy</a>
         </div>
     </div>
-
-    <script>
-        // Add smooth scrolling for internal links
-        document.querySelectorAll('a[href^="#"]').forEach(anchor => {
-            anchor.addEventListener('click', function (e) {
-                e.preventDefault();
-                document.querySelector(this.getAttribute('href')).scrollIntoView({
-                    behavior: 'smooth'
-                });
-            });
-        });
-
-        // Track acceptance of terms (if user is logged in)
-        async function trackTermsAcceptance() {
-            try {
-                const userId = localStorage.getItem('userId');
-                if (userId) {
-                    await fetch('/api/gdpr/consent', {
-                        method: 'POST',
-                        headers: {
-                            'Content-Type': 'application/json'
-                        },
-                        body: JSON.stringify({
-                            user_id: userId,
-                            consent_type: 'terms_of_service',
-                            consent_status: 'viewed',
-                            timestamp: new Date().toISOString(),
-                            version: '3.0'
-                        })
-                    });
-                }
-            } catch (error) {
-                console.log('Terms tracking failed (not critical):', error);
-            }
-        }
-
-        // Track terms viewing on page load
-        document.addEventListener('DOMContentLoaded', function() {
-            trackTermsAcceptance();
-        });
-    </script>
 </body>
 </html>
