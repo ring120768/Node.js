@@ -406,12 +406,13 @@ function checkSharedKey(req, res, next) {
 
 // --- GDPR CONSENT CHECK MIDDLEWARE (NON-BLOCKING) ---
 async function checkGDPRConsent(req, res, next) {
-  const userId = req.body?.userId || req.body?.create_user_id || req.params?.userId;
+  const userId = req.body?.userId || req.body?.create_user_id || req.params?.userId || req.query?.userId;
 
   if (!userId) {
     // No user ID - add warning to request and continue
     req.hasConsent = false;
     req.gdprWarning = 'No user ID provided';
+    Logger.debug('GDPR check: No user ID provided');
     return next();
   }
 
@@ -419,6 +420,7 @@ async function checkGDPRConsent(req, res, next) {
   if (!/^[a-zA-Z0-9_-]{3,64}$/.test(userId)) {
     req.gdprWarning = 'Invalid user ID format';
     req.hasConsent = false;
+    Logger.debug(`GDPR check: Invalid user ID format: ${userId}`);
     return next();
   }
 
@@ -430,7 +432,9 @@ async function checkGDPRConsent(req, res, next) {
       req.gdprWarning = consentStatus.consent_given ? null : 'User consent not found or expired';
 
       if (!consentStatus.consent_given) {
-        Logger.info(`⚠️ Processing without consent for user ${userId} on ${req.path}`);
+        Logger.info(`⚠️ Processing without consent for user ${userId} on ${req.path} - continuing anyway`);
+      } else {
+        Logger.debug(`✅ User ${userId} has valid consent`);
       }
       return next();
     } catch (error) {
@@ -438,6 +442,7 @@ async function checkGDPRConsent(req, res, next) {
       req.hasConsent = false;
       req.gdprWarning = 'Consent check failed';
       req.gdprError = error.message;
+      Logger.info(`⚠️ Consent check failed for user ${userId} - continuing anyway`);
       return next();
     }
   }
@@ -446,6 +451,7 @@ async function checkGDPRConsent(req, res, next) {
   if (!supabaseEnabled) {
     req.hasConsent = true; // Assume consent if no database
     req.gdprWarning = 'Database not configured';
+    Logger.debug('GDPR check: Database not configured, assuming consent');
     return next();
   }
 
@@ -462,7 +468,8 @@ async function checkGDPRConsent(req, res, next) {
           reason: 'No consent found',
           ip: req.clientIp,
           requestId: req.requestId,
-          action: 'proceeding_without_consent'
+          action: 'proceeding_without_consent',
+          path: req.path
         }, req);
       } else {
         await supabase.from('gdpr_audit_log').insert({
@@ -472,20 +479,22 @@ async function checkGDPRConsent(req, res, next) {
             reason: 'No consent found',
             ip: req.clientIp,
             requestId: req.requestId,
-            action: 'proceeding_without_consent'
+            action: 'proceeding_without_consent',
+            path: req.path
           }
         });
       }
 
       req.hasConsent = false;
       req.gdprWarning = 'User consent not found in database';
-      Logger.info(`⚠️ Processing without consent for user ${userId} on ${req.path}`);
+      Logger.info(`⚠️ Processing without consent for user ${userId} on ${req.path} - continuing anyway`);
     } else {
       req.hasConsent = true;
       req.gdprConsent = {
         granted: true,
         date: user.gdpr_consent_date
       };
+      Logger.debug(`✅ User ${userId} has valid consent from database`);
     }
 
     // Always continue - never block
@@ -497,6 +506,7 @@ async function checkGDPRConsent(req, res, next) {
     req.gdprWarning = 'Consent check failed';
     req.gdprError = error.message;
 
+    Logger.info(`⚠️ Consent check error for user ${userId} - continuing anyway: ${error.message}`);
     // Always continue even on error
     next();
   }
@@ -1909,7 +1919,7 @@ app.get('/test/transcription-queue', async (req, res) => {
 });
 
 // Get detailed transcription status
-app.get('/api/transcription-status/:queueId', async (req, res) => {
+app.get('/api/transcription-status/:queueId', checkGDPRConsent, async (req, res) => {
   if (!supabaseEnabled) {
     return res.status(503).json({ error: 'Service not configured' });
   }
@@ -1918,6 +1928,17 @@ app.get('/api/transcription-status/:queueId', async (req, res) => {
     const { queueId } = req.params;
     const { userId } = req.query;
 
+    Logger.info(`Getting transcription status for queueId: ${queueId}, userId: ${userId}`);
+
+    // Log GDPR access for audit purposes (but don't block)
+    if (gdprManager && userId) {
+      await gdprManager.auditLog(userId, 'TRANSCRIPTION_STATUS_CHECK', {
+        queueId: queueId,
+        consent_status: req.hasConsent,
+        warning: req.gdprWarning
+      }, req);
+    }
+
     // Get queue status
     const { data: queueItem, error: queueError } = await supabase
       .from('transcription_queue')
@@ -1925,27 +1946,66 @@ app.get('/api/transcription-status/:queueId', async (req, res) => {
       .eq('id', queueId)
       .single();
 
-    if (queueError) throw queueError;
+    if (queueError) {
+      Logger.warn('Queue item not found:', queueError.message);
+      throw queueError;
+    }
+
+    Logger.info(`Queue status: ${queueItem.status} for user: ${queueItem.create_user_id}`);
 
     let transcriptionData = null;
     let metadata = {};
 
-    if (queueItem.status === 'COMPLETED' && queueItem.transcription_id) {
-      // Get the actual transcription
-      const { data: transcription, error: transcriptionError } = await supabase
-        .from('ai_transcription')
-        .select('*')
-        .eq('id', queueItem.transcription_id)
-        .single();
+    if (queueItem.status === 'COMPLETED') {
+      // Try multiple methods to get transcription
+      let transcription = null;
 
-      if (!transcriptionError && transcription) {
+      // Method 1: By transcription_id
+      if (queueItem.transcription_id) {
+        const { data: transcriptionById, error: errorById } = await supabase
+          .from('ai_transcription')
+          .select('*')
+          .eq('id', queueItem.transcription_id)
+          .single();
+
+        if (!errorById && transcriptionById) {
+          transcription = transcriptionById;
+          Logger.success('Found transcription by transcription_id');
+        }
+      }
+
+      // Method 2: By user and incident
+      if (!transcription && queueItem.create_user_id) {
+        const query = supabase
+          .from('ai_transcription')
+          .select('*')
+          .eq('create_user_id', queueItem.create_user_id)
+          .order('created_at', { ascending: false });
+
+        if (queueItem.incident_report_id) {
+          query.eq('incident_report_id', queueItem.incident_report_id);
+        }
+
+        const { data: transcriptionByUser, error: errorByUser } = await query.limit(1).single();
+
+        if (!errorByUser && transcriptionByUser) {
+          transcription = transcriptionByUser;
+          Logger.success('Found transcription by user/incident');
+        }
+      }
+
+      if (transcription) {
         transcriptionData = transcription.transcription_text;
         metadata = {
           audioQuality: 'Good',
-          processingTime: `${Math.round((new Date(queueItem.processed_at) - new Date(queueItem.created_at)) / 1000)}s`,
+          processingTime: queueItem.processed_at ? 
+            `${Math.round((new Date(queueItem.processed_at) - new Date(queueItem.created_at)) / 1000)}s` : 'N/A',
           confidence: 'high',
           createdAt: transcription.created_at
         };
+        Logger.success(`Returning transcription: ${transcriptionData.substring(0, 100)}...`);
+      } else {
+        Logger.warn('Transcription marked as completed but text not found');
       }
     }
 
@@ -1958,6 +2018,8 @@ app.get('/api/transcription-status/:queueId', async (req, res) => {
       error: queueItem.error_message,
       userId: queueItem.create_user_id,
       audioUrl: queueItem.audio_url,
+      hasConsent: req.hasConsent,
+      gdprWarning: req.gdprWarning,
       requestId: req.requestId
     });
 
@@ -1966,13 +2028,14 @@ app.get('/api/transcription-status/:queueId', async (req, res) => {
     res.status(500).json({
       error: 'Failed to get transcription status',
       details: error.message,
+      stack: process.env.NODE_ENV === 'development' ? error.stack : undefined,
       requestId: req.requestId
     });
   }
 });
 
 // Alternative endpoint for transcription data (used by review page)
-app.get('/api/transcription-data', async (req, res) => {
+app.get('/api/transcription-data', checkGDPRConsent, async (req, res) => {
   if (!supabaseEnabled) {
     return res.status(503).json({ error: 'Service not configured' });
   }
@@ -1987,6 +2050,17 @@ app.get('/api/transcription-data', async (req, res) => {
       });
     }
 
+    Logger.info(`Getting transcription data for queueId: ${queueId}, userId: ${userId}`);
+
+    // Log GDPR access for audit purposes (but don't block)
+    if (gdprManager && userId) {
+      await gdprManager.auditLog(userId, 'TRANSCRIPTION_DATA_ACCESS', {
+        queueId: queueId,
+        consent_status: req.hasConsent,
+        warning: req.gdprWarning
+      }, req);
+    }
+
     // Get queue item
     const { data: queueItem, error: queueError } = await supabase
       .from('transcription_queue')
@@ -1997,23 +2071,79 @@ app.get('/api/transcription-data', async (req, res) => {
     if (queueError) {
       Logger.warn('Queue item not found:', queueError.message);
       return res.status(404).json({
-        error: 'Transcription not found',
+        error: 'Transcription queue item not found',
+        details: queueError.message,
         requestId: req.requestId
       });
     }
 
-    // If completed, get the transcription
-    if (queueItem.status === 'COMPLETED') {
-      const { data: transcription, error: transcriptionError } = await supabase
-        .from('ai_transcription')
-        .select('*')
-        .eq('create_user_id', queueItem.create_user_id)
-        .eq('incident_report_id', queueItem.incident_report_id)
-        .order('created_at', { ascending: false })
-        .limit(1)
-        .single();
+    Logger.info(`Queue item found: status=${queueItem.status}, user=${queueItem.create_user_id}`);
 
-      if (!transcriptionError && transcription) {
+    // If completed, try multiple approaches to get the transcription
+    if (queueItem.status === 'COMPLETED') {
+      let transcription = null;
+      let transcriptionError = null;
+
+      // Method 1: Try to get by transcription_id if it exists
+      if (queueItem.transcription_id) {
+        Logger.info(`Trying to get transcription by ID: ${queueItem.transcription_id}`);
+        const { data: transcriptionById, error: errorById } = await supabase
+          .from('ai_transcription')
+          .select('*')
+          .eq('id', queueItem.transcription_id)
+          .single();
+
+        if (!errorById && transcriptionById) {
+          transcription = transcriptionById;
+          Logger.success('Found transcription by ID');
+        } else {
+          Logger.warn('Transcription not found by ID:', errorById?.message);
+        }
+      }
+
+      // Method 2: Try to get by user and incident IDs
+      if (!transcription && queueItem.create_user_id) {
+        Logger.info(`Trying to get transcription by user_id: ${queueItem.create_user_id}`);
+        const query = supabase
+          .from('ai_transcription')
+          .select('*')
+          .eq('create_user_id', queueItem.create_user_id)
+          .order('created_at', { ascending: false });
+
+        if (queueItem.incident_report_id) {
+          query.eq('incident_report_id', queueItem.incident_report_id);
+        }
+
+        const { data: transcriptionByUser, error: errorByUser } = await query.limit(1).single();
+
+        if (!errorByUser && transcriptionByUser) {
+          transcription = transcriptionByUser;
+          Logger.success('Found transcription by user/incident ID');
+        } else {
+          Logger.warn('Transcription not found by user ID:', errorByUser?.message);
+        }
+      }
+
+      // Method 3: Get the most recent transcription for this user
+      if (!transcription && queueItem.create_user_id) {
+        Logger.info(`Trying to get most recent transcription for user: ${queueItem.create_user_id}`);
+        const { data: recentTranscriptions, error: recentError } = await supabase
+          .from('ai_transcription')
+          .select('*')
+          .eq('create_user_id', queueItem.create_user_id)
+          .order('created_at', { ascending: false })
+          .limit(5);
+
+        if (!recentError && recentTranscriptions && recentTranscriptions.length > 0) {
+          transcription = recentTranscriptions[0];
+          Logger.success(`Found most recent transcription (${recentTranscriptions.length} total)`);
+        } else {
+          Logger.warn('No recent transcriptions found:', recentError?.message);
+        }
+      }
+
+      if (transcription && transcription.transcription_text) {
+        Logger.success(`Returning transcription: ${transcription.transcription_text.substring(0, 100)}...`);
         return res.json({
           success: true,
           transcription: transcription.transcription_text,
@@ -2022,20 +2152,40 @@ app.get('/api/transcription-data', async (req, res) => {
           metadata: {
             audioQuality: 'Good',
             confidence: 'High',
-            createdAt: transcription.created_at
+            createdAt: transcription.created_at,
+            processingTime: queueItem.processed_at ? 
+              `${Math.round((new Date(queueItem.processed_at) - new Date(queueItem.created_at)) / 1000)}s` : 'N/A'
+          },
+          requestId: req.requestId
+        });
+      } else {
+        Logger.warn('Transcription completed but no text found');
+        return res.json({
+          success: false,
+          transcription: null,
+          queueId: queueId,
+          status: 'COMPLETED',
+          error: 'Transcription completed but text not found in database',
+          debug: {
+            hasTranscriptionId: !!queueItem.transcription_id,
+            hasUserId: !!queueItem.create_user_id,
+            hasIncidentId: !!queueItem.incident_report_id
           },
           requestId: req.requestId
         });
       }
     }
 
-    // Return status without transcription
+    // Return status for non-completed transcriptions
     res.json({
       success: true,
       transcription: null,
       queueId: queueId,
       status: queueItem.status,
       error: queueItem.error_message,
+      message: queueItem.status === 'PROCESSING' ? 'Transcription is still being processed' :
+               queueItem.status === 'PENDING' ? 'Transcription is queued for processing' :
+               queueItem.status === 'FAILED' ? 'Transcription failed' : 'Unknown status',
       requestId: req.requestId
     });
 
@@ -2044,6 +2194,7 @@ app.get('/api/transcription-data', async (req, res) => {
     res.status(500).json({
       error: 'Failed to get transcription data',
       details: error.message,
+      stack: process.env.NODE_ENV === 'development' ? error.stack : undefined,
       requestId: req.requestId
     });
   }
