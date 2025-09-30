@@ -729,7 +729,6 @@
             async checkExistingConsent(userId) {
                 // Quick check from localStorage
                 const localConsent = localStorage.getItem('gdpr_consent');
-                const consentDate = localStorage.getItem('gdpr_consent_date');
 
                 if (localConsent === 'true' && !AppState.session.requireConsent) {
                     Utils.log('GDPR consent found in localStorage');
@@ -742,7 +741,7 @@
                 }
 
                 try {
-                    // Check gdpr_consent table first
+                    // Check gdpr_consent table
                     const { data: consentData, error: consentError } = await AppState.supabase
                         .from('gdpr_consent')
                         .select('gdpr_consent, gdpr_consent_date')

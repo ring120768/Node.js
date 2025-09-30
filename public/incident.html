@@ -700,7 +700,12 @@
         </button>
     </nav>
 
-    <!-- Script remains the same as previous version -->
+    <!-- Footer -->
+    <footer style="text-align: center; padding: 20px; font-size: 14px; color: var(--text-light);">
+        <a href="privacy-policy.html" style="color: var(--primary); text-decoration: none; margin-right: 15px;">Privacy Policy</a>
+        <a href="terms-of-service.html" style="color: var(--primary); text-decoration: none;">Terms of Service</a>
+    </footer>
+
     <script>
         // Global variables
         let userData = null;
@@ -713,6 +718,10 @@
         let audioChunks = [];
         let isRecording = false;
         let mapLoaded = false;
+
+        // Removed privacy banner/popup JavaScript
+        // Removed geolocation detection code
+        // Removed automatic jurisdiction detection code
 
         // Initialize
         document.addEventListener('DOMContentLoaded', async () => {
@@ -918,7 +927,9 @@
                     link.href = 'https://unpkg.com/leaflet@1.9.4/dist/leaflet.css';
                     document.head.appendChild(link);
 
-                    setTimeout(initializeMap, 100);
+                    setTimeout(() => {
+                        if(userLocation) initializeMap();
+                    }, 100);
                 };
                 document.head.appendChild(script);
             } else if (userLocation) {
@@ -1020,7 +1031,7 @@
 
                     try {
                         console.log('🎤 Requesting microphone access...');
-                        
+
                         // Request microphone permission with optimized constraints
                         const constraints = {
                             audio: {
@@ -1065,7 +1076,7 @@
                             mimeType,
                             audioBitsPerSecond: 128000
                         } : {};
-                        
+
                         mediaRecorder = new MediaRecorder(stream, options);
                         audioChunks = [];
 
@@ -1081,16 +1092,16 @@
                             try {
                                 const audioBlob = new Blob(audioChunks, { type: mimeType || 'audio/webm' });
                                 console.log('📦 Audio blob created:', audioBlob.size, 'bytes');
-                                
+
                                 if (audioBlob.size === 0) {
                                     throw new Error('Recording is empty - no audio data captured');
                                 }
 
                                 await storeAudio(audioBlob);
-                                
+
                                 document.getElementById('documentStatus').textContent = 'Statement recorded';
                                 document.getElementById('documentStatus').classList.add('success');
-                                
+
                                 console.log('✅ Audio stored successfully');
                             } catch (storeError) {
                                 console.error('❌ Error storing audio:', storeError);
@@ -1116,7 +1127,7 @@
                         this.classList.add('recording');
                         btnText.textContent = 'Stop Recording';
                         btnIcon.textContent = '⏹';
-                        
+
                         console.log('🎤 Recording started successfully');
 
                         // Auto-stop after 5 minutes for safety
