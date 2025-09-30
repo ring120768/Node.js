@@ -482,9 +482,8 @@ let supabaseEnabled = false;
 let realtimeChannels = {};
 
 // ========================================
-// GDPR MODULE INITIALIZATION - NEW
+// GDPR SERVICE INITIALIZATION
 // ========================================
-let gdprModule = null; // This will now be the SimpleGDPRManager instance
 
 const initSupabase = () => {
   const url = process.env.SUPABASE_URL;
@@ -521,8 +520,7 @@ const initSupabase = () => {
     });
     Logger.success('Supabase initialized successfully');
 
-    // Initialize GDPR tables if they don't exist
-    // initializeGDPRTables(); // This function might be specific to the old module
+    // GDPR tables are managed by SimpleGDPRManager
 
     // Initialize Supabase Realtime (optional enhancement)
     initializeSupabaseRealtime();
@@ -538,7 +536,7 @@ const initSupabase = () => {
 supabaseEnabled = initSupabase();
 
 // ========================================
-// INITIALIZE GDPR MANAGER
+// INITIALIZE GDPR SERVICES
 // ========================================
 let gdprManager = null;
 let gdpr = null;
@@ -547,10 +545,10 @@ if (supabaseEnabled) {
   try {
     gdprManager = new SimpleGDPRManager(process.env.SUPABASE_URL, process.env.SUPABASE_SERVICE_ROLE_KEY);
     gdpr = new GDPRService(process.env.SUPABASE_URL, process.env.SUPABASE_SERVICE_ROLE_KEY);
-    Logger.success('✅ GDPR Manager initialized');
+    Logger.success('✅ Simple GDPR Manager initialized');
     Logger.success('✅ GDPR Service initialized');
   } catch (error) {
-    Logger.warn('GDPR Manager not available:', error.message);
+    Logger.warn('GDPR services not available:', error.message);
     gdprManager = null;
     gdpr = null;
   }
