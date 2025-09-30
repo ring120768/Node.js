@@ -617,32 +617,27 @@ if (supabaseEnabled && supabase) {
 if (supabaseEnabled && process.env.OPENAI_API_KEY) {
   try {
     transcriptionService = new TranscriptionService(supabase, Logger);
-    
+
     // Create the wrapper functions
     processTranscriptionFromBuffer = async (queueId, buffer, userId, incidentId, audioUrl) => {
       return transcriptionService.processTranscriptionFromBuffer(queueId, buffer, userId, incidentId, audioUrl);
     };
-    
+
     processTranscriptionQueue = async () => {
       return transcriptionService.processTranscriptionQueue();
     };
-    
-    // Make transcriptionStatuses globally available
-    global.transcriptionStatuses = transcriptionStatuses;
-    
+
     // Start queue processing
-    if (!transcriptionQueueInterval) {
-      transcriptionQueueInterval = setInterval(() => {
-        processTranscriptionQueue();
-      }, 30000); // Every 30 seconds
-    }
-    
+    transcriptionQueueInterval = setInterval(() => {
+      processTranscriptionQueue();
+    }, 30000); // Every 30 seconds
+
     Logger.success('✅ Real Transcription Service initialized with OpenAI!');
     Logger.info(`OpenAI API Key detected: ${process.env.OPENAI_API_KEY.substring(0, 7)}...`);
-    
+
   } catch (error) {
     Logger.error('Failed to initialize transcription service:', error);
-    
+
     // Fallback to mock functions
     const mocks = require('./lib/mockFunctions');
     processTranscriptionFromBuffer = mocks.processTranscriptionFromBuffer;
@@ -1857,7 +1852,7 @@ app.get('/api/debug/transcription', (req, res) => {
     timestamp: new Date().toISOString(),
     openai: {
       hasKey: !!process.env.OPENAI_API_KEY,
-      keyPrefix: process.env.OPENAI_API_KEY ? 
+      keyPrefix: process.env.OPENAI_API_KEY ?
         process.env.OPENAI_API_KEY.substring(0, 10) : 'NOT SET'
     },
     service: {
