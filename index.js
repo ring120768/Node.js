@@ -627,13 +627,17 @@ if (supabaseEnabled && process.env.OPENAI_API_KEY) {
       return transcriptionService.processTranscriptionQueue();
     };
 
-    // Start queue processing
-    transcriptionQueueInterval = setInterval(() => {
-      processTranscriptionQueue();
-    }, 30000); // Every 30 seconds
-
     Logger.success('✅ Real Transcription Service initialized with OpenAI!');
     Logger.info(`OpenAI API Key detected: ${process.env.OPENAI_API_KEY.substring(0, 7)}...`);
+
+    // Start queue processing AFTER successful initialization
+    transcriptionQueueInterval = setInterval(() => {
+      processTranscriptionQueue().catch(error => {
+        Logger.error('Queue processing error:', error);
+      });
+    }, 30000); // Every 30 seconds
+
+    Logger.success('✅ Transcription queue processing started');
 
   } catch (error) {
     Logger.error('Failed to initialize transcription service:', error);
@@ -642,6 +646,7 @@ if (supabaseEnabled && process.env.OPENAI_API_KEY) {
     const mocks = require('./lib/mockFunctions');
     processTranscriptionFromBuffer = mocks.processTranscriptionFromBuffer;
     processTranscriptionQueue = mocks.processTranscriptionQueue;
+    transcriptionQueueInterval = null;
   }
 } else {
   // Use mock functions if no OpenAI key
@@ -649,6 +654,7 @@ if (supabaseEnabled && process.env.OPENAI_API_KEY) {
   const mocks = require('./lib/mockFunctions');
   processTranscriptionFromBuffer = mocks.processTranscriptionFromBuffer;
   processTranscriptionQueue = mocks.processTranscriptionQueue;
+  transcriptionQueueInterval = null;
 }
 
 // ========================================
