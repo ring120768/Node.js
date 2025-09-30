@@ -26,7 +26,7 @@ const compression = require('compression');
 const { createClient } = require('@supabase/supabase-js');
 
 // ========================================
-// GDPR MODULE IMPORT - SIMPLIFIED
+// GDPR MODULE IMPORT
 // ========================================
 const SimpleGDPRManager = require('./lib/simpleGDPRManager');
 
@@ -537,16 +537,16 @@ const initSupabase = () => {
 supabaseEnabled = initSupabase();
 
 // ========================================
-// INITIALIZE GDPR MANAGER - SIMPLIFIED
+// INITIALIZE GDPR MANAGER
 // ========================================
 let gdprManager = null;
 
 if (supabaseEnabled) {
   try {
-    gdprManager = new SimpleGDPRManager(supabase);
-    Logger.success('✅ Simple GDPR Manager initialized');
+    gdprManager = new SimpleGDPRManager(process.env.SUPABASE_URL, process.env.SUPABASE_SERVICE_ROLE_KEY);
+    Logger.success('✅ GDPR Manager initialized');
   } catch (error) {
-    Logger.warn('Simple GDPR Manager not available:', error.message);
+    Logger.warn('GDPR Manager not available:', error.message);
     gdprManager = null;
   }
 }
@@ -581,12 +581,11 @@ if (supabaseEnabled && supabase) {
 }
 
 // ========================================
-// ADD GDPR ROUTES - SIMPLIFIED
+// ADD GDPR ROUTES
 // ========================================
-// Register the routes from the SimpleGDPRManager
 if (gdprManager) {
   gdprManager.registerRoutes(app);
-  Logger.info('📋 Simple GDPR Manager routes registered');
+  Logger.info('📋 GDPR Manager routes registered');
 }
 
 
@@ -1291,20 +1290,18 @@ app.get('/api/config', (req, res) => {
 app.get('/health', async (req, res) => {
   const externalServices = await checkExternalServices();
 
-  // UpdategdprStatus to reflect SimpleGDPRManager
   const gdprStatus = gdprManager ? {
-      module: 'simple_gdpr_manager_active',
+      module: 'gdpr_manager_active',
       consent_management: true,
       audit_logging: true,
       dsr_handling: true,
-      simplified_compliance: true
+      compliance: true
     } : {
       module: 'not configured'
     };
 
-  // Update enhancedModules to reflect SimpleGDPRManager
   const enhancedModules = {
-      simpleGDPRManager: gdprManager !== null,
+      gdprManager: gdprManager !== null,
       webhookDebugger: webhookDebugger !== null,
       storedWebhooks: webhookDebugger ? webhookDebugger.webhookStore.size : 0,
       webhookStoreStatus: webhookDebugger ?
@@ -1331,7 +1328,7 @@ app.get('/health', async (req, res) => {
     },
     enhancedModules: enhancedModules,
     compliance: {
-      uk_gdpr: gdprManager ? 'compliant' : 'not configured', // Reflecting simplified compliance
+      uk_gdpr: gdprManager ? 'compliant' : 'not configured',
       ccpa_cpra: gdprManager ? 'compliant' : 'not configured',
       us_state_laws: gdprManager ? ['VCDPA', 'CPA', 'CTDPA', 'UCPA'] : []
     },
@@ -1342,7 +1339,7 @@ app.get('/health', async (req, res) => {
       file_redirect: 'ADDED - transcription-status.html redirect to transcription.html',
       trust_proxy_configuration: 'FIXED - Changed from true to 1 for proper rate limiting',
       error_handling: 'IMPROVED - More graceful error recovery',
-      gdpr_module: 'INTEGRATED - Simple GDPR Manager with streamlined compliance', // Updated description
+      gdpr_module: 'INTEGRATED - GDPR Manager with streamlined compliance',
       legal_narrative_generation: 'FIXED - Consolidated endpoint with ai_summary table storage',
       syntax_errors: 'FIXED - All syntax errors corrected'
     }
@@ -2577,7 +2574,7 @@ if (process.env.NODE_ENV !== 'test') {
   server.listen(PORT, () => {
     Logger.success(`🚀 Server running on port ${PORT}`);
     Logger.info(`📊 Environment: ${process.env.NODE_ENV || 'development'}`);
-    Logger.info(`🔐 Simple GDPR Manager: ${gdprManager ? 'ACTIVE' : 'DISABLED'}`); // Updated log message
+    Logger.info(`🔐 GDPR Manager: ${gdprManager ? 'ACTIVE' : 'DISABLED'}`);
     Logger.info(`🗄️ Supabase: ${supabaseEnabled ? 'CONNECTED' : 'DISABLED'}`);
     Logger.info(`🤖 OpenAI: ${process.env.OPENAI_API_KEY ? 'CONFIGURED' : 'NOT CONFIGURED'}`);
     Logger.info(`🔄 Transcription Queue: ${transcriptionQueueInterval ? 'RUNNING' : 'DISABLED'}`);
@@ -2585,7 +2582,7 @@ if (process.env.NODE_ENV !== 'test') {
     Logger.info(`🎤 Recording Interface: UNIFIED at /transcription-status.html`);
     Logger.info(`⚡ Realtime Updates: ${realtimeChannels.transcriptionChannel ? 'ENABLED' : 'DISABLED (optional)'}`);
     Logger.info(`✅ Trust Proxy: FIXED (set to 1 for proper rate limiting)`);
-    Logger.info(`✅ Consent Handling: SIMPLIFIED with Simple GDPR Manager`); // Updated message
+    Logger.info(`✅ Consent Handling: GDPR Manager enabled`);
     Logger.info(`✅ Legal Narrative: FIXED - Consolidated endpoints with ai_summary storage`);
     Logger.info(`✅ Syntax Errors: ALL FIXED`);
     Logger.info(`🎥 Dash-cam Upload: ${supabaseEnabled ? 'INITIALIZING...' : 'DISABLED'}`);
@@ -2602,10 +2599,10 @@ if (process.env.NODE_ENV !== 'test') {
     Logger.info('  - POST /webhook/signup - Process signup with consent');
     Logger.info('  - POST /webhook/signup-simple - Simple testing signup endpoint');
     Logger.info('  - POST /webhook/incident-report - Process incident');
-    Logger.info('  - POST /api/gdpr/consent - Grant/update consent'); // Updated based on SimpleGDPRManager
-    Logger.info('  - GET  /api/gdpr/status/:userId - Check consent status'); // Updated based on SimpleGDPRManager
-    Logger.info('  - GET  /api/gdpr/export/:userId - Export user data'); // Updated based on SimpleGDPRManager
-    Logger.info('  - DELETE /api/gdpr/delete/:userId - Delete user data'); // Updated based on SimpleGDPRManager
+    Logger.info('  - POST /api/gdpr/consent - Grant/update consent');
+    Logger.info('  - GET  /api/gdpr/status/:userId - Check consent status');
+    Logger.info('  - GET  /api/gdpr/export/:userId - Export user data');
+    Logger.info('  - DELETE /api/gdpr/delete/:userId - Delete user data');
     Logger.info('  - POST /api/generate-legal-narrative - Generate formal legal narrative [FIXED]');
     Logger.info('  - POST /api/update-legal-narrative - Update/save narrative [FIXED]');
     Logger.info('  - GET  /api/legal-narratives/:userId - Get saved narratives [FIXED]');
@@ -2613,8 +2610,8 @@ if (process.env.NODE_ENV !== 'test') {
     Logger.info('  - GET  /api/dashcam/videos/:userId/:incidentId - Get user videos');
     Logger.info('  - DELETE /api/dashcam/video/:evidenceId - Delete video');
 
-    Logger.success('✅ All systems operational with Simple GDPR compliance - Ready to serve requests');
-    Logger.success('🔧 Simple GDPR Manager integrated - Streamlined privacy compliance enabled'); // Updated message
+    Logger.success('✅ All systems operational with GDPR compliance - Ready to serve requests');
+    Logger.success('🔧 GDPR Manager integrated - Privacy compliance enabled');
     Logger.success('📝 Legal Narrative Generation - Fixed and fully operational');
   });
 }
