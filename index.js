@@ -29,6 +29,7 @@ const { createClient } = require('@supabase/supabase-js');
 // GDPR MODULE IMPORT
 // ========================================
 const SimpleGDPRManager = require('./lib/simpleGDPRManager');
+const GDPRService = require('./services/gdprService');
 
 // ========================================
 // ENHANCED MODULES
@@ -540,14 +541,18 @@ supabaseEnabled = initSupabase();
 // INITIALIZE GDPR MANAGER
 // ========================================
 let gdprManager = null;
+let gdpr = null;
 
 if (supabaseEnabled) {
   try {
     gdprManager = new SimpleGDPRManager(process.env.SUPABASE_URL, process.env.SUPABASE_SERVICE_ROLE_KEY);
+    gdpr = new GDPRService(process.env.SUPABASE_URL, process.env.SUPABASE_SERVICE_ROLE_KEY);
     Logger.success('✅ GDPR Manager initialized');
+    Logger.success('✅ GDPR Service initialized');
   } catch (error) {
     Logger.warn('GDPR Manager not available:', error.message);
     gdprManager = null;
+    gdpr = null;
   }
 }
 
