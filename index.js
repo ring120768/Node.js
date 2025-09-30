@@ -552,6 +552,17 @@ if (supabaseEnabled) {
 }
 
 // ========================================
+// MISSING VARIABLES AND FUNCTIONS
+// ========================================
+let transcriptionQueueInterval = null;
+
+// Initialize Supabase Realtime function
+function initializeSupabaseRealtime() {
+  Logger.info('Supabase Realtime initialization placeholder');
+  // Placeholder for realtime functionality
+}
+
+// ========================================
 // INITIALIZE ENHANCED MODULES
 // ========================================
 let webhookDebugger = null;
@@ -1611,6 +1622,71 @@ app.get('/api/test-openai', async (req, res) => {
   }
 });
 
+// GDPR Test endpoint
+app.get('/api/gdpr/test', async (req, res) => {
+  try {
+    if (!gdprManager) {
+      return res.status(503).json({
+        error: 'GDPR Manager not initialized',
+        supabaseEnabled: supabaseEnabled,
+        requestId: req.requestId
+      });
+    }
+
+    const testUserId = 'test_' + Date.now();
+    
+    // Test consent flow using the actual SimpleGDPRManager methods
+    try {
+      // Set consent
+      const { data: setData, error: setError } = await supabase
+        .rpc('update_user_consent', {
+          p_user_id: testUserId,
+          p_consent: true,
+          p_ip_address: req.clientIp || '127.0.0.1'
+        });
+
+      if (setError) throw setError;
+
+      // Check consent
+      const { data: checkData, error: checkError } = await supabase
+        .from('gdpr_consent')
+        .select('gdpr_consent, gdpr_consent_date')
+        .eq('create_user_id', testUserId)
+        .single();
+
+      if (checkError && checkError.code !== 'PGRST116') throw checkError;
+
+      res.json({
+        success: true,
+        testUser: testUserId,
+        consentSet: !setError,
+        consentVerified: checkData?.gdpr_consent || false,
+        setResult: setData,
+        checkResult: checkData,
+        timestamp: new Date().toISOString(),
+        requestId: req.requestId
+      });
+
+    } catch (testError) {
+      res.status(500).json({
+        success: false,
+        testUser: testUserId,
+        error: testError.message,
+        details: testError,
+        requestId: req.requestId
+      });
+    }
+
+  } catch (error) {
+    Logger.error('GDPR test endpoint error:', error);
+    res.status(500).json({
+      error: 'Test failed',
+      message: error.message,
+      requestId: req.requestId
+    });
+  }
+});
+
 // AI summary generation test endpoint
 app.post('/api/generate-ai-summary', checkSharedKey, async (req, res) => {
   const { transcription, userId, incidentId } = req.body;
@@ -2374,6 +2450,63 @@ app.use((req, res) => {
     requestId: req.requestId
   });
 });
+
+// ========================================
+// MISSING VARIABLES AND FUNCTIONS FOR STARTUP
+// ========================================
+let wss = { clients: new Set() }; // Mock WebSocket server
+let wsHeartbeat = null;
+let activeSessions = new Map();
+let userSessions = new Map();
+let transcriptionStatuses = new Map();
+
+// Mock functions for missing implementations
+async function logGDPRActivity(userId, activity, details, req) {
+  if (supabaseEnabled) {
+    try {
+      await supabase
+        .from('gdpr_audit_log')
+        .insert({
+          create_user_id: userId,
+          activity_type: activity,
+          details: details
+        });
+    } catch (error) {
+      Logger.warn('GDPR audit log failed:', error.message);
+    }
+  }
+}
+
+async function processTranscriptionQueue() {
+  Logger.info('Processing transcription queue...');
+  // Placeholder for queue processing
+}
+
+async function initializeDashcamUpload() {
+  Logger.info('Initializing dashcam upload...');
+  // Placeholder for dashcam initialization
+}
+
+async function generateLegalNarrative(transcription, data, userId, options) {
+  return "Sample legal narrative generated for testing purposes.";
+}
+
+async function prepareAccidentDataForNarrative(userId, incidentId) {
+  return { ai_transcription: "Sample transcription data" };
+}
+
+function extractKeyPointsFromNarrative(narrative) {
+  return ["Sample key point 1", "Sample key point 2"];
+}
+
+async function generateAISummary(transcription, userId, incidentId) {
+  return "Sample AI summary for testing purposes.";
+}
+
+async function processTranscriptionFromBuffer(queueId, buffer, userId, incidentId, audioUrl) {
+  Logger.info(`Processing transcription for queue ${queueId}`);
+  // Placeholder for transcription processing
+}
 
 // --- SERVER STARTUP ---
 const PORT = process.env.PORT || 3000;
