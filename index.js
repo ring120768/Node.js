@@ -1378,9 +1378,7 @@ app.get('/health', async (req, res) => {
     },
     enhancedModules: enhancedModules,
     compliance: {
-      uk_gdpr: gdprManager ? 'compliant' : 'not configured',
-      ccpa_cpra: gdprManager ? 'compliant' : 'not configured',
-      us_state_laws: gdprManager ? ['VCDPA', 'CPA', 'CTDPA', 'UCPA'] : []
+      uk_gdpr: gdprManager ? 'compliant' : 'not configured'
     },
     fixes: {
       consent_handling: 'IMPROVED - Enhanced webhook consent detection and processing',
