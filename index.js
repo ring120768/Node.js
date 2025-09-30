@@ -1291,14 +1291,14 @@ app.get('/health', async (req, res) => {
   const externalServices = await checkExternalServices();
 
   const gdprStatus = gdprManager ? {
-      module: 'gdpr_manager_active',
-      consent_management: true,
-      audit_logging: true,
-      dsr_handling: true,
-      compliance: true
-    } : {
-      module: 'not configured'
-    };
+            module: 'simple_gdpr_manager',
+            consent_management: true,
+            audit_logging: true,
+            dsr_handling: true,
+            compliance: true
+          } : {
+            module: 'not configured'
+          };
 
   const enhancedModules = {
       gdprManager: gdprManager !== null,
@@ -1631,7 +1631,7 @@ app.get('/api/gdpr/test', async (req, res) => {
     }
 
     const testUserId = 'test_' + Date.now();
-    
+
     // Test consent flow using the actual SimpleGDPRManager methods
     try {
       // Set consent in user_signup table
