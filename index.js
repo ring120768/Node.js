@@ -32,7 +32,7 @@ const SimpleGDPRManager = require('./lib/simpleGDPRManager');
 const GDPRService = require('./services/gdprService');
 
 // ========================================
-// ENHANCED MODULES
+// SIMPLIFIED MODULES
 // ========================================
 const { CONSTANTS: ENHANCED_CONSTANTS, ConstantHelpers } = require('./constants');
 const WebhookDebugger = require('./webhookDebugger');
@@ -558,8 +558,8 @@ if (supabaseEnabled) {
   try {
     gdprManager = new SimpleGDPRManager(process.env.SUPABASE_URL, process.env.SUPABASE_SERVICE_ROLE_KEY);
     gdpr = new GDPRService(process.env.SUPABASE_URL, process.env.SUPABASE_SERVICE_ROLE_KEY);
-    Logger.success('✅ Simple GDPR Manager initialized');
-    Logger.success('✅ GDPR Service initialized');
+    Logger.success('✅ Simplified GDPR Manager initialized');
+    Logger.success('✅ Simplified GDPR Service initialized');
   } catch (error) {
     Logger.warn('GDPR services not available:', error.message);
     gdprManager = null;
@@ -579,7 +579,7 @@ function initializeSupabaseRealtime() {
 }
 
 // ========================================
-// INITIALIZE ENHANCED MODULES
+// INITIALIZE SIMPLIFIED MODULES
 // ========================================
 let webhookDebugger = null;
 
@@ -587,13 +587,13 @@ if (supabaseEnabled && supabase) {
   try {
     // Initialize Webhook Debugger
     webhookDebugger = new WebhookDebugger(supabase, Logger);
-    Logger.success('✅ Webhook Debugger initialized');
+    Logger.success('✅ Simplified Webhook Debugger initialized');
   } catch (error) {
     Logger.warn('Webhook Debugger not available:', error.message);
     webhookDebugger = null;
   }
 } else {
-  Logger.warn('Enhanced modules not initialized - Supabase not available');
+  Logger.warn('Simplified modules not initialized - Supabase not available');
 }
 
 // ========================================
@@ -753,7 +753,7 @@ app.post('/webhook/signup', webhookLimiter, checkSharedKey, async (req, res) => 
   }
 });
 
-console.log('✅ Signup webhook endpoint registered at /webhook/signup');
+console.log('✅ Simplified signup webhook endpoint registered at /webhook/signup');
 
 app.post('/webhook/incident-report', webhookLimiter, checkSharedKey, async (req, res) => {
   console.log('=======================================');
@@ -840,7 +840,7 @@ app.post('/webhook/incident-report', webhookLimiter, checkSharedKey, async (req,
     }
 
 
-    console.log('✅ Incident report webhook processed successfully');
+    console.log('✅ Simplified incident report webhook processed successfully');
     return res.status(200).json({
       success: true,
       message: 'Incident report webhook processed successfully',
@@ -972,7 +972,7 @@ app.post('/webhook/signup-simple', webhookLimiter, checkSharedKey, async (req, r
   }
 });
 
-console.log('✅ Simple webhook test endpoint registered at /webhook/signup-simple');
+console.log('✅ Simplified webhook test endpoint registered at /webhook/signup-simple');
 // ========================================
 // CONSOLIDATED LEGAL NARRATIVE ENDPOINT - FIXED
 // ========================================
@@ -1515,7 +1515,7 @@ app.get('/api/debug/user/:userId', checkSharedKey, async (req, res) => {
   }
 });
 
-// ENHANCED: Debug endpoint with WebhookDebugger module
+// SIMPLIFIED: Debug endpoint with WebhookDebugger module
 app.post('/api/debug/webhook-test', checkSharedKey, async (req, res) => {
   if (!webhookDebugger) {
     // Fallback to basic analysis
@@ -1531,7 +1531,7 @@ app.post('/api/debug/webhook-test', checkSharedKey, async (req, res) => {
     });
   }
 
-  // Use enhanced debugger
+  // Use simplified debugger
   const analysis = webhookDebugger.analyzeWebhook(req, {
     store: true,
     log: true
@@ -1551,7 +1551,7 @@ app.post('/api/debug/webhook-test', checkSharedKey, async (req, res) => {
     Logger.debug('Webhook store cleaned - removed oldest entry');
   }
 
-  Logger.info('=== ENHANCED WEBHOOK ANALYSIS ===');
+  Logger.info('=== SIMPLIFIED WEBHOOK ANALYSIS ===');
   Logger.info('Provider:', analysis.provider);
   Logger.info('Structure:', analysis.structure.type);
   Logger.info('Extracted Fields:', analysis.fields);
@@ -1560,7 +1560,7 @@ app.post('/api/debug/webhook-test', checkSharedKey, async (req, res) => {
 
   res.json({
     success: true,
-    message: 'Enhanced webhook analysis complete',
+    message: 'Simplified webhook analysis complete',
     analysis: analysis,
     requestId: req.requestId
   });
@@ -2162,7 +2162,7 @@ let incidentEndpoints = null;
 
 if (supabaseEnabled) {
   incidentEndpoints = new IncidentEndpoints(supabase);
-  Logger.success('✅ Incident endpoints module initialized');
+  Logger.success('✅ Simplified incident endpoints module initialized');
 }
 
 // ========================================
@@ -2720,7 +2720,7 @@ if (process.env.NODE_ENV !== 'test') {
   server.listen(PORT, () => {
     Logger.success(`🚀 Server running on port ${PORT}`);
     Logger.info(`📊 Environment: ${process.env.NODE_ENV || 'development'}`);
-    Logger.info(`🔐 GDPR Manager: ${gdprManager ? 'ACTIVE' : 'DISABLED'}`);
+    Logger.info(`🔐 Simplified GDPR Manager: ${gdprManager ? 'ACTIVE' : 'DISABLED'}`);
     Logger.info(`🗄️ Supabase: ${supabaseEnabled ? 'CONNECTED' : 'DISABLED'}`);
     Logger.info(`🤖 OpenAI: ${process.env.OPENAI_API_KEY ? 'CONFIGURED' : 'NOT CONFIGURED'}`);
     Logger.info(`🔄 Transcription Queue: ${transcriptionQueueInterval ? 'RUNNING' : 'DISABLED'}`);
@@ -2728,7 +2728,7 @@ if (process.env.NODE_ENV !== 'test') {
     Logger.info(`🎤 Recording Interface: UNIFIED at /transcription-status.html`);
     Logger.info(`⚡ Realtime Updates: ${realtimeChannels.transcriptionChannel ? 'ENABLED' : 'DISABLED (optional)'}`);
     Logger.info(`✅ Trust Proxy: FIXED (set to 1 for proper rate limiting)`);
-    Logger.info(`✅ Consent Handling: GDPR Manager enabled`);
+    Logger.info(`✅ Consent Handling: Simplified GDPR Manager enabled`);
     Logger.info(`✅ Legal Narrative: FIXED - Consolidated endpoints with ai_summary storage`);
     Logger.info(`✅ Syntax Errors: ALL FIXED`);
     Logger.info(`🎥 Dash-cam Upload: ${supabaseEnabled ? 'INITIALIZING...' : 'DISABLED'}`);
@@ -2756,8 +2756,8 @@ if (process.env.NODE_ENV !== 'test') {
     Logger.info('  - GET  /api/dashcam/videos/:userId/:incidentId - Get user videos');
     Logger.info('  - DELETE /api/dashcam/video/:evidenceId - Delete video');
 
-    Logger.success('✅ All systems operational with GDPR compliance - Ready to serve requests');
-    Logger.success('🔧 GDPR Manager integrated - Privacy compliance enabled');
+    Logger.success('✅ All systems operational with Simplified GDPR compliance - Ready to serve requests');
+    Logger.success('🔧 Simplified GDPR Manager integrated - Privacy compliance enabled');
     Logger.success('📝 Legal Narrative Generation - Fixed and fully operational');
   });
 }
