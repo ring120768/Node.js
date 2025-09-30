@@ -509,6 +509,8 @@
 
         let retryCount = 0;
         const maxRetries = 10;
+        let currentTranscription = '';
+        let originalTranscription = '';
 
         async function loadTranscriptionData() {
             const urlParams = new URLSearchParams(window.location.search);
@@ -516,6 +518,7 @@
             const userId = urlParams.get('userId') || urlParams.get('create_user_id') || urlParams.get('user_id');
 
             console.log('Loading transcription data for:', { queueId, userId, attempt: retryCount + 1 });
+            console.log('Full URL params:', Object.fromEntries(urlParams.entries()));
 
             if (!queueId) {
                 showError('No transcription ID provided in URL');
@@ -535,29 +538,47 @@
                 }
 
                 // Try to get transcription status first
-                const statusResponse = await fetch(`/api/transcription-status/${queueId}`, {
+                const statusUrl = `/api/transcription-status/${queueId}${userId ? `?userId=${userId}` : ''}`;
+                console.log('Fetching transcription status from:', statusUrl);
+                
+                const statusResponse = await fetch(statusUrl, {
                     headers: headers
                 });
 
                 if (!statusResponse.ok) {
-                    throw new Error(`Failed to get transcription status: ${statusResponse.status}`);
+                    const errorText = await statusResponse.text();
+                    console.error('Status response error:', errorText);
+                    throw new Error(`Failed to get transcription status: ${statusResponse.status} - ${errorText}`);
                 }
 
                 const statusData = await statusResponse.json();
-                console.log('Transcription status:', statusData);
+                console.log('Transcription status response:', statusData);
 
-                if (statusData.status === 'COMPLETED' && statusData.transcription) {
+                // Check if we have a completed transcription
+                if (statusData.success && statusData.status === 'COMPLETED' && statusData.transcription) {
+                    console.log('✅ Transcription found:', statusData.transcription.substring(0, 100) + '...');
                     currentData.transcription = statusData.transcription;
                     displayTranscription(statusData.transcription);
+                    
+                    // Update metadata if available
+                    if (statusData.metadata) {
+                        updateMetadata(statusData.metadata);
+                    }
+                    
                     hideLoadingMessage();
+                    updateStatus('Transcription loaded successfully');
                     retryCount = 0; // Reset retry count on success
 
                     // Generate AI summary and legal analysis
                     await generateAISummary();
                     await generateLegalAnalysis();
-                } else if (statusData.status === 'FAILED') {
+                    
+                } else if (statusData.status === 'FAILED' || statusData.error) {
+                    console.error('❌ Transcription failed:', statusData.error);
                     showError(`Transcription failed: ${statusData.error || 'Unknown error'}`);
-                } else {
+                    
+                } else if (statusData.status === 'PROCESSING' || statusData.status === 'PENDING') {
+                    console.log('⏳ Transcription still processing...');
                     // Still processing - retry with exponential backoff
                     retryCount++;
                     if (retryCount < maxRetries) {
@@ -567,6 +588,10 @@
                     } else {
                         showError('Transcription is taking longer than expected. Please refresh the page or contact support.');
                     }
+                    
+                } else {
+                    console.error('❌ Unexpected status response:', statusData);
+                    showError(`Unexpected response format: ${JSON.stringify(statusData)}`);
                 }
 
             } catch (error) {
@@ -701,6 +726,8 @@ Consider consulting with a legal professional for detailed analysis of your spec
         // Display Transcription
         function displayTranscription(transcription) {
             document.getElementById('transcriptionText').value = transcription;
+            currentTranscription = transcription;
+            originalTranscription = transcription;
             updateCharCount();
             updateStatus('Transcription loaded');
         }
@@ -845,9 +872,9 @@ Consider consulting with a legal professional for detailed analysis of your spec
             document.getElementById('resetTranscriptionBtn').addEventListener('click', resetTranscription);
 
             // Regenerate buttons
-            document.getElementById('regenerateSummaryBtn').addEventListener('click', generateSummary);
+            document.getElementById('regenerateSummaryBtn').addEventListener('click', generateAISummary);
             document.getElementById('regenerateLegalBtn').addEventListener('click', generateLegalAnalysis);
-            document.getElementById('retrySummaryBtn').addEventListener('click', generateSummary);
+            document.getElementById('retrySummaryBtn').addEventListener('click', generateAISummary);
             document.getElementById('retryLegalBtn').addEventListener('click', generateLegalAnalysis);
 
             // Action buttons
