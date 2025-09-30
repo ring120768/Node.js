@@ -1411,7 +1411,7 @@
                     updateProgress('step-transcribe', 'active');
                     statusIndicator.className = 'status-indicator processing';
                     statusText.textContent = data.message || 'Processing your recording...';
-                    statusDiv.style.background = '#fff3e0';
+                    statusDiv.style.background = '#e3f2fd';
                     break;
 
                 case 'transcribed':
@@ -1461,7 +1461,6 @@
                     }
 
                     // Redirect to review page after a short delay
-                    // Updated redirect logic to match the correct page name
                     console.log('Transcription completed. Redirecting to transcription review page...');
                     setTimeout(() => {
                         const params = new URLSearchParams({
@@ -1470,7 +1469,7 @@
                         });
                         // Use the correct existing page name
                         window.location.href = `/transcription-review.html?${params.toString()}`;
-                    }, 2000);</old_str>
+                    }, 2000);
 
                     // Clear polling if active
                     if (state.pollInterval) {
@@ -2281,18 +2280,15 @@
                     state.hasConsent = true;
                     consentBanner.style.display = 'none';
 
-                    // Show the record button again
+                    // Show the record button again and ensure it's enabled
                     const recordButton = document.getElementById('recordButton');
                     if (recordButton) {
                         recordButton.style.display = 'inline-block';
+                        recordButton.disabled = false;
+                        recordButton.textContent = '🎤 Start Recording';
                     }
 
                     showStatus('Consent granted. You can now start recording.', 'success');
-
-                    // Auto-start recording since user just agreed
-                    setTimeout(() => {
-                        startRecording();
-                    }, 1000);
                 });
             }
 
