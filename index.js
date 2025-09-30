@@ -1907,6 +1907,96 @@ app.get('/test/transcription-queue', async (req, res) => {
   }
 });
 
+// Comprehensive transcription diagnostics
+app.get('/api/debug/transcription-full', checkSharedKey, async (req, res) => {
+  const diagnostics = {
+    timestamp: new Date().toISOString(),
+    service_status: {
+      transcription_service: transcriptionService !== null,
+      openai_configured: !!process.env.OPENAI_API_KEY,
+      queue_processing: transcriptionQueueInterval !== null,
+      supabase_connected: supabaseEnabled
+    },
+    queue_stats: null,
+    recent_transcriptions: null,
+    storage_check: null,
+    openai_test: null
+  };
+
+  // Check queue stats
+  if (supabaseEnabled) {
+    try {
+      const { data: queueStats } = await supabase
+        .from('transcription_queue')
+        .select('status, count(*)')
+        .group('status');
+      
+      const { data: recentQueue } = await supabase
+        .from('transcription_queue')
+        .select('*')
+        .order('created_at', { ascending: false })
+        .limit(10);
+
+      const { data: recentTranscriptions } = await supabase
+        .from('ai_transcription')
+        .select('*')
+        .order('created_at', { ascending: false })
+        .limit(5);
+
+      diagnostics.queue_stats = queueStats;
+      diagnostics.recent_queue_items = recentQueue;
+      diagnostics.recent_transcriptions = recentTranscriptions;
+
+    } catch (error) {
+      diagnostics.database_error = error.message;
+    }
+  }
+
+  // Check storage
+  if (supabaseEnabled) {
+    try {
+      const { data: buckets } = await supabase.storage.listBuckets();
+      const audioStorage = buckets?.find(b => b.name === 'incident-audio');
+      
+      if (audioStorage) {
+        const { data: files } = await supabase.storage
+          .from('incident-audio')
+          .list('', { limit: 5 });
+        
+        diagnostics.storage_check = {
+          bucket_exists: true,
+          recent_files: files?.length || 0,
+          files: files?.map(f => ({ name: f.name, size: f.metadata?.size }))
+        };
+      }
+    } catch (error) {
+      diagnostics.storage_error = error.message;
+    }
+  }
+
+  // Test OpenAI connection
+  if (process.env.OPENAI_API_KEY) {
+    try {
+      const testResponse = await fetch('https://api.openai.com/v1/models', {
+        headers: { 'Authorization': `Bearer ${process.env.OPENAI_API_KEY}` },
+        timeout: 5000
+      });
+      
+      diagnostics.openai_test = {
+        api_accessible: testResponse.ok,
+        status_code: testResponse.status
+      };
+    } catch (error) {
+      diagnostics.openai_test = {
+        api_accessible: false,
+        error: error.message
+      };
+    }
+  }
+
+  res.json(diagnostics);
+});
+
 app.post('/test/process-transcription-queue', checkSharedKey, async (req, res) => {
   try {
     Logger.info('Manual transcription queue processing triggered');

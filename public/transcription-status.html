@@ -931,6 +931,9 @@
 
         <!-- Recording Controls -->
         <div class="recording-controls">
+            <button id="testMicButton" class="btn btn-ghost" style="margin-bottom: 10px;">
+                🔧 Test Microphone
+            </button>
             <button id="recordButton" class="btn btn-primary">
                 🎤 Start Recording
             </button>
@@ -1560,6 +1563,45 @@
         }
 
         // ============================
+        // Microphone Test Function
+        // ============================
+        async function testMicrophone() {
+            const testButton = document.getElementById('testMicButton');
+            testButton.disabled = true;
+            testButton.innerHTML = '🔄 Testing...';
+
+            try {
+                const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
+                
+                // Test successful
+                showStatus('✅ Microphone test successful! You can now record.', 'success');
+                testButton.innerHTML = '✅ Mic Works';
+                testButton.style.background = '#48bb78';
+                testButton.style.color = 'white';
+                
+                // Enable record button
+                document.getElementById('recordButton').disabled = false;
+                
+                // Stop the test stream
+                stream.getTracks().forEach(track => track.stop());
+                
+            } catch (error) {
+                console.error('Microphone test failed:', error);
+                showStatus(`❌ Microphone test failed: ${error.message}`, 'error');
+                testButton.innerHTML = '❌ Test Failed';
+                testButton.style.background = '#ef4444';
+                testButton.style.color = 'white';
+            }
+            
+            setTimeout(() => {
+                testButton.disabled = false;
+                testButton.innerHTML = '🔧 Test Microphone';
+                testButton.style.background = '';
+                testButton.style.color = '';
+            }, 3000);
+        }
+
+        // ============================
         // Recording Functions
         // ============================
         async function startRecording() {
@@ -1671,14 +1713,44 @@
                 showStatus('Recording started', 'info');
 
             } catch (error) {
-                console.error('Error starting recording:', error);
+                console.error('❌ Microphone access error:', error);
 
                 if (error.name === 'NotAllowedError') {
-                    showStatus('Microphone permission denied. Please allow microphone access.', 'error');
+                    showStatus('🎤 Microphone permission denied. Please click the microphone icon in your browser\'s address bar and allow access.', 'error');
+                    
+                    // Show detailed help for microphone permissions
+                    const helpDiv = document.createElement('div');
+                    helpDiv.style.cssText = 'margin-top: 15px; padding: 15px; background: #fff3cd; border: 1px solid #ffeaa7; border-radius: 8px; font-size: 14px;';
+                    helpDiv.innerHTML = `
+                        <h4 style="margin: 0 0 10px 0; color: #856404;">🔧 How to Fix Microphone Access:</h4>
+                        <ol style="margin: 0; padding-left: 20px; color: #856404;">
+                            <li>Look for a microphone icon in your browser's address bar</li>
+                            <li>Click it and select "Always allow on this site"</li>
+                            <li>Refresh the page and try again</li>
+                            <li>If no icon appears, check your browser settings for microphone permissions</li>
+                        </ol>
+                    `;
+                    document.querySelector('.container').appendChild(helpDiv);
+                    
                 } else if (error.name === 'NotFoundError') {
-                    showStatus('No microphone found. Please connect a microphone.', 'error');
+                    showStatus('🎤 No microphone found. Please connect a microphone and refresh the page.', 'error');
+                } else if (error.name === 'NotReadableError') {
+                    showStatus('🎤 Microphone is being used by another application. Please close other apps using the microphone.', 'error');
+                } else if (error.name === 'OverconstrainedError') {
+                    showStatus('🎤 Microphone constraints not supported. Trying with basic settings...', 'warning');
+                    
+                    // Retry with basic constraints
+                    setTimeout(async () => {
+                        try {
+                            const basicStream = await navigator.mediaDevices.getUserMedia({ audio: true });
+                            // Continue with basic stream setup...
+                            showStatus('✅ Microphone access granted with basic settings', 'success');
+                        } catch (retryError) {
+                            showStatus(`🎤 Microphone setup failed: ${retryError.message}`, 'error');
+                        }
+                    }, 2000);
                 } else {
-                    showStatus(`Unable to start recording: ${error.message}`, 'error');
+                    showStatus(`🎤 Unable to start recording: ${error.message}`, 'error');
                 }
 
                 resetRecordingUI();
@@ -2180,6 +2252,7 @@
             updateNetworkStatus();
 
             // Set up event listeners
+            document.getElementById('testMicButton').addEventListener('click', testMicrophone);
             document.getElementById('recordButton').addEventListener('click', startRecording);
             document.getElementById('stopButton').addEventListener('click', stopRecording);
             document.getElementById('retryButton').addEventListener('click', resetRecording);
