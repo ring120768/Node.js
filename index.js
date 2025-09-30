@@ -26,18 +26,15 @@ const compression = require('compression');
 const { createClient } = require('@supabase/supabase-js');
 
 // ========================================
-// GDPR MODULE IMPORT - NEW
+// GDPR MODULE IMPORT - SIMPLIFIED
 // ========================================
-const SimpleGDPRManager = require('./simpleGDPRManager');
-// const GDPRComplianceModule = require('./gdprModule'); // Commented out as per user request
+const SimpleGDPRManager = require('./lib/simpleGDPRManager');
 
 // ========================================
-// ENHANCED MODULES - NEW
+// ENHANCED MODULES
 // ========================================
 const { CONSTANTS: ENHANCED_CONSTANTS, ConstantHelpers } = require('./constants');
-const ConsentManager = require('./consentManager');
 const WebhookDebugger = require('./webhookDebugger');
-const PrivacyConsentHandler = require('./privacyConsentHandler');
 
 // Import PDF generation modules - with error handling
 let fetchAllData, generatePDF, sendEmails;
@@ -539,24 +536,14 @@ const initSupabase = () => {
 // Initialize Supabase
 supabaseEnabled = initSupabase();
 
-// Initialize Privacy Consent Handler
-const privacyHandler = new PrivacyConsentHandler(
-    process.env.SUPABASE_URL,
-    process.env.SUPABASE_SERVICE_ROLE_KEY
-);
-console.log('✅ Privacy Consent Handler initialized');
-
 // ========================================
-// INITIALIZE GDPR MANAGER - NEW
+// INITIALIZE GDPR MANAGER - SIMPLIFIED
 // ========================================
-let gdprManager = null; // Changed from gdprModule to gdprManager
+let gdprManager = null;
 
 if (supabaseEnabled) {
   try {
-    gdprManager = new SimpleGDPRManager(
-      process.env.SUPABASE_URL,
-      process.env.SUPABASE_SERVICE_ROLE_KEY
-    );
+    gdprManager = new SimpleGDPRManager(supabase);
     Logger.success('✅ Simple GDPR Manager initialized');
   } catch (error) {
     Logger.warn('Simple GDPR Manager not available:', error.message);
@@ -565,21 +552,11 @@ if (supabaseEnabled) {
 }
 
 // ========================================
-// INITIALIZE ENHANCED MODULES - NEW
+// INITIALIZE ENHANCED MODULES
 // ========================================
-let consentManager = null;
 let webhookDebugger = null;
 
 if (supabaseEnabled && supabase) {
-  try {
-    // Initialize Consent Manager
-    consentManager = new ConsentManager(supabase, Logger);
-    Logger.success('✅ Consent Manager initialized');
-  } catch (error) {
-    Logger.warn('Consent Manager not available:', error.message);
-    consentManager = null;
-  }
-
   try {
     // Initialize Webhook Debugger
     webhookDebugger = new WebhookDebugger(supabase, Logger);
@@ -593,73 +570,15 @@ if (supabaseEnabled && supabase) {
 }
 
 // ========================================
-// ADD GDPR ROUTES - NEW
+// ADD GDPR ROUTES - SIMPLIFIED
 // ========================================
 // Register the routes from the SimpleGDPRManager
 if (gdprManager) {
-  gdprManager.registerRoutes(app); // Use the registerRoutes method
+  gdprManager.registerRoutes(app);
   Logger.info('📋 Simple GDPR Manager routes registered');
 }
 
-// Register Privacy Consent Routes
-privacyHandler.registerRoutes(app);
-console.log('✅ Privacy consent routes registered');
 
-// Get consent summary for a user
-app.get('/api/consent/summary/:userId', checkSharedKey, async (req, res) => {
-  if (!consentManager) {
-    return res.status(503).json({
-      error: 'Module not initialized',
-      module: 'consentManager',
-      requestId: req.requestId
-    });
-  }
-
-  try {
-    const summary = await consentManager.getConsentSummary(req.params.userId);
-
-    res.json({
-      success: true,
-      ...summary,
-      requestId: req.requestId
-    });
-  } catch (error) {
-    Logger.error('Error getting consent summary:', error);
-    res.status(500).json({
-      error: 'Failed to get consent summary',
-      details: error.message,
-      requestId: req.requestId
-    });
-  }
-});
-
-// Test consent extraction
-app.post('/api/consent/test-extraction', checkSharedKey, async (req, res) => {
-  if (!consentManager) {
-    return res.status(503).json({
-      error: 'Module not initialized',
-      module: 'consentManager',
-      requestId: req.requestId
-    });
-  }
-
-  try {
-    const consentData = consentManager.extractConsentFromWebhook(req.body);
-
-    res.json({
-      success: true,
-      extraction: consentData,
-      requestId: req.requestId
-    });
-  } catch (error) {
-    Logger.error('Error testing consent extraction:', error);
-    res.status(500).json({
-      error: 'Failed to test consent extraction',
-      details: error.message,
-      requestId: req.requestId
-    });
-  }
-});
 app.post('/webhook/signup', webhookLimiter, checkSharedKey, async (req, res) => {
   console.log('=======================================');
   console.log('SIGNUP WEBHOOK - RECEIVED REQUEST');
@@ -976,7 +895,7 @@ console.log('✅ Simple webhook test endpoint registered at /webhook/signup-simp
 // ========================================
 // CONSOLIDATED LEGAL NARRATIVE ENDPOINT - FIXED
 // ========================================
-app.post('/api/generate-legal-narrative', checkSharedKey, async (req, res) => {
+app.post('/api/generate-legal-narrative', checkSharedKey, gdprManager ? gdprManager.requireConsent() : (req, res, next) => next(), async (req, res) => {
   try {
     const {
       create_user_id,
