@@ -595,7 +595,7 @@ app.get('/api/gdpr/status/:userId', async (req, res) => {
     const { userId } = req.params;
     const hasConsent = await gdpr.hasValidConsent(userId);
     const history = await gdpr.getUserGDPRHistory(userId);
-    
+
     res.json({
       user_id: userId,
       has_consent: hasConsent,
@@ -609,14 +609,14 @@ app.get('/api/gdpr/status/:userId', async (req, res) => {
 app.get('/api/gdpr/export/:userId', async (req, res) => {
   try {
     const { userId } = req.params;
-    
+
     const hasConsent = await gdpr.hasValidConsent(userId);
     if (!hasConsent) {
       return res.status(403).json({ error: 'No consent on file' });
     }
-    
+
     const exportData = await gdpr.exportUserData(userId);
-    
+
     if (exportData.success) {
       res.json(exportData);
     } else {
@@ -631,7 +631,7 @@ app.delete('/api/gdpr/delete/:userId', async (req, res) => {
   try {
     const { userId } = req.params;
     const result = await gdpr.deleteUserData(userId);
-    
+
     if (result.success) {
       res.json({
         message: 'All user data has been deleted',
