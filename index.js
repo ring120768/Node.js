@@ -692,16 +692,12 @@ app.post('/webhook/signup', webhookLimiter, checkSharedKey, async (req, res) => 
       // Continue processing, but log the consent issue.
     }
 
-    // Process images if available
-    if (imageProcessor && webhookData.create_user_id) {
-      console.log('Processing images for signup...');
-      await imageProcessor.processSignupImages(webhookData);
-      console.log('Image processing complete.');
-    } else if (!webhookData.create_user_id) {
-      console.log('Skipping image processing - missing create_user_id');
-    } else {
-      console.log('Skipping image processing - imageProcessor not available');
-    }
+    // TODO: Image processing for signup - implement when needed
+    // if (imageProcessor && webhookData.create_user_id) {
+    //   console.log('Processing images for signup...');
+    //   await imageProcessor.processSignupImages(webhookData);
+    //   console.log('Image processing complete.');
+    // }
 
     // Log GDPR activity for signup webhook processing
     const userIdForLog = webhookData?.create_user_id || webhookData?.userId;
@@ -796,15 +792,12 @@ app.post('/webhook/incident-report', webhookLimiter, checkSharedKey, async (req,
       // Continue processing, but log the consent issue.
     }
 
-    // Process files if available and imageProcessor is initialized
-    if (imageProcessor) {
-      console.log(`Processing files for incident ${incidentId} and user ${userId}...`);
-      const processingResult = await imageProcessor.processIncidentReportFiles(webhookData);
-      console.log('File processing complete.');
-      // Optionally send processingResult back or just acknowledge
-    } else {
-      console.log('Skipping file processing - imageProcessor not available');
-    }
+    // TODO: File processing for incident reports - implement when needed
+    // if (imageProcessor) {
+    //   console.log(`Processing files for incident ${incidentId} and user ${userId}...`);
+    //   const processingResult = await imageProcessor.processIncidentReportFiles(webhookData);
+    //   console.log('File processing complete.');
+    // }
 
     // Log GDPR activity for incident report webhook processing
     if (gdprManager) {
