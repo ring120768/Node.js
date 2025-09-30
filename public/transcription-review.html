@@ -1,4 +1,3 @@
-
 <!DOCTYPE html>
 <html lang="en">
 <head>
@@ -332,6 +331,29 @@
         .regenerate-btn:hover {
             background: #e0a800;
         }
+
+        /* Loading and Error Message Styles */
+        .loading-message {
+            display: none;
+            background-color: #e0e0e0;
+            color: #333;
+            padding: 15px;
+            border-radius: 8px;
+            text-align: center;
+            margin-bottom: 15px;
+            font-weight: 500;
+        }
+
+        .error-message {
+            display: none;
+            background-color: #f8d7da;
+            color: #721c24;
+            padding: 15px;
+            border-radius: 8px;
+            text-align: center;
+            margin-bottom: 15px;
+            font-weight: 500;
+        }
     </style>
 </head>
 <body>
@@ -341,6 +363,10 @@
             <div class="status-badge" id="statusBadge">Processing...</div>
         </div>
 
+        <!-- Hidden elements for loading and error messages -->
+        <div class="loading-message" id="loadingMessage"></div>
+        <div class="error-message" id="errorMessage"></div>
+
         <div class="sections-container">
             <!-- Section 1: Transcription Editor -->
             <div class="section">
@@ -348,17 +374,17 @@
                     <span class="section-icon">📝</span>
                     <span class="section-title">Full Transcription</span>
                 </div>
-                
+
                 <div id="transcriptionContent">
-                    <textarea 
-                        class="transcription-editor" 
-                        id="transcriptionText" 
+                    <textarea
+                        class="transcription-editor"
+                        id="transcriptionText"
                         placeholder="Your transcription will appear here..."
                     ></textarea>
                     <div class="char-count">
                         <span id="charCount">0</span> characters
                     </div>
-                    
+
                     <div class="edit-buttons">
                         <button class="btn btn-primary" id="saveTranscriptionBtn">
                             💾 Save Changes
@@ -467,208 +493,349 @@
     </div>
 
     <script>
-        // Global state
-        let queueId = null;
-        let userId = null;
-        let originalTranscription = '';
-        let currentTranscription = '';
-        let summaryData = null;
-        let legalData = null;
+        // Global state and configuration
+        let appConfig = {}; // Will be populated by initializeConfig
 
-        // Initialize page
-        document.addEventListener('DOMContentLoaded', async () => {
-            console.log('Initializing transcription review...');
-            
-            // Get parameters from URL
+        // ============================
+        // Data Loading and Management
+        // ============================
+        let currentData = {
+            transcription: '',
+            summary: null,
+            legalAnalysis: null,
+            queueId: null,
+            userId: null
+        };
+
+        let retryCount = 0;
+        const maxRetries = 10;
+
+        async function loadTranscriptionData() {
             const urlParams = new URLSearchParams(window.location.search);
-            queueId = urlParams.get('queueId');
-            userId = urlParams.get('userId') || urlParams.get('create_user_id');
+            const queueId = urlParams.get('queueId') || urlParams.get('queue_id');
+            const userId = urlParams.get('userId') || urlParams.get('create_user_id') || urlParams.get('user_id');
+
+            console.log('Loading transcription data for:', { queueId, userId, attempt: retryCount + 1 });
 
             if (!queueId) {
-                showError('No transcription ID provided');
+                showError('No transcription ID provided in URL');
                 return;
             }
 
-            await loadTranscription();
-            setupEventListeners();
-        });
+            currentData.queueId = queueId;
+            currentData.userId = userId;
 
-        // Load transcription data
-        async function loadTranscription() {
             try {
-                updateStatus('Loading transcription...');
+                showLoadingMessage(`Loading transcription data... (attempt ${retryCount + 1}/${maxRetries})`);
 
-                const response = await fetch(`/api/transcription-status/${queueId}?userId=${userId}`);
-                if (!response.ok) throw new Error('Failed to load transcription');
+                // Add API key header if available
+                const headers = {};
+                if (appConfig?.apiKey) {
+                    headers['X-Api-Key'] = appConfig.apiKey;
+                }
 
-                const data = await response.json();
-                
-                if (data.status === 'COMPLETED' && data.transcription) {
-                    originalTranscription = data.transcription;
-                    currentTranscription = data.transcription;
-                    
-                    document.getElementById('transcriptionText').value = data.transcription;
-                    updateCharCount();
-                    updateStatus('Transcription loaded');
-                    
-                    // Update metadata
-                    if (data.metadata) {
-                        updateMetadata(data.metadata);
-                    }
+                // Try to get transcription status first
+                const statusResponse = await fetch(`/api/transcription-status/${queueId}`, {
+                    headers: headers
+                });
+
+                if (!statusResponse.ok) {
+                    throw new Error(`Failed to get transcription status: ${statusResponse.status}`);
+                }
+
+                const statusData = await statusResponse.json();
+                console.log('Transcription status:', statusData);
+
+                if (statusData.status === 'COMPLETED' && statusData.transcription) {
+                    currentData.transcription = statusData.transcription;
+                    displayTranscription(statusData.transcription);
+                    hideLoadingMessage();
+                    retryCount = 0; // Reset retry count on success
 
                     // Generate AI summary and legal analysis
-                    await generateSummary();
+                    await generateAISummary();
                     await generateLegalAnalysis();
-                    
+                } else if (statusData.status === 'FAILED') {
+                    showError(`Transcription failed: ${statusData.error || 'Unknown error'}`);
                 } else {
-                    showError('Transcription not ready yet. Please wait...');
+                    // Still processing - retry with exponential backoff
+                    retryCount++;
+                    if (retryCount < maxRetries) {
+                        const delay = Math.min(2000 * Math.pow(1.5, retryCount), 10000); // Max 10 seconds
+                        showLoadingMessage(`Transcription in progress... Retrying in ${Math.ceil(delay/1000)} seconds (${retryCount}/${maxRetries})`);
+                        setTimeout(loadTranscriptionData, delay);
+                    } else {
+                        showError('Transcription is taking longer than expected. Please refresh the page or contact support.');
+                    }
                 }
 
             } catch (error) {
                 console.error('Error loading transcription:', error);
-                showError(error.message);
+                retryCount++;
+                if (retryCount < maxRetries) {
+                    const delay = Math.min(3000 * retryCount, 15000); // Max 15 seconds
+                    showLoadingMessage(`Connection error. Retrying in ${Math.ceil(delay/1000)} seconds... (${retryCount}/${maxRetries})`);
+                    setTimeout(loadTranscriptionData, delay);
+                } else {
+                    showError(`Failed to load transcription after ${maxRetries} attempts: ${error.message}`);
+                }
             }
         }
 
-        // Generate AI summary
-        async function generateSummary() {
-            const summaryLoading = document.getElementById('summaryLoading');
-            const summaryDisplay = document.getElementById('summaryDisplay');
-            const summaryError = document.getElementById('summaryError');
-
+        // ============================
+        // AI Summary Generation
+        // ============================
+        async function generateAISummary() {
             try {
-                summaryLoading.style.display = 'flex';
-                summaryDisplay.style.display = 'none';
-                summaryError.style.display = 'none';
+                showSummaryLoading('Generating AI summary...');
+
+                // Add API key header if available
+                const headers = {
+                    'Content-Type': 'application/json'
+                };
+                if (appConfig?.apiKey) {
+                    headers['X-Api-Key'] = appConfig.apiKey;
+                }
 
                 const response = await fetch('/api/generate-ai-summary', {
                     method: 'POST',
-                    headers: {
-                        'Content-Type': 'application/json',
-                        'X-Api-Key': await getApiKey()
-                    },
+                    headers: headers,
                     body: JSON.stringify({
-                        transcription: currentTranscription,
-                        userId: userId,
-                        queueId: queueId
+                        transcription: currentData.transcription,
+                        userId: currentData.userId,
+                        incidentId: currentData.queueId
                     })
                 });
 
-                if (!response.ok) throw new Error('Failed to generate summary');
-
-                const data = await response.json();
-                summaryData = data.summary;
-
-                // Display summary
-                document.getElementById('summaryText').textContent = data.summary.text || 'No summary available';
-                
-                // Display key points
-                const keyPointsList = document.getElementById('keyPointsList');
-                keyPointsList.innerHTML = '';
-                if (data.summary.keyPoints && data.summary.keyPoints.length > 0) {
-                    data.summary.keyPoints.forEach(point => {
-                        const li = document.createElement('li');
-                        li.textContent = point;
-                        keyPointsList.appendChild(li);
-                    });
+                if (!response.ok) {
+                    const errorText = await response.text();
+                    throw new Error(`Server error (${response.status}): ${errorText}`);
                 }
 
-                summaryLoading.style.display = 'none';
-                summaryDisplay.style.display = 'block';
+                const result = await response.json();
+                console.log('AI Summary result:', result);
 
+                if (result.success && result.summary) {
+                    currentData.summary = result.summary;
+                    displaySummary(result.summary);
+                } else {
+                    showSummaryError(`Failed to generate summary: ${result.error || 'Unknown error'}`);
+                }
             } catch (error) {
-                console.error('Error generating summary:', error);
-                summaryLoading.style.display = 'none';
-                summaryError.style.display = 'block';
-                document.getElementById('summaryErrorText').textContent = error.message;
+                console.error('AI summary generation error:', error);
+                showSummaryError(`Summary generation failed: ${error.message}`);
+
+                // Show a fallback summary
+                displaySummary({
+                    summary_text: 'Summary generation is currently unavailable. Your transcription has been saved and you can proceed to review it.',
+                    key_points: ['Transcription completed successfully', 'Manual review recommended'],
+                    incident_severity: 'Unknown',
+                    recommendations: ['Review transcription for accuracy', 'Add any missing details']
+                });
             }
         }
 
-        // Generate legal analysis
+        // ============================
+        // Legal Analysis Generation
+        // ============================
         async function generateLegalAnalysis() {
-            const legalLoading = document.getElementById('legalLoading');
-            const legalDisplay = document.getElementById('legalDisplay');
-            const legalError = document.getElementById('legalError');
-
             try {
-                legalLoading.style.display = 'flex';
-                legalDisplay.style.display = 'none';
-                legalError.style.display = 'none';
+                showLegalLoading('Analyzing legal implications...');
+
+                // Add API key header if available
+                const headers = {
+                    'Content-Type': 'application/json'
+                };
+                if (appConfig?.apiKey) {
+                    headers['X-Api-Key'] = appConfig.apiKey;
+                }
 
                 const response = await fetch('/api/generate-legal-narrative', {
                     method: 'POST',
-                    headers: {
-                        'Content-Type': 'application/json',
-                        'X-Api-Key': await getApiKey()
-                    },
+                    headers: headers,
                     body: JSON.stringify({
-                        transcription_text: currentTranscription,
-                        create_user_id: userId,
-                        target_length: "250-300 words",
-                        include_evidence_section: true
+                        create_user_id: currentData.userId,
+                        transcription_text: currentData.transcription,
+                        target_length: "200-300 words",
+                        include_evidence_section: true,
+                        include_missing_notes: true
                     })
                 });
 
-                if (!response.ok) throw new Error('Failed to generate legal analysis');
+                if (!response.ok) {
+                    const errorText = await response.text();
+                    throw new Error(`Server error (${response.status}): ${errorText}`);
+                }
 
-                const data = await response.json();
-                legalData = data.narrative;
+                const result = await response.json();
+                console.log('Legal Analysis result:', result);
 
-                // Display legal assessment (first part of narrative)
-                const assessmentText = data.narrative.split('\n\n')[0] || 'No legal assessment available';
-                document.getElementById('legalAssessment').textContent = assessmentText;
-
-                // Generate recommendations based on the narrative
-                const recommendations = generateRecommendations(data.narrative);
-                const recommendationsList = document.getElementById('legalRecommendations');
-                recommendationsList.innerHTML = '';
-                recommendations.forEach(rec => {
-                    const li = document.createElement('li');
-                    li.textContent = rec;
-                    recommendationsList.appendChild(li);
-                });
-
-                legalLoading.style.display = 'none';
-                legalDisplay.style.display = 'block';
-
+                if (result.success && result.narrative) {
+                    currentData.legalAnalysis = result.narrative;
+                    displayLegalAnalysis(result.narrative);
+                } else {
+                    showLegalError(`Failed to generate legal analysis: ${result.error || 'Unknown error'}`);
+                }
             } catch (error) {
-                console.error('Error generating legal analysis:', error);
-                legalLoading.style.display = 'none';
-                legalError.style.display = 'block';
-                document.getElementById('legalErrorText').textContent = error.message;
+                console.error('Legal analysis generation error:', error);
+                showLegalError(`Legal analysis failed: ${error.message}`);
+
+                // Show a fallback analysis
+                displayLegalAnalysis(`Legal analysis is currently unavailable.
+
+Based on your transcription, please ensure you have documented:
+- Time and location of the incident
+- Weather and road conditions
+- Actions of all parties involved
+- Any injuries or property damage
+- Contact information for witnesses
+
+Consider consulting with a legal professional for detailed analysis of your specific situation.`);
             }
         }
 
-        // Generate recommendations from narrative
+        // ============================
+        // UI Update Functions
+        // ============================
+
+        // Display Transcription
+        function displayTranscription(transcription) {
+            document.getElementById('transcriptionText').value = transcription;
+            updateCharCount();
+            updateStatus('Transcription loaded');
+        }
+
+        // Update character count
+        function updateCharCount() {
+            const text = document.getElementById('transcriptionText').value;
+            document.getElementById('charCount').textContent = text.length;
+            currentTranscription = text; // Update global currentTranscription
+        }
+
+        // Update status badge
+        function updateStatus(status) {
+            document.getElementById('statusBadge').textContent = status;
+        }
+
+        // Update metadata
+        function updateMetadata(metadata) {
+            document.getElementById('audioQuality').textContent = metadata.audioQuality || 'Good';
+            document.getElementById('processingTime').textContent = metadata.processingTime || 'N/A';
+
+            const confidence = metadata.confidence || 'high';
+            const confidenceEl = document.getElementById('transcriptionConfidence');
+            confidenceEl.textContent = confidence.charAt(0).toUpperCase() + confidence.slice(1);
+            confidenceEl.className = `confidence-indicator confidence-${confidence}`;
+        }
+
+        // Display AI Summary
+        function displaySummary(summary) {
+            document.getElementById('summaryLoading').style.display = 'none';
+            document.getElementById('summaryDisplay').style.display = 'block';
+            document.getElementById('summaryError').style.display = 'none';
+
+            document.getElementById('summaryText').textContent = summary.summary_text || 'No summary available';
+
+            const keyPointsList = document.getElementById('keyPointsList');
+            keyPointsList.innerHTML = '';
+            if (summary.key_points && summary.key_points.length > 0) {
+                summary.key_points.forEach(point => {
+                    const li = document.createElement('li');
+                    li.textContent = point;
+                    keyPointsList.appendChild(li);
+                });
+            } else {
+                const li = document.createElement('li');
+                li.textContent = 'No key points found.';
+                keyPointsList.appendChild(li);
+            }
+        }
+
+        // Show loading state for AI Summary
+        function showSummaryLoading(message) {
+            document.getElementById('summaryLoading').style.display = 'flex';
+            document.getElementById('summaryLoading').querySelector('p').textContent = message;
+            document.getElementById('summaryDisplay').style.display = 'none';
+            document.getElementById('summaryError').style.display = 'none';
+        }
+
+        // Show error state for AI Summary
+        function showSummaryError(message) {
+            document.getElementById('summaryLoading').style.display = 'none';
+            document.getElementById('summaryDisplay').style.display = 'none';
+            document.getElementById('summaryError').style.display = 'block';
+            document.getElementById('summaryErrorText').textContent = message;
+        }
+
+        // Display Legal Analysis
+        function displayLegalAnalysis(analysis) {
+            document.getElementById('legalLoading').style.display = 'none';
+            document.getElementById('legalDisplay').style.display = 'block';
+            document.getElementById('legalError').style.display = 'none';
+
+            const assessmentText = analysis.split('\n\n')[0] || 'No legal assessment available';
+            document.getElementById('legalAssessment').textContent = assessmentText;
+
+            const recommendations = generateRecommendations(analysis);
+            const recommendationsList = document.getElementById('legalRecommendations');
+            recommendationsList.innerHTML = '';
+            recommendations.forEach(rec => {
+                const li = document.createElement('li');
+                li.textContent = rec;
+                recommendationsList.appendChild(li);
+            });
+        }
+
+        // Show loading state for Legal Analysis
+        function showLegalLoading(message) {
+            document.getElementById('legalLoading').style.display = 'flex';
+            document.getElementById('legalLoading').querySelector('p').textContent = message;
+            document.getElementById('legalDisplay').style.display = 'none';
+            document.getElementById('legalError').style.display = 'none';
+        }
+
+        // Show error state for Legal Analysis
+        function showLegalError(message) {
+            document.getElementById('legalLoading').style.display = 'none';
+            document.getElementById('legalDisplay').style.display = 'none';
+            document.getElementById('legalError').style.display = 'block';
+            document.getElementById('legalErrorText').textContent = message;
+        }
+
+        // Generate recommendations from narrative (simplified for display)
         function generateRecommendations(narrative) {
             const recommendations = [];
-            
+
             if (narrative.toLowerCase().includes('injury') || narrative.toLowerCase().includes('medical')) {
-                recommendations.push('Seek immediate medical attention and keep all medical records');
-                recommendations.push('Document all injuries with photographs if possible');
+                recommendations.push('Seek immediate medical attention and keep all medical records.');
+                recommendations.push('Document all injuries with photographs if possible.');
             }
-            
             if (narrative.toLowerCase().includes('police') || narrative.toLowerCase().includes('officer')) {
-                recommendations.push('Obtain a copy of the police report when available');
-                recommendations.push('Keep all reference numbers provided by police');
+                recommendations.push('Obtain a copy of the police report when available.');
+                recommendations.push('Keep all reference numbers provided by police.');
             }
-            
             if (narrative.toLowerCase().includes('witness')) {
-                recommendations.push('Contact witnesses to obtain formal statements');
-                recommendations.push('Gather witness contact details if not already done');
+                recommendations.push('Contact witnesses to obtain formal statements.');
+                recommendations.push('Gather witness contact details if not already done.');
             }
-            
             if (narrative.toLowerCase().includes('damage') || narrative.toLowerCase().includes('vehicle')) {
-                recommendations.push('Get multiple repair estimates for vehicle damage');
-                recommendations.push('Take detailed photographs of all vehicle damage');
+                recommendations.push('Get multiple repair estimates for vehicle damage.');
+                recommendations.push('Take detailed photographs of all vehicle damage.');
             }
-            
-            recommendations.push('Contact your insurance company to report the incident');
-            recommendations.push('Keep detailed records of all incident-related expenses');
-            recommendations.push('Consider consulting with a personal injury solicitor');
-            
+
+            // Add general recommendations if not already covered or if narrative is fallback
+            if (recommendations.length === 0 || narrative.includes('unavailable')) {
+                recommendations.push('Contact your insurance company to report the incident.');
+                recommendations.push('Keep detailed records of all incident-related expenses.');
+                recommendations.push('Consider consulting with a personal injury solicitor.');
+            }
+
             return recommendations.slice(0, 6); // Limit to 6 recommendations
         }
+
+        // ============================
+        // Event Listeners and Actions
+        // ============================
 
         // Setup event listeners
         function setupEventListeners() {
@@ -688,43 +855,37 @@
             document.getElementById('approveBtn').addEventListener('click', approveAndContinue);
         }
 
-        // Update character count
-        function updateCharCount() {
-            const text = document.getElementById('transcriptionText').value;
-            document.getElementById('charCount').textContent = text.length;
-            currentTranscription = text;
-        }
-
         // Save transcription changes
         async function saveTranscription() {
             try {
+                updateStatus('Saving transcription changes...');
                 const response = await fetch('/api/update-transcription', {
                     method: 'POST',
                     headers: {
                         'Content-Type': 'application/json',
-                        'X-Api-Key': await getApiKey()
+                        'X-Api-Key': appConfig?.apiKey || ''
                     },
                     body: JSON.stringify({
-                        queueId: queueId,
+                        queueId: currentData.queueId,
                         transcription: currentTranscription,
-                        userId: userId
+                        userId: currentData.userId
                     })
                 });
 
                 if (response.ok) {
-                    updateStatus('Transcription saved');
-                    originalTranscription = currentTranscription;
-                    
+                    updateStatus('Transcription saved successfully');
+                    originalTranscription = currentTranscription; // Update original
                     // Regenerate summary and legal analysis with updated transcription
                     await generateSummary();
                     await generateLegalAnalysis();
                 } else {
-                    throw new Error('Failed to save transcription');
+                    throw new Error(`Failed to save transcription: ${response.status} ${await response.text()}`);
                 }
 
             } catch (error) {
                 console.error('Error saving transcription:', error);
                 alert('Failed to save transcription: ' + error.message);
+                updateStatus('Error saving transcription');
             }
         }
 
@@ -733,40 +894,7 @@
             document.getElementById('transcriptionText').value = originalTranscription;
             currentTranscription = originalTranscription;
             updateCharCount();
-            updateStatus('Transcription reset');
-        }
-
-        // Update metadata display
-        function updateMetadata(metadata) {
-            document.getElementById('audioQuality').textContent = metadata.audioQuality || 'Good';
-            document.getElementById('processingTime').textContent = metadata.processingTime || 'N/A';
-            
-            const confidence = metadata.confidence || 'high';
-            const confidenceEl = document.getElementById('transcriptionConfidence');
-            confidenceEl.textContent = confidence.charAt(0).toUpperCase() + confidence.slice(1);
-            confidenceEl.className = `confidence-indicator confidence-${confidence}`;
-        }
-
-        // Update status
-        function updateStatus(status) {
-            document.getElementById('statusBadge').textContent = status;
-        }
-
-        // Show error
-        function showError(message) {
-            updateStatus('Error: ' + message);
-            console.error(message);
-        }
-
-        // Get API key
-        async function getApiKey() {
-            try {
-                const response = await fetch('/api/config');
-                const config = await response.json();
-                return config.apiKey || 'fallback-key';
-            } catch (error) {
-                return 'fallback-key';
-            }
+            updateStatus('Transcription reset to original');
         }
 
         // Go back
@@ -774,15 +902,15 @@
             if (window.history.length > 1) {
                 window.history.back();
             } else {
-                window.location.href = '/transcription-status.html';
+                window.location.href = '/transcription-status.html'; // Fallback URL
             }
         }
 
         // Approve and continue
         async function approveAndContinue() {
             try {
-                updateStatus('Saving final review...');
-                
+                updateStatus('Finalizing review...');
+
                 // Save final transcription if changed
                 if (currentTranscription !== originalTranscription) {
                     await saveTranscription();
@@ -790,8 +918,8 @@
 
                 // Mark as approved and continue to next step
                 const params = new URLSearchParams({
-                    userId: userId,
-                    queueId: queueId,
+                    userId: currentData.userId,
+                    queueId: currentData.queueId,
                     status: 'approved'
                 });
 
@@ -800,8 +928,119 @@
             } catch (error) {
                 console.error('Error approving transcription:', error);
                 alert('Failed to approve transcription: ' + error.message);
+                updateStatus('Error approving transcription');
             }
         }
+
+        // ============================
+        // Utility Functions
+        // ============================
+
+        // Initialize configuration (fetch API key etc.)
+        async function initializeConfig() {
+            try {
+                const response = await fetch('/api/config');
+                if (!response.ok) {
+                    throw new Error(`Failed to fetch config: ${response.status}`);
+                }
+                appConfig = await response.json();
+                console.log('Configuration loaded:', appConfig);
+            } catch (error) {
+                console.error('Error initializing configuration:', error);
+                // Set a fallback API key or handle as needed
+                appConfig.apiKey = 'fallback-api-key';
+                throw error; // Re-throw to be caught by page initialization
+            }
+        }
+
+        // Get API key from loaded config
+        function getApiKey() {
+            return appConfig?.apiKey || 'fallback-api-key';
+        }
+
+        // ============================
+        // UI Helper Functions
+        // ============================
+
+        function showLoadingMessage(message) {
+            const errorElement = document.getElementById('errorMessage');
+            if (errorElement) {
+                errorElement.style.display = 'none';
+            }
+
+            const loadingElement = document.getElementById('loadingMessage');
+            if (loadingElement) {
+                loadingElement.textContent = message;
+                loadingElement.style.display = 'block';
+            }
+
+            console.log('Loading:', message);
+        }
+
+        function hideLoadingMessage() {
+            const loadingElement = document.getElementById('loadingMessage');
+            if (loadingElement) {
+                loadingElement.style.display = 'none';
+            }
+        }
+
+        function showError(message) {
+            hideLoadingMessage();
+
+            const errorElement = document.getElementById('errorMessage');
+            if (errorElement) {
+                errorElement.textContent = message;
+                errorElement.style.display = 'block';
+            }
+
+            console.error('Transcription Review Error:', message);
+
+            // Add debug information
+            const urlParams = new URLSearchParams(window.location.search);
+            console.log('Debug info:', {
+                currentUrl: window.location.href,
+                queueId: urlParams.get('queueId') || urlParams.get('queue_id'),
+                userId: urlParams.get('userId') || urlParams.get('create_user_id'),
+                retryCount: retryCount,
+                currentData: currentData,
+                appConfig: appConfig // Include config in debug info
+            });
+        }
+
+        // ============================
+        // Page Initialization
+        // ============================
+        document.addEventListener('DOMContentLoaded', async () => {
+            console.log('🎤 Transcription Review Page - Loading...');
+
+            // Log URL parameters for debugging
+            const urlParams = new URLSearchParams(window.location.search);
+            console.log('URL Parameters:', {
+                queueId: urlParams.get('queueId'),
+                queue_id: urlParams.get('queue_id'),
+                userId: urlParams.get('userId'),
+                create_user_id: urlParams.get('create_user_id'),
+                user_id: urlParams.get('user_id'),
+                fullUrl: window.location.href
+            });
+
+            try {
+                // Initialize configuration
+                await initializeConfig();
+                console.log('Configuration loaded:', appConfig);
+
+                // Load transcription data
+                await loadTranscriptionData();
+
+                // Setup event listeners after data is loaded and elements are ready
+                setupEventListeners();
+
+                console.log('✅ Transcription Review Page - Initialized');
+            } catch (error) {
+                console.error('❌ Failed to initialize page:', error);
+                showError(`Failed to initialize page: ${error.message}`);
+            }
+        });
     </script>
 </body>
 </html>
