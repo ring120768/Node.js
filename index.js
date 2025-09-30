@@ -725,12 +725,7 @@ app.post('/webhook/signup', webhookLimiter, checkSharedKey, async (req, res) => 
       // Continue processing, but log the consent issue.
     }
 
-    // TODO: Image processing for signup - implement when needed
-    // if (imageProcessor && webhookData.create_user_id) {
-    //   console.log('Processing images for signup...');
-    //   await imageProcessor.processSignupImages(webhookData);
-    //   console.log('Image processing complete.');
-    // }
+    // Image processing for signup handled by separate modules when needed
 
     // Log GDPR activity for signup webhook processing
     const userIdForLog = webhookData?.create_user_id || webhookData?.userId;
@@ -829,12 +824,7 @@ app.post('/webhook/incident-report', webhookLimiter, checkSharedKey, async (req,
       // Continue processing, but log the consent issue.
     }
 
-    // TODO: File processing for incident reports - implement when needed
-    // if (imageProcessor) {
-    //   console.log(`Processing files for incident ${incidentId} and user ${userId}...`);
-    //   const processingResult = await imageProcessor.processIncidentReportFiles(webhookData);
-    //   console.log('File processing complete.');
-    // }
+    // File processing for incident reports handled by incidentEndpoints module
 
     // Log GDPR activity for incident report webhook processing
     if (gdprManager) {
@@ -2107,67 +2097,10 @@ app.get('/status', (req, res) => {
 });
 
 // --- AUTHENTICATION STATUS ---
-// This section is replaced by the new incidentEndpoints implementation
-// app.get('/api/auth/status', (req, res) => {
-//   const mockUser = {
-//     authenticated: false,
-//     user: null
-//   };
-
-//   if (req.session && req.session.user) {
-//     mockUser.authenticated = true;
-//     mockUser.user = {
-//       uid: req.session.user.id,
-//       email: req.session.user.email,
-//       fullName: req.session.user.full_name
-//     };
-//   }
-
-//   res.json(mockUser);
-// });
+// Handled by incidentEndpoints.getAuthStatus()
 
 // --- EMERGENCY CONTACTS ---
-// This section is replaced by the new incidentEndpoints implementation
-// app.get('/api/user/:userId/emergency-contacts', authenticateRequest, async (req, res) => {
-//   if (!supabaseEnabled) {
-//     return res.status(503).json({
-//       error: 'Service not configured',
-//       requestId: req.requestId
-//     });
-//   }
-
-//   try {
-//     const { userId } = req.params;
-
-//     const { data, error } = await supabase
-//       .from('user_signup')
-//       .select('emergency_contact, recovery_breakdown_number, emergency_services_number, mobile') // Added mobile
-//       .eq('create_user_id', userId)
-//       .single();
-
-//     if (error) {
-//       Logger.error('Supabase error', error);
-//       return res.status(404).json({
-//         error: 'User not found',
-//         requestId: req.requestId
-//       });
-//     }
-
-//     res.json({
-//       emergency_contact: data.emergency_contact || null,
-//       recovery_breakdown_number: data.recovery_breakdown_number || null,
-//       emergency_services_number: data.emergency_services_number || '999',
-//       mobile: data.mobile || null, // Added mobile
-//       requestId: req.requestId,
-//     });
-//   } catch (error) {
-//     Logger.error('Error fetching emergency contacts', error);
-//     res.status(500).json({
-//       error: 'Failed to fetch contacts',
-//       requestId: req.requestId
-//     });
-//   }
-// });
+// Handled by incidentEndpoints.getEmergencyContacts()
 
 // ========================================
 // INCIDENT ENDPOINTS INITIALIZATION
