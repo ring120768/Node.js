@@ -47,19 +47,23 @@ try {
   console.warn('PDF generation modules not found - PDF features will be disabled', error.message);
 }
 
-// Import the REAL transcription service
+// Import REAL transcription service
 const TranscriptionService = require('./lib/transcriptionService');
 let transcriptionService = null;
 
-// Keep other mock functions for now (for parts not yet implemented)
+// Import remaining mock functions (only the ones not in TranscriptionService)
 const {
   logGDPRActivity,
   initializeDashcamUpload,
   generateLegalNarrative,
   prepareAccidentDataForNarrative,
   extractKeyPointsFromNarrative,
-  generateAISummary // Remove this if you want to use the one in TranscriptionService
+  generateAISummary
 } = require('./lib/mockFunctions');
+
+// These will be set up after Supabase initializes
+let processTranscriptionFromBuffer = null;
+let processTranscriptionQueue = null;
 
 // --- ENVIRONMENT VARIABLE VALIDATION ---
 const validateEnvironment = () => {
@@ -585,11 +589,6 @@ if (supabaseEnabled) {
   }
 }
 
-// ========================================
-// MISSING VARIABLES AND FUNCTIONS
-// ========================================
-let transcriptionQueueInterval = null;
-
 // Initialize Supabase Realtime function
 function initializeSupabaseRealtime() {
   Logger.info('Supabase Realtime initialization placeholder');
@@ -614,6 +613,9 @@ if (supabaseEnabled && supabase) {
   Logger.warn('Simplified modules not initialized - Supabase not available');
 }
 
+// Make transcriptionStatuses globally accessible for the service
+global.transcriptionStatuses = transcriptionStatuses;
+
 // ========================================
 // INITIALIZE TRANSCRIPTION SERVICE
 // ========================================
@@ -633,23 +635,20 @@ if (supabaseEnabled && process.env.OPENAI_API_KEY) {
 }
 
 // Create wrapper functions for compatibility
-const processTranscriptionFromBuffer = async (...args) => {
+processTranscriptionFromBuffer = async (...args) => {
   if (!transcriptionService) {
     throw new Error('Transcription service not initialized - check OPENAI_API_KEY');
   }
   return transcriptionService.processTranscriptionFromBuffer(...args);
 };
 
-const processTranscriptionQueue = async () => {
+processTranscriptionQueue = async () => {
   if (!transcriptionService) {
     Logger.warn('Transcription service not initialized');
     return;
   }
   return transcriptionService.processTranscriptionQueue();
 };
-
-// Make transcriptionStatuses globally accessible for the service
-global.transcriptionStatuses = transcriptionStatuses;
 
 // ========================================
 // SIMPLIFIED GDPR ENDPOINTS
@@ -2531,6 +2530,7 @@ let wsHeartbeat = null;
 let activeSessions = new Map();
 let userSessions = new Map();
 let transcriptionStatuses = new Map();
+let transcriptionQueueInterval = null;
 
 // --- SERVER STARTUP ---
 const PORT = process.env.PORT || 3000;
