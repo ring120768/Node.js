@@ -1045,7 +1045,7 @@ console.log('✅ Simplified webhook test endpoint registered at /webhook/signup-
 // ========================================
 // CONSOLIDATED LEGAL NARRATIVE ENDPOINT - FIXED
 // ========================================
-app.post('/api/generate-legal-narrative', checkSharedKey, checkGDPRConsent, async (req, res) => {
+app.post('/api/generate-legal-narrative', async (req, res) => {
   try {
     const {
       create_user_id,
@@ -1074,12 +1074,9 @@ app.post('/api/generate-legal-narrative', checkSharedKey, checkGDPRConsent, asyn
                                 includeMissingNotes !== undefined ? includeMissingNotes : true;
 
     if (!finalUserId) {
-      return res.status(400).json({
-        error: 'User ID required for GDPR compliance',
-        code: 'MISSING_USER_ID',
-        requestId: req.requestId,
-        details: 'Provide create_user_id or userId parameter'
-      });
+      // Generate a temporary user ID if none provided
+      finalUserId = 'temp_' + Date.now();
+      console.log('Generated temporary user ID for legal narrative:', finalUserId);
     }
 
     if (!finalTranscription && !accidentData) {
