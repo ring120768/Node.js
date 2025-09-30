@@ -1461,15 +1461,15 @@
                     }
 
                     // Redirect to review page after a short delay
-                    // Updated redirect logic to match the new page name and parameters
+                    // Updated redirect logic to match the correct page name
                     console.log('Transcription completed. Redirecting to transcription review page...');
                     setTimeout(() => {
                         const params = new URLSearchParams({
                             queueId: state.currentQueueId,
                             userId: state.userId
                         });
-                        // Assuming the new page is 'ai-transcription-review.html'
-                        window.location.href = `/ai-transcription-review.html?${params.toString()}`;
+                        // Use the correct existing page name
+                        window.location.href = `/transcription-review.html?${params.toString()}`;
                     }, 2000);
 
                     // Clear polling if active
@@ -2096,10 +2096,10 @@
                         state.pollInterval = null;
                     }
 
-                    // Redirect to AI summary review page
-                    console.log('Redirecting to AI summary review...');
+                    // Redirect to transcription review page
+                    console.log('Redirecting to transcription review...');
                     setTimeout(() => {
-                        window.location.href = `/ai-summary-review.html?${params.toString()}`;
+                        window.location.href = `/transcription-review.html?${params.toString()}`;
                     }, 1000);
 
                 } else {
