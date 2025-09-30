@@ -1851,6 +1851,29 @@ app.post('/api/generate-ai-summary', checkSharedKey, async (req, res) => {
   }
 });
 
+// Debug endpoint for transcription service
+app.get('/api/debug/transcription', (req, res) => {
+  res.json({
+    timestamp: new Date().toISOString(),
+    openai: {
+      hasKey: !!process.env.OPENAI_API_KEY,
+      keyPrefix: process.env.OPENAI_API_KEY ? 
+        process.env.OPENAI_API_KEY.substring(0, 10) : 'NOT SET'
+    },
+    service: {
+      initialized: transcriptionService !== null,
+      className: transcriptionService ? transcriptionService.constructor.name : 'null'
+    },
+    functions: {
+      processTranscriptionFromBuffer: typeof processTranscriptionFromBuffer === 'function',
+      processTranscriptionQueue: typeof processTranscriptionQueue === 'function'
+    },
+    queue: {
+      intervalRunning: transcriptionQueueInterval !== null
+    }
+  });
+});
+
 // Test transcription queue endpoint
 app.get('/test/transcription-queue', async (req, res) => {
   if (!supabaseEnabled) {
