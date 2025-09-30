@@ -540,7 +540,7 @@
                 // Try to get transcription status first
                 const statusUrl = `/api/transcription-status/${queueId}${userId ? `?userId=${userId}` : ''}`;
                 console.log('Fetching transcription status from:', statusUrl);
-                
+
                 const statusResponse = await fetch(statusUrl, {
                     headers: headers
                 });
@@ -560,12 +560,12 @@
                         console.log('✅ Transcription found:', statusData.transcription.substring(0, 100) + '...');
                         currentData.transcription = statusData.transcription;
                         displayTranscription(statusData.transcription);
-                        
+
                         // Update metadata if available
                         if (statusData.metadata) {
                             updateMetadata(statusData.metadata);
                         }
-                        
+
                         hideLoadingMessage();
                         updateStatus('Transcription loaded successfully');
                         retryCount = 0; // Reset retry count on success
@@ -578,11 +578,11 @@
                         // Try to fetch from database directly
                         await fetchTranscriptionFromDatabase();
                     }
-                    
+
                 } else if (statusData.status === 'FAILED' || statusData.error) {
                     console.error('❌ Transcription failed:', statusData.error);
                     showError(`Transcription failed: ${statusData.error || 'Unknown error'}`);
-                    
+
                 } else if (statusData.status === 'PROCESSING' || statusData.status === 'PENDING') {
                     console.log('⏳ Transcription still processing...');
                     // Still processing - retry with exponential backoff
@@ -594,7 +594,7 @@
                     } else {
                         showError('Transcription is taking longer than expected. Please refresh the page or contact support.');
                     }
-                    
+
                 } else {
                     console.error('❌ Unexpected status response:', statusData);
                     showError(`Unexpected response format. Status: ${statusData.status}, Success: ${statusData.success}, Has transcription: ${!!statusData.transcription}`);
@@ -619,7 +619,7 @@
         async function fetchTranscriptionFromDatabase() {
             try {
                 showLoadingMessage('Fetching transcription from database...');
-                
+
                 const headers = {
                     'Content-Type': 'application/json'
                 };
@@ -630,7 +630,7 @@
                 // Try to fetch transcription by user ID and incident ID
                 const dbUrl = `/api/transcription-data?userId=${currentData.userId}&queueId=${currentData.queueId}`;
                 console.log('Fetching transcription from database:', dbUrl);
-                
+
                 const response = await fetch(dbUrl, {
                     headers: headers
                 });
@@ -646,7 +646,7 @@
                     console.log('✅ Transcription found in database:', dbData.transcription.substring(0, 100) + '...');
                     currentData.transcription = dbData.transcription;
                     displayTranscription(dbData.transcription);
-                    
+
                     hideLoadingMessage();
                     updateStatus('Transcription loaded from database');
                     retryCount = 0;

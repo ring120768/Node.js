@@ -1971,6 +1971,84 @@ app.get('/api/transcription-status/:queueId', async (req, res) => {
   }
 });
 
+// Alternative endpoint for transcription data (used by review page)
+app.get('/api/transcription-data', async (req, res) => {
+  if (!supabaseEnabled) {
+    return res.status(503).json({ error: 'Service not configured' });
+  }
+
+  try {
+    const { queueId, userId } = req.query;
+
+    if (!queueId) {
+      return res.status(400).json({
+        error: 'Queue ID is required',
+        requestId: req.requestId
+      });
+    }
+
+    // Get queue item
+    const { data: queueItem, error: queueError } = await supabase
+      .from('transcription_queue')
+      .select('*')
+      .eq('id', queueId)
+      .single();
+
+    if (queueError) {
+      Logger.warn('Queue item not found:', queueError.message);
+      return res.status(404).json({
+        error: 'Transcription not found',
+        requestId: req.requestId
+      });
+    }
+
+    // If completed, get the transcription
+    if (queueItem.status === 'COMPLETED') {
+      const { data: transcription, error: transcriptionError } = await supabase
+        .from('ai_transcription')
+        .select('*')
+        .eq('create_user_id', queueItem.create_user_id)
+        .eq('incident_report_id', queueItem.incident_report_id)
+        .order('created_at', { ascending: false })
+        .limit(1)
+        .single();
+
+      if (!transcriptionError && transcription) {
+        return res.json({
+          success: true,
+          transcription: transcription.transcription_text,
+          queueId: queueId,
+          status: 'COMPLETED',
+          metadata: {
+            audioQuality: 'Good',
+            confidence: 'High',
+            createdAt: transcription.created_at
+          },
+          requestId: req.requestId
+        });
+      }
+    }
+
+    // Return status without transcription
+    res.json({
+      success: true,
+      transcription: null,
+      queueId: queueId,
+      status: queueItem.status,
+      error: queueItem.error_message,
+      requestId: req.requestId
+    });
+
+  } catch (error) {
+    Logger.error('Error getting transcription data:', error);
+    res.status(500).json({
+      error: 'Failed to get transcription data',
+      details: error.message,
+      requestId: req.requestId
+    });
+  }
+});
+
 // Update transcription text
 app.post('/api/update-transcription', checkSharedKey, async (req, res) => {
   if (!supabaseEnabled) {
