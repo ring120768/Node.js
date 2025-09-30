@@ -64,6 +64,7 @@ const {
 // These will be set up after Supabase initializes
 let processTranscriptionFromBuffer = null;
 let processTranscriptionQueue = null;
+let transcriptionQueueInterval = null;
 
 // --- ENVIRONMENT VARIABLE VALIDATION ---
 const validateEnvironment = () => {
@@ -2560,7 +2561,6 @@ let wsHeartbeat = null;
 let activeSessions = new Map();
 let userSessions = new Map();
 let transcriptionStatuses = new Map();
-let transcriptionQueueInterval = null;
 
 // --- SERVER STARTUP ---
 const PORT = process.env.PORT || 3000;
