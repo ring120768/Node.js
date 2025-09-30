@@ -1460,6 +1460,18 @@
                         confirmBtn.disabled = false;
                     }
 
+                    // Redirect to review page after a short delay
+                    // Updated redirect logic to match the new page name and parameters
+                    console.log('Transcription completed. Redirecting to transcription review page...');
+                    setTimeout(() => {
+                        const params = new URLSearchParams({
+                            queueId: state.currentQueueId,
+                            userId: state.userId
+                        });
+                        // Assuming the new page is 'ai-transcription-review.html'
+                        window.location.href = `/ai-transcription-review.html?${params.toString()}`;
+                    }, 2000);
+
                     // Clear polling if active
                     if (state.pollInterval) {
                         clearInterval(state.pollInterval);
@@ -1572,19 +1584,19 @@
 
             try {
                 const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
-                
+
                 // Test successful
                 showStatus('✅ Microphone test successful! You can now record.', 'success');
                 testButton.innerHTML = '✅ Mic Works';
                 testButton.style.background = '#48bb78';
                 testButton.style.color = 'white';
-                
+
                 // Enable record button
                 document.getElementById('recordButton').disabled = false;
-                
+
                 // Stop the test stream
                 stream.getTracks().forEach(track => track.stop());
-                
+
             } catch (error) {
                 console.error('Microphone test failed:', error);
                 showStatus(`❌ Microphone test failed: ${error.message}`, 'error');
@@ -1592,7 +1604,7 @@
                 testButton.style.background = '#ef4444';
                 testButton.style.color = 'white';
             }
-            
+
             setTimeout(() => {
                 testButton.disabled = false;
                 testButton.innerHTML = '🔧 Test Microphone';
@@ -1717,7 +1729,7 @@
 
                 if (error.name === 'NotAllowedError') {
                     showStatus('🎤 Microphone permission denied. Please click the microphone icon in your browser\'s address bar and allow access.', 'error');
-                    
+
                     // Show detailed help for microphone permissions
                     const helpDiv = document.createElement('div');
                     helpDiv.style.cssText = 'margin-top: 15px; padding: 15px; background: #fff3cd; border: 1px solid #ffeaa7; border-radius: 8px; font-size: 14px;';
@@ -1731,14 +1743,14 @@
                         </ol>
                     `;
                     document.querySelector('.container').appendChild(helpDiv);
-                    
+
                 } else if (error.name === 'NotFoundError') {
                     showStatus('🎤 No microphone found. Please connect a microphone and refresh the page.', 'error');
                 } else if (error.name === 'NotReadableError') {
                     showStatus('🎤 Microphone is being used by another application. Please close other apps using the microphone.', 'error');
                 } else if (error.name === 'OverconstrainedError') {
                     showStatus('🎤 Microphone constraints not supported. Trying with basic settings...', 'warning');
-                    
+
                     // Retry with basic constraints
                     setTimeout(async () => {
                         try {

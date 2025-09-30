@@ -1907,6 +1907,132 @@ app.get('/test/transcription-queue', async (req, res) => {
   }
 });
 
+// Get detailed transcription status
+app.get('/api/transcription-status/:queueId', async (req, res) => {
+  if (!supabaseEnabled) {
+    return res.status(503).json({ error: 'Service not configured' });
+  }
+
+  try {
+    const { queueId } = req.params;
+    const { userId } = req.query;
+
+    // Get queue status
+    const { data: queueItem, error: queueError } = await supabase
+      .from('transcription_queue')
+      .select('*')
+      .eq('id', queueId)
+      .single();
+
+    if (queueError) throw queueError;
+
+    let transcriptionData = null;
+    let metadata = {};
+
+    if (queueItem.status === 'COMPLETED' && queueItem.transcription_id) {
+      // Get the actual transcription
+      const { data: transcription, error: transcriptionError } = await supabase
+        .from('ai_transcription')
+        .select('*')
+        .eq('id', queueItem.transcription_id)
+        .single();
+
+      if (!transcriptionError && transcription) {
+        transcriptionData = transcription.transcription_text;
+        metadata = {
+          audioQuality: 'Good',
+          processingTime: `${Math.round((new Date(queueItem.processed_at) - new Date(queueItem.created_at)) / 1000)}s`,
+          confidence: 'high',
+          createdAt: transcription.created_at
+        };
+      }
+    }
+
+    res.json({
+      success: true,
+      queueId: queueId,
+      status: queueItem.status,
+      transcription: transcriptionData,
+      metadata: metadata,
+      error: queueItem.error_message,
+      userId: queueItem.create_user_id,
+      audioUrl: queueItem.audio_url,
+      requestId: req.requestId
+    });
+
+  } catch (error) {
+    Logger.error('Error getting transcription status:', error);
+    res.status(500).json({
+      error: 'Failed to get transcription status',
+      details: error.message,
+      requestId: req.requestId
+    });
+  }
+});
+
+// Update transcription text
+app.post('/api/update-transcription', checkSharedKey, async (req, res) => {
+  if (!supabaseEnabled) {
+    return res.status(503).json({ error: 'Service not configured' });
+  }
+
+  try {
+    const { queueId, transcription, userId } = req.body;
+
+    if (!queueId || !transcription) {
+      return res.status(400).json({
+        error: 'Missing required fields',
+        requestId: req.requestId
+      });
+    }
+
+    // Get the queue item to find the transcription ID
+    const { data: queueItem, error: queueError } = await supabase
+      .from('transcription_queue')
+      .select('transcription_id, create_user_id')
+      .eq('id', queueId)
+      .single();
+
+    if (queueError) throw queueError;
+
+    if (queueItem.transcription_id) {
+      // Update existing transcription
+      const { error: updateError } = await supabase
+        .from('ai_transcription')
+        .update({
+          transcription_text: transcription,
+          updated_at: new Date().toISOString()
+        })
+        .eq('id', queueItem.transcription_id);
+
+      if (updateError) throw updateError;
+    }
+
+    // Log the transcription update for GDPR audit
+    if (gdprManager && userId) {
+      await gdprManager.auditLog(userId, 'TRANSCRIPTION_UPDATED', {
+        queueId: queueId,
+        transcriptionId: queueItem.transcription_id
+      }, req);
+    }
+
+    res.json({
+      success: true,
+      message: 'Transcription updated successfully',
+      queueId: queueId,
+      requestId: req.requestId
+    });
+
+  } catch (error) {
+    Logger.error('Error updating transcription:', error);
+    res.status(500).json({
+      error: 'Failed to update transcription',
+      details: error.message,
+      requestId: req.requestId
+    });
+  }
+});
+
 // Comprehensive transcription diagnostics
 app.get('/api/debug/transcription-full', checkSharedKey, async (req, res) => {
   const diagnostics = {

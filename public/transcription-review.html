@@ -1,0 +1,807 @@
+
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Review Transcription - Car Crash Lawyer AI</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+            padding: 20px;
+        }
+
+        .container {
+            max-width: 1200px;
+            margin: 0 auto;
+        }
+
+        .header {
+            text-align: center;
+            color: white;
+            margin-bottom: 30px;
+        }
+
+        .header h1 {
+            font-size: 28px;
+            margin-bottom: 10px;
+        }
+
+        .status-badge {
+            display: inline-block;
+            background: rgba(255, 255, 255, 0.2);
+            padding: 8px 20px;
+            border-radius: 20px;
+            font-size: 14px;
+            margin-top: 10px;
+        }
+
+        .sections-container {
+            display: grid;
+            grid-template-columns: 1fr;
+            gap: 25px;
+        }
+
+        @media (min-width: 768px) {
+            .sections-container {
+                grid-template-columns: 1fr 1fr;
+            }
+        }
+
+        @media (min-width: 1024px) {
+            .sections-container {
+                grid-template-columns: 1fr 1fr 1fr;
+            }
+        }
+
+        .section {
+            background: white;
+            border-radius: 15px;
+            padding: 25px;
+            box-shadow: 0 10px 30px rgba(0,0,0,0.2);
+            min-height: 500px;
+        }
+
+        .section-header {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            margin-bottom: 20px;
+            padding-bottom: 15px;
+            border-bottom: 2px solid #f0f0f0;
+        }
+
+        .section-title {
+            font-size: 20px;
+            font-weight: 600;
+            color: #333;
+        }
+
+        .section-icon {
+            font-size: 24px;
+        }
+
+        .transcription-editor {
+            width: 100%;
+            min-height: 350px;
+            padding: 15px;
+            border: 2px solid #e1e4e8;
+            border-radius: 8px;
+            font-size: 16px;
+            line-height: 1.6;
+            resize: vertical;
+            font-family: inherit;
+            transition: border-color 0.3s;
+        }
+
+        .transcription-editor:focus {
+            outline: none;
+            border-color: #667eea;
+            box-shadow: 0 0 0 3px rgba(102, 126, 234, 0.1);
+        }
+
+        .char-count {
+            text-align: right;
+            color: #666;
+            font-size: 14px;
+            margin-top: 8px;
+        }
+
+        .edit-buttons {
+            display: flex;
+            gap: 10px;
+            margin-top: 15px;
+        }
+
+        .btn {
+            padding: 10px 20px;
+            border: none;
+            border-radius: 6px;
+            font-size: 14px;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.3s;
+        }
+
+        .btn-primary {
+            background: #667eea;
+            color: white;
+        }
+
+        .btn-primary:hover {
+            background: #5a6fd8;
+        }
+
+        .btn-secondary {
+            background: #f8f9fa;
+            color: #667eea;
+            border: 2px solid #667eea;
+        }
+
+        .btn-secondary:hover {
+            background: #667eea;
+            color: white;
+        }
+
+        .summary-content {
+            background: #f8f9fa;
+            padding: 20px;
+            border-radius: 8px;
+            margin-bottom: 15px;
+        }
+
+        .summary-content h4 {
+            color: #333;
+            margin-bottom: 10px;
+            font-size: 16px;
+        }
+
+        .summary-text {
+            color: #555;
+            line-height: 1.6;
+            margin-bottom: 15px;
+        }
+
+        .key-points {
+            list-style: none;
+            padding: 0;
+        }
+
+        .key-points li {
+            background: white;
+            padding: 10px 15px;
+            margin-bottom: 8px;
+            border-radius: 6px;
+            border-left: 4px solid #667eea;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+        }
+
+        .legal-analysis {
+            background: #fff8e1;
+            border: 2px solid #ffb74d;
+            border-radius: 8px;
+            padding: 20px;
+            margin-bottom: 15px;
+        }
+
+        .legal-analysis h4 {
+            color: #e65100;
+            margin-bottom: 10px;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+
+        .legal-analysis p {
+            color: #bf360c;
+            line-height: 1.6;
+            margin-bottom: 12px;
+        }
+
+        .legal-recommendations {
+            background: #e8f5e8;
+            border: 2px solid #4caf50;
+            border-radius: 8px;
+            padding: 20px;
+        }
+
+        .legal-recommendations h4 {
+            color: #2e7d32;
+            margin-bottom: 10px;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+
+        .legal-recommendations ul {
+            color: #1b5e20;
+            padding-left: 20px;
+        }
+
+        .legal-recommendations li {
+            margin-bottom: 8px;
+            line-height: 1.5;
+        }
+
+        .loading-state {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            min-height: 300px;
+            color: #666;
+        }
+
+        .spinner {
+            width: 40px;
+            height: 40px;
+            border: 4px solid #f3f3f3;
+            border-top: 4px solid #667eea;
+            border-radius: 50%;
+            animation: spin 1s linear infinite;
+            margin-bottom: 15px;
+        }
+
+        @keyframes spin {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
+        }
+
+        .error-state {
+            background: #ffebee;
+            border: 2px solid #f44336;
+            color: #c62828;
+            padding: 20px;
+            border-radius: 8px;
+            text-align: center;
+        }
+
+        .action-buttons {
+            display: flex;
+            gap: 15px;
+            justify-content: center;
+            margin-top: 30px;
+            flex-wrap: wrap;
+        }
+
+        .btn-large {
+            padding: 15px 30px;
+            font-size: 16px;
+            min-width: 160px;
+        }
+
+        .btn-success {
+            background: #28a745;
+            color: white;
+        }
+
+        .btn-success:hover {
+            background: #218838;
+        }
+
+        .confidence-indicator {
+            display: inline-block;
+            padding: 4px 8px;
+            border-radius: 12px;
+            font-size: 12px;
+            font-weight: 600;
+            margin-top: 10px;
+        }
+
+        .confidence-high {
+            background: #d4edda;
+            color: #155724;
+        }
+
+        .confidence-medium {
+            background: #fff3cd;
+            color: #856404;
+        }
+
+        .confidence-low {
+            background: #f8d7da;
+            color: #721c24;
+        }
+
+        .metadata {
+            background: #f8f9fa;
+            padding: 15px;
+            border-radius: 8px;
+            margin-top: 15px;
+            font-size: 14px;
+            color: #666;
+        }
+
+        .metadata strong {
+            color: #333;
+        }
+
+        .regenerate-btn {
+            background: #ffc107;
+            color: #212529;
+        }
+
+        .regenerate-btn:hover {
+            background: #e0a800;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="header">
+            <h1>🎤 Transcription Review</h1>
+            <div class="status-badge" id="statusBadge">Processing...</div>
+        </div>
+
+        <div class="sections-container">
+            <!-- Section 1: Transcription Editor -->
+            <div class="section">
+                <div class="section-header">
+                    <span class="section-icon">📝</span>
+                    <span class="section-title">Full Transcription</span>
+                </div>
+                
+                <div id="transcriptionContent">
+                    <textarea 
+                        class="transcription-editor" 
+                        id="transcriptionText" 
+                        placeholder="Your transcription will appear here..."
+                    ></textarea>
+                    <div class="char-count">
+                        <span id="charCount">0</span> characters
+                    </div>
+                    
+                    <div class="edit-buttons">
+                        <button class="btn btn-primary" id="saveTranscriptionBtn">
+                            💾 Save Changes
+                        </button>
+                        <button class="btn btn-secondary" id="resetTranscriptionBtn">
+                            ↺ Reset
+                        </button>
+                    </div>
+                </div>
+
+                <div class="metadata">
+                    <strong>Audio Quality:</strong> <span id="audioQuality">-</span><br>
+                    <strong>Processing Time:</strong> <span id="processingTime">-</span><br>
+                    <strong>Confidence:</strong> <span id="transcriptionConfidence" class="confidence-indicator">-</span>
+                </div>
+            </div>
+
+            <!-- Section 2: AI Summary -->
+            <div class="section">
+                <div class="section-header">
+                    <span class="section-icon">🤖</span>
+                    <span class="section-title">AI Summary</span>
+                </div>
+
+                <div id="summaryContent">
+                    <div class="loading-state" id="summaryLoading">
+                        <div class="spinner"></div>
+                        <p>Generating AI summary...</p>
+                    </div>
+
+                    <div id="summaryDisplay" style="display: none;">
+                        <div class="summary-content">
+                            <h4>📋 Summary</h4>
+                            <div class="summary-text" id="summaryText"></div>
+                        </div>
+
+                        <div class="summary-content">
+                            <h4>🔑 Key Points</h4>
+                            <ul class="key-points" id="keyPointsList"></ul>
+                        </div>
+
+                        <button class="btn btn-secondary regenerate-btn" id="regenerateSummaryBtn">
+                            🔄 Regenerate Summary
+                        </button>
+                    </div>
+
+                    <div class="error-state" id="summaryError" style="display: none;">
+                        <h4>❌ Summary Generation Failed</h4>
+                        <p id="summaryErrorText"></p>
+                        <button class="btn btn-primary" id="retrySummaryBtn">
+                            🔄 Try Again
+                        </button>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Section 3: Legal Analysis -->
+            <div class="section">
+                <div class="section-header">
+                    <span class="section-icon">⚖️</span>
+                    <span class="section-title">Legal Analysis</span>
+                </div>
+
+                <div id="legalContent">
+                    <div class="loading-state" id="legalLoading">
+                        <div class="spinner"></div>
+                        <p>Analyzing legal implications...</p>
+                    </div>
+
+                    <div id="legalDisplay" style="display: none;">
+                        <div class="legal-analysis">
+                            <h4>⚠️ Legal Assessment</h4>
+                            <p id="legalAssessment"></p>
+                        </div>
+
+                        <div class="legal-recommendations">
+                            <h4>📋 Recommendations</h4>
+                            <ul id="legalRecommendations"></ul>
+                        </div>
+
+                        <button class="btn btn-secondary regenerate-btn" id="regenerateLegalBtn">
+                            🔄 Regenerate Analysis
+                        </button>
+                    </div>
+
+                    <div class="error-state" id="legalError" style="display: none;">
+                        <h4>❌ Legal Analysis Failed</h4>
+                        <p id="legalErrorText"></p>
+                        <button class="btn btn-primary" id="retryLegalBtn">
+                            🔄 Try Again
+                        </button>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Action Buttons -->
+        <div class="action-buttons">
+            <button class="btn btn-secondary btn-large" id="backBtn">
+                ← Go Back
+            </button>
+            <button class="btn btn-success btn-large" id="approveBtn">
+                ✅ Approve & Continue
+            </button>
+        </div>
+    </div>
+
+    <script>
+        // Global state
+        let queueId = null;
+        let userId = null;
+        let originalTranscription = '';
+        let currentTranscription = '';
+        let summaryData = null;
+        let legalData = null;
+
+        // Initialize page
+        document.addEventListener('DOMContentLoaded', async () => {
+            console.log('Initializing transcription review...');
+            
+            // Get parameters from URL
+            const urlParams = new URLSearchParams(window.location.search);
+            queueId = urlParams.get('queueId');
+            userId = urlParams.get('userId') || urlParams.get('create_user_id');
+
+            if (!queueId) {
+                showError('No transcription ID provided');
+                return;
+            }
+
+            await loadTranscription();
+            setupEventListeners();
+        });
+
+        // Load transcription data
+        async function loadTranscription() {
+            try {
+                updateStatus('Loading transcription...');
+
+                const response = await fetch(`/api/transcription-status/${queueId}?userId=${userId}`);
+                if (!response.ok) throw new Error('Failed to load transcription');
+
+                const data = await response.json();
+                
+                if (data.status === 'COMPLETED' && data.transcription) {
+                    originalTranscription = data.transcription;
+                    currentTranscription = data.transcription;
+                    
+                    document.getElementById('transcriptionText').value = data.transcription;
+                    updateCharCount();
+                    updateStatus('Transcription loaded');
+                    
+                    // Update metadata
+                    if (data.metadata) {
+                        updateMetadata(data.metadata);
+                    }
+
+                    // Generate AI summary and legal analysis
+                    await generateSummary();
+                    await generateLegalAnalysis();
+                    
+                } else {
+                    showError('Transcription not ready yet. Please wait...');
+                }
+
+            } catch (error) {
+                console.error('Error loading transcription:', error);
+                showError(error.message);
+            }
+        }
+
+        // Generate AI summary
+        async function generateSummary() {
+            const summaryLoading = document.getElementById('summaryLoading');
+            const summaryDisplay = document.getElementById('summaryDisplay');
+            const summaryError = document.getElementById('summaryError');
+
+            try {
+                summaryLoading.style.display = 'flex';
+                summaryDisplay.style.display = 'none';
+                summaryError.style.display = 'none';
+
+                const response = await fetch('/api/generate-ai-summary', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'X-Api-Key': await getApiKey()
+                    },
+                    body: JSON.stringify({
+                        transcription: currentTranscription,
+                        userId: userId,
+                        queueId: queueId
+                    })
+                });
+
+                if (!response.ok) throw new Error('Failed to generate summary');
+
+                const data = await response.json();
+                summaryData = data.summary;
+
+                // Display summary
+                document.getElementById('summaryText').textContent = data.summary.text || 'No summary available';
+                
+                // Display key points
+                const keyPointsList = document.getElementById('keyPointsList');
+                keyPointsList.innerHTML = '';
+                if (data.summary.keyPoints && data.summary.keyPoints.length > 0) {
+                    data.summary.keyPoints.forEach(point => {
+                        const li = document.createElement('li');
+                        li.textContent = point;
+                        keyPointsList.appendChild(li);
+                    });
+                }
+
+                summaryLoading.style.display = 'none';
+                summaryDisplay.style.display = 'block';
+
+            } catch (error) {
+                console.error('Error generating summary:', error);
+                summaryLoading.style.display = 'none';
+                summaryError.style.display = 'block';
+                document.getElementById('summaryErrorText').textContent = error.message;
+            }
+        }
+
+        // Generate legal analysis
+        async function generateLegalAnalysis() {
+            const legalLoading = document.getElementById('legalLoading');
+            const legalDisplay = document.getElementById('legalDisplay');
+            const legalError = document.getElementById('legalError');
+
+            try {
+                legalLoading.style.display = 'flex';
+                legalDisplay.style.display = 'none';
+                legalError.style.display = 'none';
+
+                const response = await fetch('/api/generate-legal-narrative', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'X-Api-Key': await getApiKey()
+                    },
+                    body: JSON.stringify({
+                        transcription_text: currentTranscription,
+                        create_user_id: userId,
+                        target_length: "250-300 words",
+                        include_evidence_section: true
+                    })
+                });
+
+                if (!response.ok) throw new Error('Failed to generate legal analysis');
+
+                const data = await response.json();
+                legalData = data.narrative;
+
+                // Display legal assessment (first part of narrative)
+                const assessmentText = data.narrative.split('\n\n')[0] || 'No legal assessment available';
+                document.getElementById('legalAssessment').textContent = assessmentText;
+
+                // Generate recommendations based on the narrative
+                const recommendations = generateRecommendations(data.narrative);
+                const recommendationsList = document.getElementById('legalRecommendations');
+                recommendationsList.innerHTML = '';
+                recommendations.forEach(rec => {
+                    const li = document.createElement('li');
+                    li.textContent = rec;
+                    recommendationsList.appendChild(li);
+                });
+
+                legalLoading.style.display = 'none';
+                legalDisplay.style.display = 'block';
+
+            } catch (error) {
+                console.error('Error generating legal analysis:', error);
+                legalLoading.style.display = 'none';
+                legalError.style.display = 'block';
+                document.getElementById('legalErrorText').textContent = error.message;
+            }
+        }
+
+        // Generate recommendations from narrative
+        function generateRecommendations(narrative) {
+            const recommendations = [];
+            
+            if (narrative.toLowerCase().includes('injury') || narrative.toLowerCase().includes('medical')) {
+                recommendations.push('Seek immediate medical attention and keep all medical records');
+                recommendations.push('Document all injuries with photographs if possible');
+            }
+            
+            if (narrative.toLowerCase().includes('police') || narrative.toLowerCase().includes('officer')) {
+                recommendations.push('Obtain a copy of the police report when available');
+                recommendations.push('Keep all reference numbers provided by police');
+            }
+            
+            if (narrative.toLowerCase().includes('witness')) {
+                recommendations.push('Contact witnesses to obtain formal statements');
+                recommendations.push('Gather witness contact details if not already done');
+            }
+            
+            if (narrative.toLowerCase().includes('damage') || narrative.toLowerCase().includes('vehicle')) {
+                recommendations.push('Get multiple repair estimates for vehicle damage');
+                recommendations.push('Take detailed photographs of all vehicle damage');
+            }
+            
+            recommendations.push('Contact your insurance company to report the incident');
+            recommendations.push('Keep detailed records of all incident-related expenses');
+            recommendations.push('Consider consulting with a personal injury solicitor');
+            
+            return recommendations.slice(0, 6); // Limit to 6 recommendations
+        }
+
+        // Setup event listeners
+        function setupEventListeners() {
+            // Transcription editing
+            document.getElementById('transcriptionText').addEventListener('input', updateCharCount);
+            document.getElementById('saveTranscriptionBtn').addEventListener('click', saveTranscription);
+            document.getElementById('resetTranscriptionBtn').addEventListener('click', resetTranscription);
+
+            // Regenerate buttons
+            document.getElementById('regenerateSummaryBtn').addEventListener('click', generateSummary);
+            document.getElementById('regenerateLegalBtn').addEventListener('click', generateLegalAnalysis);
+            document.getElementById('retrySummaryBtn').addEventListener('click', generateSummary);
+            document.getElementById('retryLegalBtn').addEventListener('click', generateLegalAnalysis);
+
+            // Action buttons
+            document.getElementById('backBtn').addEventListener('click', goBack);
+            document.getElementById('approveBtn').addEventListener('click', approveAndContinue);
+        }
+
+        // Update character count
+        function updateCharCount() {
+            const text = document.getElementById('transcriptionText').value;
+            document.getElementById('charCount').textContent = text.length;
+            currentTranscription = text;
+        }
+
+        // Save transcription changes
+        async function saveTranscription() {
+            try {
+                const response = await fetch('/api/update-transcription', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'X-Api-Key': await getApiKey()
+                    },
+                    body: JSON.stringify({
+                        queueId: queueId,
+                        transcription: currentTranscription,
+                        userId: userId
+                    })
+                });
+
+                if (response.ok) {
+                    updateStatus('Transcription saved');
+                    originalTranscription = currentTranscription;
+                    
+                    // Regenerate summary and legal analysis with updated transcription
+                    await generateSummary();
+                    await generateLegalAnalysis();
+                } else {
+                    throw new Error('Failed to save transcription');
+                }
+
+            } catch (error) {
+                console.error('Error saving transcription:', error);
+                alert('Failed to save transcription: ' + error.message);
+            }
+        }
+
+        // Reset transcription to original
+        function resetTranscription() {
+            document.getElementById('transcriptionText').value = originalTranscription;
+            currentTranscription = originalTranscription;
+            updateCharCount();
+            updateStatus('Transcription reset');
+        }
+
+        // Update metadata display
+        function updateMetadata(metadata) {
+            document.getElementById('audioQuality').textContent = metadata.audioQuality || 'Good';
+            document.getElementById('processingTime').textContent = metadata.processingTime || 'N/A';
+            
+            const confidence = metadata.confidence || 'high';
+            const confidenceEl = document.getElementById('transcriptionConfidence');
+            confidenceEl.textContent = confidence.charAt(0).toUpperCase() + confidence.slice(1);
+            confidenceEl.className = `confidence-indicator confidence-${confidence}`;
+        }
+
+        // Update status
+        function updateStatus(status) {
+            document.getElementById('statusBadge').textContent = status;
+        }
+
+        // Show error
+        function showError(message) {
+            updateStatus('Error: ' + message);
+            console.error(message);
+        }
+
+        // Get API key
+        async function getApiKey() {
+            try {
+                const response = await fetch('/api/config');
+                const config = await response.json();
+                return config.apiKey || 'fallback-key';
+            } catch (error) {
+                return 'fallback-key';
+            }
+        }
+
+        // Go back
+        function goBack() {
+            if (window.history.length > 1) {
+                window.history.back();
+            } else {
+                window.location.href = '/transcription-status.html';
+            }
+        }
+
+        // Approve and continue
+        async function approveAndContinue() {
+            try {
+                updateStatus('Saving final review...');
+                
+                // Save final transcription if changed
+                if (currentTranscription !== originalTranscription) {
+                    await saveTranscription();
+                }
+
+                // Mark as approved and continue to next step
+                const params = new URLSearchParams({
+                    userId: userId,
+                    queueId: queueId,
+                    status: 'approved'
+                });
+
+                window.location.href = `/ai-summary-review.html?${params.toString()}`;
+
+            } catch (error) {
+                console.error('Error approving transcription:', error);
+                alert('Failed to approve transcription: ' + error.message);
+            }
+        }
+    </script>
+</body>
+</html>
