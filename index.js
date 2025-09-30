@@ -619,6 +619,11 @@ if (supabaseEnabled && process.env.OPENAI_API_KEY) {
   try {
     transcriptionService = new TranscriptionService(supabase, Logger);
 
+    // PRODUCTION SAFETY: Ensure we never use mock data
+    if (process.env.NODE_ENV === 'production' && !process.env.OPENAI_API_KEY) {
+      throw new Error('PRODUCTION ERROR: No OpenAI API key - cannot use mock transcription data');
+    }
+
     // Create the wrapper functions with proper error handling
     processTranscriptionFromBuffer = async (queueId, buffer, userId, incidentId, audioUrl) => {
       Logger.info(`🎯 Using REAL transcription service for queue ${queueId}`);

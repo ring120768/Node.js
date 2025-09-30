@@ -1,11 +1,13 @@
 {
-  "create_user_id": "test_user_001",
-  "full_name": "Test User",
-  "email": "test@example.com",
+  "_WARNING": "THIS IS TEST DATA ONLY - NEVER USE IN PRODUCTION",
+  "_TEST_ONLY": true,
+  "create_user_id": "TEST_ONLY_test_user_001",
+  "full_name": "TEST ONLY - Test User",
+  "email": "TESTONLY@example.com",
   "phone_number": "07123456789",
   "incident_date": "2025-01-15",
-  "incident_location": "Test Street, London",
-  "detailed_account_of_what_happened": "Testing PDF generation.",
+  "incident_location": "TEST ONLY - Test Street, London",
+  "detailed_account_of_what_happened": "TESTING ONLY - PDF generation test.",
   "gdpr_consent": true,
   "legal_support": "Yes - fully comprehensive support"
 }
