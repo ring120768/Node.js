@@ -663,12 +663,20 @@
                     urlParams.get('incident_report_id') || 
                     urlParams.get('incident_id') ||
                     localStorage.getItem('current_incident_id') ||
+                    sessionStorage.getItem('current_incident_id') ||
                     sessionStorage.getItem('incident_id');
 
                 // Extract other parameters
                 AppState.session.returnUrl = urlParams.get('return_url');
-                AppState.session.operation = urlParams.get('operation');
-                AppState.session.requireConsent = urlParams.get('require_consent') === 'true';
+                AppState.session.operation = urlParams.get('operation') || 'final_consent';
+                AppState.session.requireConsent = urlParams.get('require_consent') === 'true' || 
+                                                 urlParams.get('operation') === 'final_consent';
+
+                // Check if coming from AI summary review
+                const status = urlParams.get('status');
+                if (status === 'ai_summary_approved') {
+                    AppState.session.fromAISummary = true;
+                }
 
                 // Persist session data
                 if (AppState.session.userId) {
@@ -678,15 +686,24 @@
 
                 if (AppState.session.incidentId) {
                     localStorage.setItem('current_incident_id', AppState.session.incidentId);
+                    sessionStorage.setItem('current_incident_id', AppState.session.incidentId);
                     sessionStorage.setItem('incident_id', AppState.session.incidentId);
                 }
 
-                Utils.log('Session initialized', AppState.session);
+                Utils.log('Session initialized', {
+                    ...AppState.session,
+                    url: window.location.href,
+                    urlParams: Object.fromEntries(urlParams.entries())
+                });
                 return AppState.session;
             },
 
             isValid() {
-                return !!AppState.session.userId;
+                const isValid = !!AppState.session.userId;
+                if (!isValid) {
+                    Utils.log('Session validation failed - no user ID found');
+                }
+                return isValid;
             }
         };
 
@@ -906,13 +923,15 @@
                 // Check for explicit return URL first
                 if (AppState.session.returnUrl) {
                     try {
-                        return Utils.sanitizeUrl(decodeURIComponent(AppState.session.returnUrl));
+                        const sanitizedUrl = Utils.sanitizeUrl(decodeURIComponent(AppState.session.returnUrl));
+                        Utils.log('Using explicit return URL', sanitizedUrl);
+                        return sanitizedUrl;
                     } catch (e) {
                         Utils.error('Invalid return URL', e);
                     }
                 }
 
-                // Build redirect based on operation
+                // Build redirect based on operation and session state
                 const params = new URLSearchParams({
                     create_user_id: AppState.session.userId || '',
                     consent_given: 'true'
@@ -920,17 +939,35 @@
 
                 if (AppState.session.incidentId) {
                     params.append('incident_id', AppState.session.incidentId);
+                    params.append('incident_report_id', AppState.session.incidentId);
                 }
 
                 let basePath = '/report-complete.html';
 
+                // Determine redirect based on operation and session state
                 if (AppState.session.operation === 'audio_recording') {
                     basePath = '/transcription-status.html';
                 } else if (AppState.session.operation === 'final_consent') {
                     params.append('status', 'completed');
+                    params.append('declaration_complete', 'true');
+                    
+                    // If coming from AI summary, go to report complete
+                    if (AppState.session.fromAISummary) {
+                        basePath = '/report-complete.html';
+                        params.append('from_ai_summary', 'true');
+                    }
                 }
 
-                return `${basePath}?${params.toString()}`;
+                const finalUrl = `${basePath}?${params.toString()}`;
+                Utils.log('Built redirect URL', {
+                    basePath,
+                    params: Object.fromEntries(params.entries()),
+                    finalUrl,
+                    operation: AppState.session.operation,
+                    fromAISummary: AppState.session.fromAISummary
+                });
+
+                return finalUrl;
             },
 
             async redirect(url, delay = 2000) {

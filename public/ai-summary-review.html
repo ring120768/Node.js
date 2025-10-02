@@ -392,26 +392,49 @@
         function initializeSession() {
             const urlParams = new URLSearchParams(window.location.search);
 
+            // Get user ID from multiple possible sources
             state.userId = urlParams.get('create_user_id') || 
                           urlParams.get('user_id') || 
                           urlParams.get('userId') ||
                           localStorage.getItem('create_user_id') ||
-                          'demo_user';
+                          sessionStorage.getItem('create_user_id');
 
+            // Get queue ID
             state.queueId = urlParams.get('queueId') || 
                            urlParams.get('queue_id') ||
                            localStorage.getItem('current_queueId') ||
-                           'demo_queue';
+                           sessionStorage.getItem('current_queueId');
 
+            // Get incident ID
             state.incidentId = urlParams.get('incident_report_id') || 
                               urlParams.get('incident_id') ||
-                              localStorage.getItem('current_incident_id');
+                              localStorage.getItem('current_incident_id') ||
+                              sessionStorage.getItem('current_incident_id');
 
-            console.log('Session initialized:', {
+            // If no user ID found, generate a temporary one
+            if (!state.userId || state.userId === 'demo_user') {
+                state.userId = `temp_user_${Date.now()}`;
+                localStorage.setItem('create_user_id', state.userId);
+                console.log('⚠️ Generated temporary user ID:', state.userId);
+            }
+
+            // Store session data for next page
+            if (state.userId) {
+                localStorage.setItem('create_user_id', state.userId);
+                sessionStorage.setItem('create_user_id', state.userId);
+            }
+            
+            if (state.incidentId) {
+                localStorage.setItem('current_incident_id', state.incidentId);
+                sessionStorage.setItem('current_incident_id', state.incidentId);
+            }
+
+            console.log('✅ Session initialized:', {
                 userId: state.userId,
                 queueId: state.queueId,
                 incidentId: state.incidentId,
-                isDemo: isDemo
+                isDemo: isDemo,
+                url: window.location.href
             });
         }
 
@@ -476,18 +499,37 @@
                 // Store that the user wants to review again
                 localStorage.setItem('ai_summary_review_requested', 'true');
 
+                // Build parameters for going back
+                const params = new URLSearchParams();
+                
+                if (state.userId) {
+                    params.append('userId', state.userId);
+                    params.append('create_user_id', state.userId);
+                }
+                
+                if (state.queueId) {
+                    params.append('queueId', state.queueId);
+                    params.append('queue_id', state.queueId);
+                }
+
+                if (state.incidentId) {
+                    params.append('incident_id', state.incidentId);
+                    params.append('incident_report_id', state.incidentId);
+                }
+
+                console.log('🔙 Going back with params:', {
+                    userId: state.userId,
+                    queueId: state.queueId,
+                    incidentId: state.incidentId,
+                    params: params.toString()
+                });
+
                 if (state.queueId && state.userId) {
-                    const params = new URLSearchParams({
-                        queueId: state.queueId,
-                        userId: state.userId
-                    });
-
-                    if (state.incidentId) {
-                        params.append('incident_id', state.incidentId);
-                    }
-
-                    window.location.href = `/transcription-review.html?${params.toString()}`;
+                    const backUrl = `/transcription-review.html?${params.toString()}`;
+                    console.log('✅ Redirecting back to:', backUrl);
+                    window.location.href = backUrl;
                 } else {
+                    console.log('⚠️ Missing required parameters, using history.back()');
                     window.history.back();
                 }
             }
@@ -503,27 +545,38 @@
                 successBtn.disabled = true;
             }
 
-            const params = new URLSearchParams({
-                create_user_id: state.userId,
-                user_id: state.userId,
-                status: 'ai_summary_approved',
-                operation: 'final_consent'
-            });
-
-            if (state.queueId && state.queueId !== 'demo_queue') {
-                params.append('queue_id', state.queueId);
-                params.append('queueId', state.queueId);
+            // Build parameters for declaration page
+            const params = new URLSearchParams();
+            
+            // Always include user ID (required by declaration page)
+            if (state.userId) {
+                params.append('create_user_id', state.userId);
+                params.append('user_id', state.userId);
             }
-
+            
+            // Include incident ID if available
             if (state.incidentId) {
                 params.append('incident_report_id', state.incidentId);
                 params.append('incident_id', state.incidentId);
             }
+            
+            // Add operation and status flags
+            params.append('operation', 'final_consent');
+            params.append('status', 'ai_summary_approved');
+            params.append('require_consent', 'true');
 
             // Store completion status in localStorage
             localStorage.setItem('ai_summary_complete', 'true');
             localStorage.setItem('transcription_review_complete', 'true');
             localStorage.setItem('ai_summary_approved_at', new Date().toISOString());
+
+            // Debug logging
+            console.log('🔄 Proceeding to declaration with params:', {
+                userId: state.userId,
+                incidentId: state.incidentId,
+                queueId: state.queueId,
+                params: params.toString()
+            });
 
             if (isDemo) {
                 showDemoAction(`Would redirect to: /declaration.html?${params.toString()}`);
@@ -536,8 +589,11 @@
                 }, 2000);
             } else {
                 // Real redirect in production
+                const redirectUrl = `/declaration.html?${params.toString()}`;
+                console.log('✅ Redirecting to:', redirectUrl);
+                
                 setTimeout(() => {
-                    window.location.href = `/declaration.html?${params.toString()}`;
+                    window.location.href = redirectUrl;
                 }, 500);
             }
         }
