@@ -2893,17 +2893,21 @@ app.post('/api/whisper/transcribe', upload.single('audio'), async (req, res) => 
     }
 
     // Extract create_user_id from the request
-    const create_user_id = req.body.create_user_id ||
-                 req.query.create_user_id ||
-                 req.headers['x-user-id'];
+    const raw_user_id = req.body.create_user_id ||
+                       req.query.create_user_id ||
+                       req.headers['x-user-id'];
 
-    if (!create_user_id) {
+    if (!raw_user_id) {
       Logger.info('❌ Missing create_user_id in transcription request');
       return res.status(400).json({
         error: 'create_user_id is required',
         requestId: req.requestId
       });
     }
+
+    // CRITICAL FIX: Ensure user ID is in UUID format for database compatibility
+    const create_user_id = UUIDUtils.ensureValidUUID(raw_user_id);
+    Logger.info(`🔧 User ID processing: ${raw_user_id} -> ${create_user_id}`);
 
     // GDPR: Check consent and log for audit purposes
     if (gdprManager) {
