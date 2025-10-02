@@ -156,35 +156,42 @@ const Logger = {
 
 // --- UUID UTILITIES ---
 const UUIDUtils = {
-  // Check if string is valid UUID v4
+  // Check if string is valid UUID v4 - READ ONLY
   isValidUUID: (str) => {
+    if (!str) return false;
     const uuidRegex = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
     return uuidRegex.test(str);
   },
 
-  // CRITICAL: NEVER generate or modify user IDs - only validate
-  ensureValidUUID: (userId) => {
+  // SECURITY: NEVER generate, modify, or transform user IDs
+  // This function is READ-ONLY validation only
+  validateTypeformUUID: (userId) => {
     if (!userId) {
-      Logger.critical(`ensureValidUUID called with null/undefined - REJECTING`);
-      return null;
+      Logger.critical(`SECURITY: validateTypeformUUID called with null/undefined - BLOCKED`);
+      return false;
     }
     
-    // ONLY return the original userId if it's a valid UUID
-    // NEVER generate or transform user IDs
+    // Block any suspicious patterns immediately
+    if (userId.includes('temp_') || userId.includes('user_') || userId.includes('dummy_') || 
+        userId.includes('test_') || userId.includes('mock_') || userId.includes('generated_')) {
+      Logger.critical(`SECURITY VIOLATION: Suspicious UUID pattern blocked: ${userId}`);
+      return false;
+    }
+    
+    // STRICT: Only allow valid UUID format from Typeform
     const uuidRegex = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
     
     if (uuidRegex.test(userId)) {
-      Logger.info(`Valid Typeform UUID preserved: ${userId}`);
-      return userId; // Return original Typeform UUID
+      Logger.debug(`Valid Typeform UUID validated: ${userId.substring(0, 8)}...`);
+      return true;
     }
     
-    // If not a UUID, return null - DO NOT GENERATE
-    Logger.critical(`Invalid UUID format detected: ${userId} - REJECTING - MUST BE FROM TYPEFORM`);
-    return null;
+    Logger.critical(`SECURITY: Invalid UUID format rejected: ${userId} - MUST BE FROM TYPEFORM`);
+    return false;
   }
 
-  // REMOVED: generateUUID function - NO UUID GENERATION ALLOWED
-  // All UUIDs must come from Typeform only
+  // PERMANENTLY REMOVED: ensureValidUUID, generateUUID - NO UUID GENERATION/MODIFICATION ALLOWED
+  // ALL UUIDs MUST COME FROM TYPEFORM ONLY - NO EXCEPTIONS
 };
 
 // --- INPUT VALIDATION UTILITIES ---
@@ -346,36 +353,152 @@ if (BLOCK_TEMP_IDS) {
 // --- CRITICAL: STRICT TYPEFORM UUID VALIDATION ---
 function validateTypeformUserId(userId) {
   if (!userId) {
-    Logger.critical('VALIDATION FAILED: No user ID provided');
+    Logger.critical('SECURITY: No user ID provided');
     return false;
   }
 
   // Must be a valid UUID format - ONLY UUIDs from Typeform allowed
   const uuidRegex = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
   if (!uuidRegex.test(userId)) {
-    Logger.critical(`VALIDATION FAILED: Not a UUID: ${userId} - MUST BE FROM TYPEFORM`);
+    Logger.critical(`SECURITY VIOLATION: Invalid UUID format: ${userId} - MUST BE FROM TYPEFORM`);
     return false;
   }
 
-  // Block any auto-generated patterns that could sneak through
-  if (userId.includes('user_') || userId.includes('temp_') || userId.includes('test_') || userId.includes('demo_')) {
-    Logger.critical(`VALIDATION FAILED: Generated ID pattern detected: ${userId}`);
-    return false;
+  // Block ANY suspicious patterns that could indicate corruption
+  const suspiciousPatterns = [
+    'user_', 'temp_', 'test_', 'demo_', 'mock_', 'dummy_', 'generated_', 
+    'auto_', 'fake_', 'sample_', 'default_', 'placeholder_'
+  ];
+  
+  for (const pattern of suspiciousPatterns) {
+    if (userId.includes(pattern)) {
+      Logger.critical(`SECURITY VIOLATION: Suspicious pattern '${pattern}' detected in UUID: ${userId}`);
+      return false;
+    }
   }
 
-  // Additional safety: Block known problematic UUIDs if any exist
+  // Block known problematic UUIDs and timestamp-based patterns
   const blockedUUIDs = [
-    // Add any specific UUIDs that should be blocked
+    'user_1759410448804_yzas7ml2p' // Known problematic test ID
   ];
 
   if (blockedUUIDs.includes(userId.toLowerCase())) {
-    Logger.critical(`VALIDATION FAILED: Blocked UUID detected: ${userId}`);
+    Logger.critical(`SECURITY VIOLATION: Blocked UUID detected: ${userId}`);
     return false;
   }
 
-  Logger.info(`VALIDATION PASSED: Valid Typeform UUID: ${userId.substring(0, 8)}...`);
+  // Additional check: ensure it doesn't look like a timestamp-based ID
+  if (/\d{13}/.test(userId)) { // 13-digit timestamp pattern
+    Logger.critical(`SECURITY VIOLATION: Timestamp pattern detected in UUID: ${userId}`);
+    return false;
+  }
+
+  Logger.debug(`SECURITY: Valid Typeform UUID validated: ${userId.substring(0, 8)}...`);
   return true;
 }
+
+
+// --- COMPREHENSIVE USER ID CORRUPTION DETECTION ---
+function detectUserIdCorruption(req, res, next) {
+  // This middleware runs on every request to detect any user ID corruption
+  const potentialUserIdFields = [
+    'userId', 'user_id', 'create_user_id', 'typeform_user_id'
+  ];
+  
+  const checkForCorruption = (value, source, field) => {
+    if (!value) return;
+    
+    // Check if it's a string that could be a user ID
+    if (typeof value === 'string' && value.length > 5) {
+      // Validate against our strict Typeform UUID rules
+      if (!UUIDUtils.validateTypeformUUID(value)) {
+        Logger.critical(`USER ID CORRUPTION DETECTED: ${source}.${field} = "${value}"`);
+        Logger.critical(`Request details:`, {
+          method: req.method,
+          path: req.path,
+          ip: req.ip,
+          userAgent: req.get('user-agent'),
+          timestamp: new Date().toISOString()
+        });
+        
+        // Log to corruption table if available
+        if (supabaseEnabled) {
+          supabase.from('user_id_corruption_log').insert({
+            corrupted_value: value,
+            source: source,
+            field: field,
+            request_path: req.path,
+            request_method: req.method,
+            ip_address: req.ip,
+            user_agent: req.get('user-agent'),
+            detected_at: new Date().toISOString()
+          }).then(() => {
+            Logger.info('Corruption logged to database');
+          }).catch(err => {
+            Logger.warn('Failed to log corruption:', err.message);
+          });
+        }
+        
+        return true; // Corruption detected
+      }
+    }
+    
+    return false; // No corruption
+  };
+  
+  // Check all potential sources of user IDs
+  let corruptionFound = false;
+  
+  // Check request body
+  if (req.body && typeof req.body === 'object') {
+    for (const field of potentialUserIdFields) {
+      if (checkForCorruption(req.body[field], 'body', field)) {
+        corruptionFound = true;
+      }
+    }
+  }
+  
+  // Check query parameters
+  if (req.query && typeof req.query === 'object') {
+    for (const field of potentialUserIdFields) {
+      if (checkForCorruption(req.query[field], 'query', field)) {
+        corruptionFound = true;
+      }
+    }
+  }
+  
+  // Check route parameters
+  if (req.params && typeof req.params === 'object') {
+    for (const field of potentialUserIdFields) {
+      if (checkForCorruption(req.params[field], 'params', field)) {
+        corruptionFound = true;
+      }
+    }
+  }
+  
+  // Check headers
+  if (req.headers) {
+    const headerFields = ['x-user-id', 'x-create-user-id'];
+    for (const field of headerFields) {
+      if (checkForCorruption(req.headers[field], 'headers', field)) {
+        corruptionFound = true;
+      }
+    }
+  }
+  
+  if (corruptionFound) {
+    Logger.critical('🚨 USER ID CORRUPTION ALERT - Request blocked');
+    return res.status(400).json({
+      error: 'SECURITY VIOLATION: Invalid user ID detected',
+      message: 'All user IDs must be valid Typeform UUIDs',
+      requestId: req.requestId,
+      timestamp: new Date().toISOString()
+    });
+  }
+  
+  next();
+}
+
 
 // Additional function to detect and prevent any dummy ID generation
 function preventDummyIdGeneration(functionName, originalId) {
@@ -384,21 +507,43 @@ function preventDummyIdGeneration(functionName, originalId) {
   throw new Error(`SECURITY: Function ${functionName} blocked from processing non-UUID. Only Typeform UUIDs allowed.`);
 }
 
-// New function to monitor for any ID generation attempts anywhere in the system
+// Enhanced function to monitor for any ID generation attempts anywhere in the system
 function monitorIdGeneration() {
-  // Override common ID generation patterns to detect usage
+  // Override crypto.randomUUID to detect any user ID generation attempts
   const originalRandomUUID = require('crypto').randomUUID;
   require('crypto').randomUUID = function(...args) {
     const stack = new Error().stack;
-    if (stack && stack.includes('user') && !stack.includes('transcription') && !stack.includes('webhook')) {
-      Logger.critical('SECURITY ALERT: Potential user ID generation detected');
+    
+    // Block any UUID generation that might be for users
+    if (stack && (stack.includes('user') || stack.includes('User') || stack.includes('create_user'))) {
+      Logger.critical('SECURITY VIOLATION: User ID generation attempt detected and blocked');
       Logger.critical('Stack trace:', stack);
-      throw new Error('BLOCKED: User ID generation attempt detected');
+      throw new Error('SECURITY VIOLATION: User ID generation is permanently disabled. All user IDs must come from Typeform.');
     }
-    return originalRandomUUID.apply(this, args);
+    
+    // Allow other UUID generation (for transcription IDs, webhook IDs, etc.)
+    const newUUID = originalRandomUUID.apply(this, args);
+    
+    // Log for monitoring
+    Logger.debug(`UUID generated (non-user): ${newUUID.substring(0, 8)}...`);
+    
+    return newUUID;
   };
   
-  Logger.info('✅ ID generation monitoring active');
+  // Override Math.random to detect suspicious ID generation patterns
+  const originalRandom = Math.random;
+  Math.random = function(...args) {
+    const stack = new Error().stack;
+    
+    // Alert if random is being used in user ID context
+    if (stack && (stack.includes('user') || stack.includes('User') || stack.includes('temp_') || stack.includes('dummy'))) {
+      Logger.warn('SECURITY ALERT: Math.random called in user ID context - monitoring');
+    }
+    
+    return originalRandom.apply(this, args);
+  };
+  
+  Logger.success('✅ Enhanced ID generation monitoring active - all user ID generation blocked');
 }
 
 // Activate monitoring
@@ -700,6 +845,9 @@ app.use(bodyParser.json({ limit: '50mb' }));
 app.use(bodyParser.urlencoded({ extended: true, limit: '50mb' }));
 app.use(cookieParser());
 app.use(express.static(path.join(__dirname, 'public')));
+
+// Apply user ID corruption detection to all routes
+app.use(detectUserIdCorruption);
 
 // Apply rate limiting
 app.use('/api/', apiLimiter);
@@ -1916,10 +2064,11 @@ app.post('/api/update-legal-narrative', checkSharedKey, async (req, res) => {
     }
 
     // CRITICAL: Use original Typeform UUID only - NO GENERATION
-    if (!UUIDUtils.isValidUUID(finalUserId)) {
+    if (!UUIDUtils.validateTypeformUUID(finalUserId)) {
+      Logger.critical(`SECURITY: Invalid user ID blocked in legal narrative: ${finalUserId}`);
       return res.status(400).json({
         success: false,
-        error: 'Invalid user ID format - must be Typeform UUID',
+        error: 'SECURITY: Invalid user ID format - must be valid Typeform UUID only',
         requestId: req.requestId
       });
     }
@@ -1982,10 +2131,11 @@ app.get('/api/legal-narratives/:userId', checkSharedKey, checkGDPRConsent, async
     }
 
     // CRITICAL: Only use original Typeform UUID - NO GENERATION
-    if (!UUIDUtils.isValidUUID(userId)) {
+    if (!UUIDUtils.validateTypeformUUID(userId)) {
+      Logger.critical(`SECURITY: Invalid user ID blocked in narratives endpoint: ${userId}`);
       return res.status(400).json({
         success: false,
-        error: 'Invalid user ID format - must be Typeform UUID',
+        error: 'SECURITY: Invalid user ID format - must be valid Typeform UUID only',
         requestId: req.requestId
       });
     }
