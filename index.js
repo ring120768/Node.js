@@ -2350,6 +2350,36 @@ app.get('/api/debug/transcription-full', checkSharedKey, async (req, res) => {
   res.json(diagnostics);
 });
 
+// New endpoint to get transcription service metrics
+app.get('/api/transcription/metrics', (req, res) => {
+  if (!transcriptionService) {
+    return res.status(503).json({
+      error: 'Transcription service not initialized',
+      requestId: req.requestId
+    });
+  }
+  res.json({
+    metrics: transcriptionService.getMetrics(),
+    requestId: req.requestId
+  });
+});
+
+// New endpoint to reset transcription service metrics
+app.post('/api/transcription/metrics/reset', checkSharedKey, (req, res) => {
+  if (!transcriptionService) {
+    return res.status(503).json({
+      error: 'Transcription service not initialized',
+      requestId: req.requestId
+    });
+  }
+  transcriptionService.resetMetrics();
+  res.json({
+    message: 'Transcription service metrics reset',
+    requestId: req.requestId
+  });
+});
+
+
 app.post('/test/process-transcription-queue', checkSharedKey, async (req, res) => {
   try {
     Logger.info('Manual transcription queue processing triggered');
@@ -2574,13 +2604,17 @@ app.get('/status', (req, res) => {
                 <br>
                 <strong>Consent Management:</strong> <span class="improved-badge">IMPROVED</span><br>
                 <code>GET /api/consent/summary/:userId</code> - Get consent summary for user<br>
-                <code>POST /api/consent/test-extraction</code> - Test consent extraction from webhook
+                <code>POST /api/consent/test-extraction</code> - Test consent extraction from webhook<br>
+                <br>
+                <strong>Transcription Metrics:</strong> <span class="new-badge">NEW</span><br>
+                <code>GET /api/transcription/metrics</code> - Get transcription service metrics<br>
+                <code>POST /api/transcription/metrics/reset</code> - Reset service metrics<br>
             </div>
 
             <div class="endpoint">
                 <strong>Webhook Endpoints:</strong> <span class="improved-badge">IMPROVED</span><br>
                 <code>POST /webhook/signup</code> - Process signup with consent<br>
-                <code>POST /webhook/signup-simple</code> - Simple testing endpoint for signup<br>
+                <code>POST /webhook/signup-simple</code> - Simple testing signup endpoint<br>
                 <code>POST /webhook/incident-report</code> - Process incident report files<br>
                 <code>POST /generate-pdf</code> - Generate and email PDF report<br>
                 <code>POST /webhook/generate-pdf</code> - Alternative PDF generation
@@ -3132,6 +3166,9 @@ if (process.env.NODE_ENV !== 'test') {
     Logger.info('  - GET  /api/dashcam/videos/:userId/:incidentId - Get user videos');
     Logger.info('  - DELETE /api/dashcam/video/:evidenceId - Delete video');
     Logger.info('  - GET  /api/transcription-data - Fetch transcription directly from DB [NEW]');
+    Logger.info('  - GET  /api/transcription/metrics - Get transcription service metrics [NEW]');
+    Logger.info('  - POST /api/transcription/metrics/reset - Reset service metrics [NEW]');
+
 
     Logger.success('✅ All systems operational with Simplified GDPR compliance - Ready to serve requests');
     Logger.success('🔧 Simplified GDPR Manager integrated - Privacy compliance enabled');
