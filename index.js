@@ -384,7 +384,7 @@ if (BLOCK_TEMP_IDS) {
           success: false,
           error: 'This test user ID has been blocked. Please use a valid user ID.',
           field: field,
-          requestId: req.requestId || `req_${Date.now()}_${Math.random().toString(36.substr(2, 9)}`
+          requestId: req.requestId || `req_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`
         });
       }
 
