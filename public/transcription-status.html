@@ -980,20 +980,103 @@
         </div>
     </div>
 
+    <!-- Universal Navigation Helper -->
+    <script src="navigation.js"></script>
+    
     <script>
         // ============================
         // Navigation Functions
         // ============================
+        function loadNavigationHistory() {
+            try {
+                const storedHistory = sessionStorage.getItem('navigationHistory');
+                const storedIndex = sessionStorage.getItem('navigationIndex');
+                
+                if (storedHistory) {
+                    window.pageHistory = JSON.parse(storedHistory);
+                    window.currentPageIndex = storedIndex ? parseInt(storedIndex, 10) : 0;
+                } else {
+                    window.pageHistory = [];
+                    window.currentPageIndex = -1;
+                }
+                
+                console.log('📚 Loaded navigation history:', { history: window.pageHistory, index: window.currentPageIndex });
+                updateNavigationArrows();
+            } catch (error) {
+                console.warn('Failed to load navigation history:', error);
+                window.pageHistory = [];
+                window.currentPageIndex = -1;
+            }
+        }
+
+        function addPageToHistory(url) {
+            if (!window.pageHistory) window.pageHistory = [];
+            if (!url) return;
+            
+            // Don't add the same page twice in a row
+            if (window.pageHistory.length > 0 && window.pageHistory[window.pageHistory.length - 1] === url) {
+                return;
+            }
+            
+            // Remove any forward history if we are navigating back
+            if (window.currentPageIndex < window.pageHistory.length - 1) {
+                window.pageHistory.splice(window.currentPageIndex + 1);
+            }
+            
+            window.pageHistory.push(url);
+            window.currentPageIndex = window.pageHistory.length - 1;
+            
+            // Store in sessionStorage for persistence across pages
+            sessionStorage.setItem('navigationHistory', JSON.stringify(window.pageHistory));
+            sessionStorage.setItem('navigationIndex', window.currentPageIndex.toString());
+            
+            updateNavigationArrows();
+        }
+
+        function updateNavigationArrows() {
+            const backArrow = document.getElementById('backArrow') || document.querySelector('.nav-arrow.back');
+            const forwardArrow = document.getElementById('forwardArrow') || document.querySelector('.nav-arrow.forward');
+
+            const canGoBack = window.history.length > 1 || (window.pageHistory && window.pageHistory.length > 1 && window.currentPageIndex > 0);
+            const canGoForward = window.pageHistory && window.currentPageIndex < window.pageHistory.length - 1;
+
+            if (backArrow) {
+                backArrow.style.display = canGoBack ? 'flex' : 'none';
+                backArrow.style.opacity = canGoBack ? '1' : '0.5';
+            }
+            if (forwardArrow) {
+                forwardArrow.style.display = canGoForward ? 'flex' : 'none';
+                forwardArrow.style.opacity = canGoForward ? '1' : '0.5';
+            }
+        }
+
         function goBack() {
+            console.log('🔙 Go back clicked from transcription page');
+            
             if (window.history.length > 1) {
                 window.history.back();
+            } else if (window.pageHistory && window.pageHistory.length > 1 && window.currentPageIndex > 0) {
+                window.currentPageIndex--;
+                const previousPage = window.pageHistory[window.currentPageIndex];
+                console.log('🔙 Navigating to:', previousPage);
+                window.location.href = previousPage;
             } else {
+                console.log('🔙 No previous page, going to home');
                 window.location.href = '/';
             }
         }
 
         function goForward() {
-            window.history.forward();
+            console.log('🔜 Go forward clicked from transcription page');
+            
+            if (window.pageHistory && window.currentPageIndex < window.pageHistory.length - 1) {
+                window.currentPageIndex++;
+                const nextPage = window.pageHistory[window.currentPageIndex];
+                console.log('🔜 Navigating to:', nextPage);
+                window.location.href = nextPage;
+            } else {
+                window.history.forward();
+            }
         }
 
         // ============================
@@ -2231,6 +2314,12 @@
         // ============================
         document.addEventListener('DOMContentLoaded', async () => {
             console.log('Initializing recording page');
+
+            // Load navigation history first
+            loadNavigationHistory();
+            
+            // Add current page to history
+            addPageToHistory(window.location.href);
 
             // Initialize configuration first
             await initializeConfig();

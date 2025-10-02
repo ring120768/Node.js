@@ -492,8 +492,13 @@
     document.addEventListener('DOMContentLoaded', async () => {
       console.log('🚀 Car Crash Lawyer AI - Initializing...');
 
-      // Add current page to history
-      addPageToHistory(window.location.href);
+      // Load navigation history from sessionStorage
+      loadNavigationHistory();
+
+      // Add current page to history if it wasn't loaded from history
+      if (pageHistory.length === 0 || currentPageIndex === -1) {
+        addPageToHistory(window.location.href);
+      }
 
       // Initialize system immediately
       await initializeSystem();
@@ -693,40 +698,93 @@
     // NAVIGATION FUNCTIONS
     // ====================================
     function goBack() {
-      if (pageHistory.length > 1 && currentPageIndex > 0) {
+      console.log('🔙 Go back clicked', { historyLength: pageHistory.length, currentIndex: currentPageIndex });
+
+      if (window.history.length > 1) {
+        window.history.back();
+      } else if (pageHistory.length > 1 && currentPageIndex > 0) {
         currentPageIndex--;
-        window.location.href = pageHistory[currentPageIndex];
-        updateNavigationArrows();
+        const previousPage = pageHistory[currentPageIndex];
+        console.log('🔙 Navigating to:', previousPage);
+        window.location.href = previousPage;
+      } else {
+        console.log('🔙 No previous page, staying put');
       }
     }
 
     function goForward() {
+      console.log('🔜 Go forward clicked', { historyLength: pageHistory.length, currentIndex: currentPageIndex });
+
       if (currentPageIndex < pageHistory.length - 1) {
         currentPageIndex++;
-        window.location.href = pageHistory[currentPageIndex];
-        updateNavigationArrows();
+        const nextPage = pageHistory[currentPageIndex];
+        console.log('🔜 Navigating to:', nextPage);
+        window.location.href = nextPage;
+      } else {
+        window.history.forward();
       }
     }
 
     function addPageToHistory(url) {
+      console.log('📝 Adding to history:', url);
+
+      // Don't add the same page twice in a row
+      if (pageHistory.length > 0 && pageHistory[pageHistory.length - 1] === url) {
+        return;
+      }
+
+      // Remove any forward history if we are navigating back
       if (currentPageIndex < pageHistory.length - 1) {
         pageHistory.splice(currentPageIndex + 1);
       }
+
       pageHistory.push(url);
       currentPageIndex = pageHistory.length - 1;
+
+      // Store in sessionStorage for persistence across pages
+      sessionStorage.setItem('navigationHistory', JSON.stringify(pageHistory));
+      sessionStorage.setItem('navigationIndex', currentPageIndex.toString());
+
       updateNavigationArrows();
+    }
+
+    function loadNavigationHistory() {
+      try {
+        const storedHistory = sessionStorage.getItem('navigationHistory');
+        const storedIndex = sessionStorage.getItem('navigationIndex');
+
+        if (storedHistory) {
+          pageHistory.length = 0; // Clear array
+          pageHistory.push(...JSON.parse(storedHistory));
+        }
+
+        if (storedIndex) {
+          currentPageIndex = parseInt(storedIndex, 10);
+        }
+
+        console.log('📚 Loaded navigation history:', { history: pageHistory, index: currentPageIndex });
+      } catch (error) {
+        console.warn('Failed to load navigation history:', error);
+      }
     }
 
     function updateNavigationArrows() {
       const backArrow = document.getElementById('backArrow');
       const forwardArrow = document.getElementById('forwardArrow');
 
+      const canGoBack = window.history.length > 1 || (pageHistory.length > 1 && currentPageIndex > 0);
+      const canGoForward = currentPageIndex < pageHistory.length - 1;
+
       if (backArrow) {
-        backArrow.style.display = (pageHistory.length > 1 && currentPageIndex > 0) ? 'flex' : 'none';
+        backArrow.style.display = canGoBack ? 'flex' : 'none';
+        backArrow.style.opacity = canGoBack ? '1' : '0.5';
       }
       if (forwardArrow) {
-        forwardArrow.style.display = (currentPageIndex < pageHistory.length - 1) ? 'flex' : 'none';
+        forwardArrow.style.display = canGoForward ? 'flex' : 'none';
+        forwardArrow.style.opacity = canGoForward ? '1' : '0.5';
       }
+
+      console.log('🔄 Navigation arrows updated:', { canGoBack, canGoForward, historyLength: pageHistory.length, currentIndex: currentPageIndex });
     }
 
     function navigateToPage(url, pageName) {
