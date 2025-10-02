@@ -1947,6 +1947,23 @@ app.get('/test/transcription-queue', async (req, res) => {
   }
 });
 
+// Debug endpoint to trace user ID format issues
+app.get('/api/debug/trace-user', (req, res) => {
+  const userId = req.query.userId;
+  console.log('=== USER ID TRACE ===');
+  console.log('Provided user ID:', userId);
+  console.log('URL:', req.url);
+  console.log('Query params:', req.query);
+  console.log('===================');
+  
+  res.json({
+    providedUserId: userId,
+    expectedFormat: 'Should be Typeform username like: ianring_120768',
+    actualFormat: userId && userId.startsWith('user_') ? 'Generated format (WRONG)' : 'Typeform format (CORRECT)',
+    requestId: req.requestId
+  });
+});
+
 // Get detailed transcription status
 app.get('/api/transcription-status/:queueId', checkGDPRConsent, async (req, res) => {
   if (!supabaseEnabled) {
