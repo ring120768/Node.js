@@ -2497,7 +2497,14 @@ app.get('/api/debug/transcription-full', checkSharedKey, async (req, res) => {
       };
     } catch (error) {
       diagnostics.openai_test = {
+        api_accessible: false,
+        error: error.message
+      };
+    }
+  }
 
+  res.json(diagnostics);
+});
 
 // Test endpoint for incident report saving
 app.post('/api/debug/test-incident-save', checkSharedKey, async (req, res) => {
