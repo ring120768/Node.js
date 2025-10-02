@@ -257,14 +257,31 @@ if (BLOCK_TEMP_IDS) {
       'user_1759410448804_yzas7ml2p',
       // Block any user IDs that match the timestamp pattern
     ];
-    
+
+    // Whitelist specific legitimate user IDs to bypass blocking rules
+    const whitelistedUserIds = [
+      'ianring_120768', // The user ID that should not be blocked
+      // Add other legitimate IDs here if necessary
+    ];
+
     // Check for temporary IDs in common fields
     const fieldsToCheck = ['userId', 'user_id', 'create_user_id'];
 
     for (const field of fieldsToCheck) {
       // Check in body
       const bodyValue = req.body?.[field];
-      
+
+      // Debug logging for legitimate user IDs
+      if (bodyValue === 'ianring_120768') {
+        Logger.info(`Processing legitimate user ID: ${bodyValue} in field: ${field}`);
+      }
+
+      // Allow whitelisted user IDs to bypass all checks
+      if (whitelistedUserIds.includes(bodyValue)) {
+        Logger.info(`Allowing whitelisted user ID: ${bodyValue}`);
+        continue;
+      }
+
       // Block specific test user IDs
       if (blockedTestUserIds.includes(bodyValue)) {
         Logger.critical(`Blocked persistent test user ID in body.${field}`, {
@@ -298,7 +315,7 @@ if (BLOCK_TEMP_IDS) {
           requestId: req.requestId || `req_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`
         });
       }
-      
+
       if (bodyValue && typeof bodyValue === 'string' && bodyValue.startsWith('temp_')) {
         Logger.critical(`Blocked temporary ID in body.${field}`, {
           value: bodyValue,
@@ -317,7 +334,18 @@ if (BLOCK_TEMP_IDS) {
 
       // Check in params
       const paramValue = req.params?.[field];
-      
+
+      // Debug logging for legitimate user IDs
+      if (paramValue === 'ianring_120768') {
+        Logger.info(`Processing legitimate user ID: ${paramValue} in field: ${field}`);
+      }
+
+      // Allow whitelisted user IDs to bypass all checks
+      if (whitelistedUserIds.includes(paramValue)) {
+        Logger.info(`Allowing whitelisted user ID: ${paramValue}`);
+        continue;
+      }
+
       // Block specific test user IDs
       if (blockedTestUserIds.includes(paramValue)) {
         Logger.critical(`Blocked persistent test user ID in params.${field}`, {
@@ -351,7 +379,7 @@ if (BLOCK_TEMP_IDS) {
           requestId: req.requestId || `req_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`
         });
       }
-      
+
       if (paramValue && typeof paramValue === 'string' && paramValue.startsWith('temp_')) {
         Logger.critical(`Blocked temporary ID in params.${field}`, {
           value: paramValue,
@@ -370,7 +398,18 @@ if (BLOCK_TEMP_IDS) {
 
       // Check in query
       const queryValue = req.query?.[field];
-      
+
+      // Debug logging for legitimate user IDs
+      if (queryValue === 'ianring_120768') {
+        Logger.info(`Processing legitimate user ID: ${queryValue} in field: ${field}`);
+      }
+
+      // Allow whitelisted user IDs to bypass all checks
+      if (whitelistedUserIds.includes(queryValue)) {
+        Logger.info(`Allowing whitelisted user ID: ${queryValue}`);
+        continue;
+      }
+
       // Block specific test user IDs
       if (blockedTestUserIds.includes(queryValue)) {
         Logger.critical(`Blocked persistent test user ID in query.${field}`, {
@@ -404,7 +443,7 @@ if (BLOCK_TEMP_IDS) {
           requestId: req.requestId || `req_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`
         });
       }
-      
+
       if (queryValue && typeof queryValue === 'string' && queryValue.startsWith('temp_')) {
         Logger.critical(`Blocked temporary ID in query.${field}`, {
           value: queryValue,
@@ -832,7 +871,7 @@ if (supabaseEnabled && process.env.OPENAI_API_KEY) {
     // CLEANUP: Remove any persistent test user sessions
     setTimeout(() => {
       const testUserId = 'user_1759410448804_yzas7ml2p';
-      
+
       // Clear from transcription status map
       if (global.transcriptionStatuses && global.transcriptionStatuses.has) {
         for (const [key, value] of global.transcriptionStatuses.entries()) {
@@ -842,7 +881,7 @@ if (supabaseEnabled && process.env.OPENAI_API_KEY) {
           }
         }
       }
-      
+
       // Clear from user sessions map
       if (global.userSessions && global.userSessions.has) {
         if (global.userSessions.has(testUserId)) {
@@ -850,7 +889,7 @@ if (supabaseEnabled && process.env.OPENAI_API_KEY) {
           Logger.warn(`Removed persistent test user from userSessions`);
         }
       }
-      
+
       Logger.info('Session cleanup completed for test user');
     }, 5000);
 
