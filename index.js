@@ -164,18 +164,22 @@ const UUIDUtils = {
 
   // CRITICAL: NEVER generate or modify user IDs - only validate
   ensureValidUUID: (userId) => {
-    if (!userId) return null;
+    if (!userId) {
+      Logger.critical(`ensureValidUUID called with null/undefined - REJECTING`);
+      return null;
+    }
     
     // ONLY return the original userId if it's a valid UUID
     // NEVER generate or transform user IDs
     const uuidRegex = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
     
     if (uuidRegex.test(userId)) {
+      Logger.info(`Valid Typeform UUID preserved: ${userId}`);
       return userId; // Return original Typeform UUID
     }
     
     // If not a UUID, return null - DO NOT GENERATE
-    Logger.critical(`Invalid UUID format detected: ${userId} - REJECTING`);
+    Logger.critical(`Invalid UUID format detected: ${userId} - REJECTING - MUST BE FROM TYPEFORM`);
     return null;
   },
 
@@ -327,25 +331,18 @@ if (BLOCK_TEMP_IDS) {
         });
       }
 
-      // Block ANY non-UUID patterns that could be generated
+      // Block ANY non-UUID patterns that could be generated  
       if (bodyValue && typeof bodyValue === 'string') {
-        const suspiciousPatterns = [
-          /^webhook_\d+_/,           // webhook-generated
-          /^fallback_/,              // fallback IDs
-          /^session_/,               // session IDs
-          /^anonymous_/,             // anonymous users
-          /^guest_/,                 // guest users
-          /^default_/,               // default users
-          /_\d{13}_/,               // timestamp patterns
-          /^[a-z]+_\d+$/,           // simple pattern like user_123
-        ];
-
-        if (suspiciousPatterns.some(pattern => pattern.test(bodyValue))) {
-          Logger.critical(`Blocked suspicious user ID pattern in body.${field}`, {
+        // STRICT: Only allow valid UUIDs from Typeform
+        const uuidRegex = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
+        
+        if (!uuidRegex.test(bodyValue)) {
+          Logger.critical(`Blocked non-UUID user ID in body.${field}`, {
             value: bodyValue,
             path: req.path,
             method: req.method,
-            ip: req.ip
+            ip: req.ip,
+            reason: 'Only Typeform UUIDs allowed'
           });
 
 
@@ -356,33 +353,32 @@ function validateTypeformUserId(userId) {
     return false;
   }
 
-  // Must be a valid UUID format
+  // Must be a valid UUID format - ONLY UUIDs from Typeform allowed
   const uuidRegex = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
   if (!uuidRegex.test(userId)) {
-    Logger.critical(`VALIDATION FAILED: Invalid UUID format: ${userId}`);
+    Logger.critical(`VALIDATION FAILED: Not a UUID: ${userId} - MUST BE FROM TYPEFORM`);
     return false;
   }
 
-  // Block any known problematic patterns
-  const blockedPatterns = [
-    /^temp_/,
-    /^test_/,
-    /^user_\d{13}_/,  // Timestamp-based
-    /^webhook_/,
-    /^fallback_/,
-    /^guest_/,
-    /^anonymous_/
+  // Additional safety: Block known problematic UUIDs if any exist
+  const blockedUUIDs = [
+    // Add any specific UUIDs that should be blocked
   ];
 
-  for (const pattern of blockedPatterns) {
-    if (pattern.test(userId)) {
-      Logger.critical(`VALIDATION FAILED: Blocked pattern detected: ${userId}`);
-      return false;
-    }
+  if (blockedUUIDs.includes(userId.toLowerCase())) {
+    Logger.critical(`VALIDATION FAILED: Blocked UUID detected: ${userId}`);
+    return false;
   }
 
-  Logger.info(`VALIDATION PASSED: Valid Typeform UUID: ${userId}`);
+  Logger.info(`VALIDATION PASSED: Valid Typeform UUID: ${userId.substring(0, 8)}...`);
   return true;
+}
+
+// Additional function to detect and prevent any dummy ID generation
+function preventDummyIdGeneration(functionName, originalId) {
+  Logger.critical(`SECURITY ALERT: ${functionName} attempted to process non-UUID: ${originalId}`);
+  Logger.critical('BLOCKING: No dummy ID generation allowed - system must use ONLY Typeform UUIDs');
+  throw new Error(`SECURITY: Function ${functionName} blocked from processing non-UUID. Only Typeform UUIDs allowed.`);
 }
 
 
@@ -463,23 +459,16 @@ function validateTypeformUserId(userId) {
 
       // Block ANY non-UUID patterns that could be generated
       if (paramValue && typeof paramValue === 'string') {
-        const suspiciousPatterns = [
-          /^webhook_\d+_/,
-          /^fallback_/,
-          /^session_/,
-          /^anonymous_/,
-          /^guest_/,
-          /^default_/,
-          /_\d{13}_/,
-          /^[a-z]+_\d+$/,
-        ];
-
-        if (suspiciousPatterns.some(pattern => pattern.test(paramValue))) {
-          Logger.critical(`Blocked suspicious user ID pattern in params.${field}`, {
+        // STRICT: Only allow valid UUIDs from Typeform
+        const uuidRegex = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
+        
+        if (!uuidRegex.test(paramValue)) {
+          Logger.critical(`Blocked non-UUID user ID in params.${field}`, {
             value: paramValue,
             path: req.path,
             method: req.method,
-            ip: req.ip
+            ip: req.ip,
+            reason: 'Only Typeform UUIDs allowed'
           });
 
           return res.status(400).json({
@@ -558,23 +547,16 @@ function validateTypeformUserId(userId) {
 
       // Block ANY non-UUID patterns that could be generated
       if (queryValue && typeof queryValue === 'string') {
-        const suspiciousPatterns = [
-          /^webhook_\d+_/,
-          /^fallback_/,
-          /^session_/,
-          /^anonymous_/,
-          /^guest_/,
-          /^default_/,
-          /_\d{13}_/,
-          /^[a-z]+_\d+$/,
-        ];
-
-        if (suspiciousPatterns.some(pattern => pattern.test(queryValue))) {
-          Logger.critical(`Blocked suspicious user ID pattern in query.${field}`, {
+        // STRICT: Only allow valid UUIDs from Typeform
+        const uuidRegex = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
+        
+        if (!uuidRegex.test(queryValue)) {
+          Logger.critical(`Blocked non-UUID user ID in query.${field}`, {
             value: queryValue,
             path: req.path,
             method: req.method,
-            ip: req.ip
+            ip: req.ip,
+            reason: 'Only Typeform UUIDs allowed'
           });
 
           return res.status(400).json({
@@ -1702,15 +1684,6 @@ app.post('/webhook/signup-simple', webhookLimiter, checkSharedKey, async (req, r
           message: 'This test endpoint has been disabled to prevent fake user ID generation',
           requestId: req.requestId
         });
-          email: email || 'test@example.com',   // Required field
-          name: firstName,      // First name
-          surname: lastName,    // Last name
-          mobile: phone || null,  // Phone field is actually 'mobile'
-          gdpr_consent: true,
-          gdpr_consent_date: new Date().toISOString(),
-          created_at: new Date().toISOString(),
-          submit_date: new Date().toISOString()
-        };
 
         console.log('Inserting data:', insertData);
 
