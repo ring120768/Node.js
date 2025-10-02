@@ -1,6 +1,5 @@
-
-// test-transcription.js
-// Debugging script for transcription flow
+// test-transcription-fixed.js
+// Fixed debugging script for transcription flow
 
 const { createClient } = require('@supabase/supabase-js');
 const axios = require('axios');
@@ -16,12 +15,45 @@ const supabase = createClient(
 // Test configuration
 const TEST_CONFIG = {
   userId: 'test_user_123',
-  audioPath: 'test_user_123/recording_1758178026684_6qzhi7s.webm', // Update with your actual file path
+  incidentId: null, // Add if you have one
+  audioPath: 'test_user_123/recording_1758178026684_6qzhi7s.webm',
   bucketName: 'incident-audio'
 };
 
 console.log('🔧 Starting Transcription Debug Test');
 console.log('================================');
+
+// Step 1: Check actual database schema
+async function checkDatabaseSchema() {
+  console.log('\n🔍 Step 0: Checking database schema...');
+
+  try {
+    // Check transcription_queue columns
+    const { data: queueSample, error: queueError } = await supabase
+      .from('transcription_queue')
+      .select('*')
+      .limit(1);
+
+    if (queueSample && queueSample.length > 0) {
+      console.log('📋 transcription_queue columns:', Object.keys(queueSample[0]));
+    }
+
+    // Check ai_transcription columns
+    const { data: transcSample, error: transcError } = await supabase
+      .from('ai_transcription')
+      .select('*')
+      .limit(1);
+
+    if (transcSample && transcSample.length > 0) {
+      console.log('📋 ai_transcription columns:', Object.keys(transcSample[0]));
+    }
+
+    return true;
+  } catch (error) {
+    console.error('❌ Schema check error:', error);
+    return false;
+  }
+}
 
 // Step 1: Verify Supabase Connection
 async function testSupabaseConnection() {
@@ -49,7 +81,6 @@ async function testSupabaseConnection() {
 async function testAudioFileExists() {
   console.log('\n📁 Step 2: Checking if audio file exists...');
   try {
-    // List files in the bucket
     const { data: files, error } = await supabase
       .storage
       .from(TEST_CONFIG.bucketName)
@@ -94,7 +125,6 @@ async function downloadAudioFile() {
       return null;
     }
 
-    // Convert blob to buffer
     const arrayBuffer = await data.arrayBuffer();
     const buffer = Buffer.from(arrayBuffer);
 
@@ -155,54 +185,70 @@ async function testWhisperAPI(audioBuffer) {
   }
 }
 
-// Step 5: Save to Database
+// Step 5: Save to Database (FIXED VERSION)
 async function saveTranscription(transcriptionData) {
   console.log('\n💾 Step 5: Saving transcription to database...');
 
   try {
-    // Save to transcription_queue
+    // First, create entry in transcription_queue
     const { data: queueData, error: queueError } = await supabase
       .from('transcription_queue')
       .insert({
         create_user_id: TEST_CONFIG.userId,
+        incident_report_id: TEST_CONFIG.incidentId,
         audio_url: `${process.env.SUPABASE_URL}/storage/v1/object/public/${TEST_CONFIG.bucketName}/${TEST_CONFIG.audioPath}`,
-        audio_storage_path: TEST_CONFIG.audioPath,
-        status: 'completed',
-        transcription_text: transcriptionData.text,
+        status: 'COMPLETED',  // Use CAPS for status
+        retry_count: 0,
         created_at: new Date().toISOString(),
-        processed_at: new Date().toISOString()
+        processed_at: new Date().toISOString(),
+        // DON'T include transcription_text here - it doesn't belong in queue
       })
       .select()
       .single();
 
     if (queueError) {
       console.error('❌ Queue insert failed:', queueError);
+      console.log('Error details:', queueError.details, queueError.hint);
     } else {
       console.log('✅ Saved to transcription_queue, ID:', queueData.id);
+
+      // Now save the actual transcription
+      const { data: transcData, error: transcError } = await supabase
+        .from('ai_transcription')
+        .insert({
+          create_user_id: TEST_CONFIG.userId,
+          incident_report_id: TEST_CONFIG.incidentId,
+          transcription_text: transcriptionData.text,
+          audio_url: `${process.env.SUPABASE_URL}/storage/v1/object/public/${TEST_CONFIG.bucketName}/${TEST_CONFIG.audioPath}`,
+          created_at: new Date().toISOString()
+          // DON'T include non-existent fields like language, duration, audio_file_path
+        })
+        .select()
+        .single();
+
+      if (transcError) {
+        console.error('❌ Transcription insert failed:', transcError);
+        console.log('Error details:', transcError.details, transcError.hint);
+      } else {
+        console.log('✅ Saved to ai_transcription, ID:', transcData.id);
+
+        // Update queue with transcription_id reference
+        if (queueData?.id) {
+          const { error: updateError } = await supabase
+            .from('transcription_queue')
+            .update({
+              transcription_id: transcData.id
+            })
+            .eq('id', queueData.id);
+
+          if (!updateError) {
+            console.log('✅ Updated queue with transcription_id reference');
+          }
+        }
+      }
+
+      return { queueData, transcData };
     }
-
-    // Save to ai_transcription
-    const { data: transcData, error: transcError } = await supabase
-      .from('ai_transcription')
-      .insert({
-        create_user_id: TEST_CONFIG.userId,
-        transcription_text: transcriptionData.text,
-        audio_url: `${process.env.SUPABASE_URL}/storage/v1/object/public/${TEST_CONFIG.bucketName}/${TEST_CONFIG.audioPath}`,
-        audio_file_path: TEST_CONFIG.audioPath,
-        language: transcriptionData.language,
-        duration: transcriptionData.duration,
-        created_at: new Date().toISOString()
-      })
-      .select()
-      .single();
-
-    if (transcError) {
-      console.error('❌ Transcription insert failed:', transcError);
-    } else {
-      console.log('✅ Saved to ai_transcription, ID:', transcData.id);
-    }
-
-    return { queueData, transcData };
   } catch (error) {
     console.error('❌ Database save error:', error);
     return null;
@@ -212,6 +258,9 @@ async function saveTranscription(transcriptionData) {
 // Main test runner
 async function runTests() {
   console.log('🚀 Running transcription pipeline tests...\n');
+
+  // Test 0: Check Schema
+  await checkDatabaseSchema();
 
   // Test 1: Supabase Connection
   const supabaseOk = await testSupabaseConnection();
@@ -239,6 +288,7 @@ async function runTests() {
   const transcriptionResult = await testWhisperAPI(audioBuffer);
   if (!transcriptionResult) {
     console.error('\n❌ Transcription failed');
+    console.log('💡 Check your OpenAI API key is valid and has credits');
     return;
   }
 
@@ -246,6 +296,7 @@ async function runTests() {
   const saved = await saveTranscription(transcriptionResult);
   if (!saved) {
     console.error('\n❌ Database save failed');
+    console.log('💡 Check the error details above for column name mismatches');
     return;
   }
 
@@ -256,6 +307,8 @@ async function runTests() {
   console.log('- Audio File: Found and downloaded');
   console.log('- Transcription: Completed');
   console.log('- Database: Saved successfully');
+  console.log('\n📝 Transcription ID:', saved.transcData?.id);
+  console.log('🔗 Queue ID:', saved.queueData?.id);
 }
 
 // Run the tests
