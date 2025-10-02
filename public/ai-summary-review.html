@@ -423,7 +423,7 @@
                 localStorage.setItem('create_user_id', state.userId);
                 sessionStorage.setItem('create_user_id', state.userId);
             }
-            
+
             if (state.incidentId) {
                 localStorage.setItem('current_incident_id', state.incidentId);
                 sessionStorage.setItem('current_incident_id', state.incidentId);
@@ -501,12 +501,12 @@
 
                 // Build parameters for going back
                 const params = new URLSearchParams();
-                
+
                 if (state.userId) {
                     params.append('userId', state.userId);
                     params.append('create_user_id', state.userId);
                 }
-                
+
                 if (state.queueId) {
                     params.append('queueId', state.queueId);
                     params.append('queue_id', state.queueId);
@@ -536,66 +536,41 @@
         }
 
         function proceedToDeclaration() {
-            stopCountdown();
+            console.log('Proceeding to declaration page...');
 
-            // Show loading state on button
-            const successBtn = document.querySelector('.btn-success');
-            if (successBtn) {
-                successBtn.innerHTML = 'Redirecting<span class="loading-spinner"></span>';
-                successBtn.disabled = true;
-            }
+            // Save the summary data before proceeding
+            const summaryData = {
+                transcription: document.getElementById('transcriptionText')?.textContent || '',
+                summary: document.getElementById('summaryContent')?.textContent || '',
+                timestamp: new Date().toISOString(),
+                userId: new URLSearchParams(window.location.search).get('userId'),
+                incidentId: new URLSearchParams(window.location.search).get('incidentId')
+            };
 
-            // Build parameters for declaration page
+            console.log('Saving summary data:', summaryData);
+
+            // Store in both sessionStorage and localStorage for reliability
+            sessionStorage.setItem('aiSummaryData', JSON.stringify(summaryData));
+            localStorage.setItem('aiSummaryData', JSON.stringify(summaryData));
+
+            // Navigate to declaration page with parameters
+            const urlParams = new URLSearchParams(window.location.search);
+            const userId = urlParams.get('userId');
+            const incidentId = urlParams.get('incidentId');
+
+            let declarationUrl = 'declaration.html';
             const params = new URLSearchParams();
-            
-            // Always include user ID (required by declaration page)
-            if (state.userId) {
-                params.append('create_user_id', state.userId);
-                params.append('user_id', state.userId);
-            }
-            
-            // Include incident ID if available
-            if (state.incidentId) {
-                params.append('incident_report_id', state.incidentId);
-                params.append('incident_id', state.incidentId);
-            }
-            
-            // Add operation and status flags
-            params.append('operation', 'final_consent');
-            params.append('status', 'ai_summary_approved');
-            params.append('require_consent', 'true');
 
-            // Store completion status in localStorage
-            localStorage.setItem('ai_summary_complete', 'true');
-            localStorage.setItem('transcription_review_complete', 'true');
-            localStorage.setItem('ai_summary_approved_at', new Date().toISOString());
-
-            // Debug logging
-            console.log('🔄 Proceeding to declaration with params:', {
-                userId: state.userId,
-                incidentId: state.incidentId,
-                queueId: state.queueId,
-                params: params.toString()
-            });
-
-            if (isDemo) {
-                showDemoAction(`Would redirect to: /declaration.html?${params.toString()}`);
-                // Reset button after demo
-                setTimeout(() => {
-                    if (successBtn) {
-                        successBtn.innerHTML = 'Continue to Declaration →';
-                        successBtn.disabled = false;
-                    }
-                }, 2000);
-            } else {
-                // Real redirect in production
-                const redirectUrl = `/declaration.html?${params.toString()}`;
-                console.log('✅ Redirecting to:', redirectUrl);
-                
-                setTimeout(() => {
-                    window.location.href = redirectUrl;
-                }, 500);
+            if (userId) params.set('userId', userId);
+            if (incidentId) params.set('incidentId', incidentId);
+            if (params.toString()) {
+                declarationUrl += '?' + params.toString();
             }
+
+            console.log('Navigating to:', declarationUrl);
+
+            // Use replace to prevent back button issues
+            window.location.replace(declarationUrl);
         }
 
         function showDemoAction(message) {

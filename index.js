@@ -649,10 +649,18 @@ if (supabaseEnabled && process.env.OPENAI_API_KEY) {
     Logger.info(`OpenAI API Key detected: ${process.env.OPENAI_API_KEY.substring(0, 7)}...`);
 
     // Start queue processing AFTER successful initialization
-    transcriptionQueueInterval = setInterval(() => {
-      processTranscriptionQueue().catch(error => {
+    transcriptionQueueInterval = setInterval(async () => {
+      try {
+        await processTranscriptionQueue();
+        
+        // Log metrics after each run
+        if (transcriptionService && typeof transcriptionService.getMetrics === 'function') {
+          const metrics = transcriptionService.getMetrics();
+          Logger.info('📊 Transcription service metrics:', metrics);
+        }
+      } catch (error) {
         Logger.error('Queue processing error:', error);
-      });
+      }
     }, 5 * 60 * 1000); // Every 5 minutes
 
     Logger.success('✅ Transcription queue processing started');

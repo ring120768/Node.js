@@ -412,6 +412,32 @@
                 font-size: 20px;
             }
         }
+
+        /* Summary Preview Styling */
+        .summary-preview {
+            background: #e9ecef;
+            border-left: 4px solid #667eea;
+            border-radius: 8px;
+            padding: 20px;
+            margin-bottom: 25px;
+        }
+
+        .summary-preview h4 {
+            color: #333;
+            font-size: 20px;
+            margin-bottom: 10px;
+        }
+
+        .summary-preview p {
+            color: #555;
+            line-height: 1.7;
+            margin-bottom: 10px;
+        }
+
+        .summary-preview small {
+            color: #888;
+            font-size: 11px;
+        }
     </style>
 </head>
 <body>
@@ -435,6 +461,9 @@
         </div>
 
         <div class="error-banner" id="errorBanner"></div>
+
+        <!-- Placeholder for AI Summary Preview -->
+        <div id="summaryDisplay"></div>
 
         <div id="consentContent" style="display: none;">
             <div class="declaration-box">
@@ -522,7 +551,8 @@
                 incidentId: null,
                 returnUrl: null,
                 operation: null,
-                requireConsent: false
+                requireConsent: false,
+                fromAISummary: false // Flag to indicate if we are coming from AI summary review
             },
             ui: {
                 isProcessing: false,
@@ -950,7 +980,7 @@
                 } else if (AppState.session.operation === 'final_consent') {
                     params.append('status', 'completed');
                     params.append('declaration_complete', 'true');
-                    
+
                     // If coming from AI summary, go to report complete
                     if (AppState.session.fromAISummary) {
                         basePath = '/report-complete.html';
@@ -1089,6 +1119,67 @@
         };
 
         // ============================
+        // AI Summary Data Loading
+        // ============================
+        // Load summary data from previous step
+        function loadSummaryData() {
+            let summaryData = sessionStorage.getItem('aiSummaryData') || localStorage.getItem('aiSummaryData');
+
+            if (summaryData) {
+                try {
+                    const data = JSON.parse(summaryData);
+                    console.log('Loaded summary data:', data);
+
+                    // Store the data globally for form submission
+                    window.aiSummaryData = data;
+
+                    // Display summary information if elements exist
+                    const summaryDisplay = document.getElementById('summaryDisplay');
+                    if (summaryDisplay && data.summary) {
+                        summaryDisplay.innerHTML = `
+                            <div class="summary-preview">
+                                <h4>AI Generated Summary:</h4>
+                                <p>${data.summary}</p>
+                                <small>Generated on: ${new Date(data.timestamp).toLocaleString()}</small>
+                            </div>
+                        `;
+                    }
+
+                    // Pre-populate any form fields if they exist
+                    if (data.userId) {
+                        const userIdField = document.getElementById('userId') || document.querySelector('input[name="userId"]');
+                        if (userIdField) userIdField.value = data.userId;
+                    }
+
+                    if (data.incidentId) {
+                        const incidentIdField = document.getElementById('incidentId') || document.querySelector('input[name="incidentId"]');
+                        if (incidentIdField) incidentIdField.value = data.incidentId;
+                    }
+
+                    return data;
+                } catch (error) {
+                    console.error('Error parsing summary data:', error);
+                }
+            } else {
+                console.log('No summary data found in storage');
+
+                // Try to get data from URL parameters as fallback
+                const urlParams = new URLSearchParams(window.location.search);
+                const userId = urlParams.get('userId');
+                const incidentId = urlParams.get('incidentId');
+
+                if (userId || incidentId) {
+                    const fallbackData = { userId, incidentId };
+                    window.aiSummaryData = fallbackData;
+                    console.log('Using URL parameters as fallback:', fallbackData);
+                    return fallbackData;
+                }
+            }
+
+            return null;
+        }
+
+        // ============================
         // Application Initialization
         // ============================
         const App = {
@@ -1194,11 +1285,31 @@
         // ============================
         // Page Load Handler
         // ============================
-        document.addEventListener('DOMContentLoaded', () => {
-            Utils.log('DOM Content Loaded');
+        // Initialize when page loads
+        document.addEventListener('DOMContentLoaded', function() {
+            console.log('Declaration page loaded');
+            const summaryData = loadSummaryData();
 
-            // Show loading initially
-            UIManager.showLoading(true);
+            // Show a confirmation that we have the data
+            if (summaryData) {
+                console.log('✅ Summary data successfully loaded on declaration page');
+
+                // Show a brief success message
+                const statusDiv = document.createElement('div');
+                statusDiv.style.cssText = 'background: #d4edda; color: #155724; padding: 10px; border-radius: 5px; margin: 10px 0; border: 1px solid #c3e6cb;';
+                statusDiv.innerHTML = '✅ AI Summary data loaded successfully';
+
+                // Insert at the top of the page
+                const mainContent = document.querySelector('main') || document.body;
+                mainContent.insertBefore(statusDiv, mainContent.firstChild);
+
+                // Remove the status message after 3 seconds
+                setTimeout(() => {
+                    statusDiv.remove();
+                }, 3000);
+            } else {
+                console.warn('⚠️ No summary data found on declaration page');
+            }
 
             // Bind event listeners
             App.bindEventListeners();
