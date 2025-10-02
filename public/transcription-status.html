@@ -1309,7 +1309,7 @@
         // ============================
         // User ID and Session Management
         // ============================
-        function initializeSession() {
+        async function initializeSession() {
             // Extract parameters from URL
             const urlParams = new URLSearchParams(window.location.search);
 
@@ -1328,8 +1328,14 @@
 
             // Generate a new user ID if none exists
             if (!state.userId) {
-                state.userId = 'user_' + Date.now() + '_' + Math.random().toString(36).substr(2, 9);
-                console.warn('No user ID provided, generated session ID:', state.userId);
+                // If no userId is found, redirect to a page that enforces Typeform validation
+                const homeUrl = new URL(window.location.origin);
+                // Optionally, redirect to a specific validation page or show an error
+                // For now, we log an error and return null to halt initialization
+                console.error('No Typeform `create_user_id` found. This page requires a valid session.');
+                showStatus('Invalid session. Please start from the Typeform link.', 'error');
+                document.querySelector('.container').innerHTML = '<h2 style="text-align: center; color: #dc3545;">Access Denied</h2><p style="text-align: center;">You must start from the provided Typeform link to access this service.</p>';
+                return null;
             }
 
             // Store user ID for persistence
@@ -1355,7 +1361,7 @@
                 config: appConfig
             });
 
-            return state.userId;
+            return state.userId; // Return userId for further processing
         }
 
         function updateUserInfoBadge() {
@@ -2315,130 +2321,149 @@
         // Event Listeners and Initialization - SIMPLIFIED
         // ============================
         document.addEventListener('DOMContentLoaded', async () => {
-            console.log('Initializing recording page');
+            console.log('Initializing recording page with strict Typeform validation');
 
-            // Load navigation history first
-            loadNavigationHistory();
+            try {
+                // Load navigation history first
+                loadNavigationHistory();
 
-            // Add current page to history
-            addPageToHistory(window.location.href);
+                // Add current page to history
+                addPageToHistory(window.location.href);
 
-            // Initialize configuration first
-            await initializeConfig();
-            await initializeSupabase();
+                // Initialize configuration first
+                await initializeConfig();
+                await initializeSupabase();
 
-            // Initialize session
-            initializeSession();
+                // Initialize session with strict validation
+                const userId = await initializeSession();
 
-            // Check GDPR consent ONCE at page load
-            const hasConsent = await checkGDPRConsent(state.userId);
-            console.log('GDPR consent status:', hasConsent);
-
-            state.hasConsent = hasConsent;
-
-            if (!hasConsent) {
-                // Show consent banner for first-time users
-                showConsentBanner();
-                document.getElementById('gdprNotice').classList.add('visible');
-            } else {
-                // User has consent, make sure record button is visible
-                const recordButton = document.getElementById('recordButton');
-                if (recordButton) {
-                    recordButton.style.display = 'inline-block';
+                // If initialization failed, stop here
+                if (!userId) {
+                    console.error('Session initialization failed - halting page load');
+                    return; // Stop all further initialization
                 }
-            }
 
-            // Initialize components
-            initializeVisualizer();
-            initWebSocket();
-            updateNetworkStatus();
+                // Continue with normal initialization only if we have a valid Typeform user ID
+                const hasConsent = await checkGDPRConsent(state.userId);
+                console.log('GDPR consent status:', hasConsent);
 
-            // Set up event listeners
-            document.getElementById('testMicButton').addEventListener('click', testMicrophone);
-            document.getElementById('recordButton').addEventListener('click', startRecording);
-            document.getElementById('stopButton').addEventListener('click', stopRecording);
-            document.getElementById('retryButton').addEventListener('click', resetRecording);
-            document.getElementById('confirmButton').addEventListener('click', confirmTranscription);
+                state.hasConsent = hasConsent;
 
-            // GDPR Consent Banner Listeners - FIXED DECLINE BUTTON
-            const consentBanner = document.getElementById('consentBanner');
-            const agreeRecordButton = document.getElementById('agreeRecordButton');
-            const declineButton = document.getElementById('declineButton');
-
-            if (agreeRecordButton) {
-                agreeRecordButton.addEventListener('click', async () => {
-                    await logConsent('recording_consent', true);
-                    state.hasConsent = true;
-                    consentBanner.style.display = 'none';
-
-                    // Show the record button again and ensure it's enabled
+                if (!hasConsent) {
+                    // Show consent banner for first-time users
+                    showConsentBanner();
+                    const gdprNotice = document.getElementById('gdprNotice');
+                    if (gdprNotice) {
+                        gdprNotice.classList.add('visible');
+                    }
+                } else {
+                    // User has consent, make sure record button is visible
                     const recordButton = document.getElementById('recordButton');
                     if (recordButton) {
                         recordButton.style.display = 'inline-block';
-                        recordButton.disabled = false;
-                        recordButton.textContent = '🎤 Start Recording';
                     }
-
-                    showStatus('Consent granted. You can now start recording.', 'success');
-                });
+                }
+            } catch (error) {
+                console.error('Error during DOMContentLoaded initialization:', error);
+                showStatus(`Initialization failed: ${error.message}`, 'error');
+                // Optionally display a more user-friendly error message
             }
 
-            // FIXED: Decline button no longer redirects
-            if (declineButton) {
-                declineButton.addEventListener('click', async () => {
-                    await logConsent('recording_consent', false);
+            // Initialize components - these should only run if session initialization succeeded
+            if (state.userId) {
+                initializeVisualizer();
+                initWebSocket();
+                updateNetworkStatus();
 
-                    // Hide banner
-                    consentBanner.style.display = 'none';
+                // Set up event listeners
+                document.getElementById('testMicButton').addEventListener('click', testMicrophone);
+                document.getElementById('recordButton').addEventListener('click', startRecording);
+                document.getElementById('stopButton').addEventListener('click', stopRecording);
+                document.getElementById('retryButton').addEventListener('click', resetRecording);
+                document.getElementById('confirmButton').addEventListener('click', confirmTranscription);
 
-                    // Disable recording functionality
-                    const recordButton = document.getElementById('recordButton');
-                    if (recordButton) {
-                        recordButton.disabled = true;
-                        recordButton.textContent = '🔒 Consent Required';
-                        recordButton.style.display = 'inline-block';
-                    }
+                // GDPR Consent Banner Listeners - FIXED DECLINE BUTTON
+                const consentBanner = document.getElementById('consentBanner');
+                const agreeRecordButton = document.getElementById('agreeRecordButton');
+                const declineButton = document.getElementById('declineButton');
 
-                    showStatus('Recording consent declined. You cannot record without consent.', 'warning');
+                if (agreeRecordButton) {
+                    agreeRecordButton.addEventListener('click', async () => {
+                        await logConsent('recording_consent', true);
+                        state.hasConsent = true;
+                        consentBanner.style.display = 'none';
 
-                    // Optional: Redirect to home after delay
-                    setTimeout(() => {
-                        if (confirm('Would you like to return to the home page?')) {
-                            window.location.href = 'https://carcrashlawyerai.com/';
+                        // Show the record button again and ensure it's enabled
+                        const recordButton = document.getElementById('recordButton');
+                        if (recordButton) {
+                            recordButton.style.display = 'inline-block';
+                            recordButton.disabled = false;
+                            recordButton.textContent = '🎤 Start Recording';
                         }
-                    }, 3000);
+
+                        showStatus('Consent granted. You can now start recording.', 'success');
+                    });
+                }
+
+                // FIXED: Decline button no longer redirects
+                if (declineButton) {
+                    declineButton.addEventListener('click', async () => {
+                        await logConsent('recording_consent', false);
+
+                        // Hide banner
+                        consentBanner.style.display = 'none';
+
+                        // Disable recording functionality
+                        const recordButton = document.getElementById('recordButton');
+                        if (recordButton) {
+                            recordButton.disabled = true;
+                            recordButton.textContent = '🔒 Consent Required';
+                            recordButton.style.display = 'inline-block';
+                        }
+
+                        showStatus('Recording consent declined. You cannot record without consent.', 'warning');
+
+                        // Optional: Redirect to home after delay
+                        setTimeout(() => {
+                            if (confirm('Would you like to return to the home page?')) {
+                                window.location.href = 'https://carcrashlawyerai.com/';
+                            }
+                        }, 3000);
+                    });
+                }
+
+                // Network status monitoring
+                window.addEventListener('online', updateNetworkStatus);
+                window.addEventListener('offline', updateNetworkStatus);
+
+                // Handle visibility change (mobile browsers)
+                document.addEventListener('visibilitychange', () => {
+                    if (document.hidden && state.mediaRecorder && state.mediaRecorder.state === 'recording') {
+                        console.log('Page hidden while recording - stopping');
+                        stopRecording();
+                    }
                 });
+
+                // Use the extracted handler function
+                window.addEventListener('beforeunload', handleBeforeUnload);
+
+                // Cleanup on page unload
+                window.addEventListener('unload', () => {
+                    if (state.pollInterval) {
+                        clearInterval(state.pollInterval);
+                    }
+                    if (state.ws && !state.isRedirecting) {
+                        state.ws.close();
+                    }
+                });
+
+                // Show initial status
+                showStatus('Ready to record your statement', 'info');
+
+                console.log('Initialization complete');
+            } else {
+                console.log('Session initialization failed, skipping further setup.');
             }
-
-            // Network status monitoring
-            window.addEventListener('online', updateNetworkStatus);
-            window.addEventListener('offline', updateNetworkStatus);
-
-            // Handle visibility change (mobile browsers)
-            document.addEventListener('visibilitychange', () => {
-                if (document.hidden && state.mediaRecorder && state.mediaRecorder.state === 'recording') {
-                    console.log('Page hidden while recording - stopping');
-                    stopRecording();
-                }
-            });
-
-            // Use the extracted handler function
-            window.addEventListener('beforeunload', handleBeforeUnload);
-
-            // Cleanup on page unload
-            window.addEventListener('unload', () => {
-                if (state.pollInterval) {
-                    clearInterval(state.pollInterval);
-                }
-                if (state.ws && !state.isRedirecting) {
-                    state.ws.close();
-                }
-            });
-
-            // Show initial status
-            showStatus('Ready to record your statement', 'info');
-
-            console.log('Initialization complete');
         });
 
         // Global error handlers
