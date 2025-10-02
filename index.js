@@ -652,7 +652,7 @@ if (supabaseEnabled && process.env.OPENAI_API_KEY) {
     transcriptionQueueInterval = setInterval(async () => {
       try {
         await processTranscriptionQueue();
-        
+
         // Log metrics after each run
         if (transcriptionService && typeof transcriptionService.getMetrics === 'function') {
           const metrics = transcriptionService.getMetrics();
@@ -1961,8 +1961,8 @@ app.get('/api/transcription-status/:queueId', checkGDPRConsent, async (req, res)
     let transcriptionData = null;
     let metadata = {};
 
-    if (queueItem.status === 'COMPLETED') {
-      // Try multiple methods to get transcription
+    // Handle both COMPLETED status and cases where status might be wrong due to DB issues
+    if (queueItem.status === 'COMPLETED' || queueItem.status === 'FAILED' || queueItem.status === 'PROCESSING') {
       let transcription = null;
 
       // Method 1: By transcription_id
@@ -1979,7 +1979,7 @@ app.get('/api/transcription-status/:queueId', checkGDPRConsent, async (req, res)
         }
       }
 
-      // Method 2: By user and incident
+      // Method 2: By user and incident (more robust search)
       if (!transcription && queueItem.create_user_id) {
         const query = supabase
           .from('ai_transcription')
@@ -1999,11 +1999,29 @@ app.get('/api/transcription-status/:queueId', checkGDPRConsent, async (req, res)
         }
       }
 
+      // Method 3: Search by audio URL match (for cases where other methods fail)
+      if (!transcription && queueItem.audio_url && queueItem.create_user_id) {
+        const { data: transcriptionByUrl, error: errorByUrl } = await supabase
+          .from('ai_transcription')
+          .select('*')
+          .eq('create_user_id', queueItem.create_user_id)
+          .eq('audio_url', queueItem.audio_url)
+          .order('created_at', { ascending: false })
+          .limit(1)
+          .single();
+
+        if (!errorByUrl && transcriptionByUrl) {
+          transcription = transcriptionByUrl;
+          Logger.success('Found transcription by audio URL match');
+        }
+      }
+
+
       if (transcription) {
         transcriptionData = transcription.transcription_text;
         metadata = {
           audioQuality: 'Good',
-          processingTime: queueItem.processed_at ? 
+          processingTime: queueItem.processed_at ?
             `${Math.round((new Date(queueItem.processed_at) - new Date(queueItem.created_at)) / 1000)}s` : 'N/A',
           confidence: 'high',
           createdAt: transcription.created_at
@@ -2158,7 +2176,7 @@ app.get('/api/transcription-data', checkGDPRConsent, async (req, res) => {
             audioQuality: 'Good',
             confidence: 'High',
             createdAt: transcription.created_at,
-            processingTime: queueItem.processed_at ? 
+            processingTime: queueItem.processed_at ?
               `${Math.round((new Date(queueItem.processed_at) - new Date(queueItem.created_at)) / 1000)}s` : 'N/A'
           },
           requestId: req.requestId
