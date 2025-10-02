@@ -769,22 +769,38 @@ app.post('/webhook/signup', webhookLimiter, checkSharedKey, async (req, res) => 
     // Process webhook data
     const webhookData = req.body;
 
+    // Extract the Typeform user ID - multiple possible locations
+    const typeformUserId = webhookData?.create_user_id || 
+                          webhookData?.userId || 
+                          webhookData?.user_id ||
+                          webhookData?.form_response?.hidden?.create_user_id ||
+                          webhookData?.form_response?.hidden?.user_id;
+    
+    console.log('Typeform provided user ID:', typeformUserId); // Should log: ianring_120768
+    
+    if (!typeformUserId) {
+      console.log('⚠️ No user ID found in webhook data');
+      return res.status(400).json({
+        error: 'Missing user ID',
+        message: 'create_user_id or userId is required'
+      });
+    }
+
     // Check for GDPR consent before proceeding
     if (!req.hasConsent) {
-      const userId = webhookData?.create_user_id || webhookData?.userId; // Try to get user ID for logging
-      const warningMessage = `Processing signup webhook without consent for user ${userId || 'unknown'}.`;
+      const warningMessage = `Processing signup webhook without consent for user ${typeformUserId}.`;
       console.log(`⚠️ ${warningMessage}`);
       // Log GDPR activity for processing without consent
       // Use gdprManager.auditLog if available, else fallback
       if (gdprManager) {
-        await gdprManager.auditLog(userId || 'unknown', 'SIGNUP_WEBHOOK_PROCESSED_WITHOUT_CONSENT', {
+        await gdprManager.auditLog(typeformUserId, 'SIGNUP_WEBHOOK_PROCESSED_WITHOUT_CONSENT', {
           details: warningMessage,
           ip: req.clientIp,
           request_id: req.requestId
         }, req);
       } else {
         await supabase.from('gdpr_audit_log').insert({
-          create_user_id: userId || 'unknown',
+          create_user_id: typeformUserId,
           activity_type: 'SIGNUP_WEBHOOK_PROCESSED_WITHOUT_CONSENT',
           details: {
             details: warningMessage,
@@ -799,16 +815,15 @@ app.post('/webhook/signup', webhookLimiter, checkSharedKey, async (req, res) => 
     // Image processing for signup handled by separate modules when needed
 
     // Log GDPR activity for signup webhook processing
-    const userIdForLog = webhookData?.create_user_id || webhookData?.userId;
     if (gdprManager) {
-      await gdprManager.auditLog(userIdForLog || 'unknown', 'SIGNUP_WEBHOOK_PROCESSED', {
+      await gdprManager.auditLog(typeformUserId, 'SIGNUP_WEBHOOK_PROCESSED', {
         ip: req.clientIp,
         request_id: req.requestId,
         consent_granted: req.hasConsent,
         consent_warning: req.gdprWarning
       }, req);
     } else {
-      await logGDPRActivity(userIdForLog || 'unknown', 'SIGNUP_WEBHOOK_PROCESSED', {
+      await logGDPRActivity(typeformUserId, 'SIGNUP_WEBHOOK_PROCESSED', {
         ip: req.clientIp,
         request_id: req.requestId,
         consent_granted: req.hasConsent,
@@ -816,11 +831,14 @@ app.post('/webhook/signup', webhookLimiter, checkSharedKey, async (req, res) => 
       }, req);
     }
 
-
     console.log('✅ Signup webhook processed successfully');
+    
+    // Return user ID and redirect URL for Typeform to use
     return res.status(200).json({
       success: true,
       message: 'Signup webhook processed successfully',
+      userId: typeformUserId,
+      redirectUrl: `/transcription-status.html?userId=${typeformUserId}&create_user_id=${typeformUserId}`,
       data: webhookData
     });
 
@@ -850,8 +868,14 @@ app.post('/webhook/incident-report', webhookLimiter, checkSharedKey, async (req,
     // Authentication is handled by checkSharedKey
 
     const webhookData = req.body;
-    const userId = webhookData?.create_user_id || webhookData?.userId;
+    const userId = webhookData?.create_user_id || 
+                  webhookData?.userId || 
+                  webhookData?.user_id ||
+                  webhookData?.form_response?.hidden?.create_user_id ||
+                  webhookData?.form_response?.hidden?.user_id;
     const incidentId = webhookData?.id || webhookData?.incident_report_id;
+    
+    console.log('Extracted user ID from incident webhook:', userId);
 
     if (!userId) {
       console.log('❌ Missing create_user_id or userId in request body');
