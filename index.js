@@ -1690,31 +1690,37 @@ app.post('/api/generate-legal-narrative', async (req, res) => {
         }
       }
 
-      // If still no user ID, this is an error in production
+      // If still no user ID, this is an error - NEVER generate temp IDs
       if (!finalUserId) {
-        if (REQUIRE_USER_ID) {
-          Logger.critical('ERROR: No user ID available for legal narrative generation');
-          return res.status(400).json({
-            success: false,
-            error: 'User ID is required for legal narrative generation',
-            message: 'Cannot generate legal narrative without a valid user ID',
-            requestId: req.requestId
-          });
-        } else {
-          // Only in development/testing - should never happen in production
-          Logger.warn('WARNING: No user ID provided, this should not happen in production');
-          finalUserId = `dev_${Date.now()}_${req.requestId}`;
-        }
+        Logger.critical('ERROR: No user ID available for legal narrative generation');
+        return res.status(400).json({
+          success: false,
+          error: 'User ID is required for legal narrative generation',
+          message: 'Cannot generate legal narrative without a valid Typeform user ID',
+          requestId: req.requestId
+        });
       }
     }
 
-    // VALIDATE: Ensure we're not using a temporary ID
-    if (finalUserId.startsWith('temp_')) {
-      Logger.critical(`Attempted to use temporary ID: ${finalUserId}`);
+    // VALIDATE: Ensure we have a proper UUID from Typeform
+    if (finalUserId.startsWith('temp_') || finalUserId.startsWith('dev_') || finalUserId.startsWith('user_')) {
+      Logger.critical(`Attempted to use invalid user ID: ${finalUserId}`);
       return res.status(400).json({
         success: false,
-        error: 'Invalid user ID',
-        message: 'Temporary IDs cannot be used for legal narratives',
+        error: 'Invalid user ID format',
+        message: 'Only valid Typeform UUIDs can be used for legal narratives',
+        requestId: req.requestId
+      });
+    }
+
+    // Additional UUID format validation
+    const uuidRegex = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
+    if (!uuidRegex.test(finalUserId)) {
+      Logger.critical(`Invalid UUID format detected: ${finalUserId}`);
+      return res.status(400).json({
+        success: false,
+        error: 'Invalid user ID format',
+        message: 'User ID must be a valid UUID from Typeform',
         requestId: req.requestId
       });
     }
@@ -2295,9 +2301,6 @@ app.get('/api/debug/user/:userId', checkSharedKey, async (req, res) => {
     });
   }
 });
-
-// Continue with all remaining endpoints from original file...
-// [The rest of your 3137 lines of code continues here exactly as it was]
 
 // SIMPLIFIED: Debug endpoint with WebhookDebugger module
 app.post('/api/debug/webhook-test', checkSharedKey, async (req, res) => {
@@ -3924,7 +3927,7 @@ if (process.env.NODE_ENV !== 'test') {
 }
 
 // Export for testing
-module.exports = {
+module.module.exports = {
   app,
   server,
   gdprManager, // Export the new manager
