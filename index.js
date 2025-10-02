@@ -2446,16 +2446,17 @@ app.get('/record', (req, res) => {
 
 // Redirect /transcribe to main recording interface
 app.get('/transcribe', (req, res) => {
-  const queryString = req.originalUrl.split('?')[1] || '';
+  const queryString = new URLSearchParams(req.query).toString();
   const redirectUrl = `/transcription-status.html${queryString ? '?' + queryString : ''}`;
 
   Logger.info('Recording redirect', {
     from: '/transcribe',
     to: redirectUrl,
-    params: queryString
+    params: queryString,
+    originalQuery: req.query
   });
 
-  res.redirect(redirectUrl);
+  res.redirect(302, redirectUrl);
 });
 
 // Alternative recording endpoint for backward compatibility
@@ -2503,16 +2504,17 @@ app.get('/transcription.html', (req, res) => {
 
 // Add redirect for /transcribe.html specifically
 app.get('/transcribe.html', (req, res) => {
-  const queryString = req.originalUrl.split('?')[1] || '';
+  const queryString = new URLSearchParams(req.query).toString();
   const redirectUrl = `/transcription-status.html${queryString ? '?' + queryString : ''}`;
 
   Logger.info('File redirect', {
     from: '/transcribe.html',
     to: redirectUrl,
-    params: queryString
+    params: queryString,
+    originalQuery: req.query
   });
 
-  res.redirect(redirectUrl);
+  res.redirect(302, redirectUrl);
 });
 
 // --- MAINROUTES ---
