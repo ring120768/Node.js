@@ -1307,17 +1307,48 @@
         };
 
         // ============================
-        // User ID and Session Management
+        // User ID and Session Management  
         // ============================
+        
+        // Block problematic user IDs at the client level
+        function validateUserId(userId) {
+            if (!userId) return false;
+            
+            // Block specific problematic IDs
+            const blockedIds = ['user_1759410448804_yzas7ml2p'];
+            if (blockedIds.includes(userId)) {
+                console.error('🚫 Blocked user ID detected:', userId);
+                return false;
+            }
+            
+            // Block timestamp pattern IDs (user_TIMESTAMP_RANDOM)
+            if (/^user_\d{13}_[a-z0-9]+$/.test(userId)) {
+                console.error('🚫 Auto-generated user ID not allowed:', userId);
+                return false;
+            }
+            
+            return true;
+        }
+
         async function initializeSession() {
             // Extract parameters from URL
             const urlParams = new URLSearchParams(window.location.search);
 
             // Try multiple parameter names for compatibility with webhooks
-            state.userId = urlParams.get('create_user_id') || 
-                          urlParams.get('user_id') || 
-                          urlParams.get('userId') ||
-                          localStorage.getItem('create_user_id');
+            let candidateUserId = urlParams.get('create_user_id') || 
+                                 urlParams.get('user_id') || 
+                                 urlParams.get('userId') ||
+                                 localStorage.getItem('create_user_id');
+
+            // Validate the user ID
+            if (candidateUserId && !validateUserId(candidateUserId)) {
+                console.error('🚫 Invalid or blocked user ID:', candidateUserId);
+                showStatus('This session has been blocked. Please start from a valid Typeform link.', 'error');
+                document.querySelector('.container').innerHTML = '<h2 style="text-align: center; color: #dc3545;">Session Blocked</h2><p style="text-align: center;">This user ID has been blocked. Please start from the provided Typeform link with a valid session.</p>';
+                return null;
+            }
+
+            state.userId = candidateUserId;
 
             // Check if returning from consent page
             const consentGiven = urlParams.get('consent_given') === 'true';
@@ -1329,9 +1360,6 @@
             // Generate a new user ID if none exists
             if (!state.userId) {
                 // If no userId is found, redirect to a page that enforces Typeform validation
-                const homeUrl = new URL(window.location.origin);
-                // Optionally, redirect to a specific validation page or show an error
-                // For now, we log an error and return null to halt initialization
                 console.error('No Typeform `create_user_id` found. This page requires a valid session.');
                 showStatus('Invalid session. Please start from the Typeform link.', 'error');
                 document.querySelector('.container').innerHTML = '<h2 style="text-align: center; color: #dc3545;">Access Denied</h2><p style="text-align: center;">You must start from the provided Typeform link to access this service.</p>';

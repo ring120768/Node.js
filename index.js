@@ -252,8 +252,11 @@ app.set('trust proxy', 1);
 // ========================================
 if (BLOCK_TEMP_IDS) {
   app.use((req, res, next) => {
-    // Block specific problematic test user ID
-    const blockedTestUserId = 'user_1759410448804_yzas7ml2p';
+    // Block specific problematic test user ID and pattern
+    const blockedTestUserIds = [
+      'user_1759410448804_yzas7ml2p',
+      // Block any user IDs that match the timestamp pattern
+    ];
     
     // Check for temporary IDs in common fields
     const fieldsToCheck = ['userId', 'user_id', 'create_user_id'];
@@ -262,8 +265,8 @@ if (BLOCK_TEMP_IDS) {
       // Check in body
       const bodyValue = req.body?.[field];
       
-      // Block specific test user ID
-      if (bodyValue === blockedTestUserId) {
+      // Block specific test user IDs
+      if (blockedTestUserIds.includes(bodyValue)) {
         Logger.critical(`Blocked persistent test user ID in body.${field}`, {
           value: bodyValue,
           path: req.path,
@@ -274,6 +277,23 @@ if (BLOCK_TEMP_IDS) {
         return res.status(400).json({
           success: false,
           error: 'This test user ID has been blocked. Please use a valid user ID.',
+          field: field,
+          requestId: req.requestId || `req_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`
+        });
+      }
+
+      // Block timestamp pattern user IDs (user_TIMESTAMP_RANDOM)
+      if (bodyValue && typeof bodyValue === 'string' && /^user_\d{13}_[a-z0-9]+$/.test(bodyValue)) {
+        Logger.critical(`Blocked timestamp-based user ID in body.${field}`, {
+          value: bodyValue,
+          path: req.path,
+          method: req.method,
+          ip: req.ip
+        });
+
+        return res.status(400).json({
+          success: false,
+          error: 'Auto-generated user IDs are not allowed. Please use a valid Typeform user ID.',
           field: field,
           requestId: req.requestId || `req_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`
         });
@@ -298,8 +318,8 @@ if (BLOCK_TEMP_IDS) {
       // Check in params
       const paramValue = req.params?.[field];
       
-      // Block specific test user ID
-      if (paramValue === blockedTestUserId) {
+      // Block specific test user IDs
+      if (blockedTestUserIds.includes(paramValue)) {
         Logger.critical(`Blocked persistent test user ID in params.${field}`, {
           value: paramValue,
           path: req.path,
@@ -310,6 +330,23 @@ if (BLOCK_TEMP_IDS) {
         return res.status(400).json({
           success: false,
           error: 'This test user ID has been blocked. Please use a valid user ID.',
+          field: field,
+          requestId: req.requestId || `req_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`
+        });
+      }
+
+      // Block timestamp pattern user IDs
+      if (paramValue && typeof paramValue === 'string' && /^user_\d{13}_[a-z0-9]+$/.test(paramValue)) {
+        Logger.critical(`Blocked timestamp-based user ID in params.${field}`, {
+          value: paramValue,
+          path: req.path,
+          method: req.method,
+          ip: req.ip
+        });
+
+        return res.status(400).json({
+          success: false,
+          error: 'Auto-generated user IDs are not allowed. Please use a valid Typeform user ID.',
           field: field,
           requestId: req.requestId || `req_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`
         });
@@ -334,8 +371,8 @@ if (BLOCK_TEMP_IDS) {
       // Check in query
       const queryValue = req.query?.[field];
       
-      // Block specific test user ID
-      if (queryValue === blockedTestUserId) {
+      // Block specific test user IDs
+      if (blockedTestUserIds.includes(queryValue)) {
         Logger.critical(`Blocked persistent test user ID in query.${field}`, {
           value: queryValue,
           path: req.path,
@@ -346,6 +383,23 @@ if (BLOCK_TEMP_IDS) {
         return res.status(400).json({
           success: false,
           error: 'This test user ID has been blocked. Please use a valid user ID.',
+          field: field,
+          requestId: req.requestId || `req_${Date.now()}_${Math.random().toString(36.substr(2, 9)}`
+        });
+      }
+
+      // Block timestamp pattern user IDs
+      if (queryValue && typeof queryValue === 'string' && /^user_\d{13}_[a-z0-9]+$/.test(queryValue)) {
+        Logger.critical(`Blocked timestamp-based user ID in query.${field}`, {
+          value: queryValue,
+          path: req.path,
+          method: req.method,
+          ip: req.ip
+        });
+
+        return res.status(400).json({
+          success: false,
+          error: 'Auto-generated user IDs are not allowed. Please use a valid Typeform user ID.',
           field: field,
           requestId: req.requestId || `req_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`
         });
@@ -3470,12 +3524,33 @@ app.post('/api/whisper/transcribe', upload.single('audio'), async (req, res) => 
       }
     }
 
-    // CRITICAL: Validate no temp IDs
+    // CRITICAL: Validate no temp IDs or blocked IDs
     if (create_user_id && create_user_id.startsWith('temp_')) {
       Logger.critical(`Attempted to use temporary ID for transcription: ${create_user_id}`);
       return res.status(400).json({
         error: 'Invalid user ID',
         message: 'Temporary IDs not allowed for transcription',
+        requestId: req.requestId
+      });
+    }
+
+    // Block specific problematic user IDs
+    const blockedUserIds = ['user_1759410448804_yzas7ml2p'];
+    if (blockedUserIds.includes(create_user_id)) {
+      Logger.critical(`Blocked transcription for problematic user ID: ${create_user_id}`);
+      return res.status(403).json({
+        error: 'User ID blocked',
+        message: 'This user ID has been blocked from transcription services',
+        requestId: req.requestId
+      });
+    }
+
+    // Block timestamp-based auto-generated user IDs
+    if (create_user_id && /^user_\d{13}_[a-z0-9]+$/.test(create_user_id)) {
+      Logger.critical(`Blocked transcription for auto-generated user ID: ${create_user_id}`);
+      return res.status(403).json({
+        error: 'Invalid user ID format',
+        message: 'Auto-generated user IDs are not allowed. Please use a valid Typeform user ID.',
         requestId: req.requestId
       });
     }
