@@ -48,7 +48,7 @@ try {
 }
 
 // Import REAL transcription service
-const TranscriptionService = require('./lib/transcriptionService');
+const { getTranscriptionService } = require('./lib/transcriptionService');
 let transcriptionService = null;
 
 // Import remaining mock functions (only the ones not in TranscriptionService)
@@ -627,7 +627,7 @@ if (supabaseEnabled && supabase) {
 // Initialize Real Transcription Service
 if (supabaseEnabled && process.env.OPENAI_API_KEY) {
   try {
-    transcriptionService = new TranscriptionService(supabase, Logger);
+    transcriptionService = getTranscriptionService(supabase, Logger);
 
     // PRODUCTION SAFETY: Ensure we never use mock data
     if (process.env.NODE_ENV === 'production' && !process.env.OPENAI_API_KEY) {
@@ -653,7 +653,7 @@ if (supabaseEnabled && process.env.OPENAI_API_KEY) {
       processTranscriptionQueue().catch(error => {
         Logger.error('Queue processing error:', error);
       });
-    }, 30000); // Every 30 seconds
+    }, 5 * 60 * 1000); // Every 5 minutes
 
     Logger.success('✅ Transcription queue processing started');
 
@@ -2950,13 +2950,27 @@ app.post('/api/whisper/transcribe', upload.single('audio'), async (req, res) => 
 
     // Process transcription immediately using the audio buffer in memory
     // This happens asynchronously after the response is sent
-    processTranscriptionFromBuffer(
-      queueId,
-      req.file.buffer,
-      create_user_id,
-      req.body.incident_report_id,
-      publicUrl
-    );
+    if (transcriptionService) {
+      transcriptionService.processTranscriptionFromBuffer(
+        queueId,
+        req.file.buffer,
+        create_user_id,
+        req.body.incident_report_id,
+        publicUrl
+      ).catch(error => {
+        Logger.error('Async transcription processing error:', error);
+      });
+    } else {
+      processTranscriptionFromBuffer(
+        queueId,
+        req.file.buffer,
+        create_user_id,
+        req.body.incident_report_id,
+        publicUrl
+      ).catch(error => {
+        Logger.error('Fallback transcription processing error:', error);
+      });
+    }
 
   } catch (error) {
     Logger.error('Transcription error:', error);
