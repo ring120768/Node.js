@@ -3927,7 +3927,7 @@ if (process.env.NODE_ENV !== 'test') {
 }
 
 // Export for testing
-module.module.exports = {
+module.exports = {
   app,
   server,
   gdprManager, // Export the new manager
