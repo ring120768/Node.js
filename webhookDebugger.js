@@ -655,7 +655,15 @@ class WebhookDebugger {
   // Helper methods
 
   generateWebhookId() {
-    return `webhook_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`;
+    // Generate webhook ID with specific prefix to avoid confusion with user IDs
+    const id = `wh_debug_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`;
+    
+    // CRITICAL: Ensure this never looks like a user ID
+    if (id.includes('user_') || id.length === 36) {
+      throw new Error('SECURITY: Webhook ID format could be confused with user ID');
+    }
+    
+    return id;
   }
 
   generateContentHash(content) {

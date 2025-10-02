@@ -181,13 +181,10 @@ const UUIDUtils = {
     // If not a UUID, return null - DO NOT GENERATE
     Logger.critical(`Invalid UUID format detected: ${userId} - REJECTING - MUST BE FROM TYPEFORM`);
     return null;
-  },
-
-  // Generate new random UUID (only for system use, never for user IDs)
-  generateUUID: () => {
-    const crypto = require('crypto');
-    return crypto.randomUUID();
   }
+
+  // REMOVED: generateUUID function - NO UUID GENERATION ALLOWED
+  // All UUIDs must come from Typeform only
 };
 
 // --- INPUT VALIDATION UTILITIES ---
@@ -360,6 +357,12 @@ function validateTypeformUserId(userId) {
     return false;
   }
 
+  // Block any auto-generated patterns that could sneak through
+  if (userId.includes('user_') || userId.includes('temp_') || userId.includes('test_') || userId.includes('demo_')) {
+    Logger.critical(`VALIDATION FAILED: Generated ID pattern detected: ${userId}`);
+    return false;
+  }
+
   // Additional safety: Block known problematic UUIDs if any exist
   const blockedUUIDs = [
     // Add any specific UUIDs that should be blocked
@@ -380,6 +383,26 @@ function preventDummyIdGeneration(functionName, originalId) {
   Logger.critical('BLOCKING: No dummy ID generation allowed - system must use ONLY Typeform UUIDs');
   throw new Error(`SECURITY: Function ${functionName} blocked from processing non-UUID. Only Typeform UUIDs allowed.`);
 }
+
+// New function to monitor for any ID generation attempts anywhere in the system
+function monitorIdGeneration() {
+  // Override common ID generation patterns to detect usage
+  const originalRandomUUID = require('crypto').randomUUID;
+  require('crypto').randomUUID = function(...args) {
+    const stack = new Error().stack;
+    if (stack && stack.includes('user') && !stack.includes('transcription') && !stack.includes('webhook')) {
+      Logger.critical('SECURITY ALERT: Potential user ID generation detected');
+      Logger.critical('Stack trace:', stack);
+      throw new Error('BLOCKED: User ID generation attempt detected');
+    }
+    return originalRandomUUID.apply(this, args);
+  };
+  
+  Logger.info('✅ ID generation monitoring active');
+}
+
+// Activate monitoring
+monitorIdGeneration();
 
 
 
@@ -1645,96 +1668,10 @@ app.post('/webhook/incident-report', webhookLimiter, checkSharedKey, async (req,
 
 Logger.success('✅ CRITICAL FIX: Incident report webhook endpoint now saves to database');
 
-app.post('/webhook/signup-simple', webhookLimiter, checkSharedKey, async (req, res) => {
-  Logger.info('=======================================');
-  Logger.info('SIMPLE WEBHOOK TEST - RECEIVED REQUEST');
-  Logger.info('=======================================');
+// COMPLETELY REMOVED: Test webhook endpoint that could create dummy user IDs
+// All webhooks must come from Typeform with valid UUIDs only
 
-  try {
-    // Log incoming data
-    Logger.debug('Headers:', req.headers);
-    Logger.debug('Body:', JSON.stringify(req.body, null, 2));
-
-    // Check authentication
-    const authKey = req.headers['x-api-key'] || req.headers['authorization'];
-    if (authKey !== process.env.ZAPIER_SHARED_KEY) {
-      Logger.warn('Authentication failed');
-      return res.status(401).json({
-        error: 'Unauthorized',
-        message: 'Invalid API key'
-      });
-    }
-    Logger.success('Authentication successful');
-
-    // Extract basic data
-    const { email, name, phone } = req.body;
-    Logger.debug('Extracted:', { email, name, phone });
-
-    // Simple Supabase test if available
-    if (supabaseEnabled && supabase) {
-      Logger.info('Testing Supabase connection...');
-
-      try {
-        // CRITICAL: Test endpoint should not create fake user IDs
-        Logger.critical('BLOCKING: Test webhook attempted to create fake user ID');
-        
-        return res.status(400).json({
-          success: false,
-          error: 'Test endpoint disabled - use real Typeform webhook only',
-          message: 'This test endpoint has been disabled to prevent fake user ID generation',
-          requestId: req.requestId
-        });
-
-        console.log('Inserting data:', insertData);
-
-        const { data, error } = await supabase
-          .from('user_signup')
-          .insert(insertData)
-          .select()
-          .single();
-
-        if (error) {
-          console.log('⚠️ Supabase error:', error.message);
-          console.log('Error details:', error);
-          return res.status(503).json({
-            error: 'Database error',
-            details: error.message
-          });
-        }
-
-        console.log('✅ Data saved:', data);
-        return res.status(200).json({
-          success: true,
-          message: 'Test webhook processed successfully',
-          data: data
-        });
-      } catch (dbError) {
-        console.log('Database error:', dbError);
-        return res.status(503).json({
-          error: 'Database connection failed',
-          details: dbError.message
-        });
-      }
-    } else {
-      // No Supabase - just echo back
-      console.log('⚠️ Supabase not configured - returning echo');
-      return res.status(200).json({
-        success: true,
-        message: 'Webhook received (no database)',
-        received: req.body
-      });
-    }
-
-  } catch (error) {
-    console.error('❌ Webhook error:', error);
-    return res.status(500).json({
-      error: 'Internal server error',
-      message: error.message
-    });
-  }
-});
-
-console.log('✅ Simplified webhook test endpoint registered at /webhook/signup-simple');
+Logger.critical('⚠️ Test webhook endpoints DISABLED to prevent dummy ID generation');
 
 // ========================================
 // CRITICAL FIX 2: LEGAL NARRATIVE GENERATION - PREVENT USER ID OVERWRITES
@@ -3745,8 +3682,14 @@ app.post('/api/whisper/transcribe', upload.single('audio'), async (req, res) => 
 
     Logger.info(`Processing transcription for user: ${create_user_id}`);
 
-    // Generate a unique transcription ID
+    // Generate a unique transcription ID (NOT a user ID - this is for internal tracking only)
     const transcriptionId = `trans_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`;
+    
+    // CRITICAL: Ensure transcription ID is never confused with user ID
+    if (transcriptionId.includes('user_') || transcriptionId.length === 36) {
+      Logger.critical('SECURITY ALERT: Transcription ID format could be confused with user ID');
+      throw new Error('Internal error: Invalid transcription ID format');
+    }
 
     // Upload to Supabase incident-audio bucket
     const fileName = `${create_user_id}/recording_${Date.now()}.webm`;
