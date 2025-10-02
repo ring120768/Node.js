@@ -522,14 +522,33 @@
 
         /* Map Container */
         #map {
-            height: 200px;
+            height: 250px;
+            width: 100%;
             border-radius: var(--radius-sm);
             background: var(--bg-tertiary);
             margin-bottom: 16px;
             position: relative;
-            border: 1px solid var(--border-light);
+            border: 2px solid var(--border);
             overflow: hidden;
             z-index: 1;
+            min-height: 250px;
+        }
+
+        #map .leaflet-container {
+            height: 100%;
+            width: 100%;
+            border-radius: var(--radius-sm);
+        }
+
+        /* Map loading state */
+        #map:empty::before {
+            content: 'Loading map...';
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            color: var(--text-light);
+            font-size: 14px;
         }
 
         /* Loading Spinner */
@@ -880,6 +899,8 @@
 
         // Display location information
         function displayLocation() {
+            console.log('Displaying location:', userLocation);
+            
             document.getElementById('locationInfo').classList.remove('hidden');
             document.getElementById('what3wordsDisplay').classList.remove('hidden');
 
@@ -911,7 +932,13 @@
             // Fetch What3Words
             fetchWhat3Words();
 
-            // Lazy load map only when needed
+            // Ensure location section is expanded
+            const locationSection = document.getElementById('locationSection');
+            if (!locationSection.classList.contains('expanded')) {
+                locationSection.classList.add('expanded');
+            }
+
+            // Load and initialize map
             loadMapIfNeeded();
         }
 
@@ -919,41 +946,82 @@
         function loadMapIfNeeded() {
             if (!mapLoaded) {
                 mapLoaded = true;
+                
+                // Load Leaflet CSS first
+                const link = document.createElement('link');
+                link.rel = 'stylesheet';
+                link.href = 'https://unpkg.com/leaflet@1.9.4/dist/leaflet.css';
+                document.head.appendChild(link);
+                
+                // Then load Leaflet JS
                 const script = document.createElement('script');
                 script.src = 'https://unpkg.com/leaflet@1.9.4/dist/leaflet.js';
                 script.onload = () => {
-                    const link = document.createElement('link');
-                    link.rel = 'stylesheet';
-                    link.href = 'https://unpkg.com/leaflet@1.9.4/dist/leaflet.css';
-                    document.head.appendChild(link);
-
+                    console.log('Leaflet loaded, initializing map...');
                     setTimeout(() => {
-                        if(userLocation) initializeMap();
-                    }, 100);
+                        if(userLocation) {
+                            initializeMap();
+                        }
+                    }, 500); // Increased timeout for better loading
+                };
+                script.onerror = () => {
+                    console.error('Failed to load Leaflet library');
                 };
                 document.head.appendChild(script);
-            } else if (userLocation) {
+            } else if (userLocation && window.L) {
                 initializeMap();
             }
         }
 
         // Initialize map
         function initializeMap() {
-            document.getElementById('map').classList.remove('hidden');
-
-            if (!map) {
-                map = L.map('map', {
-                    zoomControl: false,
-                    attributionControl: false
-                }).setView([userLocation.lat, userLocation.lng], 16);
-
-                L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png').addTo(map);
-            } else {
-                map.setView([userLocation.lat, userLocation.lng], 16);
+            if (!window.L) {
+                console.error('Leaflet library not loaded');
+                return;
             }
 
-            if (marker) marker.remove();
-            marker = L.marker([userLocation.lat, userLocation.lng]).addTo(map);
+            if (!userLocation) {
+                console.error('No user location available for map');
+                return;
+            }
+
+            console.log('Initializing map with location:', userLocation);
+            
+            const mapElement = document.getElementById('map');
+            mapElement.classList.remove('hidden');
+
+            try {
+                if (!map) {
+                    map = L.map('map', {
+                        zoomControl: true,
+                        attributionControl: true
+                    }).setView([userLocation.lat, userLocation.lng], 16);
+
+                    L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+                        attribution: '© OpenStreetMap contributors'
+                    }).addTo(map);
+
+                    console.log('Map created successfully');
+                } else {
+                    map.setView([userLocation.lat, userLocation.lng], 16);
+                    console.log('Map view updated');
+                }
+
+                if (marker) marker.remove();
+                marker = L.marker([userLocation.lat, userLocation.lng])
+                    .addTo(map)
+                    .bindPopup(`Location: ${userLocation.lat.toFixed(6)}, ${userLocation.lng.toFixed(6)}`);
+
+                // Force map to resize after a short delay
+                setTimeout(() => {
+                    if (map) {
+                        map.invalidateSize();
+                    }
+                }, 100);
+
+            } catch (error) {
+                console.error('Error initializing map:', error);
+            }
         }
 
         // Fetch address
@@ -974,20 +1042,41 @@
 
         // Fetch What3Words
         async function fetchWhat3Words() {
-            if (!navigator.onLine) return;
+            if (!navigator.onLine) {
+                console.log('Offline - skipping What3Words lookup');
+                return;
+            }
+
+            if (!userLocation) {
+                console.log('No location - skipping What3Words lookup');
+                return;
+            }
+
+            console.log('Fetching What3Words for:', userLocation.lat, userLocation.lng);
 
             try {
                 const response = await fetch(`/api/what3words?lat=${userLocation.lat}&lng=${userLocation.lng}`);
+                console.log('What3Words response status:', response.status);
+                
                 if (response.ok) {
                     const data = await response.json();
+                    console.log('What3Words data:', data);
+                    
                     if (data.words) {
                         what3wordsData = data.words;
                         document.getElementById('what3wordsText').textContent = `///${data.words}`;
+                        console.log('What3Words updated:', data.words);
+                    } else {
+                        console.log('No words in What3Words response');
+                        document.getElementById('what3wordsText').textContent = '///location.not.found';
                     }
+                } else {
+                    console.error('What3Words API error:', response.status);
+                    document.getElementById('what3wordsText').textContent = '///api.error';
                 }
             } catch (error) {
-                console.error('What3Words error:', error);
-                document.getElementById('what3wordsText').textContent = '///unavailable';
+                console.error('What3Words fetch error:', error);
+                document.getElementById('what3wordsText').textContent = '///network.error';
             }
         }
 
