@@ -255,7 +255,7 @@ if (BLOCK_TEMP_IDS) {
     // Block specific problematic test user ID and pattern
     const blockedTestUserIds = [
       'user_1759410448804_yzas7ml2p',
-      // Block any user IDs that match the timestamp pattern
+      // Add other specific IDs to block here if necessary
     ];
 
     // Whitelist specific legitimate user IDs to bypass blocking rules
@@ -293,7 +293,7 @@ if (BLOCK_TEMP_IDS) {
 
         return res.status(400).json({
           success: false,
-          error: 'This test user ID has been blocked. Please use a valid user ID.',
+          error: 'This test user ID has been blocked. Please use a valid Typeform UUID.',
           field: field,
           requestId: req.requestId || `req_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`
         });
@@ -332,6 +332,37 @@ if (BLOCK_TEMP_IDS) {
         });
       }
 
+      // Block ANY non-UUID patterns that could be generated
+      if (bodyValue && typeof bodyValue === 'string') {
+        const suspiciousPatterns = [
+          /^webhook_\d+_/,           // webhook-generated
+          /^fallback_/,              // fallback IDs
+          /^session_/,               // session IDs
+          /^anonymous_/,             // anonymous users
+          /^guest_/,                 // guest users
+          /^default_/,               // default users
+          /_\d{13}_/,               // timestamp patterns
+          /^[a-z]+_\d+$/,           // simple pattern like user_123
+        ];
+
+        if (suspiciousPatterns.some(pattern => pattern.test(bodyValue))) {
+          Logger.critical(`Blocked suspicious user ID pattern in body.${field}`, {
+            value: bodyValue,
+            path: req.path,
+            method: req.method,
+            ip: req.ip
+          });
+
+          return res.status(400).json({
+            success: false,
+            error: 'Invalid user ID format. Only Typeform UUIDs are allowed.',
+            field: field,
+            requestId: req.requestId || `req_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`
+          });
+        }
+      }
+
+
       // Check in params
       const paramValue = req.params?.[field];
 
@@ -357,7 +388,7 @@ if (BLOCK_TEMP_IDS) {
 
         return res.status(400).json({
           success: false,
-          error: 'This test user ID has been blocked. Please use a valid user ID.',
+          error: 'This test user ID has been blocked. Please use a valid Typeform UUID.',
           field: field,
           requestId: req.requestId || `req_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`
         });
@@ -396,6 +427,37 @@ if (BLOCK_TEMP_IDS) {
         });
       }
 
+      // Block ANY non-UUID patterns that could be generated
+      if (paramValue && typeof paramValue === 'string') {
+        const suspiciousPatterns = [
+          /^webhook_\d+_/,
+          /^fallback_/,
+          /^session_/,
+          /^anonymous_/,
+          /^guest_/,
+          /^default_/,
+          /_\d{13}_/,
+          /^[a-z]+_\d+$/,
+        ];
+
+        if (suspiciousPatterns.some(pattern => pattern.test(paramValue))) {
+          Logger.critical(`Blocked suspicious user ID pattern in params.${field}`, {
+            value: paramValue,
+            path: req.path,
+            method: req.method,
+            ip: req.ip
+          });
+
+          return res.status(400).json({
+            success: false,
+            error: 'Invalid user ID format. Only Typeform UUIDs are allowed.',
+            field: field,
+            requestId: req.requestId || `req_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`
+          });
+        }
+      }
+
+
       // Check in query
       const queryValue = req.query?.[field];
 
@@ -421,7 +483,7 @@ if (BLOCK_TEMP_IDS) {
 
         return res.status(400).json({
           success: false,
-          error: 'This test user ID has been blocked. Please use a valid user ID.',
+          error: 'This test user ID has been blocked. Please use a valid Typeform UUID.',
           field: field,
           requestId: req.requestId || `req_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`
         });
@@ -458,6 +520,36 @@ if (BLOCK_TEMP_IDS) {
           field: field,
           requestId: req.requestId || `req_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`
         });
+      }
+
+      // Block ANY non-UUID patterns that could be generated
+      if (queryValue && typeof queryValue === 'string') {
+        const suspiciousPatterns = [
+          /^webhook_\d+_/,
+          /^fallback_/,
+          /^session_/,
+          /^anonymous_/,
+          /^guest_/,
+          /^default_/,
+          /_\d{13}_/,
+          /^[a-z]+_\d+$/,
+        ];
+
+        if (suspiciousPatterns.some(pattern => pattern.test(queryValue))) {
+          Logger.critical(`Blocked suspicious user ID pattern in query.${field}`, {
+            value: queryValue,
+            path: req.path,
+            method: req.method,
+            ip: req.ip
+          });
+
+          return res.status(400).json({
+            success: false,
+            error: 'Invalid user ID format. Only Typeform UUIDs are allowed.',
+            field: field,
+            requestId: req.requestId || `req_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`
+          });
+        }
       }
     }
     next();
@@ -947,8 +1039,8 @@ if (supabaseEnabled && process.env.OPENAI_API_KEY) {
 function extractAnswer(formResponse, fieldRef) {
   if (!formResponse.answers) return null;
 
-  const answer = formResponse.answers.find(a => 
-    a.field?.ref === fieldRef || 
+  const answer = formResponse.answers.find(a =>
+    a.field?.ref === fieldRef ||
     a.field?.id === fieldRef
   );
 
@@ -1359,6 +1451,18 @@ app.post('/webhook/incident-report', webhookLimiter, checkSharedKey, async (req,
             created_at: new Date().toISOString()
           });
       }
+    }
+
+    // CRITICAL: Validate the user ID format here
+    const uuidRegex = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
+    if (!uuidRegex.test(userId) && !userId.startsWith('webhook_')) { // Allow webhook fallback IDs for now
+      Logger.critical(`Invalid User ID format detected for incident report: ${userId}`);
+      return res.status(400).json({
+        success: false,
+        error: 'Invalid user ID format',
+        message: 'User ID must be a valid Typeform UUID or a system-generated webhook ID.',
+        requestId: req.requestId
+      });
     }
 
     Logger.success(`Processing incident report for user: ${userId}`);
@@ -2715,7 +2819,7 @@ app.get('/api/transcription-status/:queueId', checkGDPRConsent, async (req, res)
         transcriptionData = transcription.transcription_text;
         metadata = {
           audioQuality: 'Good',
-          processingTime: queueItem.processed_at ? 
+          processingTime: queueItem.processed_at ?
             `${Math.round((new Date(queueItem.processed_at) - new Date(queueItem.created_at)) / 1000)}s` : 'N/A',
           confidence: 'high',
           createdAt: transcription.created_at
@@ -2870,7 +2974,7 @@ app.get('/api/transcription-data', checkGDPRConsent, async (req, res) => {
             audioQuality: 'Good',
             confidence: 'High',
             createdAt: transcription.created_at,
-            processingTime: queueItem.processed_at ? 
+            processingTime: queueItem.processed_at ?
               `${Math.round((new Date(queueItem.processed_at) - new Date(queueItem.created_at)) / 1000)}s` : 'N/A'
           },
           requestId: req.requestId

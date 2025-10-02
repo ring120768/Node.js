@@ -1357,12 +1357,20 @@
                 localStorage.setItem('gdpr_consent', 'true');
             }
 
-            // Generate a new user ID if none exists
+            // CRITICAL: Never generate user IDs - must come from Typeform
             if (!state.userId) {
-                // If no userId is found, redirect to a page that enforces Typeform validation
-                console.error('No Typeform `create_user_id` found. This page requires a valid session.');
-                showStatus('Invalid session. Please start from the Typeform link.', 'error');
-                document.querySelector('.container').innerHTML = '<h2 style="text-align: center; color: #dc3545;">Access Denied</h2><p style="text-align: center;">You must start from the provided Typeform link to access this service.</p>';
+                console.error('CRITICAL: No Typeform create_user_id found. Access denied.');
+                showTranscriptionServiceError();
+                return null; // Stop initialization completely
+            }
+
+            // Validate UUID format from Typeform
+            const uuidRegex = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
+            if (!uuidRegex.test(state.userId)) {
+                console.error('CRITICAL: Invalid UUID format from Typeform:', state.userId);
+                showTranscriptionServiceError();
+                return null;
+            }erHTML = '<h2 style="text-align: center; color: #dc3545;">Access Denied</h2><p style="text-align: center;">You must start from the provided Typeform link to access this service.</p>';
                 return null;
             }
 
