@@ -812,7 +812,49 @@ app.post('/webhook/signup', webhookLimiter, checkSharedKey, async (req, res) => 
       // Continue processing, but log the consent issue.
     }
 
-    // Image processing for signup handled by separate modules when needed
+    // Actually save the user signup data to Supabase
+    if (supabaseEnabled) {
+      try {
+        // Generate UUID for id field (required)
+        const userId = UUIDUtils.generateUUID();
+
+        const signupData = {
+          id: userId,
+          create_user_id: typeformUserId,
+          email: webhookData.email || null,
+          name: webhookData.first_name || webhookData.name || null,
+          surname: webhookData.last_name || webhookData.surname || null,
+          full_name: webhookData.full_name || `${webhookData.first_name || ''} ${webhookData.last_name || ''}`.trim() || null,
+          mobile: webhookData.phone || webhookData.phone_number || webhookData.mobile || null,
+          gdpr_consent: ConstantHelpers.isConsent(webhookData.gdpr_consent || webhookData.consent),
+          gdpr_consent_date: new Date().toISOString(),
+          legal_support: webhookData.legal_support || null,
+          created_at: new Date().toISOString(),
+          submit_date: new Date().toISOString()
+        };
+
+        console.log('Saving signup data:', signupData);
+
+        // Insert into user_signup table
+        const { data: savedUser, error: saveError } = await supabase
+          .from('user_signup')
+          .upsert(signupData, {
+            onConflict: 'create_user_id'
+          })
+          .select()
+          .single();
+
+        if (saveError) {
+          console.error('❌ Failed to save user signup:', saveError.message);
+          // Continue processing but log the error
+        } else {
+          console.log('✅ User signup saved to database:', savedUser.create_user_id);
+        }
+      } catch (dbError) {
+        console.error('❌ Database error saving signup:', dbError.message);
+        // Continue processing
+      }
+    }
 
     // Log GDPR activity for signup webhook processing
     if (gdprManager) {
@@ -820,25 +862,28 @@ app.post('/webhook/signup', webhookLimiter, checkSharedKey, async (req, res) => 
         ip: req.clientIp,
         request_id: req.requestId,
         consent_granted: req.hasConsent,
-        consent_warning: req.gdprWarning
+        consent_warning: req.gdprWarning,
+        saved_to_db: supabaseEnabled
       }, req);
     } else {
       await logGDPRActivity(typeformUserId, 'SIGNUP_WEBHOOK_PROCESSED', {
         ip: req.clientIp,
         request_id: req.requestId,
         consent_granted: req.hasConsent,
-        consent_warning: req.gdprWarning
+        consent_warning: req.gdprWarning,
+        saved_to_db: supabaseEnabled
       }, req);
     }
 
-    console.log('✅ Signup webhook processed successfully');
+    console.log('✅ Signup webhook processed and saved successfully');
     
     // Return user ID and redirect URL for Typeform to use
     return res.status(200).json({
       success: true,
-      message: 'Signup webhook processed successfully',
+      message: 'Signup webhook processed and saved successfully',
       userId: typeformUserId,
       redirectUrl: `/transcription-status.html?userId=${typeformUserId}&create_user_id=${typeformUserId}`,
+      saved_to_database: supabaseEnabled,
       data: webhookData
     });
 
@@ -919,7 +964,49 @@ app.post('/webhook/incident-report', webhookLimiter, checkSharedKey, async (req,
       // Continue processing, but log the consent issue.
     }
 
-    // File processing for incident reports handled by incidentEndpoints module
+    // Actually save the incident report data to Supabase
+    if (supabaseEnabled) {
+      try {
+        const incidentReportData = {
+          id: incidentId,
+          create_user_id: userId,
+          incident_date: webhookData.incident_date || new Date().toISOString(),
+          incident_time: webhookData.incident_time || null,
+          location: webhookData.location || null,
+          what_happened: webhookData.what_happened || webhookData.description || null,
+          detailed_account_of_what_happened: webhookData.detailed_account || webhookData.detailed_description || null,
+          other_vehicles_involved: webhookData.other_vehicles_involved || null,
+          witnesses: webhookData.witnesses || null,
+          police_attendance: webhookData.police_attendance || false,
+          police_reference: webhookData.police_reference || null,
+          injuries: webhookData.injuries || null,
+          vehicle_damage: webhookData.vehicle_damage || null,
+          insurance_notified: webhookData.insurance_notified || false,
+          recovery_required: webhookData.recovery_required || false,
+          created_at: new Date().toISOString(),
+          updated_at: new Date().toISOString()
+        };
+
+        // Insert into incident_reports table
+        const { data: savedIncident, error: saveError } = await supabase
+          .from('incident_reports')
+          .upsert(incidentReportData, {
+            onConflict: 'id'
+          })
+          .select()
+          .single();
+
+        if (saveError) {
+          console.error('❌ Failed to save incident report:', saveError.message);
+          // Continue processing but log the error
+        } else {
+          console.log('✅ Incident report saved to database:', savedIncident.id);
+        }
+      } catch (dbError) {
+        console.error('❌ Database error saving incident:', dbError.message);
+        // Continue processing
+      }
+    }
 
     // Log GDPR activity for incident report webhook processing
     if (gdprManager) {
@@ -928,7 +1015,8 @@ app.post('/webhook/incident-report', webhookLimiter, checkSharedKey, async (req,
         ip: req.clientIp,
         request_id: req.requestId,
         consent_granted: req.hasConsent,
-        consent_warning: req.gdprWarning
+        consent_warning: req.gdprWarning,
+        saved_to_db: supabaseEnabled
       }, req);
     } else {
       await logGDPRActivity(userId, 'INCIDENT_REPORT_WEBHOOK_PROCESSED', {
@@ -936,18 +1024,19 @@ app.post('/webhook/incident-report', webhookLimiter, checkSharedKey, async (req,
         ip: req.clientIp,
         request_id: req.requestId,
         consent_granted: req.hasConsent,
-        consent_warning: req.gdprWarning
+        consent_warning: req.gdprWarning,
+        saved_to_db: supabaseEnabled
       }, req);
     }
 
-
-    console.log('✅ Simplified incident report webhook processed successfully');
+    console.log('✅ Incident report webhook processed and saved successfully');
     return res.status(200).json({
       success: true,
-      message: 'Incident report webhook processed successfully',
+      message: 'Incident report webhook processed and saved successfully',
       incidentId: incidentId,
       userId: userId,
-      data: webhookData // Echo back processed data if useful
+      saved_to_database: supabaseEnabled,
+      data: webhookData
     });
 
   } catch (error) {
@@ -2408,6 +2497,104 @@ app.get('/api/debug/transcription-full', checkSharedKey, async (req, res) => {
       };
     } catch (error) {
       diagnostics.openai_test = {
+
+
+// Test endpoint for incident report saving
+app.post('/api/debug/test-incident-save', checkSharedKey, async (req, res) => {
+  if (!supabaseEnabled) {
+    return res.status(503).json({
+      error: 'Supabase not configured',
+      requestId: req.requestId
+    });
+  }
+
+  try {
+    const testData = {
+      id: `test_incident_${Date.now()}`,
+      create_user_id: req.body.create_user_id || `test_user_${Date.now()}`,
+      incident_date: new Date().toISOString(),
+      location: 'Test Location',
+      what_happened: 'Test incident description',
+      created_at: new Date().toISOString(),
+      updated_at: new Date().toISOString()
+    };
+
+    const { data: savedIncident, error: saveError } = await supabase
+      .from('incident_reports')
+      .insert(testData)
+      .select()
+      .single();
+
+    if (saveError) {
+      console.error('Test save error:', saveError);
+      return res.status(500).json({
+        error: 'Failed to save test incident',
+        details: saveError.message,
+        requestId: req.requestId
+      });
+    }
+
+    res.json({
+      success: true,
+      message: 'Test incident saved successfully',
+      incident: savedIncident,
+      requestId: req.requestId
+    });
+
+  } catch (error) {
+    console.error('Test incident save error:', error);
+    res.status(500).json({
+      error: 'Test failed',
+      details: error.message,
+      requestId: req.requestId
+    });
+  }
+});
+
+// Test endpoint for checking incident reports in database
+app.get('/api/debug/check-incidents/:userId', checkSharedKey, async (req, res) => {
+  if (!supabaseEnabled) {
+    return res.status(503).json({
+      error: 'Supabase not configured',
+      requestId: req.requestId
+    });
+  }
+
+  try {
+    const { userId } = req.params;
+
+    const { data: incidents, error: fetchError } = await supabase
+      .from('incident_reports')
+      .select('*')
+      .eq('create_user_id', userId)
+      .order('created_at', { ascending: false });
+
+    if (fetchError) {
+      return res.status(500).json({
+        error: 'Failed to fetch incidents',
+        details: fetchError.message,
+        requestId: req.requestId
+      });
+    }
+
+    res.json({
+      success: true,
+      userId: userId,
+      incidentCount: incidents?.length || 0,
+      incidents: incidents || [],
+      requestId: req.requestId
+    });
+
+  } catch (error) {
+    console.error('Check incidents error:', error);
+    res.status(500).json({
+      error: 'Check failed',
+      details: error.message,
+      requestId: req.requestId
+    });
+  }
+});
+
         api_accessible: false,
         error: error.message
       };
