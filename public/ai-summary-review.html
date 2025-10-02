@@ -323,40 +323,6 @@
         @keyframes spin {
             to { transform: rotate(360deg); }
         }
-
-        /* Simplified Consent Notice Styling */
-        .consent-notice {
-            background: #f8f9fa;
-            border: 2px solid #667eea;
-            border-radius: 12px;
-            padding: 20px;
-            margin: 15px 0;
-        }
-
-        .consent-notice ul {
-            list-style: none;
-            padding: 0;
-            margin: 10px 0 0 0;
-        }
-
-        .consent-notice li {
-            padding: 8px 0;
-            color: #555;
-            font-size: 15px;
-            line-height: 1.4;
-        }
-
-        @media (max-width: 640px) {
-            .consent-notice {
-                padding: 15px;
-                margin: 10px 0;
-            }
-
-            .consent-notice li {
-                font-size: 14px;
-                padding: 6px 0;
-            }
-        }
     </style>
 </head>
 <body>
@@ -389,21 +355,6 @@
             <span class="info-box-icon">💡</span>
             <div class="info-box-text">
                 <strong>Next Step:</strong> Complete your legal declaration to finalize your incident report. This is the final step before generating your comprehensive PDF report.
-            </div>
-        </div>
-
-        <!-- Simplified Consent Section for Mobile -->
-        <div class="consent-section" id="consentSection">
-            <div class="consent-header">
-                <h3>📋 Final Confirmation</h3>
-                <div class="consent-notice">
-                    <p><strong>By proceeding, you confirm:</strong></p>
-                    <ul>
-                        <li>✓ This summary accurately represents the incident</li>
-                        <li>✓ You consent to processing this data for legal purposes</li>
-                        <li>✓ You understand this is not legal advice</li>
-                    </ul>
-                </div>
             </div>
         </div>
 
@@ -472,7 +423,7 @@
                 localStorage.setItem('create_user_id', state.userId);
                 sessionStorage.setItem('create_user_id', state.userId);
             }
-
+            
             if (state.incidentId) {
                 localStorage.setItem('current_incident_id', state.incidentId);
                 sessionStorage.setItem('current_incident_id', state.incidentId);
@@ -550,12 +501,12 @@
 
                 // Build parameters for going back
                 const params = new URLSearchParams();
-
+                
                 if (state.userId) {
                     params.append('userId', state.userId);
                     params.append('create_user_id', state.userId);
                 }
-
+                
                 if (state.queueId) {
                     params.append('queueId', state.queueId);
                     params.append('queue_id', state.queueId);
@@ -585,41 +536,66 @@
         }
 
         function proceedToDeclaration() {
-            console.log('Proceeding to declaration page...');
+            stopCountdown();
 
-            // Save the summary data before proceeding
-            const summaryData = {
-                transcription: document.getElementById('transcriptionText')?.textContent || '',
-                summary: document.getElementById('summaryContent')?.textContent || '',
-                timestamp: new Date().toISOString(),
-                userId: new URLSearchParams(window.location.search).get('userId'),
-                incidentId: new URLSearchParams(window.location.search).get('incidentId')
-            };
-
-            console.log('Saving summary data:', summaryData);
-
-            // Store in both sessionStorage and localStorage for reliability
-            sessionStorage.setItem('aiSummaryData', JSON.stringify(summaryData));
-            localStorage.setItem('aiSummaryData', JSON.stringify(summaryData));
-
-            // Navigate to declaration page with parameters
-            const urlParams = new URLSearchParams(window.location.search);
-            const userId = urlParams.get('userId');
-            const incidentId = urlParams.get('incidentId');
-
-            let declarationUrl = 'declaration.html';
-            const params = new URLSearchParams();
-
-            if (userId) params.set('userId', userId);
-            if (incidentId) params.set('incidentId', incidentId);
-            if (params.toString()) {
-                declarationUrl += '?' + params.toString();
+            // Show loading state on button
+            const successBtn = document.querySelector('.btn-success');
+            if (successBtn) {
+                successBtn.innerHTML = 'Redirecting<span class="loading-spinner"></span>';
+                successBtn.disabled = true;
             }
 
-            console.log('Navigating to:', declarationUrl);
+            // Build parameters for declaration page
+            const params = new URLSearchParams();
+            
+            // Always include user ID (required by declaration page)
+            if (state.userId) {
+                params.append('create_user_id', state.userId);
+                params.append('user_id', state.userId);
+            }
+            
+            // Include incident ID if available
+            if (state.incidentId) {
+                params.append('incident_report_id', state.incidentId);
+                params.append('incident_id', state.incidentId);
+            }
+            
+            // Add operation and status flags
+            params.append('operation', 'final_consent');
+            params.append('status', 'ai_summary_approved');
+            params.append('require_consent', 'true');
 
-            // Use replace to prevent back button issues
-            window.location.replace(declarationUrl);
+            // Store completion status in localStorage
+            localStorage.setItem('ai_summary_complete', 'true');
+            localStorage.setItem('transcription_review_complete', 'true');
+            localStorage.setItem('ai_summary_approved_at', new Date().toISOString());
+
+            // Debug logging
+            console.log('🔄 Proceeding to declaration with params:', {
+                userId: state.userId,
+                incidentId: state.incidentId,
+                queueId: state.queueId,
+                params: params.toString()
+            });
+
+            if (isDemo) {
+                showDemoAction(`Would redirect to: /declaration.html?${params.toString()}`);
+                // Reset button after demo
+                setTimeout(() => {
+                    if (successBtn) {
+                        successBtn.innerHTML = 'Continue to Declaration →';
+                        successBtn.disabled = false;
+                    }
+                }, 2000);
+            } else {
+                // Real redirect in production
+                const redirectUrl = `/declaration.html?${params.toString()}`;
+                console.log('✅ Redirecting to:', redirectUrl);
+                
+                setTimeout(() => {
+                    window.location.href = redirectUrl;
+                }, 500);
+            }
         }
 
         function showDemoAction(message) {

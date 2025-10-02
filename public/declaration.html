@@ -412,99 +412,6 @@
                 font-size: 20px;
             }
         }
-
-        /* Summary Preview Styling */
-        .summary-preview {
-            background: #e9ecef;
-            border-left: 4px solid #667eea;
-            border-radius: 8px;
-            padding: 20px;
-            margin-bottom: 25px;
-        }
-
-        .summary-preview h4 {
-            color: #333;
-            font-size: 20px;
-            margin-bottom: 10px;
-        }
-
-        .summary-preview p {
-            color: #555;
-            line-height: 1.7;
-            margin-bottom: 10px;
-        }
-
-        .summary-preview small {
-            color: #888;
-            font-size: 11px;
-        }
-
-        /* New styles for confirmations */
-        .declaration-confirmations {
-            margin: 30px 0;
-        }
-
-        .confirmation-notice {
-            background: linear-gradient(135deg, #f0f7ff, #e8f2ff);
-            border: 2px solid #667eea;
-            border-radius: 15px;
-            padding: 25px;
-        }
-
-        .confirmation-notice h4 {
-            color: #667eea;
-            margin-bottom: 20px;
-            font-size: 18px;
-            text-align: center;
-        }
-
-        .confirmation-list {
-            display: flex;
-            flex-direction: column;
-            gap: 15px;
-        }
-
-        .confirmation-item {
-            display: flex;
-            align-items: flex-start;
-            gap: 15px;
-            padding: 10px;
-            background: white;
-            border-radius: 8px;
-            box-shadow: 0 2px 5px rgba(0,0,0,0.05);
-        }
-
-        .confirm-icon {
-            color: #28a745;
-            font-size: 20px;
-            font-weight: bold;
-            min-width: 20px;
-        }
-
-        .confirmation-item span:last-child {
-            color: #555;
-            line-height: 1.4;
-            font-size: 15px;
-        }
-
-        @media (max-width: 640px) {
-            .confirmation-notice {
-                padding: 20px;
-            }
-
-            .confirmation-item {
-                padding: 8px;
-                gap: 10px;
-            }
-
-            .confirmation-item span:last-child {
-                font-size: 14px;
-            }
-
-            .confirm-icon {
-                font-size: 18px;
-            }
-        }
     </style>
 </head>
 <body>
@@ -529,9 +436,6 @@
 
         <div class="error-banner" id="errorBanner"></div>
 
-        <!-- Placeholder for AI Summary Preview -->
-        <div id="summaryDisplay"></div>
-
         <div id="consentContent" style="display: none;">
             <div class="declaration-box">
                 <h2>Important: Your Data & Your Claim</h2>
@@ -548,26 +452,6 @@
 
             <div class="consent-question">
                 <h3>Do you agree to share your incident report data to progress your claim?</h3>
-            </div>
-
-            <div class="declaration-confirmations">
-                <div class="confirmation-notice">
-                    <h4>📋 Your Confirmations</h4>
-                    <div class="confirmation-list">
-                        <div class="confirmation-item">
-                            <span class="confirm-icon">✓</span>
-                            <span>All information provided is accurate to the best of my knowledge</span>
-                        </div>
-                        <div class="confirmation-item">
-                            <span class="confirm-icon">✓</span>
-                            <span>I understand this may be used in legal proceedings</span>
-                        </div>
-                        <div class="confirmation-item">
-                            <span class="confirm-icon">✓</span>
-                            <span>I consent to my data being processed for legal support purposes</span>
-                        </div>
-                    </div>
-                </div>
             </div>
 
             <div class="button-group">
@@ -638,8 +522,7 @@
                 incidentId: null,
                 returnUrl: null,
                 operation: null,
-                requireConsent: false,
-                fromAISummary: false // Flag to indicate if we are coming from AI summary review
+                requireConsent: false
             },
             ui: {
                 isProcessing: false,
@@ -1067,7 +950,7 @@
                 } else if (AppState.session.operation === 'final_consent') {
                     params.append('status', 'completed');
                     params.append('declaration_complete', 'true');
-
+                    
                     // If coming from AI summary, go to report complete
                     if (AppState.session.fromAISummary) {
                         basePath = '/report-complete.html';
@@ -1206,67 +1089,6 @@
         };
 
         // ============================
-        // AI Summary Data Loading
-        // ============================
-        // Load summary data from previous step
-        function loadSummaryData() {
-            let summaryData = sessionStorage.getItem('aiSummaryData') || localStorage.getItem('aiSummaryData');
-
-            if (summaryData) {
-                try {
-                    const data = JSON.parse(summaryData);
-                    console.log('Loaded summary data:', data);
-
-                    // Store the data globally for form submission
-                    window.aiSummaryData = data;
-
-                    // Display summary information if elements exist
-                    const summaryDisplay = document.getElementById('summaryDisplay');
-                    if (summaryDisplay && data.summary) {
-                        summaryDisplay.innerHTML = `
-                            <div class="summary-preview">
-                                <h4>AI Generated Summary:</h4>
-                                <p>${data.summary}</p>
-                                <small>Generated on: ${new Date(data.timestamp).toLocaleString()}</small>
-                            </div>
-                        `;
-                    }
-
-                    // Pre-populate any form fields if they exist
-                    if (data.userId) {
-                        const userIdField = document.getElementById('userId') || document.querySelector('input[name="userId"]');
-                        if (userIdField) userIdField.value = data.userId;
-                    }
-
-                    if (data.incidentId) {
-                        const incidentIdField = document.getElementById('incidentId') || document.querySelector('input[name="incidentId"]');
-                        if (incidentIdField) incidentIdField.value = data.incidentId;
-                    }
-
-                    return data;
-                } catch (error) {
-                    console.error('Error parsing summary data:', error);
-                }
-            } else {
-                console.log('No summary data found in storage');
-
-                // Try to get data from URL parameters as fallback
-                const urlParams = new URLSearchParams(window.location.search);
-                const userId = urlParams.get('userId');
-                const incidentId = urlParams.get('incidentId');
-
-                if (userId || incidentId) {
-                    const fallbackData = { userId, incidentId };
-                    window.aiSummaryData = fallbackData;
-                    console.log('Using URL parameters as fallback:', fallbackData);
-                    return fallbackData;
-                }
-            }
-
-            return null;
-        }
-
-        // ============================
         // Application Initialization
         // ============================
         const App = {
@@ -1372,31 +1194,11 @@
         // ============================
         // Page Load Handler
         // ============================
-        // Initialize when page loads
-        document.addEventListener('DOMContentLoaded', function() {
-            console.log('Declaration page loaded');
-            const summaryData = loadSummaryData();
+        document.addEventListener('DOMContentLoaded', () => {
+            Utils.log('DOM Content Loaded');
 
-            // Show a confirmation that we have the data
-            if (summaryData) {
-                console.log('✅ Summary data successfully loaded on declaration page');
-
-                // Show a brief success message
-                const statusDiv = document.createElement('div');
-                statusDiv.style.cssText = 'background: #d4edda; color: #155724; padding: 10px; border-radius: 5px; margin: 10px 0; border: 1px solid #c3e6cb;';
-                statusDiv.innerHTML = '✅ AI Summary data loaded successfully';
-
-                // Insert at the top of the page
-                const mainContent = document.querySelector('main') || document.body;
-                mainContent.insertBefore(statusDiv, mainContent.firstChild);
-
-                // Remove the status message after 3 seconds
-                setTimeout(() => {
-                    statusDiv.remove();
-                }, 3000);
-            } else {
-                console.warn('⚠️ No summary data found on declaration page');
-            }
+            // Show loading initially
+            UIManager.showLoading(true);
 
             // Bind event listeners
             App.bindEventListeners();

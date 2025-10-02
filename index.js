@@ -48,7 +48,7 @@ try {
 }
 
 // Import REAL transcription service
-const { getTranscriptionService } = require('./lib/transcriptionService');
+const TranscriptionService = require('./lib/transcriptionService');
 let transcriptionService = null;
 
 // Import remaining mock functions (only the ones not in TranscriptionService)
@@ -627,7 +627,7 @@ if (supabaseEnabled && supabase) {
 // Initialize Real Transcription Service
 if (supabaseEnabled && process.env.OPENAI_API_KEY) {
   try {
-    transcriptionService = getTranscriptionService(supabase, Logger);
+    transcriptionService = new TranscriptionService(supabase, Logger);
 
     // PRODUCTION SAFETY: Ensure we never use mock data
     if (process.env.NODE_ENV === 'production' && !process.env.OPENAI_API_KEY) {
@@ -649,19 +649,11 @@ if (supabaseEnabled && process.env.OPENAI_API_KEY) {
     Logger.info(`OpenAI API Key detected: ${process.env.OPENAI_API_KEY.substring(0, 7)}...`);
 
     // Start queue processing AFTER successful initialization
-    transcriptionQueueInterval = setInterval(async () => {
-      try {
-        await processTranscriptionQueue();
-
-        // Log metrics after each run
-        if (transcriptionService && typeof transcriptionService.getMetrics === 'function') {
-          const metrics = transcriptionService.getMetrics();
-          Logger.info('📊 Transcription service metrics:', metrics);
-        }
-      } catch (error) {
+    transcriptionQueueInterval = setInterval(() => {
+      processTranscriptionQueue().catch(error => {
         Logger.error('Queue processing error:', error);
-      }
-    }, 5 * 60 * 1000); // Every 5 minutes
+      });
+    }, 30000); // Every 30 seconds
 
     Logger.success('✅ Transcription queue processing started');
 
@@ -769,38 +761,22 @@ app.post('/webhook/signup', webhookLimiter, checkSharedKey, async (req, res) => 
     // Process webhook data
     const webhookData = req.body;
 
-    // Extract the Typeform user ID - multiple possible locations
-    const typeformUserId = webhookData?.create_user_id || 
-                          webhookData?.userId || 
-                          webhookData?.user_id ||
-                          webhookData?.form_response?.hidden?.create_user_id ||
-                          webhookData?.form_response?.hidden?.user_id;
-    
-    console.log('Typeform provided user ID:', typeformUserId); // Should log: ianring_120768
-    
-    if (!typeformUserId) {
-      console.log('⚠️ No user ID found in webhook data');
-      return res.status(400).json({
-        error: 'Missing user ID',
-        message: 'create_user_id or userId is required'
-      });
-    }
-
     // Check for GDPR consent before proceeding
     if (!req.hasConsent) {
-      const warningMessage = `Processing signup webhook without consent for user ${typeformUserId}.`;
+      const userId = webhookData?.create_user_id || webhookData?.userId; // Try to get user ID for logging
+      const warningMessage = `Processing signup webhook without consent for user ${userId || 'unknown'}.`;
       console.log(`⚠️ ${warningMessage}`);
       // Log GDPR activity for processing without consent
       // Use gdprManager.auditLog if available, else fallback
       if (gdprManager) {
-        await gdprManager.auditLog(typeformUserId, 'SIGNUP_WEBHOOK_PROCESSED_WITHOUT_CONSENT', {
+        await gdprManager.auditLog(userId || 'unknown', 'SIGNUP_WEBHOOK_PROCESSED_WITHOUT_CONSENT', {
           details: warningMessage,
           ip: req.clientIp,
           request_id: req.requestId
         }, req);
       } else {
         await supabase.from('gdpr_audit_log').insert({
-          create_user_id: typeformUserId,
+          create_user_id: userId || 'unknown',
           activity_type: 'SIGNUP_WEBHOOK_PROCESSED_WITHOUT_CONSENT',
           details: {
             details: warningMessage,
@@ -812,78 +788,31 @@ app.post('/webhook/signup', webhookLimiter, checkSharedKey, async (req, res) => 
       // Continue processing, but log the consent issue.
     }
 
-    // Actually save the user signup data to Supabase
-    if (supabaseEnabled) {
-      try {
-        // Generate UUID for id field (required)
-        const userId = UUIDUtils.generateUUID();
-
-        const signupData = {
-          id: userId,
-          create_user_id: typeformUserId,
-          email: webhookData.email || null,
-          name: webhookData.first_name || webhookData.name || null,
-          surname: webhookData.last_name || webhookData.surname || null,
-          full_name: webhookData.full_name || `${webhookData.first_name || ''} ${webhookData.last_name || ''}`.trim() || null,
-          mobile: webhookData.phone || webhookData.phone_number || webhookData.mobile || null,
-          gdpr_consent: ConstantHelpers.isConsent(webhookData.gdpr_consent || webhookData.consent),
-          gdpr_consent_date: new Date().toISOString(),
-          legal_support: webhookData.legal_support || null,
-          created_at: new Date().toISOString(),
-          submit_date: new Date().toISOString()
-        };
-
-        console.log('Saving signup data:', signupData);
-
-        // Insert into user_signup table
-        const { data: savedUser, error: saveError } = await supabase
-          .from('user_signup')
-          .upsert(signupData, {
-            onConflict: 'create_user_id'
-          })
-          .select()
-          .single();
-
-        if (saveError) {
-          console.error('❌ Failed to save user signup:', saveError.message);
-          // Continue processing but log the error
-        } else {
-          console.log('✅ User signup saved to database:', savedUser.create_user_id);
-        }
-      } catch (dbError) {
-        console.error('❌ Database error saving signup:', dbError.message);
-        // Continue processing
-      }
-    }
+    // Image processing for signup handled by separate modules when needed
 
     // Log GDPR activity for signup webhook processing
+    const userIdForLog = webhookData?.create_user_id || webhookData?.userId;
     if (gdprManager) {
-      await gdprManager.auditLog(typeformUserId, 'SIGNUP_WEBHOOK_PROCESSED', {
+      await gdprManager.auditLog(userIdForLog || 'unknown', 'SIGNUP_WEBHOOK_PROCESSED', {
         ip: req.clientIp,
         request_id: req.requestId,
         consent_granted: req.hasConsent,
-        consent_warning: req.gdprWarning,
-        saved_to_db: supabaseEnabled
+        consent_warning: req.gdprWarning
       }, req);
     } else {
-      await logGDPRActivity(typeformUserId, 'SIGNUP_WEBHOOK_PROCESSED', {
+      await logGDPRActivity(userIdForLog || 'unknown', 'SIGNUP_WEBHOOK_PROCESSED', {
         ip: req.clientIp,
         request_id: req.requestId,
         consent_granted: req.hasConsent,
-        consent_warning: req.gdprWarning,
-        saved_to_db: supabaseEnabled
+        consent_warning: req.gdprWarning
       }, req);
     }
 
-    console.log('✅ Signup webhook processed and saved successfully');
-    
-    // Return user ID and redirect URL for Typeform to use
+
+    console.log('✅ Signup webhook processed successfully');
     return res.status(200).json({
       success: true,
-      message: 'Signup webhook processed and saved successfully',
-      userId: typeformUserId,
-      redirectUrl: `/transcription-status.html?userId=${typeformUserId}&create_user_id=${typeformUserId}`,
-      saved_to_database: supabaseEnabled,
+      message: 'Signup webhook processed successfully',
       data: webhookData
     });
 
@@ -913,14 +842,8 @@ app.post('/webhook/incident-report', webhookLimiter, checkSharedKey, async (req,
     // Authentication is handled by checkSharedKey
 
     const webhookData = req.body;
-    const userId = webhookData?.create_user_id || 
-                  webhookData?.userId || 
-                  webhookData?.user_id ||
-                  webhookData?.form_response?.hidden?.create_user_id ||
-                  webhookData?.form_response?.hidden?.user_id;
+    const userId = webhookData?.create_user_id || webhookData?.userId;
     const incidentId = webhookData?.id || webhookData?.incident_report_id;
-    
-    console.log('Extracted user ID from incident webhook:', userId);
 
     if (!userId) {
       console.log('❌ Missing create_user_id or userId in request body');
@@ -964,49 +887,7 @@ app.post('/webhook/incident-report', webhookLimiter, checkSharedKey, async (req,
       // Continue processing, but log the consent issue.
     }
 
-    // Actually save the incident report data to Supabase
-    if (supabaseEnabled) {
-      try {
-        const incidentReportData = {
-          id: incidentId,
-          create_user_id: userId,
-          incident_date: webhookData.incident_date || new Date().toISOString(),
-          incident_time: webhookData.incident_time || null,
-          location: webhookData.location || null,
-          what_happened: webhookData.what_happened || webhookData.description || null,
-          detailed_account_of_what_happened: webhookData.detailed_account || webhookData.detailed_description || null,
-          other_vehicles_involved: webhookData.other_vehicles_involved || null,
-          witnesses: webhookData.witnesses || null,
-          police_attendance: webhookData.police_attendance || false,
-          police_reference: webhookData.police_reference || null,
-          injuries: webhookData.injuries || null,
-          vehicle_damage: webhookData.vehicle_damage || null,
-          insurance_notified: webhookData.insurance_notified || false,
-          recovery_required: webhookData.recovery_required || false,
-          created_at: new Date().toISOString(),
-          updated_at: new Date().toISOString()
-        };
-
-        // Insert into incident_reports table
-        const { data: savedIncident, error: saveError } = await supabase
-          .from('incident_reports')
-          .upsert(incidentReportData, {
-            onConflict: 'id'
-          })
-          .select()
-          .single();
-
-        if (saveError) {
-          console.error('❌ Failed to save incident report:', saveError.message);
-          // Continue processing but log the error
-        } else {
-          console.log('✅ Incident report saved to database:', savedIncident.id);
-        }
-      } catch (dbError) {
-        console.error('❌ Database error saving incident:', dbError.message);
-        // Continue processing
-      }
-    }
+    // File processing for incident reports handled by incidentEndpoints module
 
     // Log GDPR activity for incident report webhook processing
     if (gdprManager) {
@@ -1015,8 +896,7 @@ app.post('/webhook/incident-report', webhookLimiter, checkSharedKey, async (req,
         ip: req.clientIp,
         request_id: req.requestId,
         consent_granted: req.hasConsent,
-        consent_warning: req.gdprWarning,
-        saved_to_db: supabaseEnabled
+        consent_warning: req.gdprWarning
       }, req);
     } else {
       await logGDPRActivity(userId, 'INCIDENT_REPORT_WEBHOOK_PROCESSED', {
@@ -1024,19 +904,18 @@ app.post('/webhook/incident-report', webhookLimiter, checkSharedKey, async (req,
         ip: req.clientIp,
         request_id: req.requestId,
         consent_granted: req.hasConsent,
-        consent_warning: req.gdprWarning,
-        saved_to_db: supabaseEnabled
+        consent_warning: req.gdprWarning
       }, req);
     }
 
-    console.log('✅ Incident report webhook processed and saved successfully');
+
+    console.log('✅ Simplified incident report webhook processed successfully');
     return res.status(200).json({
       success: true,
-      message: 'Incident report webhook processed and saved successfully',
+      message: 'Incident report webhook processed successfully',
       incidentId: incidentId,
       userId: userId,
-      saved_to_database: supabaseEnabled,
-      data: webhookData
+      data: webhookData // Echo back processed data if useful
     });
 
   } catch (error) {
@@ -2036,23 +1915,6 @@ app.get('/test/transcription-queue', async (req, res) => {
   }
 });
 
-// Debug endpoint to trace user ID format issues
-app.get('/api/debug/trace-user', (req, res) => {
-  const userId = req.query.userId;
-  console.log('=== USER ID TRACE ===');
-  console.log('Provided user ID:', userId);
-  console.log('URL:', req.url);
-  console.log('Query params:', req.query);
-  console.log('===================');
-  
-  res.json({
-    providedUserId: userId,
-    expectedFormat: 'Should be Typeform username like: ianring_120768',
-    actualFormat: userId && userId.startsWith('user_') ? 'Generated format (WRONG)' : 'Typeform format (CORRECT)',
-    requestId: req.requestId
-  });
-});
-
 // Get detailed transcription status
 app.get('/api/transcription-status/:queueId', checkGDPRConsent, async (req, res) => {
   if (!supabaseEnabled) {
@@ -2091,8 +1953,8 @@ app.get('/api/transcription-status/:queueId', checkGDPRConsent, async (req, res)
     let transcriptionData = null;
     let metadata = {};
 
-    // Handle both COMPLETED status and cases where status might be wrong due to DB issues
-    if (queueItem.status === 'COMPLETED' || queueItem.status === 'FAILED' || queueItem.status === 'PROCESSING') {
+    if (queueItem.status === 'COMPLETED') {
+      // Try multiple methods to get transcription
       let transcription = null;
 
       // Method 1: By transcription_id
@@ -2109,7 +1971,7 @@ app.get('/api/transcription-status/:queueId', checkGDPRConsent, async (req, res)
         }
       }
 
-      // Method 2: By user and incident (more robust search)
+      // Method 2: By user and incident
       if (!transcription && queueItem.create_user_id) {
         const query = supabase
           .from('ai_transcription')
@@ -2129,29 +1991,11 @@ app.get('/api/transcription-status/:queueId', checkGDPRConsent, async (req, res)
         }
       }
 
-      // Method 3: Search by audio URL match (for cases where other methods fail)
-      if (!transcription && queueItem.audio_url && queueItem.create_user_id) {
-        const { data: transcriptionByUrl, error: errorByUrl } = await supabase
-          .from('ai_transcription')
-          .select('*')
-          .eq('create_user_id', queueItem.create_user_id)
-          .eq('audio_url', queueItem.audio_url)
-          .order('created_at', { ascending: false })
-          .limit(1)
-          .single();
-
-        if (!errorByUrl && transcriptionByUrl) {
-          transcription = transcriptionByUrl;
-          Logger.success('Found transcription by audio URL match');
-        }
-      }
-
-
       if (transcription) {
         transcriptionData = transcription.transcription_text;
         metadata = {
           audioQuality: 'Good',
-          processingTime: queueItem.processed_at ?
+          processingTime: queueItem.processed_at ? 
             `${Math.round((new Date(queueItem.processed_at) - new Date(queueItem.created_at)) / 1000)}s` : 'N/A',
           confidence: 'high',
           createdAt: transcription.created_at
@@ -2306,7 +2150,7 @@ app.get('/api/transcription-data', checkGDPRConsent, async (req, res) => {
             audioQuality: 'Good',
             confidence: 'High',
             createdAt: transcription.created_at,
-            processingTime: queueItem.processed_at ?
+            processingTime: queueItem.processed_at ? 
               `${Math.round((new Date(queueItem.processed_at) - new Date(queueItem.created_at)) / 1000)}s` : 'N/A'
           },
           requestId: req.requestId
@@ -2506,141 +2350,6 @@ app.get('/api/debug/transcription-full', checkSharedKey, async (req, res) => {
   res.json(diagnostics);
 });
 
-// Test endpoint for incident report saving
-app.post('/api/debug/test-incident-save', checkSharedKey, async (req, res) => {
-  if (!supabaseEnabled) {
-    return res.status(503).json({
-      error: 'Supabase not configured',
-      requestId: req.requestId
-    });
-  }
-
-  try {
-    const testData = {
-      id: `test_incident_${Date.now()}`,
-      create_user_id: req.body.create_user_id || `test_user_${Date.now()}`,
-      incident_date: new Date().toISOString(),
-      location: 'Test Location',
-      what_happened: 'Test incident description',
-      created_at: new Date().toISOString(),
-      updated_at: new Date().toISOString()
-    };
-
-    const { data: savedIncident, error: saveError } = await supabase
-      .from('incident_reports')
-      .insert(testData)
-      .select()
-      .single();
-
-    if (saveError) {
-      console.error('Test save error:', saveError);
-      return res.status(500).json({
-        error: 'Failed to save test incident',
-        details: saveError.message,
-        requestId: req.requestId
-      });
-    }
-
-    res.json({
-      success: true,
-      message: 'Test incident saved successfully',
-      incident: savedIncident,
-      requestId: req.requestId
-    });
-
-  } catch (error) {
-    console.error('Test incident save error:', error);
-    res.status(500).json({
-      error: 'Test failed',
-      details: error.message,
-      requestId: req.requestId
-    });
-  }
-});
-
-// Test endpoint for checking incident reports in database
-app.get('/api/debug/check-incidents/:userId', checkSharedKey, async (req, res) => {
-  if (!supabaseEnabled) {
-    return res.status(503).json({
-      error: 'Supabase not configured',
-      requestId: req.requestId
-    });
-  }
-
-  try {
-    const { userId } = req.params;
-
-    const { data: incidents, error: fetchError } = await supabase
-      .from('incident_reports')
-      .select('*')
-      .eq('create_user_id', userId)
-      .order('created_at', { ascending: false });
-
-    if (fetchError) {
-      return res.status(500).json({
-        error: 'Failed to fetch incidents',
-        details: fetchError.message,
-        requestId: req.requestId
-      });
-    }
-
-    res.json({
-      success: true,
-      userId: userId,
-      incidentCount: incidents?.length || 0,
-      incidents: incidents || [],
-      requestId: req.requestId
-    });
-
-  } catch (error) {
-    console.error('Check incidents error:', error);
-    res.status(500).json({
-      error: 'Check failed',
-      details: error.message,
-      requestId: req.requestId
-    });
-  }
-});
-
-        api_accessible: false,
-        error: error.message
-      };
-    }
-  }
-
-  res.json(diagnostics);
-});
-
-// New endpoint to get transcription service metrics
-app.get('/api/transcription/metrics', (req, res) => {
-  if (!transcriptionService) {
-    return res.status(503).json({
-      error: 'Transcription service not initialized',
-      requestId: req.requestId
-    });
-  }
-  res.json({
-    metrics: transcriptionService.getMetrics(),
-    requestId: req.requestId
-  });
-});
-
-// New endpoint to reset transcription service metrics
-app.post('/api/transcription/metrics/reset', checkSharedKey, (req, res) => {
-  if (!transcriptionService) {
-    return res.status(503).json({
-      error: 'Transcription service not initialized',
-      requestId: req.requestId
-    });
-  }
-  transcriptionService.resetMetrics();
-  res.json({
-    message: 'Transcription service metrics reset',
-    requestId: req.requestId
-  });
-});
-
-
 app.post('/test/process-transcription-queue', checkSharedKey, async (req, res) => {
   try {
     Logger.info('Manual transcription queue processing triggered');
@@ -2681,17 +2390,16 @@ app.get('/record', (req, res) => {
 
 // Redirect /transcribe to main recording interface
 app.get('/transcribe', (req, res) => {
-  const queryString = new URLSearchParams(req.query).toString();
+  const queryString = req.originalUrl.split('?')[1] || '';
   const redirectUrl = `/transcription-status.html${queryString ? '?' + queryString : ''}`;
 
   Logger.info('Recording redirect', {
     from: '/transcribe',
     to: redirectUrl,
-    params: queryString,
-    originalQuery: req.query
+    params: queryString
   });
 
-  res.redirect(302, redirectUrl);
+  res.redirect(redirectUrl);
 });
 
 // Alternative recording endpoint for backward compatibility
@@ -2739,17 +2447,16 @@ app.get('/transcription.html', (req, res) => {
 
 // Add redirect for /transcribe.html specifically
 app.get('/transcribe.html', (req, res) => {
-  const queryString = new URLSearchParams(req.query).toString();
+  const queryString = req.originalUrl.split('?')[1] || '';
   const redirectUrl = `/transcription-status.html${queryString ? '?' + queryString : ''}`;
 
   Logger.info('File redirect', {
     from: '/transcribe.html',
     to: redirectUrl,
-    params: queryString,
-    originalQuery: req.query
+    params: queryString
   });
 
-  res.redirect(302, redirectUrl);
+  res.redirect(redirectUrl);
 });
 
 // --- MAINROUTES ---
@@ -2867,17 +2574,13 @@ app.get('/status', (req, res) => {
                 <br>
                 <strong>Consent Management:</strong> <span class="improved-badge">IMPROVED</span><br>
                 <code>GET /api/consent/summary/:userId</code> - Get consent summary for user<br>
-                <code>POST /api/consent/test-extraction</code> - Test consent extraction from webhook<br>
-                <br>
-                <strong>Transcription Metrics:</strong> <span class="new-badge">NEW</span><br>
-                <code>GET /api/transcription/metrics</code> - Get transcription service metrics<br>
-                <code>POST /api/transcription/metrics/reset</code> - Reset service metrics<br>
+                <code>POST /api/consent/test-extraction</code> - Test consent extraction from webhook
             </div>
 
             <div class="endpoint">
                 <strong>Webhook Endpoints:</strong> <span class="improved-badge">IMPROVED</span><br>
                 <code>POST /webhook/signup</code> - Process signup with consent<br>
-                <code>POST /webhook/signup-simple</code> - Simple testing signup endpoint<br>
+                <code>POST /webhook/signup-simple</code> - Simple testing endpoint for signup<br>
                 <code>POST /webhook/incident-report</code> - Process incident report files<br>
                 <code>POST /generate-pdf</code> - Generate and email PDF report<br>
                 <code>POST /webhook/generate-pdf</code> - Alternative PDF generation
@@ -3131,8 +2834,8 @@ app.post('/api/whisper/transcribe', upload.single('audio'), async (req, res) => 
 
     // Extract create_user_id from the request
     const create_user_id = req.body.create_user_id ||
-                          req.query.create_user_id ||
-                          req.headers['x-user-id'];
+                 req.query.create_user_id ||
+                 req.headers['x-user-id'];
 
     if (!create_user_id) {
       Logger.info('❌ Missing create_user_id in transcription request');
@@ -3141,9 +2844,6 @@ app.post('/api/whisper/transcribe', upload.single('audio'), async (req, res) => 
         requestId: req.requestId
       });
     }
-
-    // Use the original create_user_id from Typeform without conversion
-    Logger.info(`✅ Using original create_user_id: ${create_user_id}`);
 
     // GDPR: Check consent and log for audit purposes
     if (gdprManager) {
@@ -3250,27 +2950,13 @@ app.post('/api/whisper/transcribe', upload.single('audio'), async (req, res) => 
 
     // Process transcription immediately using the audio buffer in memory
     // This happens asynchronously after the response is sent
-    if (transcriptionService) {
-      transcriptionService.processTranscriptionFromBuffer(
-        queueId,
-        req.file.buffer,
-        create_user_id,
-        req.body.incident_report_id,
-        publicUrl
-      ).catch(error => {
-        Logger.error('Async transcription processing error:', error);
-      });
-    } else {
-      processTranscriptionFromBuffer(
-        queueId,
-        req.file.buffer,
-        create_user_id,
-        req.body.incident_report_id,
-        publicUrl
-      ).catch(error => {
-        Logger.error('Fallback transcription processing error:', error);
-      });
-    }
+    processTranscriptionFromBuffer(
+      queueId,
+      req.file.buffer,
+      create_user_id,
+      req.body.incident_report_id,
+      publicUrl
+    );
 
   } catch (error) {
     Logger.error('Transcription error:', error);
@@ -3432,9 +3118,6 @@ if (process.env.NODE_ENV !== 'test') {
     Logger.info('  - GET  /api/dashcam/videos/:userId/:incidentId - Get user videos');
     Logger.info('  - DELETE /api/dashcam/video/:evidenceId - Delete video');
     Logger.info('  - GET  /api/transcription-data - Fetch transcription directly from DB [NEW]');
-    Logger.info('  - GET  /api/transcription/metrics - Get transcription service metrics [NEW]');
-    Logger.info('  - POST /api/transcription/metrics/reset - Reset service metrics [NEW]');
-
 
     Logger.success('✅ All systems operational with Simplified GDPR compliance - Ready to serve requests');
     Logger.success('🔧 Simplified GDPR Manager integrated - Privacy compliance enabled');

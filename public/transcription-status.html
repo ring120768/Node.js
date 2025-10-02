@@ -1309,41 +1309,27 @@
         // ============================
         // User ID and Session Management
         // ============================
-        function getUserId() {
-            // Get user ID from URL parameters
-            const urlParams = new URLSearchParams(window.location.search);
-            const userIdFromUrl = urlParams.get('userId') || urlParams.get('create_user_id') || urlParams.get('user_id');
-            
-            if (userIdFromUrl) {
-                console.log('Using user ID from URL:', userIdFromUrl);
-                return userIdFromUrl;
-            }
-            
-            // Fallback: Check localStorage
-            const storedUserId = localStorage.getItem('create_user_id');
-            if (storedUserId) {
-                console.log('Using stored user ID:', storedUserId);
-                return storedUserId;
-            }
-            
-            // Only generate if no ID is available
-            console.warn('No user ID found, generating temporary ID');
-            const generatedId = `temp_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`;
-            return generatedId;
-        }
-
         function initializeSession() {
             // Extract parameters from URL
             const urlParams = new URLSearchParams(window.location.search);
 
-            // Use the new getUserId function
-            state.userId = getUserId();
+            // Try multiple parameter names for compatibility with webhooks
+            state.userId = urlParams.get('create_user_id') || 
+                          urlParams.get('user_id') || 
+                          urlParams.get('userId') ||
+                          localStorage.getItem('create_user_id');
 
             // Check if returning from consent page
             const consentGiven = urlParams.get('consent_given') === 'true';
             if (consentGiven) {
                 state.hasConsent = true;
                 localStorage.setItem('gdpr_consent', 'true');
+            }
+
+            // Generate a new user ID if none exists
+            if (!state.userId) {
+                state.userId = 'user_' + Date.now() + '_' + Math.random().toString(36).substr(2, 9);
+                console.warn('No user ID provided, generated session ID:', state.userId);
             }
 
             // Store user ID for persistence
@@ -1935,7 +1921,7 @@
 
             const formData = new FormData();
             formData.append('audio', audioBlob, 'recording.webm');
-            formData.append('create_user_id', getUserId()); // Use the function to get correct ID
+            formData.append('create_user_id', state.userId);
 
             if (state.incidentReportId) {
                 formData.append('incident_report_id', state.incidentReportId);
