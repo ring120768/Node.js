@@ -162,29 +162,24 @@ const UUIDUtils = {
     return uuidRegex.test(str);
   },
 
-  // Ensure we have a valid UUID (generate deterministic one if needed)
+  // CRITICAL: NEVER generate or modify user IDs - only validate
   ensureValidUUID: (userId) => {
     if (!userId) return null;
-
+    
+    // ONLY return the original userId if it's a valid UUID
+    // NEVER generate or transform user IDs
     const uuidRegex = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
-
+    
     if (uuidRegex.test(userId)) {
-      return userId;
+      return userId; // Return original Typeform UUID
     }
-
-    // For non-UUID user IDs, generate a deterministic UUID
-    const crypto = require('crypto');
-    const hash = crypto.createHash('md5').update(userId).digest('hex');
-    return [
-      hash.substring(0, 8),
-      hash.substring(8, 12),
-      hash.substring(12, 16),
-      hash.substring(16, 20),
-      hash.substring(20, 32)
-    ].join('-');
+    
+    // If not a UUID, return null - DO NOT GENERATE
+    Logger.critical(`Invalid UUID format detected: ${userId} - REJECTING`);
+    return null;
   },
 
-  // Generate new random UUID
+  // Generate new random UUID (only for system use, never for user IDs)
   generateUUID: () => {
     const crypto = require('crypto');
     return crypto.randomUUID();
@@ -352,6 +347,45 @@ if (BLOCK_TEMP_IDS) {
             method: req.method,
             ip: req.ip
           });
+
+
+// --- CRITICAL: STRICT TYPEFORM UUID VALIDATION ---
+function validateTypeformUserId(userId) {
+  if (!userId) {
+    Logger.critical('VALIDATION FAILED: No user ID provided');
+    return false;
+  }
+
+  // Must be a valid UUID format
+  const uuidRegex = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
+  if (!uuidRegex.test(userId)) {
+    Logger.critical(`VALIDATION FAILED: Invalid UUID format: ${userId}`);
+    return false;
+  }
+
+  // Block any known problematic patterns
+  const blockedPatterns = [
+    /^temp_/,
+    /^test_/,
+    /^user_\d{13}_/,  // Timestamp-based
+    /^webhook_/,
+    /^fallback_/,
+    /^guest_/,
+    /^anonymous_/
+  ];
+
+  for (const pattern of blockedPatterns) {
+    if (pattern.test(userId)) {
+      Logger.critical(`VALIDATION FAILED: Blocked pattern detected: ${userId}`);
+      return false;
+    }
+  }
+
+  Logger.info(`VALIDATION PASSED: Valid Typeform UUID: ${userId}`);
+  return true;
+}
+
+
 
           return res.status(400).json({
             success: false,
@@ -1431,26 +1465,29 @@ app.post('/webhook/incident-report', webhookLimiter, checkSharedKey, async (req,
       Logger.info(`Found user ID in hidden.user_id: ${userId}`);
     }
 
-    // CRITICAL: Never generate temporary ID for webhook data
+    // CRITICAL: Never generate user IDs - MUST come from Typeform
     if (!userId) {
-      Logger.critical('CRITICAL: No user ID found in webhook data');
+      Logger.critical('CRITICAL: No create_user_id found in Typeform webhook - REJECTING');
 
-      // Try to use form token as last resort (this is unique per submission)
-      userId = formResponse.token || formResponse.landed_at || `webhook_${Date.now()}_${req.requestId}`;
-      Logger.warn(`Using fallback ID (not temporary): ${userId}`);
-
-      // Log this for investigation
+      // Log the failure for investigation
       if (supabaseEnabled) {
         await supabase
           .from('data_issues')
           .insert({
-            issue_type: 'missing_user_id',
+            issue_type: 'missing_typeform_user_id',
             endpoint: '/webhook/incident-report',
             webhook_data: JSON.stringify(webhookData),
             request_id: req.requestId,
             created_at: new Date().toISOString()
           });
       }
+
+      return res.status(400).json({
+        success: false,
+        error: 'Missing create_user_id from Typeform webhook',
+        message: 'All incident reports must include a valid create_user_id from Typeform',
+        requestId: req.requestId
+      });
     }
 
     // CRITICAL: Validate the user ID format here
@@ -1656,27 +1693,15 @@ app.post('/webhook/signup-simple', webhookLimiter, checkSharedKey, async (req, r
       Logger.info('Testing Supabase connection...');
 
       try {
-        // Generate UUID for id field (required)
-        const userId = UUIDUtils.generateUUID();
-
-        // Split name into first and last if provided as single string
-        let firstName = 'Test';
-        let lastName = 'User';
-
-        if (name) {
-          if (name.includes(' ')) {
-            const nameParts = name.split(' ');
-            firstName = nameParts[0];
-            lastName = nameParts.slice(1).join(' ');
-          } else {
-            firstName = name;
-            lastName = 'User';
-          }
-        }
-
-        const insertData = {
-          id: userId,  // Required UUID field
-          create_user_id: `test_${Date.now()}`, // Required field
+        // CRITICAL: Test endpoint should not create fake user IDs
+        Logger.critical('BLOCKING: Test webhook attempted to create fake user ID');
+        
+        return res.status(400).json({
+          success: false,
+          error: 'Test endpoint disabled - use real Typeform webhook only',
+          message: 'This test endpoint has been disabled to prevent fake user ID generation',
+          requestId: req.requestId
+        });
           email: email || 'test@example.com',   // Required field
           name: firstName,      // First name
           surname: lastName,    // Last name
@@ -1980,16 +2005,22 @@ app.post('/api/update-legal-narrative', checkSharedKey, async (req, res) => {
       });
     }
 
-    // Generate UUID if user ID is not UUID format
-    const dbUserId = UUIDUtils.ensureValidUUID(finalUserId);
+    // CRITICAL: Use original Typeform UUID only - NO GENERATION
+    if (!UUIDUtils.isValidUUID(finalUserId)) {
+      return res.status(400).json({
+        success: false,
+        error: 'Invalid user ID format - must be Typeform UUID',
+        requestId: req.requestId
+      });
+    }
 
-    // Update in ai_summary table
+    // Update in ai_summary table using original UUID
     const { error } = await supabase
       .from('ai_summary')
       .upsert({
-        create_user_id: dbUserId,
-        user_id: finalUserId, // Preserve original
-        incident_id: finalIncidentId || dbUserId,
+        create_user_id: finalUserId, // Use original Typeform UUID
+        user_id: finalUserId, // Same as create_user_id
+        incident_id: finalIncidentId || finalUserId,
         summary_text: finalNarrative,
         key_points: extractKeyPointsFromNarrative(finalNarrative),
         updated_at: new Date().toISOString()
@@ -2040,13 +2071,19 @@ app.get('/api/legal-narratives/:userId', checkSharedKey, checkGDPRConsent, async
       });
     }
 
-    // Generate UUID if user ID is not UUID format
-    const dbUserId = UUIDUtils.ensureValidUUID(userId);
+    // CRITICAL: Only use original Typeform UUID - NO GENERATION
+    if (!UUIDUtils.isValidUUID(userId)) {
+      return res.status(400).json({
+        success: false,
+        error: 'Invalid user ID format - must be Typeform UUID',
+        requestId: req.requestId
+      });
+    }
 
     let query = supabase
       .from('ai_summary')
       .select('*')
-      .eq('create_user_id', dbUserId)
+      .eq('create_user_id', userId) // Use original Typeform UUID
       .order('created_at', { ascending: false })
       .limit(parseInt(limit));
 

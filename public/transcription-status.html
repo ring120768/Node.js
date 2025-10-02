@@ -1309,24 +1309,24 @@
         // ============================
         // User ID and Session Management  
         // ============================
-        
+
         // Block problematic user IDs at the client level
         function validateUserId(userId) {
             if (!userId) return false;
-            
+
             // Block specific problematic IDs
             const blockedIds = ['user_1759410448804_yzas7ml2p'];
             if (blockedIds.includes(userId)) {
                 console.error('🚫 Blocked user ID detected:', userId);
                 return false;
             }
-            
+
             // Block timestamp pattern IDs (user_TIMESTAMP_RANDOM)
             if (/^user_\d{13}_[a-z0-9]+$/.test(userId)) {
                 console.error('🚫 Auto-generated user ID not allowed:', userId);
                 return false;
             }
-            
+
             return true;
         }
 
@@ -1360,17 +1360,15 @@
             // CRITICAL: Never generate user IDs - must come from Typeform
             if (!state.userId) {
                 console.error('CRITICAL: No Typeform create_user_id found. Access denied.');
-                showTranscriptionServiceError();
-                return null; // Stop initialization completely
+                document.querySelector('.container').innerHTML = '<h2 style="text-align: center; color: #dc3545;">Access Denied</h2><p style="text-align: center;">You must start from the provided Typeform link to access this service.</p>';
+                return null;
             }
 
             // Validate UUID format from Typeform
             const uuidRegex = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
             if (!uuidRegex.test(state.userId)) {
                 console.error('CRITICAL: Invalid UUID format from Typeform:', state.userId);
-                showTranscriptionServiceError();
-                return null;
-            }erHTML = '<h2 style="text-align: center; color: #dc3545;">Access Denied</h2><p style="text-align: center;">You must start from the provided Typeform link to access this service.</p>';
+                document.querySelector('.container').innerHTML = '<h2 style="text-align: center; color: #dc3545;">Access Denied</h2><p style="text-align: center;">You must start from the provided Typeform link with a valid session.</p>';
                 return null;
             }
 
