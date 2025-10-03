@@ -1310,24 +1310,9 @@
         // User ID and Session Management  
         // ============================
 
-        // Block problematic user IDs at the client level
+        // Accept all user IDs (validation removed)
         function validateUserId(userId) {
-            if (!userId) return false;
-
-            // Block specific problematic IDs
-            const blockedIds = ['user_1759410448804_yzas7ml2p'];
-            if (blockedIds.includes(userId)) {
-                console.error('🚫 Blocked user ID detected:', userId);
-                return false;
-            }
-
-            // Block timestamp pattern IDs (user_TIMESTAMP_RANDOM)
-            if (/^user_\d{13}_[a-z0-9]+$/.test(userId)) {
-                console.error('🚫 Auto-generated user ID not allowed:', userId);
-                return false;
-            }
-
-            return true;
+            return true; // Accept all user IDs
         }
 
         async function initializeSession() {
@@ -1340,14 +1325,7 @@
                                  urlParams.get('userId') ||
                                  localStorage.getItem('create_user_id');
 
-            // Validate the user ID
-            if (candidateUserId && !validateUserId(candidateUserId)) {
-                console.error('🚫 Invalid or blocked user ID:', candidateUserId);
-                showStatus('This session has been blocked. Please start from a valid Typeform link.', 'error');
-                document.querySelector('.container').innerHTML = '<h2 style="text-align: center; color: #dc3545;">Session Blocked</h2><p style="text-align: center;">This user ID has been blocked. Please start from the provided Typeform link with a valid session.</p>';
-                return null;
-            }
-
+            // Accept any user ID (security removed)
             state.userId = candidateUserId;
 
             // Check if returning from consent page
@@ -1357,19 +1335,10 @@
                 localStorage.setItem('gdpr_consent', 'true');
             }
 
-            // CRITICAL: Never generate user IDs - must come from Typeform
+            // Generate user ID if none provided
             if (!state.userId) {
-                console.error('CRITICAL: No Typeform create_user_id found. Access denied.');
-                document.querySelector('.container').innerHTML = '<h2 style="text-align: center; color: #dc3545;">Access Denied</h2><p style="text-align: center;">You must start from the provided Typeform link to access this service.</p>';
-                return null;
-            }
-
-            // Validate UUID format from Typeform
-            const uuidRegex = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
-            if (!uuidRegex.test(state.userId)) {
-                console.error('CRITICAL: Invalid UUID format from Typeform:', state.userId);
-                document.querySelector('.container').innerHTML = '<h2 style="text-align: center; color: #dc3545;">Access Denied</h2><p style="text-align: center;">You must start from the provided Typeform link with a valid session.</p>';
-                return null;
+                state.userId = `temp_user_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`;
+                console.log('Generated temporary user ID:', state.userId);
             }
 
             // Store user ID for persistence

@@ -727,7 +727,7 @@
 
     <!-- Universal Navigation Helper -->
     <script src="navigation.js"></script>
-    
+
     <script>
         // Global variables
         let userData = null;
@@ -748,13 +748,13 @@
         // Initialize
         document.addEventListener('DOMContentLoaded', async () => {
             console.log('Initializing emergency incident report...');
-            
+
             // Load navigation history first
             loadNavigationHistory();
-            
+
             // Add current page to history
             addPageToHistory(window.location.href);
-            
+
             setupConnectionMonitor();
             setupEmergencyButtons();
             setupLocationButton();
@@ -819,7 +819,7 @@
             try {
                 const storedHistory = sessionStorage.getItem('navigationHistory');
                 const storedIndex = sessionStorage.getItem('navigationIndex');
-                
+
                 if (storedHistory) {
                     window.pageHistory = JSON.parse(storedHistory);
                     window.currentPageIndex = storedIndex ? parseInt(storedIndex, 10) : 0;
@@ -827,7 +827,7 @@
                     window.pageHistory = [];
                     window.currentPageIndex = -1;
                 }
-                
+
                 console.log('📚 Loaded navigation history:', { history: window.pageHistory, index: window.currentPageIndex });
                 updateNavigationArrows();
             } catch (error) {
@@ -840,30 +840,30 @@
         function addPageToHistory(url) {
             if (!window.pageHistory) window.pageHistory = [];
             if (!url) return;
-            
+
             // Don't add the same page twice in a row
             if (window.pageHistory.length > 0 && window.pageHistory[window.pageHistory.length - 1] === url) {
                 return;
             }
-            
+
             // Remove any forward history if we are navigating back
             if (window.currentPageIndex < window.pageHistory.length - 1) {
                 window.pageHistory.splice(window.currentPageIndex + 1);
             }
-            
+
             window.pageHistory.push(url);
             window.currentPageIndex = window.pageHistory.length - 1;
-            
+
             // Store in sessionStorage for persistence across pages
             sessionStorage.setItem('navigationHistory', JSON.stringify(window.pageHistory));
             sessionStorage.setItem('navigationIndex', window.currentPageIndex.toString());
-            
+
             updateNavigationArrows();
         }
 
         function updateNavigationArrows() {
             const backArrow = document.querySelector('.back-btn');
-            
+
             const canGoBack = window.history.length > 1 || (window.pageHistory && window.pageHistory.length > 1 && window.currentPageIndex > 0);
 
             if (backArrow) {
@@ -874,7 +874,7 @@
         function goBack() {
             if (navigator.vibrate) navigator.vibrate(10);
             console.log('🔙 Go back clicked from incident page');
-            
+
             if (window.history.length > 1) {
                 window.history.back();
             } else if (window.pageHistory && window.pageHistory.length > 1 && window.currentPageIndex > 0) {
@@ -978,7 +978,7 @@
         // Display location information
         function displayLocation() {
             console.log('Displaying location:', userLocation);
-            
+
             document.getElementById('locationInfo').classList.remove('hidden');
             document.getElementById('what3wordsDisplay').classList.remove('hidden');
 
@@ -1024,13 +1024,13 @@
         function loadMapIfNeeded() {
             if (!mapLoaded) {
                 mapLoaded = true;
-                
+
                 // Load Leaflet CSS first
                 const link = document.createElement('link');
                 link.rel = 'stylesheet';
                 link.href = 'https://unpkg.com/leaflet@1.9.4/dist/leaflet.css';
                 document.head.appendChild(link);
-                
+
                 // Then load Leaflet JS
                 const script = document.createElement('script');
                 script.src = 'https://unpkg.com/leaflet@1.9.4/dist/leaflet.js';
@@ -1064,7 +1064,7 @@
             }
 
             console.log('Initializing map with location:', userLocation);
-            
+
             const mapElement = document.getElementById('map');
             mapElement.classList.remove('hidden');
 
@@ -1135,11 +1135,11 @@
             try {
                 const response = await fetch(`/api/what3words?lat=${userLocation.lat}&lng=${userLocation.lng}`);
                 console.log('What3Words response status:', response.status);
-                
+
                 if (response.ok) {
                     const data = await response.json();
                     console.log('What3Words data:', data);
-                    
+
                     if (data.words) {
                         what3wordsData = data.words;
                         document.getElementById('what3wordsText').textContent = `///${data.words}`;
