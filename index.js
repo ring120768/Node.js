@@ -334,9 +334,9 @@ function detectUserIdCorruption(req, res, next) {
         /^[a-zA-Z][a-zA-Z0-9_]{2,20}_\d{6,10}$/, // Pattern like ianring_120768
         /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i // Valid UUIDs
       ];
-      
+
       const isLegitimate = legitimatePatterns.some(pattern => pattern.test(value));
-      
+
       if (!isLegitimate) {
         Logger.critical(`USER ID CORRUPTION DETECTED: ${source}.${field} = "${value}"`);
         Logger.critical(`Request details:`, {
@@ -568,7 +568,7 @@ if (BLOCK_TEMP_IDS) {
       // Check if the user ID follows legitimate patterns
       if (bodyValue && typeof bodyValue === 'string') {
         const isLegitimate = legitimateUserIdPatterns.some(pattern => pattern.test(bodyValue));
-        
+
         if (!isLegitimate) {
           Logger.critical(`Blocked invalid user ID in body.${field}`, {
             value: bodyValue,
@@ -654,7 +654,7 @@ if (BLOCK_TEMP_IDS) {
       // Check if the user ID follows legitimate patterns
       if (paramValue && typeof paramValue === 'string') {
         const isLegitimate = legitimateUserIdPatterns.some(pattern => pattern.test(paramValue));
-        
+
         if (!isLegitimate) {
           Logger.critical(`Blocked invalid user ID in params.${field}`, {
             value: paramValue,
@@ -740,7 +740,7 @@ if (BLOCK_TEMP_IDS) {
       // Check if the user ID follows legitimate patterns
       if (queryValue && typeof queryValue === 'string') {
         const isLegitimate = legitimateUserIdPatterns.some(pattern => pattern.test(queryValue));
-        
+
         if (!isLegitimate) {
           Logger.critical(`Blocked invalid user ID in query.${field}`, {
             value: queryValue,
