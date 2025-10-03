@@ -241,7 +241,7 @@ app.set('trust proxy', 1);
 // --- USER ID VALIDATION (Security Restored) ---
 function validateTypeformUserId(userId) {
   if (!userId) return false;
-  
+
   // Block any temporary, test, or generated IDs
   const forbiddenPrefixes = ['temp_', 'test_', 'user_', 'dummy_', 'mock_', 'dev_', 'generated_'];
   for (const prefix of forbiddenPrefixes) {
@@ -249,7 +249,7 @@ function validateTypeformUserId(userId) {
       return false;
     }
   }
-  
+
   // Must be valid UUID format from Typeform only
   return UUIDUtils.validateTypeformUUID(userId);
 }
@@ -3396,23 +3396,15 @@ app.post('/api/whisper/transcribe', upload.single('audio'), async (req, res) => 
                  req.query.create_user_id ||
                  req.headers['x-user-id'];
 
-    // CRITICAL: Validate create_user_id
+    // CRITICAL: Validate create_user_id - ALWAYS REQUIRED
     if (!create_user_id || !UUIDUtils.validateTypeformUUID(create_user_id)) {
-      if (REQUIRE_USER_ID) {
-        Logger.critical('Missing or invalid create_user_id in transcription request');
-        return res.status(400).json({
-          error: 'Invalid or missing user ID',
-          message: 'A valid Typeform user ID is required for transcription.',
-          requestId: req.requestId
-        });
-      } else {
-        // If REQUIRE_USER_ID is false, log a warning but continue if possible
-        Logger.warn('Missing or invalid create_user_id for transcription, but REQUIRE_USER_ID is false. Attempting to proceed.');
-        // NOTE: If proceeding without a valid ID, some features might be limited or fail.
-        // Assign a placeholder or null if absolutely necessary for functionality, but ideally, this path should be avoided.
-        // For now, we'll allow it to proceed, but subsequent operations might fail.
-        // Consider adding a specific error code or status if this path becomes problematic.
-      }
+      Logger.critical('Missing or invalid create_user_id in transcription request - REJECTED');
+      return res.status(400).json({
+        error: 'Invalid or missing user ID',
+        message: 'A valid Typeform user ID is required for transcription. No fallback or dummy IDs allowed.',
+        code: 'INVALID_USER_ID',
+        requestId: req.requestId
+      });
     }
 
     // Block any temporary or test user IDs through validation

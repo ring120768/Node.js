@@ -104,12 +104,8 @@ describe('API Integration Tests', () => {
   });
 
   afterEach(async () => {
-    // Cleanup test data
-    if (supabase) {
-      await supabase
-        .from('user_signup')
-        .delete()
-        .like('create_user_id', 'test_%');
-    }
+    // REMOVED: No test data creation allowed in production tests
+    // All tests must use valid Typeform UUIDs from fixtures
+    console.log('ℹ️ Test cleanup: No temporary data created');
   });
 });

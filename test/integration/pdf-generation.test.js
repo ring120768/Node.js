@@ -50,7 +50,9 @@ const logSection = (title) => {
 // TEST DATA GENERATORS
 // ============================================
 
-// Generate signup-focused test data
+// REMOVED: All dummy user generation
+// Tests must use valid Typeform UUIDs from fixtures only
+// NO MOCK DATA GENERATION ALLOWED
 const generateSignupData = (scenario = 'basic') => {
   const timestamp = Date.now();
   return {
