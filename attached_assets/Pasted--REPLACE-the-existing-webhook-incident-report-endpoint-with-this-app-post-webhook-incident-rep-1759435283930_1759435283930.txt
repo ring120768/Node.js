@@ -1,0 +1,131 @@
+// REPLACE the existing /webhook/incident-report endpoint with this:
+app.post('/webhook/incident-report', webhookLimiter, checkSharedKey, async (req, res) => {
+  console.log('=======================================');
+  console.log('INCIDENT REPORT WEBHOOK - RECEIVED REQUEST');
+  console.log('=======================================');
+
+  try {
+    // Log incoming data
+    console.log('Headers:', req.headers);
+    console.log('Body keys:', Object.keys(req.body));
+    
+    const webhookData = req.body;
+    
+    // Extract user ID - DO NOT generate temporary IDs here
+    const userId = webhookData?.create_user_id || 
+                   webhookData?.userId || 
+                   webhookData?.user_id ||
+                   webhookData?.form_response?.hidden?.user_id;
+    
+    if (!userId) {
+      console.log('❌ Missing create_user_id in incident report');
+      return res.status(400).json({
+        error: 'Missing create_user_id',
+        message: 'User ID is required for incident reports'
+      });
+    }
+
+    // CRITICAL: Save to incident_reports table
+    if (supabaseEnabled) {
+      try {
+        // Process Typeform data if present
+        let incidentData = { ...webhookData };
+        
+        // If this is from Typeform, process the form_response
+        if (webhookData.form_response) {
+          incidentData = processTypeformData(webhookData);
+          // Ensure create_user_id is preserved
+          incidentData.create_user_id = userId;
+        }
+        
+        // Ensure we have required fields
+        incidentData.create_user_id = userId;
+        incidentData.created_at = incidentData.created_at || new Date().toISOString();
+        
+        // Generate UUID for id field if not present
+        if (!incidentData.id) {
+          incidentData.id = UUIDUtils.generateUUID();
+        }
+
+        console.log('💾 Saving incident report for user:', userId);
+        console.log('Field count:', Object.keys(incidentData).length);
+        
+        // Save to incident_reports table
+        const { data: savedIncident, error: saveError } = await supabase
+          .from('incident_reports')
+          .upsert(incidentData, {
+            onConflict: 'id'  // Use id as conflict resolution
+          })
+          .select()
+          .single();
+
+        if (saveError) {
+          console.error('❌ Error saving incident report:', saveError);
+          // Log but don't fail - some fields might not match schema
+          console.log('Attempting partial save with core fields...');
+          
+          // Try saving with just core fields if full save fails
+          const coreFields = {
+            id: incidentData.id,
+            create_user_id: userId,
+            created_at: incidentData.created_at,
+            detailed_account_of_what_happened: incidentData.detailed_account_of_what_happened || '',
+            incident_date: incidentData.incident_date || incidentData.date_of_incident,
+            incident_time: incidentData.incident_time || incidentData.time_of_incident,
+            location: incidentData.location || incidentData.incident_location
+          };
+          
+          const { data: coreSave, error: coreError } = await supabase
+            .from('incident_reports')
+            .upsert(coreFields, {
+              onConflict: 'id'
+            })
+            .select()
+            .single();
+            
+          if (!coreError) {
+            console.log('✅ Core fields saved successfully');
+          }
+        } else {
+          console.log('✅ Full incident report saved:', savedIncident?.id);
+        }
+        
+        // Log GDPR activity
+        if (gdprManager) {
+          await gdprManager.auditLog(userId, 'INCIDENT_REPORT_SAVED', {
+            incidentId: incidentData.id,
+            fieldCount: Object.keys(incidentData).length
+          }, req);
+        }
+
+      } catch (dbError) {
+        console.error('Database error:', dbError);
+        // Continue processing even if save fails
+      }
+    }
+
+    // Store webhook for debugging
+    if (webhookDebugger) {
+      webhookDebugger.analyzeWebhook(req, {
+        store: true,
+        log: true
+      });
+    }
+
+    return res.status(200).json({
+      success: true,
+      message: 'Incident report processed and saved',
+      userId: userId,
+      incidentId: webhookData.id || webhookData.incident_report_id,
+      fieldsSaved: Object.keys(webhookData).length
+    });
+
+  } catch (error) {
+    Logger.error('❌ Incident report webhook error:', error);
+    return res.status(500).json({
+      error: 'Internal server error',
+      message: error.message,
+      requestId: req.requestId
+    });
+  }
+});
