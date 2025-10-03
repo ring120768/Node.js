@@ -1770,6 +1770,7 @@ app.post('/webhook/incident-report', webhookLimiter, checkSharedKey, async (req,
 
   Logger.critical('=======================================');
   Logger.critical('INCIDENT REPORT WEBHOOK - CRITICAL FIX APPLIED');
+  Logger.critical('INCIDENT FORM ID: WvM2ejru - TRACKING ACTIVE');
   Logger.critical('=======================================');
 
   try {
@@ -1787,6 +1788,17 @@ app.post('/webhook/incident-report', webhookLimiter, checkSharedKey, async (req,
     // Extract the data from Typeform webhook
     const webhookData = req.body;
     const formResponse = webhookData.form_response || webhookData;
+
+    // CRITICAL: Validate this is the correct incident report form
+    const expectedFormId = 'WvM2ejru';
+    const receivedFormId = formResponse.form_id;
+    
+    if (receivedFormId && receivedFormId !== expectedFormId) {
+      Logger.warn(`Received webhook from unexpected form: ${receivedFormId}, expected: ${expectedFormId}`);
+      // Continue processing but log the discrepancy
+    } else if (receivedFormId === expectedFormId) {
+      Logger.success(`✅ Confirmed incident report from correct form: ${expectedFormId}`);
+    }
 
     // CRITICAL: Preserve the original create_user_id from Typeform
     let userId = null;
@@ -1867,6 +1879,8 @@ app.post('/webhook/incident-report', webhookLimiter, checkSharedKey, async (req,
       create_user_id: userId, // PRESERVE original ID
       form_response_id: formResponse.token,
       typeform_submission_id: formResponse.token,
+      typeform_form_id: formResponse.form_id, // Track which form this came from
+      is_incident_form: formResponse.form_id === 'WvM2ejru', // Flag for incident reports
 
       // Timestamps
       submitted_at: formResponse.submitted_at || new Date().toISOString(),
@@ -3034,12 +3048,12 @@ Logger.info('✅ Debug incident reports endpoint registered at /api/debug/incide
 app.post('/test/incident-webhook', checkSharedKey, async (req, res) => {
   Logger.info('=== TESTING INCIDENT WEBHOOK ===');
 
-  // Create a mock Typeform webhook payload
+  // Create a mock Typeform webhook payload with the CORRECT form ID
   const testPayload = {
     event_id: 'test_' + Date.now(),
     event_type: 'form_response',
     form_response: {
-      form_id: 'test_form',
+      form_id: 'WvM2ejru', // CORRECT incident form ID
       token: 'test_token_' + Date.now(),
       landed_at: new Date().toISOString(),
       submitted_at: new Date().toISOString(),
