@@ -2,7 +2,8 @@
 const { createClient } = require('@supabase/supabase-js');
 require('dotenv').config();
 
-const testUserId = 'user_1759410448804_yzas7ml2p';
+// REMOVED: No hardcoded test user IDs allowed
+// Test user IDs must come from environment variables or command line arguments
 
 async function cleanupTestUser() {
     console.log(`🧹 Cleaning up test user: ${testUserId}`);

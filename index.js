@@ -51,7 +51,7 @@ try {
 const TranscriptionService = require('./lib/transcriptionService');
 let transcriptionService = null;
 
-// Removed mock functions - using real implementations only
+// Real implementations only - no mock functions allowed
 
 // These will be set up after Supabase initializes
 let processTranscriptionFromBuffer = null;
@@ -61,8 +61,8 @@ let transcriptionQueueInterval = null;
 // ========================================
 // User ID Configuration (Security Restored)
 // ========================================
-const BLOCK_TEMP_IDS = false; // Security restored
-const REQUIRE_USER_ID = false; // Security restored
+const BLOCK_TEMP_IDS = process.env.NODE_ENV === 'production' ? true : false; // Enable in production
+const REQUIRE_USER_ID = process.env.NODE_ENV === 'production' ? true : false; // Require in production
 
 // --- ENVIRONMENT VARIABLE VALIDATION ---
 const validateEnvironment = () => {
@@ -106,6 +106,20 @@ const validateEnvironment = () => {
 
 // Run validation
 const envValidation = validateEnvironment();
+
+// Additional production validation
+if (process.env.NODE_ENV === 'production') {
+  if (!BLOCK_TEMP_IDS) {
+    throw new Error('PRODUCTION ERROR: BLOCK_TEMP_IDS must be enabled in production');
+  }
+  if (!REQUIRE_USER_ID) {
+    throw new Error('PRODUCTION ERROR: REQUIRE_USER_ID must be enabled in production');
+  }
+  if (!process.env.OPENAI_API_KEY) {
+    throw new Error('PRODUCTION ERROR: OPENAI_API_KEY is required in production');
+  }
+  Logger.success('✅ Production security validations passed');
+}
 
 // Use enhanced constants from module
 const CONSTANTS = ENHANCED_CONSTANTS;
@@ -226,7 +240,17 @@ app.set('trust proxy', 1);
 
 // --- USER ID VALIDATION (Security Restored) ---
 function validateTypeformUserId(userId) {
-  // ACCEPTED: Only accept valid Typeform UUIDs
+  if (!userId) return false;
+  
+  // Block any temporary, test, or generated IDs
+  const forbiddenPrefixes = ['temp_', 'test_', 'user_', 'dummy_', 'mock_', 'dev_', 'generated_'];
+  for (const prefix of forbiddenPrefixes) {
+    if (userId.toString().toLowerCase().startsWith(prefix)) {
+      return false;
+    }
+  }
+  
+  // Must be valid UUID format from Typeform only
   return UUIDUtils.validateTypeformUUID(userId);
 }
 
@@ -680,30 +704,7 @@ if (supabaseEnabled && process.env.OPENAI_API_KEY) {
       throw new Error('PRODUCTION ERROR: No OpenAI API key - cannot use mock transcription data');
     }
 
-    // CLEANUP: Remove any persistent test user sessions
-    setTimeout(() => {
-      const testUserId = 'user_1759410448804_yzas7ml2p';
-
-      // Clear from transcription status map
-      if (global.transcriptionStatuses && global.transcriptionStatuses.has) {
-        for (const [key, value] of global.transcriptionStatuses.entries()) {
-          if (value.create_user_id === testUserId) {
-            global.transcriptionStatuses.delete(key);
-            Logger.warn(`Removed persistent test user session: ${key}`);
-          }
-        }
-      }
-
-      // Clear from user sessions map
-      if (global.userSessions && global.userSessions.has) {
-        if (global.userSessions.has(testUserId)) {
-          global.userSessions.delete(testUserId);
-          Logger.warn(`Removed persistent test user from userSessions`);
-        }
-      }
-
-      Logger.info('Session cleanup completed for test user');
-    }, 5000);
+    // REMOVED: No hardcoded test user cleanup - all user management must go through proper channels
 
     // Create the wrapper functions with proper error handling
     processTranscriptionFromBuffer = async (queueId, buffer, userId, incidentId, audioUrl) => {
@@ -743,22 +744,16 @@ if (supabaseEnabled && process.env.OPENAI_API_KEY) {
 
   } catch (error) {
     Logger.error('Failed to initialize transcription service:', error);
-
-    // Fallback to mock functions
-    // This block should ideally not be reached if OpenAI key is present
-    Logger.warn('⚠️ Falling back to mock transcription due to initialization error.');
-    const mocks = require('./lib/mockFunctions'); // This require should also be removed if mocks are fully gone
-    processTranscriptionFromBuffer = mocks.processTranscriptionFromBuffer;
-    processTranscriptionQueue = mocks.processTranscriptionQueue;
-    transcriptionQueueInterval = null; // Ensure interval is cleared if mock fallback is used
+    Logger.critical('PRODUCTION ERROR: Transcription service initialization failed - cannot continue without OpenAI');
+    throw new Error('Transcription service initialization failed - OpenAI API required');
   }
 } else {
-  // Use mock functions if no OpenAI key
-  Logger.warn('⚠️ Using mock transcription (no OpenAI key or Supabase)');
-  const mocks = require('./lib/mockFunctions'); // This require should also be removed if mocks are fully gone
-  processTranscriptionFromBuffer = mocks.processTranscriptionFromBuffer;
-  processTranscriptionQueue = mocks.processTranscriptionQueue;
-  transcriptionQueueInterval = null;
+  // No OpenAI key - system cannot function
+  Logger.critical('PRODUCTION ERROR: No OpenAI API key configured - transcription service required');
+  if (process.env.NODE_ENV === 'production') {
+    throw new Error('OpenAI API key required for production deployment');
+  }
+  Logger.warn('⚠️ Transcription service not initialized - OpenAI key required');
 }
 
 // ========================================
@@ -3420,13 +3415,12 @@ app.post('/api/whisper/transcribe', upload.single('audio'), async (req, res) => 
       }
     }
 
-    // Block specific problematic user IDs
-    const blockedUserIds = ['user_1759410448804_yzas7ml2p'];
-    if (create_user_id && blockedUserIds.includes(create_user_id)) {
-      Logger.critical(`Blocked transcription for problematic user ID: ${create_user_id}`);
+    // Block any temporary or test user IDs through validation
+    if (create_user_id && !validateTypeformUserId(create_user_id)) {
+      Logger.critical(`Blocked transcription for invalid user ID: ${create_user_id}`);
       return res.status(403).json({
-        error: 'User ID blocked',
-        message: 'This user ID has been blocked from transcription services',
+        error: 'Invalid user ID format',
+        message: 'Only valid Typeform UUIDs are permitted',
         requestId: req.requestId
       });
     }

@@ -2,7 +2,8 @@
 const { createClient } = require('@supabase/supabase-js');
 require('dotenv').config();
 
-const BLOCKED_USER_ID = 'user_1759410448804_yzas7ml2p';
+// REMOVED: No hardcoded user IDs allowed
+// User IDs must be passed as parameters
 
 async function cleanupPersistentTestUser() {
     console.log(`🧹 COMPREHENSIVE CLEANUP for persistent test user: ${BLOCKED_USER_ID}`);
