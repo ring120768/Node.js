@@ -329,8 +329,15 @@ function detectUserIdCorruption(req, res, next) {
 
     // Check if it's a string that could be a user ID
     if (typeof value === 'string' && value.length > 5) {
-      // Validate against our strict Typeform UUID rules
-      if (!UUIDUtils.validateTypeformUUID(value)) {
+      // Check if value matches legitimate patterns
+      const legitimatePatterns = [
+        /^[a-zA-Z][a-zA-Z0-9_]{2,20}_\d{6,10}$/, // Pattern like ianring_120768
+        /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i // Valid UUIDs
+      ];
+      
+      const isLegitimate = legitimatePatterns.some(pattern => pattern.test(value));
+      
+      if (!isLegitimate) {
         Logger.critical(`USER ID CORRUPTION DETECTED: ${source}.${field} = "${value}"`);
         Logger.critical(`Request details:`, {
           method: req.method,
@@ -484,6 +491,12 @@ if (BLOCK_TEMP_IDS) {
       // Add other legitimate IDs here if necessary
     ];
 
+    // Allow legitimate non-UUID user IDs that follow valid patterns
+    const legitimateUserIdPatterns = [
+      /^[a-zA-Z][a-zA-Z0-9_]{2,20}_\d{6,10}$/, // Pattern like ianring_120768
+      /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i // Valid UUIDs
+    ];
+
     // Check for temporary IDs in common fields
     const fieldsToCheck = ['userId', 'user_id', 'create_user_id'];
 
@@ -552,21 +565,22 @@ if (BLOCK_TEMP_IDS) {
         });
       }
 
-      // Block ANY non-UUID patterns that could be generated
+      // Check if the user ID follows legitimate patterns
       if (bodyValue && typeof bodyValue === 'string') {
-        // STRICT: Only allow valid UUIDs from Typeform
-        if (!UUIDUtils.isValidUUIDFormat(bodyValue)) {
-          Logger.critical(`Blocked non-UUID user ID in body.${field}`, {
+        const isLegitimate = legitimateUserIdPatterns.some(pattern => pattern.test(bodyValue));
+        
+        if (!isLegitimate) {
+          Logger.critical(`Blocked invalid user ID in body.${field}`, {
             value: bodyValue,
             path: req.path,
             method: req.method,
             ip: req.ip,
-            reason: 'Only Typeform UUIDs allowed'
+            reason: 'User ID does not match legitimate patterns'
           });
 
           return res.status(400).json({
             success: false,
-            error: 'Invalid user ID format. Only Typeform UUIDs are allowed.',
+            error: 'Invalid user ID format. Please use a valid user ID.',
             field: field,
             requestId: req.requestId || `req_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`
           });
@@ -637,21 +651,22 @@ if (BLOCK_TEMP_IDS) {
         });
       }
 
-      // Block ANY non-UUID patterns that could be generated
+      // Check if the user ID follows legitimate patterns
       if (paramValue && typeof paramValue === 'string') {
-        // STRICT: Only allow valid UUIDs from Typeform
-        if (!UUIDUtils.isValidUUIDFormat(paramValue)) {
-          Logger.critical(`Blocked non-UUID user ID in params.${field}`, {
+        const isLegitimate = legitimateUserIdPatterns.some(pattern => pattern.test(paramValue));
+        
+        if (!isLegitimate) {
+          Logger.critical(`Blocked invalid user ID in params.${field}`, {
             value: paramValue,
             path: req.path,
             method: req.method,
             ip: req.ip,
-            reason: 'Only Typeform UUIDs allowed'
+            reason: 'User ID does not match legitimate patterns'
           });
 
           return res.status(400).json({
             success: false,
-            error: 'Invalid user ID format. Only Typeform UUIDs are allowed.',
+            error: 'Invalid user ID format. Please use a valid user ID.',
             field: field,
             requestId: req.requestId || `req_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`
           });
@@ -722,21 +737,22 @@ if (BLOCK_TEMP_IDS) {
         });
       }
 
-      // Block ANY non-UUID patterns that could be generated
+      // Check if the user ID follows legitimate patterns
       if (queryValue && typeof queryValue === 'string') {
-        // STRICT: Only allow valid UUIDs from Typeform
-        if (!UUIDUtils.isValidUUIDFormat(queryValue)) {
-          Logger.critical(`Blocked non-UUID user ID in query.${field}`, {
+        const isLegitimate = legitimateUserIdPatterns.some(pattern => pattern.test(queryValue));
+        
+        if (!isLegitimate) {
+          Logger.critical(`Blocked invalid user ID in query.${field}`, {
             value: queryValue,
             path: req.path,
             method: req.method,
             ip: req.ip,
-            reason: 'Only Typeform UUIDs allowed'
+            reason: 'User ID does not match legitimate patterns'
           });
 
           return res.status(400).json({
             success: false,
-            error: 'Invalid user ID format. Only Typeform UUIDs are allowed.',
+            error: 'Invalid user ID format. Please use a valid user ID.',
             field: field,
             requestId: req.requestId || `req_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`
           });
@@ -4295,9 +4311,8 @@ app.post('/api/whisper/transcribe', upload.single('audio'), async (req, res) => 
 
     Logger.info(`Processing transcription for user: ${create_user_id}`);
 
-    // Generate a unique transcription ID (NOT a user ID - this is for internal tracking only)
-    // const queueId = `trans_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`; // Removed to use numeric ID
-    const queueId = Date.now(); // Use timestamp as numeric ID
+    // Generate a proper integer queue ID that fits in database integer range
+    const queueId = Math.floor(Math.random() * 2147483647); // Max 32-bit integer
 
     // CRITICAL: Ensure transcription ID is never confused with user ID
     if (queueId.toString().includes('user_') || queueId.toString().length === 36) {
