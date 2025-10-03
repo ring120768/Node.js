@@ -3077,24 +3077,7 @@ app.post('/test/incident-webhook', checkSharedKey, async (req, res) => {
 });
 
 Logger.info('✅ Test incident webhook endpoint registered at /test/incident-webhook');
-
-
-  } catch (error) {
-    Logger.error('Debug incident reports error:', error);
-    res.status(500).json({
-      error: 'Failed to fetch incident reports',
-      details: error.message,
-      requestId: req.requestId
-    });
-  }
-});
-
 Logger.info('✅ Debug incident reports endpoint registered at /api/debug/incident-reports');
-
-      requestId: req.requestId
-    });
-  }
-});
 
 // Test OpenAI API endpoint
 app.get('/api/test-openai', async (req, res) => {
