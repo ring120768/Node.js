@@ -1449,7 +1449,7 @@ app.get('/api/gdpr/status/:userId', async (req, res) => {
     const history = await gdpr.getUserGDPRHistory(userId);
 
     res.json({
-      user_id: userId,
+      create_user_id: userId,
       has_consent: hasConsent,
       recent_requests: history
     });
@@ -1672,7 +1672,6 @@ app.post('/webhook/incident-report', webhookLimiter, checkSharedKey, async (req,
     // Build the incident data object with all fields
     const incidentData = {
       // Core identifiers
-      user_id: userId,
       create_user_id: userId, // PRESERVE original ID
       form_response_id: formResponse.token,
       typeform_submission_id: formResponse.token,
@@ -1763,7 +1762,7 @@ app.post('/webhook/incident-report', webhookLimiter, checkSharedKey, async (req,
         const { data: pendingItems } = await supabase
           .from('transcription_queue')
           .select('*')
-          .eq('user_id', userId)
+          .eq('create_user_id', userId)
           .eq('status', 'pending')
           .order('created_at', { ascending: true });
 
@@ -1862,12 +1861,12 @@ app.post('/api/generate-legal-narrative', async (req, res) => {
       if (transcriptionId && supabaseEnabled) {
         const { data: transcription } = await supabase
           .from('ai_transcription')
-          .select('user_id, create_user_id')
+          .select('create_user_id')
           .eq('id', transcriptionId)
           .single();
 
         if (transcription) {
-          finalUserId = transcription.user_id || transcription.create_user_id;
+          finalUserId = transcription.create_user_id;
           Logger.info(`Retrieved user ID from transcription: ${finalUserId}`);
         }
       }
@@ -1876,12 +1875,12 @@ app.post('/api/generate-legal-narrative', async (req, res) => {
       if (!finalUserId && (incident_report_id || incidentId) && supabaseEnabled) {
         const { data: report } = await supabase
           .from('incident_reports')
-          .select('user_id, create_user_id')
+          .select('create_user_id')
           .eq('id', incident_report_id || incidentId)
           .single();
 
         if (report) {
-          finalUserId = report.user_id || report.create_user_id;
+          finalUserId = report.create_user_id;
           Logger.info(`Retrieved user ID from incident report: ${finalUserId}`);
         }
       }
@@ -1991,7 +1990,6 @@ app.post('/api/generate-legal-narrative', async (req, res) => {
         const { data: savedNarrative, error: saveError } = await supabase
           .from('ai_summary')
           .insert({
-            user_id: finalUserId, // CRITICAL: Use preserved user ID
             create_user_id: finalUserId,
             incident_id: finalIncidentId,
             summary_text: narrative,
@@ -2087,7 +2085,6 @@ app.post('/api/update-legal-narrative', checkSharedKey, async (req, res) => {
       .from('ai_summary')
       .upsert({
         create_user_id: finalUserId, // Use original Typeform UUID
-        user_id: finalUserId, // Same as create_user_id
         incident_id: finalIncidentId || finalUserId,
         summary_text: finalNarrative,
         key_points: extractKeyPointsFromNarrative(finalNarrative),
@@ -3744,9 +3741,9 @@ app.post('/api/log-emergency-call', authenticateRequest, async (req, res) => {
   }
 
   try {
-    const { user_id, service_called, timestamp, incident_id } = req.body;
+    const { create_user_id, service_called, timestamp, incident_id } = req.body;
 
-    if (!user_id) {
+    if (!create_user_id) {
       return res.status(400).json({
         error: 'User ID required',
         code: 'MISSING_USER_ID',
@@ -3755,7 +3752,7 @@ app.post('/api/log-emergency-call', authenticateRequest, async (req, res) => {
     }
 
     // CRITICAL: Validate no temp IDs
-    if (user_id.startsWith('temp_')) {
+    if (create_user_id.startsWith('temp_')) {
       return res.status(400).json({
         error: 'Invalid user ID',
         message: 'Temporary IDs not allowed',
@@ -3766,7 +3763,7 @@ app.post('/api/log-emergency-call', authenticateRequest, async (req, res) => {
     const { data, error } = await supabase
       .from('emergency_call_logs')
       .insert({
-        user_id,
+        create_user_id,
         service_called,
         incident_id: incident_id || null,
         timestamp,
@@ -3783,7 +3780,7 @@ app.post('/api/log-emergency-call', authenticateRequest, async (req, res) => {
     }
 
     if (gdprManager) {
-      await gdprManager.auditLog(user_id, 'EMERGENCY_CALL_LOGGED', {
+      await gdprManager.auditLog(create_user_id, 'EMERGENCY_CALL_LOGGED', {
         service: service_called
       }, req);
     } else {
