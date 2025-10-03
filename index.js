@@ -2891,6 +2891,21 @@ app.get('/api/process-queue-now', checkSharedKey, async (req, res) => {
       await processTranscriptionQueue();
     }
     res.json({
+      success: true,
+      message: 'Queue processing triggered',
+      timestamp: new Date().toISOString(),
+      requestId: req.requestId
+    });
+  } catch (error) {
+    Logger.error('Manual queue processing error', error);
+    res.status(500).json({
+      error: 'Failed to process queue',
+      message: error.message,
+      details: error.stack,
+      requestId: req.requestId
+    });
+  }
+});
 
 
 // ========================================
@@ -2935,18 +2950,6 @@ app.post('/webhook/debug', async (req, res) => {
 });
 
 Logger.info('✅ Debug webhook endpoint registered at /webhook/debug');
-
-      success: true,
-      message: 'Queue processing triggered',
-      timestamp: new Date().toISOString(),
-      requestId: req.requestId
-    });
-  } catch (error) {
-    Logger.error('Manual queue processing error', error);
-    res.status(500).json({
-      error: 'Failed to process queue',
-      message: error.message,
-      details: error.stack,
 
 
 // ========================================
