@@ -251,104 +251,8 @@ const server = http.createServer(app);
 app.set('trust proxy', 1);
 
 // ========================================
-// CRITICAL FIX: Global Temporary ID Blocking Middleware
+// CRITICAL: Comprehensive User ID Protection Functions
 // ========================================
-if (BLOCK_TEMP_IDS) {
-  app.use((req, res, next) => {
-    // Block specific problematic test user ID and pattern
-    const blockedTestUserIds = [
-      'user_1759410448804_yzas7ml2p',
-      // Add other specific IDs to block here if necessary
-    ];
-
-    // Whitelist specific legitimate user IDs to bypass blocking rules
-    const whitelistedUserIds = [
-      'ianring_120768', // The user ID that should not be blocked
-      // Add other legitimate IDs here if necessary
-    ];
-
-    // Check for temporary IDs in common fields
-    const fieldsToCheck = ['userId', 'user_id', 'create_user_id'];
-
-    for (const field of fieldsToCheck) {
-      // Check in body
-      const bodyValue = req.body?.[field];
-
-      // Debug logging for legitimate user IDs
-      if (bodyValue === 'ianring_120768') {
-        Logger.info(`Processing legitimate user ID: ${bodyValue} in field: ${field}`);
-      }
-
-      // Allow whitelisted user IDs to bypass all checks
-      if (whitelistedUserIds.includes(bodyValue)) {
-        Logger.info(`Allowing whitelisted user ID: ${bodyValue}`);
-        continue;
-      }
-
-      // Block specific test user IDs
-      if (blockedTestUserIds.includes(bodyValue)) {
-        Logger.critical(`Blocked persistent test user ID in body.${field}`, {
-          value: bodyValue,
-          path: req.path,
-          method: req.method,
-          ip: req.ip
-        });
-
-        return res.status(400).json({
-          success: false,
-          error: 'This test user ID has been blocked. Please use a valid Typeform UUID.',
-          field: field,
-          requestId: req.requestId || `req_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`
-        });
-      }
-
-      // Block timestamp pattern user IDs (user_TIMESTAMP_RANDOM)
-      if (bodyValue && typeof bodyValue === 'string' && /^user_\d{13}_[a-z0-9]+$/.test(bodyValue)) {
-        Logger.critical(`Blocked timestamp-based user ID in body.${field}`, {
-          value: bodyValue,
-          path: req.path,
-          method: req.method,
-          ip: req.ip
-        });
-
-        return res.status(400).json({
-          success: false,
-          error: 'Auto-generated user IDs are not allowed. Please use a valid Typeform user ID.',
-          field: field,
-          requestId: req.requestId || `req_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`
-        });
-      }
-
-      if (bodyValue && typeof bodyValue === 'string' && bodyValue.startsWith('temp_')) {
-        Logger.critical(`Blocked temporary ID in body.${field}`, {
-          value: bodyValue,
-          path: req.path,
-          method: req.method,
-          ip: req.ip
-        });
-
-        return res.status(400).json({
-          success: false,
-          error: 'Temporary IDs are not allowed in production',
-          field: field,
-          requestId: req.requestId || `req_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`
-        });
-      }
-
-      // Block ANY non-UUID patterns that could be generated  
-      if (bodyValue && typeof bodyValue === 'string') {
-        // STRICT: Only allow valid UUIDs from Typeform
-        const uuidRegex = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
-        
-        if (!uuidRegex.test(bodyValue)) {
-          Logger.critical(`Blocked non-UUID user ID in body.${field}`, {
-            value: bodyValue,
-            path: req.path,
-            method: req.method,
-            ip: req.ip,
-            reason: 'Only Typeform UUIDs allowed'
-          });
-
 
 // --- CRITICAL: STRICT TYPEFORM UUID VALIDATION ---
 function validateTypeformUserId(userId) {
@@ -396,7 +300,6 @@ function validateTypeformUserId(userId) {
   Logger.debug(`SECURITY: Valid Typeform UUID validated: ${userId.substring(0, 8)}...`);
   return true;
 }
-
 
 // --- COMPREHENSIVE USER ID CORRUPTION DETECTION ---
 function detectUserIdCorruption(req, res, next) {
@@ -499,7 +402,6 @@ function detectUserIdCorruption(req, res, next) {
   next();
 }
 
-
 // Additional function to detect and prevent any dummy ID generation
 function preventDummyIdGeneration(functionName, originalId) {
   Logger.critical(`SECURITY ALERT: ${functionName} attempted to process non-UUID: ${originalId}`);
@@ -548,6 +450,108 @@ function monitorIdGeneration() {
 
 // Activate monitoring
 monitorIdGeneration();
+
+// ========================================
+// CRITICAL FIX: Global Temporary ID Blocking Middleware
+// ========================================
+if (BLOCK_TEMP_IDS) {
+  app.use((req, res, next) => {
+    // Block specific problematic test user ID and pattern
+    const blockedTestUserIds = [
+      'user_1759410448804_yzas7ml2p',
+      // Add other specific IDs to block here if necessary
+    ];
+
+    // Whitelist specific legitimate user IDs to bypass blocking rules
+    const whitelistedUserIds = [
+      'ianring_120768', // The user ID that should not be blocked
+      // Add other legitimate IDs here if necessary
+    ];
+
+    // Check for temporary IDs in common fields
+    const fieldsToCheck = ['userId', 'user_id', 'create_user_id'];
+
+    for (const field of fieldsToCheck) {
+      // Check in body
+      const bodyValue = req.body?.[field];
+
+      // Debug logging for legitimate user IDs
+      if (bodyValue === 'ianring_120768') {
+        Logger.info(`Processing legitimate user ID: ${bodyValue} in field: ${field}`);
+      }
+
+      // Allow whitelisted user IDs to bypass all checks
+      if (whitelistedUserIds.includes(bodyValue)) {
+        Logger.info(`Allowing whitelisted user ID: ${bodyValue}`);
+        continue;
+      }
+
+      // Block specific test user IDs
+      if (blockedTestUserIds.includes(bodyValue)) {
+        Logger.critical(`Blocked persistent test user ID in body.${field}`, {
+          value: bodyValue,
+          path: req.path,
+          method: req.method,
+          ip: req.ip
+        });
+
+        return res.status(400).json({
+          success: false,
+          error: 'This test user ID has been blocked. Please use a valid Typeform UUID.',
+          field: field,
+          requestId: req.requestId || `req_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`
+        });
+      }
+
+      // Block timestamp pattern user IDs (user_TIMESTAMP_RANDOM)
+      if (bodyValue && typeof bodyValue === 'string' && /^user_\d{13}_[a-z0-9]+$/.test(bodyValue)) {
+        Logger.critical(`Blocked timestamp-based user ID in body.${field}`, {
+          value: bodyValue,
+          path: req.path,
+          method: req.method,
+          ip: req.ip
+        });
+
+        return res.status(400).json({
+          success: false,
+          error: 'Auto-generated user IDs are not allowed. Please use a valid Typeform user ID.',
+          field: field,
+          requestId: req.requestId || `req_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`
+        });
+      }
+
+      if (bodyValue && typeof bodyValue === 'string' && bodyValue.startsWith('temp_')) {
+        Logger.critical(`Blocked temporary ID in body.${field}`, {
+          value: bodyValue,
+          path: req.path,
+          method: req.method,
+          ip: req.ip
+        });
+
+        return res.status(400).json({
+          success: false,
+          error: 'Temporary IDs are not allowed in production',
+          field: field,
+          requestId: req.requestId || `req_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`
+        });
+      }
+
+      // Block ANY non-UUID patterns that could be generated  
+      if (bodyValue && typeof bodyValue === 'string') {
+        // STRICT: Only allow valid UUIDs from Typeform
+        const uuidRegex = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
+        
+        if (!uuidRegex.test(bodyValue)) {
+          Logger.critical(`Blocked non-UUID user ID in body.${field}`, {
+            value: bodyValue,
+            path: req.path,
+            method: req.method,
+            ip: req.ip,
+            reason: 'Only Typeform UUIDs allowed'
+          });
+
+
+
 
 
 
