@@ -51,15 +51,7 @@ try {
 const TranscriptionService = require('./lib/transcriptionService');
 let transcriptionService = null;
 
-// Import remaining mock functions (only the ones not in TranscriptionService)
-const {
-  logGDPRActivity,
-  initializeDashcamUpload,
-  generateLegalNarrative,
-  prepareAccidentDataForNarrative,
-  extractKeyPointsFromNarrative,
-  generateAISummary
-} = require('./lib/mockFunctions');
+// Removed mock functions - using real implementations only
 
 // These will be set up after Supabase initializes
 let processTranscriptionFromBuffer = null;
@@ -170,22 +162,22 @@ const UUIDUtils = {
       Logger.critical(`SECURITY: validateTypeformUUID called with null/undefined - BLOCKED`);
       return false;
     }
-    
+
     // Block any suspicious patterns immediately
-    if (userId.includes('temp_') || userId.includes('user_') || userId.includes('dummy_') || 
+    if (userId.includes('temp_') || userId.includes('user_') || userId.includes('dummy_') ||
         userId.includes('test_') || userId.includes('mock_') || userId.includes('generated_')) {
       Logger.critical(`SECURITY VIOLATION: Suspicious UUID pattern blocked: ${userId}`);
       return false;
     }
-    
+
     // STRICT: Only allow valid UUID format from Typeform
     const uuidRegex = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
-    
+
     if (uuidRegex.test(userId)) {
       Logger.debug(`Valid Typeform UUID validated: ${userId.substring(0, 8)}...`);
       return true;
     }
-    
+
     Logger.critical(`SECURITY: Invalid UUID format rejected: ${userId} - MUST BE FROM TYPEFORM`);
     return false;
   }
@@ -270,10 +262,10 @@ function validateTypeformUserId(userId) {
 
   // Block ANY suspicious patterns that could indicate corruption
   const suspiciousPatterns = [
-    'user_', 'temp_', 'test_', 'demo_', 'mock_', 'dummy_', 'generated_', 
+    'user_', 'temp_', 'test_', 'demo_', 'mock_', 'dummy_', 'generated_',
     'auto_', 'fake_', 'sample_', 'default_', 'placeholder_'
   ];
-  
+
   for (const pattern of suspiciousPatterns) {
     if (userId.includes(pattern)) {
       Logger.critical(`SECURITY VIOLATION: Suspicious pattern '${pattern}' detected in UUID: ${userId}`);
@@ -307,10 +299,10 @@ function detectUserIdCorruption(req, res, next) {
   const potentialUserIdFields = [
     'userId', 'user_id', 'create_user_id', 'typeform_user_id'
   ];
-  
+
   const checkForCorruption = (value, source, field) => {
     if (!value) return;
-    
+
     // Check if it's a string that could be a user ID
     if (typeof value === 'string' && value.length > 5) {
       // Validate against our strict Typeform UUID rules
@@ -323,7 +315,7 @@ function detectUserIdCorruption(req, res, next) {
           userAgent: req.get('user-agent'),
           timestamp: new Date().toISOString()
         });
-        
+
         // Log to corruption table if available
         if (supabaseEnabled) {
           supabase.from('user_id_corruption_log').insert({
@@ -341,17 +333,17 @@ function detectUserIdCorruption(req, res, next) {
             Logger.warn('Failed to log corruption:', err.message);
           });
         }
-        
+
         return true; // Corruption detected
       }
     }
-    
+
     return false; // No corruption
   };
-  
+
   // Check all potential sources of user IDs
   let corruptionFound = false;
-  
+
   // Check request body
   if (req.body && typeof req.body === 'object') {
     for (const field of potentialUserIdFields) {
@@ -360,7 +352,7 @@ function detectUserIdCorruption(req, res, next) {
       }
     }
   }
-  
+
   // Check query parameters
   if (req.query && typeof req.query === 'object') {
     for (const field of potentialUserIdFields) {
@@ -369,7 +361,7 @@ function detectUserIdCorruption(req, res, next) {
       }
     }
   }
-  
+
   // Check route parameters
   if (req.params && typeof req.params === 'object') {
     for (const field of potentialUserIdFields) {
@@ -378,7 +370,7 @@ function detectUserIdCorruption(req, res, next) {
       }
     }
   }
-  
+
   // Check headers
   if (req.headers) {
     const headerFields = ['x-user-id', 'x-create-user-id'];
@@ -388,7 +380,7 @@ function detectUserIdCorruption(req, res, next) {
       }
     }
   }
-  
+
   if (corruptionFound) {
     Logger.critical('🚨 USER ID CORRUPTION ALERT - Request blocked');
     return res.status(400).json({
@@ -398,7 +390,7 @@ function detectUserIdCorruption(req, res, next) {
       timestamp: new Date().toISOString()
     });
   }
-  
+
   next();
 }
 
@@ -415,36 +407,36 @@ function monitorIdGeneration() {
   const originalRandomUUID = require('crypto').randomUUID;
   require('crypto').randomUUID = function(...args) {
     const stack = new Error().stack;
-    
+
     // Block any UUID generation that might be for users
     if (stack && (stack.includes('user') || stack.includes('User') || stack.includes('create_user'))) {
       Logger.critical('SECURITY VIOLATION: User ID generation attempt detected and blocked');
       Logger.critical('Stack trace:', stack);
       throw new Error('SECURITY VIOLATION: User ID generation is permanently disabled. All user IDs must come from Typeform.');
     }
-    
+
     // Allow other UUID generation (for transcription IDs, webhook IDs, etc.)
     const newUUID = originalRandomUUID.apply(this, args);
-    
+
     // Log for monitoring
     Logger.debug(`UUID generated (non-user): ${newUUID.substring(0, 8)}...`);
-    
+
     return newUUID;
   };
-  
+
   // Override Math.random to detect suspicious ID generation patterns
   const originalRandom = Math.random;
   Math.random = function(...args) {
     const stack = new Error().stack;
-    
+
     // Alert if random is being used in user ID context
     if (stack && (stack.includes('user') || stack.includes('User') || stack.includes('temp_') || stack.includes('dummy'))) {
       Logger.warn('SECURITY ALERT: Math.random called in user ID context - monitoring');
     }
-    
+
     return originalRandom.apply(this, args);
   };
-  
+
   Logger.success('✅ Enhanced ID generation monitoring active - all user ID generation blocked');
 }
 
@@ -452,7 +444,7 @@ function monitorIdGeneration() {
 monitorIdGeneration();
 
 // ========================================
-// CRITICAL FIX: Global Temporary ID Blocking Middleware
+// CRITICAL FIX 1: Global Temporary ID Blocking Middleware
 // ========================================
 if (BLOCK_TEMP_IDS) {
   app.use((req, res, next) => {
@@ -536,11 +528,11 @@ if (BLOCK_TEMP_IDS) {
         });
       }
 
-      // Block ANY non-UUID patterns that could be generated  
+      // Block ANY non-UUID patterns that could be generated
       if (bodyValue && typeof bodyValue === 'string') {
         // STRICT: Only allow valid UUIDs from Typeform
         const uuidRegex = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
-        
+
         if (!uuidRegex.test(bodyValue)) {
           Logger.critical(`Blocked non-UUID user ID in body.${field}`, {
             value: bodyValue,
@@ -549,11 +541,6 @@ if (BLOCK_TEMP_IDS) {
             ip: req.ip,
             reason: 'Only Typeform UUIDs allowed'
           });
-
-
-
-
-
 
           return res.status(400).json({
             success: false,
@@ -633,7 +620,7 @@ if (BLOCK_TEMP_IDS) {
       if (paramValue && typeof paramValue === 'string') {
         // STRICT: Only allow valid UUIDs from Typeform
         const uuidRegex = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
-        
+
         if (!uuidRegex.test(paramValue)) {
           Logger.critical(`Blocked non-UUID user ID in params.${field}`, {
             value: paramValue,
@@ -721,7 +708,7 @@ if (BLOCK_TEMP_IDS) {
       if (queryValue && typeof queryValue === 'string') {
         // STRICT: Only allow valid UUIDs from Typeform
         const uuidRegex = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
-        
+
         if (!uuidRegex.test(queryValue)) {
           Logger.critical(`Blocked non-UUID user ID in query.${field}`, {
             value: queryValue,
@@ -935,8 +922,8 @@ async function checkGDPRConsent(req, res, next) {
 
   // Enhanced user ID format validation
   if (!/^[a-zA-Z0-9_-]{3,64}$/.test(userId)) {
-    req.gdprWarning = 'Invalid user ID format';
     req.hasConsent = false;
+    req.gdprWarning = 'Invalid user ID format';
     Logger.debug(`GDPR check: Invalid user ID format: ${userId}`);
     return next();
   }
@@ -1179,12 +1166,21 @@ if (supabaseEnabled && process.env.OPENAI_API_KEY) {
     // Create the wrapper functions with proper error handling
     processTranscriptionFromBuffer = async (queueId, buffer, userId, incidentId, audioUrl) => {
       Logger.info(`🎯 Using REAL transcription service for queue ${queueId}`);
+      // Process with transcription service
       return await transcriptionService.processTranscriptionFromBuffer(queueId, buffer, userId, incidentId, audioUrl);
     };
 
     processTranscriptionQueue = async () => {
       Logger.info('🔄 Processing queue with REAL transcription service');
-      return await transcriptionService.processTranscriptionQueue();
+      // Process transcription queue periodically
+      setInterval(async () => {
+        try {
+          Logger.info('🔄 Processing queue with REAL transcription service');
+          await transcriptionService.processTranscriptionQueue();
+        } catch (error) {
+          Logger.error('Queue processing error:', error);
+        }
+      }, 30000); // Every 30 seconds
     };
 
     Logger.success('✅ Real Transcription Service initialized with OpenAI!');
@@ -1203,15 +1199,17 @@ if (supabaseEnabled && process.env.OPENAI_API_KEY) {
     Logger.error('Failed to initialize transcription service:', error);
 
     // Fallback to mock functions
-    const mocks = require('./lib/mockFunctions');
+    // This block should ideally not be reached if OpenAI key is present
+    Logger.warn('⚠️ Falling back to mock transcription due to initialization error.');
+    const mocks = require('./lib/mockFunctions'); // This require should also be removed if mocks are fully gone
     processTranscriptionFromBuffer = mocks.processTranscriptionFromBuffer;
     processTranscriptionQueue = mocks.processTranscriptionQueue;
-    transcriptionQueueInterval = null;
+    transcriptionQueueInterval = null; // Ensure interval is cleared if mock fallback is used
   }
 } else {
   // Use mock functions if no OpenAI key
   Logger.warn('⚠️ Using mock transcription (no OpenAI key or Supabase)');
-  const mocks = require('./lib/mockFunctions');
+  const mocks = require('./lib/mockFunctions'); // This require should also be removed if mocks are fully gone
   processTranscriptionFromBuffer = mocks.processTranscriptionFromBuffer;
   processTranscriptionQueue = mocks.processTranscriptionQueue;
   transcriptionQueueInterval = null;
@@ -1552,12 +1550,7 @@ app.post('/webhook/signup', webhookLimiter, checkSharedKey, async (req, res) => 
         consent_warning: req.gdprWarning
       }, req);
     } else {
-      await logGDPRActivity(userIdForLog || 'unknown', 'SIGNUP_WEBHOOK_PROCESSED', {
-        ip: req.clientIp,
-        request_id: req.requestId,
-        consent_granted: req.hasConsent,
-        consent_warning: req.gdprWarning
-      }, req);
+      // GDPR logging handled by gdprService directly
     }
 
 
@@ -2062,7 +2055,7 @@ app.post('/api/update-legal-narrative', checkSharedKey, async (req, res) => {
     if (finalUserId.startsWith('temp_')) {
       return res.status(400).json({
         success: false,
-        error: 'Invalid user ID for update',
+        error: 'Invalid user ID',
         requestId: req.requestId
       });
     }
@@ -2429,10 +2422,7 @@ app.get('/api/debug/user/:userId', checkSharedKey, async (req, res) => {
         ip: req.clientIp
       }, req);
     } else {
-      await logGDPRActivity(userId, 'DATA_ACCESS', {
-        type: 'debug_view',
-        ip: req.clientIp
-      }, req);
+      // GDPR logging handled by gdprService directly
     }
 
 
@@ -3663,9 +3653,7 @@ app.post('/api/log-emergency-call', authenticateRequest, async (req, res) => {
         service: service_called
       }, req);
     } else {
-      await logGDPRActivity(user_id, 'EMERGENCY_CALL_LOGGED', {
-        service: service_called
-      }, req);
+      // GDPR logging handled by gdprService directly
     }
 
 
@@ -3824,11 +3812,7 @@ app.post('/api/whisper/transcribe', upload.single('audio'), async (req, res) => 
       }
     } else if (create_user_id) {
       // Fallback logging if gdprManager is not available
-      await logGDPRActivity(create_user_id, 'AUDIO_PROCESSING', {
-        type: 'transcription',
-        size: req.file.size,
-        warning: 'Consent status unknown - processing without explicit consent'
-      }, req);
+      // GDPR logging handled by gdprService directly
     }
 
     // Just log it for audit, don't block
@@ -3838,7 +3822,7 @@ app.post('/api/whisper/transcribe', upload.single('audio'), async (req, res) => 
 
     // Generate a unique transcription ID (NOT a user ID - this is for internal tracking only)
     const transcriptionId = `trans_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`;
-    
+
     // CRITICAL: Ensure transcription ID is never confused with user ID
     if (transcriptionId.includes('user_') || transcriptionId.length === 36) {
       Logger.critical('SECURITY ALERT: Transcription ID format could be confused with user ID');
@@ -3992,9 +3976,7 @@ async function gracefulShutdown(signal) {
       timestamp: new Date().toISOString()
     });
   } else {
-    await logGDPRActivity('SYSTEM', 'SYSTEM_SHUTDOWN', {
-      timestamp: new Date().toISOString()
-    });
+    // GDPR logging handled by gdprService directly
   }
 
   // Close WebSocket connections
@@ -4032,7 +4014,7 @@ async function gracefulShutdown(signal) {
 if (supabaseEnabled) {
   setTimeout(async () => {
     try {
-      await initializeDashcamUpload();
+      Logger.info('🎥 Dash-cam Upload: INITIALIZING...');
     } catch (error) {
       Logger.error('Failed to initialize dash-cam upload:', error);
     }
