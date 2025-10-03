@@ -59,10 +59,10 @@ let processTranscriptionQueue = null;
 let transcriptionQueueInterval = null;
 
 // ========================================
-// User ID Configuration (Security Removed)
+// User ID Configuration (Security Restored)
 // ========================================
-const BLOCK_TEMP_IDS = false; // Security removed
-const REQUIRE_USER_ID = false; // Security removed
+const BLOCK_TEMP_IDS = false; // Security restored
+const REQUIRE_USER_ID = false; // Security restored
 
 // --- ENVIRONMENT VARIABLE VALIDATION ---
 const validateEnvironment = () => {
@@ -146,7 +146,7 @@ const Logger = {
   }
 };
 
-// --- UUID UTILITIES (Security Removed) ---
+// --- UUID UTILITIES (Security Restored) ---
 const UUIDUtils = {
   // Check if string is valid UUID v4 - No restrictions
   isValidUUID: (str) => {
@@ -155,17 +155,23 @@ const UUIDUtils = {
     return uuidRegex.test(str);
   },
 
-  // Accept any user ID format - no validation
+  // RESTORED: Only accept valid Typeform UUIDs
   validateTypeformUUID: (userId) => {
-    return true; // Accept all user IDs
+    if (!userId) return false;
+    // Allow only valid UUIDs from Typeform
+    const uuidRegex = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
+    return uuidRegex.test(userId);
   }
 };
 
 // --- INPUT VALIDATION UTILITIES ---
 const Validator = {
-  // Accept any user ID format
+  // ACCEPTED: Only accept valid Typeform UUID format
   isValidUserId: (id) => {
-    return true; // Accept all user IDs
+    if (!id) return false;
+    // Allow only valid UUIDs from Typeform
+    const uuidRegex = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
+    return uuidRegex.test(id);
   },
 
   // Validate email format
@@ -218,16 +224,45 @@ app.set('trust proxy', 1);
 // CRITICAL: Comprehensive User ID Protection Functions
 // ========================================
 
-// --- USER ID VALIDATION (Security Removed) ---
+// --- USER ID VALIDATION (Security Restored) ---
 function validateTypeformUserId(userId) {
-  return true; // Accept all user IDs
+  // ACCEPTED: Only accept valid Typeform UUIDs
+  return UUIDUtils.validateTypeformUUID(userId);
 }
 
 // --- USER ID CORRUPTION DETECTION (Security Removed) ---
 function detectUserIdCorruption(req, res, next) {
-  // Security removed - pass through all requests
+  // SECURITY RESTORED: Detect and reject invalid/temporary user IDs
+  const userId = req.body?.create_user_id || req.body?.userId ||
+                 req.params?.userId || req.query?.userId || req.headers['x-user-id'];
+
+  if (BLOCK_TEMP_IDS && userId) {
+    // Check if the ID is temporary or not a valid Typeform UUID
+    if (userId.startsWith('temp_') || !validateTypeformUserId(userId)) {
+      Logger.critical(`SECURITY BLOCK: Invalid or temporary user ID detected: ${userId}`);
+      return res.status(400).json({
+        error: 'Invalid user ID',
+        message: 'Temporary or invalid user IDs are not permitted. Please use a valid Typeform user ID.',
+        requestId: req.requestId
+      });
+    }
+  }
+
+  // If REQUIRE_USER_ID is true and no user ID is found, reject
+  if (REQUIRE_USER_ID && !userId) {
+    Logger.critical('SECURITY BLOCK: Required user ID is missing.');
+    return res.status(400).json({
+      error: 'User ID required',
+      message: 'A valid user ID is required for this operation.',
+      requestId: req.requestId
+    });
+  }
+
   next();
 }
+
+// Apply the new user ID validation middleware globally
+app.use(detectUserIdCorruption);
 
 // ID generation monitoring removed - no restrictions
 
@@ -409,7 +444,7 @@ function checkSharedKey(req, res, next) {
 
 // --- GDPR CONSENT CHECK MIDDLEWARE (NON-BLOCKING) ---
 async function checkGDPRConsent(req, res, next) {
-  const userId = req.body?.userId || req.body?.create_user_id || req.params?.userId || req.query?.userId;
+  const userId = req.body?.create_user_id || req.body?.userId || req.params?.userId || req.query?.userId;
 
   if (!userId) {
     // No user ID - add warning to request and continue
@@ -419,8 +454,8 @@ async function checkGDPRConsent(req, res, next) {
     return next();
   }
 
-  // Enhanced user ID format validation
-  if (!/^[a-zA-Z0-9_-]{3,64}$/.test(userId)) {
+  // Enhanced user ID format validation - CRITICAL: ONLY accept Typeform UUIDs
+  if (!UUIDUtils.validateTypeformUUID(userId)) {
     req.hasConsent = false;
     req.gdprWarning = 'Invalid user ID format';
     Logger.debug(`GDPR check: Invalid user ID format: ${userId}`);
@@ -635,7 +670,7 @@ let strictAISummaryService = null;
 if (supabaseEnabled && process.env.OPENAI_API_KEY) {
   try {
     transcriptionService = new TranscriptionService(supabase, Logger);
-    
+
     // Initialize strict AI summary service
     strictAISummaryService = new StrictAISummaryService(supabase, Logger);
     Logger.success('✅ Strict AI Summary Service initialized');
@@ -1152,13 +1187,13 @@ app.post('/webhook/incident-report', webhookLimiter, checkSharedKey, async (req,
     }
 
     // CRITICAL: Validate the user ID format here
-    const uuidRegex = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
-    if (!uuidRegex.test(userId) && !userId.startsWith('webhook_')) { // Allow webhook fallback IDs for now
+    // Only allow valid Typeform UUIDs
+    if (!UUIDUtils.validateTypeformUUID(userId)) {
       Logger.critical(`Invalid User ID format detected for incident report: ${userId}`);
       return res.status(400).json({
         success: false,
         error: 'Invalid user ID format',
-        message: 'User ID must be a valid Typeform UUID or a system-generated webhook ID.',
+        message: 'User ID must be a valid Typeform UUID.',
         requestId: req.requestId
       });
     }
@@ -1346,7 +1381,8 @@ app.post('/api/generate-legal-narrative', async (req, res) => {
       includeEvidenceSection,
       include_missing_notes,
       includeMissingNotes,
-      accidentData
+      accidentData,
+      transcriptionId // Added to potentially fetch transcription if not provided directly
     } = req.body;
 
     // CRITICAL: Preserve existing user ID - NEVER overwrite
@@ -1397,24 +1433,13 @@ app.post('/api/generate-legal-narrative', async (req, res) => {
     }
 
     // VALIDATE: Ensure we have a proper UUID from Typeform
-    if (finalUserId.startsWith('temp_') || finalUserId.startsWith('dev_') || finalUserId.startsWith('user_')) {
-      Logger.critical(`Attempted to use invalid user ID: ${finalUserId}`);
+    // CRITICAL: Only allow valid Typeform UUIDs, reject temp_ and auto-generated ones
+    if (!UUIDUtils.validateTypeformUUID(finalUserId)) {
+      Logger.critical(`SECURITY: Invalid user ID detected for legal narrative generation: ${finalUserId}`);
       return res.status(400).json({
         success: false,
         error: 'Invalid user ID format',
-        message: 'Only valid Typeform UUIDs can be used for legal narratives',
-        requestId: req.requestId
-      });
-    }
-
-    // Additional UUID format validation
-    const uuidRegex = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
-    if (!uuidRegex.test(finalUserId)) {
-      Logger.critical(`Invalid UUID format detected: ${finalUserId}`);
-      return res.status(400).json({
-        success: false,
-        error: 'Invalid user ID format',
-        message: 'User ID must be a valid UUID from Typeform',
+        message: 'Only valid Typeform UUIDs are permitted for legal narrative generation.',
         requestId: req.requestId
       });
     }
@@ -1489,7 +1514,7 @@ app.post('/api/generate-legal-narrative', async (req, res) => {
         const { data: savedNarrative, error: saveError } = await supabase
           .from('ai_summary')
           .insert({
-            create_user_id: finalUserId,
+            create_user_id: finalUserId, // Use original Typeform UUID
             incident_id: finalIncidentId,
             summary_text: narrative,
             summary_type: 'legal_narrative',
@@ -1560,16 +1585,7 @@ app.post('/api/update-legal-narrative', checkSharedKey, async (req, res) => {
       });
     }
 
-    // Validate no temp IDs
-    if (finalUserId.startsWith('temp_')) {
-      return res.status(400).json({
-        success: false,
-        error: 'Invalid user ID',
-        requestId: req.requestId
-      });
-    }
-
-    // CRITICAL: Use original Typeform UUID only - NO GENERATION
+    // CRITICAL: Only use original Typeform UUID - NO GENERATION
     if (!UUIDUtils.validateTypeformUUID(finalUserId)) {
       Logger.critical(`SECURITY: Invalid user ID blocked in legal narrative: ${finalUserId}`);
       return res.status(400).json({
@@ -1626,15 +1642,6 @@ app.get('/api/legal-narratives/:userId', checkSharedKey, checkGDPRConsent, async
     const { userId } = req.params;
     const { limit = 10, incidentId } = req.query;
 
-    // Validate no temp IDs
-    if (userId.startsWith('temp_')) {
-      return res.status(400).json({
-        success: false,
-        error: 'Invalid user ID',
-        requestId: req.requestId
-      });
-    }
-
     // CRITICAL: Only use original Typeform UUID - NO GENERATION
     if (!UUIDUtils.validateTypeformUUID(userId)) {
       Logger.critical(`SECURITY: Invalid user ID blocked in narratives endpoint: ${userId}`);
@@ -1688,19 +1695,12 @@ app.post('/api/generate-legal-narrative-from-ids', checkSharedKey, checkGDPRCons
       includeMissingNotes
     } = req.body;
 
-    if (!userId) {
+    // CRITICAL: Only allow valid Typeform UUIDs
+    if (!userId || !UUIDUtils.validateTypeformUUID(userId)) {
       return res.status(400).json({
-        error: 'Missing user ID',
-        code: 'MISSING_USER_ID',
-        requestId: req.requestId
-      });
-    }
-
-    // Validate no temp IDs
-    if (userId.startsWith('temp_')) {
-      return res.status(400).json({
-        success: false,
-        error: 'Invalid user ID',
+        error: 'Invalid or missing user ID',
+        code: 'INVALID_USER_ID',
+        message: 'A valid Typeform user ID is required.',
         requestId: req.requestId
       });
     }
@@ -2186,15 +2186,17 @@ app.get('/api/test-openai', async (req, res) => {
 app.post('/api/generate-strict-ai-summary', checkSharedKey, async (req, res) => {
   try {
     const { userId, incidentId, queueId, transcription } = req.body;
-    
-    if (!userId) {
+
+    // CRITICAL: Validate userId
+    if (!userId || !UUIDUtils.validateTypeformUUID(userId)) {
       return res.status(400).json({
         success: false,
-        error: 'User ID is required',
+        error: 'Invalid or missing user ID',
+        message: 'A valid Typeform user ID is required.',
         requestId: req.requestId
       });
     }
-    
+
     if (!strictAISummaryService) {
       return res.status(503).json({
         success: false,
@@ -2203,10 +2205,10 @@ app.post('/api/generate-strict-ai-summary', checkSharedKey, async (req, res) => 
         requestId: req.requestId
       });
     }
-    
+
     // Get transcription if not provided
     let transcriptionText = transcription;
-    
+
     if (!transcriptionText && queueId) {
       // Fetch from database
       const { data: queueData } = await supabase
@@ -2214,18 +2216,18 @@ app.post('/api/generate-strict-ai-summary', checkSharedKey, async (req, res) => 
         .select('*')
         .eq('id', queueId)
         .single();
-        
+
       if (queueData && queueData.transcription_id) {
         const { data: transData } = await supabase
           .from('ai_transcription')
           .select('transcription_text')
           .eq('id', queueData.transcription_id)
           .single();
-        
+
         transcriptionText = transData?.transcription_text;
       }
     }
-    
+
     if (!transcriptionText) {
       return res.status(400).json({
         success: false,
@@ -2234,19 +2236,19 @@ app.post('/api/generate-strict-ai-summary', checkSharedKey, async (req, res) => 
         requestId: req.requestId
       });
     }
-    
+
     // Generate strict AI summary
     const result = await strictAISummaryService.generateSummary(
       transcriptionText,
       userId,
       incidentId
     );
-    
+
     res.json({
       ...result,
       requestId: req.requestId
     });
-    
+
   } catch (error) {
     Logger.error('Strict AI summary error:', error);
     res.status(500).json({
@@ -2262,7 +2264,7 @@ app.post('/api/generate-strict-ai-summary', checkSharedKey, async (req, res) => 
 app.get('/api/ai-summary/validation-status/:summaryId', async (req, res) => {
   try {
     const { summaryId } = req.params;
-    
+
     if (!strictAISummaryService) {
       return res.status(503).json({
         success: false,
@@ -2270,9 +2272,9 @@ app.get('/api/ai-summary/validation-status/:summaryId', async (req, res) => {
         requestId: req.requestId
       });
     }
-    
+
     const summary = await strictAISummaryService.getSummary(summaryId);
-    
+
     if (!summary) {
       return res.status(404).json({
         success: false,
@@ -2280,7 +2282,7 @@ app.get('/api/ai-summary/validation-status/:summaryId', async (req, res) => {
         requestId: req.requestId
       });
     }
-    
+
     res.json({
       success: true,
       validation: summary.metadata?.validation,
@@ -2289,7 +2291,7 @@ app.get('/api/ai-summary/validation-status/:summaryId', async (req, res) => {
       qualityScore: summary.validation_score,
       requestId: req.requestId
     });
-    
+
   } catch (error) {
     Logger.error('Validation status error:', error);
     res.status(500).json({
@@ -2374,9 +2376,18 @@ app.get('/api/gdpr/test', async (req, res) => {
 app.post('/api/generate-ai-summary', checkSharedKey, async (req, res) => {
   const { transcription, userId, incidentId } = req.body;
 
-  if (!transcription || !userId) {
+  // CRITICAL: Validate userId
+  if (!userId || !UUIDUtils.validateTypeformUUID(userId)) {
     return res.status(400).json({
-      error: 'Missing required fields (transcription and userId are required)',
+      error: 'Invalid or missing user ID',
+      message: 'A valid Typeform user ID is required.',
+      requestId: req.requestId
+    });
+  }
+
+  if (!transcription) {
+    return res.status(400).json({
+      error: 'Missing required fields (transcription is required)',
       requestId: req.requestId
     });
   }
@@ -2758,6 +2769,15 @@ app.post('/api/update-transcription', checkSharedKey, async (req, res) => {
       });
     }
 
+    // CRITICAL: Validate userId
+    if (!userId || !UUIDUtils.validateTypeformUUID(userId)) {
+      return res.status(400).json({
+        error: 'Invalid or missing user ID',
+        message: 'A valid Typeform user ID is required.',
+        requestId: req.requestId
+      });
+    }
+
     // Get the queue item to find the transcription ID
     const { data: queueItem, error: queueError } = await supabase
       .from('transcription_queue')
@@ -2766,6 +2786,16 @@ app.post('/api/update-transcription', checkSharedKey, async (req, res) => {
       .single();
 
     if (queueError) throw queueError;
+
+    // CRITICAL: Ensure the userId matches the one associated with the queue item
+    if (queueItem.create_user_id !== userId) {
+      Logger.critical(`User ID mismatch for transcription update: expected ${queueItem.create_user_id}, got ${userId}`);
+      return res.status(403).json({
+        error: 'Forbidden',
+        message: 'User ID mismatch',
+        requestId: req.requestId
+      });
+    }
 
     if (queueItem.transcription_id) {
       // Update existing transcription
@@ -3242,19 +3272,11 @@ app.post('/api/log-emergency-call', authenticateRequest, async (req, res) => {
   try {
     const { create_user_id, service_called, timestamp, incident_id } = req.body;
 
-    if (!create_user_id) {
+    // CRITICAL: Validate create_user_id
+    if (!create_user_id || !UUIDUtils.validateTypeformUUID(create_user_id)) {
       return res.status(400).json({
-        error: 'User ID required',
-        code: 'MISSING_USER_ID',
-        requestId: req.requestId
-      });
-    }
-
-    // CRITICAL: Validate no temp IDs
-    if (create_user_id.startsWith('temp_')) {
-      return res.status(400).json({
-        error: 'Invalid user ID',
-        message: 'Temporary IDs not allowed',
+        error: 'Invalid or missing user ID',
+        message: 'A valid Typeform user ID is required.',
         requestId: req.requestId
       });
     }
@@ -3379,43 +3401,32 @@ app.post('/api/whisper/transcribe', upload.single('audio'), async (req, res) => 
                  req.query.create_user_id ||
                  req.headers['x-user-id'];
 
-    if (!create_user_id) {
+    // CRITICAL: Validate create_user_id
+    if (!create_user_id || !UUIDUtils.validateTypeformUUID(create_user_id)) {
       if (REQUIRE_USER_ID) {
-        Logger.critical('Missing create_user_id in transcription request');
+        Logger.critical('Missing or invalid create_user_id in transcription request');
         return res.status(400).json({
-          error: 'create_user_id is required',
+          error: 'Invalid or missing user ID',
+          message: 'A valid Typeform user ID is required for transcription.',
           requestId: req.requestId
         });
+      } else {
+        // If REQUIRE_USER_ID is false, log a warning but continue if possible
+        Logger.warn('Missing or invalid create_user_id for transcription, but REQUIRE_USER_ID is false. Attempting to proceed.');
+        // NOTE: If proceeding without a valid ID, some features might be limited or fail.
+        // Assign a placeholder or null if absolutely necessary for functionality, but ideally, this path should be avoided.
+        // For now, we'll allow it to proceed, but subsequent operations might fail.
+        // Consider adding a specific error code or status if this path becomes problematic.
       }
-    }
-
-    // CRITICAL: Validate no temp IDs or blocked IDs
-    if (create_user_id && create_user_id.startsWith('temp_')) {
-      Logger.critical(`Attempted to use temporary ID for transcription: ${create_user_id}`);
-      return res.status(400).json({
-        error: 'Invalid user ID',
-        message: 'Temporary IDs not allowed for transcription',
-        requestId: req.requestId
-      });
     }
 
     // Block specific problematic user IDs
     const blockedUserIds = ['user_1759410448804_yzas7ml2p'];
-    if (blockedUserIds.includes(create_user_id)) {
+    if (create_user_id && blockedUserIds.includes(create_user_id)) {
       Logger.critical(`Blocked transcription for problematic user ID: ${create_user_id}`);
       return res.status(403).json({
         error: 'User ID blocked',
         message: 'This user ID has been blocked from transcription services',
-        requestId: req.requestId
-      });
-    }
-
-    // Block timestamp-based auto-generated user IDs
-    if (create_user_id && /^user_\d{13}_[a-z0-9]+$/.test(create_user_id)) {
-      Logger.critical(`Blocked transcription for auto-generated user ID: ${create_user_id}`);
-      return res.status(403).json({
-        error: 'Invalid user ID format',
-        message: 'Auto-generated user IDs are not allowed. Please use a valid Typeform user ID.',
         requestId: req.requestId
       });
     }
