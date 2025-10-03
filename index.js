@@ -1765,6 +1765,9 @@ app.post('/webhook/incident-report', webhookLimiter, checkSharedKey, async (req,
       });
     }
 
+    // Log the raw webhook data for debugging
+    Logger.info('Raw webhook data received:', JSON.stringify(req.body, null, 2));
+
     // Extract the data from Typeform webhook
     const webhookData = req.body;
     const formResponse = webhookData.form_response || webhookData;
@@ -1785,6 +1788,19 @@ app.post('/webhook/incident-report', webhookLimiter, checkSharedKey, async (req,
     } else if (formResponse.hidden?.user_id) {
       userId = formResponse.hidden.user_id;
       Logger.info(`Found user ID in hidden.user_id: ${userId}`);
+    } else if (formResponse.calculated?.create_user_id) {
+      userId = formResponse.calculated.create_user_id;
+      Logger.info(`Found user ID in calculated fields: ${userId}`);
+    } else {
+      // Try to extract from any field that might contain the user ID
+      const allAnswers = formResponse.answers || [];
+      for (const answer of allAnswers) {
+        if (answer.field?.ref === 'create_user_id' || answer.field?.id === 'create_user_id') {
+          userId = answer.text || answer.email || answer[answer.type];
+          Logger.info(`Found user ID in answers: ${userId}`);
+          break;
+        }
+      }
     }
 
     // CRITICAL: Never generate user IDs - MUST come from Typeform
@@ -1870,6 +1886,8 @@ app.post('/webhook/incident-report', webhookLimiter, checkSharedKey, async (req,
 
     // CRITICAL: Actually INSERT the data into the database
     Logger.critical('INSERTING incident report into database...');
+    Logger.critical(`Data to insert has ${Object.keys(incidentData).length} fields`);
+    Logger.critical('Sample fields:', Object.keys(incidentData).slice(0, 10));
 
     if (supabaseEnabled) {
       const { data: insertedReport, error: insertError } = await supabase
@@ -1880,6 +1898,8 @@ app.post('/webhook/incident-report', webhookLimiter, checkSharedKey, async (req,
 
       if (insertError) {
         Logger.critical(`Database insert error: ${insertError.message}`);
+        Logger.critical(`Error details:`, JSON.stringify(insertError, null, 2));
+        Logger.critical(`Data being inserted:`, JSON.stringify(incidentData, null, 2));
 
         // Try to save to a backup table for recovery
         await supabase
@@ -2871,6 +2891,51 @@ app.get('/api/process-queue-now', checkSharedKey, async (req, res) => {
       await processTranscriptionQueue();
     }
     res.json({
+
+
+// ========================================
+// DEBUG WEBHOOK ENDPOINT FOR TYPEFORM TESTING
+// ========================================
+app.post('/webhook/debug', async (req, res) => {
+  const timestamp = new Date().toISOString();
+  
+  Logger.info('=== DEBUG WEBHOOK RECEIVED ===');
+  Logger.info('Timestamp:', timestamp);
+  Logger.info('Headers:', JSON.stringify(req.headers, null, 2));
+  Logger.info('Body:', JSON.stringify(req.body, null, 2));
+  Logger.info('Query:', JSON.stringify(req.query, null, 2));
+  Logger.info('================================');
+
+  // Store in database for analysis if available
+  if (supabaseEnabled) {
+    try {
+      await supabase.from('webhook_debug_log').insert({
+        timestamp: timestamp,
+        headers: req.headers,
+        body: req.body,
+        query: req.query,
+        user_agent: req.get('user-agent'),
+        ip: req.ip
+      });
+    } catch (error) {
+      Logger.warn('Failed to store debug webhook in database:', error.message);
+    }
+  }
+
+  res.json({
+    success: true,
+    message: 'Debug webhook received and logged',
+    timestamp: timestamp,
+    bodyKeys: Object.keys(req.body || {}),
+    hasFormResponse: !!(req.body?.form_response),
+    hasHidden: !!(req.body?.form_response?.hidden),
+    hasAnswers: !!(req.body?.form_response?.answers),
+    requestId: req.requestId
+  });
+});
+
+Logger.info('✅ Debug webhook endpoint registered at /webhook/debug');
+
       success: true,
       message: 'Queue processing triggered',
       timestamp: new Date().toISOString(),
@@ -2882,6 +2947,147 @@ app.get('/api/process-queue-now', checkSharedKey, async (req, res) => {
       error: 'Failed to process queue',
       message: error.message,
       details: error.stack,
+
+
+// ========================================
+// DEBUG ENDPOINT TO CHECK INCIDENT REPORTS
+// ========================================
+app.get('/api/debug/incident-reports', checkSharedKey, async (req, res) => {
+  if (!supabaseEnabled) {
+    return res.status(503).json({
+      error: 'Service not configured',
+      requestId: req.requestId
+    });
+  }
+
+  try {
+    const { limit = 10, userId } = req.query;
+
+    let query = supabase
+      .from('incident_reports')
+      .select('*')
+      .order('created_at', { ascending: false })
+      .limit(parseInt(limit));
+
+    if (userId) {
+      query = query.eq('create_user_id', userId);
+    }
+
+    const { data, error } = await query;
+
+    if (error) {
+      Logger.error('Error fetching incident reports:', error);
+      throw error;
+    }
+
+    // Also check for webhook failures
+    const { data: failures, error: failError } = await supabase
+      .from('webhook_failures')
+      .select('*')
+      .eq('endpoint', '/webhook/incident-report')
+      .order('created_at', { ascending: false })
+      .limit(5);
+
+    res.json({
+      success: true,
+      incident_reports: data || [],
+      count: data?.length || 0,
+      recent_failures: failures || [],
+      failure_count: failures?.length || 0,
+      timestamp: new Date().toISOString(),
+      requestId: req.requestId
+    });
+
+
+// ========================================
+// TEST ENDPOINT TO SIMULATE TYPEFORM INCIDENT WEBHOOK
+// ========================================
+app.post('/test/incident-webhook', checkSharedKey, async (req, res) => {
+  Logger.info('=== TESTING INCIDENT WEBHOOK ===');
+  
+  // Create a mock Typeform webhook payload
+  const testPayload = {
+    event_id: 'test_' + Date.now(),
+    event_type: 'form_response',
+    form_response: {
+      form_id: 'test_form',
+      token: 'test_token_' + Date.now(),
+      landed_at: new Date().toISOString(),
+      submitted_at: new Date().toISOString(),
+      hidden: {
+        create_user_id: req.body.test_user_id || 'test_user_' + Date.now()
+      },
+      calculated: {
+        score: 0
+      },
+      answers: [
+        {
+          field: { id: 'field_1', ref: 'driver_name', type: 'short_text' },
+          type: 'text',
+          text: 'Test Driver'
+        },
+        {
+          field: { id: 'field_2', ref: 'incident_location', type: 'short_text' },
+          type: 'text',
+          text: 'Test Location, Test City'
+        },
+        {
+          field: { id: 'field_3', ref: 'incident_description', type: 'long_text' },
+          type: 'text',
+          text: 'This is a test incident report generated for debugging purposes.'
+        }
+      ]
+    }
+  };
+
+  Logger.info('Test payload created:', JSON.stringify(testPayload, null, 2));
+
+  try {
+    // Make internal request to incident report webhook
+    const response = await axios.post(`http://localhost:${PORT || 5000}/webhook/incident-report`, testPayload, {
+      headers: {
+        'Content-Type': 'application/json',
+        'X-Api-Key': process.env.ZAPIER_SHARED_KEY
+      }
+    });
+
+    Logger.info('Internal webhook response:', response.data);
+
+    res.json({
+      success: true,
+      message: 'Test incident webhook sent successfully',
+      test_payload: testPayload,
+      webhook_response: response.data,
+      requestId: req.requestId
+    });
+
+  } catch (error) {
+    Logger.error('Test webhook error:', error);
+    res.status(500).json({
+      success: false,
+      error: 'Test webhook failed',
+      details: error.message,
+      test_payload: testPayload,
+      requestId: req.requestId
+    });
+  }
+});
+
+Logger.info('✅ Test incident webhook endpoint registered at /test/incident-webhook');
+
+
+  } catch (error) {
+    Logger.error('Debug incident reports error:', error);
+    res.status(500).json({
+      error: 'Failed to fetch incident reports',
+      details: error.message,
+      requestId: req.requestId
+    });
+  }
+});
+
+Logger.info('✅ Debug incident reports endpoint registered at /api/debug/incident-reports');
+
       requestId: req.requestId
     });
   }
