@@ -2913,7 +2913,7 @@ app.get('/api/process-queue-now', checkSharedKey, async (req, res) => {
 // ========================================
 app.post('/webhook/debug', async (req, res) => {
   const timestamp = new Date().toISOString();
-  
+
   Logger.info('=== DEBUG WEBHOOK RECEIVED ===');
   Logger.info('Timestamp:', timestamp);
   Logger.info('Headers:', JSON.stringify(req.headers, null, 2));
@@ -3000,14 +3000,24 @@ app.get('/api/debug/incident-reports', checkSharedKey, async (req, res) => {
       timestamp: new Date().toISOString(),
       requestId: req.requestId
     });
+  } catch (error) {
+    Logger.error('Debug incident reports error:', error);
+    res.status(500).json({
+      error: 'Failed to fetch incident reports',
+      details: error.message,
+      requestId: req.requestId
+    });
+  }
+});
 
+Logger.info('✅ Debug incident reports endpoint registered at /api/debug/incident-reports');
 
 // ========================================
 // TEST ENDPOINT TO SIMULATE TYPEFORM INCIDENT WEBHOOK
 // ========================================
 app.post('/test/incident-webhook', checkSharedKey, async (req, res) => {
   Logger.info('=== TESTING INCIDENT WEBHOOK ===');
-  
+
   // Create a mock Typeform webhook payload
   const testPayload = {
     event_id: 'test_' + Date.now(),
@@ -3837,7 +3847,7 @@ app.get('/transcribe.html', (req, res) => {
   res.redirect(redirectUrl);
 });
 
-// --- MAIN ROUTES ---
+// --- MAINROUTES ---
 app.get('/status', (req, res) => {
   const htmlContent = `<!DOCTYPE html>
 <html lang="en">
