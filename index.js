@@ -802,17 +802,75 @@ const apiLimiter = rateLimit({
   }
 });
 
-// FIXED: Define webhookLimiter for specific webhook endpoints
+// ENHANCED: Define webhookLimiter with Typeform IP whitelisting and increased limits
 const webhookLimiter = rateLimit({
   windowMs: 15 * 60 * 1000, // 15 minutes
-  max: 50, // Allow 50 webhook requests per window
+  max: 200, // Increased limit for webhook requests
   message: 'Too many webhook requests, please try again later.',
   standardHeaders: true,
   legacyHeaders: false,
   trustProxy: 1,
   skip: (req) => {
     // Skip rate limiting for health checks
-    return req.path === '/health';
+    if (req.path === '/health') {
+      return true;
+    }
+
+    // Known Typeform IP ranges (as of 2024)
+    const typeformIPs = [
+      '35.156.191.13',
+      '35.157.215.205',
+      '52.57.102.75',
+      '3.123.146.239',
+      '18.194.109.39',
+      '18.196.85.34',
+      // Typeform uses AWS EU-West-1, these are common ranges
+      '52.208.0.0/13',
+      '54.228.0.0/16',
+      '46.137.0.0/17'
+    ];
+
+    // Check if request has Typeform signature (legitimate Typeform request)
+    const typeformSignature = req.headers['typeform-signature'];
+    if (typeformSignature) {
+      Logger.debug('Skipping rate limit for Typeform webhook with signature');
+      return true;
+    }
+
+    // Check User-Agent for Typeform
+    const userAgent = req.get('user-agent') || '';
+    if (userAgent.toLowerCase().includes('typeform')) {
+      Logger.debug('Skipping rate limit for Typeform user agent');
+      return true;
+    }
+
+    // Get client IP
+    const clientIP = req.ip || req.connection?.remoteAddress || req.headers['x-forwarded-for']?.split(',')[0].trim();
+    
+    // Simple IP check for exact matches
+    if (typeformIPs.includes(clientIP)) {
+      Logger.debug(`Skipping rate limit for Typeform IP: ${clientIP}`);
+      return true;
+    }
+
+    // For development/testing - allow localhost and internal IPs
+    if (process.env.NODE_ENV !== 'production') {
+      if (clientIP === '127.0.0.1' || clientIP === '::1' || clientIP?.startsWith('192.168.') || clientIP?.startsWith('10.')) {
+        return true;
+      }
+    }
+
+    return false;
+  },
+  // Custom key generator to be more lenient with Typeform
+  keyGenerator: (req) => {
+    const typeformSignature = req.headers['typeform-signature'];
+    if (typeformSignature) {
+      // Use form ID from body for Typeform requests to allow higher limits per form
+      const formId = req.body?.form_response?.form_id || 'typeform-unknown';
+      return `typeform-${formId}`;
+    }
+    return req.ip;
   }
 });
 
