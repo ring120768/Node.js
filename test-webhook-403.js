@@ -4,10 +4,11 @@
 const axios = require('axios');
 
 async function testWebhookEndpoints() {
-  console.log('🔍 TYPEFORM WEBHOOK 403 DEBUGGING');
+  console.log('🔍 TYPEFORM WEBHOOK 403 DEBUGGING - v4.4.0');
   console.log('='.repeat(60));
 
-  const serverUrl = 'https://2b2332c8-c54b-439a-83d4-6ade0f4c00ed-00-28r3ot5btrzk1.spock.replit.dev';
+  // Get current Replit URL dynamically
+  const serverUrl = process.env.REPL_URL || 'http://0.0.0.0:3000';
   const apiKey = process.env.API_KEY;
 
   console.log(`Testing server: ${serverUrl}`);
@@ -20,10 +21,25 @@ async function testWebhookEndpoints() {
     console.log('✅ Server is healthy');
     console.log('   Version:', health.data.version);
     console.log('   Supabase:', health.data.services.supabase ? '✅' : '❌');
-    console.log('   Temp ID Blocking:', health.data.fixes.temp_id_blocking);
+    console.log('   GDPR Status:', health.data.fixes.gdpr_removal || 'Not specified');
+    console.log('   Webhook Auth:', health.data.fixes.webhook_endpoints || 'Not specified');
+    console.log('   Rate Limiting:', health.data.fixes.rate_limiting || 'Not specified');
   } catch (error) {
     console.error('❌ Server health check failed:', error.message);
+    console.error('   Make sure your server is running on port 3000');
     return;
+  }
+
+  // Test 1.5: Test webhook configuration endpoint
+  console.log('\n1.5. Testing webhook configuration...');
+  try {
+    const config = await axios.get(`${serverUrl}/webhook/config-test`, { timeout: 5000 });
+    console.log('✅ Webhook configuration accessible');
+    console.log('   Auth Required:', config.data.config.api_key_required);
+    console.log('   Temp ID Blocking:', config.data.config.temp_id_blocking);
+    console.log('   Webhook URL:', config.data.instructions.typeform_webhook_url);
+  } catch (error) {
+    console.error('❌ Webhook config test failed:', error.message);
   }
 
   // Test 2: Test webhook without auth (should work for Typeform)
