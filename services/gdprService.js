@@ -22,7 +22,7 @@ class GDPRService {
       const { data, error } = await this.supabase
         .from('user_signup')
         .select('consent_given, consent_date')
-        .eq('user_id', userId)
+        .eq('create_user_id', userId)
         .single();
 
       if (error || !data) {
@@ -78,7 +78,7 @@ class GDPRService {
       const { data: userInfo } = await this.supabase
         .from('user_signup')
         .select('*')
-        .eq('user_id', userId)
+        .eq('create_user_id', userId)
         .single();
 
       if (userInfo) {
@@ -89,7 +89,7 @@ class GDPRService {
       const { data: incidents } = await this.supabase
         .from('incident_reports')
         .select('*')
-        .eq('user_id', userId);
+        .eq('create_user_id', userId);
 
       if (incidents) {
         userData.incident_reports = incidents;
@@ -99,7 +99,7 @@ class GDPRService {
       const { data: transcriptions } = await this.supabase
         .from('ai_transcription')
         .select('*')
-        .eq('user_id', userId);
+        .eq('create_user_id', userId);
 
       if (transcriptions) {
         userData.transcriptions = transcriptions;
@@ -109,7 +109,7 @@ class GDPRService {
       const { data: summaries } = await this.supabase
         .from('ai_summary')
         .select('*')
-        .eq('user_id', userId);
+        .eq('create_user_id', userId);
 
       if (summaries) {
         userData.ai_summaries = summaries;
@@ -119,7 +119,7 @@ class GDPRService {
       const { data: vehicles } = await this.supabase
         .from('additional_vehicles')
         .select('*')
-        .eq('user_id', userId);
+        .eq('create_user_id', userId);
 
       if (vehicles) {
         userData.additional_vehicles = vehicles;
@@ -129,7 +129,7 @@ class GDPRService {
       const { data: witnesses } = await this.supabase
         .from('witness_reports')
         .select('*')
-        .eq('user_id', userId);
+        .eq('create_user_id', userId);
 
       if (witnesses) {
         userData.witness_reports = witnesses;
@@ -139,7 +139,7 @@ class GDPRService {
       const { data: images } = await this.supabase
         .from('incident_images')
         .select('*')
-        .eq('user_id', userId);
+        .eq('create_user_id', userId);
 
       if (images) {
         userData.incident_images = images;

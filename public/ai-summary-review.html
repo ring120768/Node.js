@@ -423,7 +423,7 @@
                 localStorage.setItem('create_user_id', state.userId);
                 sessionStorage.setItem('create_user_id', state.userId);
             }
-            
+
             if (state.incidentId) {
                 localStorage.setItem('current_incident_id', state.incidentId);
                 sessionStorage.setItem('current_incident_id', state.incidentId);
@@ -501,12 +501,12 @@
 
                 // Build parameters for going back
                 const params = new URLSearchParams();
-                
+
                 if (state.userId) {
                     params.append('userId', state.userId);
                     params.append('create_user_id', state.userId);
                 }
-                
+
                 if (state.queueId) {
                     params.append('queueId', state.queueId);
                     params.append('queue_id', state.queueId);
@@ -547,19 +547,19 @@
 
             // Build parameters for declaration page
             const params = new URLSearchParams();
-            
+
             // Always include user ID (required by declaration page)
             if (state.userId) {
                 params.append('create_user_id', state.userId);
                 params.append('user_id', state.userId);
             }
-            
+
             // Include incident ID if available
             if (state.incidentId) {
                 params.append('incident_report_id', state.incidentId);
                 params.append('incident_id', state.incidentId);
             }
-            
+
             // Add operation and status flags
             params.append('operation', 'final_consent');
             params.append('status', 'ai_summary_approved');
@@ -591,7 +591,7 @@
                 // Real redirect in production
                 const redirectUrl = `/declaration.html?${params.toString()}`;
                 console.log('✅ Redirecting to:', redirectUrl);
-                
+
                 setTimeout(() => {
                     window.location.href = redirectUrl;
                 }, 500);

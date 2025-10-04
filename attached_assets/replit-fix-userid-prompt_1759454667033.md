@@ -1,0 +1,107 @@
+# CRITICAL DATA INTEGRITY FIX REQUIRED
+
+Our application uses `create_user_id` (a UUID from Typeform) as the primary identifier linking all user data in Supabase. There is code somewhere that's corrupting this process by creating dummy usernames or alternative user identifiers.
+
+## TASK 1 - SEARCH AND IDENTIFY
+
+Search the entire codebase for ALL instances where:
+
+### 1. Dummy, test, or placeholder user data is being created. Look for patterns like:
+- "dummy", "test", "placeholder", "temp", "default" in variable names or values
+- Hard-coded user IDs or usernames
+- Random username generation
+- `UUID.v4()` or `crypto.randomUUID()` being used to create user IDs that should come from Typeform
+- Any fallback user creation logic
+
+### 2. Places where `create_user_id` is NOT being properly used as the user identifier. Search for:
+- `userId`, `user_id`, `userID`, or similar variables that are NOT sourced from `create_user_id`
+- Database queries using a different identifier than `create_user_id`
+- Webhook handlers that might be creating or modifying user IDs
+- Any code that transforms, replaces, or overrides the original `create_user_id`
+
+### 3. Specifically check these files and patterns:
+- `index.js` (main server file) - look for user creation/modification logic
+- `/webhook/*` endpoints - especially signup webhooks
+- `mockFunctions.js` - may contain test user generation
+- Any INSERT or UPDATE queries to `user_signup` table
+- Any code that generates UUIDs for users instead of using Typeform's `create_user_id`
+- `constants.js` for any default user values
+- Migration scripts that might create test users
+
+## TASK 2 - ERADICATE AND FIX
+
+For each instance found:
+
+### 1. If it's creating dummy/test users:
+- **DELETE** the code entirely if it's test/development code
+- If it's a fallback, **REPLACE** with proper error handling that rejects the request instead of creating dummy data
+
+### 2. If it's using wrong user identifier:
+- **REPLACE** with proper `create_user_id` from Typeform webhook
+- Ensure ALL database operations use `create_user_id` as the primary key
+
+### 3. Ensure the following flow is maintained:
+```
+Typeform sends create_user_id → 
+Webhook receives and validates it → 
+All subsequent operations use this exact ID → 
+No transformation, no fallbacks, no dummy data
+```
+
+## TASK 3 - VALIDATION
+
+Add validation to ensure:
+- `create_user_id` is ALWAYS a valid UUID
+- Reject any requests without a valid `create_user_id` from Typeform
+- Log errors when `create_user_id` is missing but NEVER create dummy data
+
+## SPECIFIC CODE PATTERNS TO REMOVE
+
+```javascript
+// REMOVE patterns like these:
+userId = userId || generateDummyUser()
+if (!userId) { userId = 'test-' + Date.now() }
+const userId = uuid.v4() // Should be from Typeform
+userId = 'dummy-' + Math.random()
+```
+
+- Any INSERT INTO `user_signup` that doesn't use the original `create_user_id`
+- Mock user creation in development/test code that could run in production
+- Any transformation of the original UUID format
+
+## OUTPUT REQUIREMENTS
+
+Please search comprehensively and show me:
+
+1. **Every file and line number** where dummy user creation occurs
+2. **Every place** where `user_id` is derived from something OTHER than `create_user_id`
+3. **The exact code changes** needed to fix each instance
+
+Format your response as:
+```
+FILE: [filename]
+LINE: [line number]
+ISSUE: [description of problem]
+CURRENT CODE: [the problematic code]
+FIXED CODE: [the corrected code]
+```
+
+## CRITICAL NOTES
+
+- This is critical for data integrity in a legal system
+- We cannot have orphaned data or mismatched user records
+- Every piece of user data MUST be traceable back to the original Typeform `create_user_id`
+- No exceptions, no fallbacks, no dummy data in production
+
+## ADDITIONAL SEARCHES
+
+Also search for these specific terms to ensure comprehensive coverage:
+- `generateUser`
+- `createUser`
+- `newUser`
+- `defaultUser`
+- `testUser`
+- `Math.random()`
+- `Date.now()` (when used for user ID generation)
+- `'user-'` or `"user-"` (string prefixes for IDs)
+- Any UUID generation not directly from webhook data

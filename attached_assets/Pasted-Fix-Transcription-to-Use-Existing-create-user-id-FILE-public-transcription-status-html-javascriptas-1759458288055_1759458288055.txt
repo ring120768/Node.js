@@ -1,0 +1,60 @@
+Fix Transcription to Use Existing create_user_id
+FILE: public/transcription-status.html
+javascriptasync function initializeSession() {
+    const urlParams = new URLSearchParams(window.location.search);
+    
+    // ONLY accept create_user_id that already exists in database
+    const create_user_id = urlParams.get('create_user_id');
+    
+    if (!create_user_id || !isValidUUID(create_user_id)) {
+        showError(
+            'Authentication Required',
+            'You must complete the Typeform submission first. Please return to the beginning of the incident report process.'
+        );
+        
+        // Log attempted access
+        console.error('Access attempted without valid create_user_id');
+        
+        // Redirect to start
+        setTimeout(() => {
+            window.location.href = '/index.html';
+        }, 3000);
+        return false;
+    }
+    
+    // Verify user exists in database
+    try {
+        const response = await fetch(`/api/verify-user/${create_user_id}`);
+        const data = await response.json();
+        
+        if (!data.exists) {
+            showError(
+                'User Not Found',
+                'Please complete the initial form first. Redirecting...'
+            );
+            setTimeout(() => {
+                window.location.href = '/index.html';
+            }, 3000);
+            return false;
+        }
+        
+        // User verified - set state
+        state.userId = create_user_id;
+        state.incidentId = data.incident_id; // Get linked incident
+        
+        // Generate a session ID for this recording session
+        state.sessionId = `recording_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`;
+        
+        // Store in localStorage for page refreshes
+        localStorage.setItem('create_user_id', create_user_id);
+        localStorage.setItem('incident_id', state.incidentId);
+        
+        console.log('Session initialized for verified user:', create_user_id);
+        return true;
+        
+    } catch (error) {
+        console.error('Error verifying user:', error);
+        showError('Verification Failed', 'Unable to verify user. Please try again.');
+        return false;
+    }
+}
