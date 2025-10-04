@@ -870,7 +870,8 @@ const webhookLimiter = rateLimit({
       const formId = req.body?.form_response?.form_id || 'typeform-unknown';
       return `typeform-${formId}`;
     }
-    return req.ip;
+    // Use the default key generator for proper IPv6 handling
+    return req.ip || req.connection.remoteAddress || 'unknown';
   }
 });
 
@@ -1655,7 +1656,13 @@ Logger.info('📋 Simplified GDPR endpoints registered');
 // ========================================
 // ENHANCED TYPEFORM WEBHOOK WITH UUID VALIDATION
 // ========================================
-app.post('/webhook/signup', webhookLimiter, checkSharedKey, async (req, res) => {
+app.post('/webhook/signup', webhookLimiter, (req, res, next) => {
+  // Log all incoming requests for debugging
+  console.log('📥 Webhook signup request received from:', req.ip);
+  console.log('Headers:', req.headers);
+  console.log('User-Agent:', req.get('user-agent'));
+  next();
+}, checkSharedKey, async (req, res) => {
   const requestId = crypto.randomUUID();
   const startTime = Date.now();
 
@@ -2796,6 +2803,87 @@ app.get('/health', async (req, res) => {
       file_redirect: 'ADDED - transcription-status.html redirect to transcription.html',
       trust_proxy_configuration: 'FIXED - Changed from true to 1 for proper rate limiting',
       error_handling: 'IMPROVED - More graceful error recovery',
+
+
+// ========================================
+// TYPEFORM WEBHOOK TEST ENDPOINT (NO AUTH)
+// ========================================
+app.post('/webhook/typeform-test', webhookLimiter, async (req, res) => {
+  const requestId = crypto.randomUUID();
+  const startTime = Date.now();
+
+  console.log(`[${requestId}] 🧪 Typeform TEST webhook received`);
+  console.log('=======================================');
+  console.log('TYPEFORM TEST WEBHOOK - NO AUTH CHECK');
+  console.log('=======================================');
+
+  try {
+    // Log all webhook details for debugging
+    console.log(`[${requestId}] Headers:`, JSON.stringify(req.headers, null, 2));
+    console.log(`[${requestId}] Body:`, JSON.stringify(req.body, null, 2));
+    console.log(`[${requestId}] Query:`, JSON.stringify(req.query, null, 2));
+    console.log(`[${requestId}] IP:`, req.ip);
+    console.log(`[${requestId}] User-Agent:`, req.get('user-agent'));
+
+    // Check if this looks like a Typeform webhook
+    const isTypeform = req.headers['user-agent']?.toLowerCase().includes('typeform') ||
+                      req.body?.form_response ||
+                      req.headers['typeform-signature'];
+
+    // Store in database for analysis if available
+    if (supabaseEnabled) {
+      try {
+        await supabase.from('webhook_debug_log').insert({
+          webhook_id: requestId,
+          webhook_type: 'typeform_test',
+          timestamp: new Date().toISOString(),
+          headers: req.headers,
+          body: req.body,
+          query: req.query,
+          user_agent: req.get('user-agent'),
+          ip: req.ip,
+          is_typeform: isTypeform,
+          processing_time_ms: Date.now() - startTime
+        });
+      } catch (dbError) {
+        console.warn('Failed to store test webhook in database:', dbError.message);
+      }
+    }
+
+    console.log(`[${requestId}] ✅ Test webhook processed successfully`);
+    console.log(`[${requestId}] Is Typeform: ${isTypeform}`);
+    console.log(`[${requestId}] Processing time: ${Date.now() - startTime}ms`);
+
+    // Return success response
+    res.status(200).json({
+      success: true,
+      message: 'Typeform test webhook received successfully',
+      requestId: requestId,
+      timestamp: new Date().toISOString(),
+      isTypeform: isTypeform,
+      processingTime: Date.now() - startTime,
+      receivedData: {
+        hasFormResponse: !!(req.body?.form_response),
+        hasTypeformSignature: !!(req.headers['typeform-signature']),
+        bodyKeys: Object.keys(req.body || {}),
+        headerKeys: Object.keys(req.headers || {})
+      }
+    });
+
+  } catch (error) {
+    console.error(`[${requestId}] ❌ Test webhook error:`, error);
+
+    res.status(500).json({
+      success: false,
+      error: 'Test webhook processing failed',
+      message: error.message,
+      requestId: requestId
+    });
+  }
+});
+
+Logger.info('✅ Typeform test webhook endpoint registered at /webhook/typeform-test (NO AUTH)');
+
       gdpr_module: 'INTEGRATED - GDPR Manager with streamlined compliance',
       legal_narrative_generation: 'FIXED - Consolidated endpoint with ai_summary table storage',
       syntax_errors: 'FIXED - All syntax errors corrected',
@@ -2809,6 +2897,39 @@ app.get('/health', async (req, res) => {
 // --- DEBUG ENDPOINT FOR USER DATA (WITH GDPR LOGGING) ---
 app.get('/api/debug/user/:userId', checkSharedKey, async (req, res) => {
   if (!supabaseEnabled) {
+
+
+// ========================================
+// WEBHOOK URL CHECKER
+// ========================================
+app.get('/webhook/check', (req, res) => {
+  const baseUrl = `${req.protocol}://${req.get('host')}`;
+  
+  res.json({
+    success: true,
+    message: 'Webhook endpoints are accessible',
+    baseUrl: baseUrl,
+    endpoints: {
+      signup: `${baseUrl}/webhook/signup`,
+      incident_report: `${baseUrl}/webhook/incident-report`,
+      test: `${baseUrl}/webhook/typeform-test`,
+      debug: `${baseUrl}/webhook/debug`
+    },
+    authentication: {
+      required: true,
+      header: 'X-Api-Key',
+      value: process.env.API_KEY ? '[CONFIGURED]' : '[NOT CONFIGURED]'
+    },
+    server_info: {
+      port: process.env.PORT || 3000,
+      environment: process.env.NODE_ENV || 'development',
+      timestamp: new Date().toISOString()
+    }
+  });
+});
+
+Logger.info('✅ Webhook URL checker registered at /webhook/check');
+
     return res.status(503).json({
       error: 'Service not configured',
       requestId: req.requestId
