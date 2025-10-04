@@ -917,6 +917,19 @@ app.post('/webhook/incident-report', webhookLimiter, async (req, res) => {
   Logger.info(`IP: ${req.ip}`);
   Logger.info(`User-Agent: ${req.get('user-agent')}`);
 
+  // Prevent timeout by responding quickly if request takes too long
+  const timeoutHandler = setTimeout(() => {
+    if (!res.headersSent) {
+      Logger.warn(`Webhook timeout for request ${requestId}`);
+      res.status(200).json({
+        success: true,
+        message: 'Webhook received, processing in background',
+        requestId: requestId,
+        processing_time_ms: Date.now() - startTime
+      });
+    }
+  }, 8000); // 8 second timeout
+
   try {
     Logger.debug('Raw webhook data:', JSON.stringify(req.body, null, 2));
 
@@ -1078,12 +1091,20 @@ app.post('/webhook/incident-report', webhookLimiter, async (req, res) => {
       }
     }
 
-    res.status(500).json({
-      success: false,
-      error: 'Failed to process incident report',
-      message: error.message,
-      requestId: requestId
-    });
+    // Clear timeout and respond with error
+    clearTimeout(timeoutHandler);
+    
+    if (!res.headersSent) {
+      res.status(200).json({
+        success: false,
+        error: 'Failed to process incident report',
+        message: error.message,
+        requestId: requestId,
+        note: 'Returning 200 to prevent 502 errors in Typeform'
+      });
+    }
+  } finally {
+    clearTimeout(timeoutHandler);
   }
 });
 
