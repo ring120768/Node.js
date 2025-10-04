@@ -69,7 +69,8 @@ const validateEnvironment = () => {
     'SUPABASE_URL': 'Database connection URL',
     'SUPABASE_SERVICE_ROLE_KEY': 'Database service key',
     'OPENAI_API_KEY': 'OpenAI API for transcription and AI summaries',
-    'ZAPIER_SHARED_KEY': 'Webhook authentication key'
+    'ZAPIER_SHARED_KEY': 'Webhook authentication key',
+    'WEBHOOK_SECRET': 'Typeform webhook secret for signature validation'
   };
 
   const missingVars = [];
@@ -801,16 +802,6 @@ const apiLimiter = rateLimit({
   }
 });
 
-// FIXED: trustProxy set to 1 for strictLimiter
-const strictLimiter = rateLimit({
-  windowMs: 15 * 60 * 1000,
-  max: 10, // stricter limit for sensitive endpoints
-  message: 'Rate limit exceeded for this operation.',
-  standardHeaders: true,
-  legacyHeaders: false,
-  trustProxy: 1  // FIXED: Changed from true to 1
-});
-
 // FIXED: Define webhookLimiter for specific webhook endpoints
 const webhookLimiter = rateLimit({
   windowMs: 15 * 60 * 1000, // 15 minutes
@@ -824,6 +815,7 @@ const webhookLimiter = rateLimit({
     return req.path === '/health';
   }
 });
+
 
 // --- MIDDLEWARE SETUP ---
 
@@ -874,8 +866,22 @@ app.use(detectUserIdCorruption);
 
 // Apply rate limiting
 app.use('/api/', apiLimiter);
-app.use('/api/whisper/', strictLimiter);
-app.use('/api/gdpr/', strictLimiter);
+app.use('/api/whisper/', rateLimit({ // Stricter limiter for sensitive endpoints
+  windowMs: 15 * 60 * 1000,
+  max: 10,
+  message: 'Rate limit exceeded for this operation.',
+  standardHeaders: true,
+  legacyHeaders: false,
+  trustProxy: 1,
+}));
+app.use('/api/gdpr/', rateLimit({ // Stricter limiter for sensitive endpoints
+  windowMs: 15 * 60 * 1000,
+  max: 10,
+  message: 'Rate limit exceeded for this operation.',
+  standardHeaders: true,
+  legacyHeaders: false,
+  trustProxy: 1,
+}));
 
 // Cache control headers
 app.use((req, res, next) => {
@@ -915,6 +921,7 @@ app.use((req, res, next) => {
 
 // --- AUTHENTICATION MIDDLEWARE ---
 const SHARED_KEY = process.env.ZAPIER_SHARED_KEY || process.env.WEBHOOK_API_KEY || '';
+const WEBHOOK_SECRET = process.env.WEBHOOK_SECRET; // Typeform webhook secret
 
 function checkSharedKey(req, res, next) {
   const headerKey = req.get('X-Api-Key');
@@ -939,6 +946,50 @@ function checkSharedKey(req, res, next) {
 
   return next();
 }
+
+// --- TYPEFORM SIGNATURE VALIDATION ---
+function validateTypeformSignature(req, res, next) {
+  const typeformSignature = req.headers['typeform-signature'];
+  const payload = JSON.stringify(req.body); // Ensure consistent payload stringification
+
+  if (!WEBHOOK_SECRET) {
+    Logger.critical('WEBHOOK_SECRET is not configured. Typeform signature validation cannot proceed.');
+    return res.status(503).json({
+      error: 'Server missing Typeform webhook secret (WEBHOOK_SECRET)',
+      requestId: req.requestId
+    });
+  }
+
+  if (!typeformSignature) {
+    Logger.warn('Typeform signature missing from request headers', { ip: req.clientIp });
+    return res.status(401).json({
+      error: 'Unauthorized: Missing Typeform signature',
+      requestId: req.requestId
+    });
+  }
+
+  // Create the expected signature
+  const hmac = crypto.createHmac('sha256', WEBHOOK_SECRET);
+  hmac.update(payload);
+  const expectedSignature = `v1:${hmac.digest('hex')}`;
+
+  // Compare signatures
+  if (typeformSignature !== expectedSignature) {
+    Logger.warn('Typeform signature validation failed', {
+      ip: req.clientIp,
+      receivedSignature: typeformSignature,
+      expectedSignature: expectedSignature
+    });
+    return res.status(401).json({
+      error: 'Unauthorized: Invalid Typeform signature',
+      requestId: req.requestId
+    });
+  }
+
+  Logger.debug('Typeform signature validated successfully');
+  next();
+}
+
 
 // --- GDPR CONSENT CHECK MIDDLEWARE (NON-BLOCKING) ---
 async function checkGDPRConsent(req, res, next) {
@@ -1765,7 +1816,7 @@ console.log('✅ Enhanced Typeform webhook endpoint registered at /webhook/signu
 // ========================================
 // CRITICAL FIX: INCIDENT REPORT WEBHOOK - RESTORE DATABASE SAVING
 // ========================================
-app.post('/webhook/incident-report', webhookLimiter, checkSharedKey, async (req, res) => {
+app.post('/webhook/incident-report', webhookLimiter, validateTypeformSignature, async (req, res) => {
   const startTime = Date.now();
 
   Logger.critical('=======================================');
@@ -1792,7 +1843,7 @@ app.post('/webhook/incident-report', webhookLimiter, checkSharedKey, async (req,
     // CRITICAL: Validate this is the correct incident report form
     const expectedFormId = 'WvM2ejru';
     const receivedFormId = formResponse.form_id;
-    
+
     if (receivedFormId && receivedFormId !== expectedFormId) {
       Logger.warn(`Received webhook from unexpected form: ${receivedFormId}, expected: ${expectedFormId}`);
       // Continue processing but log the discrepancy
