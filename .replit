@@ -27,7 +27,7 @@ localPort = 5000
 externalPort = 80
 
 [workflows]
-runButton = "Main Server"
+runButton = "Start Main Server"
 
 [[workflows.workflow]]
 name = "Run Main Server"
@@ -76,6 +76,15 @@ mode = "sequential"
 [[workflows.workflow.tasks]]
 task = "shell.exec"
 args = "PORT=5000 node index.js"
+
+[[workflows.workflow]]
+name = "Start Main Server"
+author = 43588325
+mode = "sequential"
+
+[[workflows.workflow.tasks]]
+task = "shell.exec"
+args = "node index.js"
 
 [agent]
 expertMode = true

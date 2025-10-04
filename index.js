@@ -822,19 +822,11 @@ const webhookLimiter = rateLimit({
       return true;
     }
 
-    // Known Typeform IP ranges (as of 2024)
-    const typeformIPs = [
-      '35.156.191.13',
-      '35.157.215.205',
-      '52.57.102.75',
-      '3.123.146.239',
-      '18.194.109.39',
-      '18.196.85.34',
-      // Typeform uses AWS EU-West-1, these are common ranges
-      '52.208.0.0/13',
-      '54.228.0.0/16',
-      '46.137.0.0/17'
-    ];
+    // Always skip rate limiting for incident report webhooks from Typeform
+    if (req.path === '/webhook/incident-report') {
+      Logger.debug('Skipping rate limit for incident report webhook');
+      return true;
+    }
 
     // Check if request has Typeform signature (legitimate Typeform request)
     const typeformSignature = req.headers['typeform-signature'];
@@ -850,34 +842,15 @@ const webhookLimiter = rateLimit({
       return true;
     }
 
-    // Get client IP
-    const clientIP = req.ip || req.connection?.remoteAddress || req.headers['x-forwarded-for']?.split(',')[0].trim();
-
-    // Simple IP check for exact matches
-    if (typeformIPs.includes(clientIP)) {
-      Logger.debug(`Skipping rate limit for Typeform IP: ${clientIP}`);
-      return true;
-    }
-
     // For development/testing - allow localhost and internal IPs
     if (process.env.NODE_ENV !== 'production') {
+      const clientIP = req.ip || req.connection?.remoteAddress || req.headers['x-forwarded-for']?.split(',')[0].trim();
       if (clientIP === '127.0.0.1' || clientIP === '::1' || clientIP?.startsWith('192.168.') || clientIP?.startsWith('10.')) {
         return true;
       }
     }
 
     return false;
-  },
-  // Custom key generator with proper IPv6 support
-  keyGenerator: (req, res) => {
-    const typeformSignature = req.headers['typeform-signature'];
-    if (typeformSignature) {
-      // Use form ID from body for Typeform requests to allow higher limits per form
-      const formId = req.body?.form_response?.form_id || 'typeform-unknown';
-      return `typeform-${formId}`;
-    }
-    // Use the built-in IP key generator for proper IPv6 handling
-    return rateLimit.defaultKeyGenerator(req, res);
   }
 });
 
@@ -1011,6 +984,22 @@ function checkSharedKey(req, res, next) {
   }
 
   return next();
+}
+
+// Flexible webhook authentication - allows Typeform webhooks without API key
+function checkWebhookAuth(req, res, next) {
+  // Check if this is a Typeform webhook
+  const isTypeformWebhook = req.headers['user-agent']?.toLowerCase().includes('typeform') ||
+                           req.body?.form_response ||
+                           req.headers['typeform-signature'];
+
+  if (isTypeformWebhook) {
+    Logger.info('Typeform webhook detected - skipping API key check');
+    return next();
+  }
+
+  // For non-Typeform requests, require API key
+  return checkSharedKey(req, res, next);
 }
 
 // --- TYPEFORM SIGNATURE VALIDATION ---
@@ -1711,8 +1700,8 @@ console.log('✅ Enhanced Typeform webhook endpoint registered at /webhook/signu
 // ========================================
 // CRITICAL FIX 1: INCIDENT REPORT WEBHOOK - RESTORE DATABASE SAVING
 // ========================================
-// Changed from validateTypeformSignature to checkSharedKey
-app.post('/webhook/incident-report', webhookLimiter, async (req, res) => {
+// TYPEFORM WEBHOOK - NO AUTH REQUIRED FOR TYPEFORM DIRECT CALLS
+app.post('/webhook/incident-report', webhookLimiter, checkWebhookAuth, async (req, res) => {
   const startTime = Date.now();
 
   Logger.critical('=======================================');
@@ -1721,12 +1710,25 @@ app.post('/webhook/incident-report', webhookLimiter, async (req, res) => {
   Logger.critical('=======================================');
 
   try {
+    // Log incoming request details for debugging
+    Logger.info('Incident report webhook received:', {
+      ip: req.ip,
+      userAgent: req.get('user-agent'),
+      contentType: req.get('content-type'),
+      bodyKeys: Object.keys(req.body || {}),
+      hasFormResponse: !!(req.body?.form_response)
+    });
+
     // Store webhook for debugging if debugger is available
     if (webhookDebugger) {
-      await webhookDebugger.analyzeWebhook(req, {
-        store: true,
-        category: 'incident-report'
-      });
+      try {
+        await webhookDebugger.analyzeWebhook(req, {
+          store: true,
+          category: 'incident-report'
+        });
+      } catch (debugError) {
+        Logger.warn('Webhook debugging failed:', debugError.message);
+      }
     }
 
     // Log the raw webhook data for debugging
@@ -1867,53 +1869,112 @@ app.post('/webhook/incident-report', webhookLimiter, async (req, res) => {
     Logger.critical('Sample fields:', Object.keys(incidentData).slice(0, 10));
 
     if (supabaseEnabled) {
-      const { data: insertedReport, error: insertError } = await supabase
-        .from('incident_reports')
-        .insert([incidentData])
-        .select()
-        .single();
+      try {
+        // First, try to insert the complete data
+        const { data: insertedReport, error: insertError } = await supabase
+          .from('incident_reports')
+          .insert([incidentData])
+          .select()
+          .single();
 
-      if (insertError) {
-        Logger.critical(`Database insert error: ${insertError.message}`);
-        Logger.critical(`Error details:`, JSON.stringify(insertError, null, 2));
-        Logger.critical(`Data being inserted:`, JSON.stringify(incidentData, null, 2));
-
-        // Try to save to a backup table for recovery
-        await supabase
-          .from('webhook_failures')
-          .insert({
-            endpoint: '/webhook/incident-report',
-            payload: JSON.stringify(req.body),
-            error_message: insertError.message,
-            error_details: JSON.stringify(insertError),
+        if (insertError) {
+          Logger.critical(`Database insert error: ${insertError.message}`);
+          Logger.critical(`Error details:`, JSON.stringify(insertError, null, 2));
+          
+          // Try to save core fields only if full save fails
+          Logger.critical('Attempting core fields save...');
+          const coreData = {
+            create_user_id: userId,
             user_id: userId,
-            request_id: req.requestId,
-            created_at: new Date().toISOString()
+            form_response_id: formResponse?.token,
+            typeform_form_id: formResponse?.form_id,
+            submitted_at: formResponse?.submitted_at || new Date().toISOString(),
+            webhook_received_at: new Date().toISOString(),
+            raw_webhook_data: JSON.stringify(req.body),
+            processing_status: 'received_with_errors'
+          };
+
+          const { data: coreReport, error: coreError } = await supabase
+            .from('incident_reports')
+            .insert([coreData])
+            .select()
+            .single();
+
+          if (coreError) {
+            Logger.critical(`Core fields insert also failed: ${coreError.message}`);
+            
+            // Save to webhook_failures table as last resort
+            try {
+              await supabase
+                .from('webhook_failures')
+                .insert({
+                  endpoint: '/webhook/incident-report',
+                  payload: JSON.stringify(req.body),
+                  error_message: insertError.message,
+                  error_details: JSON.stringify(insertError),
+                  user_id: userId,
+                  request_id: req.requestId,
+                  created_at: new Date().toISOString()
+                });
+              Logger.info('Webhook data saved to failures table for recovery');
+            } catch (failureError) {
+              Logger.error('Failed to save to failures table:', failureError.message);
+            }
+
+            return res.status(500).json({
+              success: false,
+              error: 'Database save failed',
+              message: insertError.message,
+              user_id: userId,
+              requestId: req.requestId
+            });
+          } else {
+            Logger.success(`✅ CORE FIELDS SAVED with ID: ${coreReport.id}`);
+            
+            return res.status(200).json({
+              success: true,
+              message: 'Core incident report saved (some fields may have been skipped)',
+              report_id: coreReport.id,
+              user_id: userId,
+              warning: 'Some fields were not saved due to schema mismatch',
+              processing_time_ms: Date.now() - startTime,
+              requestId: req.requestId
+            });
+          }
+        } else {
+          Logger.critical(`✅ SUCCESSFULLY SAVED incident report with ID: ${insertedReport.id}`);
+          
+          return res.status(200).json({
+            success: true,
+            message: 'Incident report saved successfully',
+            report_id: insertedReport.id,
+            user_id: userId,
+            fields_saved: Object.keys(extractedFields).length,
+            processing_time_ms: Date.now() - startTime,
+            requestId: req.requestId
           });
+        }
+      } catch (dbError) {
+        Logger.critical(`Database connection error: ${dbError.message}`);
+        
+        // Save to webhook_failures table
+        try {
+          await supabase
+            .from('webhook_failures')
+            .insert({
+              endpoint: '/webhook/incident-report',
+              payload: JSON.stringify(req.body),
+              error_message: dbError.message,
+              user_id: userId,
+              request_id: req.requestId,
+              created_at: new Date().toISOString()
+            });
+        } catch (failureError) {
+          Logger.error('Failed to save to failures table:', failureError.message);
+        }
 
-        throw new Error(`Failed to save incident report: ${insertError.message}`);
+        throw dbError;
       }
-
-      Logger.critical(`✅ SUCCESSFULLY SAVED incident report with ID: ${insertedReport.id}`);
-
-      // GDPR audit log - but don't let it block the save
-      // Removed: GDPR audit logging is removed.
-      // try {
-      //   if (gdprManager) {
-      //     await gdprManager.auditLog(
-      //       userId,
-      //       'incident_report_received',
-      //       {
-      //         report_id: insertedReport.id,
-      //         form_token: formResponse.token,
-      //         fields_received: Object.keys(extractedFields).length
-      //       },
-      //       req
-      //     );
-      //   }
-      // } catch (auditError) {
-      //   Logger.error(`GDPR audit failed (non-blocking): ${auditError.message}`);
-      // }
 
       // Check if we need to process any pending items for this user
       try {
