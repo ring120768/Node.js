@@ -3042,6 +3042,105 @@ app.post('/webhook/debug', async (req, res) => {
 
 Logger.info('✅ Debug webhook endpoint registered at /webhook/debug');
 
+// ========================================
+// TYPEFORM 403 ERROR DIAGNOSTIC ENDPOINT
+// ========================================
+app.post('/webhook/typeform-403-debug', async (req, res) => {
+  const timestamp = new Date().toISOString();
+  
+  console.log('=== TYPEFORM 403 DEBUG ANALYSIS ===');
+  console.log('Timestamp:', timestamp);
+  console.log('Request IP:', req.ip);
+  console.log('User-Agent:', req.get('user-agent'));
+  console.log('All Headers:', JSON.stringify(req.headers, null, 2));
+  console.log('Body:', JSON.stringify(req.body, null, 2));
+  console.log('Query:', JSON.stringify(req.query, null, 2));
+  
+  // Check authentication headers
+  const authHeaders = {
+    'x-api-key': req.headers['x-api-key'],
+    'authorization': req.headers['authorization'],
+    'typeform-signature': req.headers['typeform-signature'],
+    'x-typeform-signature': req.headers['x-typeform-signature']
+  };
+  
+  console.log('Auth Headers Found:', authHeaders);
+  
+  // Validate against our expected API key
+  const expectedApiKey = process.env.API_KEY || process.env.WEBHOOK_API_KEY;
+  const providedApiKey = req.headers['x-api-key'] || 
+                        (req.headers.authorization || '').replace(/^Bearer\s+/i, '');
+  
+  const authValid = expectedApiKey && providedApiKey === expectedApiKey;
+  
+  console.log('Auth Validation:');
+  console.log('- Expected API Key Present:', !!expectedApiKey);
+  console.log('- Provided API Key:', providedApiKey ? `${providedApiKey.substring(0, 8)}...` : 'NONE');
+  console.log('- Auth Valid:', authValid);
+  
+  // Check if this looks like Typeform
+  const isTypeformRequest = req.headers['user-agent']?.toLowerCase().includes('typeform') ||
+                           req.body?.form_response ||
+                           req.headers['typeform-signature'];
+  
+  console.log('Typeform Detection:', isTypeformRequest);
+  
+  // Store diagnostic info
+  if (supabaseEnabled) {
+    try {
+      await supabase.from('webhook_debug_log').insert({
+        webhook_id: `debug_403_${Date.now()}`,
+        webhook_type: 'typeform_403_debug',
+        timestamp: timestamp,
+        headers: req.headers,
+        body: req.body,
+        query: req.query,
+        user_agent: req.get('user-agent'),
+        ip: req.ip,
+        auth_analysis: {
+          expectedApiKeyPresent: !!expectedApiKey,
+          providedApiKey: providedApiKey ? 'present' : 'missing',
+          authValid: authValid,
+          isTypeformRequest: isTypeformRequest
+        }
+      });
+      console.log('✅ Debug info saved to database');
+    } catch (dbError) {
+      console.warn('⚠️ Failed to save debug info:', dbError.message);
+    }
+  }
+  
+  // Return comprehensive response
+  res.json({
+    success: true,
+    message: '403 Debug analysis complete',
+    timestamp: timestamp,
+    analysis: {
+      ip: req.ip,
+      userAgent: req.get('user-agent'),
+      isTypeformRequest: isTypeformRequest,
+      authHeadersPresent: Object.keys(authHeaders).filter(key => authHeaders[key]),
+      expectedApiKeyConfigured: !!expectedApiKey,
+      providedApiKey: providedApiKey ? 'present' : 'missing',
+      authenticationValid: authValid,
+      recommendedAction: authValid ? 
+        'Authentication is valid - check Typeform webhook URL and SSL' :
+        'Authentication failed - verify API key in Typeform webhook headers'
+    },
+    nextSteps: {
+      typeformUrl: `${req.protocol}://${req.get('host')}/webhook/incident-report`,
+      requiredHeaders: {
+        'Content-Type': 'application/json',
+        'X-Api-Key': expectedApiKey ? 'YOUR_API_KEY_HERE' : 'NOT_CONFIGURED'
+      },
+      testUrl: `${req.protocol}://${req.get('host')}/webhook/typeform-test`,
+      debugUrl: `${req.protocol}://${req.get('host')}/webhook/typeform-403-debug`
+    }
+  });
+});
+
+Logger.info('✅ Typeform 403 debug endpoint registered at /webhook/typeform-403-debug');
+
 
 // ========================================
 // DEBUG ENDPOINT TO CHECK INCIDENT REPORTS
@@ -3178,6 +3277,157 @@ app.post('/test/incident-webhook', checkSharedKey, async (req, res) => {
 });
 
 Logger.info('✅ Test incident webhook endpoint registered at /test/incident-webhook');
+
+// ========================================
+// TYPEFORM WEBHOOK SIMULATION FOR 403 TESTING
+// ========================================
+app.get('/test/typeform-403', async (req, res) => {
+  const serverUrl = `${req.protocol}://${req.get('host')}`;
+  const apiKey = process.env.API_KEY || process.env.WEBHOOK_API_KEY;
+  
+  const testResults = [];
+  
+  // Test 1: Without authentication (should fail with 401/403)
+  console.log('🧪 Testing webhook without authentication...');
+  try {
+    const response = await axios.post(
+      `${serverUrl}/webhook/incident-report`,
+      {
+        event_id: 'test_403_debug',
+        event_type: 'form_response',
+        form_response: {
+          form_id: 'test_form',
+          token: 'test_token',
+          submitted_at: new Date().toISOString(),
+          hidden: { create_user_id: 'test-user-403' }
+        }
+      },
+      {
+        headers: {
+          'Content-Type': 'application/json',
+          'User-Agent': 'Typeform-Debug/1.0'
+        },
+        timeout: 5000
+      }
+    );
+    
+    testResults.push({
+      test: 'No Auth',
+      status: response.status,
+      success: false,
+      message: 'Should have failed but succeeded'
+    });
+    
+  } catch (error) {
+    testResults.push({
+      test: 'No Auth',
+      status: error.response?.status || 'Network Error',
+      success: error.response?.status === 401,
+      message: error.response?.status === 401 ? 'Correctly rejected (401 Unauthorized)' : error.message
+    });
+  }
+  
+  // Test 2: With correct API key (should succeed)
+  if (apiKey) {
+    console.log('🧪 Testing webhook with API key...');
+    try {
+      const response = await axios.post(
+        `${serverUrl}/webhook/incident-report`,
+        {
+          event_id: 'test_403_debug_auth',
+          event_type: 'form_response',
+          form_response: {
+            form_id: 'test_form',
+            token: 'test_token_auth',
+            submitted_at: new Date().toISOString(),
+            hidden: { create_user_id: 'test-user-403-auth' }
+          }
+        },
+        {
+          headers: {
+            'Content-Type': 'application/json',
+            'X-Api-Key': apiKey,
+            'User-Agent': 'Typeform-Debug/1.0'
+          },
+          timeout: 5000
+        }
+      );
+      
+      testResults.push({
+        test: 'With API Key',
+        status: response.status,
+        success: response.status === 200,
+        message: 'Authentication successful'
+      });
+      
+    } catch (error) {
+      testResults.push({
+        test: 'With API Key',
+        status: error.response?.status || 'Network Error',
+        success: false,
+        message: error.message
+      });
+    }
+  }
+  
+  // Test 3: Check if debug endpoint works (no auth required)
+  console.log('🧪 Testing debug endpoint...');
+  try {
+    const response = await axios.post(
+      `${serverUrl}/webhook/typeform-403-debug`,
+      {
+        test: 'debug_endpoint_check',
+        user_agent: 'Internal-Test'
+      },
+      {
+        headers: {
+          'Content-Type': 'application/json',
+          'User-Agent': 'Internal-Debug/1.0'
+        }
+      }
+    );
+    
+    testResults.push({
+      test: 'Debug Endpoint',
+      status: response.status,
+      success: response.status === 200,
+      message: 'Debug endpoint working'
+    });
+    
+  } catch (error) {
+    testResults.push({
+      test: 'Debug Endpoint',
+      status: error.response?.status || 'Network Error',
+      success: false,
+      message: error.message
+    });
+  }
+  
+  console.log('🔍 Test Results:', testResults);
+  
+  res.json({
+    success: true,
+    message: 'Typeform 403 debugging tests complete',
+    serverUrl: serverUrl,
+    apiKeyConfigured: !!apiKey,
+    testResults: testResults,
+    recommendations: {
+      typeformWebhookUrl: `${serverUrl}/webhook/incident-report`,
+      requiredHeaders: {
+        'Content-Type': 'application/json',
+        'X-Api-Key': apiKey || 'CONFIGURE_API_KEY'
+      },
+      debugSteps: [
+        '1. Check Typeform webhook URL matches the serverUrl above',
+        '2. Verify X-Api-Key header is set in Typeform webhook configuration',
+        '3. Test with debug endpoint first (no auth required)',
+        '4. Check server logs for detailed error messages'
+      ]
+    }
+  });
+});
+
+Logger.info('✅ Typeform 403 test endpoint registered at /test/typeform-403');
 Logger.info('✅ Debug incident reports endpoint registered at /api/debug/incident-reports');
 
 // Test OpenAI API endpoint
