@@ -1481,8 +1481,6 @@ function extractAllTypeformFields(formResponse) {
   return fields;
 }
 
-// GDPR endpoints temporarily removed for troubleshooting
-
 // ========================================
 // ENHANCED TYPEFORM WEBHOOK WITH UUID VALIDATION
 // ========================================
@@ -3206,10 +3204,6 @@ app.get('/api/test-openai', async (req, res) => {
     });
   }
 });
-
-// GDPR Test endpoint
-// Removed: GDPR functionality is removed.
-// app.get('/api/gdpr/test', async (req, res) => { ... });
 
 // AI summary generation test endpoint
 app.post('/api/generate-ai-summary', checkSharedKey, async (req, res) => {
