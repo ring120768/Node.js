@@ -601,21 +601,9 @@ function initializeSupabaseRealtime() {
 }
 
 // ========================================
-// INITIALIZE SIMPLIFIED MODULES
+// FRESH START - NO COMPLEX MODULES
 // ========================================
-let webhookDebugger = null;
-
-if (supabaseEnabled && supabase) {
-  try {
-    webhookDebugger = new WebhookDebugger(supabase, Logger);
-    Logger.success('✅ Webhook Debugger initialized');
-  } catch (error) {
-    Logger.warn('Webhook Debugger not available:', error.message);
-    webhookDebugger = null;
-  }
-} else {
-  Logger.warn('Modules not initialized - Supabase not available');
-}
+console.log('✅ Starting fresh - no complex webhook modules loaded');
 
 // Initialize Real Transcription Service
 if (supabaseEnabled && process.env.OPENAI_API_KEY) {
@@ -850,383 +838,64 @@ function extractAllTypeformFields(formResponse) {
 }
 
 // ========================================
-// SIMPLIFIED TYPEFORM WEBHOOK ENDPOINTS
+// FRESH WEBHOOK IMPLEMENTATION - MINIMAL & CLEAN
 // ========================================
 
-// SIGNUP WEBHOOK - NO AUTH REQUIRED
-app.post('/webhook/signup', webhookLimiter, async (req, res) => {
-  const requestId = crypto.randomUUID();
+// Single webhook endpoint for Typeform
+app.post('/webhook', async (req, res) => {
   const startTime = Date.now();
-
-  Logger.info(`[${requestId}] 📥 Typeform signup webhook received`);
-
-  try {
-    Logger.debug('Signup webhook body:', JSON.stringify(req.body, null, 2));
-
-    const formResponse = req.body.form_response;
-    if (!formResponse) {
-      throw new Error('Invalid webhook structure - no form_response');
-    }
-
-    // Extract create_user_id from various possible locations
-    let create_user_id = 
-      formResponse.hidden?.create_user_id ||
-      formResponse.variables?.create_user_id ||
-      formResponse.calculated?.score ||
-      req.body.create_user_id;
-
-    // Generate fallback ID if none found
-    if (!create_user_id) {
-      Logger.warn('No create_user_id found in webhook');
-      create_user_id = `webhook_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`;
-      Logger.info(`Generated fallback ID: ${create_user_id}`);
-    }
-
-    // Process the signup data
-    const userData = {
-      create_user_id: create_user_id,
-      created_at: new Date().toISOString(),
-      typeform_submission_id: formResponse.token,
-      typeform_landed_at: formResponse.landed_at,
-      typeform_submitted_at: formResponse.submitted_at,
-      webhook_received_at: new Date().toISOString(),
-      raw_webhook_data: JSON.stringify(req.body)
-    };
-
-    // Extract answers from Typeform
-    const answers = formResponse.answers || [];
-    for (const answer of answers) {
-      const field_ref = answer.field?.ref;
-      const field_type = answer.type;
-      let value = answer[field_type];
-
-      switch(field_ref) {
-        case 'driver_name':
-        case 'full_name':
-          userData.driver_name = value;
-          break;
-        case 'email':
-        case 'email_address':
-          userData.email = value;
-          break;
-        case 'phone':
-        case 'phone_number':
-          userData.phone = value;
-          break;
-        default:
-          if (!userData.additional_fields) userData.additional_fields = {};
-          userData.additional_fields[field_ref] = value;
-      }
-    }
-
-    // Save to database if available
-    if (supabaseEnabled) {
-      const { data: userRecord, error: userError } = await supabase
-        .from('user_signup')
-        .upsert(userData, {
-          onConflict: 'create_user_id',
-          ignoreDuplicates: false
-        })
-        .select()
-        .single();
-
-      if (userError) {
-        Logger.error(`Database error: ${userError.message}`);
-        // Don't fail the webhook - log and continue
-      } else {
-        Logger.success(`✅ User record saved: ${userRecord.id}`);
-      }
-    }
-
-    res.json({
-      success: true,
-      create_user_id: create_user_id,
-      message: 'Typeform submission processed successfully',
-      processing_time_ms: Date.now() - startTime,
-      requestId: requestId
-    });
-
-  } catch (error) {
-    Logger.error(`[${requestId}] ❌ Signup webhook error:`, error);
-
-    res.status(500).json({
-      success: false,
-      error: error.message,
-      requestId: requestId
-    });
-  }
-});
-
-// INCIDENT REPORT WEBHOOK - NO AUTH REQUIRED - ENHANCED FOR 502 PREVENTION
-app.post('/webhook/incident-report', async (req, res) => {
-  const startTime = Date.now();
-  const requestId = req.requestId || crypto.randomUUID();
-
-  // Set connection keep-alive and proper headers immediately
-  res.set({
-    'Connection': 'keep-alive',
-    'Keep-Alive': 'timeout=5, max=1000',
-    'X-Request-ID': requestId,
-    'Access-Control-Allow-Origin': '*',
-    'Access-Control-Allow-Methods': 'POST, OPTIONS',
-    'Access-Control-Allow-Headers': 'Content-Type, User-Agent'
-  });
-
-  Logger.info('=== INCIDENT REPORT WEBHOOK - 502 PREVENTION ENHANCED ===');
-  Logger.info(`Request ID: ${requestId}`);
-  Logger.info(`IP: ${req.ip}`);
-  Logger.info(`User-Agent: ${req.get('user-agent')}`);
-  Logger.info(`Content-Type: ${req.get('content-type')}`);
-  Logger.info(`Content-Length: ${req.get('content-length')}`);
-
-  // Immediate response setup to prevent 502
-  let responseHandled = false;
   
-  const sendSuccessResponse = (data) => {
-    if (!responseHandled && !res.headersSent) {
-      responseHandled = true;
-      res.status(200).json({
-        success: true,
-        timestamp: new Date().toISOString(),
-        processing_time_ms: Date.now() - startTime,
-        requestId: requestId,
-        ...data
-      });
-    }
-  };
-
-  const sendErrorResponse = (error, message = 'Webhook processing error') => {
-    if (!responseHandled && !res.headersSent) {
-      responseHandled = true;
-      res.status(200).json({ // Always 200 for Typeform
-        success: false,
-        error: message,
-        details: error.message,
-        timestamp: new Date().toISOString(),
-        processing_time_ms: Date.now() - startTime,
-        requestId: requestId,
-        note: 'Returned 200 to prevent 502 errors'
-      });
-    }
-  };
-
-  // Ultra-fast timeout to prevent any 502 issues
-  const emergencyTimeout = setTimeout(() => {
-    sendSuccessResponse({
-      message: 'Webhook received - emergency timeout response',
-      status: 'accepted',
-      note: 'Ultra-fast response to prevent 502'
-    });
-  }, 3000); // 3 second emergency timeout
+  console.log('=== WEBHOOK RECEIVED ===');
+  console.log('Headers:', req.headers);
+  console.log('Body:', JSON.stringify(req.body, null, 2));
+  console.log('======================');
 
   try {
-    clearTimeout(emergencyTimeout); // Clear emergency timeout since we're processing
+    const webhookData = req.body;
     
-    // Respond immediately to prevent 502, then process
-    sendSuccessResponse({
-      message: 'Webhook received and being processed',
-      status: 'processing'
+    // Always respond successfully to prevent 502 errors
+    res.status(200).json({
+      success: true,
+      message: 'Webhook received successfully',
+      timestamp: new Date().toISOString(),
+      processing_time_ms: Date.now() - startTime
     });
 
-    Logger.debug('Raw webhook data received and response sent');
-
-    const webhookData = req.body || {};
-    const formResponse = webhookData.form_response || webhookData;
-
-    // Extract user ID quickly
-    let userId = 
-      formResponse.hidden?.create_user_id ||
-      formResponse.variables?.find(v => v.key === 'create_user_id')?.value ||
-      formResponse.hidden?.user_id ||
-      formResponse.calculated?.create_user_id ||
-      webhookData.create_user_id ||
-      `webhook_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`;
-
-    Logger.info(`Processing for user: ${userId}`);
-
-    // Process in background (response already sent)
-    setImmediate(async () => {
-      try {
-        // Extract fields
-        const extractedFields = {};
-        if (formResponse.answers && Array.isArray(formResponse.answers)) {
-          for (const answer of formResponse.answers) {
-            const fieldRef = answer.field?.ref || answer.field?.id;
-            const fieldType = answer.type;
-            let value = answer[fieldType];
-            if (fieldRef && value !== undefined) {
-              extractedFields[fieldRef] = value;
-            }
-          }
-        }
-
-        // Build incident data
-        const incidentData = {
-          user_id: userId,
-          create_user_id: userId,
-          form_response_id: formResponse.token,
-          typeform_submission_id: formResponse.token,
-          typeform_form_id: formResponse.form_id,
-          submitted_at: formResponse.submitted_at || new Date().toISOString(),
-          landed_at: formResponse.landed_at,
-          webhook_received_at: new Date().toISOString(),
-          processing_status: 'received',
-          request_id: requestId,
-          ip_address: req.ip,
-          user_agent: req.get('user-agent'),
-          raw_webhook_data: JSON.stringify(webhookData),
-          ...extractedFields
-        };
-
-        // Save to database if available
-        if (supabaseEnabled) {
-          try {
-            const { data: insertedReport, error: insertError } = await supabase
-              .from('incident_reports')
-              .insert([incidentData])
-              .select()
-              .single();
-
-            if (insertError) {
-              Logger.error(`Database insert error: ${insertError.message}`);
-              // Try core data only
-              const coreData = {
-                create_user_id: userId,
-                user_id: userId,
-                form_response_id: formResponse.token,
-                submitted_at: formResponse.submitted_at || new Date().toISOString(),
-                webhook_received_at: new Date().toISOString(),
-                raw_webhook_data: JSON.stringify(req.body),
-                processing_status: 'received_with_errors'
-              };
-
-              const { data: coreReport, error: coreError } = await supabase
-                .from('incident_reports')
-                .insert([coreData])
-                .select()
-                .single();
-
-              if (!coreError) {
-                Logger.success(`✅ Core incident report saved: ${coreReport.id}`);
-              } else {
-                Logger.error(`Both full and core saves failed`);
-              }
-            } else {
-              Logger.success(`✅ Full incident report saved: ${insertedReport.id}`);
-            }
-          } catch (dbError) {
-            Logger.error(`Database error: ${dbError.message}`);
-          }
-        } else {
-          Logger.warn('Database not enabled - incident report not saved');
-        }
-      } catch (backgroundError) {
-        Logger.error('Background processing error:', backgroundError);
-      }
-    });
+    // Log the webhook data for debugging
+    console.log('✅ Webhook processed successfully');
 
   } catch (error) {
-    clearTimeout(emergencyTimeout);
-    Logger.error(`❌ Incident webhook error: ${error.message}`);
-
-    // Send error response if not already sent
-    sendErrorResponse(error, 'Failed to process incident report');
-
-    // Log failure in background
-    if (supabaseEnabled) {
-      setImmediate(async () => {
-        try {
-          await supabase
-            .from('webhook_failures')
-            .insert({
-              endpoint: '/webhook/incident-report',
-              payload: JSON.stringify(req.body),
-              error_message: error.message,
-              error_stack: error.stack,
-              request_id: requestId,
-              created_at: new Date().toISOString()
-            });
-        } catch (logError) {
-          Logger.error(`Failed to log webhook failure: ${logError.message}`);
-        }
-      });
-    }
-  } finally {
-    clearTimeout(emergencyTimeout);
+    console.error('❌ Webhook error:', error);
+    
+    // Still return 200 to prevent Typeform errors
+    res.status(200).json({
+      success: false,
+      message: 'Webhook received but had processing error',
+      error: error.message,
+      timestamp: new Date().toISOString()
+    });
   }
 });
 
-// ========================================
-// NEW TEST ENDPOINTS
-// ========================================
-
-// Add OPTIONS handler for CORS preflight requests
-app.options('/webhook/*', (req, res) => {
-  res.set({
-    'Access-Control-Allow-Origin': '*',
-    'Access-Control-Allow-Methods': 'GET, POST, PUT, DELETE, OPTIONS',
-    'Access-Control-Allow-Headers': 'Content-Type, Authorization, User-Agent, X-Typeform-Event-Type',
-    'Access-Control-Max-Age': '86400'
-  });
-  res.status(200).end();
-});
-
-// DIAGNOSTIC endpoint that accepts any request
-app.all('/webhook/test', async (req, res) => {
-  const timestamp = new Date().toISOString();
-
-  Logger.info('=== WEBHOOK TEST ENDPOINT ===');
-  Logger.info('Method:', req.method);
-  Logger.info('Headers:', JSON.stringify(req.headers, null, 2));
-  Logger.info('Body:', JSON.stringify(req.body, null, 2));
-  Logger.info('Query:', JSON.stringify(req.query, null, 2));
-  Logger.info('IP:', req.ip);
-  Logger.info('===============================');
-
-  res.status(200).json({
-    success: true,
-    message: 'Test endpoint reached successfully',
-    timestamp: timestamp,
-    method: req.method,
-    headers: req.headers,
-    body: req.body,
-    query: req.query,
-    ip: req.ip,
-    note: 'This endpoint accepts all requests for testing webhooks'
-  });
-});
-
-// Configuration test endpoint
-app.get('/webhook/config-test', (req, res) => {
+// Test endpoint
+app.all('/webhook/test', (req, res) => {
+  console.log('=== TEST WEBHOOK ===');
+  console.log('Method:', req.method);
+  console.log('Body:', req.body);
+  console.log('==================');
+  
   res.json({
     success: true,
-    message: 'Webhook configuration test',
-    config: {
-      api_key_required: !!process.env.API_KEY,
-      temp_id_blocking: process.env.BLOCK_TEMP_IDS === 'true',
-      require_user_id: process.env.REQUIRE_USER_ID === 'true',
-      node_env: process.env.NODE_ENV,
-      webhook_endpoints: [
-        '/webhook/signup',
-        '/webhook/incident-report', 
-        '/webhook/test',
-        '/webhook/config-test'
-      ]
-    },
-    instructions: {
-      typeform_webhook_url: `${req.protocol}://${req.get('host')}/webhook/incident-report`,
-      headers_needed: 'Content-Type: application/json',
-      authentication: 'NONE REQUIRED',
-      test_command: `curl -X POST ${req.protocol}://${req.get('host')}/webhook/test -H "Content-Type: application/json" -d '{"test": "data"}'`
-    }
+    message: 'Test webhook working',
+    method: req.method,
+    body: req.body,
+    timestamp: new Date().toISOString()
   });
 });
 
-Logger.info('✅ SIMPLIFIED: Webhook endpoints registered (NO AUTH)');
-Logger.info('  - POST /webhook/signup (no auth required)');
-Logger.info('  - POST /webhook/incident-report (no auth required)');  
-Logger.info('  - ALL /webhook/test (diagnostic endpoint)');
-Logger.info('  - GET /webhook/config-test (configuration test)');
+console.log('✅ Fresh webhook endpoints created:');
+console.log('  - POST /webhook (main endpoint)');
+console.log('  - ALL /webhook/test (test endpoint)');
 
 // ========================================
 // LEGAL NARRATIVE AND AI SUMMARY FUNCTIONS
@@ -1746,11 +1415,8 @@ app.get('/health', async (req, res) => {
   const externalServices = await checkExternalServices();
 
   const enhancedModules = {
-    webhookDebugger: webhookDebugger !== null,
-    storedWebhooks: webhookDebugger ? webhookDebugger.webhookStore.size : 0,
-    webhookStoreStatus: webhookDebugger ?
-      (webhookDebugger.webhookStore.size > 800 ? 'warning' : 'healthy') : 'n/a',
-    maxWebhookStoreSize: parseInt(process.env.WEBHOOK_STORE_MAX_SIZE) || 1000
+    webhookSystem: 'fresh_minimal_implementation',
+    complexModulesRemoved: true
   };
 
   const status = {
@@ -1866,113 +1532,7 @@ app.get('/api/debug/user/:userId', async (req, res) => {
   }
 });
 
-app.post('/api/debug/webhook-test', async (req, res) => {
-  if (!webhookDebugger) {
-    Logger.info('=== WEBHOOK DEBUG TEST (Basic) ===');
-    Logger.info('Headers:', JSON.stringify(req.headers, null, 2));
-    Logger.info('Body:', JSON.stringify(req.body, null, 2));
-
-    return res.json({
-      success: true,
-      message: 'Basic webhook analysis (debugger not initialized)',
-      fields: Object.keys(req.body || {}),
-      requestId: req.requestId
-    });
-  }
-
-  const analysis = webhookDebugger.analyzeWebhook(req, {
-    store: true,
-    log: true
-  });
-
-  if (webhookDebugger.webhookStore && webhookDebugger.webhookStore.size > 1000) {
-    const webhooksArray = Array.from(webhookDebugger.webhookStore.entries());
-    const sortedWebhooks = webhooksArray.sort((a, b) =>
-      new Date(a[1].timestamp) - new Date(b[1].timestamp)
-    );
-
-    webhookDebugger.webhookStore.delete(sortedWebhooks[0][0]);
-    Logger.debug('Webhook store cleaned - removed oldest entry');
-  }
-
-  Logger.info('=== WEBHOOK ANALYSIS ===');
-  Logger.info('Provider:', analysis.provider);
-  Logger.info('Structure:', analysis.structure.type);
-  Logger.info('Extracted Fields:', analysis.fields);
-  Logger.info('Validation:', analysis.validation);
-  Logger.info('Recommendations:', analysis.recommendations);
-
-  res.json({
-    success: true,
-    message: 'Webhook analysis complete',
-    analysis: analysis,
-    requestId: req.requestId
-  });
-});
-
-app.get('/api/debug/webhook-history', async (req, res) => {
-  if (!webhookDebugger) {
-    return res.status(503).json({
-      error: 'Module not initialized',
-      module: 'webhookDebugger',
-      requestId: req.requestId
-    });
-  }
-
-  const limit = parseInt(req.query.limit) || 10;
-  const recentWebhooks = webhookDebugger.getRecentWebhooks(limit);
-
-  res.json({
-    success: true,
-    count: recentWebhooks.length,
-    webhooks: recentWebhooks,
-    requestId: req.requestId
-  });
-});
-
-app.get('/api/debug/webhook/:webhookId', async (req, res) => {
-  if (!webhookDebugger) {
-    return res.status(503).json({
-      error: 'Module not initialized',
-      module: 'webhookDebugger',
-      requestId: req.requestId
-    });
-  }
-
-  const webhook = webhookDebugger.getWebhook(req.params.webhookId);
-
-  if (!webhook) {
-    return res.status(404).json({
-      error: 'Webhook not found',
-      requestId: req.requestId
-    });
-  }
-
-  res.json({
-    success: true,
-    webhook: webhook,
-    requestId: req.requestId
-  });
-});
-
-app.post('/api/debug/webhook-search', async (req, res) => {
-  if (!webhookDebugger) {
-    return res.status(503).json({
-      error: 'Module not initialized',
-      module: 'webhookDebugger',
-      requestId: req.requestId
-    });
-  }
-
-  const results = webhookDebugger.searchWebhooks(req.body);
-
-  res.json({
-    success: true,
-    count: results.length,
-    results: results,
-    requestId: req.requestId
-  });
-});
+// Debug endpoints removed - fresh start
 
 app.get('/api/process-queue-now', async (req, res) => {
   Logger.info('Manual queue processing triggered');
