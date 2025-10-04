@@ -841,170 +841,99 @@ function extractAllTypeformFields(formResponse) {
 // ROBUST WEBHOOK IMPLEMENTATION - 502 ERROR PREVENTION
 // ========================================
 
-// Enhanced signup webhook endpoint
-app.post('/webhook/signup', async (req, res) => {
-  const startTime = Date.now();
+// Ultra-fast signup webhook endpoint - MAXIMUM 502 prevention
+app.post('/webhook/signup', (req, res) => {
   const requestId = `signup_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`;
 
-  // Immediate timeout protection to prevent 502 errors
-  const timeoutHandler = setTimeout(() => {
-    if (!res.headersSent) {
-      Logger.warn(`Signup webhook timeout for request ${requestId}`);
-      res.status(200).json({
-        success: true,
-        message: 'Signup webhook received, processing in background',
-        requestId: requestId,
-        processing_time_ms: Date.now() - startTime
-      });
-    }
-  }, 8000); // 8 second timeout
-
-  Logger.info(`📝 Signup webhook received - Request ID: ${requestId}`);
-  Logger.info(`IP: ${req.ip}`);
-  Logger.info(`User-Agent: ${req.get('user-agent')}`);
-
-  try {
-    Logger.debug('Signup webhook data:', JSON.stringify(req.body, null, 2));
-
-    const webhookData = req.body;
-    const formResponse = webhookData.form_response;
-
-    if (!formResponse) {
-      Logger.warn(`No form_response in signup webhook ${requestId}`);
-      clearTimeout(timeoutHandler);
-      return res.status(200).json({
-        success: false,
-        message: 'No form response data found',
-        requestId: requestId
-      });
-    }
-
-    // Store in webhook debugger
-    WebhookDebugger.storeWebhook({
-      type: 'signup',
-      data: webhookData,
-      timestamp: new Date().toISOString(),
-      requestId: requestId
-    });
-
-    // Extract basic signup data
-    const extractedFields = extractAllTypeformFields(formResponse);
-    const userId = formResponse.hidden?.create_user_id ||
-                  formResponse.variables?.find(v => v.key === 'create_user_id')?.value ||
-                  extractAnswer(formResponse, 'create_user_id');
-
-    Logger.info(`Signup processing for user: ${userId}`);
-
-    // Save to database if available
-    if (supabaseEnabled && userId) {
-      try {
-        const { data: insertedSignup, error: signupError } = await supabase
-          .from('user_signup')
-          .insert({
-            create_user_id: userId,
-            email: extractedFields.email || extractAnswer(formResponse, 'email'),
-            name: extractedFields.full_name || extractAnswer(formResponse, 'full_name'),
-            mobile: extractedFields.phone || extractAnswer(formResponse, 'phone'),
-            legal_support: ConstantHelpers.isConsent(extractedFields.legal_support),
-            created_at: new Date().toISOString(),
-            signup_data: JSON.stringify(extractedFields),
-            webhook_request_id: requestId
-          })
-          .select()
-          .single();
-
-        if (signupError) {
-          Logger.error(`Signup save error: ${signupError.message}`);
-          throw signupError;
-        }
-
-        Logger.success(`✅ Signup saved with ID: ${insertedSignup.id} for user: ${userId}`);
-
-        clearTimeout(timeoutHandler);
-        res.status(200).json({
-          success: true,
-          message: 'Signup saved successfully',
-          user_id: userId,
-          signup_id: insertedSignup.id,
-          fields_saved: Object.keys(extractedFields).length,
-          processing_time_ms: Date.now() - startTime,
-          requestId: requestId
-        });
-
-      } catch (dbError) {
-        Logger.error(`Database error: ${dbError.message}`);
-        throw dbError;
-      }
-    } else {
-      Logger.warn('Database not enabled or no user ID - signup not saved');
-      clearTimeout(timeoutHandler);
-      res.status(200).json({
-        success: true,
-        message: 'Signup received (database not configured or no user ID)',
-        user_id: userId,
-        fields_extracted: Object.keys(extractedFields).length,
-        processing_time_ms: Date.now() - startTime,
-        requestId: requestId
-      });
-    }
-
-  } catch (error) {
-    Logger.error(`❌ Signup webhook error: ${error.message}`);
-    clearTimeout(timeoutHandler);
-
-    if (!res.headersSent) {
-      res.status(200).json({
-        success: false,
-        error: 'Failed to process signup',
-        message: error.message,
-        requestId: requestId,
-        note: 'Returning 200 to prevent 502 errors in Typeform'
-      });
-    }
-  } finally {
-    clearTimeout(timeoutHandler);
-  }
-});
-
-// Enhanced incident report webhook endpoint with maximum 502 error prevention
-app.post('/webhook/incident-report', async (req, res) => {
-  const startTime = Date.now();
-  const requestId = `incident_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`;
-
-  // IMMEDIATE response to prevent 502 errors - respond first, process later
+  // INSTANT response - no async operations before response
   res.status(200).json({
     success: true,
-    message: 'Incident report webhook received and processing',
+    message: 'Signup webhook received',
     requestId: requestId,
-    timestamp: new Date().toISOString(),
-    note: 'Processing in background to prevent 502 errors'
+    timestamp: new Date().toISOString()
   });
 
-  Logger.info(`🚨 Incident report webhook received - Request ID: ${requestId}`);
-  Logger.info(`IP: ${req.ip}`);
-  Logger.info(`User-Agent: ${req.get('user-agent')}`);
+  Logger.info(`📝 Signup webhook - Request ID: ${requestId}`);
 
-  // Process in background to prevent any 502 errors
-  setImmediate(async () => {
+  // Process everything asynchronously after response is sent
+  process.nextTick(async () => {
     try {
-      Logger.debug('Incident webhook data:', JSON.stringify(req.body, null, 2));
-
       const webhookData = req.body;
-      let formResponse = webhookData.form_response || webhookData;
+      
+      // Store in debugger immediately
+      WebhookDebugger.storeWebhook({
+        type: 'signup',
+        data: webhookData,
+        timestamp: new Date().toISOString(),
+        requestId: requestId
+      });
 
-      // Handle different Typeform webhook structures
-      if (!formResponse && webhookData.form_response) {
-        formResponse = webhookData.form_response;
-      } else if (!formResponse && webhookData.answers) {
-        formResponse = webhookData;
-      }
-
+      const formResponse = webhookData.form_response;
+      
       if (!formResponse) {
-        Logger.warn(`No form_response in incident webhook ${requestId}`);
+        Logger.warn(`No form data in signup ${requestId}`);
         return;
       }
 
-      // Store in webhook debugger
+      // Extract data
+      const extractedFields = extractAllTypeformFields(formResponse);
+      const userId = formResponse.hidden?.create_user_id ||
+                    formResponse.variables?.find(v => v.key === 'create_user_id')?.value ||
+                    extractAnswer(formResponse, 'create_user_id');
+
+      Logger.info(`Processing signup for user: ${userId || 'NO_USER_ID'}`);
+
+      // Database save with maximum error protection
+      if (supabaseEnabled && userId) {
+        try {
+          const { error } = await supabase
+            .from('user_signup')
+            .insert({
+              create_user_id: userId,
+              email: extractedFields.email || extractAnswer(formResponse, 'email'),
+              name: extractedFields.full_name || extractAnswer(formResponse, 'full_name'),
+              created_at: new Date().toISOString(),
+              webhook_request_id: requestId,
+              signup_data: JSON.stringify(extractedFields)
+            });
+
+          if (error) {
+            Logger.error(`Signup save failed: ${error.message}`);
+          } else {
+            Logger.success(`✅ Signup saved for ${userId}`);
+          }
+        } catch (dbError) {
+          Logger.error(`Signup DB error: ${dbError.message}`);
+        }
+      }
+
+    } catch (error) {
+      Logger.error(`Signup background processing error: ${error.message}`);
+    }
+  });
+});
+
+// Ultra-robust incident report webhook endpoint - MAXIMUM 502 prevention
+app.post('/webhook/incident-report', (req, res) => {
+  const startTime = Date.now();
+  const requestId = `incident_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`;
+
+  // INSTANT response - no async operations before response
+  res.status(200).json({
+    success: true,
+    message: 'Incident webhook received',
+    requestId: requestId,
+    timestamp: new Date().toISOString()
+  });
+
+  Logger.info(`🚨 Incident webhook - Request ID: ${requestId}`);
+
+  // Process everything asynchronously after response is sent
+  process.nextTick(async () => {
+    try {
+      const webhookData = req.body;
+      
+      // Store in debugger immediately
       WebhookDebugger.storeWebhook({
         type: 'incident_report',
         data: webhookData,
@@ -1012,77 +941,45 @@ app.post('/webhook/incident-report', async (req, res) => {
         requestId: requestId
       });
 
-      // Extract comprehensive incident data with multiple fallback methods
-      const extractedFields = extractAllTypeformFields(formResponse);
+      let formResponse = webhookData.form_response || webhookData;
       
-      // Multiple ways to find user ID
-      const userId = formResponse.hidden?.create_user_id ||
-                    formResponse.variables?.find(v => v.key === 'create_user_id')?.value ||
-                    webhookData.hidden?.create_user_id ||
-                    webhookData.variables?.find(v => v.key === 'create_user_id')?.value ||
-                    extractAnswer(formResponse, 'create_user_id') ||
-                    extractedFields.create_user_id;
-
-      Logger.info(`Background incident processing for user: ${userId || 'UNKNOWN'}`);
-
-      // Save to database if available
-      if (supabaseEnabled && userId) {
-        try {
-          // Simplified save - just store the essential data
-          const essentialData = {
-            create_user_id: userId,
-            created_at: new Date().toISOString(),
-            webhook_request_id: requestId,
-            form_data: JSON.stringify(extractedFields),
-            raw_webhook_data: JSON.stringify(webhookData)
-          };
-
-          // Try to add specific fields if they exist
-          if (extractedFields.incident_date) essentialData.incident_date = extractedFields.incident_date;
-          if (extractedFields.incident_time) essentialData.incident_time = extractedFields.incident_time;
-          if (extractedFields.incident_location) essentialData.incident_location = extractedFields.incident_location;
-          if (extractedFields.full_name) essentialData.full_name = extractedFields.full_name;
-          if (extractedFields.email) essentialData.email = extractedFields.email;
-          if (extractedFields.phone) essentialData.phone = extractedFields.phone;
-
-          const { data: insertedReport, error: reportError } = await supabase
-            .from('incident_reports')
-            .insert(essentialData)
-            .select()
-            .single();
-
-          if (reportError) {
-            Logger.error(`Incident save failed: ${reportError.message}`);
-            
-            // Try ultra-minimal save
-            const { data: minimalSave, error: minimalError } = await supabase
-              .from('incident_reports')
-              .insert({
-                create_user_id: userId,
-                created_at: new Date().toISOString(),
-                webhook_request_id: requestId
-              })
-              .select()
-              .single();
-
-            if (!minimalError && minimalSave) {
-              Logger.success(`✅ Minimal incident report saved with ID: ${minimalSave.id}`);
-            } else {
-              Logger.error(`All save attempts failed: ${minimalError?.message}`);
-            }
-          } else {
-            Logger.success(`✅ Incident report saved with ID: ${insertedReport.id} for user: ${userId}`);
-          }
-
-        } catch (dbError) {
-          Logger.error(`Background database error: ${dbError.message}`);
-        }
-      } else {
-        Logger.warn('Database not enabled or no user ID - incident report not saved in background');
+      if (!formResponse) {
+        Logger.warn(`No form data in ${requestId}`);
+        return;
       }
 
-    } catch (backgroundError) {
-      Logger.error(`❌ Background incident processing error: ${backgroundError.message}`);
+      // Extract data
+      const extractedFields = extractAllTypeformFields(formResponse);
+      const userId = formResponse.hidden?.create_user_id ||
+                    formResponse.variables?.find(v => v.key === 'create_user_id')?.value ||
+                    extractAnswer(formResponse, 'create_user_id');
+
+      Logger.info(`Processing incident for user: ${userId || 'NO_USER_ID'}`);
+
+      // Database save with maximum error protection
+      if (supabaseEnabled && userId) {
+        try {
+          const { error } = await supabase
+            .from('incident_reports')
+            .insert({
+              create_user_id: userId,
+              created_at: new Date().toISOString(),
+              webhook_request_id: requestId,
+              raw_webhook_data: JSON.stringify(webhookData, null, 2)
+            });
+
+          if (error) {
+            Logger.error(`DB save failed: ${error.message}`);
+          } else {
+            Logger.success(`✅ Incident saved for ${userId}`);
+          }
+        } catch (dbError) {
+          Logger.error(`DB error: ${dbError.message}`);
+        }
+      }
+
+    } catch (error) {
+      Logger.error(`Background processing error: ${error.message}`);
     }
   });
 });
