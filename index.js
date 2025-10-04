@@ -846,7 +846,7 @@ const webhookLimiter = rateLimit({
 
     // Get client IP
     const clientIP = req.ip || req.connection?.remoteAddress || req.headers['x-forwarded-for']?.split(',')[0].trim();
-    
+
     // Simple IP check for exact matches
     if (typeformIPs.includes(clientIP)) {
       Logger.debug(`Skipping rate limit for Typeform IP: ${clientIP}`);
@@ -1880,7 +1880,7 @@ app.post('/webhook/signup', webhookLimiter, (req, res, next) => {
 console.log('✅ Enhanced Typeform webhook endpoint registered at /webhook/signup');
 
 // ========================================
-// CRITICAL FIX: INCIDENT REPORT WEBHOOK - RESTORE DATABASE SAVING
+// CRITICAL FIX 1: INCIDENT REPORT WEBHOOK - RESTORE DATABASE SAVING
 // ========================================
 // Changed from validateTypeformSignature to checkSharedKey
 app.post('/webhook/incident-report', webhookLimiter, async (req, res) => {
@@ -2152,7 +2152,7 @@ app.post('/webhook/incident-report', webhookLimiter, async (req, res) => {
   }
 });
 
-Logger.success('✅ CRITICAL FIX: Incident report webhook endpoint now saves to database');
+Logger.success('✅ CRITICAL FIX: Incident report webhook now saves to database');
 
 // ========================================
 // LEGAL NARRATIVE AND AI SUMMARY FUNCTIONS
@@ -2892,95 +2892,6 @@ app.post('/webhook/typeform-test', webhookLimiter, async (req, res) => {
 
 Logger.info('✅ Typeform test webhook endpoint registered at /webhook/typeform-test (NO AUTH)');
 
-      gdpr_module: 'INTEGRATED - GDPR Manager with streamlined compliance',
-      legal_narrative_generation: 'FIXED - Consolidated endpoint with ai_summary table storage',
-      syntax_errors: 'FIXED - All syntax errors corrected',
-      code_organization: 'IMPROVED - Better structured and documented code'
-    }
-  };
-
-  res.json(status);
-});
-
-// ========================================
-// TYPEFORM WEBHOOK TEST ENDPOINT (NO AUTH)
-// ========================================
-app.post('/webhook/typeform-test', webhookLimiter, async (req, res) => {
-  const requestId = crypto.randomUUID();
-  const startTime = Date.now();
-
-  console.log(`[${requestId}] 🧪 Typeform TEST webhook received`);
-  console.log('=======================================');
-  console.log('TYPEFORM TEST WEBHOOK - NO AUTH CHECK');
-  console.log('=======================================');
-
-  try {
-    // Log all webhook details for debugging
-    console.log(`[${requestId}] Headers:`, JSON.stringify(req.headers, null, 2));
-    console.log(`[${requestId}] Body:`, JSON.stringify(req.body, null, 2));
-    console.log(`[${requestId}] Query:`, JSON.stringify(req.query, null, 2));
-    console.log(`[${requestId}] IP:`, req.ip);
-    console.log(`[${requestId}] User-Agent:`, req.get('user-agent'));
-
-    // Check if this looks like a Typeform webhook
-    const isTypeform = req.headers['user-agent']?.toLowerCase().includes('typeform') ||
-                      req.body?.form_response ||
-                      req.headers['typeform-signature'];
-
-    // Store in database for analysis if available
-    if (supabaseEnabled) {
-      try {
-        await supabase.from('webhook_debug_log').insert({
-          webhook_id: requestId,
-          webhook_type: 'typeform_test',
-          timestamp: new Date().toISOString(),
-          headers: req.headers,
-          body: req.body,
-          query: req.query,
-          user_agent: req.get('user-agent'),
-          ip: req.ip,
-          is_typeform: isTypeform,
-          processing_time_ms: Date.now() - startTime
-        });
-      } catch (dbError) {
-        console.warn('Failed to store test webhook in database:', dbError.message);
-      }
-    }
-
-    console.log(`[${requestId}] ✅ Test webhook processed successfully`);
-    console.log(`[${requestId}] Is Typeform: ${isTypeform}`);
-    console.log(`[${requestId}] Processing time: ${Date.now() - startTime}ms`);
-
-    // Return success response
-    res.status(200).json({
-      success: true,
-      message: 'Typeform test webhook received successfully',
-      requestId: requestId,
-      timestamp: new Date().toISOString(),
-      isTypeform: isTypeform,
-      processingTime: Date.now() - startTime,
-      receivedData: {
-        hasFormResponse: !!(req.body?.form_response),
-        hasTypeformSignature: !!(req.headers['typeform-signature']),
-        bodyKeys: Object.keys(req.body || {}),
-        headerKeys: Object.keys(req.headers || {})
-      }
-    });
-
-  } catch (error) {
-    console.error(`[${requestId}] ❌ Test webhook error:`, error);
-
-    res.status(500).json({
-      success: false,
-      error: 'Test webhook processing failed',
-      message: error.message,
-      requestId: requestId
-    });
-  }
-});
-
-Logger.info('✅ Typeform test webhook endpoint registered at /webhook/typeform-test (NO AUTH)');
-
 // --- DEBUG ENDPOINT FOR USER DATA (WITH GDPR LOGGING) ---
 app.get('/api/debug/user/:userId', checkSharedKey, async (req, res) => {
   if (!supabaseEnabled) {
@@ -2990,7 +2901,7 @@ app.get('/api/debug/user/:userId', checkSharedKey, async (req, res) => {
 // ========================================
 app.get('/webhook/check', (req, res) => {
   const baseUrl = `${req.protocol}://${req.get('host')}`;
-  
+
   res.json({
     success: true,
     message: 'Webhook endpoints are accessible',
@@ -4931,7 +4842,7 @@ if (process.env.NODE_ENV !== 'test') {
     Logger.info(`🎥 Dash-cam Upload: ${supabaseEnabled ? 'INITIALIZING...' : 'DISABLED'}`);
 
     if (!SHARED_KEY) {
-      Logger.warn('⚠️ ZAPIER_SHARED_KEY not set - authentication disabled');
+      Logger.warn('⚠️ WARNING: ZAPIER_SHARED_KEY not set - authentication disabled');
     }
 
     if (!BLOCK_TEMP_IDS) {
