@@ -2803,7 +2803,15 @@ app.get('/health', async (req, res) => {
       file_redirect: 'ADDED - transcription-status.html redirect to transcription.html',
       trust_proxy_configuration: 'FIXED - Changed from true to 1 for proper rate limiting',
       error_handling: 'IMPROVED - More graceful error recovery',
+      gdpr_module: 'INTEGRATED - GDPR Manager with streamlined compliance',
+      legal_narrative_generation: 'FIXED - Consolidated endpoint with ai_summary table storage',
+      syntax_errors: 'FIXED - All syntax errors corrected',
+      code_organization: 'IMPROVED - Better structured and documented code'
+    }
+  };
 
+  res.json(status);
+});
 
 // ========================================
 // TYPEFORM WEBHOOK TEST ENDPOINT (NO AUTH)
