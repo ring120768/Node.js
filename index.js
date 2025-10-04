@@ -2894,10 +2894,88 @@ Logger.info('✅ Typeform test webhook endpoint registered at /webhook/typeform-
   res.json(status);
 });
 
+// ========================================
+// TYPEFORM WEBHOOK TEST ENDPOINT (NO AUTH)
+// ========================================
+app.post('/webhook/typeform-test', webhookLimiter, async (req, res) => {
+  const requestId = crypto.randomUUID();
+  const startTime = Date.now();
+
+  console.log(`[${requestId}] 🧪 Typeform TEST webhook received`);
+  console.log('=======================================');
+  console.log('TYPEFORM TEST WEBHOOK - NO AUTH CHECK');
+  console.log('=======================================');
+
+  try {
+    // Log all webhook details for debugging
+    console.log(`[${requestId}] Headers:`, JSON.stringify(req.headers, null, 2));
+    console.log(`[${requestId}] Body:`, JSON.stringify(req.body, null, 2));
+    console.log(`[${requestId}] Query:`, JSON.stringify(req.query, null, 2));
+    console.log(`[${requestId}] IP:`, req.ip);
+    console.log(`[${requestId}] User-Agent:`, req.get('user-agent'));
+
+    // Check if this looks like a Typeform webhook
+    const isTypeform = req.headers['user-agent']?.toLowerCase().includes('typeform') ||
+                      req.body?.form_response ||
+                      req.headers['typeform-signature'];
+
+    // Store in database for analysis if available
+    if (supabaseEnabled) {
+      try {
+        await supabase.from('webhook_debug_log').insert({
+          webhook_id: requestId,
+          webhook_type: 'typeform_test',
+          timestamp: new Date().toISOString(),
+          headers: req.headers,
+          body: req.body,
+          query: req.query,
+          user_agent: req.get('user-agent'),
+          ip: req.ip,
+          is_typeform: isTypeform,
+          processing_time_ms: Date.now() - startTime
+        });
+      } catch (dbError) {
+        console.warn('Failed to store test webhook in database:', dbError.message);
+      }
+    }
+
+    console.log(`[${requestId}] ✅ Test webhook processed successfully`);
+    console.log(`[${requestId}] Is Typeform: ${isTypeform}`);
+    console.log(`[${requestId}] Processing time: ${Date.now() - startTime}ms`);
+
+    // Return success response
+    res.status(200).json({
+      success: true,
+      message: 'Typeform test webhook received successfully',
+      requestId: requestId,
+      timestamp: new Date().toISOString(),
+      isTypeform: isTypeform,
+      processingTime: Date.now() - startTime,
+      receivedData: {
+        hasFormResponse: !!(req.body?.form_response),
+        hasTypeformSignature: !!(req.headers['typeform-signature']),
+        bodyKeys: Object.keys(req.body || {}),
+        headerKeys: Object.keys(req.headers || {})
+      }
+    });
+
+  } catch (error) {
+    console.error(`[${requestId}] ❌ Test webhook error:`, error);
+
+    res.status(500).json({
+      success: false,
+      error: 'Test webhook processing failed',
+      message: error.message,
+      requestId: requestId
+    });
+  }
+});
+
+Logger.info('✅ Typeform test webhook endpoint registered at /webhook/typeform-test (NO AUTH)');
+
 // --- DEBUG ENDPOINT FOR USER DATA (WITH GDPR LOGGING) ---
 app.get('/api/debug/user/:userId', checkSharedKey, async (req, res) => {
   if (!supabaseEnabled) {
-
 
 // ========================================
 // WEBHOOK URL CHECKER
