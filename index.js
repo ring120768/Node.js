@@ -426,11 +426,21 @@ function detectUserIdCorruption(req, res, next) {
   next();
 }
 
-// Additional function to detect and prevent any dummy ID generation
-function preventDummyIdGeneration(functionName, originalId) {
-  Logger.critical(`SECURITY ALERT: ${functionName} attempted to process non-UUID: ${originalId}`);
-  Logger.critical('BLOCKING: No dummy ID generation allowed - system must use ONLY Typeform UUIDs');
-  throw new Error(`SECURITY: Function ${functionName} blocked from processing non-UUID. Only Typeform UUIDs allowed.`);
+// Simplified user ID validation
+function validateUserIdRequired(userId, source = 'unknown') {
+  if (!userId) {
+    Logger.critical(`SECURITY: Missing user ID from ${source}`);
+    return false;
+  }
+
+  // Simple UUID format check
+  const uuidRegex = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
+  if (!uuidRegex.test(userId)) {
+    Logger.critical(`SECURITY: Invalid UUID format from ${source}: ${userId}`);
+    return false;
+  }
+
+  return true;
 }
 
 // Enhanced function to monitor for any ID generation attempts anywhere in the system
