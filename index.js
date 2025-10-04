@@ -1058,112 +1058,8 @@ function validateTypeformSignature(req, res, next) {
 
 
 // --- GDPR CONSENT CHECK MIDDLEWARE (NON-BLOCKING) ---
-async function checkGDPRConsent(req, res, next) {
-  const userId = req.body?.userId || req.body?.create_user_id || req.params?.userId || req.query?.userId;
-
-  if (!userId) {
-    // No user ID - add warning to request and continue
-    req.hasConsent = false;
-    req.gdprWarning = 'No user ID provided';
-    Logger.debug('GDPR check: No user ID provided');
-    return next();
-  }
-
-  // Enhanced user ID format validation
-  if (!/^[a-zA-Z0-9_-]{3,64}$/.test(userId) && !UUIDUtils.isValidUUIDFormat(userId)) {
-    req.hasConsent = false;
-    req.gdprWarning = 'Invalid user ID format';
-    Logger.debug(`GDPR check: Invalid user ID format: ${userId}`);
-    return next();
-  }
-
-  // Use the new SimpleGDPRManager for consent checks
-  if (gdprManager) {
-    try {
-      const consentStatus = await gdprManager.checkConsent(userId);
-      req.hasConsent = consentStatus.consent_given;
-      req.gdprWarning = consentStatus.consent_given ? null : 'User consent not found or expired';
-
-      if (!consentStatus.consent_given) {
-        Logger.info(`⚠️ Processing without consent for user ${userId} on ${req.path} - continuing anyway`);
-      } else {
-        Logger.debug(`✅ User ${userId} has valid consent`);
-      }
-      return next();
-    } catch (error) {
-      Logger.error('SimpleGDPRManager consent check error', error);
-      req.hasConsent = false;
-      req.gdprWarning = 'Consent check failed';
-      req.gdprError = error.message;
-      Logger.info(`⚠️ Consent check failed for user ${userId} - continuing anyway`);
-      return next();
-    }
-  }
-
-  // Fallback to original implementation if GDPR module not available (should not happen with the new manager)
-  if (!supabaseEnabled) {
-    req.hasConsent = true; // Assume consent if no database
-    req.gdprWarning = 'Database not configured';
-    Logger.debug('GDPR check: Database not configured, assuming consent');
-    return next();
-  }
-
-  try {
-    const { data: user } = await supabase
-      .from('user_signup')
-      .select('gdpr_consent, gdpr_consent_date')
-      .eq('create_user_id', userId)
-      .single();
-
-    if (!user || !user.gdpr_consent) {
-      if (gdprManager) {
-        await gdprManager.auditLog(userId, 'CONSENT_CHECK_FAILED', {
-          reason: 'No consent found',
-          ip: req.clientIp,
-          requestId: req.requestId,
-          action: 'proceeding_without_consent',
-          path: req.path
-        }, req);
-      } else {
-        await supabase.from('gdpr_audit_log').insert({
-          create_user_id: userId,
-          activity_type: 'CONSENT_CHECK_FAILED',
-          details: {
-            reason: 'No consent found',
-            ip: req.clientIp,
-            requestId: req.requestId,
-            action: 'proceeding_without_consent',
-            path: req.path
-          }
-        });
-      }
-
-      req.hasConsent = false;
-      req.gdprWarning = 'User consent not found in database';
-      Logger.info(`⚠️ Processing without consent for user ${userId} on ${req.path} - continuing anyway`);
-    } else {
-      req.hasConsent = true;
-      req.gdprConsent = {
-        granted: true,
-        date: user.gdpr_consent_date
-      };
-      Logger.debug(`✅ User ${userId} has valid consent from database`);
-    }
-
-    // Always continue - never block
-    next();
-
-  } catch (error) {
-    Logger.error('GDPR consent check error', error);
-    req.hasConsent = false;
-    req.gdprWarning = 'Consent check failed';
-    req.gdprError = error.message;
-
-    Logger.info(`⚠️ Consent check error for user ${userId} - continuing anyway: ${error.message}`);
-    // Always continue even on error
-    next();
-  }
-}
+// Removed: This middleware is no longer used as GDPR functionality is removed.
+// async function checkGDPRConsent(req, res, next) { ... }
 
 function authenticateRequest(req, res, next) {
   // Placeholder for future auth implementation
@@ -1231,24 +1127,25 @@ global.supabase = supabase;
 global.supabaseEnabled = supabaseEnabled;
 
 // Initialize GDPR services
-let gdprManager = null;
-let gdpr = null;
+// Removed: GDPR services are no longer needed.
+// let gdprManager = null;
+// let gdpr = null;
 
-if (supabaseEnabled) {
-  try {
-    const SimpleGDPRManager = require('./lib/simpleGDPRManager');
-    const GDPRService = require('./services/gdprService');
-    
-    gdprManager = new SimpleGDPRManager(process.env.SUPABASE_URL, process.env.SUPABASE_SERVICE_ROLE_KEY);
-    gdpr = new GDPRService(process.env.SUPABASE_URL, process.env.SUPABASE_SERVICE_ROLE_KEY);
-    Logger.success('✅ Simplified GDPR Manager initialized');
-    Logger.success('✅ Simplified GDPR Service initialized');
-  } catch (error) {
-    Logger.warn('GDPR services not available:', error.message);
-    gdprManager = null;
-    gdpr = null;
-  }
-}
+// if (supabaseEnabled) {
+//   try {
+//     const SimpleGDPRManager = require('./lib/simpleGDPRManager');
+//     const GDPRService = require('./services/gdprService');
+
+//     gdprManager = new SimpleGDPRManager(process.env.SUPABASE_URL, process.env.SUPABASE_SERVICE_ROLE_KEY);
+//     gdpr = new GDPRService(process.env.SUPABASE_URL, process.env.SUPABASE_SERVICE_ROLE_KEY);
+//     Logger.success('✅ Simplified GDPR Manager initialized');
+//     Logger.success('✅ Simplified GDPR Service initialized');
+//   } catch (error) {
+//     Logger.warn('GDPR services not available:', error.message);
+//     gdprManager = null;
+//     gdpr = null;
+//   }
+// }
 
 // Initialize Supabase Realtime function
 function initializeSupabaseRealtime() {
@@ -1773,13 +1670,14 @@ app.post('/webhook/signup', webhookLimiter, (req, res, next) => {
     }
 
     // Log success
-    if (gdprManager) {
-      await gdprManager.auditLog(create_user_id, 'TYPEFORM_WEBHOOK_PROCESSED', {
-        request_id: requestId,
-        duration_ms: Date.now() - startTime,
-        fields_mapped: Object.keys(userData).length
-      }, req);
-    }
+    // Removed: GDPR audit logging is removed.
+    // if (gdprManager) {
+    //   await gdprManager.auditLog(create_user_id, 'TYPEFORM_WEBHOOK_PROCESSED', {
+    //     request_id: requestId,
+    //     duration_ms: Date.now() - startTime,
+    //     fields_mapped: Object.keys(userData).length
+    //   }, req);
+    // }
 
     console.log(`[${requestId}] ✅ Webhook processed successfully in ${Date.now() - startTime}ms`);
 
@@ -2001,22 +1899,23 @@ app.post('/webhook/incident-report', webhookLimiter, async (req, res) => {
       Logger.critical(`✅ SUCCESSFULLY SAVED incident report with ID: ${insertedReport.id}`);
 
       // GDPR audit log - but don't let it block the save
-      try {
-        if (gdprManager) {
-          await gdprManager.auditLog(
-            userId,
-            'incident_report_received',
-            {
-              report_id: insertedReport.id,
-              form_token: formResponse.token,
-              fields_received: Object.keys(extractedFields).length
-            },
-            req
-          );
-        }
-      } catch (auditError) {
-        Logger.error(`GDPR audit failed (non-blocking): ${auditError.message}`);
-      }
+      // Removed: GDPR audit logging is removed.
+      // try {
+      //   if (gdprManager) {
+      //     await gdprManager.auditLog(
+      //       userId,
+      //       'incident_report_received',
+      //       {
+      //         report_id: insertedReport.id,
+      //         form_token: formResponse.token,
+      //         fields_received: Object.keys(extractedFields).length
+      //       },
+      //       req
+      //     );
+      //   }
+      // } catch (auditError) {
+      //   Logger.error(`GDPR audit failed (non-blocking): ${auditError.message}`);
+      // }
 
       // Check if we need to process any pending items for this user
       try {
@@ -2447,7 +2346,7 @@ app.post('/api/update-legal-narrative', checkSharedKey, async (req, res) => {
 });
 
 // Get saved legal narratives from ai_summary table
-app.get('/api/legal-narratives/:userId', checkSharedKey, checkGDPRConsent, async (req, res) => {
+app.get('/api/legal-narratives/:userId', checkSharedKey, async (req, res) => {
   if (!supabaseEnabled) {
     return res.status(503).json({
       error: 'Service not configured',
@@ -2511,7 +2410,7 @@ app.get('/api/legal-narratives/:userId', checkSharedKey, checkGDPRConsent, async
 });
 
 // Generate legal narrative from user and incident IDs
-app.post('/api/generate-legal-narrative-from-ids', checkSharedKey, checkGDPRConsent, async (req, res) => {
+app.post('/api/generate-legal-narrative-from-ids', checkSharedKey, async (req, res) => {
   try {
     const {
       userId,
@@ -2683,18 +2582,19 @@ app.get('/api/config', (req, res) => {
 app.get('/health', async (req, res) => {
   const externalServices = await checkExternalServices();
 
-  const gdprStatus = gdprManager ? {
-    module: 'simple_gdpr_manager',
-    consent_management: true,
-    audit_logging: true,
-    dsr_handling: true,
-    compliance: true
-  } : {
-    module: 'not configured'
-  };
+  // Removed: GDPR status is no longer relevant.
+  // const gdprStatus = gdprManager ? {
+  //   module: 'simple_gdpr_manager',
+  //   consent_management: true,
+  //   audit_logging: true,
+  //   dsr_handling: true,
+  //   compliance: true
+  // } : {
+  //   module: 'not configured'
+  // };
 
   const enhancedModules = {
-    gdprManager: gdprManager !== null,
+    gdprManager: false, // Explicitly set to false as it's removed
     webhookDebugger: webhookDebugger !== null,
     storedWebhooks: webhookDebugger ? webhookDebugger.webhookStore.size : 0,
     webhookStoreStatus: webhookDebugger ?
@@ -2717,12 +2617,12 @@ app.get('/health', async (req, res) => {
         queue: activeSessions.size,
         users: userSessions.size
       },
-      gdpr_compliance: gdprStatus,
+      // gdpr_compliance: gdprStatus, // Removed GDPR status
       what3words: externalServices.what3words
     },
     enhancedModules: enhancedModules,
     compliance: {
-      uk_gdpr: gdprManager ? 'compliant' : 'not configured'
+      // uk_gdpr: gdprManager ? 'compliant' : 'not configured' // Removed GDPR compliance status
     },
     fixes: {
       incident_report_saving: 'CRITICAL FIX - Now saves all 150 fields to database',
@@ -2730,13 +2630,13 @@ app.get('/health', async (req, res) => {
       uuid_validation: 'ENHANCED - Comprehensive UUID validation functions',
       typeform_webhook: 'ENHANCED - Full UUID validation in webhook handler',
       temp_id_blocking: BLOCK_TEMP_IDS ? 'ENABLED - Blocking all temporary IDs' : 'DISABLED',
-      consent_handling: 'IMPROVED - Enhanced webhook consent detection and processing',
+      consent_handling: 'REMOVED - GDPR consent checks are no longer performed', // Updated to reflect removal
       ai_summary_columns: 'FIXED - Using only existing database columns',
       transcription_saving: 'FIXED - Removed non-existent column references',
       file_redirect: 'ADDED - transcription-status.html redirect to transcription.html',
       trust_proxy_configuration: 'FIXED - Changed from true to 1 for proper rate limiting',
       error_handling: 'IMPROVED - More graceful error recovery',
-      gdpr_module: 'INTEGRATED - GDPR Manager with streamlined compliance',
+      gdpr_module: 'REMOVED - Simplified GDPR Manager and related services', // Updated to reflect removal
       legal_narrative_generation: 'FIXED - Consolidated endpoint with ai_summary table storage',
       syntax_errors: 'FIXED - All syntax errors corrected',
       code_organization: 'IMPROVED - Better structured and documented code'
@@ -2871,12 +2771,13 @@ Logger.info('✅ Webhook URL checker registered at /webhook/check');
     Logger.info('Debug check for user', { userId });
 
     // Log GDPR activity
-    if (gdprManager) {
-      await gdprManager.auditLog(userId, 'DATA_ACCESS', {
-        type: 'debug_view',
-        ip: req.clientIp
-      }, req);
-    }
+    // Removed: GDPR audit logging is removed.
+    // if (gdprManager) {
+    //   await gdprManager.auditLog(userId, 'DATA_ACCESS', {
+    //     type: 'debug_view',
+    //     ip: req.clientIp
+    //   }, req);
+    // }
 
     // Check all tables for this user
     const checks = {};
@@ -3307,74 +3208,8 @@ app.get('/api/test-openai', async (req, res) => {
 });
 
 // GDPR Test endpoint
-app.get('/api/gdpr/test', async (req, res) => {
-  try {
-    if (!gdprManager) {
-      return res.status(503).json({
-        error: 'GDPR Manager not initialized',
-        supabaseEnabled: supabaseEnabled,
-        requestId: req.requestId
-      });
-    }
-
-    const testUserId = 'test_' + Date.now();
-
-    // Test consent flow using the actual SimpleGDPRManager methods
-    try {
-      // Set consent in user_signup table
-      const { data: setData, error: setError } = await supabase
-        .from('user_signup')
-        .upsert({
-          create_user_id: testUserId,
-          gdpr_consent: true,
-          gdpr_consent_date: new Date().toISOString()
-        }, {
-          onConflict: 'create_user_id'
-        })
-        .select()
-        .single();
-
-      if (setError) throw setError;
-
-      // Check consent from user_signup table
-      const { data: checkData, error: checkError } = await supabase
-        .from('user_signup')
-        .select('gdpr_consent, gdpr_consent_date')
-        .eq('create_user_id', testUserId)
-        .single();
-
-      if (checkError && checkError.code !== 'PGRST116') throw checkError;
-
-      res.json({
-        success: true,
-        testUser: testUserId,
-        consentSet: !setError,
-        consentVerified: checkData?.gdpr_consent || false,
-        setResult: setData,
-        checkResult: checkData,
-        timestamp: new Date().toISOString(),
-        requestId: req.requestId
-      });
-
-    } catch (testError) {
-      res.status(500).json({
-        success: false,
-        testUser: testUserId,
-        error: testError.message,
-        details: testError,
-        requestId: req.requestId
-      });
-    }
-
-  } catch (error) {
-    Logger.error('GDPR test endpoint error:', error);
-    res.status(500).json({
-      error: 'Test failed',
-      message: error.message,
-      requestId: req.requestId
-    });
-  }
-});
+// Removed: GDPR functionality is removed.
+// app.get('/api/gdpr/test', async (req, res) => { ... });
 
 // AI summary generation test endpoint
 app.post('/api/generate-ai-summary', checkSharedKey, async (req, res) => {
@@ -3475,7 +3310,7 @@ app.get('/test/transcription-queue', async (req, res) => {
 });
 
 // Get detailed transcription status
-app.get('/api/transcription-status/:queueId', checkGDPRConsent, async (req, res) => {
+app.get('/api/transcription-status/:queueId', async (req, res) => {
   if (!supabaseEnabled) {
     return res.status(503).json({
       error: 'Service not configured',
@@ -3490,13 +3325,14 @@ app.get('/api/transcription-status/:queueId', checkGDPRConsent, async (req, res)
     Logger.info(`Getting transcription status for queueId: ${queueId}, userId: ${userId}`);
 
     // Log GDPR access for audit purposes (but don't block)
-    if (gdprManager && userId) {
-      await gdprManager.auditLog(userId, 'TRANSCRIPTION_STATUS_CHECK', {
-        queueId: queueId,
-        consent_status: req.hasConsent,
-        warning: req.gdprWarning
-      }, req);
-    }
+    // Removed: GDPR audit logging is removed.
+    // if (gdprManager && userId) {
+    //   await gdprManager.auditLog(userId, 'TRANSCRIPTION_STATUS_CHECK', {
+    //     queueId: queueId,
+    //     consent_status: req.hasConsent,
+    //     warning: req.gdprWarning
+    //   }, req);
+    // }
 
     // Get queue status
     const { data: queueItem, error: queueError } = await supabase
@@ -3577,8 +3413,8 @@ app.get('/api/transcription-status/:queueId', checkGDPRConsent, async (req, res)
       error: queueItem.error_message,
       userId: queueItem.create_user_id,
       audioUrl: queueItem.audio_url,
-      hasConsent: req.hasConsent,
-      gdprWarning: req.gdprWarning,
+      // hasConsent: req.hasConsent, // Removed GDPR fields
+      // gdprWarning: req.gdprWarning,
       requestId: req.requestId
     });
 
@@ -3594,7 +3430,7 @@ app.get('/api/transcription-status/:queueId', checkGDPRConsent, async (req, res)
 });
 
 // Alternative endpoint for transcription data (used by review page)
-app.get('/api/transcription-data', checkGDPRConsent, async (req, res) => {
+app.get('/api/transcription-data', async (req, res) => {
   if (!supabaseEnabled) {
     return res.status(503).json({
       error: 'Service not configured',
@@ -3615,13 +3451,14 @@ app.get('/api/transcription-data', checkGDPRConsent, async (req, res) => {
     Logger.info(`Getting transcription data for queueId: ${queueId}, userId: ${userId}`);
 
     // Log GDPR access for audit purposes (but don't block)
-    if (gdprManager && userId) {
-      await gdprManager.auditLog(userId, 'TRANSCRIPTION_DATA_ACCESS', {
-        queueId: queueId,
-        consent_status: req.hasConsent,
-        warning: req.gdprWarning
-      }, req);
-    }
+    // Removed: GDPR audit logging is removed.
+    // if (gdprManager && userId) {
+    //   await gdprManager.auditLog(userId, 'TRANSCRIPTION_DATA_ACCESS', {
+    //     queueId: queueId,
+    //     consent_status: req.hasConsent,
+    //     warning: req.gdprWarning
+    //   }, req);
+    // }
 
     // Get queue item
     const { data: queueItem, error: queueError } = await supabase
@@ -3803,12 +3640,13 @@ app.post('/api/update-transcription', checkSharedKey, async (req, res) => {
     }
 
     // Log the transcription update for GDPR audit
-    if (gdprManager && userId) {
-      await gdprManager.auditLog(userId, 'TRANSCRIPTION_UPDATED', {
-        queueId: queueId,
-        transcriptionId: queueItem.transcription_id
-      }, req);
-    }
+    // Removed: GDPR audit logging is removed.
+    // if (gdprManager && userId) {
+    //   await gdprManager.auditLog(userId, 'TRANSCRIPTION_UPDATED', {
+    //     queueId: queueId,
+    //     transcriptionId: queueItem.transcription_id
+    //   }, req);
+    // }
 
     res.json({
       success: true,
@@ -4046,7 +3884,7 @@ app.get('/status', (req, res) => {
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Car Crash Lawyer AI - Critical Fixes Applied</title>
+    <title>Car Crash Lawyer AI - CRITICAL FIXES APPLIED</title>
     <style>
         body { font-family: Arial, sans-serif; padding: 40px; background: #f5f5f5; }
         .container { max-width: 900px; margin: 0 auto; background: white; padding: 30px; border-radius: 10px; box-shadow: 0 2px 10px rgba(0,0,0,0.1); }
@@ -4133,11 +3971,8 @@ app.get('/status', (req, res) => {
         <div class="section">
             <h2>🛡️ GDPR Compliance:</h2>
             <div class="endpoint">
-                <strong>Simple GDPR Manager Routes:</strong> <span class="new-badge">ACTIVE</span><br>
-                <code>GET /api/gdpr/status/:userId</code> - Check consent status<br>
-                <code>GET /api/gdpr/export/:userId</code> - Request data export<br>
-                <code>DELETE /api/gdpr/delete/:userId</code> - Request data deletion<br>
-                <code>GET /api/gdpr/test</code> - Test GDPR functionality<br>
+                <strong>GDPR Manager: ❌ Completely Removed for Simplified App</strong><br>
+                <p>All GDPR-related consent checks, audit logs, and data management features have been removed.</p>
                 <br>
                 <strong>Legal Narrative (FIXED):</strong> <span class="critical-badge">USER ID PRESERVED</span><br>
                 <code>POST /api/generate-legal-narrative</code> - Generate with ID preservation<br>
@@ -4171,7 +4006,7 @@ app.get('/status', (req, res) => {
                 <li>UUID Validation: ✅ ENHANCED - Comprehensive validation functions</li>
                 <li>Temp ID Blocking: ${BLOCK_TEMP_IDS ? '✅ ENABLED' : '⚠️ DISABLED - Enable in production!'}</li>
                 <li>Require User ID: ${REQUIRE_USER_ID ? '✅ ENABLED' : '⚠️ DISABLED'}</li>
-                <li>Simple GDPR Manager: ${gdprManager ? '✅ Active' : '❌ Not configured'}</li>
+                <li>GDPR Manager: ❌ Completely Removed for Simplified App</li>
                 <li>Webhook Debugger: ${webhookDebugger ? '✅ Active' : '⚠️ Not configured'}</li>
                 <li>Transcription Service: ${transcriptionService ? '✅ Real Service' : '⚠️ Mock Service'}</li>
             </ul>
@@ -4182,7 +4017,7 @@ app.get('/status', (req, res) => {
             <ul>
                 <li>Version: 4.3.0</li>
                 <li>Supabase: ${supabaseEnabled ? '✅ Connected' : '❌ Not configured'}</li>
-                <li>Simple GDPR Manager: ${gdprManager ? '✅ Active' : '❌ Not configured'}</li>
+                <li>GDPR Manager: ❌ Completely Removed for Simplified App</li>
                 <li>Supabase Realtime: ${realtimeChannels.transcriptionChannel ? '✅ Active' : '⚠️ Optional'}</li>
                 <li>OpenAI: ${process.env.OPENAI_API_KEY ? '✅ Configured' : '❌ Not configured'}</li>
                 <li>Transcription Queue: ${transcriptionQueueInterval ? '✅ Running' : '❌ Not running'}</li>
@@ -4205,7 +4040,7 @@ app.get('/status', (req, res) => {
                 <li>☐ Run data recovery script if needed</li>
                 <li>☐ Monitor error_logs table</li>
                 <li>☐ Test UUID validation functions</li>
-                <li>☐ Verify GDPR compliance</li>
+                <li>☐ Verify data integrity (GDPR removed)</li>
             </ul>
         </div>
     </div>
@@ -4321,11 +4156,12 @@ app.post('/api/log-emergency-call', authenticateRequest, async (req, res) => {
       });
     }
 
-    if (gdprManager) {
-      await gdprManager.auditLog(user_id, 'EMERGENCY_CALL_LOGGED', {
-        service: service_called
-      }, req);
-    }
+    // Removed: GDPR audit logging is removed.
+    // if (gdprManager) {
+    //   await gdprManager.auditLog(user_id, 'EMERGENCY_CALL_LOGGED', {
+    //     service: service_called
+    //   }, req);
+    // }
 
     res.json({
       success: true,
@@ -4461,26 +4297,27 @@ app.post('/api/whisper/transcribe', upload.single('audio'), async (req, res) => 
     }
 
     // GDPR: Check consent and log for audit purposes
-    if (gdprManager && create_user_id) {
-      const consentStatus = await gdprManager.checkConsent(create_user_id);
-      if (!consentStatus.consent_given) {
-        Logger.info(`🚫 No consent for user ${create_user_id} - processing with audit log`);
-        // Log the processing without consent for audit purposes
-        await gdprManager.auditLog(create_user_id, 'AUDIO_PROCESSING_NO_CONSENT', {
-          type: 'transcription',
-          size: req.file.size,
-          jurisdiction: consentStatus.jurisdiction || 'unknown',
-          warning: 'Processing without explicit consent'
-        }, req);
-      } else {
-        // Log the processing activity with consent
-        await gdprManager.auditLog(create_user_id, 'AUDIO_PROCESSING', {
-          type: 'transcription',
-          size: req.file.size,
-          jurisdiction: consentStatus.jurisdiction
-        }, req);
-      }
-    }
+    // Removed: GDPR functionality is removed.
+    // if (gdprManager && create_user_id) {
+    //   const consentStatus = await gdprManager.checkConsent(create_user_id);
+    //   if (!consentStatus.consent_given) {
+    //     Logger.info(`🚫 No consent for user ${create_user_id} - processing with audit log`);
+    //     // Log the processing without consent for audit purposes
+    //     await gdprManager.auditLog(create_user_id, 'AUDIO_PROCESSING_NO_CONSENT', {
+    //       type: 'transcription',
+    //       size: req.file.size,
+    //       jurisdiction: consentStatus.jurisdiction || 'unknown',
+    //       warning: 'Processing without explicit consent'
+    //     }, req);
+    //   } else {
+    //     // Log the processing activity with consent
+    //     await gdprManager.auditLog(create_user_id, 'AUDIO_PROCESSING', {
+    //       type: 'transcription',
+    //       size: req.file.size,
+    //       jurisdiction: consentStatus.jurisdiction
+    //     }, req);
+    //   }
+    // }
 
     // Just log it for audit, don't block
     console.log(`Processing audio for user ${create_user_id}`);
@@ -4658,15 +4495,16 @@ async function gracefulShutdown(signal) {
   Logger.info(`⚠️ ${signal} received, starting graceful shutdown...`);
 
   // Save any pending GDPR audits
-  if (gdprManager) {
-    try {
-      await gdprManager.auditLog('SYSTEM', 'SYSTEM_SHUTDOWN', {
-        timestamp: new Date().toISOString()
-      });
-    } catch (error) {
-      Logger.error('Failed to log shutdown:', error);
-    }
-  }
+  // Removed: GDPR functionality is removed.
+  // if (gdprManager) {
+  //   try {
+  //     await gdprManager.auditLog('SYSTEM', 'SYSTEM_SHUTDOWN', {
+  //       timestamp: new Date().toISOString()
+  //     });
+  //   } catch (error) {
+  //     Logger.error('Failed to log shutdown:', error);
+  //   }
+  // }
 
   // Close WebSocket connections
   wss.clients.forEach((ws) => {
@@ -4760,7 +4598,7 @@ if (process.env.NODE_ENV !== 'test') {
     Logger.critical('3. ✅ Temp ID blocking: ' + (BLOCK_TEMP_IDS ? 'ENABLED' : '⚠️ DISABLED'));
     Logger.critical('4. ✅ UUID Validation: ENHANCED');
     Logger.critical('============================================');
-    Logger.info(`🔐 Simplified GDPR Manager: ${gdprManager ? 'ACTIVE' : 'DISABLED'}`);
+    Logger.info(`🔐 GDPR Compliance: REMOVED`); // Updated to reflect removal
     Logger.info(`🗄️ Supabase: ${supabaseEnabled ? 'CONNECTED' : 'DISABLED'}`);
     Logger.info(`🤖 OpenAI: ${process.env.OPENAI_API_KEY ? 'CONFIGURED' : 'NOT CONFIGURED'}`);
     Logger.info(`🔄 Transcription Queue: ${transcriptionQueueInterval ? 'RUNNING' : 'DISABLED'}`);
@@ -4768,7 +4606,7 @@ if (process.env.NODE_ENV !== 'test') {
     Logger.info(`🎤 Recording Interface: UNIFIED at /transcription-status.html`);
     Logger.info(`⚡ Realtime Updates: ${realtimeChannels.transcriptionChannel ? 'ENABLED' : 'DISABLED (optional)'}`);
     Logger.info(`✅ Trust Proxy: FIXED (set to 1 for proper rate limiting)`);
-    Logger.info(`✅ Consent Handling: Simplified GDPR Manager enabled`);
+    Logger.info(`✅ Consent Handling: REMOVED`); // Updated to reflect removal
     Logger.info(`✅ Legal Narrative: FIXED - Consolidated endpoints with ai_summary storage`);
     Logger.info(`✅ Syntax Errors: ALL FIXED`);
     Logger.info(`✅ UUID Validation: ENHANCED with comprehensive functions`);
@@ -4794,9 +4632,10 @@ if (process.env.NODE_ENV !== 'test') {
     Logger.info('  - GET  /health - System health check');
     Logger.info('  - GET  /transcription-status.html - Main recording interface');
     Logger.info('  - POST /api/whisper/transcribe - Process audio');
-    Logger.info('  - GET  /api/gdpr/status/:userId - Check consent status');
-    Logger.info('  - GET  /api/gdpr/export/:userId - Export user data');
-    Logger.info('  - DELETE /api/gdpr/delete/:userId - Delete user data');
+    // Removed GDPR endpoints from critical list
+    // Logger.info('  - GET  /api/gdpr/status/:userId - Check consent status');
+    // Logger.info('  - GET  /api/gdpr/export/:userId - Export user data');
+    // Logger.info('  - DELETE /api/gdpr/delete/:userId - Delete user data');
     Logger.info('  - POST /api/update-legal-narrative - Update/save narrative');
     Logger.info('  - GET  /api/legal-narratives/:userId - Get saved narratives');
     Logger.info('  - GET  /api/transcription-data - Fetch transcription directly from DB');
@@ -4812,7 +4651,7 @@ if (process.env.NODE_ENV !== 'test') {
 module.exports = {
   app,
   server,
-  gdprManager,
+  // gdprManager, // Removed
   UUIDUtils,
   Validator,
   Logger
