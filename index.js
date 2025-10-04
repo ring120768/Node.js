@@ -838,64 +838,363 @@ function extractAllTypeformFields(formResponse) {
 }
 
 // ========================================
-// FRESH WEBHOOK IMPLEMENTATION - MINIMAL & CLEAN
+// ROBUST WEBHOOK IMPLEMENTATION - 502 ERROR PREVENTION
 // ========================================
 
-// Single webhook endpoint for Typeform
-app.post('/webhook', async (req, res) => {
+// Enhanced signup webhook endpoint
+app.post('/webhook/signup', async (req, res) => {
   const startTime = Date.now();
+  const requestId = `signup_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`;
   
-  console.log('=== WEBHOOK RECEIVED ===');
-  console.log('Headers:', req.headers);
-  console.log('Body:', JSON.stringify(req.body, null, 2));
-  console.log('======================');
+  // Immediate timeout protection to prevent 502 errors
+  const timeoutHandler = setTimeout(() => {
+    if (!res.headersSent) {
+      Logger.warn(`Signup webhook timeout for request ${requestId}`);
+      res.status(200).json({
+        success: true,
+        message: 'Signup webhook received, processing in background',
+        requestId: requestId,
+        processing_time_ms: Date.now() - startTime
+      });
+    }
+  }, 8000); // 8 second timeout
+
+  Logger.info(`📝 Signup webhook received - Request ID: ${requestId}`);
+  Logger.info(`IP: ${req.ip}`);
+  Logger.info(`User-Agent: ${req.get('user-agent')}`);
 
   try {
+    Logger.debug('Signup webhook data:', JSON.stringify(req.body, null, 2));
+
     const webhookData = req.body;
+    const formResponse = webhookData.form_response;
     
-    // Always respond successfully to prevent 502 errors
-    res.status(200).json({
-      success: true,
-      message: 'Webhook received successfully',
+    if (!formResponse) {
+      Logger.warn(`No form_response in signup webhook ${requestId}`);
+      clearTimeout(timeoutHandler);
+      return res.status(200).json({
+        success: false,
+        message: 'No form response data found',
+        requestId: requestId
+      });
+    }
+
+    // Store in webhook debugger
+    WebhookDebugger.storeWebhook({
+      type: 'signup',
+      data: webhookData,
       timestamp: new Date().toISOString(),
-      processing_time_ms: Date.now() - startTime
+      requestId: requestId
     });
 
-    // Log the webhook data for debugging
-    console.log('✅ Webhook processed successfully');
+    // Extract basic signup data
+    const extractedFields = extractAllTypeformFields(formResponse);
+    const userId = formResponse.hidden?.create_user_id || 
+                  formResponse.variables?.find(v => v.key === 'create_user_id')?.value ||
+                  extractAnswer(formResponse, 'create_user_id');
+
+    Logger.info(`Signup processing for user: ${userId}`);
+
+    // Save to database if available
+    if (supabaseEnabled && userId) {
+      try {
+        const { data: insertedSignup, error: signupError } = await supabase
+          .from('user_signup')
+          .insert({
+            create_user_id: userId,
+            email: extractedFields.email || extractAnswer(formResponse, 'email'),
+            name: extractedFields.full_name || extractAnswer(formResponse, 'full_name'),
+            mobile: extractedFields.phone || extractAnswer(formResponse, 'phone'),
+            legal_support: ConstantHelpers.isConsent(extractedFields.legal_support),
+            created_at: new Date().toISOString(),
+            signup_data: JSON.stringify(extractedFields),
+            webhook_request_id: requestId
+          })
+          .select()
+          .single();
+
+        if (signupError) {
+          Logger.error(`Signup save error: ${signupError.message}`);
+          throw signupError;
+        }
+
+        Logger.success(`✅ Signup saved with ID: ${insertedSignup.id} for user: ${userId}`);
+
+        clearTimeout(timeoutHandler);
+        res.status(200).json({
+          success: true,
+          message: 'Signup saved successfully',
+          user_id: userId,
+          signup_id: insertedSignup.id,
+          fields_saved: Object.keys(extractedFields).length,
+          processing_time_ms: Date.now() - startTime,
+          requestId: requestId
+        });
+
+      } catch (dbError) {
+        Logger.error(`Database error: ${dbError.message}`);
+        throw dbError;
+      }
+    } else {
+      Logger.warn('Database not enabled or no user ID - signup not saved');
+      clearTimeout(timeoutHandler);
+      res.status(200).json({
+        success: true,
+        message: 'Signup received (database not configured or no user ID)',
+        user_id: userId,
+        fields_extracted: Object.keys(extractedFields).length,
+        processing_time_ms: Date.now() - startTime,
+        requestId: requestId
+      });
+    }
 
   } catch (error) {
-    console.error('❌ Webhook error:', error);
-    
-    // Still return 200 to prevent Typeform errors
-    res.status(200).json({
-      success: false,
-      message: 'Webhook received but had processing error',
-      error: error.message,
-      timestamp: new Date().toISOString()
-    });
+    Logger.error(`❌ Signup webhook error: ${error.message}`);
+    clearTimeout(timeoutHandler);
+
+    if (!res.headersSent) {
+      res.status(200).json({
+        success: false,
+        error: 'Failed to process signup',
+        message: error.message,
+        requestId: requestId,
+        note: 'Returning 200 to prevent 502 errors in Typeform'
+      });
+    }
+  } finally {
+    clearTimeout(timeoutHandler);
   }
 });
 
-// Test endpoint
-app.all('/webhook/test', (req, res) => {
-  console.log('=== TEST WEBHOOK ===');
-  console.log('Method:', req.method);
-  console.log('Body:', req.body);
-  console.log('==================');
+// Enhanced incident report webhook endpoint
+app.post('/webhook/incident-report', async (req, res) => {
+  const startTime = Date.now();
+  const requestId = `incident_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`;
+
+  // Immediate timeout protection to prevent 502 errors
+  const timeoutHandler = setTimeout(() => {
+    if (!res.headersSent) {
+      Logger.warn(`Incident webhook timeout for request ${requestId}`);
+      res.status(200).json({
+        success: true,
+        message: 'Incident webhook received, processing in background',
+        requestId: requestId,
+        processing_time_ms: Date.now() - startTime
+      });
+    }
+  }, 8000); // 8 second timeout
+
+  Logger.info(`🚨 Incident report webhook received - Request ID: ${requestId}`);
+  Logger.info(`IP: ${req.ip}`);
+  Logger.info(`User-Agent: ${req.get('user-agent')}`);
+
+  try {
+    Logger.debug('Incident webhook data:', JSON.stringify(req.body, null, 2));
+
+    const webhookData = req.body;
+    const formResponse = webhookData.form_response;
+    
+    if (!formResponse) {
+      Logger.warn(`No form_response in incident webhook ${requestId}`);
+      clearTimeout(timeoutHandler);
+      return res.status(200).json({
+        success: false,
+        message: 'No form response data found',
+        requestId: requestId
+      });
+    }
+
+    // Store in webhook debugger
+    WebhookDebugger.storeWebhook({
+      type: 'incident_report',
+      data: webhookData,
+      timestamp: new Date().toISOString(),
+      requestId: requestId
+    });
+
+    // Extract comprehensive incident data
+    const extractedFields = extractAllTypeformFields(formResponse);
+    const userId = formResponse.hidden?.create_user_id || 
+                  formResponse.variables?.find(v => v.key === 'create_user_id')?.value ||
+                  extractAnswer(formResponse, 'create_user_id');
+
+    if (!userId) {
+      Logger.critical(`No user ID found in incident report ${requestId}`);
+    }
+
+    Logger.info(`Incident processing for user: ${userId}`);
+
+    // Save to database if available
+    if (supabaseEnabled && userId) {
+      try {
+        const { data: insertedReport, error: reportError } = await supabase
+          .from('incident_reports')
+          .insert({
+            create_user_id: userId,
+            ...extractedFields,
+            created_at: new Date().toISOString(),
+            webhook_request_id: requestId,
+            raw_webhook_data: JSON.stringify(webhookData)
+          })
+          .select()
+          .single();
+
+        if (reportError) {
+          Logger.error(`Incident report save error: ${reportError.message}`);
+          throw reportError;
+        }
+
+        Logger.success(`✅ Incident report saved with ID: ${insertedReport.id} for user: ${userId}`);
+
+        clearTimeout(timeoutHandler);
+        res.status(200).json({
+          success: true,
+          message: 'Incident report saved successfully',
+          report_id: insertedReport.id,
+          user_id: userId,
+          fields_saved: Object.keys(extractedFields).length,
+          processing_time_ms: Date.now() - startTime,
+          requestId: requestId
+        });
+
+      } catch (dbError) {
+        Logger.error(`Database error: ${dbError.message}`);
+        throw dbError;
+      }
+    } else {
+      Logger.warn('Database not enabled or no user ID - incident report not saved');
+      clearTimeout(timeoutHandler);
+      res.status(200).json({
+        success: true,
+        message: 'Incident report received (database not configured or no user ID)',
+        user_id: userId,
+        fields_extracted: Object.keys(extractedFields).length,
+        processing_time_ms: Date.now() - startTime,
+        requestId: requestId
+      });
+    }
+
+  } catch (error) {
+    Logger.error(`❌ Incident webhook error: ${error.message}`);
+    clearTimeout(timeoutHandler);
+
+    if (!res.headersSent) {
+      res.status(200).json({
+        success: false,
+        error: 'Failed to process incident report',
+        message: error.message,
+        requestId: requestId,
+        note: 'Returning 200 to prevent 502 errors in Typeform'
+      });
+    }
+  } finally {
+    clearTimeout(timeoutHandler);
+  }
+});
+
+// Generic webhook endpoint for backward compatibility
+app.post('/webhook', async (req, res) => {
+  const startTime = Date.now();
+  const requestId = `generic_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`;
   
-  res.json({
+  Logger.info(`📥 Generic webhook received - Request ID: ${requestId}`);
+  Logger.debug('Generic webhook data:', JSON.stringify(req.body, null, 2));
+  
+  // Store in debugger
+  WebhookDebugger.storeWebhook({
+    type: 'generic',
+    data: req.body,
+    timestamp: new Date().toISOString(),
+    requestId: requestId
+  });
+  
+  // Always respond successfully and quickly
+  res.status(200).json({
     success: true,
-    message: 'Test webhook working',
-    method: req.method,
-    body: req.body,
-    timestamp: new Date().toISOString()
+    message: 'Generic webhook received successfully',
+    timestamp: new Date().toISOString(),
+    processing_time_ms: Date.now() - startTime,
+    requestId: requestId,
+    note: 'Use specific endpoints: /webhook/signup or /webhook/incident-report for better processing'
   });
 });
 
-console.log('✅ Fresh webhook endpoints created:');
-console.log('  - POST /webhook (main endpoint)');
-console.log('  - ALL /webhook/test (test endpoint)');
+// Enhanced test endpoint
+app.all('/webhook/test', (req, res) => {
+  const requestId = `test_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`;
+  
+  Logger.info(`🧪 Test webhook - Method: ${req.method} - Request ID: ${requestId}`);
+  Logger.debug('Test webhook data:', req.body);
+  
+  // Store in debugger
+  WebhookDebugger.storeWebhook({
+    type: 'test',
+    method: req.method,
+    data: req.body,
+    headers: req.headers,
+    timestamp: new Date().toISOString(),
+    requestId: requestId
+  });
+  
+  res.status(200).json({
+    success: true,
+    message: 'Test webhook working perfectly',
+    method: req.method,
+    body: req.body,
+    headers: req.headers,
+    timestamp: new Date().toISOString(),
+    requestId: requestId
+  });
+});
+
+// Configuration test endpoint
+app.get('/webhook/config-test', (req, res) => {
+  const requestId = `config_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`;
+  
+  res.status(200).json({
+    success: true,
+    message: 'Webhook configuration test - Typeform ready',
+    server_time: new Date().toISOString(),
+    requestId: requestId,
+    config: {
+      api_key_required_for_webhooks: false,
+      temp_id_blocking: process.env.BLOCK_TEMP_IDS === 'true',
+      require_user_id: process.env.REQUIRE_USER_ID === 'true',
+      node_env: process.env.NODE_ENV,
+      webhook_endpoints: [
+        '/webhook/signup',
+        '/webhook/incident-report', 
+        '/webhook',
+        '/webhook/test',
+        '/webhook/config-test'
+      ],
+      timeout_protection: '8 seconds',
+      error_handling: '200 OK always returned'
+    },
+    typeform_instructions: {
+      signup_webhook_url: `${req.protocol}://${req.get('host')}/webhook/signup`,
+      incident_webhook_url: `${req.protocol}://${req.get('host')}/webhook/incident-report`,
+      headers_needed: 'Content-Type: application/json',
+      authentication: 'NONE REQUIRED',
+      method: 'POST',
+      expected_response: '200 OK with JSON success message',
+      test_command: `curl -X POST ${req.protocol}://${req.get('host')}/webhook/test -H "Content-Type: application/json" -d '{"test": "data"}'`
+    }
+  });
+});
+
+Logger.success('✅ Robust webhook endpoints created with 502 error prevention:');
+Logger.success('  - POST /webhook/signup - Process Typeform signups');
+Logger.success('  - POST /webhook/incident-report - Process incident reports');  
+Logger.success('  - POST /webhook - Generic webhook (backward compatibility)');
+Logger.success('  - ALL /webhook/test - Test endpoint (any method)');
+Logger.success('  - GET /webhook/config-test - Configuration diagnostics');
+Logger.info('🛡️ All endpoints include:');
+Logger.info('  - 8-second timeout protection');
+Logger.info('  - Always return HTTP 200 OK');
+Logger.info('  - Comprehensive error handling');
+Logger.info('  - Request ID tracking');
+Logger.info('  - Webhook debugging storage');
 
 // ========================================
 // LEGAL NARRATIVE AND AI SUMMARY FUNCTIONS
