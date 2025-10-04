@@ -69,7 +69,7 @@ const validateEnvironment = () => {
     'SUPABASE_URL': 'Database connection URL',
     'SUPABASE_SERVICE_ROLE_KEY': 'Database service key',
     'OPENAI_API_KEY': 'OpenAI API for transcription and AI summaries',
-    'ZAPIER_SHARED_KEY': 'Webhook authentication key',
+    'API_KEY': 'Webhook authentication key', // Changed from ZAPIER_SHARED_KEY
     'WEBHOOK_SECRET': 'Typeform webhook secret for signature validation'
   };
 
@@ -920,7 +920,8 @@ app.use((req, res, next) => {
 });
 
 // --- AUTHENTICATION MIDDLEWARE ---
-const SHARED_KEY = process.env.ZAPIER_SHARED_KEY || process.env.WEBHOOK_API_KEY || '';
+// Changed from ZAPIER_SHARED_KEY to API_KEY
+const SHARED_KEY = process.env.API_KEY || process.env.WEBHOOK_API_KEY || '';
 const WEBHOOK_SECRET = process.env.WEBHOOK_SECRET; // Typeform webhook secret
 
 function checkSharedKey(req, res, next) {
@@ -929,9 +930,9 @@ function checkSharedKey(req, res, next) {
   const provided = headerKey || bearer || '';
 
   if (!SHARED_KEY) {
-    Logger.warn('No ZAPIER_SHARED_KEY/WEBHOOK_API_KEY set');
+    Logger.warn('No API_KEY/WEBHOOK_API_KEY set');
     return res.status(503).json({
-      error: 'Server missing shared key (ZAPIER_SHARED_KEY)',
+      error: 'Server missing shared key (API_KEY)',
       requestId: req.requestId
     });
   }
@@ -1816,7 +1817,8 @@ console.log('✅ Enhanced Typeform webhook endpoint registered at /webhook/signu
 // ========================================
 // CRITICAL FIX: INCIDENT REPORT WEBHOOK - RESTORE DATABASE SAVING
 // ========================================
-app.post('/webhook/incident-report', webhookLimiter, validateTypeformSignature, async (req, res) => {
+// Changed from validateTypeformSignature to checkSharedKey
+app.post('/webhook/incident-report', webhookLimiter, checkSharedKey, async (req, res) => {
   const startTime = Date.now();
 
   Logger.critical('=======================================');
@@ -3138,10 +3140,10 @@ app.post('/test/incident-webhook', checkSharedKey, async (req, res) => {
 
   try {
     // Make internal request to incident report webhook
-    const response = await axios.post(`http://localhost:${PORT || 5000}/webhook/incident-report`, testPayload, {
+    const response = await axios.post(`http://localhost:${PORT || 3000}/webhook/incident-report`, testPayload, { // Changed PORT to 3000
       headers: {
         'Content-Type': 'application/json',
-        'X-Api-Key': process.env.ZAPIER_SHARED_KEY
+        'X-Api-Key': process.env.API_KEY // Changed from ZAPIER_SHARED_KEY
       }
     });
 

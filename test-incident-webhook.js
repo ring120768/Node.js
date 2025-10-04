@@ -48,7 +48,7 @@ async function testIncidentWebhook() {
     const response = await axios.post('http://localhost:5000/webhook/incident-report', testData, {
       headers: {
         'Content-Type': 'application/json',
-        'X-Api-Key': process.env.ZAPIER_SHARED_KEY
+        'X-Api-Key': process.env.API_KEY
       }
     });
 
@@ -58,7 +58,7 @@ async function testIncidentWebhook() {
     // Check if data was saved
     const debugResponse = await axios.get(`http://localhost:5000/api/debug/incident-reports?userId=${testData.form_response.hidden.create_user_id}`, {
       headers: {
-        'X-Api-Key': process.env.ZAPIER_SHARED_KEY
+        'X-Api-Key': process.env.API_KEY
       }
     });
     
