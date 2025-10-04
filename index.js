@@ -26,11 +26,7 @@ const compression = require('compression');
 // Import Supabase client
 const { createClient } = require('@supabase/supabase-js');
 
-// ========================================
-// GDPR MODULE IMPORT
-// ========================================
-const SimpleGDPRManager = require('./lib/simpleGDPRManager');
-const GDPRService = require('./services/gdprService');
+// GDPR modules temporarily removed for troubleshooting
 
 // ========================================
 // SIMPLIFIED MODULES
@@ -1234,24 +1230,9 @@ supabaseEnabled = initSupabase();
 global.supabase = supabase;
 global.supabaseEnabled = supabaseEnabled;
 
-// ========================================
-// INITIALIZE GDPR SERVICES
-// ========================================
+// GDPR services temporarily disabled
 let gdprManager = null;
 let gdpr = null;
-
-if (supabaseEnabled) {
-  try {
-    gdprManager = new SimpleGDPRManager(process.env.SUPABASE_URL, process.env.SUPABASE_SERVICE_ROLE_KEY);
-    gdpr = new GDPRService(process.env.SUPABASE_URL, process.env.SUPABASE_SERVICE_ROLE_KEY);
-    Logger.success('✅ Simplified GDPR Manager initialized');
-    Logger.success('✅ Simplified GDPR Service initialized');
-  } catch (error) {
-    Logger.warn('GDPR services not available:', error.message);
-    gdprManager = null;
-    gdpr = null;
-  }
-}
 
 // Initialize Supabase Realtime function
 function initializeSupabaseRealtime() {
@@ -1587,81 +1568,7 @@ function extractAllTypeformFields(formResponse) {
   return fields;
 }
 
-// ========================================
-// SIMPLIFIED GDPR ENDPOINTS
-// ========================================
-
-// Simplified GDPR endpoints
-app.get('/api/gdpr/status/:userId', async (req, res) => {
-  try {
-    const { userId } = req.params;
-
-    if (!gdpr) {
-      return res.status(503).json({ error: 'GDPR service not configured' });
-    }
-
-    const hasConsent = await gdpr.hasValidConsent(userId);
-    const history = await gdpr.getUserGDPRHistory(userId);
-
-    res.json({
-      user_id: userId,
-      has_consent: hasConsent,
-      recent_requests: history
-    });
-  } catch (error) {
-    res.status(500).json({ error: 'Failed to fetch GDPR status' });
-  }
-});
-
-app.get('/api/gdpr/export/:userId', async (req, res) => {
-  try {
-    const { userId } = req.params;
-
-    if (!gdpr) {
-      return res.status(503).json({ error: 'GDPR service not configured' });
-    }
-
-    const hasConsent = await gdpr.hasValidConsent(userId);
-    if (!hasConsent) {
-      return res.status(403).json({ error: 'No consent on file' });
-    }
-
-    const exportData = await gdpr.exportUserData(userId);
-
-    if (exportData.success) {
-      res.json(exportData);
-    } else {
-      res.status(500).json({ error: exportData.error });
-    }
-  } catch (error) {
-    res.status(500).json({ error: 'Export failed' });
-  }
-});
-
-app.delete('/api/gdpr/delete/:userId', async (req, res) => {
-  try {
-    const { userId } = req.params;
-
-    if (!gdpr) {
-      return res.status(503).json({ error: 'GDPR service not configured' });
-    }
-
-    const result = await gdpr.deleteUserData(userId);
-
-    if (result.success) {
-      res.json({
-        message: 'All user data has been deleted',
-        details: result
-      });
-    } else {
-      res.status(500).json({ error: result.error });
-    }
-  } catch (error) {
-    res.status(500).json({ error: 'Deletion failed' });
-  }
-});
-
-Logger.info('📋 Simplified GDPR endpoints registered');
+// GDPR endpoints temporarily removed for troubleshooting
 
 // ========================================
 // ENHANCED TYPEFORM WEBHOOK WITH UUID VALIDATION
