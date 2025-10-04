@@ -1212,44 +1212,12 @@
             if (!supabase || !userId) return false;
 
             try {
-                // Check gdpr_consent table
-                const { data, error } = await supabase
-                    .from('gdpr_consent')
-                    .select('gdpr_consent, gdpr_consent_date')
-                    .eq('create_user_id', userId)
-                    .order('gdpr_consent_date', { ascending: false })
-                    .limit(1)
-                    .single();
-
-                if (error || !data) {
-                    // Check user_signup table as fallback
-                    const { data: userData } = await supabase
-                        .from('user_signup')
-                        .select('gdpr_consent, legal_support')
-                        .eq('create_user_id', userId)
-                        .single();
-
-                    const hasConsent = userData?.gdpr_consent === true || 
-                                      userData?.legal_support === 'Yes';
-
-                    if (hasConsent) {
-                        localStorage.setItem('gdpr_consent', 'true');
-                    }
-
-                    return hasConsent;
-                }
-
-                const hasConsent = data.gdpr_consent === true;
-
-                if (hasConsent) {
-                    localStorage.setItem('gdpr_consent', 'true');
-                    localStorage.setItem('gdpr_consent_date', data.gdpr_consent_date);
-                }
-
-                return hasConsent;
+                // GDPR functionality has been removed - always return true
+                console.log('GDPR functionality removed - consent check bypassed');
+                return true;
             } catch (error) {
-                console.error('Error checking GDPR consent:', error);
-                return false;
+                console.error('Error in consent check (GDPR removed):', error);
+                return true;
             }
         }
 

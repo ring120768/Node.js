@@ -753,37 +753,8 @@
                 }
 
                 if (!AppState.supabase || !userId) {
-                    Utils.log('Cannot check GDPR consent - missing requirements');
-                    return false;
-                }
-
-                try {
-                    // Check gdpr_consent table
-                    const { data: consentData, error: consentError } = await AppState.supabase
-                        .from('gdpr_consent')
-                        .select('gdpr_consent, gdpr_consent_date')
-                        .eq('create_user_id', userId)
-                        .order('gdpr_consent_date', { ascending: false })
-                        .limit(1)
-                        .maybeSingle();
-
-                    if (!consentError && consentData?.gdpr_consent === true) {
-                        // Cache the consent
-                        localStorage.setItem('gdpr_consent', 'true');
-                        localStorage.setItem('gdpr_consent_date', consentData.gdpr_consent_date);
-                        Utils.log('GDPR consent found in database');
-                        return true;
-                    }
-
-                    // Fallback: Check user_signup table
-                    const { data: userData, error: userError } = await AppState.supabase
-                        .from('user_signup')
-                        .select('gdpr_consent, legal_support')
-                        .eq('create_user_id', userId)
-                        .maybeSingle();
-
-                    if (!userError && userData) {
-                        const hasConsent = userData.gdpr_consent === true || userData.legal_support === 'Yes';
+                    Utils.log('GDPR functionality removed - skipping consent check');
+                    return true; // Always return true since GDPR has been removedal_support === 'Yes';
 
                         if (hasConsent) {
                             localStorage.setItem('gdpr_consent', 'true');
