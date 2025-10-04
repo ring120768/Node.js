@@ -868,7 +868,7 @@ const webhookLimiter = rateLimit({
 
     return false;
   },
-  // Custom key generator to be more lenient with Typeform - Fixed for IPv6
+  // Custom key generator with proper IPv6 support
   keyGenerator: (req, res) => {
     const typeformSignature = req.headers['typeform-signature'];
     if (typeformSignature) {
@@ -876,8 +876,8 @@ const webhookLimiter = rateLimit({
       const formId = req.body?.form_response?.form_id || 'typeform-unknown';
       return `typeform-${formId}`;
     }
-    // Use req.ip which is already processed by express for IPv6 compatibility
-    return req.ip;
+    // Use the built-in IP key generator for proper IPv6 handling
+    return rateLimit.defaultKeyGenerator(req, res);
   }
 });
 
@@ -1230,9 +1230,25 @@ supabaseEnabled = initSupabase();
 global.supabase = supabase;
 global.supabaseEnabled = supabaseEnabled;
 
-// GDPR services temporarily disabled
+// Initialize GDPR services
 let gdprManager = null;
 let gdpr = null;
+
+if (supabaseEnabled) {
+  try {
+    const SimpleGDPRManager = require('./lib/simpleGDPRManager');
+    const GDPRService = require('./services/gdprService');
+    
+    gdprManager = new SimpleGDPRManager(process.env.SUPABASE_URL, process.env.SUPABASE_SERVICE_ROLE_KEY);
+    gdpr = new GDPRService(process.env.SUPABASE_URL, process.env.SUPABASE_SERVICE_ROLE_KEY);
+    Logger.success('✅ Simplified GDPR Manager initialized');
+    Logger.success('✅ Simplified GDPR Service initialized');
+  } catch (error) {
+    Logger.warn('GDPR services not available:', error.message);
+    gdprManager = null;
+    gdpr = null;
+  }
+}
 
 // Initialize Supabase Realtime function
 function initializeSupabaseRealtime() {
