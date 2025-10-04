@@ -463,11 +463,11 @@ function checkApiKey(req, res, next) {
   const queryKey = req.query.api_key;
   const provided = headerKey || bearer || queryKey || '';
 
-  Logger.debug(`API Key check for ${req.path}`, { 
-    hasHeaderKey: !!headerKey, 
-    hasBearer: !!bearer, 
+  Logger.debug(`API Key check for ${req.path}`, {
+    hasHeaderKey: !!headerKey,
+    hasBearer: !!bearer,
     hasQueryKey: !!queryKey,
-    ip: req.clientIp 
+    ip: req.clientIp
   });
 
   // Always require API key in production
@@ -495,10 +495,10 @@ function checkApiKey(req, res, next) {
 
   // Check if API key provided
   if (!provided) {
-    Logger.warn('API key missing', { 
-      ip: req.clientIp, 
-      path: req.path, 
-      method: req.method 
+    Logger.warn('API key missing', {
+      ip: req.clientIp,
+      path: req.path,
+      method: req.method
     });
     return res.status(401).json({
       error: 'API key required',
@@ -514,10 +514,10 @@ function checkApiKey(req, res, next) {
 
   // Validate API key
   if (provided !== SHARED_KEY) {
-    Logger.warn('Invalid API key provided', { 
-      ip: req.clientIp, 
+    Logger.warn('Invalid API key provided', {
+      ip: req.clientIp,
       path: req.path,
-      keyPrefix: provided.substring(0, 8) + '...' 
+      keyPrefix: provided.substring(0, 8) + '...'
     });
     return res.status(401).json({
       error: 'Invalid API key',
@@ -845,7 +845,7 @@ function extractAllTypeformFields(formResponse) {
 app.post('/webhook/signup', async (req, res) => {
   const startTime = Date.now();
   const requestId = `signup_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`;
-  
+
   // Immediate timeout protection to prevent 502 errors
   const timeoutHandler = setTimeout(() => {
     if (!res.headersSent) {
@@ -868,7 +868,7 @@ app.post('/webhook/signup', async (req, res) => {
 
     const webhookData = req.body;
     const formResponse = webhookData.form_response;
-    
+
     if (!formResponse) {
       Logger.warn(`No form_response in signup webhook ${requestId}`);
       clearTimeout(timeoutHandler);
@@ -889,7 +889,7 @@ app.post('/webhook/signup', async (req, res) => {
 
     // Extract basic signup data
     const extractedFields = extractAllTypeformFields(formResponse);
-    const userId = formResponse.hidden?.create_user_id || 
+    const userId = formResponse.hidden?.create_user_id ||
                   formResponse.variables?.find(v => v.key === 'create_user_id')?.value ||
                   extractAnswer(formResponse, 'create_user_id');
 
@@ -993,7 +993,7 @@ app.post('/webhook/incident-report', async (req, res) => {
 
     const webhookData = req.body;
     const formResponse = webhookData.form_response;
-    
+
     if (!formResponse) {
       Logger.warn(`No form_response in incident webhook ${requestId}`);
       clearTimeout(timeoutHandler);
@@ -1014,7 +1014,7 @@ app.post('/webhook/incident-report', async (req, res) => {
 
     // Extract comprehensive incident data
     const extractedFields = extractAllTypeformFields(formResponse);
-    const userId = formResponse.hidden?.create_user_id || 
+    const userId = formResponse.hidden?.create_user_id ||
                   formResponse.variables?.find(v => v.key === 'create_user_id')?.value ||
                   extractAnswer(formResponse, 'create_user_id');
 
@@ -1024,24 +1024,58 @@ app.post('/webhook/incident-report', async (req, res) => {
 
     Logger.info(`Incident processing for user: ${userId}`);
 
-    // Save to database if available
+    // Save to database if available - with error handling to prevent 502s
     if (supabaseEnabled && userId) {
       try {
+        // Try core save first
+        const coreData = {
+          create_user_id: userId,
+          incident_date: extractedFields.incident_date,
+          incident_time: extractedFields.incident_time,
+          incident_location: extractedFields.incident_location,
+          full_name: extractedFields.full_name,
+          email: extractedFields.email,
+          phone: extractedFields.phone,
+          created_at: new Date().toISOString(),
+          webhook_request_id: requestId
+        };
+
         const { data: insertedReport, error: reportError } = await supabase
           .from('incident_reports')
-          .insert({
-            create_user_id: userId,
-            ...extractedFields,
-            created_at: new Date().toISOString(),
-            webhook_request_id: requestId,
-            raw_webhook_data: JSON.stringify(webhookData)
-          })
+          .insert(coreData)
           .select()
           .single();
 
         if (reportError) {
-          Logger.error(`Incident report save error: ${reportError.message}`);
-          throw reportError;
+          Logger.error(`Core save failed: ${reportError.message}`);
+          // Try minimal save as fallback
+          const { data: minimalSave, error: minimalError } = await supabase
+            .from('incident_reports')
+            .insert({
+              create_user_id: userId,
+              created_at: new Date().toISOString(),
+              webhook_request_id: requestId,
+              raw_data: JSON.stringify(extractedFields)
+            })
+            .select()
+            .single();
+
+          if (minimalError) {
+            throw new Error(`Both core and minimal saves failed: ${minimalError.message}`);
+          }
+
+          Logger.success(`✅ Minimal incident report saved with ID: ${minimalSave.id}`);
+
+          clearTimeout(timeoutHandler);
+          return res.status(200).json({
+            success: true,
+            message: 'Incident report saved (minimal mode)',
+            report_id: minimalSave.id,
+            user_id: userId,
+            mode: 'minimal_save',
+            processing_time_ms: Date.now() - startTime,
+            requestId: requestId
+          });
         }
 
         Logger.success(`✅ Incident report saved with ID: ${insertedReport.id} for user: ${userId}`);
@@ -1059,7 +1093,17 @@ app.post('/webhook/incident-report', async (req, res) => {
 
       } catch (dbError) {
         Logger.error(`Database error: ${dbError.message}`);
-        throw dbError;
+        // Don't throw - return success to prevent Typeform 502
+        clearTimeout(timeoutHandler);
+        return res.status(200).json({
+          success: false,
+          error: 'Database save failed',
+          message: dbError.message,
+          user_id: userId,
+          processing_time_ms: Date.now() - startTime,
+          requestId: requestId,
+          note: 'Returning 200 to prevent 502 errors in Typeform'
+        });
       }
     } else {
       Logger.warn('Database not enabled or no user ID - incident report not saved');
@@ -1096,10 +1140,10 @@ app.post('/webhook/incident-report', async (req, res) => {
 app.post('/webhook', async (req, res) => {
   const startTime = Date.now();
   const requestId = `generic_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`;
-  
+
   Logger.info(`📥 Generic webhook received - Request ID: ${requestId}`);
   Logger.debug('Generic webhook data:', JSON.stringify(req.body, null, 2));
-  
+
   // Store in debugger
   WebhookDebugger.storeWebhook({
     type: 'generic',
@@ -1107,7 +1151,7 @@ app.post('/webhook', async (req, res) => {
     timestamp: new Date().toISOString(),
     requestId: requestId
   });
-  
+
   // Always respond successfully and quickly
   res.status(200).json({
     success: true,
@@ -1122,10 +1166,10 @@ app.post('/webhook', async (req, res) => {
 // Enhanced test endpoint
 app.all('/webhook/test', (req, res) => {
   const requestId = `test_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`;
-  
+
   Logger.info(`🧪 Test webhook - Method: ${req.method} - Request ID: ${requestId}`);
   Logger.debug('Test webhook data:', req.body);
-  
+
   // Store in debugger
   WebhookDebugger.storeWebhook({
     type: 'test',
@@ -1135,7 +1179,7 @@ app.all('/webhook/test', (req, res) => {
     timestamp: new Date().toISOString(),
     requestId: requestId
   });
-  
+
   res.status(200).json({
     success: true,
     message: 'Test webhook working perfectly',
@@ -1150,7 +1194,7 @@ app.all('/webhook/test', (req, res) => {
 // Configuration test endpoint
 app.get('/webhook/config-test', (req, res) => {
   const requestId = `config_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`;
-  
+
   res.status(200).json({
     success: true,
     message: 'Webhook configuration test - Typeform ready',
@@ -1163,7 +1207,7 @@ app.get('/webhook/config-test', (req, res) => {
       node_env: process.env.NODE_ENV,
       webhook_endpoints: [
         '/webhook/signup',
-        '/webhook/incident-report', 
+        '/webhook/incident-report',
         '/webhook',
         '/webhook/test',
         '/webhook/config-test'
@@ -1185,7 +1229,7 @@ app.get('/webhook/config-test', (req, res) => {
 
 Logger.success('✅ Robust webhook endpoints created with 502 error prevention:');
 Logger.success('  - POST /webhook/signup - Process Typeform signups');
-Logger.success('  - POST /webhook/incident-report - Process incident reports');  
+Logger.success('  - POST /webhook/incident-report - Process incident reports');
 Logger.success('  - POST /webhook - Generic webhook (backward compatibility)');
 Logger.success('  - ALL /webhook/test - Test endpoint (any method)');
 Logger.success('  - GET /webhook/config-test - Configuration diagnostics');
@@ -1675,7 +1719,7 @@ app.get('/api/key-status', (req, res) => {
     authentication_required: process.env.NODE_ENV === 'production' || !!SHARED_KEY,
     supported_methods: [
       'X-Api-Key header',
-      'Authorization Bearer token', 
+      'Authorization Bearer token',
       'api_key query parameter'
     ],
     example_usage: {
@@ -1688,7 +1732,7 @@ app.get('/api/key-status', (req, res) => {
 });
 
 // ========================================
-// API CONFIGURATION ENDPOINT  
+// API CONFIGURATION ENDPOINT
 // ========================================
 app.get('/api/config', (req, res) => {
   res.json({
