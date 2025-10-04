@@ -453,6 +453,42 @@ app.use((req, res, next) => {
 });
 
 // ========================================
+// ZAPIER NOTIFICATION SYSTEM
+// ========================================
+
+// Function to notify external systems (like Zapier) when transcription completes
+async function notifyTranscriptionComplete(userId, incidentId, transcriptionText) {
+  try {
+    // You can add webhook URLs here that Zapier provides
+    const zapierWebhookUrl = process.env.ZAPIER_WEBHOOK_URL;
+    
+    if (zapierWebhookUrl) {
+      const notification = {
+        user_id: userId,
+        incident_id: incidentId,
+        transcription_completed: true,
+        transcription_text: transcriptionText,
+        timestamp: new Date().toISOString(),
+        next_step_url: `${process.env.APP_BASE_URL || 'https://your-replit-url.repl.co'}/transcription-review.html?create_user_id=${userId}&incident_report_id=${incidentId}`
+      };
+
+      // Send to Zapier webhook (non-blocking)
+      fetch(zapierWebhookUrl, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(notification)
+      }).catch(err => {
+        Logger.warn('Zapier notification failed:', err.message);
+      });
+    }
+
+    Logger.info(`Transcription complete notification sent for user: ${userId}`);
+  } catch (error) {
+    Logger.error('Error sending transcription notification:', error);
+  }
+}
+
+// ========================================
 // ENHANCED API KEY AUTHENTICATION MIDDLEWARE
 // ========================================
 const SHARED_KEY = process.env.API_KEY || process.env.WEBHOOK_API_KEY || '';
@@ -594,6 +630,7 @@ supabaseEnabled = initSupabase();
 // Make variables globally accessible for mock functions
 global.supabase = supabase;
 global.supabaseEnabled = supabaseEnabled;
+global.notifyTranscriptionComplete = notifyTranscriptionComplete;
 
 // Initialize Supabase Realtime function
 function initializeSupabaseRealtime() {
@@ -1089,6 +1126,246 @@ Logger.info('  - Request ID tracking');
 Logger.info('  - Webhook debugging storage');
 
 // ========================================
+// ZAPIER INTEGRATION ENDPOINTS
+// ========================================
+
+// Endpoint for Zapier to trigger transcription flow
+app.post('/api/zapier/start-transcription', async (req, res) => {
+  try {
+    const {
+      create_user_id,
+      incident_report_id,
+      user_email,
+      user_name,
+      incident_data
+    } = req.body;
+
+    // Validate required fields
+    if (!create_user_id) {
+      return res.status(400).json({
+        success: false,
+        error: 'create_user_id is required',
+        requestId: req.requestId
+      });
+    }
+
+    Logger.info(`Zapier transcription request for user: ${create_user_id}`);
+
+    // Generate transcription URL for user
+    const transcriptionUrl = `${req.protocol}://${req.get('host')}/transcription-status.html?create_user_id=${create_user_id}&incident_report_id=${incident_report_id || ''}&source=zapier`;
+
+    // Store the request for tracking
+    WebhookDebugger.storeWebhook({
+      type: 'zapier_transcription_request',
+      data: req.body,
+      timestamp: new Date().toISOString(),
+      requestId: req.requestId,
+      transcription_url: transcriptionUrl
+    });
+
+    // Optionally update incident report with transcription URL
+    if (supabaseEnabled && incident_report_id) {
+      try {
+        await supabase
+          .from('incident_reports')
+          .update({
+            transcription_url: transcriptionUrl,
+            transcription_status: 'pending_recording',
+            updated_at: new Date().toISOString()
+          })
+          .eq('id', incident_report_id);
+      } catch (updateError) {
+        Logger.warn('Could not update incident report:', updateError);
+      }
+    }
+
+    res.json({
+      success: true,
+      message: 'Transcription flow initiated',
+      transcription_url: transcriptionUrl,
+      user_id: create_user_id,
+      incident_id: incident_report_id,
+      next_step: 'User should visit transcription_url to record their statement',
+      requestId: req.requestId
+    });
+
+  } catch (error) {
+    Logger.error('Zapier transcription request error:', error);
+    res.status(500).json({
+      success: false,
+      error: error.message,
+      requestId: req.requestId
+    });
+  }
+});
+
+// Endpoint to get complete flow status and URLs
+app.get('/api/flow-status/:userId', async (req, res) => {
+  try {
+    const { userId } = req.params;
+    const { incident_id } = req.query;
+    
+    const baseUrl = `${req.protocol}://${req.get('host')}`;
+    const flowUrls = generateFlowUrls(baseUrl, userId, incident_id);
+
+    let flowStatus = {
+      user_id: userId,
+      incident_id: incident_id,
+      flow_urls: flowUrls,
+      completed_steps: [],
+      current_step: 'transcription_recording',
+      overall_progress: 0
+    };
+
+    if (supabaseEnabled) {
+      // Check each step completion
+      const steps = [];
+
+      // 1. Check transcription
+      const { data: transcription } = await supabase
+        .from('ai_transcription')
+        .select('transcription_text, created_at')
+        .eq('create_user_id', userId)
+        .order('created_at', { ascending: false })
+        .limit(1)
+        .maybeSingle();
+
+      if (transcription) {
+        steps.push('transcription_completed');
+        flowStatus.transcription_date = transcription.created_at;
+      }
+
+      // 2. Check AI summary/legal narrative
+      const { data: narrative } = await supabase
+        .from('ai_summary')
+        .select('summary_text, created_at')
+        .eq('create_user_id', userId)
+        .order('created_at', { ascending: false })
+        .limit(1)
+        .maybeSingle();
+
+      if (narrative) {
+        steps.push('ai_summary_completed');
+        flowStatus.ai_summary_date = narrative.created_at;
+      }
+
+      // 3. Check consent/declaration
+      const { data: consent } = await supabase
+        .from('gdpr_consent')
+        .select('gdpr_consent, gdpr_consent_date')
+        .eq('create_user_id', userId)
+        .order('gdpr_consent_date', { ascending: false })
+        .limit(1)
+        .maybeSingle();
+
+      if (consent?.gdpr_consent) {
+        steps.push('declaration_completed');
+        flowStatus.declaration_date = consent.gdpr_consent_date;
+      }
+
+      flowStatus.completed_steps = steps;
+      flowStatus.overall_progress = Math.round((steps.length / 3) * 100);
+
+      // Determine current step
+      if (!transcription) {
+        flowStatus.current_step = 'transcription_recording';
+        flowStatus.next_url = flowUrls.transcription_recording;
+      } else if (!narrative) {
+        flowStatus.current_step = 'ai_summary_review';
+        flowStatus.next_url = flowUrls.ai_summary_review;
+      } else if (!consent?.gdpr_consent) {
+        flowStatus.current_step = 'declaration';
+        flowStatus.next_url = flowUrls.declaration;
+      } else {
+        flowStatus.current_step = 'completed';
+        flowStatus.next_url = flowUrls.report_complete;
+      }
+    }
+
+    res.json({
+      success: true,
+      flow_status: flowStatus,
+      requestId: req.requestId
+    });
+
+  } catch (error) {
+    Logger.error('Flow status check error:', error);
+    res.status(500).json({
+      success: false,
+      error: error.message,
+      requestId: req.requestId
+    });
+  }
+});
+
+// Endpoint to check transcription status for Zapier
+app.get('/api/zapier/transcription-status/:userId', async (req, res) => {
+  try {
+    const { userId } = req.params;
+    const { incident_id } = req.query;
+
+    if (!supabaseEnabled) {
+      return res.status(503).json({
+        success: false,
+        error: 'Database service not available'
+      });
+    }
+
+    // Get latest transcription for user
+    let query = supabase
+      .from('ai_transcription')
+      .select('*')
+      .eq('create_user_id', userId)
+      .order('created_at', { ascending: false })
+      .limit(1);
+
+    if (incident_id) {
+      query = query.eq('incident_report_id', incident_id);
+    }
+
+    const { data: transcription, error } = await query.maybeSingle();
+
+    if (error) {
+      throw error;
+    }
+
+    // Check queue status
+    const { data: queueItem } = await supabase
+      .from('transcription_queue')
+      .select('status, created_at, error_message')
+      .eq('create_user_id', userId)
+      .order('created_at', { ascending: false })
+      .limit(1)
+      .maybeSingle();
+
+    const status = {
+      has_transcription: !!transcription,
+      transcription_text: transcription?.transcription_text || null,
+      transcription_date: transcription?.created_at || null,
+      queue_status: queueItem?.status || 'not_started',
+      queue_error: queueItem?.error_message || null,
+      last_activity: queueItem?.created_at || null
+    };
+
+    res.json({
+      success: true,
+      user_id: userId,
+      incident_id: incident_id,
+      status: status,
+      requestId: req.requestId
+    });
+
+  } catch (error) {
+    Logger.error('Zapier status check error:', error);
+    res.status(500).json({
+      success: false,
+      error: error.message,
+      requestId: req.requestId
+    });
+  }
+});
+
+// ========================================
 // LEGAL NARRATIVE AND AI SUMMARY FUNCTIONS
 // ========================================
 
@@ -1485,6 +1762,26 @@ app.post('/api/generate-legal-narrative-from-ids', async (req, res) => {
 // ========================================
 // UTILITY FUNCTIONS
 // ========================================
+
+// Generate complete flow URLs for user journey
+function generateFlowUrls(baseUrl, userId, incidentId = null) {
+  const baseParams = new URLSearchParams({
+    create_user_id: userId
+  });
+
+  if (incidentId) {
+    baseParams.append('incident_report_id', incidentId);
+    baseParams.append('incident_id', incidentId);
+  }
+
+  return {
+    transcription_recording: `${baseUrl}/transcription-status.html?${baseParams.toString()}`,
+    transcription_review: `${baseUrl}/transcription-review.html?${baseParams.toString()}`,
+    ai_summary_review: `${baseUrl}/ai-summary-review.html?${baseParams.toString()}`,
+    declaration: `${baseUrl}/declaration.html?${baseParams.toString()}&operation=final_consent`,
+    report_complete: `${baseUrl}/report-complete.html?${baseParams.toString()}&status=completed`
+  };
+}
 
 function processTypeformData(formResponse) {
   const processedData = {};

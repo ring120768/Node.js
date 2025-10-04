@@ -1287,11 +1287,19 @@
             // Extract parameters from URL
             const urlParams = new URLSearchParams(window.location.search);
 
-            // Try multiple parameter names for compatibility with webhooks
+            // Try multiple parameter names for compatibility with webhooks and Zapier
             let candidateUserId = urlParams.get('create_user_id') || 
                                  urlParams.get('user_id') || 
                                  urlParams.get('userId') ||
                                  localStorage.getItem('create_user_id');
+
+            // Check if this is coming from Zapier
+            const source = urlParams.get('source');
+            if (source === 'zapier') {
+                console.log('🔗 Session initiated from Zapier integration');
+                // Store Zapier source for analytics
+                localStorage.setItem('session_source', 'zapier');
+            }
 
             // Accept any user ID (security removed)
             state.userId = candidateUserId;
