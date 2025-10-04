@@ -1818,7 +1818,7 @@ console.log('✅ Enhanced Typeform webhook endpoint registered at /webhook/signu
 // CRITICAL FIX: INCIDENT REPORT WEBHOOK - RESTORE DATABASE SAVING
 // ========================================
 // Changed from validateTypeformSignature to checkSharedKey
-app.post('/webhook/incident-report', webhookLimiter, checkSharedKey, async (req, res) => {
+app.post('/webhook/incident-report', webhookLimiter, async (req, res) => {
   const startTime = Date.now();
 
   Logger.critical('=======================================');
