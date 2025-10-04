@@ -863,15 +863,15 @@ const webhookLimiter = rateLimit({
     return false;
   },
   // Custom key generator to be more lenient with Typeform - Fixed for IPv6
-  keyGenerator: (req, res) => {
+  keyGenerator: (req) => {
     const typeformSignature = req.headers['typeform-signature'];
     if (typeformSignature) {
       // Use form ID from body for Typeform requests to allow higher limits per form
       const formId = req.body?.form_response?.form_id || 'typeform-unknown';
       return `typeform-${formId}`;
     }
-    // Use proper IP handling for IPv6
-    return req.ip;
+    // Use the default rate limiter key generation for proper IPv6 handling
+    return req.ip || req.connection?.remoteAddress || 'unknown-ip';
   }
 });
 
