@@ -417,8 +417,11 @@ if (BLOCK_TEMP_IDS) {
   Logger.info('✅ Simplified temporary ID blocking enabled');
 }
 
-// Apply rate limiting only to API routes
+// Apply rate limiting to API routes
 app.use('/api/', apiLimiter);
+
+// Apply API key authentication to ALL /api/* routes
+app.use('/api/*', checkApiKey);
 
 // Cache control headers
 app.use((req, res, next) => {
@@ -450,44 +453,91 @@ app.use((req, res, next) => {
 });
 
 // ========================================
-// SIMPLIFIED AUTHENTICATION MIDDLEWARE
+// ENHANCED API KEY AUTHENTICATION MIDDLEWARE
 // ========================================
 const SHARED_KEY = process.env.API_KEY || process.env.WEBHOOK_API_KEY || '';
 
-function checkSharedKey(req, res, next) {
+function checkApiKey(req, res, next) {
   const headerKey = req.get('X-Api-Key');
   const bearer = (req.headers.authorization || '').replace(/^Bearer\s+/i, '');
-  const provided = headerKey || bearer || '';
+  const queryKey = req.query.api_key;
+  const provided = headerKey || bearer || queryKey || '';
 
-  // Skip authentication in development or if no key set
-  if (process.env.NODE_ENV === 'development' && !SHARED_KEY) {
-    Logger.warn('Development mode: No API key required');
-    return next();
-  }
+  Logger.debug(`API Key check for ${req.path}`, { 
+    hasHeaderKey: !!headerKey, 
+    hasBearer: !!bearer, 
+    hasQueryKey: !!queryKey,
+    ip: req.clientIp 
+  });
 
-  if (!SHARED_KEY) {
-    Logger.warn('No API_KEY/WEBHOOK_API_KEY set');
+  // Always require API key in production
+  if (process.env.NODE_ENV === 'production' && !SHARED_KEY) {
+    Logger.critical('PRODUCTION ERROR: No API_KEY set');
     return res.status(503).json({
-      error: 'Server missing shared key (API_KEY)',
+      error: 'API authentication not configured',
+      message: 'Server missing API_KEY configuration',
       requestId: req.requestId
     });
   }
 
-  if (provided !== SHARED_KEY) {
-    Logger.warn('Authentication failed', { ip: req.clientIp });
+  // If no API key configured, allow in development only
+  if (!SHARED_KEY) {
+    if (process.env.NODE_ENV === 'development') {
+      Logger.warn('Development mode: No API key configured - allowing access');
+      return next();
+    } else {
+      return res.status(503).json({
+        error: 'API authentication not configured',
+        requestId: req.requestId
+      });
+    }
+  }
+
+  // Check if API key provided
+  if (!provided) {
+    Logger.warn('API key missing', { 
+      ip: req.clientIp, 
+      path: req.path, 
+      method: req.method 
+    });
     return res.status(401).json({
-      error: 'Unauthorized',
+      error: 'API key required',
+      message: 'Provide API key in X-Api-Key header, Authorization Bearer token, or api_key query parameter',
+      requestId: req.requestId,
+      examples: {
+        header: 'X-Api-Key: your-api-key',
+        bearer: 'Authorization: Bearer your-api-key',
+        query: '?api_key=your-api-key'
+      }
+    });
+  }
+
+  // Validate API key
+  if (provided !== SHARED_KEY) {
+    Logger.warn('Invalid API key provided', { 
+      ip: req.clientIp, 
+      path: req.path,
+      keyPrefix: provided.substring(0, 8) + '...' 
+    });
+    return res.status(401).json({
+      error: 'Invalid API key',
+      message: 'The provided API key is not valid',
       requestId: req.requestId
     });
   }
 
+  Logger.debug('API key validated successfully', { ip: req.clientIp, path: req.path });
   return next();
 }
 
+// Legacy function for backward compatibility
+function checkSharedKey(req, res, next) {
+  return checkApiKey(req, res, next);
+}
+
 function authenticateRequest(req, res, next) {
-  // Placeholder for future auth implementation
-  Logger.debug('authenticateRequest called');
-  next();
+  // Enhanced authentication that includes API key check
+  return checkApiKey(req, res, next);
 }
 
 // ========================================
@@ -1396,7 +1446,7 @@ app.post('/api/generate-legal-narrative', async (req, res) => {
   }
 });
 
-app.post('/api/update-legal-narrative', checkSharedKey, async (req, res) => {
+app.post('/api/update-legal-narrative', async (req, res) => {
   try {
     const {
       create_user_id,
@@ -1461,7 +1511,7 @@ app.post('/api/update-legal-narrative', checkSharedKey, async (req, res) => {
   }
 });
 
-app.get('/api/legal-narratives/:userId', checkSharedKey, async (req, res) => {
+app.get('/api/legal-narratives/:userId', async (req, res) => {
   if (!supabaseEnabled) {
     return res.status(503).json({
       error: 'Service not configured',
@@ -1505,7 +1555,7 @@ app.get('/api/legal-narratives/:userId', checkSharedKey, async (req, res) => {
   }
 });
 
-app.post('/api/generate-legal-narrative-from-ids', checkSharedKey, async (req, res) => {
+app.post('/api/generate-legal-narrative-from-ids', async (req, res) => {
   try {
     const {
       userId,
@@ -1639,7 +1689,29 @@ async function checkExternalServices() {
 }
 
 // ========================================
-// API CONFIGURATION ENDPOINT
+// API KEY STATUS ENDPOINT
+// ========================================
+app.get('/api/key-status', (req, res) => {
+  res.json({
+    api_key_configured: !!SHARED_KEY,
+    environment: process.env.NODE_ENV || 'development',
+    authentication_required: process.env.NODE_ENV === 'production' || !!SHARED_KEY,
+    supported_methods: [
+      'X-Api-Key header',
+      'Authorization Bearer token', 
+      'api_key query parameter'
+    ],
+    example_usage: {
+      curl_header: `curl -H "X-Api-Key: ${SHARED_KEY ? 'your-api-key' : 'not-configured'}" /api/endpoint`,
+      curl_bearer: `curl -H "Authorization: Bearer ${SHARED_KEY ? 'your-api-key' : 'not-configured'}" /api/endpoint`,
+      curl_query: `/api/endpoint?api_key=${SHARED_KEY ? 'your-api-key' : 'not-configured'}`
+    },
+    timestamp: new Date().toISOString()
+  });
+});
+
+// ========================================
+// API CONFIGURATION ENDPOINT  
 // ========================================
 app.get('/api/config', (req, res) => {
   res.json({
@@ -1711,7 +1783,7 @@ app.get('/health', async (req, res) => {
 // DEBUG AND TEST ENDPOINTS
 // ========================================
 
-app.get('/api/debug/user/:userId', checkSharedKey, async (req, res) => {
+app.get('/api/debug/user/:userId', async (req, res) => {
   if (!supabaseEnabled) {
     return res.status(503).json({
       error: 'Service not configured',
@@ -1785,7 +1857,7 @@ app.get('/api/debug/user/:userId', checkSharedKey, async (req, res) => {
   }
 });
 
-app.post('/api/debug/webhook-test', checkSharedKey, async (req, res) => {
+app.post('/api/debug/webhook-test', async (req, res) => {
   if (!webhookDebugger) {
     Logger.info('=== WEBHOOK DEBUG TEST (Basic) ===');
     Logger.info('Headers:', JSON.stringify(req.headers, null, 2));
@@ -1829,7 +1901,7 @@ app.post('/api/debug/webhook-test', checkSharedKey, async (req, res) => {
   });
 });
 
-app.get('/api/debug/webhook-history', checkSharedKey, async (req, res) => {
+app.get('/api/debug/webhook-history', async (req, res) => {
   if (!webhookDebugger) {
     return res.status(503).json({
       error: 'Module not initialized',
@@ -1849,7 +1921,7 @@ app.get('/api/debug/webhook-history', checkSharedKey, async (req, res) => {
   });
 });
 
-app.get('/api/debug/webhook/:webhookId', checkSharedKey, async (req, res) => {
+app.get('/api/debug/webhook/:webhookId', async (req, res) => {
   if (!webhookDebugger) {
     return res.status(503).json({
       error: 'Module not initialized',
@@ -1874,7 +1946,7 @@ app.get('/api/debug/webhook/:webhookId', checkSharedKey, async (req, res) => {
   });
 });
 
-app.post('/api/debug/webhook-search', checkSharedKey, async (req, res) => {
+app.post('/api/debug/webhook-search', async (req, res) => {
   if (!webhookDebugger) {
     return res.status(503).json({
       error: 'Module not initialized',
@@ -1893,7 +1965,7 @@ app.post('/api/debug/webhook-search', checkSharedKey, async (req, res) => {
   });
 });
 
-app.get('/api/process-queue-now', checkSharedKey, async (req, res) => {
+app.get('/api/process-queue-now', async (req, res) => {
   Logger.info('Manual queue processing triggered');
 
   if (!supabaseEnabled) {
@@ -1978,7 +2050,7 @@ app.get('/api/test-openai', async (req, res) => {
   }
 });
 
-app.post('/api/generate-ai-summary', checkSharedKey, async (req, res) => {
+app.post('/api/generate-ai-summary', async (req, res) => {
   const { transcription, userId, incidentId } = req.body;
 
   if (!transcription || !userId) {
@@ -2302,7 +2374,7 @@ app.get('/api/transcription-data', async (req, res) => {
   }
 });
 
-app.post('/api/update-transcription', checkSharedKey, async (req, res) => {
+app.post('/api/update-transcription', async (req, res) => {
   if (!supabaseEnabled) {
     return res.status(503).json({
       error: 'Service not configured',
@@ -2357,7 +2429,7 @@ app.post('/api/update-transcription', checkSharedKey, async (req, res) => {
   }
 });
 
-app.get('/api/debug/transcription-full', checkSharedKey, async (req, res) => {
+app.get('/api/debug/transcription-full', async (req, res) => {
   const diagnostics = {
     timestamp: new Date().toISOString(),
     service_status: {
@@ -2449,7 +2521,7 @@ app.get('/api/debug/transcription-full', checkSharedKey, async (req, res) => {
   res.json(diagnostics);
 });
 
-app.post('/test/process-transcription-queue', checkSharedKey, async (req, res) => {
+app.post('/test/process-transcription-queue', async (req, res) => {
   try {
     Logger.info('Manual transcription queue processing triggered');
     if (processTranscriptionQueue) {
@@ -2690,7 +2762,7 @@ app.post('/api/upload-dashcam', upload.single('video'), async (req, res) => {
   return incidentEndpoints.uploadDashcam(req, res);
 });
 
-app.post('/api/log-emergency-call', authenticateRequest, async (req, res) => {
+app.post('/api/log-emergency-call', async (req, res) => {
   if (!supabaseEnabled) {
     return res.status(503).json({
       error: 'Service not configured',
@@ -3036,14 +3108,21 @@ if (process.env.NODE_ENV !== 'test') {
     Logger.success('  - ALL /webhook/test - Test endpoint (any method)');
     Logger.success('  - GET /webhook/config-test - Configuration test');
 
-    Logger.info('📍 API endpoints (auth optional):');
+    Logger.info('📍 API endpoints (API key required):');
     Logger.info('  - POST /api/generate-legal-narrative - Generate narratives');
     Logger.info('  - GET /api/legal-narratives/:userId - Get saved narratives');
     Logger.info('  - POST /api/whisper/transcribe - Process audio');
-    Logger.info('  - GET /health - System health check');
+    Logger.info('  - GET /api/key-status - API key configuration status');
+    Logger.info('  - GET /health - System health check (no auth required)');
 
-    if (!SHARED_KEY && process.env.NODE_ENV === 'production') {
-      Logger.warn('⚠️ WARNING: No API_KEY set in production - API endpoints unprotected');
+    if (SHARED_KEY) {
+      Logger.success(`🔑 API Key Authentication: ENABLED (${SHARED_KEY.substring(0, 8)}...)`);
+    } else {
+      if (process.env.NODE_ENV === 'production') {
+        Logger.critical('⚠️ CRITICAL: No API_KEY set in production - API endpoints will reject requests');
+      } else {
+        Logger.warn('⚠️ WARNING: No API_KEY set in development - API endpoints allow unrestricted access');
+      }
     }
 
     Logger.success('✅ Typeform 403 errors RESOLVED');
