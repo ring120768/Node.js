@@ -3139,7 +3139,7 @@ async function gracefulShutdown(signal) {
 
 // Only start server if not in test mode
 if (process.env.NODE_ENV !== 'test') {
-  server.listen(PORT, () => {
+  server.listen(PORT, '0.0.0.0', () => {
     Logger.success(`🚀 Server running on port ${PORT}`);
     Logger.info(`📊 Environment: ${process.env.NODE_ENV || 'development'}`);
     Logger.critical('============================================');
