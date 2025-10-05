@@ -700,25 +700,46 @@
             state.userId = urlParams.get('create_user_id') || 
                           localStorage.getItem('create_user_id');
 
-            // Validate UUID format from Typeform
+            // Validate UUID format from Typeform - more flexible regex
             function isValidUUID(str) {
                 if (!str) return false;
+                // Accept any valid UUID format (v1, v3, v4, v5) - more flexible
                 const uuidRegex = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
-                return uuidRegex.test(str);
+                return uuidRegex.test(str.toLowerCase());
             }
 
-            // CRITICAL: If no valid create_user_id from Typeform, show error
-            if (!state.userId || !isValidUUID(state.userId)) {
-                console.error('CRITICAL: No valid create_user_id from Typeform');
+            // Enhanced logging for debugging
+            console.log('Session validation:', {
+                userId: state.userId,
+                source: 'Typeform',
+                url: window.location.href,
+                timestamp: new Date().toISOString()
+            });
+
+            // CRITICAL: If no create_user_id, show error
+            if (!state.userId) {
+                console.error('CRITICAL: No create_user_id found in URL or localStorage');
                 showTranscriptionServiceError();
                 return null;
             }
 
-            // Validate against suspicious patterns
-            const suspiciousPatterns = ['temp_', 'user_', 'dummy_', 'test_', 'mock_', 'generated_'];
+            // Validate against suspicious patterns first
+            const suspiciousPatterns = ['temp_', 'user_', 'dummy_', 'test_', 'mock_', 'generated_', 'placeholder_'];
             for (const pattern of suspiciousPatterns) {
-                if (state.userId.includes(pattern)) {
+                if (state.userId.toLowerCase().includes(pattern.toLowerCase())) {
                     console.error('CRITICAL: Suspicious user ID pattern detected:', state.userId);
+                    showTranscriptionServiceError();
+                    return null;
+                }
+            }
+
+            // More lenient UUID validation - accept if it looks like a legitimate ID
+            if (!isValidUUID(state.userId)) {
+                // If it's not a UUID but looks like a legitimate Typeform ID, allow it
+                if (state.userId.length >= 8 && /^[a-zA-Z0-9_-]+$/.test(state.userId)) {
+                    console.warn('Non-UUID format user ID accepted:', state.userId.substring(0, 12) + '...');
+                } else {
+                    console.error('CRITICAL: Invalid user ID format:', state.userId);
                     showTranscriptionServiceError();
                     return null;
                 }
@@ -747,6 +768,9 @@
 
         // Error handler for missing Typeform create_user_id
         function showTranscriptionServiceError() {
+            const urlParams = new URLSearchParams(window.location.search);
+            const currentUserId = urlParams.get('create_user_id') || localStorage.getItem('create_user_id');
+            
             const container = document.querySelector('.container');
             container.innerHTML = `
                 <div style="text-align: center; padding: 40px;">
@@ -762,9 +786,22 @@
                             <li>No manual URL entry or bookmarking</li>
                         </ul>
                     </div>
-                    <a href="/incident-form-direct.html" class="btn btn-primary">
-                        🏠 Return to Start
-                    </a>
+                    <div style="background: #fff3cd; padding: 15px; border-radius: 8px; margin: 20px 0; border-left: 4px solid #ffc107;">
+                        <h4 style="color: #856404; margin-top: 0;">Debug Info:</h4>
+                        <p style="color: #856404; font-size: 12px; font-family: monospace; text-align: left;">
+                            URL: ${window.location.href}<br>
+                            Found ID: ${currentUserId || 'NOT FOUND'}<br>
+                            Timestamp: ${new Date().toISOString()}
+                        </p>
+                    </div>
+                    <div style="margin: 20px 0;">
+                        <a href="/incident-form-direct.html" class="btn btn-primary">
+                            🏠 Return to Start
+                        </a>
+                        <button onclick="location.reload()" class="btn btn-ghost" style="margin-left: 10px;">
+                            🔄 Retry
+                        </button>
+                    </div>
                 </div>
             `;
         }
