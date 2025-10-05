@@ -1,6 +1,6 @@
 // ========================================
-// CAR CRASH LAWYER AI SYSTEM - UPDATED v4.5.1
-// Database Consistency & Enhanced Transcription Endpoint Applied
+// CAR CRASH LAWYER AI SYSTEM - UPDATED v4.5.2
+// Production User ID Validation & Enhanced Schema Compatibility
 // ========================================
 
 const express = require('express');
@@ -47,16 +47,18 @@ try {
 const TranscriptionService = require('./lib/transcriptionService');
 let transcriptionService = null;
 
-// These will be set up after Supabase initializes
+// These will be set up after Supabase initialises
 let processTranscriptionFromBuffer = null;
 let processTranscriptionQueue = null;
 let transcriptionQueueInterval = null;
 
 // ========================================
-// SIMPLIFIED ENVIRONMENT VARIABLES
+// PRODUCTION ENVIRONMENT VARIABLES
 // ========================================
 const BLOCK_TEMP_IDS = process.env.BLOCK_TEMP_IDS === 'true';
 const REQUIRE_USER_ID = process.env.REQUIRE_USER_ID === 'true';
+const PRODUCTION_MODE = process.env.PRODUCTION_MODE === 'true' || process.env.NODE_ENV === 'production';
+const STRICT_USER_VALIDATION = process.env.STRICT_USER_VALIDATION === 'true' || PRODUCTION_MODE;
 
 // Set defaults to prevent authentication issues
 process.env.API_KEY = process.env.API_KEY || '';
@@ -110,6 +112,45 @@ const validateEnvironment = () => {
     missing: missingVars,
     configured: configuredVars
   };
+};
+
+// ========================================
+// PRODUCTION ENVIRONMENT VALIDATION
+// ========================================
+const validateProductionEnvironment = () => {
+  const productionChecks = {
+    node_env: process.env.NODE_ENV === 'production',
+    api_key_set: !!process.env.API_KEY,
+    supabase_configured: !!(process.env.SUPABASE_URL && process.env.SUPABASE_SERVICE_ROLE_KEY),
+    openai_configured: !!process.env.OPENAI_API_KEY,
+    production_mode: PRODUCTION_MODE,
+    strict_validation: STRICT_USER_VALIDATION,
+    temp_blocking: BLOCK_TEMP_IDS,
+    user_id_required: REQUIRE_USER_ID
+  };
+
+  const criticalChecks = ['supabase_configured', 'openai_configured'];
+  const failedCritical = criticalChecks.filter(check => !productionChecks[check]);
+
+  if (failedCritical.length > 0 && PRODUCTION_MODE) {
+    Logger.critical('PRODUCTION CRITICAL CHECKS FAILED:', failedCritical);
+    throw new Error(`Production critical services not configured: ${failedCritical.join(', ')}`);
+  }
+
+  const recommendedChecks = ['api_key_set'];
+  const failedRecommended = recommendedChecks.filter(check => !productionChecks[check]);
+
+  if (failedRecommended.length > 0) {
+    Logger.warn('PRODUCTION RECOMMENDED CHECKS FAILED:', failedRecommended);
+  }
+
+  if (PRODUCTION_MODE) {
+    Logger.success('PRODUCTION: Full production mode active with strict validation');
+  } else {
+    Logger.info('DEVELOPMENT: Flexible validation active');
+  }
+
+  return productionChecks;
 };
 
 // Run validation
@@ -255,85 +296,130 @@ const server = http.createServer(app);
 app.set('trust proxy', 1);
 
 // ========================================
-// ENHANCED USER ID VALIDATION FUNCTIONS
+// PRODUCTION USER ID VALIDATION (STRICT)
 // ========================================
 
-// Enhanced backend user ID validation (from improvement pack)
 function validateBackendUserId(userId) {
   if (!userId || typeof userId !== 'string') {
+    if (STRICT_USER_VALIDATION) {
+      Logger.critical('PRODUCTION: No user ID provided');
+    }
     return false;
   }
 
   const cleanUserId = userId.trim();
 
-  // Block obvious test/temporary patterns
+  // PRODUCTION: Block ALL development/test patterns
   const blockedPatterns = [
-    'temp_user_', 'test_user_', 'dummy_', 'mock_', 'sample_',
-    'undefined', 'null', 'anonymous', 'guest'
+    'dev_', 'test_', 'local_', 'temp_', 'mock_', 'sample_',
+    'dummy_', 'undefined', 'null', 'anonymous', 'guest'
   ];
 
   for (const pattern of blockedPatterns) {
     if (cleanUserId.toLowerCase().includes(pattern.toLowerCase())) {
-      Logger.warn(`Blocked suspicious user ID pattern: ${cleanUserId}`);
-      return false;
+      if (STRICT_USER_VALIDATION) {
+        Logger.critical(`PRODUCTION: Blocked non-production user ID: ${cleanUserId}`);
+        return false;
+      } else {
+        // In development, warn but allow some patterns for testing
+        Logger.warn(`DEV: Suspicious user ID pattern: ${cleanUserId}`);
+        if (cleanUserId.startsWith('dev_') || cleanUserId.startsWith('test_') || cleanUserId.startsWith('local_')) {
+          return true; // Allow dev patterns in development
+        }
+      }
     }
   }
 
-  // Accept UUID format (standard Typeform format)
-  const uuidRegex = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
-  if (uuidRegex.test(cleanUserId)) {
+  // Accept valid Typeform UUID format
+  const typeformUuidRegex = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
+  if (typeformUuidRegex.test(cleanUserId)) {
+    if (STRICT_USER_VALIDATION) {
+      Logger.success(`PRODUCTION: Valid Typeform UUID: ${cleanUserId.substring(0, 8)}...`);
+    } else {
+      Logger.debug(`Valid Typeform UUID: ${cleanUserId.substring(0, 8)}...`);
+    }
     return true;
   }
 
-  // Accept alphanumeric IDs (some Typeform integrations use these)
-  const alphanumericRegex = /^[a-zA-Z0-9][a-zA-Z0-9_-]{2,63}$/;
-  if (alphanumericRegex.test(cleanUserId)) {
-    return true;
-  }
-
-  // Accept development/testing IDs in non-production
-  if (process.env.NODE_ENV !== 'production') {
-    const devRegex = /^(dev_|test_|local_)[a-zA-Z0-9_-]{1,50}$/;
-    if (devRegex.test(cleanUserId)) {
+  // In development/flexible mode, accept alphanumeric IDs
+  if (!STRICT_USER_VALIDATION) {
+    const alphanumericRegex = /^[a-zA-Z0-9][a-zA-Z0-9_-]{2,63}$/;
+    if (alphanumericRegex.test(cleanUserId)) {
+      Logger.debug(`DEV: Accepted alphanumeric ID: ${cleanUserId}`);
       return true;
     }
   }
 
+  // PRODUCTION: Reject everything else
+  if (STRICT_USER_VALIDATION) {
+    Logger.critical(`PRODUCTION: Invalid user ID format rejected: ${cleanUserId}`);
+  } else {
+    Logger.warn(`Invalid user ID format: ${cleanUserId}`);
+  }
   return false;
 }
 
-// Enhanced User ID extraction and validation for backend (from improvement pack)
+// ========================================
+// PRODUCTION USER ID EXTRACTION (STRICT)
+// ========================================
+
 function extractAndValidateUserId(req, source = 'unknown') {
-  const sources = [
+  // Primary sources (preferred for production)
+  const primarySources = [
     req.body?.create_user_id,
     req.query?.create_user_id,
-    req.params?.create_user_id,
-    req.body?.user_id,
-    req.query?.user_id,
-    req.params?.user_id,
-    req.body?.userId,
-    req.query?.userId,
-    req.headers['x-user-id'],
-    req.headers['x-create-user-id']
+    req.params?.create_user_id
   ];
 
-  for (const candidateId of sources) {
+  // Fallback sources (legacy compatibility)
+  const fallbackSources = [
+    req.headers['x-create-user-id'],
+    req.body?.user_id,
+    req.query?.user_id,
+    req.headers['x-user-id']
+  ];
+
+  // Try primary sources first
+  for (const candidateId of primarySources) {
     if (candidateId && validateBackendUserId(candidateId)) {
-      Logger.info(`✅ Valid user ID found from ${source}:`, candidateId.substring(0, 8) + '...');
+      if (STRICT_USER_VALIDATION) {
+        Logger.success(`PRODUCTION: Valid create_user_id from ${source}: ${candidateId.substring(0, 8)}...`);
+      } else {
+        Logger.info(`✅ Valid create_user_id from ${source}: ${candidateId.substring(0, 8)}...`);
+      }
       return candidateId.trim();
     }
   }
 
-  Logger.critical(`❌ No valid user ID found from ${source}`, {
-    body_keys: Object.keys(req.body || {}),
-    query_keys: Object.keys(req.query || {}),
-    param_keys: Object.keys(req.params || {})
-  });
+  // In production mode, be stricter about fallback sources
+  if (!STRICT_USER_VALIDATION) {
+    // Try fallback sources with warnings
+    for (const candidateId of fallbackSources) {
+      if (candidateId && validateBackendUserId(candidateId)) {
+        Logger.warn(`Using fallback user ID source: ${candidateId.substring(0, 8)}...`);
+        return candidateId.trim();
+      }
+    }
+  }
+
+  if (STRICT_USER_VALIDATION) {
+    Logger.critical(`PRODUCTION: No valid create_user_id found from ${source}`, {
+      body_create_user_id: req.body?.create_user_id,
+      query_create_user_id: req.query?.create_user_id,
+      headers_create_user_id: req.headers['x-create-user-id']
+    });
+  } else {
+    Logger.critical(`❌ No valid user ID found from ${source}`, {
+      body_keys: Object.keys(req.body || {}),
+      query_keys: Object.keys(req.query || {}),
+      param_keys: Object.keys(req.params || {})
+    });
+  }
 
   return null;
 }
 
-// Create consistent database object with proper user ID fields (from improvement pack)
+// Create consistent database object with proper user ID fields
 function createDatabaseUserObject(userId, additionalData = {}) {
   return {
     create_user_id: userId,
@@ -649,6 +735,14 @@ const initSupabase = () => {
 // Initialize Supabase
 supabaseEnabled = initSupabase();
 
+// Run production validation after Supabase init
+let productionStatus = {};
+try {
+  productionStatus = validateProductionEnvironment();
+} catch (error) {
+  Logger.error('Production validation error:', error);
+}
+
 // Make variables globally accessible for mock functions
 global.supabase = supabase;
 global.supabaseEnabled = supabaseEnabled;
@@ -896,7 +990,7 @@ function extractAllTypeformFields(formResponse) {
   return fields;
 }
 
-// Enhanced webhook data extraction with user ID validation (from improvement pack)
+// Enhanced webhook data extraction with user ID validation
 function extractWebhookUserData(webhookData) {
   const formResponse = webhookData.form_response || webhookData;
 
@@ -1143,6 +1237,7 @@ app.get('/webhook/config-test', (req, res) => {
       temp_id_blocking: process.env.BLOCK_TEMP_IDS === 'true',
       require_user_id: process.env.REQUIRE_USER_ID === 'true',
       node_env: process.env.NODE_ENV,
+      production_mode: process.env.NODE_ENV === 'production',
       webhook_endpoints: [
         '/webhook/signup',
         '/webhook/incident-report',
@@ -1569,7 +1664,7 @@ app.post('/api/generate-legal-narrative', async (req, res) => {
     }
 
     let incidentDataForNarrative = accidentData;
-    if (!accidentDataForNarrative && finalIncidentId && supabaseEnabled) {
+    if (!incidentDataForNarrative && finalIncidentId && supabaseEnabled) {
       incidentDataForNarrative = await prepareAccidentDataForNarrative(finalUserId, finalIncidentId);
     }
 
@@ -1608,7 +1703,7 @@ app.post('/api/generate-legal-narrative', async (req, res) => {
             metadata: {
               preserved_user_id: finalUserId,
               request_id: req.requestId,
-              generation_version: '4.5.1'
+              generation_version: '4.5.2'
             }
           })
           .select()
@@ -1814,7 +1909,6 @@ app.post('/api/generate-legal-narrative-from-ids', async (req, res) => {
 
 // ========================================
 // DATABASE CONSISTENCY AND DEBUGGING TOOLS
-// (from database_consistency_tools.js)
 // ========================================
 
 // User data validation and consistency check
@@ -2621,7 +2715,8 @@ app.get('/api/config', (req, res) => {
       pdf_generation: !!(fetchAllData && generatePDF && sendEmails),
       temp_id_blocking: BLOCK_TEMP_IDS,
       require_user_id: REQUIRE_USER_ID,
-      gdpr_removed: true // Indicates GDPR has been removed
+      gdpr_removed: true, // Indicates GDPR has been removed
+      production_user_validation: process.env.NODE_ENV === 'production'
     }
   });
 });
@@ -2635,15 +2730,16 @@ app.get('/health', async (req, res) => {
   const enhancedModules = {
     webhookSystem: 'fresh_minimal_implementation',
     complexModulesRemoved: true,
-    databaseConsistencyTools: 'v4.5.1_integrated',
-    userIdManagement: 'enhanced_v4.5.1',
-    transcriptionEndpoint: 'schema_compatible_v4.5.1'
+    databaseConsistencyTools: 'v4.5.2_integrated',
+    userIdManagement: 'production_ready_v4.5.2',
+    transcriptionEndpoint: 'schema_compatible_v4.5.2',
+    productionValidation: 'enabled_v4.5.2'
   };
 
   const status = {
     status: 'healthy',
     timestamp: new Date().toISOString(),
-    version: '4.5.1', // Updated version
+    version: '4.5.2', // Updated version
     services: {
       supabase: supabaseEnabled && externalServices.supabase,
       supabase_realtime: externalServices.supabase_realtime,
@@ -2658,8 +2754,11 @@ app.get('/health', async (req, res) => {
       what3words: externalServices.what3words
     },
     enhancedModules: enhancedModules,
+    production_readiness: productionStatus,
     fixes: {
-      transcription_endpoint: 'UPGRADED - Schema-compatible with enhanced error handling and user ID validation',
+      production_user_validation: 'ENABLED - Strict UUID-only validation in production',
+      user_id_extraction: 'ENHANCED - Multi-source validation with fallbacks',
+      transcription_endpoint: 'UPGRADED - Production-ready with strict validation',
       typeform_403_errors: 'FIXED - Simplified authentication and rate limiting',
       gdpr_removal: 'COMPLETE - All GDPR code removed',
       webhook_endpoints: 'SIMPLIFIED - No authentication required for webhooks',
@@ -2671,8 +2770,9 @@ app.get('/health', async (req, res) => {
       error_handling: 'IMPROVED - Better webhook error recovery',
       legal_narrative_generation: 'OPERATIONAL - Consolidated endpoints active',
       database_consistency: 'OPERATIONAL - Consistency checks and data fixes available',
-      enhanced_user_id_validation: 'OPERATIONAL - Comprehensive user ID validation',
-      transcription_debugging: 'ENHANCED - Request tracking with debug IDs'
+      enhanced_user_id_validation: 'PRODUCTION READY - Comprehensive user ID validation',
+      transcription_debugging: 'ENHANCED - Request tracking with debug IDs',
+      environment_validation: 'ENABLED - Production readiness checks'
     }
   };
 
@@ -2687,10 +2787,11 @@ app.get('/', (req, res) => {
   res.json({
     success: true,
     message: 'Car Crash Lawyer AI System is running',
-    version: '4.5.1',
+    version: '4.5.2',
     timestamp: new Date().toISOString(),
     port: PORT,
     environment: process.env.NODE_ENV || 'development',
+    production_ready: process.env.NODE_ENV === 'production' ? productionStatus : 'N/A (development)',
     endpoints: {
       health: '/health',
       status: '/status',
@@ -2724,6 +2825,11 @@ app.get('/api/debug/user-id-test', (req, res) => {
       url: req.url,
       originalUrl: req.originalUrl
     },
+    production_mode: process.env.NODE_ENV === 'production',
+    validation_rules: {
+      production: 'UUID format only (xxxxxxxx-xxxx-xxxx-xxxx-xxxxxxxxxxxx)',
+      development: 'UUID format + alphanumeric IDs + dev patterns'
+    },
     test_urls: {
       with_create_user_id: `${req.protocol}://${req.get('host')}/api/debug/user-id-test?create_user_id=test-user-123`,
       with_user_id: `${req.protocol}://${req.get('host')}/api/debug/user-id-test?user_id=test-user-123`,
@@ -2734,18 +2840,19 @@ app.get('/api/debug/user-id-test', (req, res) => {
 });
 
 app.post('/api/debug/user-id-test', (req, res) => {
-  const create_user_id = req.body.create_user_id ||
-                        req.query.create_user_id ||
-                        req.headers['x-user-id'];
+  const create_user_id = extractAndValidateUserId(req, 'debug_test');
 
   res.json({
     success: true,
     message: 'POST User ID detection test',
     detected_user_id: create_user_id,
+    validation_passed: !!create_user_id,
+    production_mode: process.env.NODE_ENV === 'production',
     sources: {
-      body: req.body.create_user_id,
-      query: req.query.create_user_id,
-      header: req.headers['x-user-id']
+      body_create_user_id: req.body.create_user_id,
+      query_create_user_id: req.query.create_user_id,
+      body_user_id: req.body.user_id,
+      header_user_id: req.headers['x-user-id']
     },
     full_body: req.body,
     full_query: req.query,
@@ -3300,7 +3407,8 @@ app.get('/api/debug/transcription-full', async (req, res) => {
       transcription_service: transcriptionService !== null,
       openai_configured: !!process.env.OPENAI_API_KEY,
       queue_processing: transcriptionQueueInterval !== null,
-      supabase_connected: supabaseEnabled
+      supabase_connected: supabaseEnabled,
+      production_mode: process.env.NODE_ENV === 'production'
     },
     queue_stats: null,
     recent_transcriptions: null,
@@ -3383,9 +3491,9 @@ app.get('/api/debug/transcription-full', async (req, res) => {
   }
 
   res.json(diagnostics);
-});
+  });
 
-app.post('/test/process-transcription-queue', async (req, res) => {
+  app.post('/test/process-transcription-queue', async (req, res) => {
   try {
     Logger.info('Manual transcription queue processing triggered');
     if (processTranscriptionQueue) {
@@ -3403,18 +3511,20 @@ app.post('/test/process-transcription-queue', async (req, res) => {
       requestId: req.requestId
     });
   }
-});
+  });
 
-// ========================================
-// ENHANCED WHISPER TRANSCRIPTION ENDPOINT
-// SCHEMA COMPATIBLE WITH IMPROVED ERROR HANDLING
-// ========================================
+  // ========================================
+  // ENHANCED WHISPER TRANSCRIPTION ENDPOINT
+  // PRODUCTION-READY WITH STRICT USER VALIDATION
+  // ========================================
 
-app.post('/api/whisper/transcribe', upload.single('audio'), async (req, res) => {
+  app.post('/api/whisper/transcribe', upload.single('audio'), async (req, res) => {
   const requestStartTime = Date.now();
-  const debugId = `transcribe_${Date.now()}_${Math.random().toString(36).substr(2, 6)}`;
+  const debugId = process.env.NODE_ENV === 'production' ? 
+    `prod_${Date.now()}_${Math.random().toString(36).substr(2, 6)}` :
+    `transcribe_${Date.now()}_${Math.random().toString(36).substr(2, 6)}`;
 
-  console.log(`🎤 [${debugId}] TRANSCRIPTION REQUEST RECEIVED`);
+  console.log(`🎤 [${debugId}] ${process.env.NODE_ENV === 'production' ? 'PRODUCTION' : 'DEV'} TRANSCRIPTION REQUEST RECEIVED`);
 
   try {
     // Check if file is present
@@ -3432,63 +3542,52 @@ app.post('/api/whisper/transcribe', upload.single('audio'), async (req, res) => 
       mimetype: req.file.mimetype
     });
 
-    // Enhanced user ID extraction
-    const userIdSources = {
-      'body.create_user_id': req.body?.create_user_id,
-      'query.create_user_id': req.query?.create_user_id,
-      'body.user_id': req.body?.user_id,
-      'query.user_id': req.query?.user_id
-    };
-
-    let create_user_id = null;
-    let userIdSource = null;
-
-    for (const [source, value] of Object.entries(userIdSources)) {
-      if (value && typeof value === 'string' && value.trim()) {
-        create_user_id = value.trim();
-        userIdSource = source;
-        console.log(`✅ [${debugId}] Found user ID from ${source}: ${create_user_id}`);
-        break;
-      }
-    }
+    // PRODUCTION: Strict create_user_id extraction using enhanced validation
+    const create_user_id = extractAndValidateUserId(req, 'transcription_request');
 
     if (!create_user_id) {
-      console.log(`❌ [${debugId}] NO USER ID FOUND`);
+      console.log(`❌ [${debugId}] ${process.env.NODE_ENV === 'production' ? 'PRODUCTION: Invalid or missing create_user_id' : 'NO USER ID FOUND'}`);
       return res.status(400).json({
-        error: 'create_user_id is required',
-        message: 'Please provide a valid user ID from Typeform',
+        error: 'Valid create_user_id is required',
+        message: process.env.NODE_ENV === 'production' ? 
+          'Must provide valid Typeform create_user_id (UUID format)' : 
+          'Please provide a valid user ID from Typeform',
         requestId: req.requestId,
-        debugId: debugId
+        debugId: debugId,
+        production_requirements: process.env.NODE_ENV === 'production' ? {
+          required_field: 'create_user_id',
+          required_format: 'UUID (xxxxxxxx-xxxx-xxxx-xxxx-xxxxxxxxxxxx)',
+          source: 'Typeform webhook or form submission'
+        } : undefined
       });
     }
 
-    // Basic validation (permissive for development)
-    if (create_user_id.length < 3 || ['undefined', 'null'].includes(create_user_id.toLowerCase())) {
-      console.log(`❌ [${debugId}] INVALID USER ID: ${create_user_id}`);
-      return res.status(400).json({
-        error: 'Invalid user ID format',
-        received_id: create_user_id,
-        requestId: req.requestId,
-        debugId: debugId
-      });
-    }
-
-    console.log(`✅ [${debugId}] USER ID VALIDATED: ${create_user_id}`);
+    console.log(`✅ [${debugId}] ${process.env.NODE_ENV === 'production' ? 'PRODUCTION: Validated' : 'USER ID VALIDATED'}: ${create_user_id.substring(0, 8)}...`);
 
     const incident_report_id = req.body?.incident_report_id || req.query?.incident_report_id || null;
     const queueId = Math.floor(Math.random() * 2147483647);
 
     if (!supabaseEnabled) {
-      console.log(`⚠️ [${debugId}] SUPABASE DISABLED`);
-      return res.json({
-        success: true,
-        message: 'Audio received (database disabled)',
-        queueId: queueId.toString(),
-        audioUrl: 'mock://audio.webm',
-        create_user_id: create_user_id,
-        debugId: debugId,
-        requestId: req.requestId
-      });
+      console.log(`❌ [${debugId}] ${process.env.NODE_ENV === 'production' ? 'PRODUCTION: Database not configured' : 'SUPABASE DISABLED'}`);
+
+      if (process.env.NODE_ENV === 'production') {
+        return res.status(503).json({
+          error: 'Service temporarily unavailable',
+          message: 'Database service not configured for production',
+          requestId: req.requestId,
+          debugId: debugId
+        });
+      } else {
+        return res.json({
+          success: true,
+          message: 'Audio received (database disabled)',
+          queueId: queueId.toString(),
+          audioUrl: 'mock://audio.webm',
+          create_user_id: create_user_id,
+          debugId: debugId,
+          requestId: req.requestId
+        });
+      }
     }
 
     // Upload to Supabase storage
@@ -3521,7 +3620,7 @@ app.post('/api/whisper/transcribe', upload.single('audio'), async (req, res) => 
 
     console.log(`🔗 [${debugId}] PUBLIC URL: ${publicUrl}`);
 
-    // Create queue entry with ONLY EXISTING COLUMNS
+    // Create queue entry with ONLY EXISTING COLUMNS - schema-safe approach
     console.log(`📝 [${debugId}] CREATING QUEUE ENTRY (schema-safe)...`);
 
     const queueObject = {
@@ -3535,7 +3634,7 @@ app.post('/api/whisper/transcribe', upload.single('audio'), async (req, res) => 
       created_at: new Date().toISOString()
     };
 
-    console.log(`📝 [${debugId}] Queue object (safe):`, queueObject);
+    console.log(`📋 [${debugId}] Queue object (safe):`, queueObject);
 
     const { data: queueData, error: queueError } = await supabase
       .from('transcription_queue')
@@ -3590,7 +3689,8 @@ app.post('/api/whisper/transcribe', upload.single('audio'), async (req, res) => 
         mime_type: req.file.mimetype,
         storage_path: fileName,
         processing_time_ms: processingTime,
-        user_id_source: userIdSource
+        user_id_source: 'enhanced_validation',
+        production_mode: process.env.NODE_ENV === 'production'
       }
     };
 
@@ -3640,106 +3740,106 @@ app.post('/api/whisper/transcribe', upload.single('audio'), async (req, res) => 
       processing_time_ms: processingTime
     });
   }
-});
+  });
 
-// ========================================
-// RECORDING INTERFACE REDIRECT ROUTES
-// ========================================
+  // ========================================
+  // RECORDING INTERFACE REDIRECT ROUTES
+  // ========================================
 
-app.get('/record', (req, res) => {
+  app.get('/record', (req, res) => {
   const queryString = req.originalUrl.split('?')[1] || '';
   const redirectUrl = `/transcription-status.html${queryString ? '?' + queryString : ''}`;
   Logger.info('Recording redirect', { from: '/record', to: redirectUrl, params: queryString });
   res.redirect(redirectUrl);
-});
+  });
 
-app.get('/transcribe', (req, res) => {
+  app.get('/transcribe', (req, res) => {
   const queryString = req.originalUrl.split('?')[1] || '';
   const redirectUrl = `/transcription-status.html${queryString ? '?' + queryString : ''}`;
   Logger.info('Recording redirect', { from: '/transcribe', to: redirectUrl, params: queryString });
   res.redirect(redirectUrl);
-});
+  });
 
-app.get('/recording', (req, res) => {
+  app.get('/recording', (req, res) => {
   const queryString = req.originalUrl.split('?')[1] || '';
   const redirectUrl = `/transcription-status.html${queryString ? '?' + queryString : ''}`;
   Logger.info('Recording redirect', { from: '/recording', to: redirectUrl, params: queryString });
   res.redirect(redirectUrl);
-});
+  });
 
-app.get('/webhook/record', (req, res) => {
+  app.get('/webhook/record', (req, res) => {
   const queryString = req.originalUrl.split('?')[1] || '';
   const redirectUrl = `/transcription-status.html${queryString ? '?' + queryString : ''}`;
   Logger.info('Recording redirect', { from: '/webhook/record', to: redirectUrl, params: queryString, source: 'webhook' });
   res.redirect(redirectUrl);
-});
+  });
 
-app.get('/transcription.html', (req, res) => {
+  app.get('/transcription.html', (req, res) => {
   const queryString = req.originalUrl.split('?')[1] || '';
   const redirectUrl = `/transcription-status.html${queryString ? '?' + queryString : ''}`;
   Logger.info('File redirect', { from: '/transcription.html', to: redirectUrl, params: queryString });
   res.redirect(redirectUrl);
-});
+  });
 
-app.get('/transcribe.html', (req, res) => {
+  app.get('/transcribe.html', (req, res) => {
   const queryString = req.originalUrl.split('?')[1] || '';
   const redirectUrl = `/transcription-status.html${queryString ? '?' + queryString : ''}`;
   Logger.info('File redirect', { from: '/transcribe.html', to: redirectUrl, params: queryString });
   res.redirect(redirectUrl);
-});
+  });
 
-// ========================================
-// INCIDENT ENDPOINTS
-// ========================================
+  // ========================================
+  // INCIDENT ENDPOINTS
+  // ========================================
 
-const IncidentEndpoints = require('./lib/incidentEndpoints');
-let incidentEndpoints = null;
+  const IncidentEndpoints = require('./lib/incidentEndpoints');
+  let incidentEndpoints = null;
 
-if (supabaseEnabled) {
+  if (supabaseEnabled) {
   try {
     incidentEndpoints = new IncidentEndpoints(supabase);
     Logger.success('✅ Incident endpoints module initialised');
   } catch (error) {
     Logger.warn('Incident endpoints module not available:', error.message);
   }
-}
+  }
 
-app.get('/api/auth/status', async (req, res) => {
+  app.get('/api/auth/status', async (req, res) => {
   if (!incidentEndpoints) {
     return res.json({ authenticated: false });
   }
   return incidentEndpoints.getAuthStatus(req, res);
-});
+  });
 
-app.get('/api/user/:userId/emergency-contacts', async (req, res) => {
+  app.get('/api/user/:userId/emergency-contacts', async (req, res) => {
   if (!incidentEndpoints) {
     return res.status(503).json({ error: 'Service not configured' });
   }
   return incidentEndpoints.getEmergencyContacts(req, res);
-});
+  });
 
-app.post('/api/store-evidence-audio', upload.single('audio'), async (req, res) => {
+  app.post('/api/store-evidence-audio', upload.single('audio'), async (req, res) => {
   if (!incidentEndpoints) {
     return res.status(503).json({ error: 'Service not configured' });
   }
   return incidentEndpoints.storeEvidenceAudio(req, res);
-});
+  });
 
-app.post('/api/upload-what3words-image', upload.single('image'), async (req, res) => {
+  app.post('/api/upload-what3words-image', upload.single('image'), async (req, res) => {
   if (!incidentEndpoints) {
     return res.status(503).json({ error: 'Service not configured' });
   }
   return incidentEndpoints.uploadWhat3WordsImage(req, res);
-});
+  });
 
-app.post('/api/upload-dashcam', upload.single('video'), async (req, res) => {
+  app.post('/api/upload-dashcam', upload.single('video'), async (req, res) => {
   if (!incidentEndpoints) {
     return res.status(503).json({ error: 'Service not configured' });
   }
   return incidentEndpoints.uploadDashcam(req, res);
-});
+  });
 
-app.post('/api/log-emergency-call', async (req, res) => {
+  app.post('/api/log-emergency-call', async (req, res) => {
   if (!supabaseEnabled) {
     return res.status(503).json({
       error: 'Service not configured',
@@ -3789,9 +3889,9 @@ app.post('/api/log-emergency-call', async (req, res) => {
       requestId: req.requestId
     });
   }
-});
+  });
 
-app.get('/api/what3words', async (req, res) => {
+  app.get('/api/what3words', async (req, res) => {
   try {
     const { lat, lng } = req.query;
 
@@ -3846,73 +3946,80 @@ app.get('/api/what3words', async (req, res) => {
       error: error.message
     });
   }
-});
+  });
 
-// ========================================
-// STATUS ROUTES
-// ========================================
+  // ========================================
+  // STATUS ROUTES
+  // ========================================
 
-app.get('/status', (req, res) => {
+  app.get('/status', (req, res) => {
   const htmlContent = `<!DOCTYPE html>
   <html lang="en">
   <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Car Crash Lawyer AI - v4.5.1 Enhanced</title>
+  <title>Car Crash Lawyer AI - v4.5.2 Production Ready</title>
   <style>
   body { font-family: Arial, sans-serif; padding: 40px; background: #f5f5f5; }
   .container { max-width: 900px; margin: 0 auto; background: white; padding: 30px; border-radius: 10px; box-shadow: 0 2px 10px rgba(0,0,0,0.1); }
   h1 { color: #333; }
   .status { padding: 10px; background: #4CAF50; color: white; border-radius: 5px; display: inline-block; }
   .new { background: #2196F3 !important; font-weight: bold; }
+  .production { background: #FF5722 !important; font-weight: bold; }
   .section { margin-top: 30px; }
   .endpoint { background: #f0f0f0; padding: 10px; margin: 10px 0; border-radius: 5px; }
   code { background: #333; color: #4CAF50; padding: 2px 6px; border-radius: 3px; }
   ul { list-style: none; padding: 0; }
   li { margin: 5px 0; }
   .badge { background: #4CAF50; color: white; padding: 2px 6px; border-radius: 3px; font-size: 10px; margin-left: 5px; }
+  .prod-badge { background: #FF5722; color: white; padding: 2px 6px; border-radius: 3px; font-size: 10px; margin-left: 5px; }
   </style>
   </head>
   <body>
   <div class="container">
-  <h1>🚗 Car Crash Lawyer AI - v4.5.1</h1>
-  <p class="status new">✅ ENHANCED TRANSCRIPTION ENDPOINT & SCHEMA COMPATIBILITY</p>
+  <h1>🚗 Car Crash Lawyer AI - v4.5.2</h1>
+  <p class="status production">🔒 PRODUCTION-READY USER VALIDATION & ENHANCED SCHEMA COMPATIBILITY</p>
 
   <div class="section">
-    <h2>🆕 NEW FEATURES IN v4.5.1:</h2>
+    <h2>🆕 NEW FEATURES IN v4.5.2:</h2>
     <div class="endpoint">
-        <strong>1. Schema-Compatible Transcription Endpoint</strong> <span class="badge">NEW</span><br>
-        <p>✅ Enhanced user ID validation with multiple source fallbacks</p>
-        <p>✅ Robust error handling with detailed debug tracking</p>
-        <p>✅ Database schema compliance with safe column usage</p>
-        <p>✅ Comprehensive request/response logging with debug IDs</p>
+        <strong>1. Production User ID Validation</strong> <span class="prod-badge">PRODUCTION</span><br>
+        <p>🔒 Strict UUID-only validation in production mode</p>
+        <p>🔧 Development-friendly validation for testing</p>
+        <p>⚡ Multi-source user ID extraction with intelligent fallbacks</p>
+        <p>📊 Enhanced logging with production/development context</p>
         <br>
-        <strong>2. Improved Request Tracking</strong> <span class="badge">NEW</span><br>
-        <p>✅ Unique debug IDs for each transcription request</p>
-        <p>✅ Processing time measurement and metadata</p>
-        <p>✅ User ID source tracking for troubleshooting</p>
+        <strong>2. Environment-Aware Processing</strong> <span class="prod-badge">PRODUCTION</span><br>
+        <p>🏭 Production environment validation checks</p>
+        <p>🔍 Automatic production readiness assessment</p>
+        <p>⚙️ Different validation rules per environment</p>
         <br>
-        <strong>3. Enhanced Error Recovery</strong> <span class="badge">NEW</span><br>
-        <p>✅ Graceful fallback handling for transcription failures</p>
-        <p>✅ Automatic queue status updates on errors</p>
-        <p>✅ Detailed error context in responses</p>
+        <strong>3. Enhanced Error Handling</strong> <span class="badge">ENHANCED</span><br>
+        <p>🚨 Context-aware error messages for production vs development</p>
+        <p>📝 Improved debug tracking with environment indicators</p>
+        <p>🛡️ Graceful degradation in production environments</p>
     </div>
   </div>
 
   <div class="section">
-    <h2>🔧 ENHANCED ENDPOINTS:</h2>
+    <h2>🔧 PRODUCTION VALIDATION:</h2>
     <div class="endpoint">
-        <strong>Transcription Upload:</strong> <span class="badge">ENHANCED</span><br>
-        <code>POST /api/whisper/transcribe</code><br>
-        Now includes robust user ID validation, debug tracking, and schema compliance<br>
+        <strong>Current Environment:</strong> <span class="badge">${process.env.NODE_ENV || 'development'}</span><br>
         <br>
-        <strong>Consistency Check:</strong> <span class="badge">DEBUG</span><br>
-        <code>GET /api/debug/user/:userId/consistency</code><br>
-        Checks data consistency across all tables for a user<br>
+        <strong>User ID Validation Rules:</strong><br>
+        ${process.env.NODE_ENV === 'production' ? 
+          '<code>PRODUCTION: UUID format only (xxxxxxxx-xxxx-xxxx-xxxx-xxxxxxxxxxxx)</code><br>' +
+          '<code>Blocked: All dev/test/temp patterns</code><br>' +
+          '<code>Required: Valid Typeform create_user_id</code>' :
+          '<code>DEVELOPMENT: Flexible validation</code><br>' +
+          '<code>Allowed: UUIDs + alphanumeric + dev patterns</code><br>' +
+          '<code>Fallbacks: Multiple user ID sources</code>'
+        }<br>
         <br>
-        <strong>Data Fix:</strong> <span class="badge">ADMIN</span><br>
-        <code>POST /api/admin/fix-user-data/:userId</code><br>
-        Fixes user data inconsistencies (supports dry-run)<br>
+        <strong>Production Readiness:</strong><br>
+        <code>API Keys: ${!!process.env.API_KEY ? 'Configured ✅' : 'Not set ⚠️'}</code><br>
+        <code>Database: ${supabaseEnabled ? 'Connected ✅' : 'Not configured ❌'}</code><br>
+        <code>OpenAI: ${!!process.env.OPENAI_API_KEY ? 'Configured ✅' : 'Not set ⚠️'}</code>
     </div>
   </div>
 
@@ -3926,38 +4033,40 @@ app.get('/status', (req, res) => {
         <br>
         <strong>Database:</strong><br>
         <code>Supabase: ${supabaseEnabled ? 'Connected ✅' : 'Not configured ❌'}</code><br>
-        <code>Transcription Endpoint: Enhanced ✅</code><br>
-        <code>Schema Compliance: Active ✅</code>
+        <code>Transcription Endpoint: Production Ready ✅</code><br>
+        <code>Schema Compliance: Active ✅</code><br>
+        <code>User Validation: ${process.env.NODE_ENV === 'production' ? 'Strict ✅' : 'Flexible ✅'}</code>
     </div>
   </div>
 
   <div class="section">
-    <h3>✅ All Features:</h3>
+    <h3>✅ Production Features:</h3>
     <ul>
-        <li>✅ Enhanced transcription endpoint with schema compatibility</li>
-        <li>✅ Robust user ID validation and extraction</li>
-        <li>✅ Debug ID tracking for request troubleshooting</li>
-        <li>✅ Processing time measurement and metadata</li>
-        <li>✅ Database consistency checking</li>
-        <li>✅ Automated data fixing with dry-run</li>
-        <li>✅ Complete user data collection</li>
-        <li>✅ PDF data preparation</li>
-        <li>✅ User search with statistics</li>
-        <li>✅ Webhook endpoints (no auth)</li>
-        <li>✅ Legal narrative generation</li>
+        <li>🔒 Production-ready user ID validation with strict UUID enforcement</li>
+        <li>⚡ Enhanced transcription endpoint with environment-aware processing</li>
+        <li>🔍 Multi-source user ID extraction with intelligent fallbacks</li>
+        <li>📊 Production environment validation and readiness checks</li>
+        <li>🛡️ Schema-compatible database operations with error recovery</li>
+        <li>📝 Context-aware debug tracking and logging</li>
+        <li>🚨 Environment-specific error messages and handling</li>
+        <li>✅ Database consistency checking and automated fixes</li>
+        <li>📄 Complete user data collection and PDF preparation</li>
+        <li>🔍 Advanced user search with statistics</li>
+        <li>🔌 Webhook endpoints with no authentication required</li>
+        <li>⚖️ Legal narrative generation with AI integration</li>
     </ul>
   </div>
   </div>
   </body>
   </html>`;
   res.send(htmlContent);
-});
+  });
 
-// ========================================
-// ERROR HANDLING MIDDLEWARE
-// ========================================
+  // ========================================
+  // ERROR HANDLING MIDDLEWARE
+  // ========================================
 
-app.use((err, req, res, next) => {
+  app.use((err, req, res, next) => {
   if (err.name === 'MulterError') {
     if (err.code === 'LIMIT_FILE_SIZE') {
       return res.status(400).json({
@@ -3980,41 +4089,41 @@ app.use((err, req, res, next) => {
     stack: process.env.NODE_ENV === 'development' ? err.stack : undefined,
     requestId: req.requestId
   });
-});
+  });
 
-// 404 handler - must be last
-app.use((req, res) => {
+  // 404 handler - must be last
+  app.use((req, res) => {
   res.status(404).json({
     error: 'Not found',
     path: req.path,
     method: req.method,
     requestId: req.requestId
   });
-});
+  });
 
-// ========================================
-// MISSING VARIABLES AND FUNCTIONS FOR STARTUP
-// ========================================
-let wss = { clients: new Set() }; // Mock WebSocket server
-let wsHeartbeat = null;
-let activeSessions = new Map();
-let userSessions = new Map();
-let transcriptionStatuses = new Map();
+  // ========================================
+  // MISSING VARIABLES AND FUNCTIONS FOR STARTUP
+  // ========================================
+  let wss = { clients: new Set() }; // Mock WebSocket server
+  let wsHeartbeat = null;
+  let activeSessions = new Map();
+  let userSessions = new Map();
+  let transcriptionStatuses = new Map();
 
-// Make them globally accessible
-global.transcriptionStatuses = transcriptionStatuses;
-global.userSessions = userSessions;
+  // Make them globally accessible
+  global.transcriptionStatuses = transcriptionStatuses;
+  global.userSessions = userSessions;
 
-// ========================================
-// SERVER STARTUP
-// ========================================
-const PORT = process.env.PORT || 5000;
+  // ========================================
+  // SERVER STARTUP
+  // ========================================
+  const PORT = process.env.PORT || 5000;
 
-// Graceful shutdown handler
-process.on('SIGTERM', gracefulShutdown);
-process.on('SIGINT', gracefulShutdown);
+  // Graceful shutdown handler
+  process.on('SIGTERM', gracefulShutdown);
+  process.on('SIGINT', gracefulShutdown);
 
-async function gracefulShutdown(signal) {
+  async function gracefulShutdown(signal) {
   Logger.info(`⚠️ ${signal} received, starting graceful shutdown...`);
 
   wss.clients.forEach((ws) => {
@@ -4043,52 +4152,79 @@ async function gracefulShutdown(signal) {
 
   Logger.info('Graceful shutdown complete');
   process.exit(0);
-}
+  }
 
-// Only start server if not in test mode
-if (process.env.NODE_ENV !== 'test') {
+  // Only start server if not in test mode
+  if (process.env.NODE_ENV !== 'test') {
   server.listen(PORT, '0.0.0.0', () => {
     Logger.critical('============================================');
-    Logger.success('🚀 Car Crash Lawyer AI System v4.5.1');
-    Logger.success('✅ Enhanced Transcription Endpoint Active');
-    Logger.success('✅ Schema-Compatible Database Operations');
+    Logger.success('🚀 Car Crash Lawyer AI System v4.5.2');
+    Logger.success('🔒 PRODUCTION-READY USER VALIDATION');
+    Logger.success('✅ Enhanced Schema-Compatible Operations');
     Logger.critical('============================================');
     Logger.info(`🌐 Server: http://localhost:${PORT}`);
-    Logger.info('🔒 API Authentication: DEVELOPMENT MODE');
+    Logger.info(`🏭 Environment: ${process.env.NODE_ENV || 'development'}`);
+    Logger.info('🔐 API Authentication: DEVELOPMENT MODE');
     Logger.info('🗄️ Supabase: ' + (supabaseEnabled ? 'CONNECTED' : 'DISABLED'));
     Logger.info('🤖 OpenAI: ' + (process.env.OPENAI_API_KEY ? 'CONFIGURED' : 'DISABLED'));
     Logger.info('📄 Transcription Queue: ' + (transcriptionQueueInterval ? 'RUNNING' : 'DISABLED'));
     Logger.info('🔌 WebSocket: ACTIVE');
     Logger.info('🎤 Recording Interface: /transcription-status.html');
 
+    Logger.info('🔒 Production Validation Features:');
+    Logger.success('  - Environment-aware user ID validation');
+    Logger.success('  - Strict UUID enforcement in production');
+    Logger.success('  - Multi-source user ID extraction');
+    Logger.success('  - Production readiness checks');
+    Logger.success('  - Enhanced error context');
+
     Logger.info('🔧 Enhanced Transcription Features:');
-    Logger.success('  - POST /api/whisper/transcribe (Enhanced with debug tracking)');
-    Logger.success('  - Multi-source user ID validation');
+    Logger.success('  - POST /api/whisper/transcribe (Production-ready)');
     Logger.success('  - Schema-safe database operations');
     Logger.success('  - Request debug ID tracking');
     Logger.success('  - Processing time measurement');
+    Logger.success('  - Environment-specific validation');
 
-    Logger.info('🔍 Database Tools:');
+    Logger.info('📊 Database Tools:');
     Logger.success('  - GET /api/debug/user/:userId/consistency');
     Logger.success('  - POST /api/admin/fix-user-data/:userId');
     Logger.success('  - GET /api/user/:userId/complete-data');
     Logger.success('  - GET /api/user/:userId/pdf-data');
     Logger.success('  - GET /api/admin/users/search');
 
-    Logger.info('📥 Webhook endpoints (NO AUTH):');
+    Logger.info('🔥 Webhook endpoints (NO AUTH):');
     Logger.success('  - POST /webhook/signup');
     Logger.success('  - POST /webhook/incident-report');
     Logger.success('  - ALL /webhook/test');
 
-    Logger.success('✅ System ready with enhanced transcription endpoint');
-    console.log('✅ Enhanced transcription endpoint with schema compatibility loaded');
-    console.log('✅ Enhanced backend user ID management loaded');
-    console.log('✅ Database consistency and debugging tools loaded');
-  });
-}
+    if (PRODUCTION_MODE && STRICT_USER_VALIDATION) {
+      Logger.success('🔒 FULL PRODUCTION MODE: Maximum security active');
+      Logger.info('  - Only Typeform UUID format accepted');
+      Logger.info('  - All dev/test patterns blocked');
+      Logger.info('  - No fallback user ID sources');
+      Logger.info('  - Enhanced security logging');
+      Logger.info('  - Real user data validation ready');
+    } else if (process.env.NODE_ENV === 'production') {
+      Logger.success('🔒 PRODUCTION MODE: Strict user validation active');
+      Logger.info('  - Only Typeform UUID format accepted');
+      Logger.info('  - All dev/test patterns blocked');
+      Logger.info('  - Enhanced security logging');
+    } else {
+      Logger.info('🔧 DEVELOPMENT MODE: Flexible validation active');
+      Logger.info('  - UUIDs + alphanumeric IDs allowed');
+      Logger.info('  - Dev patterns permitted for testing');
+      Logger.info('  - Comprehensive fallback sources');
+    }
 
-// Export for testing
-module.exports = {
+    Logger.success('✅ System ready with production-grade user validation');
+    console.log('✅ Production-ready user ID validation enabled');
+    console.log('✅ Enhanced transcription endpoint with environment awareness');
+    console.log('✅ Database consistency and debugging tools active');
+  });
+  }
+
+  // Export for testing
+  module.exports = {
   app,
   server,
   UUIDUtils,
@@ -4096,5 +4232,6 @@ module.exports = {
   Logger,
   validateBackendUserId,
   extractAndValidateUserId,
-  createDatabaseUserObject
-};
+  createDatabaseUserObject,
+  validateProductionEnvironment
+  };
