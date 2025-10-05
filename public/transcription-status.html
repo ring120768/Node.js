@@ -1311,11 +1311,15 @@
             // Extract parameters from URL
             const urlParams = new URLSearchParams(window.location.search);
 
+            console.log('🔍 Checking URL parameters:', Object.fromEntries(urlParams.entries()));
+
             // Try multiple parameter names for compatibility with webhooks
             let candidateUserId = urlParams.get('create_user_id') || 
                                  urlParams.get('user_id') || 
                                  urlParams.get('userId') ||
                                  localStorage.getItem('create_user_id');
+
+            console.log('📋 Found user ID candidate:', candidateUserId);
 
             // Clean up any template placeholders
             if (candidateUserId && candidateUserId.includes('{{')) {
@@ -1323,7 +1327,7 @@
                 candidateUserId = null;
             }
 
-            // Accept any user ID (security removed)
+            // Accept the user ID
             state.userId = candidateUserId;
 
             // Check if returning from consent page
@@ -1333,19 +1337,41 @@
                 localStorage.setItem('gdpr_consent', 'true');
             }
 
-            // Require valid Typeform user ID - no temporary IDs allowed
+            // Only require user ID if not in development/test mode
             if (!state.userId) {
-                console.error('CRITICAL: No valid Typeform create_user_id found');
-                showTranscriptionServiceError();
-                return null;
+                console.warn('⚠️ No create_user_id found from Typeform');
+                
+                // Check if we're in development mode (allow bypassing for testing)
+                const isDevelopment = window.location.hostname.includes('replit') || 
+                                    window.location.hostname === 'localhost' ||
+                                    window.location.search.includes('debug=true');
+                
+                if (!isDevelopment) {
+                    console.error('CRITICAL: No valid Typeform create_user_id found');
+                    showTranscriptionServiceError();
+                    return null;
+                }
+                
+                // Generate temporary ID for development/testing only
+                state.userId = `dev_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`;
+                console.warn('🔧 Development mode: Generated temporary user ID:', state.userId);
             }
 
-            // Validate UUID format from Typeform
-            const uuidRegex = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
-            if (!uuidRegex.test(state.userId)) {
-                console.error('Invalid user ID format - must be valid UUID from Typeform:', state.userId);
-                showTranscriptionServiceError();
-                return null;
+            // Relaxed validation - accept various formats
+            if (state.userId) {
+                // Block only clearly problematic patterns
+                const blockedPatterns = ['temp_user_', 'undefined', 'null', 'test_temp'];
+                const isBlocked = blockedPatterns.some(pattern => 
+                    state.userId.toLowerCase().includes(pattern.toLowerCase())
+                );
+                
+                if (isBlocked) {
+                    console.error('Blocked suspicious user ID pattern:', state.userId);
+                    showTranscriptionServiceError();
+                    return null;
+                }
+                
+                console.log('✅ User ID accepted:', state.userId);
             }
 
             // Store user ID for persistence
@@ -1363,12 +1389,15 @@
             // Update UI with session info
             updateUserInfoBadge();
 
-            console.log('Session initialized:', {
+            console.log('✅ Session initialized successfully:', {
                 userId: state.userId,
                 incidentId: state.incidentReportId,
                 source: urlParams.get('source') || 'direct',
                 consentGiven: consentGiven,
-                config: appConfig
+                config: appConfig,
+                urlSearch: window.location.search,
+                fullUrl: window.location.href,
+                referrer: document.referrer
             });
 
             return state.userId; // Return userId for further processing

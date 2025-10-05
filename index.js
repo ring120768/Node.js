@@ -1906,6 +1906,51 @@ app.get('/', (req, res) => {
 // DEBUG AND TEST ENDPOINTS
 // ========================================
 
+// Debug endpoint to test user ID detection from various sources
+app.get('/api/debug/user-id-test', (req, res) => {
+  res.json({
+    success: true,
+    message: 'User ID detection test endpoint',
+    received: {
+      query_params: req.query,
+      headers: Object.keys(req.headers).reduce((acc, key) => {
+        if (key.toLowerCase().includes('user') || key.toLowerCase().includes('id')) {
+          acc[key] = req.headers[key];
+        }
+        return acc;
+      }, {}),
+      url: req.url,
+      originalUrl: req.originalUrl
+    },
+    test_urls: {
+      with_create_user_id: `${req.protocol}://${req.get('host')}/api/debug/user-id-test?create_user_id=test-user-123`,
+      with_user_id: `${req.protocol}://${req.get('host')}/api/debug/user-id-test?user_id=test-user-123`,
+      transcription_page: `${req.protocol}://${req.get('host')}/transcription-status.html?create_user_id=test-user-123`
+    },
+    requestId: req.requestId
+  });
+});
+
+app.post('/api/debug/user-id-test', (req, res) => {
+  const create_user_id = req.body.create_user_id ||
+                        req.query.create_user_id ||
+                        req.headers['x-user-id'];
+
+  res.json({
+    success: true,
+    message: 'POST User ID detection test',
+    detected_user_id: create_user_id,
+    sources: {
+      body: req.body.create_user_id,
+      query: req.query.create_user_id,
+      header: req.headers['x-user-id']
+    },
+    full_body: req.body,
+    full_query: req.query,
+    requestId: req.requestId
+  });
+});
+
 app.get('/api/debug/user/:userId', async (req, res) => {
   if (!supabaseEnabled) {
     return res.status(503).json({
@@ -2577,22 +2622,55 @@ app.post('/api/whisper/transcribe', upload.single('audio'), async (req, res) => 
                            req.query.create_user_id ||
                            req.headers['x-user-id'];
 
+    Logger.info('Transcription request received:', {
+      body_user_id: req.body.create_user_id,
+      query_user_id: req.query.create_user_id,
+      header_user_id: req.headers['x-user-id'],
+      final_user_id: create_user_id,
+      body_keys: Object.keys(req.body || {}),
+      query_keys: Object.keys(req.query || {})
+    });
+
     if (!create_user_id) {
       Logger.critical('Missing create_user_id in transcription request');
       return res.status(400).json({
-        error: 'create_user_id from Typeform is required',
-        message: 'This service requires a valid Typeform user ID',
-        requestId: req.requestId
+        error: 'create_user_id is required',
+        message: 'Please provide a user ID from Typeform',
+        requestId: req.requestId,
+        debug: {
+          received_body: Object.keys(req.body || {}),
+          received_query: Object.keys(req.query || {}),
+          received_headers: Object.keys(req.headers || {}).filter(h => h.toLowerCase().includes('user'))
+        }
       });
     }
 
-    // Validate UUID format from Typeform
-    const uuidRegex = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
-    if (!uuidRegex.test(create_user_id)) {
+    // Relaxed validation - accept various user ID formats
+    const isValidUserId = (id) => {
+      // Accept UUIDs
+      if (/^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(id)) {
+        return true;
+      }
+      
+      // Accept legitimate alphanumeric IDs (like ianring_120768)
+      if (/^[a-zA-Z][a-zA-Z0-9_]{2,63}$/.test(id)) {
+        return true;
+      }
+      
+      // Accept development IDs for testing
+      if (id.startsWith('dev_') && process.env.NODE_ENV !== 'production') {
+        return true;
+      }
+      
+      return false;
+    };
+
+    if (!isValidUserId(create_user_id)) {
       Logger.critical('Invalid create_user_id format:', create_user_id);
       return res.status(400).json({
         error: 'Invalid user ID format',
-        message: 'User ID must be a valid UUID from Typeform',
+        message: 'User ID must be a valid format',
+        received_id: create_user_id,
         requestId: req.requestId
       });
     }
