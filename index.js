@@ -369,22 +369,19 @@ const webhookLimiter = rateLimit({
 // MIDDLEWARE SETUP (SIMPLIFIED)
 // ========================================
 
-// Security headers with Helmet
+// Security headers with Helmet - configured for Replit
 app.use(helmet({
   contentSecurityPolicy: {
     directives: {
-      defaultSrc: ["'self'"],
-      styleSrc: ["'self'", "'unsafe-inline'"],
-      scriptSrc: ["'self'", "'unsafe-inline'"],
-      imgSrc: ["'self'", "data:", "https:"],
-      connectSrc: ["'self'", "wss:", "https:"],
+      defaultSrc: ["'self'", "*.replit.dev", "*.repl.co"],
+      styleSrc: ["'self'", "'unsafe-inline'", "*.replit.dev", "*.repl.co"],
+      scriptSrc: ["'self'", "'unsafe-inline'", "*.replit.dev", "*.repl.co"],
+      imgSrc: ["'self'", "data:", "https:", "*.replit.dev", "*.repl.co"],
+      connectSrc: ["'self'", "wss:", "https:", "*.replit.dev", "*.repl.co"],
+      frameSrc: ["'self'", "*.replit.dev", "*.repl.co"],
     },
   },
-  hsts: {
-    maxAge: 31536000,
-    includeSubDomains: true,
-    preload: true
-  }
+  hsts: false // Disable HSTS in development
 }));
 
 // Response compression
@@ -400,7 +397,12 @@ app.use(compression({
 }));
 
 app.use(cors({
-  origin: process.env.ALLOWED_ORIGINS ? process.env.ALLOWED_ORIGINS.split(',') : '*',
+  origin: process.env.ALLOWED_ORIGINS ? process.env.ALLOWED_ORIGINS.split(',') : [
+    /\.replit\.dev$/,
+    /\.repl\.co$/,
+    'http://localhost:5000',
+    'https://localhost:5000'
+  ],
   credentials: true,
   methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS'],
   allowedHeaders: ['Content-Type', 'Authorization', 'X-Api-Key', 'X-User-Id']
@@ -1943,6 +1945,31 @@ app.get('/health', async (req, res) => {
 });
 
 // ========================================
+// ROOT ROUTE FOR TESTING ACCESSIBILITY
+// ========================================
+
+app.get('/', (req, res) => {
+  res.json({
+    success: true,
+    message: 'Car Crash Lawyer AI System is running',
+    version: '4.4.0',
+    timestamp: new Date().toISOString(),
+    port: PORT,
+    environment: process.env.NODE_ENV || 'development',
+    endpoints: {
+      health: '/health',
+      status: '/status',
+      webhooks: {
+        signup: '/webhook/signup',
+        incident: '/webhook/incident-report',
+        test: '/webhook/test'
+      },
+      transcription: '/transcription-status.html'
+    }
+  });
+});
+
+// ========================================
 // DEBUG AND TEST ENDPOINTS
 // ========================================
 
@@ -3100,7 +3127,7 @@ global.userSessions = userSessions;
 // ========================================
 // SERVER STARTUP
 // ========================================
-const PORT = process.env.PORT || 3000;
+const PORT = process.env.PORT || 5000;
 
 // Graceful shutdown handler
 process.on('SIGTERM', gracefulShutdown);
