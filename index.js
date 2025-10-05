@@ -2679,6 +2679,63 @@ async function checkExternalServices() {
 }
 
 // ========================================
+// USER VALIDATION ENDPOINT
+// ========================================
+
+// User validation endpoint
+app.post('/api/validate-user', async (req, res) => {
+    try {
+        const { username } = req.body;
+
+        if (!username || typeof username !== 'string') {
+            return res.status(400).json({ 
+                valid: false, 
+                error: 'Username is required' 
+            });
+        }
+
+        if (!supabaseEnabled) {
+            return res.status(503).json({
+                valid: false,
+                error: 'Database service not configured'
+            });
+        }
+
+        // Query user_signup table
+        const { data: user, error } = await supabase
+            .from('user_signup')
+            .select('id, create_user_id, email, full_name')
+            .eq('create_user_id', username.trim())
+            .single();
+
+        if (error || !user) {
+            Logger.info('User validation failed:', { username, error: error?.message });
+            return res.status(401).json({ 
+                valid: false, 
+                error: 'Username not found' 
+            });
+        }
+
+        Logger.info('User validation successful:', { username, userId: user.create_user_id });
+
+        // Return user data
+        res.json({
+            valid: true,
+            userId: user.create_user_id,
+            email: user.email,
+            fullName: user.full_name
+        });
+
+    } catch (error) {
+        Logger.error('Validate user error:', error);
+        res.status(500).json({ 
+            valid: false, 
+            error: 'Server error' 
+        });
+    }
+});
+
+// ========================================
 // API KEY STATUS ENDPOINT
 // ========================================
 app.get('/api/key-status', (req, res) => {
