@@ -348,6 +348,26 @@
       }
     }
 
+    /* UUID Service Debug Panel (hidden by default) */
+    .debug-panel {
+      position: fixed;
+      bottom: 20px;
+      left: 20px;
+      background: rgba(0, 0, 0, 0.8);
+      color: white;
+      padding: 10px;
+      border-radius: 5px;
+      font-family: monospace;
+      font-size: 0.8rem;
+      max-width: 300px;
+      display: none;
+      z-index: 9999;
+    }
+
+    .debug-panel.show {
+      display: block;
+    }
+
     /* Responsive Design */
     @media (max-width: 768px) {
       header img {
@@ -391,6 +411,14 @@
       .nav-arrow span {
         font-size: 20px;
       }
+
+      .debug-panel {
+        position: relative;
+        bottom: auto;
+        left: auto;
+        margin-top: 2rem;
+        max-width: 100%;
+      }
     }
   </style>
 </head>
@@ -423,7 +451,7 @@
     </div>
   </div>
 
-  <!-- Emergency Banner - NOW ALWAYS VISIBLE -->
+  <!-- Emergency Banner - ALWAYS VISIBLE -->
   <div class="emergency-banner" id="emergencyBanner">
     <h3>🚨 Need Emergency Help?</h3>
     <p>If this is a medical emergency or you need immediate assistance</p>
@@ -437,7 +465,7 @@
 
   <!-- Main Heading -->
   <h1>Car Crash Lawyer AI</h1>
-  <p class="subtitle">Legal support at the scene – fast, smart, AI-powered.</p>
+  <p class="subtitle">Legal support at the scene — fast, smart, AI-powered.</p>
   <p class="tagline">Get help. Record evidence. Protect your rights.</p>
 
   <!-- Call to Action Buttons -->
@@ -456,6 +484,12 @@
     </button>
   </div>
 
+  <!-- Debug Panel (Hidden by default, activated with Ctrl+Shift+D) -->
+  <div class="debug-panel" id="debugPanel">
+    <strong>UUID Service Debug</strong><br>
+    <span id="debugContent">Press Ctrl+Shift+D to toggle</span>
+  </div>
+
   <!-- Footer -->
   <footer>
     <p style="font-size: 0.8rem; margin-top: 2rem;">
@@ -466,13 +500,240 @@
   </footer>
 
   <script>
+    // ========================================
+    // FRONTEND UUID SERVICE - INTEGRATED
+    // ========================================
+    class UUIDService {
+      // Generate UUID v4 using modern browser API with fallback
+      static generate() {
+        // Use crypto.randomUUID() if available (modern browsers)
+        if (typeof crypto !== 'undefined' && crypto.randomUUID) {
+          return crypto.randomUUID();
+        }
+
+        // Fallback for older browsers
+        return ([1e7]+-1e3+-4e3+-8e3+-1e11).replace(/[018]/g, c =>
+          (c ^ crypto.getRandomValues(new Uint8Array(1))[0] & 15 >> c / 4).toString(16)
+        );
+      }
+
+      // Validate UUID format
+      static isValid(uuid) {
+        if (!uuid || typeof uuid !== 'string') return false;
+        const uuidRegex = /^[0-9a-f]{8}-[0-9a-f]{4}-4[0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i;
+        return uuidRegex.test(uuid.trim());
+      }
+
+      // Create or get existing user session with enhanced metadata
+      static getOrCreateSession() {
+        const STORAGE_KEY = 'car_crash_user_session';
+        const SESSION_DURATION = 24 * 60 * 60 * 1000; // 24 hours
+
+        try {
+          // Check for existing session
+          const existingSession = sessionStorage.getItem(STORAGE_KEY);
+
+          if (existingSession) {
+            const session = JSON.parse(existingSession);
+
+            // Check if session is still valid
+            if (session.expires && Date.now() < session.expires) {
+              console.log('🔄 Using existing session:', session.user_id.substring(0, 8) + '...');
+              // Update last accessed time
+              session.lastAccessed = new Date().toISOString();
+              sessionStorage.setItem(STORAGE_KEY, JSON.stringify(session));
+              return session;
+            } else {
+              console.log('⏰ Session expired, creating new one');
+            }
+          }
+
+          // Create new session with enhanced metadata
+          const session = {
+            user_id: this.generate(),
+            session_id: this.generate(),
+            created: new Date().toISOString(),
+            lastAccessed: new Date().toISOString(),
+            expires: Date.now() + SESSION_DURATION,
+            version: '6.0',
+            userAgent: navigator.userAgent,
+            timezone: Intl.DateTimeFormat().resolvedOptions().timeZone,
+            language: navigator.language,
+            referrer: document.referrer || 'direct'
+          };
+
+          // Store in sessionStorage
+          sessionStorage.setItem(STORAGE_KEY, JSON.stringify(session));
+
+          console.log('✨ Created new session:', session.user_id.substring(0, 8) + '...');
+          return session;
+
+        } catch (error) {
+          console.error('❌ Session storage error:', error);
+
+          // Return temporary session if storage fails
+          return {
+            user_id: this.generate(),
+            session_id: this.generate(),
+            created: new Date().toISOString(),
+            lastAccessed: new Date().toISOString(),
+            expires: Date.now() + SESSION_DURATION,
+            version: '6.0',
+            temporary: true,
+            error: error.message
+          };
+        }
+      }
+
+      // Clear current session (for testing or logout)
+      static clearSession() {
+        try {
+          sessionStorage.removeItem('car_crash_user_session');
+          sessionStorage.removeItem('car_crash_user_data');
+          console.log('🧹 Session cleared');
+          return true;
+        } catch (error) {
+          console.error('❌ Failed to clear session:', error);
+          return false;
+        }
+      }
+
+      // Build Typeform URL with proper parameters and enhanced tracking
+      static buildTypeformUrl(baseUrl, options = {}) {
+        const session = this.getOrCreateSession();
+        const url = new URL(baseUrl);
+
+        // Core UUID parameters
+        url.searchParams.set('user_id', session.user_id);
+        url.searchParams.set('session_id', session.session_id);
+
+        // Optional user parameters
+        if (options.email) url.searchParams.set('email', options.email);
+        if (options.first_name) url.searchParams.set('first_name', options.first_name);
+        if (options.last_name) url.searchParams.set('last_name', options.last_name);
+        if (options.product_id) url.searchParams.set('product_id', options.product_id);
+
+        // Enhanced metadata and tracking
+        url.searchParams.set('source', options.source || 'landing_page');
+        url.searchParams.set('timestamp', new Date().toISOString());
+        url.searchParams.set('page_url', window.location.href);
+        url.searchParams.set('user_agent', navigator.userAgent.substring(0, 100)); // Truncated for URL length
+        url.searchParams.set('referrer', document.referrer || 'direct');
+        url.searchParams.set('session_version', session.version);
+
+        console.log('🔗 Built Typeform URL with UUID tracking');
+        return url.toString();
+      }
+
+      // Enhanced user data management
+      static setUserData(userData) {
+        const STORAGE_KEY = 'car_crash_user_data';
+
+        try {
+          const existingData = sessionStorage.getItem(STORAGE_KEY);
+          const currentData = existingData ? JSON.parse(existingData) : {};
+
+          const updatedData = {
+            ...currentData,
+            ...userData,
+            updated: new Date().toISOString(),
+            version: '6.0'
+          };
+
+          sessionStorage.setItem(STORAGE_KEY, JSON.stringify(updatedData));
+          console.log('💾 User data updated');
+
+          return updatedData;
+        } catch (error) {
+          console.error('❌ Failed to store user data:', error);
+          return null;
+        }
+      }
+
+      // Get stored user data
+      static getUserData() {
+        try {
+          const data = sessionStorage.getItem('car_crash_user_data');
+          return data ? JSON.parse(data) : {};
+        } catch (error) {
+          console.error('❌ Failed to retrieve user data:', error);
+          return {};
+        }
+      }
+
+      // Enhanced debug function
+      static debug() {
+        const session = this.getOrCreateSession();
+        const userData = this.getUserData();
+
+        return {
+          session: session,
+          userData: userData,
+          validation: {
+            userIdValid: this.isValid(session.user_id),
+            sessionIdValid: this.isValid(session.session_id),
+            sessionExpired: Date.now() > session.expires
+          },
+          capabilities: {
+            storageSupported: typeof Storage !== 'undefined',
+            cryptoSupported: typeof crypto !== 'undefined' && !!crypto.randomUUID,
+            sessionStorage: !!sessionStorage,
+            localStorageSpace: this.getStorageSize()
+          },
+          browser: {
+            userAgent: navigator.userAgent,
+            language: navigator.language,
+            timezone: Intl.DateTimeFormat().resolvedOptions().timeZone,
+            online: navigator.onLine,
+            cookieEnabled: navigator.cookieEnabled
+          }
+        };
+      }
+
+      // Helper to check storage size
+      static getStorageSize() {
+        try {
+          let total = 0;
+          for (let key in sessionStorage) {
+            if (sessionStorage.hasOwnProperty(key)) {
+              total += sessionStorage[key].length + key.length;
+            }
+          }
+          return `${(total / 1024).toFixed(2)} KB`;
+        } catch (error) {
+          return 'Unknown';
+        }
+      }
+
+      // Test UUID generation performance
+      static performanceTest(count = 1000) {
+        const start = performance.now();
+        const uuids = [];
+
+        for (let i = 0; i < count; i++) {
+          uuids.push(this.generate());
+        }
+
+        const end = performance.now();
+        const duplicates = uuids.length - new Set(uuids).size;
+
+        return {
+          generatedCount: count,
+          timeMs: (end - start).toFixed(2),
+          avgTimePerUuid: ((end - start) / count).toFixed(4),
+          duplicates: duplicates,
+          uniquenessRate: ((count - duplicates) / count * 100).toFixed(2)
+        };
+      }
+    }
+
     // ====================================
     // CONFIGURATION SECTION
     // ====================================
     const TYPEFORM_URLS = {
-      signup: 'https://form.typeform.com/to/b03aFxEO#user_id=xxxxx&product_id=xxxxx&auth_code=xxxxx',
+      signup: 'https://form.typeform.com/to/b03aFxEO',
       demo: 'https://form.typeform.com/to/XMBB3Xhq',
-      incident: 'https://form.typeform.com/to/WvM2ejru#user_id=xxxxx&product_id=xxxxx&auth_code=xxxxx&email=xxxxx&car_crash_user_id=xxxxx&first_name=xxxxx&last_name=xxxxx'
+      incident: 'https://form.typeform.com/to/WvM2ejru'
     };
 
     // ====================================
@@ -481,6 +742,7 @@
     let userAuthenticated = false;
     let userData = null;
     let systemHealth = null;
+    let currentSession = null;
 
     // Page navigation history
     const pageHistory = [];
@@ -490,16 +752,25 @@
     // INITIALIZATION
     // ====================================
     document.addEventListener('DOMContentLoaded', async () => {
-      console.log('🚀 Car Crash Lawyer AI - Initializing...');
+      console.log('🚀 Car Crash Lawyer AI - Initializing with UUID Service...');
 
-      // Check if user is signed in - redirect to sign-in if not
-      const userId = sessionStorage.getItem('userId');
-      if (!userId) {
-          console.log('ℹ️ User not signed in - redirecting to sign-in page');
-          window.location.href = '/sign-in.html';
-          return;
+      // Initialize UUID service first
+      try {
+        currentSession = UUIDService.getOrCreateSession();
+        console.log('✅ UUID Service initialized');
+
+        // Update user status with session info
+        showUserStatus(`🔑 Session: ${currentSession.user_id.substring(0, 8)}...`);
+      } catch (error) {
+        console.error('❌ UUID Service initialization failed:', error);
+        showUserStatus('⚠️ Session error - limited functionality');
+      }
+
+      // Check if user is signed in using UUID service session
+      if (!currentSession || currentSession.temporary) {
+        console.log('ℹ️ No valid session - user needs to sign up');
       } else {
-          console.log('✅ User signed in:', userId.substring(0, 8) + '...');
+        console.log('✅ Valid session found:', currentSession.user_id.substring(0, 8) + '...');
       }
 
       // Load navigation history from sessionStorage
@@ -510,11 +781,14 @@
         addPageToHistory(window.location.href);
       }
 
-      // Initialize system immediately
+      // Initialize system
       await initializeSystem();
 
       // Setup event listeners
       setupEventListeners();
+
+      // Setup debug panel
+      setupDebugPanel();
 
       console.log('✅ Application initialized successfully');
     });
@@ -527,7 +801,7 @@
         // Check system health
         await checkSystemHealth();
 
-        // Check user authentication
+        // Check user authentication (enhanced with UUID service)
         await checkUserAuthentication();
 
         // Update UI based on state
@@ -548,6 +822,7 @@
           method: 'GET',
           headers: {
             'Content-Type': 'application/json',
+            'X-Session-ID': currentSession?.session_id || 'unknown'
           }
         });
 
@@ -566,13 +841,15 @@
       }
     }
 
-    // Check user authentication
+    // Enhanced user authentication check with UUID service
     async function checkUserAuthentication() {
       try {
         const response = await fetch('/api/auth/status', {
           method: 'GET',
           headers: {
             'Content-Type': 'application/json',
+            'X-Session-ID': currentSession?.session_id || 'unknown',
+            'X-User-ID': currentSession?.user_id || 'unknown'
           },
           credentials: 'include'
         });
@@ -583,6 +860,16 @@
           if (authData.authenticated && authData.user) {
             userAuthenticated = true;
             userData = authData.user;
+
+            // Store user data in UUID service
+            UUIDService.setUserData({
+              uid: userData.uid,
+              email: userData.email,
+              displayName: userData.displayName,
+              authenticated: true,
+              lastLogin: new Date().toISOString()
+            });
+
             showUserStatus(`👋 Welcome back, ${userData.displayName || 'User'}`);
             console.log('✅ User authenticated:', userData.uid);
           } else {
@@ -660,15 +947,42 @@
     }
 
     // ====================================
-    // BUTTON HANDLERS
+    // ENHANCED BUTTON HANDLERS WITH UUID SERVICE
     // ====================================
     async function handleReportIncident() {
       console.log('🚗 Report Incident clicked');
       const button = document.getElementById('reportIncidentBtn');
-      setButtonLoading(button, 'Loading incident form...');
+      setButtonLoading(button, 'Checking authentication...');
 
-      // Navigate to incident.html page instead of Typeform
-      navigateToPage('incident.html', 'incident report');
+      try {
+        // Check if user is already signed in
+        const existingUserId = sessionStorage.getItem('userId');
+        
+        if (existingUserId) {
+          // User is signed in, go directly to incident form
+          console.log('✅ User authenticated, proceeding to incident form');
+          navigateToPage('incident.html', 'incident report');
+        } else {
+          // User not signed in, redirect to sign-up
+          console.log('ℹ️ User not authenticated, redirecting to sign-up');
+          navigateToPage('sign-up.html', 'sign up');
+        }
+
+        // Log the action
+        logUserAction('incident_button_clicked', {
+          authenticated: !!existingUserId,
+          redirectTo: existingUserId ? 'incident' : 'signup'
+        });
+
+      } catch (error) {
+        console.error('❌ Failed to handle incident report:', error);
+        // Fallback to sign-up page
+        navigateToPage('sign-up.html', 'sign up');
+      }
+
+      setTimeout(() => {
+        resetButton(button, 'Report an Incident');
+      }, 1000);
     }
 
     async function handleSignUpOrDashboard() {
@@ -678,9 +992,29 @@
         setButtonLoading(button, 'Loading dashboard...');
         navigateToPage('dashboard.html', 'dashboard');
       } else {
-        console.log('📝 Opening Typeform signup');
+        console.log('📝 Opening signup form with UUID tracking');
         setButtonLoading(button, 'Opening signup form...');
-        window.open(TYPEFORM_URLS.signup, '_blank');
+
+        try {
+          const typeformUrl = UUIDService.buildTypeformUrl(TYPEFORM_URLS.signup, {
+            product_id: 'car_crash_lawyer_ai',
+            source: 'signup_button'
+          });
+
+          window.open(typeformUrl, '_blank');
+
+          // Log the action
+          logUserAction('signup_form_opened', {
+            hasSession: !!currentSession,
+            sessionVersion: currentSession?.version
+          });
+
+        } catch (error) {
+          console.error('❌ Failed to handle signup:', error);
+          window.open(TYPEFORM_URLS.signup, '_blank');
+          showNotification('Opened basic signup form', 'error');
+        }
+
         setTimeout(() => {
           resetButton(button, 'Sign Up');
         }, 1000);
@@ -691,21 +1025,141 @@
       console.log('📊 Access Reports clicked');
       const button = document.getElementById('accessReportsBtn');
       setButtonLoading(button, 'Loading reports...');
+
+      // Log the action with UUID tracking
+      logUserAction('access_reports_clicked', {
+        authenticated: userAuthenticated,
+        hasSession: !!currentSession
+      });
+
       navigateToPage('access-reports.html', 'access reports');
     }
 
     async function handleDemo() {
-      console.log('🎮 Opening Typeform demo');
+      console.log('🎮 Opening demo form with UUID tracking');
       const button = document.getElementById('demoBtn');
       setButtonLoading(button, 'Opening demo form...');
-      window.open(TYPEFORM_URLS.demo, '_blank');
+
+      try {
+        const typeformUrl = UUIDService.buildTypeformUrl(TYPEFORM_URLS.demo, {
+          product_id: 'demo',
+          source: 'demo_button'
+        });
+
+        window.open(typeformUrl, '_blank');
+
+        // Log the action
+        logUserAction('demo_form_opened', {
+          hasSession: !!currentSession
+        });
+
+      } catch (error) {
+        console.error('❌ Failed to handle demo:', error);
+        window.open(TYPEFORM_URLS.demo, '_blank');
+        showNotification('Opened basic demo form', 'error');
+      }
+
       setTimeout(() => {
         resetButton(button, 'Try Demo');
       }, 1000);
     }
 
     // ====================================
-    // NAVIGATION FUNCTIONS
+    // ENHANCED LOGGING AND ANALYTICS
+    // ====================================
+    function logUserAction(action, metadata = {}) {
+      try {
+        const logData = {
+          action: action,
+          timestamp: new Date().toISOString(),
+          session_id: currentSession?.session_id,
+          user_id: currentSession?.user_id,
+          page_url: window.location.href,
+          user_agent: navigator.userAgent,
+          metadata: metadata
+        };
+
+        console.log('📝 User action logged:', action, logData);
+
+        // Send to analytics endpoint (non-blocking)
+        fetch('/api/analytics/log', {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+            'X-Session-ID': currentSession?.session_id || 'unknown'
+          },
+          body: JSON.stringify(logData)
+        }).catch(error => {
+          console.warn('⚠️ Analytics logging failed:', error);
+        });
+
+      } catch (error) {
+        console.error('❌ Failed to log user action:', error);
+      }
+    }
+
+    // ====================================
+    // DEBUG PANEL SETUP
+    // ====================================
+    function setupDebugPanel() {
+      // Toggle debug panel with Ctrl+Shift+D
+      document.addEventListener('keydown', (e) => {
+        if (e.ctrlKey && e.shiftKey && e.key === 'D') {
+          e.preventDefault();
+          toggleDebugPanel();
+        }
+      });
+    }
+
+    function toggleDebugPanel() {
+      const panel = document.getElementById('debugPanel');
+      const isVisible = panel.classList.contains('show');
+
+      if (isVisible) {
+        panel.classList.remove('show');
+      } else {
+        updateDebugPanel();
+        panel.classList.add('show');
+      }
+    }
+
+    function updateDebugPanel() {
+      const debugData = UUIDService.debug();
+      const performanceData = UUIDService.performanceTest(100);
+
+      const debugContent = document.getElementById('debugContent');
+      debugContent.innerHTML = `
+        <strong>Session Info:</strong><br>
+        User ID: ${debugData.session.user_id}<br>
+        Session ID: ${debugData.session.session_id}<br>
+        Created: ${new Date(debugData.session.created).toLocaleTimeString()}<br>
+        Expires: ${new Date(debugData.session.expires).toLocaleTimeString()}<br>
+        Version: ${debugData.session.version}<br><br>
+
+        <strong>Validation:</strong><br>
+        User ID Valid: ${debugData.validation.userIdValid ? '✅' : '❌'}<br>
+        Session Valid: ${!debugData.validation.sessionExpired ? '✅' : '❌'}<br><br>
+
+        <strong>Capabilities:</strong><br>
+        Crypto UUID: ${debugData.capabilities.cryptoSupported ? '✅' : '❌'}<br>
+        Storage: ${debugData.capabilities.storageSupported ? '✅' : '❌'}<br>
+        Storage Size: ${debugData.capabilities.localStorageSpace}<br><br>
+
+        <strong>Performance (100 UUIDs):</strong><br>
+        Time: ${performanceData.timeMs}ms<br>
+        Avg: ${performanceData.avgTimePerUuid}ms<br>
+        Duplicates: ${performanceData.duplicates}<br>
+        Uniqueness: ${performanceData.uniquenessRate}%<br><br>
+
+        <strong>Browser:</strong><br>
+        Online: ${debugData.browser.online ? '✅' : '❌'}<br>
+        Language: ${debugData.browser.language}<br>
+        Timezone: ${debugData.browser.timezone}
+      `;
+    }
+
+    // ====================================
+    // NAVIGATION FUNCTIONS (UNCHANGED)
     // ====================================
     function goBack() {
       console.log('🔙 Go back clicked', { historyLength: pageHistory.length, currentIndex: currentPageIndex });
@@ -736,7 +1190,7 @@
     }
 
     function addPageToHistory(url) {
-      console.log('📝 Adding to history:', url);
+      console.log('📚 Adding to history:', url);
 
       // Don't add the same page twice in a row
       if (pageHistory.length > 0 && pageHistory[pageHistory.length - 1] === url) {
@@ -800,28 +1254,50 @@
     function navigateToPage(url, pageName) {
       showLoading(`Loading ${pageName}...`);
       addPageToHistory(url);
+
+      // Log navigation with UUID tracking
+      logUserAction('page_navigation', {
+        targetUrl: url,
+        pageName: pageName,
+        referrer: window.location.href
+      });
+
       setTimeout(() => {
         window.location.href = url;
       }, 300);
     }
 
     // ====================================
-    // EMERGENCY FUNCTIONS
+    // EMERGENCY FUNCTIONS (ENHANCED)
     // ====================================
     function callEmergency() {
       if (confirm('This will call 999 Emergency Services. Continue?')) {
         window.location.href = 'tel:999';
 
-        // Log emergency call attempt (no consent needed for safety)
+        // Enhanced emergency logging with UUID tracking
         try {
+          const emergencyData = {
+            timestamp: new Date().toISOString(),
+            action: 'emergency_call_initiated',
+            session_id: currentSession?.session_id,
+            user_id: currentSession?.user_id,
+            page_url: window.location.href,
+            user_agent: navigator.userAgent,
+            geolocation: 'permission_required' // Note: Would need user permission
+          };
+
           fetch('/api/emergency/log', {
             method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({
-              timestamp: new Date().toISOString(),
-              action: 'emergency_call_initiated'
-            })
+            headers: { 
+              'Content-Type': 'application/json',
+              'X-Session-ID': currentSession?.session_id || 'emergency'
+            },
+            body: JSON.stringify(emergencyData)
           });
+
+          // Also log locally for redundancy
+          console.log('🚨 Emergency call logged:', emergencyData);
+
         } catch (error) {
           // Don't block emergency call if logging fails
           console.error('Emergency log failed:', error);
@@ -830,7 +1306,7 @@
     }
 
     // ====================================
-    // UI HELPER FUNCTIONS
+    // UI HELPER FUNCTIONS (UNCHANGED)
     // ====================================
     function showLoading(message) {
       document.getElementById('loadingText').textContent = message;
@@ -887,21 +1363,32 @@
     }
 
     // ====================================
-    // ERROR HANDLING
+    // ERROR HANDLING (ENHANCED)
     // ====================================
     window.addEventListener('error', (event) => {
       console.error('❌ Uncaught error:', event.error);
+
+      // Log error with UUID tracking for debugging
+      logUserAction('javascript_error', {
+        error: event.error?.message || 'Unknown error',
+        filename: event.filename,
+        lineno: event.lineno,
+        colno: event.colno
+      });
+
       // Don't block UI on errors - emergency functions must always work
     });
 
     window.addEventListener('online', () => {
       console.log('🌐 Connection restored');
       checkSystemHealth();
+      logUserAction('connection_restored');
     });
 
     window.addEventListener('offline', () => {
       console.log('📵 Connection lost');
       showSystemStatus('offline', '📵 No internet - Emergency calls still work via phone');
+      logUserAction('connection_lost');
     });
 
     // ====================================
@@ -910,6 +1397,26 @@
     window.goBack = goBack;
     window.goForward = goForward;
     window.callEmergency = callEmergency;
+    window.UUIDService = UUIDService;
+    window.toggleDebugPanel = toggleDebugPanel;
+    window.testUUIDService = () => {
+      console.group('UUID Service Test');
+      const performanceData = UUIDService.performanceTest();
+      const debugData = UUIDService.debug();
+      console.log('Performance Test:', performanceData);
+      console.log('Debug Data:', debugData);
+      console.groupEnd();
+      return { performanceData, debugData };
+    };
+
+    // Log successful initialization
+    window.addEventListener('load', () => {
+      logUserAction('page_loaded', {
+        loadTime: performance.now(),
+        hasSession: !!currentSession,
+        sessionValid: currentSession && !currentSession.temporary
+      });
+    });
   </script>
 </body>
 </html>

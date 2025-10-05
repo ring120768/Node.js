@@ -237,8 +237,12 @@
                     // Show success message briefly before redirect
                     showSuccess('Sign-in successful! Redirecting...');
                     
+                    // Check if there's a redirect URL or go to incident form
+                    const redirectUrl = sessionStorage.getItem('redirectAfterSignIn') || '/incident.html';
+                    sessionStorage.removeItem('redirectAfterSignIn');
+                    
                     setTimeout(() => {
-                        window.location.href = '/incident.html';
+                        window.location.href = redirectUrl;
                     }, 1000);
                     
                 } else {

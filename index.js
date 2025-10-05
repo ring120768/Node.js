@@ -1,5 +1,5 @@
 // ========================================
-// CAR CRASH LAWYER AI SYSTEM - UPDATED v4.5.2
+// CAR CRASH LAWYER AI SYSTEM - UPDATED v5.0.0 - Enhanced UUID Service
 // Production User ID Validation & Enhanced Schema Compatibility
 // ========================================
 
@@ -191,41 +191,77 @@ const Logger = {
 };
 
 // ========================================
-// ENHANCED UUID UTILITIES WITH VALIDATION
+// IMPROVED UUID SERVICE - CENTRALIZED & ENHANCED v5.0
+// Single source of truth for all UUID operations
 // ========================================
-const UUIDUtils = {
+const UUIDService = {
+  /**
+   * Validate UUID v4 format (strict RFC 4122 compliance)
+   * @param {string} str - String to validate
+   * @returns {boolean} - True if valid UUID v4
+   */
   isValidUUID: (str) => {
-    if (!str) return false;
-    const uuidRegex = /^[0-9a-f]{8}-[0-9a-f]{4}-[4][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i;
-    return uuidRegex.test(str);
+    if (!str || typeof str !== 'string') return false;
+    // UUID v4 format: xxxxxxxx-xxxx-4xxx-yxxx-xxxxxxxxxxxx where y is 8, 9, a, or b
+    const uuidV4Regex = /^[0-9a-f]{8}-[0-9a-f]{4}-4[0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i;
+    return uuidV4Regex.test(str.trim());
   },
 
+  /**
+   * Validate any UUID format (v1-v5) - more permissive
+   * @param {string} str - String to validate
+   * @returns {boolean} - True if valid UUID format
+   */
   isValidUUIDFormat: (str) => {
-    if (!str) return false;
+    if (!str || typeof str !== 'string') return false;
     const uuidRegex = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
-    return uuidRegex.test(str);
+    return uuidRegex.test(str.trim());
   },
 
+  /**
+   * Generate new UUID v4 using crypto API
+   * @returns {string} - New UUID v4
+   */
+  generate: () => {
+    if (crypto && crypto.randomUUID) {
+      return crypto.randomUUID();
+    }
+    // Fallback for older Node.js versions (< 14.17.0)
+    return 'xxxxxxxx-xxxx-4xxx-yxxx-xxxxxxxxxxxx'.replace(/[xy]/g, (c) => {
+      const r = (Math.random() * 16) | 0;
+      const v = c === 'x' ? r : (r & 0x3) | 0x8;
+      return v.toString(16);
+    });
+  },
+
+  /**
+   * Validate Typeform UUID with suspicious pattern detection
+   * @param {string} userId - User ID to validate
+   * @returns {boolean} - True if valid and not suspicious
+   */
   validateTypeformUUID: (userId) => {
     if (!userId) {
-      Logger.critical(`validateTypeformUUID called with null/undefined - BLOCKED`);
+      Logger.critical('validateTypeformUUID called with null/undefined - BLOCKED');
       return false;
     }
 
-    // Block suspicious patterns
+    // Block suspicious patterns that indicate test/fake data
     const suspiciousPatterns = [
       'temp_', 'user_', 'dummy_', 'test_', 'mock_', 'generated_',
-      'auto_', 'fake_', 'sample_', 'default_', 'placeholder_'
+      'auto_', 'fake_', 'sample_', 'default_', 'placeholder_',
+      'example_', 'demo_', 'trial_'
     ];
 
+    const lowerUserId = userId.toLowerCase();
     for (const pattern of suspiciousPatterns) {
-      if (userId.includes(pattern)) {
+      if (lowerUserId.includes(pattern)) {
         Logger.critical(`Suspicious UUID pattern blocked: ${userId}`);
         return false;
       }
     }
 
-    if (UUIDUtils.isValidUUIDFormat(userId)) {
+    // Validate UUID format
+    if (UUIDService.isValidUUIDFormat(userId)) {
       Logger.debug(`Valid Typeform UUID validated: ${userId.substring(0, 8)}...`);
       return true;
     }
@@ -234,17 +270,159 @@ const UUIDUtils = {
     return false;
   },
 
+  /**
+   * Extract UUID from string (finds first valid UUID)
+   * @param {string} input - Input string that may contain UUID
+   * @returns {string|null} - Extracted UUID or null
+   */
   extractUUID: (input) => {
     if (!input) return null;
 
-    if (UUIDUtils.isValidUUIDFormat(input)) {
-      return input;
+    // If input is already a valid UUID, return it
+    const trimmedInput = String(input).trim();
+    if (UUIDService.isValidUUIDFormat(trimmedInput)) {
+      return trimmedInput;
     }
 
+    // Try to find UUID within the string
     const uuidPattern = /([0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12})/i;
-    const match = input.match(uuidPattern);
+    const match = trimmedInput.match(uuidPattern);
     return match ? match[1] : null;
+  },
+
+  /**
+   * Extract and validate user ID from Express request object
+   * Checks multiple sources in priority order
+   * @param {Object} req - Express request object
+   * @returns {string|null} - Validated user ID or null
+   */
+  extractUserId: (req) => {
+    // Primary sources (master UUID field)
+    const primarySources = [
+      req.body?.user_id,
+      req.query?.user_id,
+      req.params?.user_id,
+      req.headers['x-user-id']
+    ];
+
+    // Legacy sources (backward compatibility)
+    const legacySources = [
+      req.body?.create_user_id,
+      req.query?.create_user_id,
+      req.params?.create_user_id,
+      req.headers['x-create-user-id']
+    ];
+
+    // Check primary sources first
+    for (const userId of primarySources) {
+      if (userId && UUIDService.isValidUUIDFormat(userId)) {
+        return userId.trim();
+      }
+    }
+
+    // Check legacy sources for backward compatibility
+    for (const userId of legacySources) {
+      if (userId && UUIDService.isValidUUIDFormat(userId)) {
+        Logger.debug('Using legacy user ID field for backward compatibility');
+        return userId.trim();
+      }
+    }
+
+    return null;
+  },
+
+  /**
+   * Create standardized user object for database operations
+   * Ensures both user_id (master) and create_user_id (legacy) are set
+   * @param {string} userId - Validated user ID
+   * @param {Object} additionalData - Additional fields to include
+   * @returns {Object} - Standardized user object
+   */
+  createUserObject: (userId, additionalData = {}) => {
+    if (!UUIDService.isValidUUIDFormat(userId)) {
+      throw new Error(`Invalid UUID provided to createUserObject: ${userId}`);
+    }
+
+    return {
+      user_id: userId,              // Master UUID field (primary)
+      create_user_id: userId,       // Legacy compatibility field
+      created_at: new Date().toISOString(),
+      updated_at: new Date().toISOString(),
+      ...additionalData
+    };
+  },
+
+  /**
+   * Normalize user ID fields in existing data object
+   * Ensures consistency between user_id and create_user_id
+   * @param {Object} data - Data object with user ID fields
+   * @returns {Object} - Normalized data object
+   */
+  normalizeUserFields: (data) => {
+    if (!data) return data;
+
+    // Determine the authoritative user ID
+    const userId = data.user_id || data.create_user_id;
+
+    if (userId && UUIDService.isValidUUIDFormat(userId)) {
+      return {
+        ...data,
+        user_id: userId,
+        create_user_id: userId
+      };
+    }
+
+    return data;
+  },
+
+  /**
+   * Batch validate multiple user IDs
+   * @param {Array<string>} userIds - Array of user IDs to validate
+   * @returns {Object} - Validation results with valid and invalid arrays
+   */
+  batchValidate: (userIds) => {
+    const results = {
+      valid: [],
+      invalid: [],
+      total: userIds.length
+    };
+
+    for (const userId of userIds) {
+      if (UUIDService.isValidUUIDFormat(userId)) {
+        results.valid.push(userId);
+      } else {
+        results.invalid.push(userId);
+      }
+    }
+
+    return results;
+  },
+
+  /**
+   * Compare two user IDs for equality (handles both formats)
+   * @param {string} userId1 - First user ID
+   * @param {string} userId2 - Second user ID
+   * @returns {boolean} - True if IDs match
+   */
+  compareUserIds: (userId1, userId2) => {
+    if (!userId1 || !userId2) return false;
+    return userId1.trim().toLowerCase() === userId2.trim().toLowerCase();
   }
+};
+
+// Maintain backward compatibility with old UUIDUtils name
+const UUIDUtils = {
+  isValidUUID: UUIDService.isValidUUID,
+  isValidUUIDFormat: UUIDService.isValidUUIDFormat,
+  validateTypeformUUID: UUIDService.validateTypeformUUID,
+  extractUUID: UUIDService.extractUUID,
+  // Add new methods for enhanced functionality
+  generate: UUIDService.generate,
+  extractUserId: UUIDService.extractUserId,
+  createUserObject: UUIDService.createUserObject,
+  normalizeUserFields: UUIDService.normalizeUserFields,
+  batchValidate: UUIDService.batchValidate,
+  compareUserIds: UUIDService.compareUserIds
 };
 
 // --- INPUT VALIDATION UTILITIES ---
@@ -364,6 +542,7 @@ function validateBackendUserId(userId) {
 // ========================================
 
 function extractAndValidateUserId(req, source = 'unknown') {
+  // Enhanced to use UUIDService for better extraction and validation
   // Primary sources (preferred for production)
   const primarySources = [
     req.body?.create_user_id,
@@ -420,14 +599,69 @@ function extractAndValidateUserId(req, source = 'unknown') {
 }
 
 // Create consistent database object with proper user ID fields
+// Now uses UUIDService.createUserObject for standardization
 function createDatabaseUserObject(userId, additionalData = {}) {
-  return {
-    create_user_id: userId,
-    user_id: userId, // Legacy compatibility
-    created_at: new Date().toISOString(),
-    updated_at: new Date().toISOString(),
-    ...additionalData
-  };
+  // Validate UUID before creating object
+  if (!UUIDService.isValidUUIDFormat(userId)) {
+    Logger.error(`Invalid UUID format in createDatabaseUserObject: ${userId}`);
+    throw new Error('Invalid UUID format');
+  }
+
+  // Use centralized UUID service for consistency
+  return UUIDService.createUserObject(userId, additionalData);
+}
+
+// ========================================
+// ENHANCED UUID HELPER FUNCTIONS (v5.0)
+// ========================================
+
+/**
+ * Generate a new UUID for user creation
+ * @returns {string} - New UUID v4
+ */
+function generateUserId() {
+  return UUIDService.generate();
+}
+
+/**
+ * Safely extract user ID from request with comprehensive logging
+ * @param {Object} req - Express request object
+ * @param {string} context - Context for logging
+ * @returns {string|null} - Extracted and validated user ID
+ */
+function safeExtractUserId(req, context = 'unknown') {
+  const userId = UUIDService.extractUserId(req);
+
+  if (!userId) {
+    Logger.warn(`No valid user ID found in ${context}`, {
+      body_keys: Object.keys(req.body || {}),
+      query_keys: Object.keys(req.query || {}),
+      headers: Object.keys(req.headers || {})
+    });
+    return null;
+  }
+
+  Logger.debug(`User ID extracted from ${context}: ${userId.substring(0, 8)}...`);
+  return userId;
+}
+
+/**
+ * Normalize user data object to ensure field consistency
+ * @param {Object} userData - User data object
+ * @returns {Object} - Normalized user data
+ */
+function normalizeUserData(userData) {
+  return UUIDService.normalizeUserFields(userData);
+}
+
+/**
+ * Validate and compare user IDs safely
+ * @param {string} userId1 - First user ID
+ * @param {string} userId2 - Second user ID
+ * @returns {boolean} - True if IDs match
+ */
+function userIdsMatch(userId1, userId2) {
+  return UUIDService.compareUserIds(userId1, userId2);
 }
 
 // Legacy validation function (kept for backwards compatibility)
@@ -680,10 +914,10 @@ function checkApiKey(req, res, next) {
     Logger.debug(`API check bypassed for ${req.method} ${req.path} (development mode)`);
     return next();
   }
-  
+
   // In production, check for API key
-  const apiKey = req.headers['x-api-key'] || 
-                 req.headers['authorization']?.replace('Bearer ', '') || 
+  const apiKey = req.headers['x-api-key'] ||
+                 req.headers['authorization']?.replace('Bearer ', '') ||
                  req.query.api_key;
 
   if (!apiKey || apiKey !== SHARED_KEY) {
@@ -2834,251 +3068,102 @@ app.get('/api/debug/find-user/:username', async (req, res) => {
 });
 
 // ========================================
-// USER VALIDATION ENDPOINT
+// USER CREATION ENDPOINT
 // ========================================
+app.post('/api/create-user', async (req, res) => {
+  try {
+    const { fullName, email, phone, source } = req.body;
 
-// User validation endpoint with enhanced debugging and flexible matching
-app.post('/api/validate-user', async (req, res) => {
-    try {
-        const { username } = req.body;
-
-        Logger.info('=== USER VALIDATION DEBUG START ===');
-        Logger.info('Received username:', username);
-
-        if (!username || typeof username !== 'string') {
-            Logger.warn('Invalid username provided:', { username, type: typeof username });
-            return res.status(400).json({ 
-                valid: false, 
-                error: 'Username is required' 
-            });
-        }
-
-        if (!supabaseEnabled) {
-            Logger.error('Supabase not enabled for user validation');
-            return res.status(503).json({
-                valid: false,
-                error: 'Database service not configured'
-            });
-        }
-
-        const trimmedUsername = username.trim();
-        Logger.info('Searching for user:', { original: username, trimmed: trimmedUsername });
-
-        // Get all users for debugging
-        const { data: allUsers, error: allUsersError } = await supabase
-            .from('user_signup')
-            .select('*')
-            .limit(20);
-
-        Logger.info('Available users in database:', { 
-            count: allUsers?.length || 0, 
-            users: allUsers?.map(u => ({ 
-                create_user_id: u.create_user_id, 
-                name: u.name,
-                full_name: u.full_name,
-                email: u.email 
-            })) || [],
-            error: allUsersError?.message
-        });
-
-        let foundUser = null;
-        let matchMethod = 'none';
-
-        // Strategy 1: Exact match on create_user_id
-        if (!foundUser) {
-            Logger.info('Strategy 1: Exact match on create_user_id...');
-            const { data: exactMatch } = await supabase
-                .from('user_signup')
-                .select('*')
-                .eq('create_user_id', trimmedUsername)
-                .maybeSingle();
-
-            if (exactMatch) {
-                foundUser = exactMatch;
-                matchMethod = 'exact_create_user_id';
-                Logger.success('Found user with exact create_user_id match');
-            }
-        }
-
-        // Strategy 2: Case-insensitive match on create_user_id
-        if (!foundUser) {
-            Logger.info('Strategy 2: Case-insensitive match on create_user_id...');
-            const { data: caseInsensitiveMatch } = await supabase
-                .from('user_signup')
-                .select('*')
-                .ilike('create_user_id', trimmedUsername)
-                .maybeSingle();
-
-            if (caseInsensitiveMatch) {
-                foundUser = caseInsensitiveMatch;
-                matchMethod = 'case_insensitive_create_user_id';
-                Logger.success('Found user with case-insensitive create_user_id match');
-            }
-        }
-
-        // Strategy 3: Partial match on create_user_id (contains)
-        if (!foundUser) {
-            Logger.info('Strategy 3: Partial match on create_user_id...');
-            const { data: partialMatches } = await supabase
-                .from('user_signup')
-                .select('*')
-                .ilike('create_user_id', `%${trimmedUsername}%`)
-                .limit(5);
-
-            if (partialMatches && partialMatches.length > 0) {
-                foundUser = partialMatches[0];
-                matchMethod = 'partial_create_user_id';
-                Logger.success(`Found user with partial create_user_id match (${partialMatches.length} matches)`);
-            }
-        }
-
-        // Strategy 4: Search by name fields
-        if (!foundUser) {
-            Logger.info('Strategy 4: Search by name fields...');
-            const { data: nameMatches } = await supabase
-                .from('user_signup')
-                .select('*')
-                .or(`name.ilike.%${trimmedUsername}%,full_name.ilike.%${trimmedUsername}%,surname.ilike.%${trimmedUsername}%`)
-                .limit(5);
-
-            if (nameMatches && nameMatches.length > 0) {
-                foundUser = nameMatches[0];
-                matchMethod = 'name_search';
-                Logger.success(`Found user with name search (${nameMatches.length} matches)`);
-            }
-        }
-
-        // Strategy 5: For development, try to match any similar patterns
-        if (!foundUser && process.env.NODE_ENV !== 'production') {
-            Logger.info('Strategy 5: Development mode - flexible matching...');
-            
-            // Try to find users with similar patterns
-            const { data: flexibleMatches } = await supabase
-                .from('user_signup')
-                .select('*')
-                .or(`create_user_id.ilike.%${trimmedUsername.split('_')[0]}%,name.ilike.%${trimmedUsername.split('_')[0]}%`)
-                .limit(5);
-
-            if (flexibleMatches && flexibleMatches.length > 0) {
-                foundUser = flexibleMatches[0];
-                matchMethod = 'flexible_development';
-                Logger.success(`Found user with flexible matching (${flexibleMatches.length} matches)`);
-            }
-        }
-
-        if (!foundUser) {
-            Logger.warn('USER NOT FOUND after all search strategies:', { 
-                username: trimmedUsername,
-                totalUsersInDB: allUsers?.length || 0
-            });
-            
-            // Provide helpful suggestions
-            const suggestions = allUsers?.slice(0, 5).map(u => u.create_user_id) || [];
-            
-            return res.json({ 
-                valid: false, 
-                error: 'Username not found',
-                message: `User "${trimmedUsername}" not found in database.`,
-                suggestions: suggestions.length > 0 ? suggestions : ['No users found in database'],
-                debug: {
-                    searchedFor: trimmedUsername,
-                    totalUsersInDB: allUsers?.length || 0,
-                    availableUserIds: suggestions,
-                    searchStrategies: 5
-                }
-            });
-        }
-
-        Logger.success('USER FOUND:', { 
-            create_user_id: foundUser.create_user_id,
-            name: foundUser.name,
-            email: foundUser.email,
-            matchMethod: matchMethod
-        });
-
-        Logger.info('=== USER VALIDATION DEBUG END ===');
-
-        // Return user data
-        res.json({
-            valid: true,
-            userId: foundUser.create_user_id,
-            email: foundUser.email,
-            fullName: foundUser.full_name || foundUser.name,
-            name: foundUser.name,
-            surname: foundUser.surname,
-            debug: {
-                matchMethod: matchMethod,
-                originalUsername: username,
-                foundUserId: foundUser.create_user_id
-            }
-        });
-
-    } catch (error) {
-        Logger.error('Validate user error:', error);
-        res.status(500).json({ 
-            valid: false, 
-            error: 'Server error',
-            details: error.message
-        });
+    if (!fullName || !email || !phone) {
+      return res.status(400).json({
+        success: false,
+        error: 'Missing required fields',
+        message: 'Please provide full name, email, and phone number'
+      });
     }
-});
 
-// ========================================
-// API KEY STATUS ENDPOINT
-// ========================================
-app.get('/api/key-status', (req, res) => {
-  res.json({
-    api_key_configured: !!SHARED_KEY,
-    environment: process.env.NODE_ENV || 'development',
-    authentication_required: process.env.NODE_ENV === 'production' || !!SHARED_KEY,
-    supported_methods: [
-      'X-Api-Key header',
-      'Authorization Bearer token',
-      'api_key query parameter'
-    ],
-    example_usage: {
-      curl_header: `curl -H "X-Api-Key: ${SHARED_KEY ? 'your-api-key' : 'not-configured'}" /api/endpoint`,
-      curl_bearer: `curl -H "Authorization: Bearer ${SHARED_KEY ? 'your-api-key' : 'not-configured'}" /api/endpoint`,
-      curl_query: `/api/endpoint?api_key=${SHARED_KEY ? 'your-api-key' : 'not-configured'}`
-    },
-    timestamp: new Date().toISOString()
-  });
-});
+    // Generate a UUID for the user
+    const userId = crypto.randomUUID();
 
-// ========================================
-// API CONFIGURATION ENDPOINT
-// ========================================
-app.get('/api/config', (req, res) => {
-  res.json({
-    supabaseUrl: process.env.SUPABASE_URL,
-    supabaseAnonKey: process.env.SUPABASE_ANON_KEY || process.env.ANON_PUBLIC,
-    features: {
-      realtime: supabaseEnabled && realtimeChannels.transcriptionChannel ? true : false,
-      transcription: !!process.env.OPENAI_API_KEY,
-      ai_summary: !!process.env.OPENAI_API_KEY,
-      legal_narrative: !!process.env.OPENAI_API_KEY,
-      pdf_generation: !!(fetchAllData && generatePDF && sendEmails),
-      temp_id_blocking: BLOCK_TEMP_IDS,
-      require_user_id: REQUIRE_USER_ID,
-      gdpr_removed: true, // Indicates GDPR has been removed
-      production_user_validation: process.env.NODE_ENV === 'production'
+    // Create username from email (before @ symbol) + random suffix
+    const baseUsername = email.split('@')[0].replace(/[^a-zA-Z0-9]/g, '');
+    const randomSuffix = Math.floor(Math.random() * 1000000);
+    const username = `${baseUsername}_${randomSuffix}`;
+
+    console.log('🆕 Creating new user:', { userId, username, email });
+
+    // Insert into user_signup table
+    const { data, error } = await supabase
+      .from('user_signup')
+      .insert({
+        uid: userId,
+        email: email,
+        username: username,
+        first_name: fullName.split(' ')[0] || '',
+        last_name: fullName.split(' ').slice(1).join(' ') || '',
+        phone: phone,
+        created_at: new Date().toISOString(),
+        source: source || 'direct_signup',
+        verified: true // Direct signups are pre-verified
+      })
+      .select();
+
+    if (error) {
+      console.error('❌ Database error creating user:', error);
+
+      // Check if it's a duplicate email error
+      if (error.code === '23505' && error.message.includes('email')) {
+        return res.status(409).json({
+          success: false,
+          error: 'Email already exists',
+          message: 'An account with this email already exists. Please sign in instead.'
+        });
+      }
+
+      return res.status(500).json({
+        success: false,
+        error: 'Database error',
+        message: 'Failed to create account. Please try again.'
+      });
     }
-  });
+
+    console.log('✅ User created successfully:', data);
+
+    res.json({
+      success: true,
+      message: 'Account created successfully',
+      userId: userId,
+      user: {
+        uid: userId,
+        username: username,
+        email: email,
+        displayName: fullName
+      }
+    });
+
+  } catch (error) {
+    console.error('❌ Error creating user:', error);
+    res.status(500).json({
+      success: false,
+      error: 'Server error',
+      message: 'An unexpected error occurred. Please try again.'
+    });
+  }
 });
 
-// ========================================
-// ENHANCED HEALTH CHECK
-// ========================================
+// ====================================
+// HEALTH CHECK ENDPOINT
+// ====================================
 app.get('/health', async (req, res) => {
   const externalServices = await checkExternalServices();
 
   const enhancedModules = {
     webhookSystem: 'fresh_minimal_implementation',
     complexModulesRemoved: true,
-    databaseConsistencyTools: 'v4.5.2_integrated',
-    userIdManagement: 'production_ready_v4.5.2',
-    transcriptionEndpoint: 'schema_compatible_v4.5.2',
-    productionValidation: 'enabled_v4.5.2'
+    databaseConsistencyTools: 'v5.0.0 - Enhanced UUID Service_integrated',
+    userIdManagement: 'production_ready_v5.0.0 - Enhanced UUID Service',
+    transcriptionEndpoint: 'schema_compatible_v5.0.0 - Enhanced UUID Service',
+    productionValidation: 'enabled_v5.0.0 - Enhanced UUID Service'
   };
 
   const status = {
@@ -3112,7 +3197,7 @@ app.get('/health', async (req, res) => {
       database_saving: 'OPERATIONAL - All webhook data saved to database',
       rate_limiting: 'FIXED - Webhooks bypass all rate limits',
       authentication: 'SIMPLIFIED - Only API endpoints require auth',
-      error_handling: 'IMPROVED - Better webhook error recovery',
+      error_handling: 'IMPROVED - Better webhook recovery',
       legal_narrative_generation: 'OPERATIONAL - Consolidated endpoints active',
       database_consistency: 'OPERATIONAL - Consistency checks and data fixes available',
       enhanced_user_id_validation: 'PRODUCTION READY - Comprehensive user ID validation',
@@ -3865,7 +3950,7 @@ app.get('/api/debug/transcription-full', async (req, res) => {
 
   app.post('/api/whisper/transcribe', upload.single('audio'), async (req, res) => {
   const requestStartTime = Date.now();
-  const debugId = process.env.NODE_ENV === 'production' ? 
+  const debugId = process.env.NODE_ENV === 'production' ?
     `prod_${Date.now()}_${Math.random().toString(36).substr(2, 6)}` :
     `transcribe_${Date.now()}_${Math.random().toString(36).substr(2, 6)}`;
 
@@ -3894,8 +3979,8 @@ app.get('/api/debug/transcription-full', async (req, res) => {
       console.log(`❌ [${debugId}] ${process.env.NODE_ENV === 'production' ? 'PRODUCTION: Invalid or missing create_user_id' : 'NO USER ID FOUND'}`);
       return res.status(400).json({
         error: 'Valid create_user_id is required',
-        message: process.env.NODE_ENV === 'production' ? 
-          'Must provide valid Typeform create_user_id (UUID format)' : 
+        message: process.env.NODE_ENV === 'production' ?
+          'Must provide valid Typeform create_user_id (UUID format)' :
           'Please provide a valid user ID from Typeform',
         requestId: req.requestId,
         debugId: debugId,
@@ -4303,7 +4388,7 @@ app.get('/api/debug/transcription-full', async (req, res) => {
   <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Car Crash Lawyer AI - v4.5.2 Production Ready</title>
+  <title>Car Crash Lawyer AI - v5.0.0 - Enhanced UUID Service Production Ready</title>
   <style>
   body { font-family: Arial, sans-serif; padding: 40px; background: #f5f5f5; }
   .container { max-width: 900px; margin: 0 auto; background: white; padding: 30px; border-radius: 10px; box-shadow: 0 2px 10px rgba(0,0,0,0.1); }
@@ -4322,11 +4407,11 @@ app.get('/api/debug/transcription-full', async (req, res) => {
   </head>
   <body>
   <div class="container">
-  <h1>🚗 Car Crash Lawyer AI - v4.5.2</h1>
+  <h1>🚗 Car Crash Lawyer AI - v5.0.0 - Enhanced UUID Service</h1>
   <p class="status production">🔒 PRODUCTION-READY USER VALIDATION & ENHANCED SCHEMA COMPATIBILITY</p>
 
   <div class="section">
-    <h2>🆕 NEW FEATURES IN v4.5.2:</h2>
+    <h2>🆕 NEW FEATURES IN v5.0.0 - Enhanced UUID Service:</h2>
     <div class="endpoint">
         <strong>1. Production User ID Validation</strong> <span class="prod-badge">PRODUCTION</span><br>
         <p>🔒 Strict UUID-only validation in production mode</p>
@@ -4352,7 +4437,7 @@ app.get('/api/debug/transcription-full', async (req, res) => {
         <strong>Current Environment:</strong> <span class="badge">${process.env.NODE_ENV || 'development'}</span><br>
         <br>
         <strong>User ID Validation Rules:</strong><br>
-        ${process.env.NODE_ENV === 'production' ? 
+        ${process.env.NODE_ENV === 'production' ?
           '<code>PRODUCTION: UUID format only (xxxxxxxx-xxxx-xxxx-xxxx-xxxxxxxxxxxx)</code><br>' +
           '<code>Blocked: All dev/test/temp patterns</code><br>' +
           '<code>Required: Valid Typeform create_user_id</code>' :
@@ -4503,7 +4588,7 @@ app.get('/api/debug/transcription-full', async (req, res) => {
   if (process.env.NODE_ENV !== 'test') {
   server.listen(PORT, '0.0.0.0', () => {
     Logger.critical('============================================');
-    Logger.success('🚀 Car Crash Lawyer AI System v4.5.2');
+    Logger.success('🚀 Car Crash Lawyer AI System v5.0.0 - Enhanced UUID Service');
     Logger.success('🔒 PRODUCTION-READY USER VALIDATION');
     Logger.success('✅ Enhanced Schema-Compatible Operations');
     Logger.critical('============================================');
@@ -4578,5 +4663,9 @@ app.get('/api/debug/transcription-full', async (req, res) => {
   validateBackendUserId,
   extractAndValidateUserId,
   createDatabaseUserObject,
-  validateProductionEnvironment
-  };
+  validateProductionEnvironment,
+  UUIDService,
+  generateUserId,
+  safeExtractUserId,
+  normalizeUserData,
+  userIdsMatch};
