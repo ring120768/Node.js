@@ -2578,13 +2578,23 @@ app.post('/api/whisper/transcribe', upload.single('audio'), async (req, res) => 
                            req.headers['x-user-id'];
 
     if (!create_user_id) {
-      if (REQUIRE_USER_ID) {
-        Logger.critical('Missing create_user_id in transcription request');
-        return res.status(400).json({
-          error: 'create_user_id is required',
-          requestId: req.requestId
-        });
-      }
+      Logger.critical('Missing create_user_id in transcription request');
+      return res.status(400).json({
+        error: 'create_user_id from Typeform is required',
+        message: 'This service requires a valid Typeform user ID',
+        requestId: req.requestId
+      });
+    }
+
+    // Validate UUID format from Typeform
+    const uuidRegex = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
+    if (!uuidRegex.test(create_user_id)) {
+      Logger.critical('Invalid create_user_id format:', create_user_id);
+      return res.status(400).json({
+        error: 'Invalid user ID format',
+        message: 'User ID must be a valid UUID from Typeform',
+        requestId: req.requestId
+      });
     }
 
     Logger.info(`Processing transcription for user: ${create_user_id}`);

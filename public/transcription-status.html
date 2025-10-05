@@ -1275,6 +1275,30 @@
         };
 
         // ============================
+        // Error Handling for Missing Typeform User ID
+        // ============================
+        function showTranscriptionServiceError() {
+            const container = document.querySelector('.container');
+            container.innerHTML = `
+                <div style="text-align: center; padding: 40px;">
+                    <h1 style="color: #ef4444;">🚫 Access Denied</h1>
+                    <div style="background: #fee2e2; border: 1px solid #fecaca; border-radius: 8px; padding: 20px; margin: 20px 0;">
+                        <h3 style="color: #dc2626; margin: 0 0 15px 0;">Missing Typeform User ID</h3>
+                        <p style="color: #991b1b; margin: 0;">
+                            This transcription service requires a valid user ID from our Typeform submission. 
+                            Please return to the original form to complete your incident report properly.
+                        </p>
+                    </div>
+                    <div style="margin-top: 30px;">
+                        <button onclick="window.location.href='/'" class="btn btn-primary">
+                            Return to Home
+                        </button>
+                    </div>
+                </div>
+            `;
+        }
+
+        // ============================
         // User ID and Session Management  
         // ============================
 
@@ -1309,10 +1333,19 @@
                 localStorage.setItem('gdpr_consent', 'true');
             }
 
-            // Generate user ID if none provided
+            // Require valid Typeform user ID - no temporary IDs allowed
             if (!state.userId) {
-                state.userId = `temp_user_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`;
-                console.log('Generated temporary user ID:', state.userId);
+                console.error('CRITICAL: No valid Typeform create_user_id found');
+                showTranscriptionServiceError();
+                return null;
+            }
+
+            // Validate UUID format from Typeform
+            const uuidRegex = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
+            if (!uuidRegex.test(state.userId)) {
+                console.error('Invalid user ID format - must be valid UUID from Typeform:', state.userId);
+                showTranscriptionServiceError();
+                return null;
             }
 
             // Store user ID for persistence
