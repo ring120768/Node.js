@@ -2845,7 +2845,7 @@ app.post('/api/validate-user', async (req, res) => {
         const { data: allUsers, error: allUsersError } = await supabase
             .from('user_signup')
             .select('*')
-            .limit(5);
+            .limit(10);
 
         Logger.info('Sample users in database:', { 
             count: allUsers?.length || 0, 
@@ -2853,12 +2853,13 @@ app.post('/api/validate-user', async (req, res) => {
                 create_user_id: u.create_user_id, 
                 name: u.name,
                 full_name: u.full_name,
+                surname: u.surname,
                 email: u.email 
             })) || [],
             error: allUsersError?.message
         });
 
-        // Try multiple search strategies
+        // Try multiple search strategies - be more flexible
         Logger.info('Attempting exact match on create_user_id...');
         const { data: user1, error: error1 } = await supabase
             .from('user_signup')
@@ -2878,15 +2879,15 @@ app.post('/api/validate-user', async (req, res) => {
 
         Logger.info('Case-insensitive result:', { found: !!user2, error: error2?.message });
 
-        // Try searching by name fields too
-        Logger.info('Attempting name-based search...');
+        // Try searching by name fields and partial matches
+        Logger.info('Attempting comprehensive search...');
         const { data: user3, error: error3 } = await supabase
             .from('user_signup')
             .select('*')
-            .or(`name.ilike.%${trimmedUsername}%,full_name.ilike.%${trimmedUsername}%,create_user_id.ilike.%${trimmedUsername}%`)
-            .limit(3);
+            .or(`name.ilike.%${trimmedUsername}%,full_name.ilike.%${trimmedUsername}%,surname.ilike.%${trimmedUsername}%,create_user_id.ilike.%${trimmedUsername}%`)
+            .limit(5);
 
-        Logger.info('Name-based search result:', { found: user3?.length || 0, users: user3 });
+        Logger.info('Comprehensive search result:', { found: user3?.length || 0, users: user3 });
 
         // Use the first successful match
         const foundUser = user1 || user2 || (user3 && user3[0]);
@@ -2897,17 +2898,23 @@ app.post('/api/validate-user', async (req, res) => {
                 searchAttempts: {
                     exact: !!user1,
                     caseInsensitive: !!user2,
-                    nameSearch: user3?.length || 0
+                    comprehensiveSearch: user3?.length || 0
                 }
             });
+            
+            // Provide helpful suggestions
+            const suggestions = allUsers?.map(u => u.create_user_id).slice(0, 3) || [];
             
             return res.status(401).json({ 
                 valid: false, 
                 error: 'Username not found',
+                message: `User "${trimmedUsername}" not found in database.`,
+                suggestions: suggestions.length > 0 ? `Available users include: ${suggestions.join(', ')}` : 'No users found in database.',
                 debug: {
                     searchedFor: trimmedUsername,
                     searchAttempts: 3,
-                    totalUsersInDB: allUsers?.length || 0
+                    totalUsersInDB: allUsers?.length || 0,
+                    availableUserIds: suggestions
                 }
             });
         }
@@ -2917,7 +2924,7 @@ app.post('/api/validate-user', async (req, res) => {
             name: foundUser.name,
             full_name: foundUser.full_name,
             email: foundUser.email,
-            matchMethod: user1 ? 'exact' : user2 ? 'case-insensitive' : 'name-search'
+            matchMethod: user1 ? 'exact' : user2 ? 'case-insensitive' : 'comprehensive-search'
         });
 
         Logger.info('=== USER VALIDATION DEBUG END ===');
@@ -2928,8 +2935,10 @@ app.post('/api/validate-user', async (req, res) => {
             userId: foundUser.create_user_id,
             email: foundUser.email,
             fullName: foundUser.full_name || foundUser.name,
+            name: foundUser.name,
+            surname: foundUser.surname,
             debug: {
-                matchMethod: user1 ? 'exact' : user2 ? 'case-insensitive' : 'name-search',
+                matchMethod: user1 ? 'exact' : user2 ? 'case-insensitive' : 'comprehensive-search',
                 originalUsername: username,
                 foundUserId: foundUser.create_user_id
             }

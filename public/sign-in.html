@@ -1,0 +1,288 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Sign In - Car Crash Lawyer AI</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            padding: 20px;
+        }
+
+        .container {
+            background: white;
+            border-radius: 20px;
+            padding: 40px;
+            max-width: 400px;
+            width: 100%;
+            box-shadow: 0 20px 60px rgba(0,0,0,0.3);
+            text-align: center;
+        }
+
+        .logo {
+            width: 80px;
+            height: 80px;
+            background: #667eea;
+            border-radius: 16px;
+            margin: 0 auto 20px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 32px;
+            color: white;
+        }
+
+        h1 {
+            color: #333;
+            margin-bottom: 10px;
+            font-size: 24px;
+        }
+
+        .subtitle {
+            color: #666;
+            margin-bottom: 30px;
+            font-size: 14px;
+        }
+
+        .form-group {
+            margin-bottom: 20px;
+            text-align: left;
+        }
+
+        label {
+            display: block;
+            margin-bottom: 8px;
+            color: #333;
+            font-weight: 600;
+        }
+
+        input[type="text"] {
+            width: 100%;
+            padding: 15px;
+            border: 2px solid #e5e7eb;
+            border-radius: 8px;
+            font-size: 16px;
+            transition: border-color 0.3s;
+        }
+
+        input[type="text"]:focus {
+            outline: none;
+            border-color: #667eea;
+        }
+
+        .btn {
+            width: 100%;
+            padding: 15px;
+            background: linear-gradient(135deg, #667eea, #764ba2);
+            color: white;
+            border: none;
+            border-radius: 8px;
+            font-size: 16px;
+            font-weight: 600;
+            cursor: pointer;
+            transition: transform 0.3s;
+        }
+
+        .btn:hover:not(:disabled) {
+            transform: translateY(-2px);
+        }
+
+        .btn:disabled {
+            opacity: 0.5;
+            cursor: not-allowed;
+            transform: none;
+        }
+
+        .error {
+            background: #fee2e2;
+            color: #dc2626;
+            padding: 12px;
+            border-radius: 8px;
+            margin-bottom: 20px;
+            display: none;
+        }
+
+        .loading {
+            display: none;
+            margin-top: 15px;
+        }
+
+        .spinner {
+            display: inline-block;
+            width: 20px;
+            height: 20px;
+            border: 2px solid rgba(255,255,255,0.3);
+            border-top-color: white;
+            border-radius: 50%;
+            animation: spin 1s linear infinite;
+        }
+
+        @keyframes spin {
+            to { transform: rotate(360deg); }
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="logo">🚗</div>
+        <h1>Welcome Back</h1>
+        <p class="subtitle">Sign in to continue with your car crash report</p>
+
+        <div class="error" id="errorMessage"></div>
+
+        <form id="signInForm">
+            <div class="form-group">
+                <label for="username">Username</label>
+                <input 
+                    type="text" 
+                    id="username" 
+                    name="username" 
+                    placeholder="Enter your username (e.g., ianring_120768)"
+                    required
+                    autocomplete="username"
+                >
+            </div>
+
+            <button type="submit" class="btn" id="signInBtn">
+                Sign In
+            </button>
+
+            <div class="loading" id="loadingIndicator">
+                <div class="spinner"></div>
+                <span>Verifying...</span>
+            </div>
+        </form>
+    </div>
+
+    <script>
+        document.getElementById('signInForm').addEventListener('submit', async (e) => {
+            e.preventDefault();
+
+            const username = document.getElementById('username').value.trim();
+            const signInBtn = document.getElementById('signInBtn');
+            const loadingIndicator = document.getElementById('loadingIndicator');
+            const errorMessage = document.getElementById('errorMessage');
+
+            if (!username) {
+                showError('Please enter your username');
+                return;
+            }
+
+            // Disable form and show loading
+            signInBtn.disabled = true;
+            loadingIndicator.style.display = 'block';
+            errorMessage.style.display = 'none';
+
+            console.log('🔍 Attempting sign-in with username:', username);
+
+            try {
+                // First, let's debug what users exist in the database
+                console.log('🔍 Checking available users...');
+                const debugResponse = await fetch('/api/debug/users?limit=5', {
+                    method: 'GET'
+                });
+                
+                if (debugResponse.ok) {
+                    const debugResult = await debugResponse.json();
+                    console.log('📋 Available users in database:', debugResult);
+                }
+
+                // Try to find the specific user
+                console.log('🔍 Searching for specific user...');
+                const findResponse = await fetch(`/api/debug/find-user/${encodeURIComponent(username)}`, {
+                    method: 'GET'
+                });
+                
+                if (findResponse.ok) {
+                    const findResult = await findResponse.json();
+                    console.log('🔍 User search results:', findResult);
+                }
+
+                // Validate user against your user_signup table
+                console.log('✅ Attempting user validation...');
+                const response = await fetch('/api/validate-user', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json'
+                    },
+                    body: JSON.stringify({ username: username })
+                });
+
+                const result = await response.json();
+                console.log('📋 Validation result:', result);
+
+                if (response.ok && result.valid) {
+                    console.log('✅ Sign-in successful!');
+                    
+                    // Store user data in sessionStorage
+                    sessionStorage.setItem('userId', result.userId);
+                    sessionStorage.setItem('create_user_id', result.userId); // Also store as create_user_id
+                    sessionStorage.setItem('username', username);
+                    sessionStorage.setItem('userEmail', result.email || '');
+                    sessionStorage.setItem('signInTime', new Date().toISOString());
+
+                    // Show success message briefly before redirect
+                    showSuccess('Sign-in successful! Redirecting...');
+                    
+                    setTimeout(() => {
+                        window.location.href = '/incident.html';
+                    }, 1000);
+                    
+                } else {
+                    console.error('❌ Sign-in failed:', result);
+                    let errorMsg = result.error || 'Invalid username. Please check and try again.';
+                    
+                    if (result.error === 'Username not found') {
+                        errorMsg = `Username "${username}" not found. Available users may include different IDs. Please check your username or contact support.`;
+                    }
+                    
+                    showError(errorMsg);
+                }
+
+            } catch (error) {
+                console.error('❌ Sign-in error:', error);
+                showError('Connection error. Please try again.');
+            } finally {
+                // Re-enable form
+                signInBtn.disabled = false;
+                loadingIndicator.style.display = 'none';
+            }
+        });
+
+        function showError(message) {
+            const errorDiv = document.getElementById('errorMessage');
+            errorDiv.textContent = message;
+            errorDiv.style.display = 'block';
+            errorDiv.style.backgroundColor = '#fee2e2';
+            errorDiv.style.color = '#dc2626';
+        }
+
+        function showSuccess(message) {
+            const errorDiv = document.getElementById('errorMessage');
+            errorDiv.textContent = message;
+            errorDiv.style.display = 'block';
+            errorDiv.style.backgroundColor = '#d1fae5';
+            errorDiv.style.color = '#059669';
+        }
+
+        // Check if already signed in
+        const existingUserId = sessionStorage.getItem('userId');
+        if (existingUserId) {
+            // Already signed in, redirect to incident form
+            window.location.href = '/incident.html';
+        }
+    </script>
+</body>
+</html>
