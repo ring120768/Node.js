@@ -1906,64 +1906,6 @@ app.get('/', (req, res) => {
 // DEBUG AND TEST ENDPOINTS
 // ========================================
 
-// User verification endpoint
-app.get('/api/verify-user/:userId', async (req, res) => {
-  if (!supabaseEnabled) {
-    return res.status(503).json({
-      exists: false,
-      error: 'Database service not available'
-    });
-  }
-
-  try {
-    const { userId } = req.params;
-
-    // Check if user exists in user_signup table
-    const { data: user, error: userError } = await supabase
-      .from('user_signup')
-      .select('create_user_id, email, name')
-      .eq('create_user_id', userId)
-      .single();
-
-    if (userError && userError.code !== 'PGRST116') {
-      throw userError;
-    }
-
-    // If user exists, also check for any related incident reports
-    let incidentId = null;
-    if (user) {
-      const { data: incident } = await supabase
-        .from('incident_reports')
-        .select('id')
-        .eq('create_user_id', userId)
-        .order('created_at', { ascending: false })
-        .limit(1)
-        .single();
-
-      incidentId = incident?.id || null;
-    }
-
-    res.json({
-      exists: !!user,
-      user: user ? {
-        create_user_id: user.create_user_id,
-        email: user.email,
-        name: user.name
-      } : null,
-      incident_id: incidentId,
-      requestId: req.requestId
-    });
-
-  } catch (error) {
-    Logger.error('Error verifying user:', error);
-    res.status(500).json({
-      exists: false,
-      error: 'Failed to verify user',
-      requestId: req.requestId
-    });
-  }
-});
-
 // Debug endpoint to test user ID detection from various sources
 app.get('/api/debug/user-id-test', (req, res) => {
   res.json({
