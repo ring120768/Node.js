@@ -548,7 +548,7 @@ app.use(helmet({
     directives: {
       defaultSrc: ["'self'", "*.replit.dev", "*.repl.co"],
       styleSrc: ["'self'", "'unsafe-inline'", "*.replit.dev", "*.repl.co"],
-      scriptSrc: ["'self'", "'unsafe-inline'", "*.replit.dev", "*.repl.co"],
+      scriptSrc: ["'self'", "'unsafe-inline'", "'unsafe-eval'", "*.replit.dev", "*.repl.co"],
       imgSrc: ["'self'", "data:", "https:", "*.replit.dev", "*.repl.co"],
       connectSrc: ["'self'", "wss:", "https:", "*.replit.dev", "*.repl.co"],
       frameSrc: ["'self'", "*.replit.dev", "*.repl.co"],
@@ -595,8 +595,14 @@ if (BLOCK_TEMP_IDS) {
 // Apply rate limiting to API routes
 app.use('/api/', apiLimiter);
 
-// Apply API key authentication to ALL /api/* routes
-app.use('/api/*', checkApiKey);
+// Apply API key authentication to ALL /api/* routes (except validation)
+app.use('/api/*', (req, res, next) => {
+  // Skip authentication for validation endpoint
+  if (req.path === '/api/validate-user') {
+    return next();
+  }
+  return checkApiKey(req, res, next);
+});
 
 // Cache control headers
 app.use((req, res, next) => {
@@ -669,8 +675,25 @@ async function notifyTranscriptionComplete(userId, incidentId, transcriptionText
 const SHARED_KEY = process.env.API_KEY || process.env.WEBHOOK_API_KEY || '';
 
 function checkApiKey(req, res, next) {
-  // Simplified for development - API key optional
-  Logger.debug(`API check bypassed for ${req.method} ${req.path}`);
+  // In development, always allow requests
+  if (process.env.NODE_ENV !== 'production') {
+    Logger.debug(`API check bypassed for ${req.method} ${req.path} (development mode)`);
+    return next();
+  }
+  
+  // In production, check for API key
+  const apiKey = req.headers['x-api-key'] || 
+                 req.headers['authorization']?.replace('Bearer ', '') || 
+                 req.query.api_key;
+
+  if (!apiKey || apiKey !== SHARED_KEY) {
+    Logger.warn(`Unauthorized API access attempt: ${req.method} ${req.path}`);
+    return res.status(401).json({
+      error: 'Unauthorized - Valid API key required',
+      requestId: req.requestId
+    });
+  }
+
   next();
 }
 
