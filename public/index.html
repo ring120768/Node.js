@@ -492,6 +492,13 @@
     document.addEventListener('DOMContentLoaded', async () => {
       console.log('🚀 Car Crash Lawyer AI - Initializing...');
 
+      // Check if user is signed in - redirect to sign-in if not
+      const userId = sessionStorage.getItem('userId');
+      if (!userId) {
+          window.location.href = '/sign-in.html';
+          return;
+      }
+
       // Load navigation history from sessionStorage
       loadNavigationHistory();
 
