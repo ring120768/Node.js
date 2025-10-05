@@ -1037,6 +1037,7 @@ if (supabaseEnabled && process.env.OPENAI_API_KEY) {
     Logger.success('✅ Real Transcription Service initialised with OpenAI!');
     Logger.info(`OpenAI API Key detected: ${process.env.OPENAI_API_KEY.substring(0, 7)}...`);
 
+    // Transcription queue processing interval (30 seconds)
     transcriptionQueueInterval = setInterval(() => {
       processTranscriptionQueue().catch(error => {
         Logger.error('Queue processing error:', error);
@@ -4127,36 +4128,12 @@ app.get('/api/debug/transcription-full', async (req, res) => {
     console.log(`📤 [${debugId}] SENDING SUCCESS RESPONSE`);
     res.json(response);
 
-    // Start background transcription processing
-    if (processTranscriptionFromBuffer) {
-      console.log(`🔄 [${debugId}] STARTING BACKGROUND TRANSCRIPTION...`);
-      processTranscriptionFromBuffer(
-        queueData.id.toString(),
-        req.file.buffer,
-        create_user_id,
-        incident_report_id,
-        publicUrl
-      ).catch(error => {
-        console.error(`❌ [${debugId}] BACKGROUND TRANSCRIPTION FAILED:`, error);
+    // Start background transcription processing - THIS IS THE CHANGE
+    // The transcription is now triggered explicitly via a POST request to /api/trigger-transcription
+    // This allows the client to decide when to start the processing.
+    // The polling mechanism will then check the status.
 
-        // Update queue status to failed
-        supabase.from('transcription_queue')
-          .update({
-            status: 'FAILED',
-            error_message: error.message,
-            updated_at: new Date().toISOString()
-          })
-          .eq('id', queueData.id)
-          .then(() => {
-            console.log(`📝 [${debugId}] Queue status updated to FAILED`);
-          })
-          .catch(updateError => {
-            console.error(`❌ [${debugId}] Failed to update queue status:`, updateError);
-          });
-      });
-    } else {
-      console.log(`⚠️ [${debugId}] NO TRANSCRIPTION PROCESSOR AVAILABLE`);
-    }
+    // No immediate background processing here, rely on the explicit trigger endpoint.
 
   } catch (error) {
     const processingTime = Date.now() - requestStartTime;
@@ -4171,6 +4148,62 @@ app.get('/api/debug/transcription-full', async (req, res) => {
     });
   }
   });
+
+  // Endpoint to trigger transcription processing
+  app.post('/api/trigger-transcription', async (req, res) => {
+    const { queueId } = req.body;
+
+    if (!queueId) {
+      return res.status(400).json({ error: 'queueId is required' });
+    }
+
+    // Find the corresponding queue entry in the database
+    const { data: queueItem, error } = await supabase
+      .from('transcription_queue')
+      .select('*')
+      .eq('id', parseInt(queueId)) // Ensure queueId is treated as an integer
+      .single();
+
+    if (error) {
+      console.error('Error fetching queue item:', error);
+      return res.status(500).json({ error: 'Failed to find queue item' });
+    }
+
+    if (!queueItem || queueItem.status !== 'PENDING') {
+      return res.status(400).json({ error: 'Queue item not found or not in PENDING state' });
+    }
+
+    console.log(`Triggering transcription for queueId: ${queueId}, userId: ${queueItem.create_user_id}`);
+
+    // Start background transcription processing
+    if (processTranscriptionFromBuffer) {
+      try {
+        await processTranscriptionFromBuffer(
+          queueItem.id.toString(),
+          null, // Buffer is not needed here as audio_url is already in DB
+          queueItem.create_user_id,
+          queueItem.incident_report_id,
+          queueItem.audio_url
+        );
+        res.json({ success: true, message: 'Transcription processing initiated' });
+      } catch (processingError) {
+        console.error('Background transcription failed:', processingError);
+        // Update queue status to failed
+        await supabase
+          .from('transcription_queue')
+          .update({
+            status: 'FAILED',
+            error_message: processingError.message,
+            updated_at: new Date().toISOString()
+          })
+          .eq('id', queueItem.id);
+        res.status(500).json({ error: 'Transcription processing failed' });
+      }
+    } else {
+      res.status(500).json({ error: 'Transcription processor not available' });
+    }
+  });
+
 
   // ========================================
   // RECORDING INTERFACE REDIRECT ROUTES
@@ -4415,7 +4448,7 @@ app.get('/api/debug/transcription-full', async (req, res) => {
     <div class="endpoint">
         <strong>1. Production User ID Validation</strong> <span class="prod-badge">PRODUCTION</span><br>
         <p>🔒 Strict UUID-only validation in production mode</p>
-        <p>🔧 Development-friendly validation for testing</p>
+        <p>⚡ Development-friendly validation for testing</p>
         <p>⚡ Multi-source user ID extraction with intelligent fallbacks</p>
         <p>📊 Enhanced logging with production/development context</p>
         <br>
@@ -4471,7 +4504,7 @@ app.get('/api/debug/transcription-full', async (req, res) => {
 
   <div class="section">
     <h3>✅ Production Features:</h3>
-    <ul>
+    <ul style="margin-top: 15px;">
         <li>🔒 Production-ready user ID validation with strict UUID enforcement</li>
         <li>⚡ Enhanced transcription endpoint with environment-aware processing</li>
         <li>🔍 Multi-source user ID extraction with intelligent fallbacks</li>
