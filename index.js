@@ -57,8 +57,8 @@ let transcriptionQueueInterval = null;
 // ========================================
 const BLOCK_TEMP_IDS = process.env.BLOCK_TEMP_IDS === 'true';
 const REQUIRE_USER_ID = process.env.REQUIRE_USER_ID === 'true';
-const PRODUCTION_MODE = process.env.PRODUCTION_MODE === 'true' || process.env.NODE_ENV === 'production';
-const STRICT_USER_VALIDATION = process.env.STRICT_USER_VALIDATION === 'true' || PRODUCTION_MODE;
+const PRODUCTION_MODE = process.env.PRODUCTION_MODE === 'true'; // Removed automatic NODE_ENV check
+const STRICT_USER_VALIDATION = process.env.STRICT_USER_VALIDATION === 'true'; // Removed automatic production mode check
 
 // Set defaults to prevent authentication issues
 process.env.API_KEY = process.env.API_KEY || '';
@@ -2837,7 +2837,7 @@ app.get('/api/debug/find-user/:username', async (req, res) => {
 // USER VALIDATION ENDPOINT
 // ========================================
 
-// User validation endpoint with enhanced debugging
+// User validation endpoint with enhanced debugging and flexible matching
 app.post('/api/validate-user', async (req, res) => {
     try {
         const { username } = req.body;
@@ -2864,90 +2864,136 @@ app.post('/api/validate-user', async (req, res) => {
         const trimmedUsername = username.trim();
         Logger.info('Searching for user:', { original: username, trimmed: trimmedUsername });
 
-        // First, let's check what data we have in the table
+        // Get all users for debugging
         const { data: allUsers, error: allUsersError } = await supabase
             .from('user_signup')
             .select('*')
-            .limit(10);
+            .limit(20);
 
-        Logger.info('Sample users in database:', { 
+        Logger.info('Available users in database:', { 
             count: allUsers?.length || 0, 
-            samples: allUsers?.map(u => ({ 
+            users: allUsers?.map(u => ({ 
                 create_user_id: u.create_user_id, 
                 name: u.name,
                 full_name: u.full_name,
-                surname: u.surname,
                 email: u.email 
             })) || [],
             error: allUsersError?.message
         });
 
-        // Try multiple search strategies - be more flexible
-        Logger.info('Attempting exact match on create_user_id...');
-        const { data: user1, error: error1 } = await supabase
-            .from('user_signup')
-            .select('*')
-            .eq('create_user_id', trimmedUsername)
-            .maybeSingle();
+        let foundUser = null;
+        let matchMethod = 'none';
 
-        Logger.info('Exact match result:', { found: !!user1, error: error1?.message });
+        // Strategy 1: Exact match on create_user_id
+        if (!foundUser) {
+            Logger.info('Strategy 1: Exact match on create_user_id...');
+            const { data: exactMatch } = await supabase
+                .from('user_signup')
+                .select('*')
+                .eq('create_user_id', trimmedUsername)
+                .maybeSingle();
 
-        // Try case-insensitive match
-        Logger.info('Attempting case-insensitive match...');
-        const { data: user2, error: error2 } = await supabase
-            .from('user_signup')
-            .select('*')
-            .ilike('create_user_id', trimmedUsername)
-            .maybeSingle();
+            if (exactMatch) {
+                foundUser = exactMatch;
+                matchMethod = 'exact_create_user_id';
+                Logger.success('Found user with exact create_user_id match');
+            }
+        }
 
-        Logger.info('Case-insensitive result:', { found: !!user2, error: error2?.message });
+        // Strategy 2: Case-insensitive match on create_user_id
+        if (!foundUser) {
+            Logger.info('Strategy 2: Case-insensitive match on create_user_id...');
+            const { data: caseInsensitiveMatch } = await supabase
+                .from('user_signup')
+                .select('*')
+                .ilike('create_user_id', trimmedUsername)
+                .maybeSingle();
 
-        // Try searching by name fields and partial matches
-        Logger.info('Attempting comprehensive search...');
-        const { data: user3, error: error3 } = await supabase
-            .from('user_signup')
-            .select('*')
-            .or(`name.ilike.%${trimmedUsername}%,full_name.ilike.%${trimmedUsername}%,surname.ilike.%${trimmedUsername}%,create_user_id.ilike.%${trimmedUsername}%`)
-            .limit(5);
+            if (caseInsensitiveMatch) {
+                foundUser = caseInsensitiveMatch;
+                matchMethod = 'case_insensitive_create_user_id';
+                Logger.success('Found user with case-insensitive create_user_id match');
+            }
+        }
 
-        Logger.info('Comprehensive search result:', { found: user3?.length || 0, users: user3 });
+        // Strategy 3: Partial match on create_user_id (contains)
+        if (!foundUser) {
+            Logger.info('Strategy 3: Partial match on create_user_id...');
+            const { data: partialMatches } = await supabase
+                .from('user_signup')
+                .select('*')
+                .ilike('create_user_id', `%${trimmedUsername}%`)
+                .limit(5);
 
-        // Use the first successful match
-        const foundUser = user1 || user2 || (user3 && user3[0]);
+            if (partialMatches && partialMatches.length > 0) {
+                foundUser = partialMatches[0];
+                matchMethod = 'partial_create_user_id';
+                Logger.success(`Found user with partial create_user_id match (${partialMatches.length} matches)`);
+            }
+        }
+
+        // Strategy 4: Search by name fields
+        if (!foundUser) {
+            Logger.info('Strategy 4: Search by name fields...');
+            const { data: nameMatches } = await supabase
+                .from('user_signup')
+                .select('*')
+                .or(`name.ilike.%${trimmedUsername}%,full_name.ilike.%${trimmedUsername}%,surname.ilike.%${trimmedUsername}%`)
+                .limit(5);
+
+            if (nameMatches && nameMatches.length > 0) {
+                foundUser = nameMatches[0];
+                matchMethod = 'name_search';
+                Logger.success(`Found user with name search (${nameMatches.length} matches)`);
+            }
+        }
+
+        // Strategy 5: For development, try to match any similar patterns
+        if (!foundUser && process.env.NODE_ENV !== 'production') {
+            Logger.info('Strategy 5: Development mode - flexible matching...');
+            
+            // Try to find users with similar patterns
+            const { data: flexibleMatches } = await supabase
+                .from('user_signup')
+                .select('*')
+                .or(`create_user_id.ilike.%${trimmedUsername.split('_')[0]}%,name.ilike.%${trimmedUsername.split('_')[0]}%`)
+                .limit(5);
+
+            if (flexibleMatches && flexibleMatches.length > 0) {
+                foundUser = flexibleMatches[0];
+                matchMethod = 'flexible_development';
+                Logger.success(`Found user with flexible matching (${flexibleMatches.length} matches)`);
+            }
+        }
 
         if (!foundUser) {
-            Logger.warn('USER NOT FOUND after all search attempts:', { 
+            Logger.warn('USER NOT FOUND after all search strategies:', { 
                 username: trimmedUsername,
-                searchAttempts: {
-                    exact: !!user1,
-                    caseInsensitive: !!user2,
-                    comprehensiveSearch: user3?.length || 0
-                }
+                totalUsersInDB: allUsers?.length || 0
             });
             
             // Provide helpful suggestions
-            const suggestions = allUsers?.map(u => u.create_user_id).slice(0, 3) || [];
+            const suggestions = allUsers?.slice(0, 5).map(u => u.create_user_id) || [];
             
-            return res.status(401).json({ 
+            return res.json({ 
                 valid: false, 
                 error: 'Username not found',
                 message: `User "${trimmedUsername}" not found in database.`,
-                suggestions: suggestions.length > 0 ? `Available users include: ${suggestions.join(', ')}` : 'No users found in database.',
+                suggestions: suggestions.length > 0 ? suggestions : ['No users found in database'],
                 debug: {
                     searchedFor: trimmedUsername,
-                    searchAttempts: 3,
                     totalUsersInDB: allUsers?.length || 0,
-                    availableUserIds: suggestions
+                    availableUserIds: suggestions,
+                    searchStrategies: 5
                 }
             });
         }
 
-        Logger.info('USER FOUND:', { 
+        Logger.success('USER FOUND:', { 
             create_user_id: foundUser.create_user_id,
             name: foundUser.name,
-            full_name: foundUser.full_name,
             email: foundUser.email,
-            matchMethod: user1 ? 'exact' : user2 ? 'case-insensitive' : 'comprehensive-search'
+            matchMethod: matchMethod
         });
 
         Logger.info('=== USER VALIDATION DEBUG END ===');
@@ -2961,7 +3007,7 @@ app.post('/api/validate-user', async (req, res) => {
             name: foundUser.name,
             surname: foundUser.surname,
             debug: {
-                matchMethod: user1 ? 'exact' : user2 ? 'case-insensitive' : 'comprehensive-search',
+                matchMethod: matchMethod,
                 originalUsername: username,
                 foundUserId: foundUser.create_user_id
             }
