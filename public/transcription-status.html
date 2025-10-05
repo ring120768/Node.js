@@ -692,21 +692,43 @@
             isRedirecting: false
         };
 
-        // Initialize session - simplified
+        // Initialize session - STRICT Typeform validation
         async function initializeSession() {
             const urlParams = new URLSearchParams(window.location.search);
 
-            // Try to get user ID from URL or generate one
+            // CRITICAL: Only accept create_user_id from Typeform URL
             state.userId = urlParams.get('create_user_id') || 
-                          urlParams.get('user_id') || 
-                          localStorage.getItem('create_user_id') ||
-                          `user_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`;
+                          localStorage.getItem('create_user_id');
+
+            // Validate UUID format from Typeform
+            function isValidUUID(str) {
+                if (!str) return false;
+                const uuidRegex = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
+                return uuidRegex.test(str);
+            }
+
+            // CRITICAL: If no valid create_user_id from Typeform, show error
+            if (!state.userId || !isValidUUID(state.userId)) {
+                console.error('CRITICAL: No valid create_user_id from Typeform');
+                showTranscriptionServiceError();
+                return null;
+            }
+
+            // Validate against suspicious patterns
+            const suspiciousPatterns = ['temp_', 'user_', 'dummy_', 'test_', 'mock_', 'generated_'];
+            for (const pattern of suspiciousPatterns) {
+                if (state.userId.includes(pattern)) {
+                    console.error('CRITICAL: Suspicious user ID pattern detected:', state.userId);
+                    showTranscriptionServiceError();
+                    return null;
+                }
+            }
 
             state.incidentReportId = urlParams.get('incident_report_id') || 
                                     urlParams.get('incident_id') ||
                                     localStorage.getItem('current_incident_id');
 
-            // Store for persistence
+            // Store validated user ID
             localStorage.setItem('create_user_id', state.userId);
             if (state.incidentReportId) {
                 localStorage.setItem('current_incident_id', state.incidentReportId);
@@ -715,12 +737,36 @@
             // Update UI
             updateUserInfoBadge();
 
-            console.log('Session initialized:', {
+            console.log('Session initialized with valid Typeform UUID:', {
                 userId: state.userId,
                 incidentId: state.incidentReportId
             });
 
             return state.userId;
+        }
+
+        // Error handler for missing Typeform create_user_id
+        function showTranscriptionServiceError() {
+            const container = document.querySelector('.container');
+            container.innerHTML = `
+                <div style="text-align: center; padding: 40px;">
+                    <h1 style="color: #dc3545;">⚠️ Access Error</h1>
+                    <p style="color: #666; font-size: 18px; margin: 20px 0;">
+                        This transcription service requires a valid session from Typeform.
+                    </p>
+                    <div style="background: #f8d7da; padding: 20px; border-radius: 8px; margin: 20px 0; border-left: 4px solid #dc3545;">
+                        <h3 style="color: #721c24; margin-top: 0;">Required:</h3>
+                        <ul style="text-align: left; color: #721c24;">
+                            <li>Valid create_user_id from Typeform submission</li>
+                            <li>Direct access from Typeform workflow</li>
+                            <li>No manual URL entry or bookmarking</li>
+                        </ul>
+                    </div>
+                    <a href="/incident-form-direct.html" class="btn btn-primary">
+                        🏠 Return to Start
+                    </a>
+                </div>
+            `;
         }
 
         function updateUserInfoBadge() {
