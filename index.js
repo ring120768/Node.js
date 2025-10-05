@@ -2679,15 +2679,151 @@ async function checkExternalServices() {
 }
 
 // ========================================
+// DEBUG ENDPOINTS FOR USER INVESTIGATION
+// ========================================
+
+// Debug endpoint to inspect user_signup table
+app.get('/api/debug/users', async (req, res) => {
+    try {
+        if (!supabaseEnabled) {
+            return res.status(503).json({
+                error: 'Database service not configured'
+            });
+        }
+
+        const { limit = 10, search } = req.query;
+
+        Logger.info('Debug: Fetching users from database');
+
+        let query = supabase
+            .from('user_signup')
+            .select('*')
+            .order('created_at', { ascending: false })
+            .limit(parseInt(limit));
+
+        if (search) {
+            query = query.or(`create_user_id.ilike.%${search}%,name.ilike.%${search}%,email.ilike.%${search}%`);
+        }
+
+        const { data: users, error } = await query;
+
+        if (error) {
+            Logger.error('Error fetching users:', error);
+            return res.status(500).json({
+                error: 'Database error',
+                details: error.message
+            });
+        }
+
+        Logger.info(`Found ${users?.length || 0} users in database`);
+
+        res.json({
+            success: true,
+            users: users?.map(user => ({
+                create_user_id: user.create_user_id,
+                name: user.name,
+                full_name: user.full_name,
+                surname: user.surname,
+                email: user.email,
+                mobile: user.mobile,
+                created_at: user.created_at
+            })) || [],
+            count: users?.length || 0,
+            search_term: search || null,
+            timestamp: new Date().toISOString()
+        });
+
+    } catch (error) {
+        Logger.error('Debug users endpoint error:', error);
+        res.status(500).json({
+            error: 'Server error',
+            details: error.message
+        });
+    }
+});
+
+// Debug endpoint to search for specific user
+app.get('/api/debug/find-user/:username', async (req, res) => {
+    try {
+        if (!supabaseEnabled) {
+            return res.status(503).json({
+                error: 'Database service not configured'
+            });
+        }
+
+        const { username } = req.params;
+        Logger.info(`Debug: Searching for user "${username}"`);
+
+        // Try all possible search methods
+        const searches = [];
+
+        // 1. Exact match on create_user_id
+        const { data: exact } = await supabase
+            .from('user_signup')
+            .select('*')
+            .eq('create_user_id', username)
+            .maybeSingle();
+        searches.push({ method: 'exact_create_user_id', found: !!exact, result: exact });
+
+        // 2. Case insensitive match on create_user_id
+        const { data: ilike } = await supabase
+            .from('user_signup')
+            .select('*')
+            .ilike('create_user_id', username)
+            .maybeSingle();
+        searches.push({ method: 'ilike_create_user_id', found: !!ilike, result: ilike });
+
+        // 3. Search in name fields
+        const { data: nameSearch } = await supabase
+            .from('user_signup')
+            .select('*')
+            .or(`name.ilike.%${username}%,full_name.ilike.%${username}%,surname.ilike.%${username}%`)
+            .limit(5);
+        searches.push({ method: 'name_search', found: (nameSearch?.length || 0) > 0, result: nameSearch });
+
+        // 4. Contains search
+        const { data: contains } = await supabase
+            .from('user_signup')
+            .select('*')
+            .ilike('create_user_id', `%${username}%`)
+            .limit(5);
+        searches.push({ method: 'contains_create_user_id', found: (contains?.length || 0) > 0, result: contains });
+
+        res.json({
+            success: true,
+            searched_for: username,
+            searches: searches,
+            summary: {
+                total_methods: searches.length,
+                successful_methods: searches.filter(s => s.found).length,
+                best_match: searches.find(s => s.found)?.result || null
+            },
+            timestamp: new Date().toISOString()
+        });
+
+    } catch (error) {
+        Logger.error('Debug find user error:', error);
+        res.status(500).json({
+            error: 'Server error',
+            details: error.message
+        });
+    }
+});
+
+// ========================================
 // USER VALIDATION ENDPOINT
 // ========================================
 
-// User validation endpoint
+// User validation endpoint with enhanced debugging
 app.post('/api/validate-user', async (req, res) => {
     try {
         const { username } = req.body;
 
+        Logger.info('=== USER VALIDATION DEBUG START ===');
+        Logger.info('Received username:', username);
+
         if (!username || typeof username !== 'string') {
+            Logger.warn('Invalid username provided:', { username, type: typeof username });
             return res.status(400).json({ 
                 valid: false, 
                 error: 'Username is required' 
@@ -2695,42 +2831,116 @@ app.post('/api/validate-user', async (req, res) => {
         }
 
         if (!supabaseEnabled) {
+            Logger.error('Supabase not enabled for user validation');
             return res.status(503).json({
                 valid: false,
                 error: 'Database service not configured'
             });
         }
 
-        // Query user_signup table
-        const { data: user, error } = await supabase
-            .from('user_signup')
-            .select('id, create_user_id, email, full_name')
-            .eq('create_user_id', username.trim())
-            .single();
+        const trimmedUsername = username.trim();
+        Logger.info('Searching for user:', { original: username, trimmed: trimmedUsername });
 
-        if (error || !user) {
-            Logger.info('User validation failed:', { username, error: error?.message });
+        // First, let's check what data we have in the table
+        const { data: allUsers, error: allUsersError } = await supabase
+            .from('user_signup')
+            .select('*')
+            .limit(5);
+
+        Logger.info('Sample users in database:', { 
+            count: allUsers?.length || 0, 
+            samples: allUsers?.map(u => ({ 
+                create_user_id: u.create_user_id, 
+                name: u.name,
+                full_name: u.full_name,
+                email: u.email 
+            })) || [],
+            error: allUsersError?.message
+        });
+
+        // Try multiple search strategies
+        Logger.info('Attempting exact match on create_user_id...');
+        const { data: user1, error: error1 } = await supabase
+            .from('user_signup')
+            .select('*')
+            .eq('create_user_id', trimmedUsername)
+            .maybeSingle();
+
+        Logger.info('Exact match result:', { found: !!user1, error: error1?.message });
+
+        // Try case-insensitive match
+        Logger.info('Attempting case-insensitive match...');
+        const { data: user2, error: error2 } = await supabase
+            .from('user_signup')
+            .select('*')
+            .ilike('create_user_id', trimmedUsername)
+            .maybeSingle();
+
+        Logger.info('Case-insensitive result:', { found: !!user2, error: error2?.message });
+
+        // Try searching by name fields too
+        Logger.info('Attempting name-based search...');
+        const { data: user3, error: error3 } = await supabase
+            .from('user_signup')
+            .select('*')
+            .or(`name.ilike.%${trimmedUsername}%,full_name.ilike.%${trimmedUsername}%,create_user_id.ilike.%${trimmedUsername}%`)
+            .limit(3);
+
+        Logger.info('Name-based search result:', { found: user3?.length || 0, users: user3 });
+
+        // Use the first successful match
+        const foundUser = user1 || user2 || (user3 && user3[0]);
+
+        if (!foundUser) {
+            Logger.warn('USER NOT FOUND after all search attempts:', { 
+                username: trimmedUsername,
+                searchAttempts: {
+                    exact: !!user1,
+                    caseInsensitive: !!user2,
+                    nameSearch: user3?.length || 0
+                }
+            });
+            
             return res.status(401).json({ 
                 valid: false, 
-                error: 'Username not found' 
+                error: 'Username not found',
+                debug: {
+                    searchedFor: trimmedUsername,
+                    searchAttempts: 3,
+                    totalUsersInDB: allUsers?.length || 0
+                }
             });
         }
 
-        Logger.info('User validation successful:', { username, userId: user.create_user_id });
+        Logger.info('USER FOUND:', { 
+            create_user_id: foundUser.create_user_id,
+            name: foundUser.name,
+            full_name: foundUser.full_name,
+            email: foundUser.email,
+            matchMethod: user1 ? 'exact' : user2 ? 'case-insensitive' : 'name-search'
+        });
+
+        Logger.info('=== USER VALIDATION DEBUG END ===');
 
         // Return user data
         res.json({
             valid: true,
-            userId: user.create_user_id,
-            email: user.email,
-            fullName: user.full_name
+            userId: foundUser.create_user_id,
+            email: foundUser.email,
+            fullName: foundUser.full_name || foundUser.name,
+            debug: {
+                matchMethod: user1 ? 'exact' : user2 ? 'case-insensitive' : 'name-search',
+                originalUsername: username,
+                foundUserId: foundUser.create_user_id
+            }
         });
 
     } catch (error) {
         Logger.error('Validate user error:', error);
         res.status(500).json({ 
             valid: false, 
-            error: 'Server error' 
+            error: 'Server error',
+            details: error.message
         });
     }
 });
