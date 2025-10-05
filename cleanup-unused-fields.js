@@ -1,4 +1,3 @@
-
 /**
  * Utility to identify and clean up unused fields in incident_reports table
  * Based on actual usage patterns in your application
@@ -16,7 +15,7 @@ const supabase = createClient(
 const ESSENTIAL_FIELDS = [
   'id',
   'create_user_id',
-  'user_id', 
+  'user_id',
   'created_at',
   'updated_at',
   'raw_webhook_data',
@@ -30,7 +29,7 @@ const ESSENTIAL_FIELDS = [
   'medical_how_are_you_feeling',
   // Core incident data
   'when_did_the_accident_happen',
-  'what_time_did_the_accident_happen', 
+  'what_time_did_the_accident_happen',
   'where_exactly_did_this_happen',
   'weather_conditions',
   // Vehicle information
@@ -68,36 +67,36 @@ const ESSENTIAL_FIELDS = [
 
 async function analyzeFieldUsage() {
   console.log('🔍 Analyzing field usage in incident_reports table...');
-  
+
   try {
     // Get all records to analyze
     const { data: allRecords, error } = await supabase
       .from('incident_reports')
       .select('*');
-    
+
     if (error) {
       throw error;
     }
-    
+
     console.log(`📊 Analyzing ${allRecords?.length || 0} incident reports`);
-    
+
     if (!allRecords || allRecords.length === 0) {
       console.log('⚠️  No data to analyze');
       return;
     }
-    
+
     // Get all possible fields from the first record
     const allFields = Object.keys(allRecords[0]);
     console.log(`📋 Found ${allFields.length} total fields`);
-    
+
     // Analyze each field
     const fieldAnalysis = {};
-    
+
     allFields.forEach(field => {
       let nullCount = 0;
       let populatedCount = 0;
       let sampleValues = [];
-      
+
       allRecords.forEach(record => {
         const value = record[field];
         if (value === null || value === undefined || value === '') {
@@ -109,7 +108,7 @@ async function analyzeFieldUsage() {
           }
         }
       });
-      
+
       fieldAnalysis[field] = {
         total: allRecords.length,
         populated: populatedCount,
@@ -119,46 +118,46 @@ async function analyzeFieldUsage() {
         isEssential: ESSENTIAL_FIELDS.includes(field)
       };
     });
-    
+
     // Sort by usage percentage
     const sortedFields = Object.entries(fieldAnalysis)
       .sort(([,a], [,b]) => b.usagePercentage - a.usagePercentage);
-    
+
     console.log('\n📈 FIELD USAGE ANALYSIS:');
     console.log('='.repeat(80));
     console.log('Field Name'.padEnd(35) + 'Usage%'.padEnd(10) + 'Populated'.padEnd(12) + 'Status');
     console.log('-'.repeat(80));
-    
+
     const unusedFields = [];
     const lowUsageFields = [];
-    
+
     sortedFields.forEach(([field, stats]) => {
-      const status = stats.isEssential ? '🔒 ESSENTIAL' : 
+      const status = stats.isEssential ? '🔒 ESSENTIAL' :
                     stats.usagePercentage === 0 ? '❌ UNUSED' :
-                    stats.usagePercentage < 10 ? '⚠️  LOW USAGE' : 
+                    stats.usagePercentage < 10 ? '⚠️  LOW USAGE' :
                     '✅ ACTIVE';
-      
+
       console.log(
-        field.substring(0, 34).padEnd(35) + 
-        (stats.usagePercentage + '%').padEnd(10) + 
-        (stats.populated + '/' + stats.total).padEnd(12) + 
+        field.substring(0, 34).padEnd(35) +
+        (stats.usagePercentage + '%').padEnd(10) +
+        (stats.populated + '/' + stats.total).padEnd(12) +
         status
       );
-      
+
       if (stats.usagePercentage === 0 && !stats.isEssential) {
         unusedFields.push(field);
       } else if (stats.usagePercentage < 10 && !stats.isEssential) {
         lowUsageFields.push(field);
       }
     });
-    
+
     // Summary
     console.log('\n📊 SUMMARY:');
     console.log(`✅ Essential fields: ${ESSENTIAL_FIELDS.length}`);
     console.log(`🟢 Active fields (>10% usage): ${sortedFields.filter(([,s]) => s.usagePercentage >= 10).length}`);
     console.log(`🟡 Low usage fields (<10%): ${lowUsageFields.length}`);
     console.log(`🔴 Completely unused fields: ${unusedFields.length}`);
-    
+
     if (unusedFields.length > 0) {
       console.log('\n❌ UNUSED FIELDS:');
       unusedFields.forEach(field => {
@@ -166,7 +165,7 @@ async function analyzeFieldUsage() {
       });
       console.log('\n💡 These fields could be safely removed to clean up the schema');
     }
-    
+
     if (lowUsageFields.length > 0) {
       console.log('\n⚠️  LOW USAGE FIELDS:');
       lowUsageFields.forEach(field => {
@@ -174,7 +173,7 @@ async function analyzeFieldUsage() {
         console.log(`   - ${field} (${stats.usagePercentage}% usage)`);
       });
     }
-    
+
     return {
       totalFields: allFields.length,
       essentialFields: ESSENTIAL_FIELDS.length,
@@ -182,7 +181,7 @@ async function analyzeFieldUsage() {
       lowUsageFields: lowUsageFields,
       analysis: fieldAnalysis
     };
-    
+
   } catch (error) {
     console.error('❌ Analysis failed:', error.message);
   }
@@ -193,18 +192,18 @@ async function generateCleanupSQL(unusedFields) {
     console.log('✅ No unused fields to clean up');
     return;
   }
-  
+
   console.log('\n🧹 Generating cleanup SQL...');
-  
-  const cleanupSQL = unusedFields.map(field => 
+
+  const cleanupSQL = unusedFields.map(field =>
     `ALTER TABLE public.incident_reports DROP COLUMN IF EXISTS ${field};`
   ).join('\n');
-  
+
   console.log('\n-- SQL to remove unused fields:');
   console.log('-- ⚠️  BACKUP YOUR DATA BEFORE RUNNING THIS!');
   console.log('-- ⚠️  This will permanently delete these columns!');
   console.log('\n' + cleanupSQL);
-  
+
   return cleanupSQL;
 }
 
@@ -212,14 +211,14 @@ async function generateCleanupSQL(unusedFields) {
 async function main() {
   console.log('🔍 Car Crash Lawyer AI - Database Field Analysis');
   console.log('='.repeat(60));
-  
+
   const analysis = await analyzeFieldUsage();
-  
+
   if (analysis && analysis.unusedFields.length > 0) {
     console.log('\n❓ Would you like to generate cleanup SQL for unused fields?');
     console.log('   Run: node cleanup-unused-fields.js --generate-sql');
   }
-  
+
   console.log('\n✅ Analysis complete');
 }
 

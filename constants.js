@@ -78,26 +78,26 @@ const CONSTANTS = {
     SURNAME: 'surname',
     PHONE: 'mobile',
     CONSENT: 'gdpr_consent',
-    
+
     // Hidden fields from Typeform
     HIDDEN_USER_ID: 'user_id',
     PRODUCT_ID: 'product_id', 
     AUTH_CODE: 'auth_code',
-    
+
     // Personal information
     STREET_ADDRESS: 'street_address',
     TOWN: 'town',
     POSTCODE: 'postcode',
     COUNTRY: 'country',
     DRIVING_LICENSE_NUMBER: 'driving_license_number',
-    
+
     // Vehicle information
     CAR_REGISTRATION: 'car_registration_number',
     VEHICLE_MAKE: 'vehicle_make',
     VEHICLE_MODEL: 'vehicle_model',
     VEHICLE_COLOUR: 'vehicle_colour',
     VEHICLE_CONDITION: 'vehicle_condition',
-    
+
     // Insurance and recovery
     INSURANCE_COMPANY: 'insurance_company',
     POLICY_NUMBER: 'policy_number',
@@ -105,7 +105,7 @@ const CONSTANTS = {
     RECOVERY_COMPANY: 'recovery_company',
     RECOVERY_NUMBER: 'recovery_breakdown_number',
     EMERGENCY_CONTACT: 'emergency_contact',
-    
+
     // Incident details
     INCIDENT_DATE: 'when_did_the_accident_happen',
     INCIDENT_TIME: 'what_time_did_the_accident_happen',
@@ -113,18 +113,18 @@ const CONSTANTS = {
     WEATHER_CONDITIONS: 'weather_conditions',
     ROAD_TYPE: 'road_type',
     SPEED_LIMIT: 'speed_limit',
-    
+
     // Medical assessment
     MEDICAL_FEELING: 'medical_how_are_you_feeling',
     ARE_YOU_SAFE: 'are_you_safe',
     MEDICAL_ATTENTION: 'medical_attention',
-    
+
     // Vehicle damage and details
     VEHICLE_DAMAGE: 'damage_to_your_vehicle',
     DAMAGE_DESCRIPTION: 'damage_caused_by_accident',
     AIRBAGS_DEPLOYED: 'airbags_deployed',
     WEARING_SEATBELTS: 'wearing_seatbelts',
-    
+
     // Other driver information
     OTHER_DRIVER_NAME: 'other_drivers_name',
     OTHER_DRIVER_PHONE: 'other_drivers_number',
@@ -134,18 +134,18 @@ const CONSTANTS = {
     OTHER_VEHICLE_LICENSE: 'vehicle_license_plate',
     OTHER_INSURANCE: 'other_insurance_company',
     OTHER_POLICY_NUMBER: 'other_policy_number',
-    
+
     // Police and legal
     POLICE_ATTENDED: 'did_police_attend',
     POLICE_REFERENCE: 'accident_reference_number',
     POLICE_OFFICER_NAME: 'police_officers_name',
     POLICE_BADGE_NUMBER: 'police_officer_badge_number',
-    
+
     // Evidence and witnesses
     WITNESSES: 'any_witness',
     WITNESS_INFO: 'witness_contact_information',
     ADDITIONAL_INFO: 'anything_else',
-    
+
     // File uploads
     DOCUMENTS_URL: 'file_url_documents',
     SCENE_PHOTOS_URL: 'file_url_scene_overview',
@@ -153,7 +153,7 @@ const CONSTANTS = {
     OTHER_VEHICLE_URL: 'file_url_other_vehicle',
     WHAT3WORDS_URL: 'file_url_what3words',
     VOICE_RECORDING_URL: 'file_url_record_detailed_account_of_what_happened',
-    
+
     // Legal and system
     LEGAL_SUPPORT: 'legal_support',
     VOICE_TRANSCRIPTION: 'voice_transcription',

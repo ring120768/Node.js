@@ -1,4 +1,3 @@
-
 -- ========================================
 -- CAR CRASH LAWYER AI - SUPABASE SCHEMA MIGRATION
 -- Based on supabase_fields_1759689113802.csv
@@ -9,7 +8,7 @@
 -- ========================================
 -- USER SIGNUP TABLE - Core user information
 -- ========================================
-ALTER TABLE public.user_signup 
+ALTER TABLE public.user_signup
 ADD COLUMN IF NOT EXISTS name TEXT,
 ADD COLUMN IF NOT EXISTS surname TEXT,
 ADD COLUMN IF NOT EXISTS email TEXT,
@@ -46,7 +45,7 @@ ADD COLUMN IF NOT EXISTS product_id TEXT,
 ADD COLUMN IF NOT EXISTS auth_code TEXT;
 
 -- Ensure create_user_id is UUID type
-ALTER TABLE public.user_signup 
+ALTER TABLE public.user_signup
 ALTER COLUMN create_user_id TYPE UUID USING create_user_id::UUID;
 
 -- ========================================
@@ -207,7 +206,7 @@ ADD COLUMN IF NOT EXISTS emergency_contact_number BIGINT,
 ADD COLUMN IF NOT EXISTS recovery_service_number BIGINT;
 
 -- Ensure create_user_id is UUID type
-ALTER TABLE public.incident_reports 
+ALTER TABLE public.incident_reports
 ALTER COLUMN create_user_id TYPE UUID USING create_user_id::UUID;
 
 -- ========================================
@@ -236,28 +235,28 @@ ADD COLUMN IF NOT EXISTS incident_id UUID;
 -- ========================================
 
 -- Sync user_id with create_user_id in user_signup
-UPDATE public.user_signup 
-SET user_id = create_user_id::UUID 
+UPDATE public.user_signup
+SET user_id = create_user_id::UUID
 WHERE user_id IS NULL AND create_user_id IS NOT NULL;
 
 -- Sync user_id with create_user_id in incident_reports
-UPDATE public.incident_reports 
-SET user_id = create_user_id::UUID 
+UPDATE public.incident_reports
+SET user_id = create_user_id::UUID
 WHERE user_id IS NULL AND create_user_id IS NOT NULL;
 
 -- Sync user_id with create_user_id in transcription_queue
-UPDATE public.transcription_queue 
-SET user_id = create_user_id::UUID 
+UPDATE public.transcription_queue
+SET user_id = create_user_id::UUID
 WHERE user_id IS NULL AND create_user_id IS NOT NULL;
 
 -- Sync user_id with create_user_id in ai_transcription
-UPDATE public.ai_transcription 
-SET user_id = create_user_id::UUID 
+UPDATE public.ai_transcription
+SET user_id = create_user_id::UUID
 WHERE user_id IS NULL AND create_user_id IS NOT NULL;
 
 -- Sync user_id with create_user_id in ai_summary
-UPDATE public.ai_summary 
-SET user_id = create_user_id::UUID 
+UPDATE public.ai_summary
+SET user_id = create_user_id::UUID
 WHERE user_id IS NULL AND create_user_id IS NOT NULL;
 
 -- ========================================
@@ -298,23 +297,23 @@ COMMENT ON COLUMN public.user_signup.auth_code IS 'Typeform hidden field for aut
 -- ========================================
 
 -- Show table structure for verification
-SELECT 
+SELECT
     table_name,
     column_name,
     data_type,
     is_nullable
-FROM information_schema.columns 
-WHERE table_schema = 'public' 
+FROM information_schema.columns
+WHERE table_schema = 'public'
     AND table_name IN ('user_signup', 'incident_reports', 'transcription_queue', 'ai_transcription', 'ai_summary')
 ORDER BY table_name, ordinal_position;
 
 -- Show indexes for verification
-SELECT 
+SELECT
     schemaname,
     tablename,
     indexname,
     indexdef
-FROM pg_indexes 
-WHERE schemaname = 'public' 
+FROM pg_indexes
+WHERE schemaname = 'public'
     AND tablename IN ('user_signup', 'incident_reports', 'transcription_queue', 'ai_transcription', 'ai_summary')
 ORDER BY tablename, indexname;
