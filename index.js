@@ -826,15 +826,80 @@ if (BLOCK_TEMP_IDS) {
   Logger.info('✅ Simplified temporary ID blocking enabled');
 }
 
+// Health endpoint - BEFORE API middleware to ensure it's always accessible
+app.get('/health', async (req, res) => {
+  const externalServices = await checkExternalServices();
+
+  const enhancedModules = {
+    webhookSystem: 'fresh_minimal_implementation',
+    complexModulesRemoved: true,
+    databaseConsistencyTools: 'v5.0.0 - Enhanced UUID Service_integrated',
+    userIdManagement: 'production_ready_v5.0.0 - Enhanced UUID Service',
+    transcriptionEndpoint: 'schema_compatible_v5.0.0 - Enhanced UUID Service',
+    productionValidation: 'enabled_v5.0.0 - Enhanced UUID Service'
+  };
+
+  const status = {
+    status: 'healthy',
+    timestamp: new Date().toISOString(),
+    version: '4.5.2',
+    services: {
+      supabase: supabaseEnabled && externalServices.supabase,
+      supabase_realtime: externalServices.supabase_realtime,
+      server: true,
+      transcriptionQueue: transcriptionQueueInterval !== null,
+      openai: !!process.env.OPENAI_API_KEY && externalServices.openai,
+      websocket: wss.clients.size,
+      websocket_sessions: {
+        queue: activeSessions.size,
+        users: userSessions.size
+      },
+      what3words: externalServices.what3words
+    },
+    enhancedModules: enhancedModules,
+    production_readiness: productionStatus,
+    fixes: {
+      production_user_validation: 'ENABLED - Strict UUID-only validation in production',
+      user_id_extraction: 'ENHANCED - Multi-source validation with fallbacks',
+      transcription_endpoint: 'UPGRADED - Production-ready with strict validation',
+      typeform_403_errors: 'FIXED - Simplified authentication and rate limiting',
+      gdpr_removal: 'COMPLETE - All GDPR code removed',
+      webhook_endpoints: 'SIMPLIFIED - No authentication required for webhooks',
+      temp_id_blocking: BLOCK_TEMP_IDS ? 'ENABLED - Optional blocking for temp IDs' : 'DISABLED',
+      user_id_preservation: 'MAINTAINED - Original user IDs preserved',
+      database_saving: 'OPERATIONAL - All webhook data saved to database',
+      rate_limiting: 'FIXED - Webhooks bypass all rate limits',
+      authentication: 'SIMPLIFIED - Only API endpoints require auth',
+      error_handling: 'IMPROVED - Better webhook recovery',
+      legal_narrative_generation: 'OPERATIONAL - Consolidated endpoints active',
+      database_consistency: 'OPERATIONAL - Consistency checks and data fixes available',
+      enhanced_user_id_validation: 'PRODUCTION READY - Comprehensive user ID validation',
+      transcription_debugging: 'ENHANCED - Request tracking with debug IDs',
+      environment_validation: 'ENABLED - Production readiness checks'
+    }
+  };
+
+  res.json(status);
+});
+
 // Apply rate limiting to API routes
 app.use('/api/', apiLimiter);
 
-// Apply API key authentication to ALL /api/* routes (except validation)
+// Apply API key authentication to specific API routes that need protection
 app.use('/api/*', (req, res, next) => {
-  // Skip authentication for validation endpoint
-  if (req.path === '/api/validate-user') {
+  // Skip authentication for public endpoints
+  const publicPaths = [
+    '/api/validate-user',
+    '/api/debug/user-id-test',
+    '/api/debug/users',
+    '/api/debug/find-user'
+  ];
+  
+  if (publicPaths.some(path => req.path.startsWith(path)) || 
+      req.path.startsWith('/api/debug/')) {
     return next();
   }
+  
   return checkApiKey(req, res, next);
 });
 
@@ -912,6 +977,21 @@ function checkApiKey(req, res, next) {
   // In development, always allow requests
   if (process.env.NODE_ENV !== 'production') {
     Logger.debug(`API check bypassed for ${req.method} ${req.path} (development mode)`);
+    return next();
+  }
+
+  // Allow health endpoints and debug endpoints without API key
+  const allowedPaths = [
+    '/health',
+    '/api/debug/user-id-test',
+    '/api/debug/users',
+    '/api/debug/find-user',
+    '/status',
+    '/'
+  ];
+
+  if (allowedPaths.includes(req.path) || req.path.startsWith('/api/debug/')) {
+    Logger.debug(`API check bypassed for allowed path: ${req.method} ${req.path}`);
     return next();
   }
 
@@ -3152,63 +3232,7 @@ app.post('/api/create-user', async (req, res) => {
   }
 });
 
-// ====================================
-// HEALTH CHECK ENDPOINT
-// ====================================
-app.get('/health', async (req, res) => {
-  const externalServices = await checkExternalServices();
-
-  const enhancedModules = {
-    webhookSystem: 'fresh_minimal_implementation',
-    complexModulesRemoved: true,
-    databaseConsistencyTools: 'v5.0.0 - Enhanced UUID Service_integrated',
-    userIdManagement: 'production_ready_v5.0.0 - Enhanced UUID Service',
-    transcriptionEndpoint: 'schema_compatible_v5.0.0 - Enhanced UUID Service',
-    productionValidation: 'enabled_v5.0.0 - Enhanced UUID Service'
-  };
-
-  const status = {
-    status: 'healthy',
-    timestamp: new Date().toISOString(),
-    version: '4.5.2', // Updated version
-    services: {
-      supabase: supabaseEnabled && externalServices.supabase,
-      supabase_realtime: externalServices.supabase_realtime,
-      server: true,
-      transcriptionQueue: transcriptionQueueInterval !== null,
-      openai: !!process.env.OPENAI_API_KEY && externalServices.openai,
-      websocket: wss.clients.size,
-      websocket_sessions: {
-        queue: activeSessions.size,
-        users: userSessions.size
-      },
-      what3words: externalServices.what3words
-    },
-    enhancedModules: enhancedModules,
-    production_readiness: productionStatus,
-    fixes: {
-      production_user_validation: 'ENABLED - Strict UUID-only validation in production',
-      user_id_extraction: 'ENHANCED - Multi-source validation with fallbacks',
-      transcription_endpoint: 'UPGRADED - Production-ready with strict validation',
-      typeform_403_errors: 'FIXED - Simplified authentication and rate limiting',
-      gdpr_removal: 'COMPLETE - All GDPR code removed',
-      webhook_endpoints: 'SIMPLIFIED - No authentication required for webhooks',
-      temp_id_blocking: BLOCK_TEMP_IDS ? 'ENABLED - Optional blocking for temp IDs' : 'DISABLED',
-      user_id_preservation: 'MAINTAINED - Original user IDs preserved',
-      database_saving: 'OPERATIONAL - All webhook data saved to database',
-      rate_limiting: 'FIXED - Webhooks bypass all rate limits',
-      authentication: 'SIMPLIFIED - Only API endpoints require auth',
-      error_handling: 'IMPROVED - Better webhook recovery',
-      legal_narrative_generation: 'OPERATIONAL - Consolidated endpoints active',
-      database_consistency: 'OPERATIONAL - Consistency checks and data fixes available',
-      enhanced_user_id_validation: 'PRODUCTION READY - Comprehensive user ID validation',
-      transcription_debugging: 'ENHANCED - Request tracking with debug IDs',
-      environment_validation: 'ENABLED - Production readiness checks'
-    }
-  };
-
-  res.json(status);
-});
+// Health endpoint moved above to ensure it's accessible
 
 // ========================================
 // ROOT ROUTE FOR TESTING ACCESSIBILITY
