@@ -1,6 +1,6 @@
 // ========================================
-// CAR CRASH LAWYER AI SYSTEM - UPDATED v4.4.0
-// Typeform 403 Fix Applied - GDPR Removed - Authentication Simplified
+// CAR CRASH LAWYER AI SYSTEM - UPDATED v4.5.0
+// Database Consistency & User ID Management Enhancements Applied
 // ========================================
 
 const express = require('express');
@@ -255,9 +255,96 @@ const server = http.createServer(app);
 app.set('trust proxy', 1);
 
 // ========================================
-// SIMPLIFIED USER ID VALIDATION FUNCTIONS
+// ENHANCED USER ID VALIDATION FUNCTIONS
 // ========================================
 
+// Enhanced backend user ID validation (from improvement pack)
+function validateBackendUserId(userId) {
+  if (!userId || typeof userId !== 'string') {
+    return false;
+  }
+
+  const cleanUserId = userId.trim();
+
+  // Block obvious test/temporary patterns
+  const blockedPatterns = [
+    'temp_user_', 'test_user_', 'dummy_', 'mock_', 'sample_',
+    'undefined', 'null', 'anonymous', 'guest'
+  ];
+
+  for (const pattern of blockedPatterns) {
+    if (cleanUserId.toLowerCase().includes(pattern.toLowerCase())) {
+      Logger.warn(`Blocked suspicious user ID pattern: ${cleanUserId}`);
+      return false;
+    }
+  }
+
+  // Accept UUID format (standard Typeform format)
+  const uuidRegex = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
+  if (uuidRegex.test(cleanUserId)) {
+    return true;
+  }
+
+  // Accept alphanumeric IDs (some Typeform integrations use these)
+  const alphanumericRegex = /^[a-zA-Z0-9][a-zA-Z0-9_-]{2,63}$/;
+  if (alphanumericRegex.test(cleanUserId)) {
+    return true;
+  }
+
+  // Accept development/testing IDs in non-production
+  if (process.env.NODE_ENV !== 'production') {
+    const devRegex = /^(dev_|test_|local_)[a-zA-Z0-9_-]{1,50}$/;
+    if (devRegex.test(cleanUserId)) {
+      return true;
+    }
+  }
+
+  return false;
+}
+
+// Enhanced User ID extraction and validation for backend (from improvement pack)
+function extractAndValidateUserId(req, source = 'unknown') {
+  const sources = [
+    req.body?.create_user_id,
+    req.query?.create_user_id, 
+    req.params?.create_user_id,
+    req.body?.user_id,
+    req.query?.user_id,
+    req.params?.user_id,
+    req.body?.userId,
+    req.query?.userId,
+    req.headers['x-user-id'],
+    req.headers['x-create-user-id']
+  ];
+
+  for (const candidateId of sources) {
+    if (candidateId && validateBackendUserId(candidateId)) {
+      Logger.info(`✅ Valid user ID found from ${source}:`, candidateId.substring(0, 8) + '...');
+      return candidateId.trim();
+    }
+  }
+
+  Logger.critical(`❌ No valid user ID found from ${source}`, {
+    body_keys: Object.keys(req.body || {}),
+    query_keys: Object.keys(req.query || {}),
+    param_keys: Object.keys(req.params || {})
+  });
+
+  return null;
+}
+
+// Create consistent database object with proper user ID fields (from improvement pack)
+function createDatabaseUserObject(userId, additionalData = {}) {
+  return {
+    create_user_id: userId,
+    user_id: userId, // Legacy compatibility
+    created_at: new Date().toISOString(),
+    updated_at: new Date().toISOString(),
+    ...additionalData
+  };
+}
+
+// Legacy validation function (kept for backwards compatibility)
 function validateUserIdRequired(userId, source = 'unknown') {
   if (!userId) {
     Logger.critical(`Missing user ID from ${source}`);
@@ -548,13 +635,13 @@ const initSupabase = () => {
         }
       }
     });
-    Logger.success('Supabase initialized successfully');
+    Logger.success('Supabase initialised successfully');
 
     initializeSupabaseRealtime();
 
     return true;
   } catch (error) {
-    Logger.error('Error initializing Supabase', error);
+    Logger.error('Error initialising Supabase', error);
     return false;
   }
 };
@@ -569,7 +656,7 @@ global.notifyTranscriptionComplete = notifyTranscriptionComplete;
 
 // Initialize Supabase Realtime function
 function initializeSupabaseRealtime() {
-  Logger.info('Supabase Realtime initialization placeholder');
+  Logger.info('Supabase Realtime initialisation placeholder');
 }
 
 // ========================================
@@ -596,7 +683,7 @@ if (supabaseEnabled && process.env.OPENAI_API_KEY) {
       await transcriptionService.processTranscriptionQueue();
     };
 
-    Logger.success('✅ Real Transcription Service initialized with OpenAI!');
+    Logger.success('✅ Real Transcription Service initialised with OpenAI!');
     Logger.info(`OpenAI API Key detected: ${process.env.OPENAI_API_KEY.substring(0, 7)}...`);
 
     transcriptionQueueInterval = setInterval(() => {
@@ -608,9 +695,9 @@ if (supabaseEnabled && process.env.OPENAI_API_KEY) {
     Logger.success('✅ Transcription queue processing started');
 
   } catch (error) {
-    Logger.error('Failed to initialize transcription service:', error);
+    Logger.error('Failed to initialise transcription service:', error);
 
-    Logger.warn('⚠️ Falling back to mock transcription due to initialization error.');
+    Logger.warn('⚠️ Falling back to mock transcription due to initialisation error.');
     try {
       const mocks = require('./lib/mockFunctions');
       processTranscriptionFromBuffer = mocks.processTranscriptionFromBuffer;
@@ -807,6 +894,37 @@ function extractAllTypeformFields(formResponse) {
   }
 
   return fields;
+}
+
+// Enhanced webhook data extraction with user ID validation (from improvement pack)
+function extractWebhookUserData(webhookData) {
+  const formResponse = webhookData.form_response || webhookData;
+
+  if (!formResponse) {
+    Logger.warn('No form response data in webhook');
+    return null;
+  }
+
+  // Extract user ID with multiple fallbacks
+  const userId = formResponse.hidden?.create_user_id ||
+                formResponse.variables?.find(v => v.key === 'create_user_id')?.value ||
+                extractAnswer(formResponse, 'create_user_id') ||
+                formResponse.token; // Fallback to response token
+
+  if (!userId || !validateBackendUserId(userId)) {
+    Logger.error('Invalid or missing user ID in webhook data:', userId);
+    return null;
+  }
+
+  // Extract all form fields
+  const extractedFields = extractAllTypeformFields(formResponse);
+
+  return {
+    create_user_id: userId,
+    extracted_fields: extractedFields,
+    raw_webhook_data: webhookData,
+    submitted_at: formResponse.submitted_at || new Date().toISOString()
+  };
 }
 
 // ========================================
@@ -1490,7 +1608,7 @@ app.post('/api/generate-legal-narrative', async (req, res) => {
             metadata: {
               preserved_user_id: finalUserId,
               request_id: req.requestId,
-              generation_version: '4.4.0'
+              generation_version: '4.5.0'
             }
           })
           .select()
@@ -1695,6 +1813,683 @@ app.post('/api/generate-legal-narrative-from-ids', async (req, res) => {
 });
 
 // ========================================
+// DATABASE CONSISTENCY AND DEBUGGING TOOLS
+// (from database_consistency_tools.js)
+// ========================================
+
+// User data validation and consistency check
+app.get('/api/debug/user/:userId/consistency', async (req, res) => {
+  try {
+    const { userId } = req.params;
+
+    if (!validateBackendUserId(userId)) {
+      return res.status(400).json({
+        error: 'Invalid user ID format',
+        requestId: req.requestId
+      });
+    }
+
+    if (!supabaseEnabled) {
+      return res.status(503).json({
+        error: 'Database service not configured',
+        requestId: req.requestId
+      });
+    }
+
+    Logger.info(`🔍 Running consistency check for user: ${userId}`);
+
+    const consistencyReport = {
+      user_id: userId,
+      timestamp: new Date().toISOString(),
+      tables_checked: {},
+      issues_found: [],
+      recommendations: []
+    };
+
+    // Check each table for user data
+    const tablesToCheck = [
+      'user_signup',
+      'incident_reports', 
+      'ai_transcription',
+      'transcription_queue',
+      'ai_summary',
+      'incident_evidence',
+      'additional_vehicles',
+      'witness_reports'
+    ];
+
+    for (const tableName of tablesToCheck) {
+      try {
+        const { data, error, count } = await supabase
+          .from(tableName)
+          .select('*', { count: 'exact' })
+          .eq('create_user_id', userId);
+
+        if (error) {
+          consistencyReport.issues_found.push({
+            type: 'query_error',
+            table: tableName,
+            error: error.message
+          });
+          continue;
+        }
+
+        consistencyReport.tables_checked[tableName] = {
+          record_count: count || 0,
+          has_data: (count || 0) > 0,
+          latest_record: data && data.length > 0 ? data[0]?.created_at : null
+        };
+
+        // Check for inconsistent user_id fields
+        if (data && data.length > 0) {
+          for (const record of data) {
+            if (record.user_id && record.user_id !== userId) {
+              consistencyReport.issues_found.push({
+                type: 'user_id_mismatch',
+                table: tableName,
+                record_id: record.id,
+                create_user_id: record.create_user_id,
+                user_id: record.user_id
+              });
+            }
+          }
+        }
+
+      } catch (tableError) {
+        consistencyReport.issues_found.push({
+          type: 'table_access_error',
+          table: tableName,
+          error: tableError.message
+        });
+      }
+    }
+
+    // Generate recommendations based on findings
+    const totalRecords = Object.values(consistencyReport.tables_checked)
+      .reduce((sum, table) => sum + table.record_count, 0);
+
+    if (totalRecords === 0) {
+      consistencyReport.recommendations.push(
+        'No data found for this user ID. Verify the user ID is correct.'
+      );
+    }
+
+    if (!consistencyReport.tables_checked.user_signup?.has_data) {
+      consistencyReport.recommendations.push(
+        'Missing user signup data. This may indicate the user never completed initial registration.'
+      );
+    }
+
+    if (!consistencyReport.tables_checked.incident_reports?.has_data && 
+        !consistencyReport.tables_checked.ai_transcription?.has_data) {
+      consistencyReport.recommendations.push(
+        'No incident data or transcriptions found. User may not have completed the full process.'
+      );
+    }
+
+    if (consistencyReport.issues_found.length === 0) {
+      consistencyReport.status = 'consistent';
+      consistencyReport.message = 'All data appears consistent for this user';
+    } else {
+      consistencyReport.status = 'issues_found';
+      consistencyReport.message = `Found ${consistencyReport.issues_found.length} potential issues`;
+    }
+
+    res.json({
+      success: true,
+      consistency_report: consistencyReport,
+      requestId: req.requestId
+    });
+
+  } catch (error) {
+    Logger.error('❌ Consistency check error:', error);
+    res.status(500).json({
+      error: 'Failed to run consistency check',
+      details: error.message,
+      requestId: req.requestId
+    });
+  }
+});
+
+// User data migration/fix endpoint
+app.post('/api/admin/fix-user-data/:userId', async (req, res) => {
+  try {
+    const { userId } = req.params;
+    const { fix_type, dry_run = true } = req.body;
+
+    if (!validateBackendUserId(userId)) {
+      return res.status(400).json({
+        error: 'Invalid user ID format',
+        requestId: req.requestId
+      });
+    }
+
+    if (!supabaseEnabled) {
+      return res.status(503).json({
+        error: 'Database service not configured',
+        requestId: req.requestId
+      });
+    }
+
+    Logger.info(`🔧 Running data fix for user: ${userId}, type: ${fix_type}, dry_run: ${dry_run}`);
+
+    const fixResults = {
+      user_id: userId,
+      fix_type: fix_type,
+      dry_run: dry_run,
+      timestamp: new Date().toISOString(),
+      changes_made: [],
+      errors: []
+    };
+
+    switch (fix_type) {
+      case 'normalize_user_id_fields':
+        // Ensure all records have both create_user_id and user_id fields
+        const tables = ['incident_reports', 'ai_transcription', 'ai_summary', 'incident_evidence'];
+
+        for (const tableName of tables) {
+          try {
+            const { data: records } = await supabase
+              .from(tableName)
+              .select('id, create_user_id, user_id')
+              .eq('create_user_id', userId);
+
+            for (const record of records || []) {
+              if (!record.user_id || record.user_id !== userId) {
+                const updateData = {
+                  user_id: userId,
+                  updated_at: new Date().toISOString()
+                };
+
+                if (!dry_run) {
+                  const { error: updateError } = await supabase
+                    .from(tableName)
+                    .update(updateData)
+                    .eq('id', record.id);
+
+                  if (updateError) {
+                    fixResults.errors.push({
+                      table: tableName,
+                      record_id: record.id,
+                      error: updateError.message
+                    });
+                    continue;
+                  }
+                }
+
+                fixResults.changes_made.push({
+                  table: tableName,
+                  record_id: record.id,
+                  action: 'updated_user_id',
+                  old_value: record.user_id,
+                  new_value: userId
+                });
+              }
+            }
+          } catch (tableError) {
+            fixResults.errors.push({
+              table: tableName,
+              error: tableError.message
+            });
+          }
+        }
+        break;
+
+      case 'link_orphaned_transcriptions':
+        // Link transcriptions to incident reports by user ID and timestamp
+        try {
+          const { data: orphanedTranscriptions } = await supabase
+            .from('ai_transcription')
+            .select('id, created_at, incident_report_id')
+            .eq('create_user_id', userId)
+            .is('incident_report_id', null);
+
+          const { data: incidents } = await supabase
+            .from('incident_reports')
+            .select('id, created_at')
+            .eq('create_user_id', userId)
+            .order('created_at', { ascending: false });
+
+          for (const transcription of orphanedTranscriptions || []) {
+            // Find the most recent incident before the transcription
+            const matchingIncident = incidents?.find(incident => 
+              new Date(incident.created_at) <= new Date(transcription.created_at)
+            );
+
+            if (matchingIncident) {
+              if (!dry_run) {
+                const { error: linkError } = await supabase
+                  .from('ai_transcription')
+                  .update({
+                    incident_report_id: matchingIncident.id,
+                    updated_at: new Date().toISOString()
+                  })
+                  .eq('id', transcription.id);
+
+                if (linkError) {
+                  fixResults.errors.push({
+                    transcription_id: transcription.id,
+                    error: linkError.message
+                  });
+                  continue;
+                }
+              }
+
+              fixResults.changes_made.push({
+                action: 'linked_transcription_to_incident',
+                transcription_id: transcription.id,
+                incident_id: matchingIncident.id
+              });
+            }
+          }
+        } catch (linkError) {
+          fixResults.errors.push({
+            action: 'link_orphaned_transcriptions',
+            error: linkError.message
+          });
+        }
+        break;
+
+      default:
+        return res.status(400).json({
+          error: 'Unknown fix type',
+          available_fixes: [
+            'normalize_user_id_fields',
+            'link_orphaned_transcriptions'
+          ],
+          requestId: req.requestId
+        });
+    }
+
+    res.json({
+      success: true,
+      fix_results: fixResults,
+      summary: {
+        changes_planned: fixResults.changes_made.length,
+        errors_encountered: fixResults.errors.length,
+        dry_run: dry_run
+      },
+      requestId: req.requestId
+    });
+
+  } catch (error) {
+    Logger.error('❌ Data fix error:', error);
+    res.status(500).json({
+      error: 'Failed to fix user data',
+      details: error.message,
+      requestId: req.requestId
+    });
+  }
+});
+
+// Enhanced data collection for PDF generation
+app.get('/api/user/:userId/complete-data', async (req, res) => {
+  try {
+    const { userId } = req.params;
+
+    if (!validateBackendUserId(userId)) {
+      return res.status(400).json({
+        error: 'Invalid user ID format',
+        requestId: req.requestId
+      });
+    }
+
+    if (!supabaseEnabled) {
+      return res.status(503).json({
+        error: 'Database service not configured',
+        requestId: req.requestId
+      });
+    }
+
+    Logger.info(`📊 Collecting complete data for user: ${userId}`);
+
+    const userData = {};
+
+    try {
+      // Get user signup data
+      const { data: signup, error: signupError } = await supabase
+        .from('user_signup')
+        .select('*')
+        .eq('create_user_id', userId)
+        .single();
+
+      userData.signup = signup;
+      if (signupError && signupError.code !== 'PGRST116') { // Ignore "not found" errors
+        Logger.warn('Signup data error:', signupError.message);
+      }
+
+      // Get incident reports
+      const { data: incidents, error: incidentsError } = await supabase
+        .from('incident_reports')
+        .select('*')
+        .eq('create_user_id', userId)
+        .order('created_at', { ascending: false });
+
+      userData.incidents = incidents || [];
+      if (incidentsError) {
+        Logger.warn('Incidents data error:', incidentsError.message);
+      }
+
+      // Get transcriptions
+      const { data: transcriptions, error: transcriptionsError } = await supabase
+        .from('ai_transcription')
+        .select('*')
+        .eq('create_user_id', userId)
+        .order('created_at', { ascending: false });
+
+      userData.transcriptions = transcriptions || [];
+      if (transcriptionsError) {
+        Logger.warn('Transcriptions data error:', transcriptionsError.message);
+      }
+
+      // Get AI summaries/legal narratives
+      const { data: summaries, error: summariesError } = await supabase
+        .from('ai_summary')
+        .select('*')
+        .eq('create_user_id', userId)
+        .order('created_at', { ascending: false });
+
+      userData.summaries = summaries || [];
+      if (summariesError) {
+        Logger.warn('Summaries data error:', summariesError.message);
+      }
+
+      // Get evidence files
+      const { data: evidence, error: evidenceError } = await supabase
+        .from('incident_evidence')
+        .select('*')
+        .eq('create_user_id', userId)
+        .order('created_at', { ascending: false });
+
+      userData.evidence = evidence || [];
+      if (evidenceError) {
+        Logger.warn('Evidence data error:', evidenceError.message);
+      }
+
+      // Get additional vehicle information
+      const { data: vehicles, error: vehiclesError } = await supabase
+        .from('additional_vehicles')
+        .select('*')
+        .eq('create_user_id', userId)
+        .order('created_at', { ascending: false });
+
+      userData.vehicles = vehicles || [];
+      if (vehiclesError) {
+        Logger.warn('Vehicles data error:', vehiclesError.message);
+      }
+
+      // Get witness reports
+      const { data: witnesses, error: witnessesError } = await supabase
+        .from('witness_reports')
+        .select('*')
+        .eq('create_user_id', userId)
+        .order('created_at', { ascending: false });
+
+      userData.witnesses = witnesses || [];
+      if (witnessesError) {
+        Logger.warn('Witnesses data error:', witnessesError.message);
+      }
+
+    } catch (dbError) {
+      Logger.error('Database query error:', dbError);
+      return res.status(500).json({
+        error: 'Database query failed',
+        details: dbError.message,
+        requestId: req.requestId
+      });
+    }
+
+    // Calculate data completeness
+    const completeness = {
+      has_personal_info: !!(userData.signup?.name && userData.signup?.email),
+      has_incident_data: userData.incidents.length > 0,
+      has_transcription: userData.transcriptions.length > 0,
+      has_ai_analysis: userData.summaries.length > 0,
+      has_evidence: userData.evidence.length > 0,
+      has_vehicles: userData.vehicles.length > 0,
+      has_witnesses: userData.witnesses.length > 0
+    };
+
+    const completenessScore = Object.values(completeness).filter(Boolean).length / Object.keys(completeness).length;
+
+    Logger.success(`✅ Data collection complete for ${userId}:`, {
+      signup: !!userData.signup,
+      incidents: userData.incidents.length,
+      transcriptions: userData.transcriptions.length,
+      summaries: userData.summaries.length,
+      evidence: userData.evidence.length,
+      vehicles: userData.vehicles.length,
+      witnesses: userData.witnesses.length,
+      completeness_score: Math.round(completenessScore * 100) + '%'
+    });
+
+    res.json({
+      success: true,
+      user_id: userId,
+      data: userData,
+      metadata: {
+        completeness: completeness,
+        completeness_score: Math.round(completenessScore * 100),
+        total_records: userData.incidents.length + userData.transcriptions.length + userData.summaries.length + userData.evidence.length,
+        data_collected_at: new Date().toISOString(),
+        ready_for_pdf: completeness.has_personal_info && (completeness.has_incident_data || completeness.has_transcription)
+      },
+      requestId: req.requestId
+    });
+
+  } catch (error) {
+    Logger.error('❌ Complete data collection error:', error);
+    res.status(500).json({
+      error: 'Failed to collect user data',
+      details: error.message,
+      requestId: req.requestId
+    });
+  }
+});
+
+// PDF data preparation endpoint
+app.get('/api/user/:userId/pdf-data', async (req, res) => {
+  try {
+    const { userId } = req.params;
+    const { include_raw_data = false } = req.query;
+
+    if (!validateBackendUserId(userId)) {
+      return res.status(400).json({
+        error: 'Invalid user ID format',
+        requestId: req.requestId
+      });
+    }
+
+    Logger.info(`📄 Preparing PDF data for user: ${userId}`);
+
+    // Get complete user data
+    const userDataResponse = await fetch(`${req.protocol}://${req.get('host')}/api/user/${userId}/complete-data`, {
+      headers: {
+        'X-Api-Key': req.headers['x-api-key'] || '',
+        'X-Request-Id': req.requestId
+      }
+    });
+
+    if (!userDataResponse.ok) {
+      throw new Error('Failed to fetch user data');
+    }
+
+    const userDataResult = await userDataResponse.json();
+    const userData = userDataResult.data;
+
+    // Prepare structured PDF data
+    const pdfData = {
+      // Header Information
+      report_metadata: {
+        user_id: userId,
+        generated_at: new Date().toISOString(),
+        report_type: 'incident_report',
+        version: '1.0'
+      },
+
+      // Personal Information
+      personal_information: {
+        full_name: userData.signup?.name || userData.signup?.full_name || 'Not provided',
+        email: userData.signup?.email || 'Not provided',
+        phone: userData.signup?.mobile || userData.signup?.phone || 'Not provided',
+        address: userData.signup?.address || 'Not provided',
+        date_of_birth: userData.signup?.date_of_birth || 'Not provided'
+      },
+
+      // Incident Details
+      incident_information: userData.incidents[0] || {},
+
+      // Transcription and AI Analysis
+      transcription_data: {
+        transcription_text: userData.transcriptions[0]?.transcription_text || 'No transcription available',
+        transcription_date: userData.transcriptions[0]?.created_at || null,
+        audio_quality: userData.transcriptions[0]?.audio_quality || 'Not assessed'
+      },
+
+      // AI Summary and Legal Narrative
+      ai_analysis: {
+        summary: userData.summaries.find(s => s.summary_type === 'summary')?.summary_text || 'No summary available',
+        legal_narrative: userData.summaries.find(s => s.summary_type === 'legal_narrative')?.summary_text || 'No legal narrative available',
+        key_points: userData.summaries[0]?.key_points || [],
+        fault_analysis: userData.summaries[0]?.fault_analysis || 'Not analysed'
+      },
+
+      // Evidence
+      evidence_summary: {
+        total_items: userData.evidence.length,
+        audio_files: userData.evidence.filter(e => e.evidence_type === 'audio').length,
+        images: userData.evidence.filter(e => e.evidence_type === 'image').length,
+        documents: userData.evidence.filter(e => e.evidence_type === 'document').length,
+        evidence_list: userData.evidence.map(e => ({
+          type: e.evidence_type,
+          description: e.description,
+          date_collected: e.created_at
+        }))
+      },
+
+      // Additional Information
+      additional_data: {
+        vehicles: userData.vehicles || [],
+        witnesses: userData.witnesses || [],
+        total_data_points: userData.incidents.length + userData.transcriptions.length + userData.summaries.length + userData.evidence.length
+      },
+
+      // Data Completeness Assessment
+      completeness: userDataResult.metadata.completeness,
+      completeness_score: userDataResult.metadata.completeness_score
+    };
+
+    // Include raw data if requested
+    if (include_raw_data === 'true') {
+      pdfData.raw_data = userData;
+    }
+
+    res.json({
+      success: true,
+      user_id: userId,
+      pdf_data: pdfData,
+      ready_for_pdf_generation: userDataResult.metadata.ready_for_pdf,
+      requestId: req.requestId
+    });
+
+  } catch (error) {
+    Logger.error('❌ PDF data preparation error:', error);
+    res.status(500).json({
+      error: 'Failed to prepare PDF data',
+      details: error.message,
+      requestId: req.requestId
+    });
+  }
+});
+
+// User search and discovery endpoint
+app.get('/api/admin/users/search', async (req, res) => {
+  try {
+    const { query, limit = 50, include_stats = false } = req.query;
+
+    if (!supabaseEnabled) {
+      return res.status(503).json({
+        error: 'Database service not configured',
+        requestId: req.requestId
+      });
+    }
+
+    Logger.info(`🔍 Searching users with query: ${query}`);
+
+    let userQuery = supabase
+      .from('user_signup')
+      .select('create_user_id, name, email, created_at')
+      .limit(parseInt(limit))
+      .order('created_at', { ascending: false });
+
+    // Apply search filter if provided
+    if (query && query.trim()) {
+      userQuery = userQuery.or(`name.ilike.%${query}%,email.ilike.%${query}%,create_user_id.ilike.%${query}%`);
+    }
+
+    const { data: users, error: usersError } = await userQuery;
+
+    if (usersError) {
+      throw usersError;
+    }
+
+    const results = [];
+
+    for (const user of users || []) {
+      const userResult = {
+        user_id: user.create_user_id,
+        name: user.name,
+        email: user.email,
+        signup_date: user.created_at
+      };
+
+      // Include statistics if requested
+      if (include_stats === 'true') {
+        try {
+          const statsResponse = await fetch(`${req.protocol}://${req.get('host')}/api/debug/user/${user.create_user_id}/consistency`, {
+            headers: {
+              'X-Api-Key': req.headers['x-api-key'] || '',
+              'X-Request-Id': req.requestId
+            }
+          });
+
+          if (statsResponse.ok) {
+            const statsData = await statsResponse.json();
+            userResult.stats = {
+              total_records: Object.values(statsData.consistency_report.tables_checked)
+                .reduce((sum, table) => sum + table.record_count, 0),
+              has_incidents: statsData.consistency_report.tables_checked.incident_reports?.has_data || false,
+              has_transcriptions: statsData.consistency_report.tables_checked.ai_transcription?.has_data || false,
+              consistency_status: statsData.consistency_report.status
+            };
+          }
+        } catch (statsError) {
+          Logger.warn(`Could not get stats for user ${user.create_user_id}:`, statsError.message);
+        }
+      }
+
+      results.push(userResult);
+    }
+
+    res.json({
+      success: true,
+      users: results,
+      total_found: results.length,
+      query: query,
+      requestId: req.requestId
+    });
+
+  } catch (error) {
+    Logger.error('❌ User search error:', error);
+    res.status(500).json({
+      error: 'Failed to search users',
+      details: error.message,
+      requestId: req.requestId
+    });
+  }
+});
+
+// ========================================
 // UTILITY FUNCTIONS
 // ========================================
 
@@ -1832,20 +2627,22 @@ app.get('/api/config', (req, res) => {
 });
 
 // ========================================
-// ENHANCED HEALTH CHECK (GDPR REMOVED)
+// ENHANCED HEALTH CHECK
 // ========================================
 app.get('/health', async (req, res) => {
   const externalServices = await checkExternalServices();
 
   const enhancedModules = {
     webhookSystem: 'fresh_minimal_implementation',
-    complexModulesRemoved: true
+    complexModulesRemoved: true,
+    databaseConsistencyTools: 'v4.5.0_integrated',
+    userIdManagement: 'enhanced_v4.5.0'
   };
 
   const status = {
     status: 'healthy',
     timestamp: new Date().toISOString(),
-    version: '4.4.0', // Updated version
+    version: '4.5.0', // Updated version
     services: {
       supabase: supabaseEnabled && externalServices.supabase,
       supabase_realtime: externalServices.supabase_realtime,
@@ -1870,7 +2667,9 @@ app.get('/health', async (req, res) => {
       rate_limiting: 'FIXED - Webhooks bypass all rate limits',
       authentication: 'SIMPLIFIED - Only API endpoints require auth',
       error_handling: 'IMPROVED - Better webhook error recovery',
-      legal_narrative_generation: 'OPERATIONAL - Consolidated endpoints active'
+      legal_narrative_generation: 'OPERATIONAL - Consolidated endpoints active',
+      database_consistency: 'NEW - Consistency checks and data fixes available',
+      enhanced_user_id_validation: 'NEW - Comprehensive user ID validation'
     }
   };
 
@@ -1885,7 +2684,7 @@ app.get('/', (req, res) => {
   res.json({
     success: true,
     message: 'Car Crash Lawyer AI System is running',
-    version: '4.4.0',
+    version: '4.5.0',
     timestamp: new Date().toISOString(),
     port: PORT,
     environment: process.env.NODE_ENV || 'development',
@@ -1951,6 +2750,7 @@ app.post('/api/debug/user-id-test', (req, res) => {
   });
 });
 
+// Enhanced debug endpoint with consistency check integration
 app.get('/api/debug/user/:userId', async (req, res) => {
   if (!supabaseEnabled) {
     return res.status(503).json({
@@ -2013,7 +2813,8 @@ app.get('/api/debug/user/:userId', async (req, res) => {
         queuedItems: transcriptionQueue?.length || 0,
         summaryCount: aiSummary?.length || 0
       },
-      requestId: req.requestId
+      requestId: req.requestId,
+      consistency_check_available: `/api/debug/user/${userId}/consistency`
     });
   } catch (error) {
     Logger.error('Debug endpoint error', error);
@@ -2024,8 +2825,6 @@ app.get('/api/debug/user/:userId', async (req, res) => {
     });
   }
 });
-
-// Debug endpoints removed - fresh start
 
 app.get('/api/process-queue-now', async (req, res) => {
   Logger.info('Manual queue processing triggered');
@@ -2163,7 +2962,7 @@ app.get('/api/debug/transcription', (req, res) => {
         process.env.OPENAI_API_KEY.substring(0, 10) : 'NOT SET'
     },
     service: {
-      initialized: transcriptionService !== null,
+      initialised: transcriptionService !== null,
       className: transcriptionService ? transcriptionService.constructor.name : 'null'
     },
     functions: {
@@ -2604,7 +3403,7 @@ app.post('/test/process-transcription-queue', async (req, res) => {
 });
 
 // ========================================
-// WHISPER TRANSCRIPTION ENDPOINT
+// WHISPER TRANSCRIPTION ENDPOINT (ENHANCED)
 // ========================================
 
 app.post('/api/whisper/transcribe', upload.single('audio'), async (req, res) => {
@@ -2618,623 +3417,610 @@ app.post('/api/whisper/transcribe', upload.single('audio'), async (req, res) => 
       });
     }
 
-    const create_user_id = req.body.create_user_id ||
-                           req.query.create_user_id ||
-                           req.headers['x-user-id'];
+          // Enhanced user ID extraction using the new function
+          const create_user_id = extractAndValidateUserId(req, 'transcription_request');
 
-    Logger.info('Transcription request received:', {
-      body_user_id: req.body.create_user_id,
-      query_user_id: req.query.create_user_id,
-      header_user_id: req.headers['x-user-id'],
-      final_user_id: create_user_id,
-      body_keys: Object.keys(req.body || {}),
-      query_keys: Object.keys(req.query || {})
-    });
+          if (!create_user_id) {
+          Logger.critical('❌ Missing or invalid create_user_id in transcription request');
+          return res.status(400).json({
+            error: 'Valid create_user_id is required',
+            message: 'Please provide a valid user ID from Typeform',
+            requestId: req.requestId,
+            debug: {
+              received_body_keys: Object.keys(req.body || {}),
+              received_query_keys: Object.keys(req.query || {}),
+              user_agent: req.headers['user-agent'],
+              referer: req.headers['referer']
+            }
+          });
+          }
 
-    if (!create_user_id) {
-      Logger.critical('Missing create_user_id in transcription request');
-      return res.status(400).json({
-        error: 'create_user_id is required',
-        message: 'Please provide a user ID from Typeform',
-        requestId: req.requestId,
-        debug: {
-          received_body: Object.keys(req.body || {}),
-          received_query: Object.keys(req.query || {}),
-          received_headers: Object.keys(req.headers || {}).filter(h => h.toLowerCase().includes('user'))
-        }
-      });
-    }
+          Logger.info(`✅ Processing transcription for validated user: ${create_user_id}`);
 
-    // Relaxed validation - accept various user ID formats
-    const isValidUserId = (id) => {
-      // Accept UUIDs
-      if (/^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(id)) {
-        return true;
-      }
-      
-      // Accept legitimate alphanumeric IDs (like ianring_120768)
-      if (/^[a-zA-Z][a-zA-Z0-9_]{2,63}$/.test(id)) {
-        return true;
-      }
-      
-      // Accept development IDs for testing
-      if (id.startsWith('dev_') && process.env.NODE_ENV !== 'production') {
-        return true;
-      }
-      
-      return false;
-    };
+          const queueId = Math.floor(Math.random() * 2147483647);
+          const incident_report_id = req.body.incident_report_id || req.query.incident_report_id || null;
 
-    if (!isValidUserId(create_user_id)) {
-      Logger.critical('Invalid create_user_id format:', create_user_id);
-      return res.status(400).json({
-        error: 'Invalid user ID format',
-        message: 'User ID must be a valid format',
-        received_id: create_user_id,
-        requestId: req.requestId
-      });
-    }
+          if (!supabaseEnabled) {
+          return res.json({
+            success: true,
+            message: 'Audio received (database disabled)',
+            queueId: queueId.toString(),
+            audioUrl: 'mock://audio.webm',
+            create_user_id: create_user_id,
+            requestId: req.requestId
+          });
+          }
 
-    Logger.info(`Processing transcription for user: ${create_user_id}`);
+          // Upload to Supabase storage with user-specific folder structure
+          const fileName = `${create_user_id}/recording_${Date.now()}.webm`;
+          const { data: uploadData, error: uploadError } = await supabase.storage
+          .from('incident-audio')
+          .upload(fileName, req.file.buffer, {
+            contentType: req.file.mimetype,
+            upsert: true
+          });
 
-    const queueId = Math.floor(Math.random() * 2147483647);
+          if (uploadError) {
+          Logger.error(`❌ Supabase upload error: ${uploadError.message}`);
+          return res.status(500).json({
+            error: 'Failed to upload audio to storage',
+            details: uploadError.message,
+            requestId: req.requestId
+          });
+          }
 
-    if (!supabaseEnabled) {
-      return res.json({
-        success: true,
-        message: 'Audio received (database disabled)',
-        queueId: queueId.toString(),
-        audioUrl: 'mock://audio.webm',
-        create_user_id: create_user_id,
-        requestId: req.requestId
-      });
-    }
+          const { data: { publicUrl } } = supabase.storage
+          .from('incident-audio')
+          .getPublicUrl(fileName);
 
-    const fileName = `${create_user_id}/recording_${Date.now()}.webm`;
-    const { data: uploadData, error: uploadError } = await supabase.storage
-      .from('incident-audio')
-      .upload(fileName, req.file.buffer, {
-        contentType: req.file.mimetype,
-        upsert: true
-      });
+          Logger.success(`✅ Audio uploaded to: ${fileName}`);
 
-    if (uploadError) {
-      Logger.error(`Upload error: ${uploadError.message}`);
-      return res.status(500).json({
-        error: 'Failed to upload audio to Supabase',
-        requestId: req.requestId
-      });
-    }
+          // Create database object with consistent user ID fields
+          const queueObject = createDatabaseUserObject(create_user_id, {
+          incident_report_id: incident_report_id,
+          audio_url: publicUrl,
+          status: CONSTANTS.TRANSCRIPTION_STATUS?.PENDING || 'PENDING',
+          retry_count: 0,
+          error_message: null,
+          transcription_id: null,
+          file_name: fileName,
+          file_size: req.file.size,
+          mime_type: req.file.mimetype,
+          request_id: req.requestId
+          });
 
-    const { data: { publicUrl } } = supabase.storage
-      .from('incident-audio')
-      .getPublicUrl(fileName);
+          // Save to transcription queue
+          const { data: queueData, error: queueError } = await supabase
+          .from('transcription_queue')
+          .insert(queueObject)
+          .select()
+          .single();
 
-    Logger.info(`Audio file uploaded to Supabase: ${fileName}`);
+          if (queueError) {
+          Logger.error('❌ Queue insertion error:', queueError);
+          return res.status(500).json({
+            error: 'Failed to queue transcription',
+            details: queueError.message,
+            requestId: req.requestId
+          });
+          }
 
-    const { data: queueData, error: queueError } = await supabase
-      .from('transcription_queue')
-      .insert([{
-        create_user_id: create_user_id,
-        incident_report_id: req.body.incident_report_id || null,
-        audio_url: publicUrl,
-        status: CONSTANTS.TRANSCRIPTION_STATUS?.PENDING || 'PENDING',
-        retry_count: 0,
-        created_at: new Date().toISOString(),
-        error_message: null,
-        transcription_id: null
-      }])
-      .select()
-      .single();
+          Logger.success(`✅ Transcription queued with ID: ${queueData.id}`);
 
-    if (queueError) {
-      Logger.error('Queue error:', queueError);
-    }
+          // Update in-memory status tracking
+          transcriptionStatuses.set(queueId.toString(), {
+          status: CONSTANTS.TRANSCRIPTION_STATUS?.PROCESSING || 'PROCESSING',
+          transcription: null,
+          summary: null,
+          error: null,
+          create_user_id: create_user_id,
+          incident_report_id: incident_report_id,
+          queue_id: queueData.id
+          });
 
-    transcriptionStatuses.set(queueId.toString(), {
-      status: CONSTANTS.TRANSCRIPTION_STATUS?.PROCESSING || 'PROCESSING',
-      transcription: null,
-      summary: null,
-      error: null,
-      create_user_id: create_user_id
-    });
+          // Return successful response
+          res.json({
+          success: true,
+          message: 'Audio uploaded and queued for transcription',
+          queueId: queueId.toString(),
+          queue_db_id: queueData.id,
+          audioUrl: publicUrl,
+          create_user_id: create_user_id,
+          incident_report_id: incident_report_id,
+          requestId: req.requestId,
+          metadata: {
+            file_size: req.file.size,
+            mime_type: req.file.mimetype,
+            storage_path: fileName
+          }
+          });
 
-    res.json({
-      success: true,
-      message: 'Audio uploaded and queued for transcription',
-      queueId: queueId.toString(),
-      audioUrl: publicUrl,
-      create_user_id: create_user_id,
-      requestId: req.requestId
-    });
+          // Start background transcription processing
+          if (processTranscriptionFromBuffer) {
+          Logger.info('🔄 Starting background transcription processing...');
+          processTranscriptionFromBuffer(
+            queueData.id.toString(), // Use database ID for tracking
+            req.file.buffer,
+            create_user_id,
+            incident_report_id,
+            publicUrl
+          ).catch(error => {
+            Logger.error('❌ Background transcription failed:', error);
 
-    if (processTranscriptionFromBuffer) {
-      processTranscriptionFromBuffer(
-        queueId.toString(),
-        req.file.buffer,
-        create_user_id,
-        req.body.incident_report_id,
-        publicUrl
-      ).catch(error => {
-        Logger.error('Background transcription failed:', error);
-      });
-    }
+            // Update queue status to failed
+            supabase.from('transcription_queue')
+              .update({
+                status: 'FAILED',
+                error_message: error.message,
+                updated_at: new Date().toISOString()
+              })
+              .eq('id', queueData.id)
+              .then(() => {
+                Logger.info('Queue status updated to FAILED');
+              });
+          });
+          }
 
-  } catch (error) {
-    Logger.error('Transcription error:', error);
-    res.status(500).json({
-      error: 'Failed to process audio',
-      details: error.message,
-      requestId: req.requestId
-    });
-  }
-});
+          } catch (error) {
+          Logger.error('❌ Transcription endpoint error:', error);
+          res.status(500).json({
+          error: 'Failed to process audio upload',
+          details: error.message,
+          requestId: req.requestId
+          });
+          }
+          });
 
-// ========================================
-// RECORDING INTERFACE REDIRECT ROUTES
-// ========================================
+          // ========================================
+          // RECORDING INTERFACE REDIRECT ROUTES
+          // ========================================
 
-app.get('/record', (req, res) => {
-  const queryString = req.originalUrl.split('?')[1] || '';
-  const redirectUrl = `/transcription-status.html${queryString ? '?' + queryString : ''}`;
-  Logger.info('Recording redirect', { from: '/record', to: redirectUrl, params: queryString });
-  res.redirect(redirectUrl);
-});
+          app.get('/record', (req, res) => {
+          const queryString = req.originalUrl.split('?')[1] || '';
+          const redirectUrl = `/transcription-status.html${queryString ? '?' + queryString : ''}`;
+          Logger.info('Recording redirect', { from: '/record', to: redirectUrl, params: queryString });
+          res.redirect(redirectUrl);
+          });
 
-app.get('/transcribe', (req, res) => {
-  const queryString = req.originalUrl.split('?')[1] || '';
-  const redirectUrl = `/transcription-status.html${queryString ? '?' + queryString : ''}`;
-  Logger.info('Recording redirect', { from: '/transcribe', to: redirectUrl, params: queryString });
-  res.redirect(redirectUrl);
-});
+          app.get('/transcribe', (req, res) => {
+          const queryString = req.originalUrl.split('?')[1] || '';
+          const redirectUrl = `/transcription-status.html${queryString ? '?' + queryString : ''}`;
+          Logger.info('Recording redirect', { from: '/transcribe', to: redirectUrl, params: queryString });
+          res.redirect(redirectUrl);
+          });
 
-app.get('/recording', (req, res) => {
-  const queryString = req.originalUrl.split('?')[1] || '';
-  const redirectUrl = `/transcription-status.html${queryString ? '?' + queryString : ''}`;
-  Logger.info('Recording redirect', { from: '/recording', to: redirectUrl, params: queryString });
-  res.redirect(redirectUrl);
-});
+          app.get('/recording', (req, res) => {
+          const queryString = req.originalUrl.split('?')[1] || '';
+          const redirectUrl = `/transcription-status.html${queryString ? '?' + queryString : ''}`;
+          Logger.info('Recording redirect', { from: '/recording', to: redirectUrl, params: queryString });
+          res.redirect(redirectUrl);
+          });
 
-app.get('/webhook/record', (req, res) => {
-  const queryString = req.originalUrl.split('?')[1] || '';
-  const redirectUrl = `/transcription-status.html${queryString ? '?' + queryString : ''}`;
-  Logger.info('Recording redirect', { from: '/webhook/record', to: redirectUrl, params: queryString, source: 'webhook' });
-  res.redirect(redirectUrl);
-});
+          app.get('/webhook/record', (req, res) => {
+          const queryString = req.originalUrl.split('?')[1] || '';
+          const redirectUrl = `/transcription-status.html${queryString ? '?' + queryString : ''}`;
+          Logger.info('Recording redirect', { from: '/webhook/record', to: redirectUrl, params: queryString, source: 'webhook' });
+          res.redirect(redirectUrl);
+          });
 
-app.get('/transcription.html', (req, res) => {
-  const queryString = req.originalUrl.split('?')[1] || '';
-  const redirectUrl = `/transcription-status.html${queryString ? '?' + queryString : ''}`;
-  Logger.info('File redirect', { from: '/transcription.html', to: redirectUrl, params: queryString });
-  res.redirect(redirectUrl);
-});
+          app.get('/transcription.html', (req, res) => {
+          const queryString = req.originalUrl.split('?')[1] || '';
+          const redirectUrl = `/transcription-status.html${queryString ? '?' + queryString : ''}`;
+          Logger.info('File redirect', { from: '/transcription.html', to: redirectUrl, params: queryString });
+          res.redirect(redirectUrl);
+          });
 
-app.get('/transcribe.html', (req, res) => {
-  const queryString = req.originalUrl.split('?')[1] || '';
-  const redirectUrl = `/transcription-status.html${queryString ? '?' + queryString : ''}`;
-  Logger.info('File redirect', { from: '/transcribe.html', to: redirectUrl, params: queryString });
-  res.redirect(redirectUrl);
-});
+          app.get('/transcribe.html', (req, res) => {
+          const queryString = req.originalUrl.split('?')[1] || '';
+          const redirectUrl = `/transcription-status.html${queryString ? '?' + queryString : ''}`;
+          Logger.info('File redirect', { from: '/transcribe.html', to: redirectUrl, params: queryString });
+          res.redirect(redirectUrl);
+          });
 
-// ========================================
-// INCIDENT ENDPOINTS
-// ========================================
+          // ========================================
+          // INCIDENT ENDPOINTS
+          // ========================================
 
-const IncidentEndpoints = require('./lib/incidentEndpoints');
-let incidentEndpoints = null;
+          const IncidentEndpoints = require('./lib/incidentEndpoints');
+          let incidentEndpoints = null;
 
-if (supabaseEnabled) {
-  try {
-    incidentEndpoints = new IncidentEndpoints(supabase);
-    Logger.success('✅ Incident endpoints module initialized');
-  } catch (error) {
-    Logger.warn('Incident endpoints module not available:', error.message);
-  }
-}
+          if (supabaseEnabled) {
+          try {
+          incidentEndpoints = new IncidentEndpoints(supabase);
+          Logger.success('✅ Incident endpoints module initialised');
+          } catch (error) {
+          Logger.warn('Incident endpoints module not available:', error.message);
+          }
+          }
 
-app.get('/api/auth/status', async (req, res) => {
-  if (!incidentEndpoints) {
-    return res.json({ authenticated: false });
-  }
-  return incidentEndpoints.getAuthStatus(req, res);
-});
+          app.get('/api/auth/status', async (req, res) => {
+          if (!incidentEndpoints) {
+          return res.json({ authenticated: false });
+          }
+          return incidentEndpoints.getAuthStatus(req, res);
+          });
 
-app.get('/api/user/:userId/emergency-contacts', async (req, res) => {
-  if (!incidentEndpoints) {
-    return res.status(503).json({ error: 'Service not configured' });
-  }
-  return incidentEndpoints.getEmergencyContacts(req, res);
-});
+          app.get('/api/user/:userId/emergency-contacts', async (req, res) => {
+          if (!incidentEndpoints) {
+          return res.status(503).json({ error: 'Service not configured' });
+          }
+          return incidentEndpoints.getEmergencyContacts(req, res);
+          });
 
-app.post('/api/store-evidence-audio', upload.single('audio'), async (req, res) => {
-  if (!incidentEndpoints) {
-    return res.status(503).json({ error: 'Service not configured' });
-  }
-  return incidentEndpoints.storeEvidenceAudio(req, res);
-});
+          app.post('/api/store-evidence-audio', upload.single('audio'), async (req, res) => {
+          if (!incidentEndpoints) {
+          return res.status(503).json({ error: 'Service not configured' });
+          }
+          return incidentEndpoints.storeEvidenceAudio(req, res);
+          });
 
-app.post('/api/upload-what3words-image', upload.single('image'), async (req, res) => {
-  if (!incidentEndpoints) {
-    return res.status(503).json({ error: 'Service not configured' });
-  }
-  return incidentEndpoints.uploadWhat3WordsImage(req, res);
-});
+          app.post('/api/upload-what3words-image', upload.single('image'), async (req, res) => {
+          if (!incidentEndpoints) {
+          return res.status(503).json({ error: 'Service not configured' });
+          }
+          return incidentEndpoints.uploadWhat3WordsImage(req, res);
+          });
 
-app.post('/api/upload-dashcam', upload.single('video'), async (req, res) => {
-  if (!incidentEndpoints) {
-    return res.status(503).json({ error: 'Service not configured' });
-  }
-  return incidentEndpoints.uploadDashcam(req, res);
-});
+          app.post('/api/upload-dashcam', upload.single('video'), async (req, res) => {
+          if (!incidentEndpoints) {
+          return res.status(503).json({ error: 'Service not configured' });
+          }
+          return incidentEndpoints.uploadDashcam(req, res);
+          });
 
-app.post('/api/log-emergency-call', async (req, res) => {
-  if (!supabaseEnabled) {
-    return res.status(503).json({
-      error: 'Service not configured',
-      requestId: req.requestId
-    });
-  }
+          app.post('/api/log-emergency-call', async (req, res) => {
+          if (!supabaseEnabled) {
+          return res.status(503).json({
+          error: 'Service not configured',
+          requestId: req.requestId
+          });
+          }
 
-  try {
-    const { user_id, service_called, timestamp, incident_id } = req.body;
+          try {
+          const { user_id, service_called, timestamp, incident_id } = req.body;
 
-    if (!user_id) {
-      return res.status(400).json({
-        error: 'User ID required',
-        code: 'MISSING_USER_ID',
-        requestId: req.requestId
-      });
-    }
+          if (!user_id) {
+          return res.status(400).json({
+            error: 'User ID required',
+            code: 'MISSING_USER_ID',
+            requestId: req.requestId
+          });
+          }
 
-    const { data, error } = await supabase
-      .from('emergency_call_logs')
-      .insert({
-        user_id,
-        service_called,
-        incident_id: incident_id || null,
-        timestamp,
-        created_at: new Date().toISOString()
-      });
+          const { data, error } = await supabase
+          .from('emergency_call_logs')
+          .insert({
+            user_id,
+            service_called,
+            incident_id: incident_id || null,
+            timestamp,
+            created_at: new Date().toISOString()
+          });
 
-    if (error) {
-      Logger.error('Failed to log emergency call', error);
-      return res.json({
-        success: false,
-        logged: false,
-        requestId: req.requestId
-      });
-    }
+          if (error) {
+          Logger.error('Failed to log emergency call', error);
+          return res.json({
+            success: false,
+            logged: false,
+            requestId: req.requestId
+          });
+          }
 
-    res.json({
-      success: true,
-      logged: true,
-      requestId: req.requestId
-    });
-  } catch (error) {
-    Logger.error('Error logging emergency call', error);
-    res.status(500).json({
-      error: 'Internal server error',
-      requestId: req.requestId
-    });
-  }
-});
+          res.json({
+          success: true,
+          logged: true,
+          requestId: req.requestId
+          });
+          } catch (error) {
+          Logger.error('Error logging emergency call', error);
+          res.status(500).json({
+          error: 'Internal server error',
+          requestId: req.requestId
+          });
+          }
+          });
 
-app.get('/api/what3words', async (req, res) => {
-  try {
-    const { lat, lng } = req.query;
+          app.get('/api/what3words', async (req, res) => {
+          try {
+          const { lat, lng } = req.query;
 
-    if (!lat || !lng) {
-      return res.status(400).json({
-        error: 'Missing latitude or longitude',
-        words: 'coordinates.required'
-      });
-    }
+          if (!lat || !lng) {
+          return res.status(400).json({
+            error: 'Missing latitude or longitude',
+            words: 'coordinates.required'
+          });
+          }
 
-    const W3W_API_KEY = process.env.WHAT3WORDS_API_KEY;
+          const W3W_API_KEY = process.env.WHAT3WORDS_API_KEY;
 
-    if (!W3W_API_KEY) {
-      console.warn('What3Words API key not configured');
-      return res.json({
-        words: 'location.not.configured',
-        error: 'API key missing'
-      });
-    }
+          if (!W3W_API_KEY) {
+          console.warn('What3Words API key not configured');
+          return res.json({
+            words: 'location.not.configured',
+            error: 'API key missing'
+          });
+          }
 
-    console.log(`📍 What3Words request: lat=${lat}, lng=${lng}`);
+          console.log(`📍 What3Words request: lat=${lat}, lng=${lng}`);
 
-    const response = await axios.get(
-      'https://api.what3words.com/v3/convert-to-3wa',
-      {
-        params: {
-          coordinates: `${lat},${lng}`,
-          key: W3W_API_KEY
-        },
-        timeout: 5000
-      }
-    );
+          const response = await axios.get(
+          'https://api.what3words.com/v3/convert-to-3wa',
+          {
+            params: {
+              coordinates: `${lat},${lng}`,
+              key: W3W_API_KEY
+            },
+            timeout: 5000
+          }
+          );
 
-    if (response.data && response.data.words) {
-      console.log(`✅ What3Words: ${response.data.words}`);
-      return res.json({
-        words: response.data.words,
-        country: response.data.country,
-        nearestPlace: response.data.nearestPlace
-      });
-    }
+          if (response.data && response.data.words) {
+          console.log(`✅ What3Words: ${response.data.words}`);
+          return res.json({
+            words: response.data.words,
+            country: response.data.country,
+            nearestPlace: response.data.nearestPlace
+          });
+          }
 
-    res.json({
-      words: 'location.not.found',
-      error: 'No words returned'
-    });
+          res.json({
+          words: 'location.not.found',
+          error: 'No words returned'
+          });
 
-  } catch (error) {
-    console.error('❌ What3Words error:', error.message);
-    res.status(500).json({
-      words: 'api.error.occurred',
-      error: error.message
-    });
-  }
-});
+          } catch (error) {
+          console.error('❌ What3Words error:', error.message);
+          res.status(500).json({
+          words: 'api.error.occurred',
+          error: error.message
+          });
+          }
+          });
 
-// ========================================
-// STATUS ROUTES
-// ========================================
+          // ========================================
+          // STATUS ROUTES
+          // ========================================
 
-app.get('/status', (req, res) => {
-  const htmlContent = `<!DOCTYPE html>
-<html lang="en">
-<head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Car Crash Lawyer AI - GDPR REMOVED & Typeform 403 FIXED</title>
-    <style>
-        body { font-family: Arial, sans-serif; padding: 40px; background: #f5f5f5; }
-        .container { max-width: 900px; margin: 0 auto; background: white; padding: 30px; border-radius: 10px; box-shadow: 0 2px 10px rgba(0,0,0,0.1); }
-        h1 { color: #333; }
-        .status { padding: 10px; background: #4CAF50; color: white; border-radius: 5px; display: inline-block; }
-        .fixed { background: #4CAF50 !important; font-weight: bold; }
-        .section { margin-top: 30px; }
-        .endpoint { background: #f0f0f0; padding: 10px; margin: 10px 0; border-radius: 5px; }
-        code { background: #333; color: #4CAF50; padding: 2px 6px; border-radius: 3px; }
-        ul { list-style: none; padding: 0; }
-        li { margin: 5px 0; }
-        .fix-badge { background: #4CAF50; color: white; padding: 2px 6px; border-radius: 3px; font-size: 10px; margin-left: 5px; }
-    </style>
-</head>
-<body>
-    <div class="container">
-        <h1>🚗 Car Crash Lawyer AI - UPDATED v4.4.0</h1>
-        <p class="status fixed">✅ TYPEFORM 403 ERRORS FIXED</p>
+          app.get('/status', (req, res) => {
+          const htmlContent = `<!DOCTYPE html>
+          <html lang="en">
+          <head>
+          <meta charset="UTF-8">
+          <meta name="viewport" content="width=device-width, initial-scale=1.0">
+          <title>Car Crash Lawyer AI - v4.5.0 Enhanced</title>
+          <style>
+            body { font-family: Arial, sans-serif; padding: 40px; background: #f5f5f5; }
+            .container { max-width: 900px; margin: 0 auto; background: white; padding: 30px; border-radius: 10px; box-shadow: 0 2px 10px rgba(0,0,0,0.1); }
+            h1 { color: #333; }
+            .status { padding: 10px; background: #4CAF50; color: white; border-radius: 5px; display: inline-block; }
+            .new { background: #2196F3 !important; font-weight: bold; }
+            .section { margin-top: 30px; }
+            .endpoint { background: #f0f0f0; padding: 10px; margin: 10px 0; border-radius: 5px; }
+            code { background: #333; color: #4CAF50; padding: 2px 6px; border-radius: 3px; }
+            ul { list-style: none; padding: 0; }
+            li { margin: 5px 0; }
+            .badge { background: #4CAF50; color: white; padding: 2px 6px; border-radius: 3px; font-size: 10px; margin-left: 5px; }
+          </style>
+          </head>
+          <body>
+          <div class="container">
+            <h1>🚗 Car Crash Lawyer AI - v4.5.0</h1>
+            <p class="status new">✅ DATABASE CONSISTENCY & USER ID MANAGEMENT ENHANCED</p>
 
-        <div class="section">
-            <h2>🔧 MAJOR FIXES APPLIED:</h2>
-            <div class="endpoint">
-                <strong>1. GDPR Code Completely Removed</strong> <span class="fix-badge">COMPLETE</span><br>
-                <p>✅ All GDPR imports, variables, middleware, and routes removed</p>
-                <p>✅ No more consent checks blocking webhook operations</p>
-                <p>✅ Simplified codebase with no authentication complexity</p>
-                <br>
-                <strong>2. Typeform 403 Errors Fixed</strong> <span class="fix-badge">FIXED</span><br>
-                <p>✅ Webhook endpoints require NO authentication</p>
-                <p>✅ Rate limiting completely bypassed for webhook paths</p>
-                <p>✅ Simplified request processing pipeline</p>
-                <p>✅ All webhook paths: /webhook/* skip all middleware</p>
-                <br>
-                <strong>3. Authentication Simplified</strong> <span class="fix-badge">SIMPLIFIED</span><br>
-                <p>✅ Only API endpoints require authentication (optional)</p>
-                <p>✅ Development mode bypasses all authentication</p>
-                <p>✅ Webhook endpoints completely open</p>
-                <br>
-                <strong>4. Rate Limiting Fixed</strong> <span class="fix-badge">FIXED</span><br>
-                <p>✅ Webhooks bypass ALL rate limits</p>
-                <p>✅ High limits (1000 req/15min) for webhook endpoints</p>
-                <p>✅ API endpoints have separate, reasonable limits</p>
+            <div class="section">
+                <h2>🆕 NEW FEATURES IN v4.5.0:</h2>
+                <div class="endpoint">
+                    <strong>1. Database Consistency Tools</strong> <span class="badge">NEW</span><br>
+                    <p>✅ User data consistency checks across all tables</p>
+                    <p>✅ Automated data fix capabilities with dry-run support</p>
+                    <p>✅ Orphaned record detection and linking</p>
+                    <br>
+                    <strong>2. Enhanced User ID Management</strong> <span class="badge">NEW</span><br>
+                    <p>✅ Comprehensive user ID validation across all sources</p>
+                    <p>✅ Consistent database object creation</p>
+                    <p>✅ Multi-source user ID extraction</p>
+                    <br>
+                    <strong>3. Enhanced Data Collection</strong> <span class="badge">NEW</span><br>
+                    <p>✅ Complete user data aggregation for PDF generation</p>
+                    <p>✅ Data completeness scoring</p>
+                    <p>✅ User search with statistics</p>
+                </div>
             </div>
-        </div>
 
-        <div class="section">
-            <h2>🎯 Working Webhook Endpoints:</h2>
-            <div class="endpoint">
-                <strong>Signup Webhook:</strong> <span class="fix-badge">NO AUTH</span><br>
-                <code>POST /webhook/signup</code> - Process Typeform signup forms<br>
-                <br>
-                <strong>Incident Report:</strong> <span class="fix-badge">NO AUTH</span><br>
-                <code>POST /webhook/incident-report</code> - Process incident reports<br>
-                <br>
-                <strong>Test Endpoints:</strong> <span class="fix-badge">NEW</span><br>
-                <code>ALL /webhook/test</code> - Test any method/data<br>
-                <code>GET /webhook/config-test</code> - Configuration diagnostics<br>
+            <div class="section">
+                <h2>🔧 NEW ENDPOINTS:</h2>
+                <div class="endpoint">
+                    <strong>Consistency Check:</strong> <span class="badge">DEBUG</span><br>
+                    <code>GET /api/debug/user/:userId/consistency</code><br>
+                    Checks data consistency across all tables for a user<br>
+                    <br>
+                    <strong>Data Fix:</strong> <span class="badge">ADMIN</span><br>
+                    <code>POST /api/admin/fix-user-data/:userId</code><br>
+                    Fixes user data inconsistencies (supports dry-run)<br>
+                    <br>
+                    <strong>Complete User Data:</strong> <span class="badge">NEW</span><br>
+                    <code>GET /api/user/:userId/complete-data</code><br>
+                    Collects all data for a user across all tables<br>
+                    <br>
+                    <strong>PDF Data Preparation:</strong> <span class="badge">NEW</span><br>
+                    <code>GET /api/user/:userId/pdf-data</code><br>
+                    Prepares structured data for PDF generation<br>
+                    <br>
+                    <strong>User Search:</strong> <span class="badge">ADMIN</span><br>
+                    <code>GET /api/admin/users/search</code><br>
+                    Search users with optional statistics
+                </div>
             </div>
-        </div>
 
-        <div class="section">
-            <h2>⚙️ System Configuration:</h2>
-            <div class="endpoint">
-                <strong>Environment Settings:</strong><br>
-                <code>BLOCK_TEMP_IDS=${BLOCK_TEMP_IDS ? 'true ✅' : 'false ⚠️'}</code> - Temporary ID blocking<br>
-                <code>REQUIRE_USER_ID=${REQUIRE_USER_ID ? 'true ✅' : 'false ⚠️'}</code> - User ID requirement<br>
-                <code>NODE_ENV=${process.env.NODE_ENV || 'development'}</code> - Environment mode<br>
-                <br>
-                <strong>Authentication:</strong><br>
-                <code>API_KEY</code> - ${process.env.API_KEY ? 'SET (optional)' : 'NOT SET (webhooks work without it)'}<br>
-                <code>WEBHOOK_SECRET</code> - ${process.env.WEBHOOK_SECRET ? 'SET (optional)' : 'NOT SET (optional)'}<br>
+            <div class="section">
+                <h2>⚙️ System Configuration:</h2>
+                <div class="endpoint">
+                    <strong>Environment Settings:</strong><br>
+                    <code>BLOCK_TEMP_IDS=${BLOCK_TEMP_IDS ? 'true ✅' : 'false ⚠️'}</code><br>
+                    <code>REQUIRE_USER_ID=${REQUIRE_USER_ID ? 'true ✅' : 'false ⚠️'}</code><br>
+                    <code>NODE_ENV=${process.env.NODE_ENV || 'development'}</code><br>
+                    <br>
+                    <strong>Database:</strong><br>
+                    <code>Supabase: ${supabaseEnabled ? 'Connected ✅' : 'Not configured ❌'}</code><br>
+                    <code>User ID Validation: Enhanced ✅</code><br>
+                    <code>Consistency Tools: Active ✅</code>
+                </div>
             </div>
-        </div>
 
-        <div class="section">
-            <h3>✅ System Status:</h3>
-            <ul style="color: white;">
-                <li>Version: 4.4.0 - GDPR Removed & Typeform Fixed</li>
-                <li>Supabase: ${supabaseEnabled ? '✅ Connected' : '❌ Not configured'}</li>
-                <li>OpenAI: ${process.env.OPENAI_API_KEY ? '✅ Configured' : '⚠️ Not configured'}</li>
-                <li>Transcription Queue: ${transcriptionQueueInterval ? '✅ Running' : '⚠️ Not running'}</li>
-                <li>WebSocket: ${wss ? '✅ Active (' + wss.clients.size + ' clients)' : '❌ Not active'}</li>
-                <li>GDPR Manager: ❌ Completely Removed</li>
-                <li>Webhook Debugger: ${webhookDebugger ? '✅ Active' : '⚠️ Not configured'}</li>
-                <li>Rate Limiting: ✅ Webhooks bypassed, API endpoints protected</li>
-                <li>Authentication: ✅ Simplified - webhooks require NO auth</li>
-                <li>Temp ID Blocking: ${BLOCK_TEMP_IDS ? '✅ Enabled' : '⚠️ Disabled'}</li>
-            </ul>
-        </div>
+            <div class="section">
+                <h3>✅ All Features:</h3>
+                <ul>
+                    <li>✅ Enhanced user ID validation and extraction</li>
+                    <li>✅ Database consistency checking</li>
+                    <li>✅ Automated data fixing with dry-run</li>
+                    <li>✅ Complete user data collection</li>
+                    <li>✅ PDF data preparation</li>
+                    <li>✅ User search with statistics</li>
+                    <li>✅ Webhook endpoints (no auth)</li>
+                    <li>✅ Transcription processing</li>
+                    <li>✅ Legal narrative generation</li>
+                </ul>
+            </div>
+          </div>
+          </body>
+          </html>`;
+          res.send(htmlContent);
+          });
 
-        <div class="fixed">
-            <h3>🎯 Typeform Integration Instructions:</h3>
-            <ul style="color: white;">
-                <li>✅ Webhook URL: https://your-domain.com/webhook/incident-report</li>
-                <li>✅ Required Headers: Content-Type: application/json</li>
-                <li>✅ Authentication: NONE REQUIRED</li>
-                <li>✅ Test Command: curl -X POST /webhook/test -d '{"test":"data"}'</li>
-                <li>✅ Status: Should return 200 OK with success message</li>
-            </ul>
-        </div>
-    </div>
-</body>
-</html>`;
-  res.send(htmlContent);
-});
+          // ========================================
+          // ERROR HANDLING MIDDLEWARE
+          // ========================================
 
-// ========================================
-// ERROR HANDLING MIDDLEWARE
-// ========================================
+          app.use((err, req, res, next) => {
+          if (err.name === 'MulterError') {
+          if (err.code === 'LIMIT_FILE_SIZE') {
+          return res.status(400).json({
+            error: 'File size too large. Maximum size: 50MB for audio, 10MB for images',
+            code: 'FILE_TOO_LARGE',
+            requestId: req.requestId
+          });
+          }
+          return res.status(400).json({
+          error: `Upload error: ${err.message}`,
+          code: err.code,
+          requestId: req.requestId
+          });
+          }
 
-app.use((err, req, res, next) => {
-  if (err.name === 'MulterError') {
-    if (err.code === 'LIMIT_FILE_SIZE') {
-      return res.status(400).json({
-        error: 'File size too large. Maximum size: 50MB for audio, 10MB for images',
-        code: 'FILE_TOO_LARGE',
-        requestId: req.requestId
-      });
-    }
-    return res.status(400).json({
-      error: `Upload error: ${err.message}`,
-      code: err.code,
-      requestId: req.requestId
-    });
-  }
+          Logger.error('Unhandled error', err);
+          res.status(500).json({
+          error: 'Internal server error',
+          message: err.message,
+          stack: process.env.NODE_ENV === 'development' ? err.stack : undefined,
+          requestId: req.requestId
+          });
+          });
 
-  Logger.error('Unhandled error', err);
-  res.status(500).json({
-    error: 'Internal server error',
-    message: err.message,
-    stack: process.env.NODE_ENV === 'development' ? err.stack : undefined,
-    requestId: req.requestId
-  });
-});
+          // 404 handler - must be last
+          app.use((req, res) => {
+          res.status(404).json({
+          error: 'Not found',
+          path: req.path,
+          method: req.method,
+          requestId: req.requestId
+          });
+          });
 
-// 404 handler - must be last
-app.use((req, res) => {
-  res.status(404).json({
-    error: 'Not found',
-    path: req.path,
-    method: req.method,
-    requestId: req.requestId
-  });
-});
+          // ========================================
+          // MISSING VARIABLES AND FUNCTIONS FOR STARTUP
+          // ========================================
+          let wss = { clients: new Set() }; // Mock WebSocket server
+          let wsHeartbeat = null;
+          let activeSessions = new Map();
+          let userSessions = new Map();
+          let transcriptionStatuses = new Map();
 
-// ========================================
-// MISSING VARIABLES AND FUNCTIONS FOR STARTUP
-// ========================================
-let wss = { clients: new Set() }; // Mock WebSocket server
-let wsHeartbeat = null;
-let activeSessions = new Map();
-let userSessions = new Map();
-let transcriptionStatuses = new Map();
+          // Make them globally accessible
+          global.transcriptionStatuses = transcriptionStatuses;
+          global.userSessions = userSessions;
 
-// Make them globally accessible
-global.transcriptionStatuses = transcriptionStatuses;
-global.userSessions = userSessions;
+          // ========================================
+          // SERVER STARTUP
+          // ========================================
+          const PORT = process.env.PORT || 5000;
 
-// ========================================
-// SERVER STARTUP
-// ========================================
-const PORT = process.env.PORT || 5000;
+          // Graceful shutdown handler
+          process.on('SIGTERM', gracefulShutdown);
+          process.on('SIGINT', gracefulShutdown);
 
-// Graceful shutdown handler
-process.on('SIGTERM', gracefulShutdown);
-process.on('SIGINT', gracefulShutdown);
+          async function gracefulShutdown(signal) {
+          Logger.info(`⚠️ ${signal} received, starting graceful shutdown...`);
 
-async function gracefulShutdown(signal) {
-  Logger.info(`⚠️ ${signal} received, starting graceful shutdown...`);
+          wss.clients.forEach((ws) => {
+          ws.close(1001, 'Server shutting down');
+          });
 
-  wss.clients.forEach((ws) => {
-    ws.close(1001, 'Server shutting down');
-  });
+          server.close(() => {
+          Logger.info('HTTP server closed');
+          });
 
-  server.close(() => {
-    Logger.info('HTTP server closed');
-  });
+          if (transcriptionQueueInterval) {
+          clearInterval(transcriptionQueueInterval);
+          }
+          if (wsHeartbeat) {
+          clearInterval(wsHeartbeat);
+          }
 
-  if (transcriptionQueueInterval) {
-    clearInterval(transcriptionQueueInterval);
-  }
-  if (wsHeartbeat) {
-    clearInterval(wsHeartbeat);
-  }
+          if (realtimeChannels.transcriptionChannel) {
+          supabase.removeChannel(realtimeChannels.transcriptionChannel);
+          }
+          if (realtimeChannels.summaryChannel) {
+          supabase.removeChannel(realtimeChannels.summaryChannel);
+          }
 
-  if (realtimeChannels.transcriptionChannel) {
-    supabase.removeChannel(realtimeChannels.transcriptionChannel);
-  }
-  if (realtimeChannels.summaryChannel) {
-    supabase.removeChannel(realtimeChannels.summaryChannel);
-  }
+          await new Promise(resolve => setTimeout(resolve, 5000));
 
-  await new Promise(resolve => setTimeout(resolve, 5000));
+          Logger.info('Graceful shutdown complete');
+          process.exit(0);
+          }
 
-  Logger.info('Graceful shutdown complete');
-  process.exit(0);
-}
+          // Only start server if not in test mode
+          if (process.env.NODE_ENV !== 'test') {
+          server.listen(PORT, '0.0.0.0', () => {
+          Logger.critical('============================================');
+          Logger.success('🚀 Car Crash Lawyer AI System v4.5.0');
+          Logger.success('✅ Database Consistency Tools Integrated');
+          Logger.success('✅ Enhanced User ID Management Active');
+          Logger.critical('============================================');
+          Logger.info(`🌐 Server: http://localhost:${PORT}`);
+          Logger.info('🔑 API Authentication: DEVELOPMENT MODE');
+          Logger.info('🗄️ Supabase: ' + (supabaseEnabled ? 'CONNECTED' : 'DISABLED'));
+          Logger.info('🤖 OpenAI: ' + (process.env.OPENAI_API_KEY ? 'CONFIGURED' : 'DISABLED'));
+          Logger.info('🔄 Transcription Queue: ' + (transcriptionQueueInterval ? 'RUNNING' : 'DISABLED'));
+          Logger.info('🔌 WebSocket: ACTIVE');
+          Logger.info('🎤 Recording Interface: /transcription-status.html');
 
-// Only start server if not in test mode
-if (process.env.NODE_ENV !== 'test') {
-  server.listen(PORT, '0.0.0.0', () => {
-    Logger.critical('============================================');
-    Logger.success('🚀 Car Crash Lawyer AI System v4.4.0');
-    Logger.success('✅ Simplified development mode');
-    Logger.success('✅ Authentication disabled for development');
-    Logger.success('✅ All endpoints accessible');
-    Logger.critical('============================================');
-    Logger.info('🔑 API Authentication: DEVELOPMENT MODE');
-    Logger.info('🗄️ Supabase: CONNECTED');
-    Logger.info('🤖 OpenAI: CONFIGURED');
-    Logger.info('🔄 Transcription Queue: RUNNING');
-    Logger.info('🔌 WebSocket: ACTIVE');
-    Logger.info('🎤 Recording Interface: /transcription-status.html');
-    Logger.info('✅ Temp ID Blocking: ENABLED');
+          Logger.info('📍 NEW Database Tools:');
+          Logger.success('  - GET /api/debug/user/:userId/consistency');
+          Logger.success('  - POST /api/admin/fix-user-data/:userId');
+          Logger.success('  - GET /api/user/:userId/complete-data');
+          Logger.success('  - GET /api/user/:userId/pdf-data');
+          Logger.success('  - GET /api/admin/users/search');
 
-    Logger.info('📍 Working webhook endpoints (NO AUTH):');
-    Logger.success('  - POST /webhook/signup - Process Typeform signups');
-    Logger.success('  - POST /webhook/incident-report - Process incident reports');
-    Logger.success('  - ALL /webhook/test - Test endpoint (any method)');
-    Logger.success('  - GET /webhook/config-test - Configuration test');
+          Logger.info('📍 Webhook endpoints (NO AUTH):');
+          Logger.success('  - POST /webhook/signup');
+          Logger.success('  - POST /webhook/incident-report');
+          Logger.success('  - ALL /webhook/test');
 
-    Logger.info('📍 API endpoints (API key required):');
-    Logger.info('  - POST /api/generate-legal-narrative - Generate narratives');
-    Logger.info('  - GET /api/legal-narratives/:userId - Get saved narratives');
-    Logger.info('  - POST /api/whisper/transcribe - Process audio');
-    Logger.info('  - GET /api/key-status - API key configuration status');
-    Logger.info('  - GET /health - System health check (no auth required)');
+          Logger.success('✅ System ready with enhanced database tools');
+          console.log('✅ Enhanced backend user ID management loaded');
+          console.log('✅ Database consistency and debugging tools loaded');
+          });
+          }
 
-    if (SHARED_KEY) {
-      Logger.success(`🔑 API Key Authentication: ENABLED (${SHARED_KEY.substring(0, 8)}...)`);
-    } else {
-      if (process.env.NODE_ENV === 'production') {
-        Logger.critical('⚠️ CRITICAL: No API_KEY set in production - API endpoints will reject requests');
-      } else {
-        Logger.warn('⚠️ WARNING: No API_KEY set in development - API endpoints allow unrestricted access');
-      }
-    }
-
-    Logger.success('✅ System ready for development');
-    Logger.success('📝 Ready for Typeform webhook integration');
-  });
-}
-
-// Export for testing
-module.exports = {
-  app,
-  server,
-  UUIDUtils,
-  Validator,
-  Logger
-};
+          // Export for testing
+          module.exports = {
+          app,
+          server,
+          UUIDUtils,
+          Validator,
+          Logger,
+          validateBackendUserId,
+          extractAndValidateUserId,
+          createDatabaseUserObject
+          };
