@@ -892,14 +892,15 @@ app.use('/api/*', (req, res, next) => {
     '/api/validate-user',
     '/api/debug/user-id-test',
     '/api/debug/users',
-    '/api/debug/find-user'
+    '/api/debug/find-user',
+    '/api/create-user' // Allow create-user without API key
   ];
-  
+
   if (publicPaths.some(path => req.path.startsWith(path)) || 
       req.path.startsWith('/api/debug/')) {
     return next();
   }
-  
+
   return checkApiKey(req, res, next);
 });
 
@@ -987,7 +988,9 @@ function checkApiKey(req, res, next) {
     '/api/debug/users',
     '/api/debug/find-user',
     '/status',
-    '/'
+    '/',
+    '/api/validate-user', // Allow validate-user without API key
+    '/api/create-user' // Allow create-user without API key
   ];
 
   if (allowedPaths.includes(req.path) || req.path.startsWith('/api/debug/')) {
@@ -3315,7 +3318,203 @@ app.post('/api/debug/user-id-test', (req, res) => {
   });
 });
 
-// Enhanced debug endpoint with consistency check integration
+// ========================================
+// USER VALIDATION ENDPOINT
+// ========================================
+
+// User validation endpoint with enhanced debugging and flexible matching
+app.post('/api/validate-user', async (req, res) => {
+    try {
+        const { username } = req.body;
+
+        Logger.info('=== USER VALIDATION DEBUG START ===');
+        Logger.info('Received username:', username);
+
+        if (!username || typeof username !== 'string') {
+            Logger.warn('Invalid username provided:', { username, type: typeof username });
+            return res.status(400).json({ 
+                valid: false,
+                error: 'Username is required',
+                message: 'Please provide a valid username'
+            });
+        }
+
+        if (!supabaseEnabled) {
+            Logger.warn('Supabase not configured - cannot validate user');
+            return res.status(503).json({
+                valid: false,
+                error: 'Database service not available',
+                message: 'Please try again later'
+            });
+        }
+
+        // Clean the username
+        const cleanUsername = username.trim();
+        Logger.info('Cleaned username:', cleanUsername);
+
+        // Try multiple search strategies
+        let foundUser = null;
+        let matchMethod = null;
+
+        // Strategy 1: Exact match on create_user_id
+        Logger.info('Strategy 1: Exact create_user_id match');
+        const { data: exactMatch } = await supabase
+            .from('user_signup')
+            .select('*')
+            .eq('create_user_id', cleanUsername)
+            .maybeSingle();
+
+        if (exactMatch) {
+            foundUser = exactMatch;
+            matchMethod = 'exact_create_user_id';
+            Logger.success('Found by exact create_user_id match');
+        }
+
+        // Strategy 2: Search by uid field (from create-user endpoint)
+        if (!foundUser) {
+            Logger.info('Strategy 2: UID field search');
+            const { data: uidMatch } = await supabase
+                .from('user_signup')
+                .select('*')
+                .eq('uid', cleanUsername)
+                .maybeSingle();
+
+            if (uidMatch) {
+                foundUser = uidMatch;
+                matchMethod = 'uid_field';
+                Logger.success('Found by uid field');
+            }
+        }
+
+        // Strategy 3: Search by username field (if exists)
+        if (!foundUser) {
+            Logger.info('Strategy 3: Username field search');
+            const { data: usernameMatch } = await supabase
+                .from('user_signup')
+                .select('*')
+                .eq('username', cleanUsername)
+                .maybeSingle();
+
+            if (usernameMatch) {
+                foundUser = usernameMatch;
+                matchMethod = 'username_field';
+                Logger.success('Found by username field');
+            }
+        }
+
+        // Strategy 4: Search by email (if username looks like email)
+        if (!foundUser && cleanUsername.includes('@')) {
+            Logger.info('Strategy 4: Email search');
+            const { data: emailMatch } = await supabase
+                .from('user_signup')
+                .select('*')
+                .eq('email', cleanUsername)
+                .maybeSingle();
+
+            if (emailMatch) {
+                foundUser = emailMatch;
+                matchMethod = 'email_match';
+                Logger.success('Found by email match');
+            }
+        }
+
+        // Strategy 5: Case insensitive searches
+        if (!foundUser) {
+            Logger.info('Strategy 5: Case insensitive searches');
+
+            // Try case insensitive username
+            const { data: caseInsensitiveUsername } = await supabase
+                .from('user_signup')
+                .select('*')
+                .ilike('username', cleanUsername)
+                .maybeSingle();
+
+            if (caseInsensitiveUsername) {
+                foundUser = caseInsensitiveUsername;
+                matchMethod = 'case_insensitive_username';
+                Logger.success('Found by case insensitive username');
+            } else {
+                // Try case insensitive create_user_id
+                const { data: caseInsensitiveId } = await supabase
+                    .from('user_signup')
+                    .select('*')
+                    .ilike('create_user_id', cleanUsername)
+                    .maybeSingle();
+
+                if (caseInsensitiveId) {
+                    foundUser = caseInsensitiveId;
+                    matchMethod = 'case_insensitive_create_user_id';
+                    Logger.success('Found by case insensitive create_user_id');
+                }
+            }
+        }
+
+        if (!foundUser) {
+            Logger.warn('USER NOT FOUND after all strategies');
+
+            // Get some debug info about what users exist
+            const { data: sampleUsers } = await supabase
+                .from('user_signup')
+                .select('create_user_id, uid, username, email, first_name, last_name')
+                .limit(10);
+
+            Logger.info('Sample users in database:', sampleUsers);
+
+            return res.status(404).json({
+                valid: false,
+                error: 'User not found',
+                message: 'No account found with this username. Please check your username or sign up first.',
+                suggestions: sampleUsers?.map(u => u.username || `${u.first_name || ''}_${Math.floor(Math.random() * 1000)}`).filter(Boolean).slice(0, 3) || [],
+                debug: {
+                    searchTerm: cleanUsername,
+                    totalUsersInDb: sampleUsers?.length || 0,
+                    searchStrategies: 5,
+                    sampleUserIds: sampleUsers?.map(u => u.uid || u.create_user_id).slice(0, 3) || []
+                }
+            });
+        }
+
+        Logger.success('USER FOUND:', { 
+            uid: foundUser.uid,
+            create_user_id: foundUser.create_user_id,
+            username: foundUser.username,
+            email: foundUser.email,
+            matchMethod: matchMethod
+        });
+
+        Logger.info('=== USER VALIDATION DEBUG END ===');
+
+        // Return user data - use uid as primary userId if available, fallback to create_user_id
+        const userId = foundUser.uid || foundUser.create_user_id;
+
+        res.json({
+            valid: true,
+            userId: userId,
+            email: foundUser.email,
+            fullName: `${foundUser.first_name || ''} ${foundUser.last_name || ''}`.trim() || foundUser.name || foundUser.full_name,
+            name: foundUser.first_name || foundUser.name,
+            surname: foundUser.last_name || foundUser.surname,
+            username: foundUser.username,
+            debug: {
+                matchMethod: matchMethod,
+                originalUsername: username,
+                foundUserId: userId,
+                hasUid: !!foundUser.uid,
+                hasCreateUserId: !!foundUser.create_user_id
+            }
+        });
+
+    } catch (error) {
+        Logger.error('Validate user error:', error);
+        res.status(500).json({ 
+            valid: false,
+            error: 'Server error',
+            message: 'An error occurred while validating your account. Please try again.',
+            details: error.message
+        });
+    }
+});
+
 app.get('/api/debug/user/:userId', async (req, res) => {
   if (!supabaseEnabled) {
     return res.status(503).json({
