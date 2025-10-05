@@ -495,8 +495,11 @@
       // Check if user is signed in - redirect to sign-in if not
       const userId = sessionStorage.getItem('userId');
       if (!userId) {
+          console.log('ℹ️ User not signed in - redirecting to sign-in page');
           window.location.href = '/sign-in.html';
           return;
+      } else {
+          console.log('✅ User signed in:', userId.substring(0, 8) + '...');
       }
 
       // Load navigation history from sessionStorage
