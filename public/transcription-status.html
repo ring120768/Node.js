@@ -1275,132 +1275,219 @@
         };
 
         // ============================
-        // Error Handling for Missing Typeform User ID
+        // Enhanced User ID Validation (more permissive for Typeform)
+        // ============================
+        function validateTypeformUserId(userId) {
+            if (!userId || typeof userId !== 'string') {
+                console.error('❌ User ID is null, undefined, or not a string:', userId);
+                return false;
+            }
+
+            const cleanUserId = userId.trim();
+
+            // Block obvious test/temporary patterns
+            const blockedPatterns = [
+                'temp_user_', 'test_user_', 'dummy_', 'mock_', 'sample_',
+                'undefined', 'null', 'anonymous', 'guest'
+            ];
+
+            for (const pattern of blockedPatterns) {
+                if (cleanUserId.toLowerCase().includes(pattern.toLowerCase())) {
+                    console.error('❌ Blocked suspicious user ID pattern:', cleanUserId);
+                    return false;
+                }
+            }
+
+            // Accept UUID format (standard Typeform format)
+            const uuidRegex = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
+            if (uuidRegex.test(cleanUserId)) {
+                console.log('✅ Valid Typeform UUID:', cleanUserId.substring(0, 8) + '...');
+                return true;
+            }
+
+            // Accept alphanumeric IDs (some Typeform integrations use these)
+            const alphanumericRegex = /^[a-zA-Z0-9][a-zA-Z0-9_-]{2,63}$/;
+            if (alphanumericRegex.test(cleanUserId)) {
+                console.log('✅ Valid alphanumeric user ID:', cleanUserId);
+                return true;
+            }
+
+            // Accept development/testing IDs in non-production
+            const hostname = window.location.hostname;
+            const isDevelopment = hostname.includes('replit') || 
+                                 hostname === 'localhost' || 
+                                 window.location.search.includes('debug=true');
+
+            if (isDevelopment) {
+                const devRegex = /^(dev_|test_|local_)[a-zA-Z0-9_-]{1,50}$/;
+                if (devRegex.test(cleanUserId)) {
+                    console.log('✅ Valid development user ID:', cleanUserId);
+                    return true;
+                }
+            }
+
+            console.error('❌ Invalid user ID format:', cleanUserId);
+            return false;
+        }
+
+        // ============================
+        // Enhanced session initialization with better error handling
+        // ============================
+        async function initializeSession() {
+            console.log('🔄 Initializing session with enhanced user ID management...');
+
+            try {
+                // Extract parameters from URL with enhanced handling
+                const urlParams = new URLSearchParams(window.location.search);
+                console.log('🔍 All URL parameters:', Object.fromEntries(urlParams.entries()));
+
+                // Try multiple parameter names for user ID (Typeform compatibility)
+                const userIdSources = [
+                    'create_user_id',
+                    'user_id', 
+                    'userId',
+                    'typeform_user_id',
+                    'form_user_id'
+                ];
+
+                let candidateUserId = null;
+                let userIdSource = null;
+
+                // Check URL parameters first
+                for (const paramName of userIdSources) {
+                    const value = urlParams.get(paramName);
+                    if (value && value.trim()) {
+                        candidateUserId = value.trim();
+                        userIdSource = `url_param_${paramName}`;
+                        console.log(`📋 Found user ID candidate from ${paramName}:`, candidateUserId);
+                        break;
+                    }
+                }
+
+                // Fallback to localStorage if not in URL
+                if (!candidateUserId) {
+                    candidateUserId = localStorage.getItem('create_user_id');
+                    if (candidateUserId) {
+                        userIdSource = 'localStorage';
+                        console.log('📋 Found user ID candidate from localStorage:', candidateUserId);
+                    }
+                }
+
+                // Clean up any template placeholders
+                if (candidateUserId && candidateUserId.includes('{{')) {
+                    console.warn('⚠️ Template placeholder detected, clearing:', candidateUserId);
+                    candidateUserId = null;
+                }
+
+                // Validate the user ID
+                if (!candidateUserId) {
+                    console.error('❌ No user ID found in URL parameters or localStorage');
+
+                    // Check if we're in development mode
+                    const isDevelopment = window.location.hostname.includes('replit') || 
+                                         window.location.hostname === 'localhost' ||
+                                         window.location.search.includes('debug=true');
+
+                    // Backend now requires proper UUIDs in production - no dev patterns allowed
+                    console.error('❌ No user ID found - redirecting to proper authentication flow');
+                    showTranscriptionServiceError();
+                    return null;
+                }
+
+                // Final validation
+                if (!validateTypeformUserId(candidateUserId)) {
+                    console.error('❌ User ID validation failed:', candidateUserId);
+                    showTranscriptionServiceError();
+                    return null;
+                }
+
+                // Set the validated user ID
+                state.userId = candidateUserId;
+
+                // Store for persistence and tracking
+                localStorage.setItem('create_user_id', state.userId);
+                localStorage.setItem('user_id_source', userIdSource);
+                localStorage.setItem('user_id_timestamp', new Date().toISOString());
+
+                console.log('✅ User ID validation successful:', {
+                    userId: state.userId,
+                    source: userIdSource,
+                    timestamp: new Date().toISOString()
+                });
+
+                // Extract incident report ID if available
+                state.incidentReportId = urlParams.get('incident_report_id') || 
+                                        urlParams.get('incident_id') ||
+                                        localStorage.getItem('current_incident_id');
+
+                if (state.incidentReportId) {
+                    localStorage.setItem('current_incident_id', state.incidentReportId);
+                    console.log('📋 Incident ID found:', state.incidentReportId);
+                }
+
+                // Check consent status
+                const consentGiven = urlParams.get('consent_given') === 'true';
+                if (consentGiven) {
+                    state.hasConsent = true;
+                    localStorage.setItem('gdpr_consent', 'true');
+                    console.log('✅ Consent already given');
+                }
+
+                // Update UI with session info
+                updateUserInfoBadge();
+
+                console.log('✅ Session initialized successfully:', {
+                    userId: state.userId,
+                    incidentId: state.incidentReportId,
+                    source: userIdSource,
+                    consentGiven: consentGiven,
+                    fullUrl: window.location.href
+                });
+
+                return state.userId;
+
+            } catch (error) {
+                console.error('❌ Error during session initialization:', error);
+                showStatus(`Initialization failed: ${error.message}`, 'error');
+                return null;
+            }
+        }
+
+        // ============================
+        // Enhanced error display for missing user ID
         // ============================
         function showTranscriptionServiceError() {
             const container = document.querySelector('.container');
             container.innerHTML = `
                 <div style="text-align: center; padding: 40px;">
-                    <h1 style="color: #ef4444;">🚫 Access Denied</h1>
+                    <h1 style="color: #ef4444;">🚫 User ID Required</h1>
                     <div style="background: #fee2e2; border: 1px solid #fecaca; border-radius: 8px; padding: 20px; margin: 20px 0;">
                         <h3 style="color: #dc2626; margin: 0 0 15px 0;">Missing Typeform User ID</h3>
-                        <p style="color: #991b1b; margin: 0;">
-                            This transcription service requires a valid user ID from our Typeform submission. 
-                            Please return to the original form to complete your incident report properly.
+                        <p style="color: #991b1b; margin: 0 0 15px 0;">
+                            This transcription service requires a valid user ID from Typeform to link your recording 
+                            with your incident report data.
+                        </p>
+                        <div style="background: #fff; border: 1px solid #fecaca; border-radius: 4px; padding: 15px; margin: 15px 0; text-align: left;">
+                            <h4 style="margin: 0 0 10px 0; color: #dc2626;">Expected URL format:</h4>
+                            <code style="color: #059669; word-break: break-all;">
+                                /transcription-status.html?create_user_id=YOUR_TYPEFORM_USER_ID
+                            </code>
+                        </div>
+                        <p style="color: #991b1b; margin: 15px 0 0 0; font-size: 14px;">
+                            Please return to the original Typeform and complete the process properly, 
+                            or contact support if you continue to see this message.
                         </p>
                     </div>
                     <div style="margin-top: 30px;">
                         <button onclick="window.location.href='/'" class="btn btn-primary">
-                            Return to Home
+                            🏠 Return to Home
+                        </button>
+                        <button onclick="window.location.reload()" class="btn btn-ghost" style="margin-left: 10px;">
+                            🔄 Retry
                         </button>
                     </div>
                 </div>
             `;
-        }
-
-        // ============================
-        // User ID and Session Management  
-        // ============================
-
-        // Accept all user IDs (validation removed)
-        function validateUserId(userId) {
-            return true; // Accept all user IDs
-        }
-
-        async function initializeSession() {
-            // Extract parameters from URL
-            const urlParams = new URLSearchParams(window.location.search);
-
-            console.log('🔍 Checking URL parameters:', Object.fromEntries(urlParams.entries()));
-
-            // Try multiple parameter names for compatibility with webhooks
-            let candidateUserId = urlParams.get('create_user_id') || 
-                                 urlParams.get('user_id') || 
-                                 urlParams.get('userId') ||
-                                 localStorage.getItem('create_user_id');
-
-            console.log('📋 Found user ID candidate:', candidateUserId);
-
-            // Clean up any template placeholders
-            if (candidateUserId && candidateUserId.includes('{{')) {
-                console.warn('Template placeholder detected in user ID, removing:', candidateUserId);
-                candidateUserId = null;
-            }
-
-            // Accept the user ID
-            state.userId = candidateUserId;
-
-            // Check if returning from consent page
-            const consentGiven = urlParams.get('consent_given') === 'true';
-            if (consentGiven) {
-                state.hasConsent = true;
-                localStorage.setItem('gdpr_consent', 'true');
-            }
-
-            // Only require user ID if not in development/test mode
-            if (!state.userId) {
-                console.warn('⚠️ No create_user_id found from Typeform');
-                
-                // Check if we're in development mode (allow bypassing for testing)
-                const isDevelopment = window.location.hostname.includes('replit') || 
-                                    window.location.hostname === 'localhost' ||
-                                    window.location.search.includes('debug=true');
-                
-                if (!isDevelopment) {
-                    console.error('CRITICAL: No valid Typeform create_user_id found');
-                    showTranscriptionServiceError();
-                    return null;
-                }
-                
-                // Generate temporary ID for development/testing only
-                state.userId = `dev_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`;
-                console.warn('🔧 Development mode: Generated temporary user ID:', state.userId);
-            }
-
-            // Relaxed validation - accept various formats
-            if (state.userId) {
-                // Block only clearly problematic patterns
-                const blockedPatterns = ['temp_user_', 'undefined', 'null', 'test_temp'];
-                const isBlocked = blockedPatterns.some(pattern => 
-                    state.userId.toLowerCase().includes(pattern.toLowerCase())
-                );
-                
-                if (isBlocked) {
-                    console.error('Blocked suspicious user ID pattern:', state.userId);
-                    showTranscriptionServiceError();
-                    return null;
-                }
-                
-                console.log('✅ User ID accepted:', state.userId);
-            }
-
-            // Store user ID for persistence
-            localStorage.setItem('create_user_id', state.userId);
-
-            // Extract incident report ID if available
-            state.incidentReportId = urlParams.get('incident_report_id') || 
-                                    urlParams.get('incident_id') ||
-                                    localStorage.getItem('current_incident_id');
-
-            if (state.incidentReportId) {
-                localStorage.setItem('current_incident_id', state.incidentReportId);
-            }
-
-            // Update UI with session info
-            updateUserInfoBadge();
-
-            console.log('✅ Session initialized successfully:', {
-                userId: state.userId,
-                incidentId: state.incidentReportId,
-                source: urlParams.get('source') || 'direct',
-                consentGiven: consentGiven,
-                config: appConfig,
-                urlSearch: window.location.search,
-                fullUrl: window.location.href,
-                referrer: document.referrer
-            });
-
-            return state.userId; // Return userId for further processing
         }
 
         function updateUserInfoBadge() {
@@ -1968,29 +2055,39 @@
         }
 
         // ============================
-        // Upload and Processing - FIXED: Removed GDPR Check
+        // Enhanced upload function with proper user ID handling
         // ============================
         async function uploadAndProcess(audioBlob) {
-            // REMOVED GDPR check - consent already handled at recording start
+            console.log('🚀 Starting upload with user ID:', state.userId);
+
+            if (!state.userId) {
+                showStatus('❌ No user ID available for upload', 'error');
+                return;
+            }
 
             const formData = new FormData();
             formData.append('audio', audioBlob, 'recording.webm');
-            formData.append('create_user_id', state.userId);
+            formData.append('create_user_id', state.userId); // Primary field for Supabase
+            formData.append('user_id', state.userId); // Backup field for compatibility
 
             if (state.incidentReportId) {
                 formData.append('incident_report_id', state.incidentReportId);
             }
 
-            try {
-                showStatus('Uploading audio...', 'info');
-                state.isProcessing = true;
-                console.log('Upload started, isProcessing set to true');
+            // Add source tracking for debugging
+            formData.append('source', 'transcription_page');
+            formData.append('user_id_source', localStorage.getItem('user_id_source') || 'unknown');
 
-                // Add API key from config if available
+            try {
+                showStatus('📤 Uploading audio...', 'info');
+                state.isProcessing = true;
+
                 const headers = {};
                 if (appConfig?.apiKey) {
                     headers['X-Api-Key'] = appConfig.apiKey;
                 }
+
+                console.log('📤 Uploading to /api/whisper/transcribe with user ID:', state.userId);
 
                 const response = await fetch('/api/whisper/transcribe', {
                     method: 'POST',
@@ -2007,24 +2104,26 @@
                 if (result.success && result.queueId) {
                     state.currentQueueId = result.queueId;
 
-                    console.log('Upload successful. Queue ID:', state.currentQueueId);
+                    console.log('✅ Upload successful:', {
+                        queueId: state.currentQueueId,
+                        userId: result.create_user_id,
+                        audioUrl: result.audioUrl
+                    });
 
-                    // Subscribe to updates for this queue ID
-                    if (state.ws && state.ws.readyState === WebSocket.OPEN) {
-                        state.ws.send(JSON.stringify({
-                            type: 'subscribe',
-                            queueId: state.currentQueueId,
-                            userId: state.userId
-                        }));
+                    // Verify user ID matches
+                    if (result.create_user_id !== state.userId) {
+                        console.warn('⚠️ User ID mismatch:', {
+                            sent: state.userId,
+                            received: result.create_user_id
+                        });
                     }
 
-                    // Update UI
+                    // Update progress
                     updateProgress('step-upload', 'complete');
                     updateProgress('step-transcribe', 'active');
+                    showStatus('✅ Upload successful! Processing transcription...', 'success');
 
-                    showStatus('Upload successful! Processing transcription...', 'success');
-
-                    // Start polling as fallback if WebSocket is not connected
+                    // Start polling for status updates
                     if (!state.ws || state.ws.readyState !== WebSocket.OPEN) {
                         startPolling();
                     }
@@ -2034,14 +2133,13 @@
                 }
 
             } catch (error) {
-                console.error('Upload error:', error);
+                console.error('❌ Upload error:', error);
                 state.isProcessing = false;
-                console.log('Upload error, isProcessing set to false');
 
                 if (!navigator.onLine) {
-                    showStatus('No internet connection. Please check your connection and try again.', 'error');
+                    showStatus('🌐 No internet connection. Please check your connection and try again.', 'error');
                 } else {
-                    showStatus(`Upload failed: ${error.message}`, 'error');
+                    showStatus(`❌ Upload failed: ${error.message}`, 'error');
                 }
 
                 document.getElementById('retryButton').style.display = 'inline-block';
@@ -2534,6 +2632,9 @@
         window.addEventListener('unhandledrejection', (event) => {
             console.error('Unhandled promise rejection:', event.reason);
         });
+
+        // Enhanced user ID management loaded
+        console.log('✅ Enhanced user ID management loaded');
     </script>
 </body>
 </html>
