@@ -858,7 +858,7 @@
 
         <!-- User Info Badge -->
         <div class="user-info-badge" id="userInfoBadge">
-            Session ID: <strong id="userIdDisplay"></strong>
+            User: <strong id="userIdDisplay"></strong>
             <span id="incidentDisplay" style="display: none;"> | Incident: <strong id="incidentIdDisplay"></strong></span>
         </div>
 
@@ -1284,14 +1284,20 @@
                     <h1 style="color: #ef4444;">🚫 Access Denied</h1>
                     <div style="background: #fee2e2; border: 1px solid #fecaca; border-radius: 8px; padding: 20px; margin: 20px 0;">
                         <h3 style="color: #dc2626; margin: 0 0 15px 0;">Missing Typeform User ID</h3>
-                        <p style="color: #991b1b; margin: 0;">
+                        <p style="color: #991b1b; margin: 0 0 15px 0;">
                             This transcription service requires a valid user ID from our Typeform submission. 
-                            Please return to the original form to complete your incident report properly.
+                            You can only access this page after completing the incident report form.
+                        </p>
+                        <p style="color: #991b1b; margin: 0; font-size: 14px;">
+                            Expected URL format: transcription-status.html?create_user_id=YOUR_TYPEFORM_ID
                         </p>
                     </div>
                     <div style="margin-top: 30px;">
                         <button onclick="window.location.href='/'" class="btn btn-primary">
                             Return to Home
+                        </button>
+                        <button onclick="window.location.href='/incident.html'" class="btn btn-ghost" style="margin-left: 10px;">
+                            Start Incident Report
                         </button>
                     </div>
                 </div>
@@ -1337,41 +1343,43 @@
                 localStorage.setItem('gdpr_consent', 'true');
             }
 
-            // Only require user ID if not in development/test mode
+            // CRITICAL: Only accept valid user IDs from Typeform
             if (!state.userId) {
-                console.warn('⚠️ No create_user_id found from Typeform');
-                
-                // Check if we're in development mode (allow bypassing for testing)
-                const isDevelopment = window.location.hostname.includes('replit') || 
-                                    window.location.hostname === 'localhost' ||
-                                    window.location.search.includes('debug=true');
-                
-                if (!isDevelopment) {
-                    console.error('CRITICAL: No valid Typeform create_user_id found');
-                    showTranscriptionServiceError();
-                    return null;
-                }
-                
-                // Generate temporary ID for development/testing only
-                state.userId = `dev_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`;
-                console.warn('🔧 Development mode: Generated temporary user ID:', state.userId);
+                console.error('CRITICAL: No create_user_id found from Typeform');
+                showTranscriptionServiceError();
+                return null;
             }
 
-            // Relaxed validation - accept various formats
+            // Verify user exists in database
             if (state.userId) {
-                // Block only clearly problematic patterns
-                const blockedPatterns = ['temp_user_', 'undefined', 'null', 'test_temp'];
-                const isBlocked = blockedPatterns.some(pattern => 
-                    state.userId.toLowerCase().includes(pattern.toLowerCase())
-                );
-                
-                if (isBlocked) {
-                    console.error('Blocked suspicious user ID pattern:', state.userId);
+                try {
+                    console.log('🔍 Verifying user exists in database:', state.userId);
+                    
+                    const verifyResponse = await fetch(`/api/verify-user/${state.userId}`);
+                    const verifyData = await verifyResponse.json();
+                    
+                    if (!verifyData.exists) {
+                        console.error('User not found in database:', state.userId);
+                        showTranscriptionServiceError();
+                        return null;
+                    }
+                    
+                    console.log('✅ User verified in database:', verifyData.user);
+                    
+                    // Store verified user data
+                    if (verifyData.user?.name) {
+                        localStorage.setItem('user_name', verifyData.user.name);
+                    }
+                    if (verifyData.incident_id) {
+                        state.incidentReportId = verifyData.incident_id;
+                        localStorage.setItem('current_incident_id', verifyData.incident_id);
+                    }
+                    
+                } catch (error) {
+                    console.error('Error verifying user:', error);
                     showTranscriptionServiceError();
                     return null;
                 }
-                
-                console.log('✅ User ID accepted:', state.userId);
             }
 
             // Store user ID for persistence
@@ -1411,11 +1419,18 @@
 
             if (state.userId) {
                 badge.classList.add('visible');
-                // Show shortened user ID for privacy
-                const displayId = state.userId.length > 12 ? 
-                    state.userId.substring(0, 12) + '...' : 
-                    state.userId;
-                userDisplay.textContent = displayId;
+                
+                // Try to show user name if available, otherwise show shortened user ID
+                const userName = localStorage.getItem('user_name');
+                if (userName) {
+                    userDisplay.textContent = userName;
+                } else {
+                    // Show shortened user ID for privacy
+                    const displayId = state.userId.length > 12 ? 
+                        state.userId.substring(0, 12) + '...' : 
+                        state.userId;
+                    userDisplay.textContent = displayId;
+                }
 
                 if (state.incidentReportId) {
                     incidentDisplay.style.display = 'inline';
