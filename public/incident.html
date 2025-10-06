@@ -1206,22 +1206,22 @@
                 continueBtn.disabled = true;
                 continueBtn.textContent = 'Preparing...';
 
-                // Get the current session user ID from the logs
+                console.log('🔄 Continue button clicked - preparing to go to safety check');
+
+                // Get the current session user ID from multiple sources
                 let userId = sessionStorage.getItem('userId') || 
                            sessionStorage.getItem('create_user_id') ||
                            localStorage.getItem('create_user_id');
 
-                // If no user ID exists, redirect to sign-in first
+                // If no user ID exists, create a temporary session ID for the flow
                 if (!userId) {
-                    console.warn('⚠️ No authenticated user found, redirecting to sign-in');
-                    // Store current page for redirect after sign-in
-                    sessionStorage.setItem('redirectAfterSignIn', '/incident.html');
-                    sessionStorage.setItem('pendingAction', 'continue_to_safety_check');
-                    window.location.href = '/sign-in.html';
-                    return;
+                    console.warn('⚠️ No user ID found, creating temporary session');
+                    userId = 'temp_' + Date.now() + '_' + Math.random().toString(36).substr(2, 9);
+                    sessionStorage.setItem('create_user_id', userId);
+                    sessionStorage.setItem('userId', userId);
                 }
 
-                console.log('🔑 Using authenticated user ID:', userId.substring(0, 8) + '...');
+                console.log('🔑 Using user ID:', userId.substring(0, 8) + '...');
 
                 // Store incident data for safety check page
                 const incidentData = {
@@ -1230,45 +1230,34 @@
                     what3words: what3wordsData,
                     timestamp: new Date().toISOString(),
                     address: document.getElementById('addressText')?.textContent || 'Location not captured',
-                    voiceTranscription: voiceTranscription || null
+                    voiceTranscription: voiceTranscription || null,
+                    source: 'incident_page'
                 };
 
+                console.log('💾 Storing incident data for safety check:', incidentData);
                 sessionStorage.setItem('incidentData', JSON.stringify(incidentData));
                 sessionStorage.setItem('userAuthenticated', 'true');
                 sessionStorage.setItem('authTime', new Date().toISOString());
 
-                // Check if user prefers Typeform or native flow
-                const useTypeform = localStorage.getItem('preferTypeform') === 'true';
-                
-                if (useTypeform && userId) {
-                    continueBtn.textContent = 'Opening Typeform...';
-                    
-                    try {
-                        if (typeof window.redirectToTypeform === 'function') {
-                            await window.redirectToTypeform('incident', userId, {
-                                openInNewTab: false,
-                                source: 'incident_continue_button'
-                            });
-                            return;
-                        }
-                    } catch (typeformError) {
-                        console.error('❌ Typeform redirect failed, using native flow:', typeformError);
-                        continueBtn.textContent = 'Continuing to safety check...';
-                    }
-                }
-
-                // Redirect to safety check page (proper flow)
+                // Always redirect to safety check page (proper flow)
                 continueBtn.textContent = 'Going to Safety Check...';
-                console.log('🛡️ Redirecting to safety check page');
-                window.location.href = 'safety-check.html';
+                console.log('🛡️ Redirecting to safety-check.html');
+                
+                // Add a small delay to show the button state change
+                setTimeout(() => {
+                    window.location.href = 'safety-check.html';
+                }, 500);
 
             } catch (error) {
                 console.error('❌ Error in continue flow:', error);
                 
-                // On error, redirect to sign-in with context
-                sessionStorage.setItem('redirectAfterSignIn', '/incident.html');
-                sessionStorage.setItem('errorMessage', 'Please sign in to continue with your incident report');
-                window.location.href = '/sign-in.html?error=authentication_required';
+                // Reset button and show error
+                const continueBtn = document.getElementById('continueBtn');
+                continueBtn.disabled = false;
+                continueBtn.textContent = 'Continue to Safety Check →';
+                
+                // Show error message to user
+                alert('Error preparing to continue. Please try again.');
             }
         }
 
