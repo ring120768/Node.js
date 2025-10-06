@@ -21,6 +21,12 @@ const rateLimit = require('express-rate-limit');
 // Import Supabase client
 const { createClient } = require('@supabase/supabase-js');
 
+// ========================================
+// AUTH IMPORTS - NEW
+// ========================================
+const AuthService = require('./lib/authService');
+const { requireAuth, optionalAuth } = require('./lib/authMiddleware');
+
 // Import PDF generation modules - with error handling
 let fetchAllData, generatePDF, sendEmails;
 try {
@@ -535,6 +541,20 @@ async function initializeGDPRTables() {
 }
 
 supabaseEnabled = initSupabase();
+
+// ========================================
+// INITIALIZE AUTH SERVICE - NEW
+// ========================================
+let authService = null;
+if (process.env.SUPABASE_ANON_KEY && supabaseEnabled) {
+  authService = new AuthService(
+    process.env.SUPABASE_URL,
+    process.env.SUPABASE_ANON_KEY
+  );
+  Logger.success('✅ Supabase Auth service initialized');
+} else {
+  Logger.warn('⚠️ Auth service not initialized - missing SUPABASE_ANON_KEY');
+}
 
 // --- GDPR ACTIVITY LOGGING ---
 async function logGDPRActivity(userId, activityType, details, req = null) {
@@ -1910,7 +1930,8 @@ app.get('/api/config', (req, res) => {
       realtime: supabaseEnabled && realtimeChannels.transcriptionChannel ? true : false,
       transcription: !!process.env.OPENAI_API_KEY,
       ai_summary: !!process.env.OPENAI_API_KEY,
-      pdf_generation: !!(fetchAllData && generatePDF && sendEmails)
+      pdf_generation: !!(fetchAllData && generatePDF && sendEmails),
+      auth: !!authService
     }
   });
 });
@@ -1934,7 +1955,8 @@ app.get('/health', async (req, res) => {
         users: userSessions.size
       },
       gdprCompliant: true,
-      what3words: externalServices.what3words  // FIXED: No duplicate declaration
+      what3words: externalServices.what3words,
+      auth: !!authService
     },
     fixes: {
       bufferToStream: 'FIXED - Using Readable.from() with knownLength',
@@ -1942,11 +1964,201 @@ app.get('/health', async (req, res) => {
       syntaxError: 'FIXED - Removed duplicate what3words declaration',
       trustProxy: 'FIXED - Express trust proxy enabled',
       columnMapping: 'FIXED - Database column names corrected',
-      schemaRefresh: 'FIXED - Schema cache refreshed on init'
+      schemaRefresh: 'FIXED - Schema cache refreshed on init',
+      authSystem: 'ADDED - Full authentication system integrated'
     }
   };
 
   res.json(status);
+});
+
+// ========================================
+// SUPABASE AUTH ENDPOINTS - NEW
+// ========================================
+
+// Signup
+app.post('/api/auth/signup', async (req, res) => {
+  try {
+    const { email, password, fullName, phone } = req.body;
+
+    if (!email || !password || !fullName) {
+      return res.status(400).json({
+        success: false,
+        error: 'Missing required fields'
+      });
+    }
+
+    if (password.length < 8) {
+      return res.status(400).json({
+        success: false,
+        error: 'Password must be at least 8 characters'
+      });
+    }
+
+    if (!authService) {
+      return res.status(503).json({
+        success: false,
+        error: 'Auth service not configured'
+      });
+    }
+
+    Logger.info('Auth signup:', email);
+
+    const authResult = await authService.signUp(email, password, {
+      full_name: fullName,
+      phone: phone
+    });
+
+    if (!authResult.success) {
+      return res.status(400).json({
+        success: false,
+        error: authResult.error
+      });
+    }
+
+    const userId = authResult.userId;
+    const username = email.split('@')[0].replace(/[^a-zA-Z0-9]/g, '') + '_' + Math.floor(Math.random() * 1000000);
+
+    await supabase.from('user_signup').insert({
+      uid: userId,
+      create_user_id: userId,
+      email: email,
+      username: username,
+      first_name: fullName.split(' ')[0] || '',
+      last_name: fullName.split(' ').slice(1).join(' ') || '',
+      phone: phone || null,
+      created_at: new Date().toISOString(),
+      source: 'auth_signup',
+      verified: true
+    });
+
+    res.cookie('access_token', authResult.session.access_token, {
+      httpOnly: true,
+      secure: process.env.NODE_ENV === 'production',
+      sameSite: 'lax',
+      maxAge: 7 * 24 * 60 * 60 * 1000
+    });
+
+    res.json({
+      success: true,
+      user: {
+        id: userId,
+        email: email,
+        username: username,
+        fullName: fullName
+      },
+      session: {
+        access_token: authResult.session.access_token
+      }
+    });
+
+  } catch (error) {
+    Logger.error('Signup error:', error);
+    res.status(500).json({ success: false, error: 'Server error' });
+  }
+});
+
+// Login
+app.post('/api/auth/login', async (req, res) => {
+  try {
+    const { email, password, rememberMe } = req.body;
+
+    if (!email || !password) {
+      return res.status(400).json({
+        success: false,
+        error: 'Missing credentials'
+      });
+    }
+
+    if (!authService) {
+      return res.status(503).json({
+        success: false,
+        error: 'Auth service not configured'
+      });
+    }
+
+    const authResult = await authService.signIn(email, password);
+
+    if (!authResult.success) {
+      return res.status(401).json({
+        success: false,
+        error: 'Invalid credentials'
+      });
+    }
+
+    const { data: userData } = await supabase
+      .from('user_signup')
+      .select('*')
+      .eq('uid', authResult.userId)
+      .single();
+
+    const cookieMaxAge = rememberMe ? 7 * 24 * 60 * 60 * 1000 : 24 * 60 * 60 * 1000;
+
+    res.cookie('access_token', authResult.session.access_token, {
+      httpOnly: true,
+      secure: process.env.NODE_ENV === 'production',
+      sameSite: 'lax',
+      maxAge: cookieMaxAge
+    });
+
+    res.json({
+      success: true,
+      user: {
+        id: authResult.userId,
+        email: authResult.user.email,
+        username: userData?.username,
+        fullName: `${userData?.first_name || ''} ${userData?.last_name || ''}`.trim()
+      },
+      session: {
+        access_token: authResult.session.access_token
+      }
+    });
+
+  } catch (error) {
+    Logger.error('Login error:', error);
+    res.status(500).json({ success: false, error: 'Server error' });
+  }
+});
+
+// Logout
+app.post('/api/auth/logout', async (req, res) => {
+  try {
+    if (authService) await authService.signOut();
+    res.clearCookie('access_token');
+    res.json({ success: true });
+  } catch (error) {
+    Logger.error('Logout error:', error);
+    res.status(500).json({ success: false, error: 'Logout failed' });
+  }
+});
+
+// Session check
+app.get('/api/auth/session', optionalAuth, async (req, res) => {
+  try {
+    if (!req.user) {
+      return res.json({ authenticated: false, user: null });
+    }
+
+    const { data: userData } = await supabase
+      .from('user_signup')
+      .select('*')
+      .eq('uid', req.userId)
+      .single();
+
+    res.json({
+      authenticated: true,
+      user: {
+        id: req.userId,
+        email: req.user.email,
+        username: userData?.username,
+        fullName: `${userData?.first_name || ''} ${userData?.last_name || ''}`.trim()
+      }
+    });
+
+  } catch (error) {
+    Logger.error('Session check error:', error);
+    res.status(500).json({ authenticated: false });
+  }
 });
 
 // --- DEBUG ENDPOINT FOR USER DATA (WITH GDPR LOGGING) ---
@@ -2259,7 +2471,7 @@ app.get('/', (req, res) => {
 <body>
     <div class="container">
         <h1>🚗 Car Crash Lawyer AI - GDPR Compliant System <span class="gdpr-badge">GDPR COMPLIANT</span></h1>
-        <p class="status">✅ Server is running - All fixes applied</p>
+        <p class="status">✅ Server is running - All fixes applied + Auth System</p>
 
         <div class="section">
             <h2>🔧 Critical Fixes Applied:</h2>
@@ -2272,6 +2484,7 @@ app.get('/', (req, res) => {
                 <p>✅ Express trust proxy enabled</p>
                 <p>✅ Database column mapping corrected</p>
                 <p>✅ Schema cache refreshed on initialization</p>
+                <p>✅ <strong>NEW:</strong> Full authentication system integrated <span class="new-badge">NEW</span></p>
             </div>
         </div>
 
@@ -2280,12 +2493,20 @@ app.get('/', (req, res) => {
 
             <div class="endpoint">
                 <strong>Core Services:</strong><br>
-                <code>GET /health</code> - System health check with service status <span class="fix-badge">FIXED</span><br>
-                <code>GET /api/config</code> - Get Supabase configuration<br>
+                <code>GET /health</code> - System health check with service status <span class="fix-badge">UPDATED</span><br>
+                <code>GET /api/config</code> - Get Supabase configuration <span class="fix-badge">UPDATED</span><br>
                 <code>GET /api/debug/user/:userId</code> - Debug user data (GDPR logged)<br>
-                <code>GET /api/test-openai</code> - Test OpenAI API key validity <span class="new-badge">NEW</span><br>
-                <code>GET /api/process-queue-now</code> - Manually trigger queue processing <span class="new-badge">NEW</span><br>
-                <code>GET /test/transcription-queue</code> - View queue status <span class="new-badge">NEW</span>
+                <code>GET /api/test-openai</code> - Test OpenAI API key validity<br>
+                <code>GET /api/process-queue-now</code> - Manually trigger queue processing<br>
+                <code>GET /test/transcription-queue</code> - View queue status
+            </div>
+
+            <div class="endpoint">
+                <strong>Authentication Endpoints:</strong> <span class="new-badge">NEW</span><br>
+                <code>POST /api/auth/signup</code> - Register new user account<br>
+                <code>POST /api/auth/login</code> - Login with email/password<br>
+                <code>POST /api/auth/logout</code> - Logout and clear session<br>
+                <code>GET /api/auth/session</code> - Check authentication status
             </div>
 
             <div class="endpoint">
@@ -2313,7 +2534,6 @@ app.get('/', (req, res) => {
 
             <div class="endpoint">
                 <strong>Emergency & Incident Services:</strong><br>
-                <code>GET /api/auth/status</code> - Check authentication status<br>
                 <code>GET /api/user/:userId/emergency-contacts</code> - Get emergency contacts<br>
                 <code>POST /api/log-emergency-call</code> - Log emergency calls<br>
                 <code>GET /api/what3words</code> - Get What3Words location<br>
@@ -2342,6 +2562,7 @@ app.get('/', (req, res) => {
                 <li>Transcription Queue: ${transcriptionQueueInterval ? '✅ Running' : '❌ Not running'}</li>
                 <li>WebSocket: ${wss ? '✅ Active (' + wss.clients.size + ' clients)' : '❌ Not active'}</li>
                 <li>Auth Key: ${SHARED_KEY ? '✅ Set' : '❌ Missing'}</li>
+                <li>Auth Service: ${authService ? '✅ Configured' : '⚠️ Not configured'} <span class="new-badge">NEW</span></li>
                 <li>GDPR Compliance: ✅ Full compliance with audit logging</li>
                 <li>Data Retention: ${process.env.DATA_RETENTION_DAYS || CONSTANTS.DATA_RETENTION.DEFAULT_DAYS} days</li>
                 <li>Rate Limiting: ✅ Enabled</li>
@@ -2361,12 +2582,16 @@ app.get('/', (req, res) => {
                 <li>✅ Request tracking with unique IDs</li>
                 <li>✅ IP and user agent logging for audit purposes</li>
                 <li>✅ Rate limiting for API protection</li>
+                <li>✅ <strong>NEW:</strong> Secure authentication with JWT tokens <span class="new-badge">NEW</span></li>
             </ul>
         </div>
 
         <div class="section">
             <h3>🚀 Recent Improvements:</h3>
             <ul>
+                <li>✅ <strong>NEW:</strong> Complete authentication system (signup, login, logout)</li>
+                <li>✅ <strong>NEW:</strong> Session management with secure cookies</li>
+                <li>✅ <strong>NEW:</strong> Auth middleware for protected routes</li>
                 <li>✅ <strong>FIXED:</strong> Syntax error in health endpoint</li>
                 <li>✅ <strong>FIXED:</strong> Express trust proxy warning</li>
                 <li>✅ <strong>FIXED:</strong> Database column name mapping</li>
@@ -3186,642 +3411,1975 @@ app.post('/api/save-transcription', checkGDPRConsent, async (req, res) => {
           create_user_id: userId,
           incident_report_id: incidentId || null,
           transcription_text: transcription,
-          audio_url: audioUrl || '',
-          created_at: new Date().toISOString()
-        })
-        .select()
-        .single();
-
-      result = data;
-      if (error) throw error;
-    }
-
-    // Update incident report if exists
-    if (incidentId) {
-      await supabase
-        .from('incident_reports')
-        .update({
-          witness_statement_text: transcription,
-          witness_statement_audio: audioUrl || undefined,
-          updated_at: new Date().toISOString()
-        })
-        .eq('id', incidentId)
-        .eq('create_user_id', userId);
-    }
-
-    res.json({ 
-      success: true, 
-      message: 'Transcription saved successfully',
-      transcription_id: result?.id,
-      requestId: req.requestId
-    });
-
-  } catch (error) {
-    Logger.error('Save transcription error', error);
-    res.status(500).json({ 
-      error: 'Failed to save transcription',
-      code: 'SAVE_FAILED',
-      message: error.message,
-      requestId: req.requestId 
-    });
-  }
-});
-
-// GET USER'S LATEST TRANSCRIPTION endpoint
-app.get('/api/user/:userId/latest-transcription', async (req, res) => {
-  try {
-    const { userId } = req.params;
-    Logger.info('Getting latest transcription', { userId });
-
-    if (!supabaseEnabled) {
-      return res.json({ 
-        exists: false, 
-        transcription: null,
-        requestId: req.requestId 
-      });
-    }
-
-    // Log GDPR activity
-    await logGDPRActivity(userId, 'DATA_ACCESS', {
-      type: 'transcription_retrieval'
-    }, req);
-
-    const { data, error } = await supabase
-      .from('ai_transcription')
-      .select('*')
-      .eq('create_user_id', userId)
-      .order('created_at', { ascending: false })
-      .limit(1)
-      .single();
-
-    if (data) {
-      // Also get the AI summary
-      const { data: summaryData } = await supabase
-        .from('ai_summary')
-        .select('*')
-        .eq('create_user_id', userId)
-        .order('created_at', { ascending: false })
-        .limit(1)
-        .single();
-
-      return res.json({
-        exists: true,
-        transcription: data,
-        aiSummary: summaryData,
-        status: 'completed',
-        requestId: req.requestId
-      });
-    }
-
-    // Fallback to incident reports
-    const { data: incidentData } = await supabase
-      .from('incident_reports')
-      .select('witness_statement_text, witness_statement_audio')
-      .eq('create_user_id', userId)
-      .order('created_at', { ascending: false })
-      .limit(1)
-      .single();
-
-    res.json({
-      exists: !!incidentData?.witness_statement_text,
-      transcription: incidentData ? {
-        transcription_text: incidentData.witness_statement_text,
-        audio_url: incidentData.witness_statement_audio
-      } : null,
-      status: incidentData?.witness_statement_text ? 'completed' : 'not_found',
-      requestId: req.requestId
-    });
-
-  } catch (error) {
-    Logger.error('Get transcription status error', error);
-    res.status(500).json({ 
-      error: 'Failed to get transcription status',
-      requestId: req.requestId 
-    });
-  }
-});
-
-// --- WEBHOOK ENDPOINTS ---
-app.post('/webhook/signup', checkSharedKey, async (req, res) => {
-  try {
-    Logger.info('Signup webhook received');
-
-    if (!supabaseEnabled || !imageProcessor) {
-      return res.status(503).json({ 
-        error: 'Service not configured',
-        requestId: req.requestId 
-      });
-    }
-
-    const webhookData = req.body;
-
-    if (!webhookData.create_user_id) {
-      return res.status(400).json({ 
-        error: 'Missing create_user_id',
-        requestId: req.requestId 
-      });
-    }
-
-    // Log GDPR activity
-    await logGDPRActivity(webhookData.create_user_id, 'SIGNUP_PROCESSING', {
-      source: 'webhook',
-      has_images: true
-    }, req);
-
-    // Process images asynchronously
-    imageProcessor.processSignupImages(webhookData)
-      .then(result => {
-        Logger.success('Signup processing complete', result);
-      })
-      .catch(error => {
-        Logger.error('Signup processing failed', error);
-      });
-
-    res.status(200).json({ 
-      success: true, 
-      message: 'Signup processing started',
-      create_user_id: webhookData.create_user_id,
-      requestId: req.requestId 
-    });
-
-  } catch (error) {
-    Logger.error('Webhook error', error);
-    res.status(500).json({ 
-      success: false, 
-      error: error.message,
-      requestId: req.requestId 
-    });
-  }
-});
-
-app.post('/webhook/incident-report', checkSharedKey, async (req, res) => {
-  try {
-    Logger.info('🚨 Incident report webhook received');
-    Logger.info(`📋 Processing incident report files for: ${req.body.create_user_id}`);
-
-    if (!supabaseEnabled || !imageProcessor) {
-      return res.status(503).json({ 
-        error: 'Service not configured',
-        requestId: req.requestId 
-      });
-    }
-
-    const webhookData = req.body;
-
-    if (!webhookData.id && !webhookData.incident_report_id) {
-      return res.status(400).json({ 
-        error: 'Missing incident report ID',
-        requestId: req.requestId 
-      });
-    }
-
-    if (!webhookData.create_user_id) {
-      return res.status(400).json({ 
-        error: 'Missing user ID - GDPR compliance requires user identification',
-        code: 'MISSING_USER_ID',
-        requestId: req.requestId
-      });
-    }
-
-    const incidentId = webhookData.id || webhookData.incident_report_id;
-
-    // Log GDPR activity
-    await logGDPRActivity(webhookData.create_user_id, 'INCIDENT_REPORT', {
-      incident_id: incidentId,
-      source: 'webhook'
-    }, req);
-
-    // Process files asynchronously
-    const result = await imageProcessor.processIncidentReportFiles(webhookData);
-
-    Logger.success(`✅ Incident processing complete:`, result);
-
-    if (req.query.redirect === 'true') {
-      const userId = webhookData.create_user_id || '';
-      res.redirect(`/report-complete.html?incident_id=${incidentId}&user_id=${userId}`);
-    } else {
-      res.status(200).json({
-        ...result,
-        requestId: req.requestId
-      });
-    }
-
-  } catch (error) {
-    Logger.error('Webhook error', error);
-    res.status(500).json({ 
-      success: false, 
-      error: error.message,
-      requestId: req.requestId 
-    });
-  }
-});
-
-// --- PDF GENERATION ENDPOINT ---
-app.post('/generate-pdf', checkSharedKey, async (req, res) => {
-  const { create_user_id } = req.body;
-
-  if (!create_user_id) {
-    return res.status(400).json({ 
-      error: 'Missing create_user_id',
-      message: 'Please provide a valid user ID',
-      requestId: req.requestId
-    });
-  }
-
-      if (!supabaseEnabled) {
-        return res.status(503).json({ 
-          error: 'Service not configured',
-          message: 'Supabase is not properly configured',
-          requestId: req.requestId
-        });
-      }
-
-      if (!fetchAllData || !generatePDF || !sendEmails) {
-        return res.status(503).json({ 
-          error: 'PDF generation modules not available',
-          message: 'PDF generation libraries are missing',
-          requestId: req.requestId
-        });
-      }
-
-      try {
-        Logger.info('Starting PDF generation', { userId: create_user_id });
-
-        // Log GDPR activity
-        await logGDPRActivity(create_user_id, 'PDF_GENERATION', {
-          type: 'complete_report'
-        }, req);
-
-        // Fetch all data including AI summaries
-        const allData = await fetchAllData(create_user_id);
-
-        if (!allData.user || !allData.user.driver_email) {
-          return res.status(404).json({
-            error: 'User not found',
-            message: 'No user data found for the provided ID',
-            requestId: req.requestId
-          });
-        }
-
-        // Include AI data
-        const { data: aiTranscription } = await supabase
-          .from('ai_transcription')
-          .select('*')
-          .eq('create_user_id', create_user_id)
-          .order('created_at', { ascending: false })
-          .limit(1)
-          .single();
-
-        const { data: aiSummary } = await supabase
-          .from('ai_summary')
-          .select('*')
-          .eq('create_user_id', create_user_id)
-          .order('created_at', { ascending: false })
-          .limit(1)
-          .single();
-
-        if (aiTranscription) {
-          allData.aiTranscription = aiTranscription;
-        }
-        if (aiSummary) {
-          allData.aiSummary = aiSummary;
-        }
-
-        // Generate PDF
-        const pdfBuffer = await generatePDF(allData);
-
-        // Store PDF
-        const storedForm = await storeCompletedForm(create_user_id, pdfBuffer, allData);
-
-        // Send emails
-        const emailResult = await sendEmails(
-          allData.user.driver_email, 
-          pdfBuffer, 
-          create_user_id
-        );
-
-        // Update status
-        if (storedForm.id && !storedForm.id.startsWith('temp-')) {
-          await supabase
-            .from('completed_incident_forms')
-            .update({
-              sent_to_user: emailResult.success,
-              sent_to_accounts: emailResult.success,
-              email_status: emailResult
-            })
-            .eq('id', storedForm.id);
-        }
-
-        Logger.success('PDF generation process completed successfully');
-
-        res.json({
-          success: true,
-          message: 'PDF generated and sent successfully',
-          form_id: storedForm.id,
-          create_user_id,
-          email_sent: emailResult.success,
-          timestamp: new Date().toISOString(),
-          requestId: req.requestId
-        });
-
-      } catch (error) {
-        Logger.error('Error in PDF generation', error);
-        res.status(500).json({ 
-          error: error.message,
-          details: 'Failed to generate PDF. Please check logs.',
-          requestId: req.requestId
-        });
-      }
-      });
-
-      // Alternative PDF generation endpoint (webhook)
-      app.post('/webhook/generate-pdf', checkSharedKey, async (req, res) => {
-      const { create_user_id } = req.body;
-
-      if (!create_user_id) {
-        return res.status(400).json({ 
-          error: 'Missing create_user_id',
-          message: 'Please provide a valid user ID',
-          requestId: req.requestId
-        });
-      }
-
-      if (!supabaseEnabled) {
-        return res.status(503).json({ 
-          error: 'Service not configured',
-          message: 'Supabase is not properly configured',
-          requestId: req.requestId
-        });
-      }
-
-      if (!fetchAllData || !generatePDF || !sendEmails) {
-        return res.status(503).json({ 
-          error: 'PDF generation modules not available',
-          message: 'PDF generation libraries are missing',
-          requestId: req.requestId
-        });
-      }
-
-      try {
-        Logger.info('Starting PDF generation via webhook', { userId: create_user_id });
-
-        // Log GDPR activity
-        await logGDPRActivity(create_user_id, 'PDF_GENERATION', {
-          type: 'complete_report',
-          source: 'webhook'
-        }, req);
-
-        // Fetch all data including AI summaries
-        const allData = await fetchAllData(create_user_id);
-
-        if (!allData.user || !allData.user.driver_email) {
-          return res.status(404).json({
-            error: 'User not found',
-            message: 'No user data found for the provided ID',
-            requestId: req.requestId
-          });
-        }
-
-        // Include AI data
-        const { data: aiTranscription } = await supabase
-          .from('ai_transcription')
-          .select('*')
-          .eq('create_user_id', create_user_id)
-          .order('created_at', { ascending: false })
-          .limit(1)
-          .single();
-
-        const { data: aiSummary } = await supabase
-          .from('ai_summary')
-          .select('*')
-          .eq('create_user_id', create_user_id)
-          .order('created_at', { ascending: false })
-          .limit(1)
-          .single();
-
-        if (aiTranscription) {
-          allData.aiTranscription = aiTranscription;
-        }
-        if (aiSummary) {
-          allData.aiSummary = aiSummary;
-        }
-
-        // Generate PDF
-        const pdfBuffer = await generatePDF(allData);
-
-        // Store PDF
-        const storedForm = await storeCompletedForm(create_user_id, pdfBuffer, allData);
-
-        // Send emails
-        const emailResult = await sendEmails(
-          allData.user.driver_email, 
-          pdfBuffer, 
-          create_user_id
-        );
-
-        // Update status
-        if (storedForm.id && !storedForm.id.startsWith('temp-')) {
-          await supabase
-            .from('completed_incident_forms')
-            .update({
-              sent_to_user: emailResult.success,
-              sent_to_accounts: emailResult.success,
-              email_status: emailResult
-            })
-            .eq('id', storedForm.id);
-        }
-
-        Logger.success('PDF generation process completed successfully (webhook)');
-
-        res.json({
-          success: true,
-          message: 'PDF generated and sent successfully',
-          form_id: storedForm.id,
-          create_user_id,
-          email_sent: emailResult.success,
-          timestamp: new Date().toISOString(),
-          requestId: req.requestId
-        });
-
-      } catch (error) {
-        Logger.error('Error in webhook PDF generation', error);
-        res.status(500).json({ 
-          error: error.message,
-          details: 'Failed to generate PDF. Please check logs.',
-          requestId: req.requestId
-        });
-      }
-      });
-
-      // --- ERROR HANDLING ---
-      app.use((err, req, res, next) => {
-      Logger.error('Unhandled error', err);
-      res.status(500).json({ 
-        error: 'Internal server error',
-        message: process.env.NODE_ENV === 'development' ? err.message : 'An error occurred',
-        requestId: req.requestId 
-      });
-      });
-
-      app.use((req, res) => {
-      res.status(404).json({ 
-        error: 'Not found',
-        path: req.path,
-        requestId: req.requestId 
-      });
-      });
-
-      // --- GRACEFUL SHUTDOWN ---
-      process.on('SIGTERM', () => {
-      Logger.info('SIGTERM received, closing server...');
-
-      // Clean up Supabase Realtime channels (if they exist)
-      if (realtimeChannels.transcriptionChannel) {
-        realtimeChannels.transcriptionChannel.unsubscribe();
-      }
-      if (realtimeChannels.summaryChannel) {
-        realtimeChannels.summaryChannel.unsubscribe();
-      }
-
-      // Clean up intervals
-      if (transcriptionQueueInterval) {
-        clearInterval(transcriptionQueueInterval);
-      }
-      if (wsHeartbeat) {
-        clearInterval(wsHeartbeat);
-      }
-
-      // Close WebSocket server
-      wss.close(() => {
-        Logger.info('WebSocket server closed');
-      });
-
-      // Close HTTP server
-      server.close(() => {
-        Logger.info('Server closed gracefully');
-        process.exit(0);
-      });
-
-      // Force close after 10 seconds
-      setTimeout(() => {
-        Logger.error('Could not close connections in time, forcefully shutting down');
-        process.exit(1);
-      }, 10000);
-      });
-
-      process.on('SIGINT', () => {
-      Logger.info('SIGINT received, closing server...');
-
-      // Clean up Supabase Realtime channels (if they exist)
-      if (realtimeChannels.transcriptionChannel) {
-        realtimeChannels.transcriptionChannel.unsubscribe();
-      }
-      if (realtimeChannels.summaryChannel) {
-        realtimeChannels.summaryChannel.unsubscribe();
-      }
-
-      // Clean up intervals
-      if (transcriptionQueueInterval) {
-        clearInterval(transcriptionQueueInterval);
-      }
-      if (wsHeartbeat) {
-        clearInterval(wsHeartbeat);
-      }
-
-      // Close WebSocket server
-      wss.close(() => {
-        Logger.info('WebSocket server closed');
-      });
-
-      // Close HTTP server
-      server.close(() => {
-        Logger.info('Server closed gracefully');
-        process.exit(0);
-      });
-
-      // Force close after 10 seconds
-      setTimeout(() => {
-        Logger.error('Could not close connections in time, forcefully shutting down');
-        process.exit(1);
-      }, 10000);
-      });
-
-      // Handle uncaught exceptions
-      process.on('uncaughtException', (error) => {
-      Logger.error('Uncaught Exception:', error);
-      // Attempt graceful shutdown
-      process.emit('SIGTERM');
-      });
-
-      // Handle unhandled promise rejections
-      process.on('unhandledRejection', (reason, promise) => {
-      Logger.error('Unhandled Rejection at:', promise, 'reason:', reason);
-      // Don't exit on unhandled rejection, but log it
-      });
-
-      // --- START SERVER ---
-      const PORT = process.env.PORT || 3000;
-      const HOST = '0.0.0.0';  // Bind to all network interfaces
-
-      server.listen(PORT, HOST, () => {
-      Logger.info('========================================');
-      Logger.info('🚗 Car Crash Lawyer AI - GDPR Compliant System');
-      Logger.info('========================================');
-      Logger.info(`🚀 Server running on http://${HOST}:${PORT}`);
-
-      // Check for Replit environment
-      if (process.env.REPL_SLUG && process.env.REPL_OWNER) {
-        Logger.info(`🌐 Public URL: https://${process.env.REPL_SLUG}.${process.env.REPL_OWNER}.repl.co`);
-        Logger.info(`🌐 Alternative: https://${process.env.REPL_SLUG}.${process.env.REPL_OWNER}.replit.app`);
-      }
-
-      Logger.info('\n📊 Service Status:');
-      Logger.info(`   Supabase: ${supabaseEnabled ? '✅ Connected' : '❌ Not configured'}`);
-      Logger.info(`   Supabase Realtime: ${realtimeChannels.transcriptionChannel ? '✅ Active (optional)' : '⚠️ Not active (optional)'}`);
-      Logger.info(`   OpenAI: ${process.env.OPENAI_API_KEY ? '✅ Configured' : '❌ Not configured'}`);
-      Logger.info(`   Transcription Queue: ${transcriptionQueueInterval ? '✅ Running' : '❌ Not running'}`);
-      Logger.info(`   WebSocket Server: ✅ Active`);
-      Logger.info(`   Auth Key: ${SHARED_KEY ? '✅ Set' : '❌ Missing'}`);
-      Logger.info(`   PDF Modules: ${fetchAllData && generatePDF && sendEmails ? '✅ Available' : '⚠️ Not available'}`);
-
-      Logger.info('\n🔧 All Fixes Applied:');
-      Logger.info('   ✅ Syntax error in health endpoint FIXED');
-      Logger.info('   ✅ Express trust proxy warning FIXED');
-      Logger.info('   ✅ Database column name mapping FIXED');
-      Logger.info('   ✅ Schema cache refresh on startup ADDED');
-      Logger.info('   ✅ Buffer to Stream conversion working correctly');
-      Logger.info('   ✅ FormData knownLength parameter implemented');
-      Logger.info('   ✅ Enhanced error handling with request tracking');
-      Logger.info('   ✅ Improved input validation and sanitization');
-      Logger.info('   ✅ Better retry logic for external APIs');
-      Logger.info('   ✅ WebSocket connection management optimized');
-      Logger.info('   ✅ Rate limiting properly configured with trust proxy');
-
-      Logger.info('\n🔑 Key Features:');
-      Logger.info('   ✅ Complete transcription pipeline with retry logic');
-      Logger.info('   ✅ AI summary generation with correct column mapping');
-      Logger.info('   ✅ Enhanced WebSocket with user channels');
-      Logger.info('   ✅ What3Words integration');
-      Logger.info('   ✅ Emergency contacts system');
-      Logger.info('   ✅ GDPR compliant image handling');
-      Logger.info('   ✅ PDF generation with AI data');
-      Logger.info('   ✅ Request tracking with unique IDs');
-      Logger.info('   ✅ Comprehensive audit logging');
-
-      Logger.info('\n⏰ Scheduled Tasks:');
-      Logger.info(`   Transcription Queue: Every ${parseInt(process.env.TRANSCRIPTION_QUEUE_INTERVAL) || 5} minutes`);
-      Logger.info(`   Data Retention: Daily at 2 AM`);
-      Logger.info(`   WebSocket Heartbeat: Every 30 seconds`);
-      Logger.info(`   Session Cleanup: Every 60 seconds`);
-
-      Logger.info('\n🎯 Environment:');
-      Logger.info(`   Node Version: ${process.version}`);
-      Logger.info(`   Environment: ${process.env.NODE_ENV || 'development'}`);
-      Logger.info(`   Debug Mode: ${process.env.DEBUG === 'true' ? 'Enabled' : 'Disabled'}`);
-
-      Logger.info('\n✅ Server ready with all fixes applied!');
-      Logger.info('========================================');
-      });
-
-      // Export the app for testing purposes
-      module.exports = app;
+          audio_url: audioUrl ||
+            // ========================================
+            // PART 2: API Endpoints, Routes, and Server
+            // ========================================
+
+            // --- UTILITY FUNCTIONS ---
+            function processTypeformData(formResponse) {
+              const processedData = {};
+
+              if (formResponse.form_response && formResponse.form_response.answers) {
+                formResponse.form_response.answers.forEach(answer => {
+                  const fieldId = answer.field.id;
+                  const fieldRef = answer.field.ref;
+
+                  let value = null;
+                  if (answer.text) value = answer.text;
+                  else if (answer.email) value = answer.email;
+                  else if (answer.phone_number) value = answer.phone_number;
+                  else if (answer.number) value = answer.number;
+                  else if (answer.boolean !== undefined) value = answer.boolean;
+                  else if (answer.choice) value = answer.choice.label;
+                  else if (answer.choices) value = answer.choices.map(c => c.label);
+                  else if (answer.date) value = answer.date;
+                  else if (answer.url) value = answer.url;
+                  else if (answer.file_url) value = answer.file_url;
+
+                  if (value !== null) {
+                    processedData[fieldId] = value;
+                    if (fieldRef) processedData[fieldRef] = value;
+                  }
+                });
+              }
+
+              processedData.submitted_at = formResponse.form_response?.submitted_at || new Date().toISOString();
+              processedData.form_id = formResponse.form_response?.form_id;
+              processedData.response_id = formResponse.form_response?.token;
+
+              return processedData;
+            }
+
+            // Enhanced health check for external services
+async function checkExternalServices() {
+              const services = {
+                supabase: false,
+                supabase_realtime: false,
+                openai: false,
+                what3words: false
+              };
+
+              // Check Supabase
+              if (supabaseEnabled) {
+                try {
+                  await supabase.from('user_signup').select('*').limit(1);
+                  services.supabase = true;
+
+                  // Check if realtime is connected (optional)
+                  services.supabase_realtime = realtimeChannels.transcriptionChannel ? true : false;
+                } catch (error) {
+                  Logger.error('Supabase health check failed', error);
+                }
+              }
+
+              // Check OpenAI
+              if (process.env.OPENAI_API_KEY) {
+                try {
+                  await axios.get('https://api.openai.com/v1/models', {
+                    headers: { 'Authorization': `Bearer ${process.env.OPENAI_API_KEY}` },
+                    timeout: 5000
+                  });
+                  services.openai = true;
+                } catch (error) {
+                  Logger.error('OpenAI health check failed', error);
+                }
+              }
+
+              // Check What3Words
+              if (process.env.WHAT3WORDS_API_KEY) {
+                services.what3words = true;
+              }
+
+              return services;
+            }
+
+            // --- API CONFIGURATION ENDPOINT ---
+            app.get('/api/config', (req, res) => {
+              res.json({
+                supabaseUrl: process.env.SUPABASE_URL,
+                supabaseAnonKey: process.env.SUPABASE_ANON_KEY || process.env.ANON_PUBLIC,
+                features: {
+                  realtime: supabaseEnabled && realtimeChannels.transcriptionChannel ? true : false,
+                  transcription: !!process.env.OPENAI_API_KEY,
+                  ai_summary: !!process.env.OPENAI_API_KEY,
+                  pdf_generation: !!(fetchAllData && generatePDF && sendEmails),
+                  auth: !!authService
+                }
+              });
+            });
+
+            // Enhanced health check endpoint
+            app.get('/health', async (req, res) => {
+              const externalServices = await checkExternalServices();
+
+              const status = {
+                status: 'healthy',
+                timestamp: new Date().toISOString(),
+                services: {
+                  supabase: supabaseEnabled && externalServices.supabase,
+                  supabase_realtime: externalServices.supabase_realtime,
+                  server: true,
+                  transcriptionQueue: transcriptionQueueInterval !== null,
+                  openai: !!process.env.OPENAI_API_KEY && externalServices.openai,
+                  websocket: wss.clients.size,
+                  websocket_sessions: {
+                    queue: activeSessions.size,
+                    users: userSessions.size
+                  },
+                  gdprCompliant: true,
+                  what3words: externalServices.what3words,
+                  auth: !!authService
+                },
+                fixes: {
+                  bufferToStream: 'FIXED - Using Readable.from() with knownLength',
+                  transcriptionProcessing: 'FIXED - source.on error resolved',
+                  syntaxError: 'FIXED - Removed duplicate what3words declaration',
+                  trustProxy: 'FIXED - Express trust proxy enabled',
+                  columnMapping: 'FIXED - Database column names corrected',
+                  schemaRefresh: 'FIXED - Schema cache refreshed on init',
+                  authSystem: 'ADDED - Full authentication system integrated'
+                }
+              };
+
+              res.json(status);
+            });
+
+            // ========================================
+            // SUPABASE AUTH ENDPOINTS
+            // ========================================
+
+            // Signup
+            app.post('/api/auth/signup', async (req, res) => {
+              try {
+                const { email, password, fullName, phone } = req.body;
+
+                if (!email || !password || !fullName) {
+                  return res.status(400).json({
+                    success: false,
+                    error: 'Missing required fields'
+                  });
+                }
+
+                if (password.length < 8) {
+                  return res.status(400).json({
+                    success: false,
+                    error: 'Password must be at least 8 characters'
+                  });
+                }
+
+                if (!authService) {
+                  return res.status(503).json({
+                    success: false,
+                    error: 'Auth service not configured'
+                  });
+                }
+
+                Logger.info('Auth signup:', email);
+
+                const authResult = await authService.signUp(email, password, {
+                  full_name: fullName,
+                  phone: phone
+                });
+
+                if (!authResult.success) {
+                  return res.status(400).json({
+                    success: false,
+                    error: authResult.error
+                  });
+                }
+
+                const userId = authResult.userId;
+                const username = email.split('@')[0].replace(/[^a-zA-Z0-9]/g, '') + '_' + Math.floor(Math.random() * 1000000);
+
+                await supabase.from('user_signup').insert({
+                  uid: userId,
+                  create_user_id: userId,
+                  email: email,
+                  username: username,
+                  first_name: fullName.split(' ')[0] || '',
+                  last_name: fullName.split(' ').slice(1).join(' ') || '',
+                  phone: phone || null,
+                  created_at: new Date().toISOString(),
+                  source: 'auth_signup',
+                  verified: true
+                });
+
+                res.cookie('access_token', authResult.session.access_token, {
+                  httpOnly: true,
+                  secure: process.env.NODE_ENV === 'production',
+                  sameSite: 'lax',
+                  maxAge: 7 * 24 * 60 * 60 * 1000
+                });
+
+                res.json({
+                  success: true,
+                  user: {
+                    id: userId,
+                    email: email,
+                    username: username,
+                    fullName: fullName
+                  },
+                  session: {
+                    access_token: authResult.session.access_token
+                  }
+                });
+
+              } catch (error) {
+                Logger.error('Signup error:', error);
+                res.status(500).json({ success: false, error: 'Server error' });
+              }
+            });
+
+            // Login
+            app.post('/api/auth/login', async (req, res) => {
+              try {
+                const { email, password, rememberMe } = req.body;
+
+                if (!email || !password) {
+                  return res.status(400).json({
+                    success: false,
+                    error: 'Missing credentials'
+                  });
+                }
+
+                if (!authService) {
+                  return res.status(503).json({
+                    success: false,
+                    error: 'Auth service not configured'
+                  });
+                }
+
+                const authResult = await authService.signIn(email, password);
+
+                if (!authResult.success) {
+                  return res.status(401).json({
+                    success: false,
+                    error: 'Invalid credentials'
+                  });
+                }
+
+                const { data: userData } = await supabase
+                  .from('user_signup')
+                  .select('*')
+                  .eq('uid', authResult.userId)
+                  .single();
+
+                const cookieMaxAge = rememberMe ? 7 * 24 * 60 * 60 * 1000 : 24 * 60 * 60 * 1000;
+
+                res.cookie('access_token', authResult.session.access_token, {
+                  httpOnly: true,
+                  secure: process.env.NODE_ENV === 'production',
+                  sameSite: 'lax',
+                  maxAge: cookieMaxAge
+                });
+
+                res.json({
+                  success: true,
+                  user: {
+                    id: authResult.userId,
+                    email: authResult.user.email,
+                    username: userData?.username,
+                    fullName: `${userData?.first_name || ''} ${userData?.last_name || ''}`.trim()
+                  },
+                  session: {
+                    access_token: authResult.session.access_token
+                  }
+                });
+
+              } catch (error) {
+                Logger.error('Login error:', error);
+                res.status(500).json({ success: false, error: 'Server error' });
+              }
+            });
+
+            // Logout
+            app.post('/api/auth/logout', async (req, res) => {
+              try {
+                if (authService) await authService.signOut();
+                res.clearCookie('access_token');
+                res.json({ success: true });
+              } catch (error) {
+                Logger.error('Logout error:', error);
+                res.status(500).json({ success: false, error: 'Logout failed' });
+              }
+            });
+
+            // Session check
+            app.get('/api/auth/session', optionalAuth, async (req, res) => {
+              try {
+                if (!req.user) {
+                  return res.json({ authenticated: false, user: null });
+                }
+
+                const { data: userData } = await supabase
+                  .from('user_signup')
+                  .select('*')
+                  .eq('uid', req.userId)
+                  .single();
+
+                res.json({
+                  authenticated: true,
+                  user: {
+                    id: req.userId,
+                    email: req.user.email,
+                    username: userData?.username,
+                    fullName: `${userData?.first_name || ''} ${userData?.last_name || ''}`.trim()
+                  }
+                });
+
+              } catch (error) {
+                Logger.error('Session check error:', error);
+                res.status(500).json({ authenticated: false });
+              }
+            });
+
+            // --- DEBUG ENDPOINT FOR USER DATA ---
+            app.get('/api/debug/user/:userId', checkSharedKey, async (req, res) => {
+              if (!supabaseEnabled) {
+                return res.status(503).json({ 
+                  error: 'Service not configured',
+                  requestId: req.requestId 
+                });
+              }
+
+              try {
+                const { userId } = req.params;
+                Logger.info('Debug check for user', { userId });
+
+                await logGDPRActivity(userId, 'DATA_ACCESS', {
+                  type: 'debug_view',
+                  ip: req.clientIp
+                }, req);
+
+                const checks = {};
+
+                const { data: userSignup, error: userError } = await supabase
+                  .from('user_signup')
+                  .select('*')
+                  .eq('create_user_id', userId)
+                  .single();
+                checks.user_signup = { data: userSignup, error: userError };
+
+                const { data: incidentReports, error: incidentError } = await supabase
+                  .from('incident_reports')
+                  .select('*')
+                  .eq('create_user_id', userId);
+                checks.incident_reports = { data: incidentReports, error: incidentError };
+
+                const { data: aiTranscription, error: transcriptionError } = await supabase
+                  .from('ai_transcription')
+                  .select('*')
+                  .eq('create_user_id', userId);
+                checks.ai_transcription = { data: aiTranscription, error: transcriptionError };
+
+                const { data: transcriptionQueue, error: queueError } = await supabase
+                  .from('transcription_queue')
+                  .select('*')
+                  .eq('create_user_id', userId);
+                checks.transcription_queue = { data: transcriptionQueue, error: queueError };
+
+                const { data: aiSummary, error: summaryError } = await supabase
+                  .from('ai_summary')
+                  .select('*')
+                  .eq('create_user_id', userId);
+                checks.ai_summary = { data: aiSummary, error: summaryError };
+
+                res.json({
+                  userId,
+                  timestamp: new Date().toISOString(),
+                  dataFound: checks,
+                  summary: {
+                    userExists: !!userSignup,
+                    incidentCount: incidentReports?.length || 0,
+                    transcriptionCount: aiTranscription?.length || 0,
+                    queuedItems: transcriptionQueue?.length || 0,
+                    summaryCount: aiSummary?.length || 0
+                  },
+                  requestId: req.requestId
+                });
+              } catch (error) {
+                Logger.error('Debug endpoint error', error);
+                res.status(500).json({ 
+                  error: error.message,
+                  requestId: req.requestId 
+                });
+              }
+            });
+
+            // --- GDPR DATA EXPORT ENDPOINT ---
+            app.get('/api/gdpr/export/:userId', checkSharedKey, async (req, res) => {
+              if (!supabaseEnabled) {
+                return res.status(503).json({ 
+                  error: 'Service not configured',
+                  requestId: req.requestId 
+                });
+              }
+
+              const { userId } = req.params;
+
+              try {
+                const { data: user } = await supabase
+                  .from('user_signup')
+                  .select('*')
+                  .eq('create_user_id', userId)
+                  .single();
+
+                if (!user) {
+                  return res.status(404).json({ 
+                    error: 'User not found',
+                    code: 'USER_NOT_FOUND',
+                    requestId: req.requestId
+                  });
+                }
+
+                const userData = {
+                  user_profile: user,
+                  incident_reports: [],
+                  transcriptions: [],
+                  ai_summaries: [],
+                  images: [],
+                  emergency_calls: []
+                };
+
+                const { data: incidents } = await supabase
+                  .from('incident_reports')
+                  .select('*')
+                  .eq('create_user_id', userId);
+                userData.incident_reports = incidents || [];
+
+                const { data: transcriptions } = await supabase
+                  .from('ai_transcription')
+                  .select('*')
+                  .eq('create_user_id', userId);
+                userData.transcriptions = transcriptions || [];
+
+                const { data: summaries } = await supabase
+                  .from('ai_summary')
+                  .select('*')
+                  .eq('create_user_id', userId);
+                userData.ai_summaries = summaries || [];
+
+                const { data: images } = await supabase
+                  .from('incident_images')
+                  .select('*')
+                  .eq('create_user_id', userId);
+                userData.images = images || [];
+
+                await logGDPRActivity(userId, 'DATA_EXPORT', {
+                  requested_by: req.clientIp,
+                  items_exported: {
+                    incidents: userData.incident_reports.length,
+                    transcriptions: userData.transcriptions.length,
+                    images: userData.images.length
+                  }
+                }, req);
+
+                res.json({
+                  export_date: new Date().toISOString(),
+                  user_id: userId,
+                  data: userData,
+                  gdpr_info: {
+                    right_to_access: true,
+                    right_to_portability: true,
+                    export_format: 'JSON'
+                  },
+                  requestId: req.requestId
+                });
+
+              } catch (error) {
+                Logger.error('GDPR export error', error);
+                res.status(500).json({ 
+                  error: 'Failed to export data',
+                  code: 'EXPORT_FAILED',
+                  requestId: req.requestId
+                });
+              }
+            });
+
+            // --- TESTING ENDPOINTS ---
+            app.get('/api/process-queue-now', checkSharedKey, async (req, res) => {
+              Logger.info('Manual queue processing triggered');
+
+              if (!supabaseEnabled) {
+                return res.status(503).json({ 
+                  error: 'Service not configured',
+                  requestId: req.requestId 
+                });
+              }
+
+              try {
+                await processTranscriptionQueue();
+                res.json({ 
+                  success: true, 
+                  message: 'Queue processing triggered',
+                  timestamp: new Date().toISOString(),
+                  requestId: req.requestId
+                });
+              } catch (error) {
+                Logger.error('Manual queue processing error', error);
+                res.status(500).json({ 
+                  error: 'Failed to process queue',
+                  message: error.message,
+                  requestId: req.requestId
+                });
+              }
+            });
+
+            app.get('/api/test-openai', async (req, res) => {
+              try {
+                const response = await axios.get(
+                  'https://api.openai.com/v1/models',
+                  {
+                    headers: {
+                      'Authorization': `Bearer ${process.env.OPENAI_API_KEY}`
+                    },
+                    timeout: 5000
+                  }
+                );
+                res.json({ 
+                  status: 'OpenAI API key is valid', 
+                  models: response.data.data.length,
+                  timestamp: new Date().toISOString(),
+                  requestId: req.requestId
+                });
+              } catch (error) {
+                res.status(401).json({ 
+                  status: 'OpenAI API key issue', 
+                  error: error.response?.data || error.message,
+                  requestId: req.requestId 
+                });
+              }
+            });
+
+            app.get('/test/transcription-queue', async (req, res) => {
+              if (!supabaseEnabled) {
+                return res.status(503).json({ error: 'Service not configured' });
+              }
+
+              try {
+                const { data, error } = await supabase
+                  .from('transcription_queue')
+                  .select('*')
+                  .order('created_at', { ascending: false })
+                  .limit(5);
+
+                res.json({
+                  success: !error,
+                  queue: data || [],
+                  error: error?.message,
+                  timestamp: new Date().toISOString()
+                });
+              } catch (error) {
+                res.status(500).json({ error: error.message });
+              }
+            });
+
+            app.post('/test/process-transcription-queue', checkSharedKey, async (req, res) => {
+              try {
+                Logger.info('Manual transcription queue processing triggered');
+                await processTranscriptionQueue();
+                res.json({
+                  success: true,
+                  message: 'Queue processing triggered',
+                  timestamp: new Date().toISOString()
+                });
+              } catch (error) {
+                res.status(500).json({ error: error.message });
+              }
+            });
+
+            // --- MAIN ROUTES ---
+            app.get('/transcribe', (req, res) => {
+              const queryString = Object.keys(req.query).length > 0 ? '?' + new URLSearchParams(req.query).toString() : '';
+              res.redirect('/transcription-status.html' + queryString);
+            });
+
+            app.get('/transcribe.html', (req, res) => {
+              const queryString = Object.keys(req.query).length > 0 ? '?' + new URLSearchParams(req.query).toString() : '';
+              res.redirect('/transcription-status.html' + queryString);
+            });
+
+            app.get('/', (req, res) => {
+              const htmlContent = `<!DOCTYPE html>
+            <html lang="en">
+            <head>
+                <meta charset="UTF-8">
+                <meta name="viewport" content="width=device-width, initial-scale=1.0">
+                <title>Car Crash Lawyer AI - System Status</title>
+                <style>
+                    body { font-family: Arial, sans-serif; padding: 40px; background: #f5f5f5; }
+                    .container { max-width: 800px; margin: 0 auto; background: white; padding: 30px; border-radius: 10px; box-shadow: 0 2px 10px rgba(0,0,0,0.1); }
+                    h1 { color: #333; }
+                    .status { padding: 10px; background: #4CAF50; color: white; border-radius: 5px; display: inline-block; }
+                    .section { margin-top: 30px; }
+                    ul { list-style: none; padding: 0; }
+                    li { margin: 5px 0; }
+                </style>
+            </head>
+            <body>
+                <div class="container">
+                    <h1>Car Crash Lawyer AI - System Status</h1>
+                    <p class="status">Server Running - All Systems Operational</p>
+
+                    <div class="section">
+                        <h3>System Status:</h3>
+                        <ul>
+                            <li>Supabase: ${supabaseEnabled ? 'Connected' : 'Not configured'}</li>
+                            <li>OpenAI: ${process.env.OPENAI_API_KEY ? 'Configured' : 'Not configured'}</li>
+                            <li>Auth Service: ${authService ? 'Active' : 'Not configured'}</li>
+                            <li>WebSocket: Active (${wss.clients.size} clients)</li>
+                            <li>GDPR Compliant: Yes</li>
+                        </ul>
+                    </div>
+
+                    <div class="section">
+                        <h3>Available Endpoints:</h3>
+                        <ul>
+                            <li>GET /health - System health check</li>
+                            <li>GET /api/config - Configuration</li>
+                            <li>POST /api/auth/signup - User signup</li>
+                            <li>POST /api/auth/login - User login</li>
+                            <li>POST /api/auth/logout - User logout</li>
+                            <li>GET /api/auth/session - Check session</li>
+                        </ul>
+                    </div>
+                </div>
+            </body>
+            </html>`;
+              res.send(htmlContent);
+            });
+
+            // --- AUTHENTICATION STATUS (Legacy) ---
+            app.get('/api/auth/status', (req, res) => {
+              const mockUser = {
+                authenticated: false,
+                user: null
+              };
+
+              if (req.session && req.session.user) {
+                mockUser.authenticated = true;
+                mockUser.user = {
+                  uid: req.session.user.id,
+                  email: req.session.user.email,
+                  fullName: req.session.user.full_name
+                };
+              }
+
+              res.json(mockUser);
+            });
+
+            // --- EMERGENCY CONTACTS ---
+            app.get('/api/user/:userId/emergency-contacts', authenticateRequest, async (req, res) => {
+              if (!supabaseEnabled) {
+                return res.status(503).json({ 
+                  error: 'Service not configured',
+                  requestId: req.requestId 
+                });
+              }
+
+              try {
+                const { userId } = req.params;
+
+                const { data, error } = await supabase
+                  .from('user_signup')
+                  .select('emergency_contact, recovery_breakdown_number, emergency_services_number')
+                  .eq('create_user_id', userId)
+                  .single();
+
+                if (error) {
+                  Logger.error('Supabase error', error);
+                  return res.status(404).json({ 
+                    error: 'User not found',
+                    requestId: req.requestId 
+                  });
+                }
+
+                res.json({
+                  emergency_contact: data.emergency_contact || null,
+                  recovery_breakdown_number: data.recovery_breakdown_number || null,
+                  emergency_services_number: data.emergency_services_number || '999',
+                  requestId: req.requestId
+                });
+              } catch (error) {
+                Logger.error('Error fetching emergency contacts', error);
+                res.status(500).json({ 
+                  error: 'Failed to fetch contacts',
+                  requestId: req.requestId 
+                });
+              }
+            });
+
+            // --- LOG EMERGENCY CALLS ---
+            app.post('/api/log-emergency-call', authenticateRequest, async (req, res) => {
+              if (!supabaseEnabled) {
+                return res.status(503).json({ 
+                  error: 'Service not configured',
+                  requestId: req.requestId 
+                });
+              }
+
+              try {
+                const { user_id, service_called, timestamp, incident_id } = req.body;
+
+                if (!user_id) {
+                  return res.status(400).json({ 
+                    error: 'User ID required',
+                    code: 'MISSING_USER_ID',
+                    requestId: req.requestId
+                  });
+                }
+
+                const { data, error } = await supabase
+                  .from('emergency_call_logs')
+                  .insert({
+                    user_id,
+                    service_called,
+                    incident_id: incident_id || null,
+                    timestamp,
+                    created_at: new Date().toISOString()
+                  });
+
+                if (error) {
+                  Logger.error('Failed to log emergency call', error);
+                  return res.json({ 
+                    success: false, 
+                    logged: false,
+                    requestId: req.requestId 
+                  });
+                }
+
+                await logGDPRActivity(user_id, 'EMERGENCY_CALL_LOGGED', {
+                  service: service_called
+                }, req);
+
+                res.json({ 
+                  success: true, 
+                  logged: true,
+                  requestId: req.requestId 
+                });
+              } catch (error) {
+                Logger.error('Error logging emergency call', error);
+                res.status(500).json({ 
+                  error: 'Internal server error',
+                  requestId: req.requestId 
+                });
+              }
+            });
+
+            // --- WHAT3WORDS ---
+            app.get('/api/what3words', async (req, res) => {
+              try {
+                const { lat, lng } = req.query;
+
+                if (!lat || !lng) {
+                  return res.status(400).json({ 
+                    error: 'Missing latitude or longitude',
+                    requestId: req.requestId 
+                  });
+                }
+
+                const W3W_API_KEY = process.env.WHAT3WORDS_API_KEY;
+
+                if (!W3W_API_KEY) {
+                  Logger.warn('What3Words API key not configured');
+                  return res.json({ 
+                    words: 'location.not.configured',
+                    requestId: req.requestId 
+                  });
+                }
+
+                const response = await axios.get(
+                  `https://api.what3words.com/v3/convert-to-3wa?coordinates=${lat},${lng}&key=${W3W_API_KEY}`
+                );
+
+                if (response.data && response.data.words) {
+                  res.json({ 
+                    words: response.data.words,
+                    requestId: req.requestId 
+                  });
+                } else {
+                  res.json({ 
+                    words: 'location.not.found',
+                    requestId: req.requestId 
+                  });
+                }
+              } catch (error) {
+                Logger.error('What3Words API error', error);
+                res.json({ 
+                  words: 'api.error.occurred',
+                  requestId: req.requestId 
+                });
+              }
+            });
+
+            // --- UPLOAD WHAT3WORDS IMAGE ---
+            app.post('/api/upload-what3words-image', upload.single('image'), async (req, res) => {
+              if (!supabaseEnabled || !imageProcessor) {
+                return res.status(503).json({ 
+                  error: 'Service not configured',
+                  requestId: req.requestId 
+                });
+              }
+
+              try {
+                let buffer;
+                let what3words, latitude, longitude, userId;
+
+                if (req.file) {
+                  buffer = req.file.buffer;
+                  ({ what3words, latitude, longitude, userId } = req.body);
+                } else {
+                  const { imageData } = req.body;
+                  if (!imageData) {
+                    return res.status(400).json({ 
+                      error: 'No image data provided',
+                      requestId: req.requestId 
+                    });
+                  }
+
+                  const base64Data = imageData.replace(/^data:image\/\w+;base64,/, '');
+                  buffer = Buffer.from(base64Data, 'base64');
+                  ({ what3words, latitude, longitude, userId } = req.body);
+                }
+
+                if (!userId) {
+                  return res.status(400).json({ 
+                    error: 'User ID required for GDPR compliance',
+                    code: 'MISSING_USER_ID',
+                    requestId: req.requestId
+                  });
+                }
+
+                const safeWhat3Words = what3words ? what3words.replace(/[\/\\.]/g, '-') : 'unknown';
+                const timestamp = Date.now();
+                const fileName = `${userId}/what3words/${timestamp}_${safeWhat3Words}.png`;
+
+                const storagePath = await imageProcessor.uploadToSupabase(buffer, fileName, 'image/png');
+
+                const imageRecord = await imageProcessor.createImageRecord({
+                  create_user_id: userId,
+                  incident_report_id: null,
+                  image_type: 'what3words_screenshot',
+                  storage_path: storagePath,
+                  original_url: null,
+                  metadata: {
+                    upload_date: new Date().toISOString(),
+                    source: 'web_capture',
+                    what3words: what3words,
+                    latitude: parseFloat(latitude) || null,
+                    longitude: parseFloat(longitude) || null,
+                    captured_at: new Date().toISOString(),
+                    gdpr_consent: true
+                  }
+                });
+
+                const signedUrl = await imageProcessor.getSignedUrl(storagePath, 3600);
+
+                await logGDPRActivity(userId, 'IMAGE_UPLOADED', {
+                  type: 'what3words',
+                  location: what3words
+                }, req);
+
+                res.json({
+                  success: true,
+                  imageUrl: signedUrl,
+                  storagePath: storagePath,
+                  imageRecord: imageRecord,
+                  requestId: req.requestId
+                });
+
+              } catch (error) {
+                Logger.error('Error uploading what3words image', error);
+                res.status(500).json({ 
+                  error: error.message,
+                  requestId: req.requestId 
+                });
+              }
+            });
+
+            // --- GET USER IMAGES ---
+            app.get('/api/images/:userId', checkGDPRConsent, async (req, res) => {
+              if (!supabaseEnabled) {
+                return res.status(503).json({ 
+                  error: 'Service not configured',
+                  requestId: req.requestId 
+                });
+              }
+
+              try {
+                const { userId } = req.params;
+
+                const { data: images, error } = await supabase
+                  .from('incident_images')
+                  .select('*')
+                  .eq('create_user_id', userId)
+                  .order('uploaded_at', { ascending: false });
+
+                if (error) {
+                  throw error;
+                }
+
+                await logGDPRActivity(userId, 'IMAGES_ACCESSED', {
+                  count: images?.length || 0
+                }, req);
+
+                res.json({
+                  success: true,
+                  images: images || [],
+                  count: images?.length || 0,
+                  requestId: req.requestId
+                });
+
+              } catch (error) {
+                Logger.error('Error fetching user images', error);
+                res.status(500).json({ 
+                  error: 'Failed to fetch images',
+                  requestId: req.requestId 
+                });
+              }
+            });
+
+            // --- GET SIGNED URL ---
+            app.get('/api/image/signed-url/:userId/:imageType', checkGDPRConsent, async (req, res) => {
+              if (!supabaseEnabled || !imageProcessor) {
+                return res.status(503).json({ 
+                  error: 'Service not configured',
+                  requestId: req.requestId 
+                });
+              }
+
+              try {
+                const { userId, imageType } = req.params;
+                const { path } = req.query;
+
+                if (!path) {
+                  return res.status(400).json({ 
+                    error: 'Storage path required',
+                    requestId: req.requestId 
+                  });
+                }
+
+                const signedUrl = await imageProcessor.getSignedUrl(path, 3600);
+
+                await logGDPRActivity(userId, 'SIGNED_URL_GENERATED', {
+                  image_type: imageType,
+                  path: path
+                }, req);
+
+                res.json({
+                  success: true,
+                  url: signedUrl,
+                  expires_in: 3600,
+                  requestId: req.requestId
+                });
+
+              } catch (error) {
+                Logger.error('Error generating signed URL', error);
+                res.status(500).json({ 
+                  error: 'Failed to generate URL',
+                  requestId: req.requestId 
+                });
+              }
+            });
+
+            // --- GDPR DELETE IMAGES ---
+            app.delete('/api/gdpr/delete-images', checkSharedKey, async (req, res) => {
+              if (!supabaseEnabled || !imageProcessor) {
+                return res.status(503).json({ 
+                  error: 'Service not configured',
+                  requestId: req.requestId 
+                });
+              }
+
+              try {
+                const { userId } = req.body;
+
+                if (!userId) {
+                  return res.status(400).json({ 
+                    error: 'User ID required',
+                    code: 'MISSING_USER_ID',
+                    requestId: req.requestId
+                  });
+                }
+
+                const result = await imageProcessor.deleteAllUserImages(userId);
+
+                res.json({
+                  success: true,
+                  ...result,
+                  requestId: req.requestId
+                });
+
+              } catch (error) {
+                Logger.error('Error deleting images', error);
+                res.status(500).json({ 
+                  error: 'Failed to delete images',
+                  requestId: req.requestId 
+                });
+              }
+            });
+
+            // --- PDF STATUS ---
+            app.get('/pdf-status/:userId', async (req, res) => {
+              if (!supabaseEnabled) {
+                return res.status(503).json({ 
+                  error: 'Service not configured',
+                  requestId: req.requestId 
+                });
+              }
+
+              try {
+                const { userId } = req.params;
+
+                const { data, error } = await supabase
+                  .from('completed_incident_forms')
+                  .select('id, generated_at, sent_to_user, email_status')
+                  .eq('create_user_id', userId)
+                  .order('generated_at', { ascending: false })
+                  .limit(1)
+                  .single();
+
+                if (error || !data) {
+                  return res.json({
+                    status: 'not_found',
+                    message: 'No PDF generation found for this user',
+                    requestId: req.requestId
+                  });
+                }
+
+                res.json({
+                  status: 'completed',
+                  generated_at: data.generated_at,
+                  sent: data.sent_to_user,
+                  email_status: data.email_status,
+                  requestId: req.requestId
+                });
+
+              } catch (error) {
+                Logger.error('Error checking PDF status', error);
+                res.status(500).json({ 
+                  error: 'Failed to check status',
+                  requestId: req.requestId 
+                });
+              }
+            });
+
+            // --- DOWNLOAD PDF ---
+            app.get('/download-pdf/:userId', checkGDPRConsent, async (req, res) => {
+              if (!supabaseEnabled) {
+                return res.status(503).json({ 
+                  error: 'Service not configured',
+                  requestId: req.requestId 
+                });
+              }
+
+              try {
+                const { userId } = req.params;
+
+                const { data, error } = await supabase
+                  .from('completed_incident_forms')
+                  .select('pdf_url, pdf_base64')
+                  .eq('create_user_id', userId)
+                  .order('generated_at', { ascending: false })
+                  .limit(1)
+                  .single();
+
+                if (error || !data) {
+                  return res.status(404).json({ 
+                    error: 'PDF not found',
+                    requestId: req.requestId 
+                  });
+                }
+
+                await logGDPRActivity(userId, 'PDF_DOWNLOADED', {}, req);
+
+                if (data.pdf_url) {
+                  res.redirect(data.pdf_url);
+                } else if (data.pdf_base64) {
+                  const buffer = Buffer.from(data.pdf_base64, 'base64');
+                  res.setHeader('Content-Type', 'application/pdf');
+                  res.setHeader('Content-Disposition', `attachment; filename="report_${userId}.pdf"`);
+                  res.send(buffer);
+                } else {
+                  res.status(404).json({ 
+                    error: 'PDF data not available',
+                    requestId: req.requestId 
+                  });
+                }
+
+              } catch (error) {
+                Logger.error('Error downloading PDF', error);
+                res.status(500).json({ 
+                  error: 'Failed to download PDF',
+                  requestId: req.requestId 
+                });
+              }
+            });
+
+            // --- WHISPER TRANSCRIPTION ---
+            app.post('/api/whisper/transcribe', upload.single('audio'), async (req, res) => {
+              try {
+                Logger.info('Received transcription request');
+
+                if (!req.file) {
+                  return res.status(400).json({ 
+                    error: 'No audio file provided',
+                    requestId: req.requestId 
+                  });
+                }
+
+                const create_user_id = req.body.create_user_id || 
+                                       req.query.create_user_id || 
+                                       req.headers['x-user-id'];
+
+                if (!create_user_id) {
+                  Logger.info('Missing create_user_id in transcription request');
+                  return res.status(400).json({ 
+                    error: 'create_user_id is required',
+                    requestId: req.requestId 
+                  });
+                }
+
+                Logger.info(`Processing transcription for user: ${create_user_id}`);
+
+                const transcriptionId = `trans_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`;
+
+                const fileName = `${create_user_id}/recording_${Date.now()}.webm`;
+                const { data: uploadData, error: uploadError } = await supabase.storage
+                  .from('incident-audio')
+                  .upload(fileName, req.file.buffer, {
+                    contentType: req.file.mimetype,
+                    upsert: true
+                  });
+
+                if (uploadError) {
+                  Logger.error(`Upload error: ${uploadError.message}`);
+                  return res.status(500).json({ 
+                    error: 'Failed to upload audio to Supabase',
+                    requestId: req.requestId 
+                  });
+                }
+
+                const { data: { publicUrl } } = supabase.storage
+                  .from('incident-audio')
+                  .getPublicUrl(fileName);
+
+                Logger.info(`Audio file uploaded to Supabase: ${fileName}`);
+
+                const { data: queueData, error: queueError } = await supabase
+                  .from('transcription_queue')
+                  .insert([{
+                    create_user_id: create_user_id,
+                    incident_report_id: req.body.incident_report_id || null,
+                    audio_url: publicUrl,
+                    status: CONSTANTS.TRANSCRIPTION_STATUS.PENDING,
+                    retry_count: 0,
+                    created_at: new Date().toISOString(),
+                    error_message: null,
+                    audio_storage_path: fileName,
+                    audio_file_id: null,
+                    transcription_id: null
+                  }])
+                  .select()
+                  .single();
+
+                if (queueError) {
+                  Logger.error('Queue error:', queueError);
+                }
+
+                const queueId = queueData?.id || transcriptionId;
+
+                transcriptionStatuses.set(queueId.toString(), {
+                  status: CONSTANTS.TRANSCRIPTION_STATUS.PROCESSING,
+                  transcription: null,
+                  summary: null,
+                  error: null,
+                  create_user_id: create_user_id
+                });
+
+                res.json({
+                  success: true,
+                  message: 'Audio uploaded and queued for transcription',
+                  queueId: queueId.toString(),
+                  audioUrl: publicUrl,
+                  create_user_id: create_user_id,
+                  requestId: req.requestId
+                });
+
+                processTranscriptionFromBuffer(
+                  queueId, 
+                  req.file.buffer, 
+                  create_user_id, 
+                  req.body.incident_report_id, 
+                  publicUrl
+                );
+
+              } catch (error) {
+                Logger.error('Transcription error:', error);
+                res.status(500).json({ 
+                  error: 'Failed to process audio',
+                  requestId: req.requestId 
+                });
+              }
+            });
+
+            // --- CHECK TRANSCRIPTION STATUS ---
+            app.get('/api/transcription-status/:queueId', async (req, res) => {
+              const { queueId } = req.params;
+
+              if (!queueId || queueId === 'undefined') {
+                return res.status(400).json({ 
+                  error: 'Invalid queue ID',
+                  requestId: req.requestId 
+                });
+              }
+
+              const status = transcriptionStatuses.get(queueId);
+
+              if (status) {
+                res.json({
+                  ...status,
+                  requestId: req.requestId
+                });
+              } else {
+                if (supabaseEnabled) {
+                  try {
+                    const { data, error } = await supabase
+                      .from('transcription_queue')
+                      .select('*')
+                      .eq('id', queueId)
+                      .single();
+
+                    if (data) {
+                      res.json({
+                        status: data.status,
+                        transcription: data.transcription_text,
+                        error: data.error_message,
+                        create_user_id: data.create_user_id,
+                        requestId: req.requestId
+                      });
+                    } else {
+                      res.json({
+                        status: 'not_found',
+                        message: 'Transcription not found or expired',
+                        requestId: req.requestId
+                      });
+                    }
+                  } catch (error) {
+                    res.json({
+                      status: 'not_found',
+                      message: 'Transcription not found or expired',
+                      requestId: req.requestId
+                    });
+                  }
+                } else {
+                  res.json({
+                    status: 'not_found',
+                    message: 'Transcription not found or expired',
+                    requestId: req.requestId
+                  });
+                }
+              }
+            });
+
+            // --- UPDATE TRANSCRIPTION ---
+            app.post('/api/update-transcription', checkGDPRConsent, async (req, res) => {
+              try {
+                const { queueId, userId, transcription } = req.body;
+
+                if (!userId) {
+                  return res.status(400).json({ 
+                    error: 'User ID required for GDPR compliance',
+                    code: 'MISSING_USER_ID',
+                    requestId: req.requestId
+                  });
+                }
+
+                if (!transcription) {
+                  return res.status(400).json({ 
+                    error: 'Missing transcription text',
+                    code: 'MISSING_TRANSCRIPTION',
+                    requestId: req.requestId
+                  });
+                }
+
+                Logger.info('Updating transcription', { userId, queueId });
+
+                await logGDPRActivity(userId, 'DATA_UPDATE', {
+                  type: 'transcription',
+                  action: 'manual_edit'
+                }, req);
+
+                const { data: existing } = await supabase
+                  .from('ai_transcription')
+                  .select('id, audio_url, duration')
+                  .eq('create_user_id', userId)
+                  .order('created_at', { ascending: false })
+                  .limit(1)
+                  .single();
+
+                if (existing) {
+                  await supabase
+                    .from('ai_transcription')
+                    .update({
+                      transcription_text: transcription,
+                      updated_at: new Date().toISOString()
+                    })
+                    .eq('id', existing.id);
+                } else {
+                  await supabase
+                    .from('ai_transcription')
+                    .insert({
+                      create_user_id: userId,
+                      incident_report_id: null,
+                      transcription_text: transcription,
+                      audio_url: '',
+                      created_at: new Date().toISOString()
+                    });
+                }
+
+                const summary = await generateAISummary(transcription, userId, queueId || userId);
+
+                if (queueId) {
+                  broadcastTranscriptionUpdate(queueId, {
+                    type: 'updated',
+                    status: CONSTANTS.TRANSCRIPTION_STATUS.COMPLETED,
+                    transcription: transcription,
+                    summary: summary,
+                    message: 'Transcription updated successfully'
+                  });
+                }
+
+                res.json({ 
+                  success: true,
+                  summary: summary,
+                  requestId: req.requestId
+                });
+
+              } catch (error) {
+                Logger.error('Update transcription error', error);
+                res.status(500).json({ 
+                  error: 'Failed to update transcription',
+                  code: 'UPDATE_FAILED',
+                  requestId: req.requestId
+                });
+              }
+            });
+
+            // --- SAVE TRANSCRIPTION ---
+            app.post('/api/save-transcription', checkGDPRConsent, async (req, res) => {
+              try {
+                const { userId, incidentId, transcription, audioUrl, duration } = req.body;
+
+                if (!userId) {
+                  return res.status(400).json({ 
+                    error: 'User ID required for GDPR compliance',
+                    code: 'MISSING_USER_ID',
+                    message: 'Personal data cannot be saved without proper user identification',
+                    requestId: req.requestId
+                  });
+                }
+
+                if (!transcription) {
+                  return res.status(400).json({ 
+                    error: 'Transcription text is required',
+                    code: 'MISSING_TRANSCRIPTION',
+                    requestId: req.requestId
+                  });
+                }
+
+                Logger.info('Saving transcription', { userId });
+
+                await logGDPRActivity(userId, 'DATA_SAVE', {
+                  type: 'transcription',
+                  has_audio: !!audioUrl
+                }, req);
+
+                if (!supabaseEnabled) {
+                  return res.json({ 
+                    success: true, 
+                    message: 'Transcription received (Supabase not configured)',
+                    requestId: req.requestId 
+                  });
+                }
+
+                const { data: existing } = await supabase
+                  .from('ai_transcription')
+                  .select('id, audio_url')
+                  .eq('create_user_id', userId)
+                  .eq('incident_report_id', incidentId || null)
+                  .single();
+
+                let result;
+
+                if (existing) {
+                  const { data, error } = await supabase
+                    .from('ai_transcription')
+                    .update({
+                      transcription_text: transcription,
+                      audio_url: audioUrl || existing.audio_url,
+                      updated_at: new Date().toISOString()
+                    })
+                    .eq('id', existing.id)
+                    .select()
+                    .single();
+
+                  result = data;
+                  if (error) throw error;
+                } else {
+                  const { data, error } = await supabase
+                    .from('ai_transcription')
+                    .insert({
+                      create_user_id: userId,
+                      incident_report_id: incidentId || null,
+                      transcription_text: transcription,
+                      audio_url: audioUrl || '',
+                      created_at: new Date().toISOString()
+                    })
+                    .select()
+                    .single();
+
+                  result = data;
+                  if (error) throw error;
+                }
+
+                if (incidentId) {
+                  await supabase
+                    .from('incident_reports')
+                    .update({
+                      witness_statement_text: transcription,
+                      witness_statement_audio: audioUrl || undefined,
+                      updated_at: new Date().toISOString()
+                    })
+                    .eq('id', incidentId)
+                    .eq('create_user_id', userId);
+                }
+
+                res.json({ 
+                  success: true, 
+                  message: 'Transcription saved successfully',
+                  transcription_id: result?.id,
+                  requestId: req.requestId
+                });
+
+              } catch (error) {
+                Logger.error('Save transcription error', error);
+                res.status(500).json({ 
+                  error: 'Failed to save transcription',
+                  code: 'SAVE_FAILED',
+                  message: error.message,
+                  requestId: req.requestId 
+                });
+              }
+            });
+
+            // --- GET LATEST TRANSCRIPTION ---
+            app.get('/api/user/:userId/latest-transcription', async (req, res) => {
+              try {
+                const { userId } = req.params;
+                Logger.info('Getting latest transcription', { userId });
+
+                if (!supabaseEnabled) {
+                  return res.json({ 
+                    exists: false, 
+                    transcription: null,
+                    requestId: req.requestId 
+                  });
+                }
+
+                await logGDPRActivity(userId, 'DATA_ACCESS', {
+                  type: 'transcription_retrieval'
+                }, req);
+
+                const { data, error } = await supabase
+                  .from('ai_transcription')
+                  .select('*')
+                  .eq('create_user_id', userId)
+                  .order('created_at', { ascending: false })
+                  .limit(1)
+                  .single();
+
+                if (data) {
+                  const { data: summaryData } = await supabase
+                    .from('ai_summary')
+                    .select('*')
+                    .eq('create_user_id', userId)
+                    .order('created_at', { ascending: false })
+                    .limit(1)
+                    .single();
+
+                  return res.json({
+                    exists: true,
+                    transcription: data,
+                    aiSummary: summaryData,
+                    status: 'completed',
+                    requestId: req.requestId
+                  });
+                }
+
+                const { data: incidentData } = await supabase
+                  .from('incident_reports')
+                  .select('witness_statement_text, witness_statement_audio')
+                  .eq('create_user_id', userId)
+                  .order('created_at', { ascending: false })
+                  .limit(1)
+                  .single();
+
+                res.json({
+                  exists: !!incidentData?.witness_statement_text,
+                  transcription: incidentData ? {
+                    transcription_text: incidentData.witness_statement_text,
+                    audio_url: incidentData.witness_statement_audio
+                  } : null,
+                  status: incidentData?.witness_statement_text ? 'completed' : 'not_found',
+                  requestId: req.requestId
+                });
+
+              } catch (error) {
+                Logger.error('Get transcription status error', error);
+                res.status(500).json({ 
+                  error: 'Failed to get transcription status',
+                  requestId: req.requestId 
+                });
+              }
+            });
+
+            // --- WEBHOOK ENDPOINTS ---
+            app.post('/webhook/signup', checkSharedKey, async (req, res) => {
+              try {
+                Logger.info('Signup webhook received');
+
+                if (!supabaseEnabled || !imageProcessor) {
+                  return res.status(503).json({ 
+                    error: 'Service not configured',
+                    requestId: req.requestId 
+                  });
+                }
+
+                const webhookData = req.body;
+
+                if (!webhookData.create_user_id) {
+                  return res.status(400).json({ 
+                    error: 'Missing create_user_id',
+                    requestId: req.requestId 
+                  });
+                }
+
+                await logGDPRActivity(webhookData.create_user_id, 'SIGNUP_PROCESSING', {
+                  source: 'webhook',
+                  has_images: true
+                }, req);
+
+                imageProcessor.processSignupImages(webhookData)
+                  .then(result => {
+                    Logger.success('Signup processing complete', result);
+                  })
+                  .catch(error => {
+                    Logger.error('Signup processing failed', error);
+                  });
+
+                res.status(200).json({ 
+                  success: true, 
+                  message: 'Signup processing started',
+                  create_user_id: webhookData.create_user_id,
+                  requestId: req.requestId 
+                });
+
+              } catch (error) {
+                Logger.error('Webhook error', error);
+                res.status(500).json({ 
+                  success: false, 
+                  error: error.message,
+                  requestId: req.requestId 
+                });
+              }
+            });
+
+            app.post('/webhook/incident-report', checkSharedKey, async (req, res) => {
+              try {
+                Logger.info('Incident report webhook received');
+
+                if (!supabaseEnabled || !imageProcessor) {
+                  return res.status(503).json({ 
+                    error: 'Service not configured',
+                    requestId: req.requestId 
+                  });
+                }
+
+                const webhookData = req.body;
+
+                if (!webhookData.id && !webhookData.incident_report_id) {
+                  return res.status(400).json({ 
+                    error: 'Missing incident report ID',
+                    requestId: req.requestId 
+                  });
+                }
+
+                if (!webhookData.create_user_id) {
+                  return res.status(400).json({ 
+                    error: 'Missing user ID - GDPR compliance requires user identification',
+                    code: 'MISSING_USER_ID',
+                    requestId: req.requestId
+                  });
+                }
+
+                const incidentId = webhookData.id || webhookData.incident_report_id;
+
+                await logGDPRActivity(webhookData.create_user_id, 'INCIDENT_REPORT', {
+                  incident_id: incidentId,
+                  source: 'webhook'
+                }, req);
+
+                const result = await imageProcessor.processIncidentReportFiles(webhookData);
+
+                Logger.success('Incident processing complete:', result);
+
+                if (req.query.redirect === 'true') {
+                  const userId = webhookData.create_user_id || '';
+                  res.redirect(`/report-complete.html?incident_id=${incidentId}&user_id=${userId}`);
+                } else {
+                  res.status(200).json({
+                    ...result,
+                    requestId: req.requestId
+                  });
+                }
+
+              } catch (error) {
+                Logger.error('Webhook error', error);
+                res.status(500).json({ 
+                  success: false, 
+                  error: error.message,
+                  requestId: req.requestId 
+                });
+              }
+            });
+
+            // --- PDF GENERATION ---
+            app.post('/generate-pdf', checkSharedKey, async (req, res) => {
+              const { create_user_id } = req.body;
+
+              if (!create_user_id) {
+                return res.status(400).json({ 
+                  error: 'Missing create_user_id',
+                  message: 'Please provide a valid user ID',
+                  requestId: req.requestId
+                });
+              }
+
+              if (!supabaseEnabled) {
+                return res.status(503).json({ 
+                  error: 'Service not configured',
+                  message: 'Supabase is not properly configured',
+                  requestId: req.requestId
+                });
+              }
+
+              if (!fetchAllData || !generatePDF || !sendEmails) {
+                return res.status(503).json({ 
+                  error: 'PDF generation modules not available',
+                  message: 'PDF generation libraries are missing',
+                  requestId: req.requestId
+                });
+              }
+
+              try {
+                Logger.info('Starting PDF generation', { userId: create_user_id });
+
+                await logGDPRActivity(create_user_id, 'PDF_GENERATION', {
+                  type: 'complete_report'
+                }, req);
+
+                const allData = await fetchAllData(create_user_id);
+
+                if (!allData.user || !allData.user.driver_email) {
+                  return res.status(404).json({
+                    error: 'User not found',
+                    message: 'No user data found for the provided ID',
+                    requestId: req.requestId
+                  });
+                }
+
+                const { data: aiTranscription } = await supabase
+                  .from('ai_transcription')
+                  .select('*')
+                  .eq('create_user_id', create_user_id)
+                  .order('created_at', { ascending: false })
+                  .limit(1)
+                  .single();
+
+                const { data: aiSummary } = await supabase
+                  .from('ai_summary')
+                  .select('*')
+                  .eq('create_user_id', create_user_id)
+                  .order('created_at', { ascending: false })
+                  .limit(1)
+                  .single();
+
+                if (aiTranscription) {
+                  allData.aiTranscription = aiTranscription;
+                }
+                if (aiSummary) {
+                  allData.aiSummary = aiSummary;
+                }
+
+                const pdfBuffer = await generatePDF(allData);
+                const storedForm = await storeCompletedForm(create_user_id, pdfBuffer, allData);
+                const emailResult = await sendEmails(allData.user.driver_email, pdfBuffer, create_user_id);
+
+                if (storedForm.id && !storedForm.id.startsWith('temp-')) {
+                  await supabase
+                    .from('completed_incident_forms')
+                    .update({
+                      sent_to_user: emailResult.success,
+                      sent_to_accounts: emailResult.success,
+                      email_status: emailResult
+                    })
+                    .eq('id', storedForm.id);
+                }
+
+                Logger.success('PDF generation process completed successfully');
+
+                res.json({
+                  success: true,
+                  message: 'PDF generated and sent successfully',
+                  form_id: storedForm.id,
+                  create_user_id,
+                  email_sent: emailResult.success,
+                  timestamp: new Date().toISOString(),
+                  requestId: req.requestId
+                });
+
+              } catch (error) {
+                Logger.error('Error in PDF generation', error);
+                res.status(500).json({ 
+                  error: error.message,
+                  details: 'Failed to generate PDF. Please check logs.',
+                  requestId: req.requestId
+                });
+              }
+            });
+
+            app.post('/webhook/generate-pdf', checkSharedKey, async (req, res) => {
+              const { create_user_id } = req.body;
+
+              if (!create_user_id) {
+                return res.status(400).json({ 
+                  error: 'Missing create_user_id',
+                  message: 'Please provide a valid user ID',
+                  requestId: req.requestId
+                });
+              }
+
+              if (!supabaseEnabled) {
+                return res.status(503).json({ 
+                  error: 'Service not configured',
+                  message: 'Supabase is not properly configured',
+                  requestId: req.requestId
+                });
+              }
+
+              if (!fetchAllData || !generatePDF || !sendEmails) {
+                return res.status(503).json({ 
+                  error: 'PDF generation modules not available',
+                  message: 'PDF generation libraries are missing',
+                  requestId: req.requestId
+                });
+              }
+
+              try {
+                Logger.info('Starting PDF generation via webhook', { userId: create_user_id });
+
+                await logGDPRActivity(create_user_id, 'PDF_GENERATION', {
+                  type: 'complete_report',
+                  source: 'webhook'
+                }, req);
+
+                const allData = await fetchAllData(create_user_id);
+
+                if (!allData.user || !allData.user.driver_email) {
+                  return res.status(404).json({
+                    error: 'User not found',
+                    message: 'No user data found for the provided ID',
+                    requestId: req.requestId
+                  });
+                }
+
+                const { data: aiTranscription } = await supabase
+                  .from('ai_transcription')
+                  .select('*')
+                  .eq('create_user_id', create_user_id)
+                  .order('created_at', { ascending: false })
+                  .limit(1)
+                  .single();
+
+                const { data: aiSummary } = await supabase
+                  .from('ai_summary')
+                  .select('*')
+                  .eq('create_user_id', create_user_id)
+                  .order('created_at', { ascending: false })
+                  .limit(1)
+                  .single();
+
+                if (aiTranscription) {
+                  allData.aiTranscription = aiTranscription;
+                }
+                if (aiSummary) {
+                  allData.aiSummary = aiSummary;
+                }
+
+                const pdfBuffer = await generatePDF(allData);
+                const storedForm = await storeCompletedForm(create_user_id, pdfBuffer, allData);
+                const emailResult = await sendEmails(allData.user.driver_email, pdfBuffer, create_user_id);
+
+                if (storedForm.id && !storedForm.id.startsWith('temp-')) {
+                  await supabase
+                    .from('completed_incident_forms')
+                    .update({
+                      sent_to_user: emailResult.success,
+                      sent_to_accounts: emailResult.success,
+                      email_status: emailResult
+                    })
+                    .eq('id', storedForm.id);
+                }
+
+                Logger.success('PDF generation process completed successfully (webhook)');
+
+                res.json({
+                  success: true,
+                  message: 'PDF generated and sent successfully',
+                  form_id: storedForm.id,
+                  create_user_id,
+                  email_sent: emailResult.success,
+                  timestamp: new Date().toISOString(),
+                  requestId: req.requestId
+                });
+
+              } catch (error) {
+                Logger.error('Error in webhook PDF generation', error);
+                res.status(500).json({ 
+                  error: error.message,
+                  details: 'Failed to generate PDF. Please check logs.',
+                  requestId: req.requestId
+                });
+              }
+            });
+
+            // --- ERROR HANDLING ---
+            app.use((err, req, res, next) => {
+              Logger.error('Unhandled error', err);
+              res.status(500).json({ 
+                error: 'Internal server error',
+                message: process.env.NODE_ENV === 'development' ? err.message : 'An error occurred',
+                requestId: req.requestId 
+              });
+            });
+
+            app.use((req, res) => {
+              res.status(404).json({ 
+                error: 'Not found',
+                path: req.path,
+                requestId: req.requestId 
+              });
+            });
+
+            // --- GRACEFUL SHUTDOWN ---
+            process.on('SIGTERM', () => {
+              Logger.info('SIGTERM received, closing server...');
+
+              if (realtimeChannels.transcriptionChannel) {
+                realtimeChannels.transcriptionChannel.unsubscribe();
+              }
+              if (realtimeChannels.summaryChannel) {
+                realtimeChannels.summaryChannel.unsubscribe();
+              }
+
+              if (transcriptionQueueInterval) {
+                clearInterval(transcriptionQueueInterval);
+              }
+              if (wsHeartbeat) {
+                clearInterval(wsHeartbeat);
+              }
+
+              wss.close(() => {
+                Logger.info('WebSocket server closed');
+              });
+
+              server.close(() => {
+                Logger.info('Server closed gracefully');
+                process.exit(0);
+              });
+
+              setTimeout(() => {
+                Logger.error('Could not close connections in time, forcefully shutting down');
+                process.exit(1);
+              }, 10000);
+            });
+
+            process.on('SIGINT', () => {
+              Logger.info('SIGINT received, closing server...');
+
+              if (realtimeChannels.transcriptionChannel) {
+                realtimeChannels.transcriptionChannel.unsubscribe();
+              }
+              if (realtimeChannels.summaryChannel) {
+                realtimeChannels.summaryChannel.unsubscribe();
+              }
+
+              if (transcriptionQueueInterval) {
+                clearInterval(transcriptionQueueInterval);
+              }
+              if (wsHeartbeat) {
+                clearInterval(wsHeartbeat);
+              }
+
+              wss.close(() => {
+                Logger.info('WebSocket server closed');
+              });
+
+              server.close(() => {
+                Logger.info('Server closed gracefully');
+                process.exit(0);
+              });
+
+              setTimeout(() => {
+                Logger.error('Could not close connections in time, forcefully shutting down');
+                process.exit(1);
+              }, 10000);
+            });
+
+            process.on('uncaughtException', (error) => {
+              Logger.error('Uncaught Exception:', error);
+              process.emit('SIGTERM');
+            });
+
+            process.on('unhandledRejection', (reason, promise) => {
+              Logger.error('Unhandled Rejection at:', promise, 'reason:', reason);
+            });
+
+            // --- START SERVER ---
+            const PORT = process.env.PORT || 3000;
+            const HOST = '0.0.0.0';
+
+            server.listen(PORT, HOST, () => {
+              Logger.info('========================================');
+              Logger.info('Car Crash Lawyer AI - Server Started');
+              Logger.info('========================================');
+              Logger.info(`Server running on http://${HOST}:${PORT}`);
+
+              if (process.env.REPL_SLUG && process.env.REPL_OWNER) {
+                Logger.info(`Public URL: https://${process.env.REPL_SLUG}.${process.env.REPL_OWNER}.repl.co`);
+              }
+
+              Logger.info('\nService Status:');
+              Logger.info(`   Supabase: ${supabaseEnabled ? 'Connected' : 'Not configured'}`);
+              Logger.info(`   Auth Service: ${authService ? 'Configured' : 'Not configured'}`);
+              Logger.info(`   OpenAI: ${process.env.OPENAI_API_KEY ? 'Configured' : 'Not configured'}`);
+              Logger.info(`   WebSocket: Active`);
+              Logger.info(`   GDPR Compliant: Yes`);
+
+              Logger.info('\nServer ready!');
+              Logger.info('========================================');
+            });
+
+            module.exports = app;
