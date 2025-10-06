@@ -714,8 +714,8 @@
 
     <!-- Bottom Navigation -->
     <nav class="bottom-nav">
-        <button class="continue-btn" id="continueBtn" aria-label="Continue to detailed report">
-            Continue to Report →
+        <button class="continue-btn" id="continueBtn" aria-label="Continue to safety check">
+            Continue to Safety Check →
         </button>
     </nav>
 
@@ -1216,20 +1216,21 @@
                     console.warn('⚠️ No authenticated user found, redirecting to sign-in');
                     // Store current page for redirect after sign-in
                     sessionStorage.setItem('redirectAfterSignIn', '/incident.html');
-                    sessionStorage.setItem('pendingAction', 'continue_to_transcription');
+                    sessionStorage.setItem('pendingAction', 'continue_to_safety_check');
                     window.location.href = '/sign-in.html';
                     return;
                 }
 
                 console.log('🔑 Using authenticated user ID:', userId.substring(0, 8) + '...');
 
-                // Store incident data
+                // Store incident data for safety check page
                 const incidentData = {
                     userId: userId,
                     location: userLocation,
                     what3words: what3wordsData,
                     timestamp: new Date().toISOString(),
-                    address: document.getElementById('addressText')?.textContent || 'Location not captured'
+                    address: document.getElementById('addressText')?.textContent || 'Location not captured',
+                    voiceTranscription: voiceTranscription || null
                 };
 
                 sessionStorage.setItem('incidentData', JSON.stringify(incidentData));
@@ -1252,14 +1253,14 @@
                         }
                     } catch (typeformError) {
                         console.error('❌ Typeform redirect failed, using native flow:', typeformError);
-                        continueBtn.textContent = 'Continuing to native form...';
+                        continueBtn.textContent = 'Continuing to safety check...';
                     }
                 }
 
-                // Redirect to transcription with authentication context
-                const transcriptionUrl = `/transcription-status.html?create_user_id=${encodeURIComponent(userId)}&source=incident_form&authenticated=true&timestamp=${Date.now()}`;
-                console.log('🎤 Redirecting authenticated user to transcription:', transcriptionUrl);
-                window.location.href = transcriptionUrl;
+                // Redirect to safety check page (proper flow)
+                continueBtn.textContent = 'Going to Safety Check...';
+                console.log('🛡️ Redirecting to safety check page');
+                window.location.href = 'safety-check.html';
 
             } catch (error) {
                 console.error('❌ Error in continue flow:', error);
