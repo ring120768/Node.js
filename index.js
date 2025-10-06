@@ -24,15 +24,15 @@ const { createClient } = require('@supabase/supabase-js');
 // ========================================
 // AUTH IMPORTS - NEW
 // ========================================
-const AuthService = require('./lib/authService');
-const { requireAuth, optionalAuth } = require('./lib/lib/authMiddleware');
+const AuthService = require('./lib/services/authService');
+const { requireAuth, optionalAuth } = require('./lib/middleware/authMiddleware');
 
 // Import PDF generation modules - with error handling
 let fetchAllData, generatePDF, sendEmails;
 try {
-  fetchAllData = require('./lib/dataFetcher').fetchAllData;
-  generatePDF = require('./lib/pdfGenerator').generatePDF;
-  sendEmails = require('./lib/emailService').sendEmails;
+  fetchAllData = require('./lib/data/dataFetcher').fetchAllData;
+  generatePDF = require('./lib/generators/pdfGenerator').generatePDF;
+  sendEmails = require('./lib/generators/emailService').sendEmails;
 } catch (error) {
   console.warn('PDF generation modules not found - PDF features will be disabled', error.message);
 }
