@@ -1275,9 +1275,9 @@
         };
 
         // ============================
-        // Enhanced User ID Validation (more permissive for Typeform)
+        // Enhanced User ID Validation (accepts both Typeform and direct signup)
         // ============================
-        function validateTypeformUserId(userId) {
+        function validateUserId(userId) {
             if (!userId || typeof userId !== 'string') {
                 console.error('❌ User ID is null, undefined, or not a string:', userId);
                 return false;
@@ -1305,10 +1305,10 @@
                 return true;
             }
 
-            // Accept alphanumeric IDs (some Typeform integrations use these)
-            const alphanumericRegex = /^[a-zA-Z0-9][a-zA-Z0-9_-]{2,63}$/;
-            if (alphanumericRegex.test(cleanUserId)) {
-                console.log('✅ Valid alphanumeric user ID:', cleanUserId);
+            // Accept direct signup user IDs (username format from database)
+            const usernameRegex = /^[a-zA-Z0-9][a-zA-Z0-9_-]{2,63}$/;
+            if (usernameRegex.test(cleanUserId)) {
+                console.log('✅ Valid direct signup user ID:', cleanUserId);
                 return true;
             }
 
@@ -1328,6 +1328,11 @@
 
             console.error('❌ Invalid user ID format:', cleanUserId);
             return false;
+        }
+
+        // Keep the old function name for backward compatibility
+        function validateTypeformUserId(userId) {
+            return validateUserId(userId);
         }
 
         // ============================
@@ -1366,7 +1371,7 @@
 
                 // Fallback to localStorage if not in URL
                 if (!candidateUserId) {
-                    candidateUserId = localStorage.getItem('create_user_id');
+                    candidateUserId = localStorage.getItem('create_user_id') || localStorage.getItem('currentUserId');
                     if (candidateUserId) {
                         userIdSource = 'localStorage';
                         console.log('📋 Found user ID candidate from localStorage:', candidateUserId);
@@ -1379,23 +1384,36 @@
                     candidateUserId = null;
                 }
 
+                // If still no user ID, try to get authenticated user from session
+                if (!candidateUserId) {
+                    console.log('🔍 No direct user ID found, checking authentication...');
+                    try {
+                        const authCheck = await fetch('/api/auth/check', {
+                            credentials: 'include'
+                        });
+                        
+                        if (authCheck.ok) {
+                            const authData = await authCheck.json();
+                            if (authData.authenticated && authData.user && authData.user.userId) {
+                                candidateUserId = authData.user.userId;
+                                userIdSource = 'authenticated_session';
+                                console.log('✅ Found authenticated user ID:', candidateUserId);
+                            }
+                        }
+                    } catch (authError) {
+                        console.warn('Authentication check failed:', authError);
+                    }
+                }
+
                 // Validate the user ID
                 if (!candidateUserId) {
-                    console.error('❌ No user ID found in URL parameters or localStorage');
-
-                    // Check if we're in development mode
-                    const isDevelopment = window.location.hostname.includes('replit') || 
-                                         window.location.hostname === 'localhost' ||
-                                         window.location.search.includes('debug=true');
-
-                    // Backend now requires proper UUIDs in production - no dev patterns allowed
-                    console.error('❌ No user ID found - redirecting to proper authentication flow');
+                    console.error('❌ No user ID found in URL parameters, localStorage, or session');
                     showTranscriptionServiceError();
                     return null;
                 }
 
-                // Final validation
-                if (!validateTypeformUserId(candidateUserId)) {
+                // Enhanced validation - accept both Typeform UUIDs and direct signup user IDs
+                if (!validateUserId(candidateUserId)) {
                     console.error('❌ User ID validation failed:', candidateUserId);
                     showTranscriptionServiceError();
                     return null;
@@ -1460,30 +1478,34 @@
             const container = document.querySelector('.container');
             container.innerHTML = `
                 <div style="text-align: center; padding: 40px;">
-                    <h1 style="color: #ef4444;">🚫 User ID Required</h1>
+                    <h1 style="color: #ef4444;">🚫 Authentication Required</h1>
                     <div style="background: #fee2e2; border: 1px solid #fecaca; border-radius: 8px; padding: 20px; margin: 20px 0;">
-                        <h3 style="color: #dc2626; margin: 0 0 15px 0;">Missing Typeform User ID</h3>
+                        <h3 style="color: #dc2626; margin: 0 0 15px 0;">Missing User Authentication</h3>
                         <p style="color: #991b1b; margin: 0 0 15px 0;">
-                            This transcription service requires a valid user ID from Typeform to link your recording 
+                            This transcription service requires you to be properly signed in to link your recording 
                             with your incident report data.
                         </p>
                         <div style="background: #fff; border: 1px solid #fecaca; border-radius: 4px; padding: 15px; margin: 15px 0; text-align: left;">
-                            <h4 style="margin: 0 0 10px 0; color: #dc2626;">Expected URL format:</h4>
-                            <code style="color: #059669; word-break: break-all;">
-                                /transcription-status.html?create_user_id=YOUR_TYPEFORM_USER_ID
-                            </code>
+                            <h4 style="margin: 0 0 10px 0; color: #dc2626;">Possible solutions:</h4>
+                            <ul style="color: #991b1b; text-align: left; margin: 0; padding-left: 20px;">
+                                <li>Sign in to your account first</li>
+                                <li>Complete the incident form before accessing transcription</li>
+                                <li>If coming from Typeform, ensure the URL contains your user ID</li>
+                            </ul>
                         </div>
                         <p style="color: #991b1b; margin: 15px 0 0 0; font-size: 14px;">
-                            Please return to the original Typeform and complete the process properly, 
-                            or contact support if you continue to see this message.
+                            Please sign in or complete the incident form first, then try again.
                         </p>
                     </div>
                     <div style="margin-top: 30px;">
-                        <button onclick="window.location.href='/'" class="btn btn-primary">
-                            🏠 Return to Home
+                        <button onclick="window.location.href='/sign-in.html'" class="btn btn-primary">
+                            🔐 Sign In
                         </button>
-                        <button onclick="window.location.reload()" class="btn btn-ghost" style="margin-left: 10px;">
-                            🔄 Retry
+                        <button onclick="window.location.href='/incident.html'" class="btn btn-primary" style="margin-left: 10px;">
+                            📋 Start Incident Report
+                        </button>
+                        <button onclick="window.location.href='/'" class="btn btn-ghost" style="margin-left: 10px;">
+                            🏠 Return to Home
                         </button>
                     </div>
                 </div>

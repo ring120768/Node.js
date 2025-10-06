@@ -4300,6 +4300,51 @@ app.get('/', (req, res) => {
 });
 
 // ========================================
+// AUTHENTICATION CHECK ENDPOINT
+// ========================================
+
+// Authentication check endpoint for transcription page
+app.get('/api/auth/check', (req, res) => {
+  try {
+    // Check if user is authenticated via session or localStorage
+    const sessionUserId = req.session?.userId || req.cookies?.userId;
+    
+    // If no session, try to extract from common authentication headers
+    const authUserId = req.headers['x-user-id'] || req.headers['authorization']?.replace('Bearer ', '');
+    
+    const userId = sessionUserId || authUserId;
+    
+    if (userId) {
+      // Validate the user ID format
+      if (UUIDService.isValidUUIDFormat(userId) || /^[a-zA-Z0-9][a-zA-Z0-9_-]{2,63}$/.test(userId)) {
+        return res.json({
+          authenticated: true,
+          user: {
+            userId: userId,
+            source: sessionUserId ? 'session' : 'header'
+          },
+          requestId: req.requestId
+        });
+      }
+    }
+    
+    res.json({
+      authenticated: false,
+      user: null,
+      requestId: req.requestId
+    });
+    
+  } catch (error) {
+    Logger.error('Authentication check error:', error);
+    res.status(500).json({
+      authenticated: false,
+      error: 'Authentication check failed',
+      requestId: req.requestId
+    });
+  }
+});
+
+// ========================================
 // DEBUG AND TEST ENDPOINTS
 // ========================================
 
