@@ -1382,7 +1382,7 @@ async function processTypeformWebhook(formResponse, requestId) {
 
     // Extract all data first
     result.extractedFields = extractAllTypeformFields(formResponse);
-    
+
     // Log hidden fields for debugging
     if (formResponse.hidden) {
       result.debug.hiddenFields = formResponse.hidden;
@@ -1594,7 +1594,7 @@ async function validateExtractedUserId(userId, source, requestId) {
   try {
     // Format validation
     validation.format_valid = UUIDService.validateTypeformUUID(userId);
-    
+
     if (!validation.format_valid) {
       validation.error = 'Invalid UUID format';
 
@@ -1799,10 +1799,10 @@ async function validateAuthCode(authCode, userId, productId) {
   }
 
   try {
-    // Simple auth code validation - you can enhance this based on your needs
+    // Simple auth code validation - enhance this based on your needs
     const expectedCode = generateAuthCode(userId, productId);
     const isValid = authCode === expectedCode;
-    
+
     Logger.info(`🔐 Auth code validation: ${isValid ? 'VALID' : 'INVALID'}`);
     return isValid;
 
@@ -1817,12 +1817,12 @@ async function validateAuthCode(authCode, userId, productId) {
  */
 function generateAuthCode(userId, productId = 'incident_report') {
   if (!userId) return null;
-  
+
   // Simple auth code generation - enhance based on your security requirements
   const crypto = require('crypto');
   const secret = process.env.WEBHOOK_SECRET || 'default_secret';
   const data = `${userId}:${productId}:${secret}`;
-  
+
   return crypto.createHash('sha256').update(data).digest('hex').substring(0, 16);
 }
 
@@ -1844,7 +1844,7 @@ async function fallbackUserMatching(extractedFields, requestId, debug) {
 
   try {
     let query = supabase.from('user_signup').select('create_user_id, uid, email, mobile');
-    
+
     if (email && phone) {
       query = query.or(`email.eq.${email},mobile.eq.${phone}`);
     } else if (email) {
@@ -1863,9 +1863,9 @@ async function fallbackUserMatching(extractedFields, requestId, debug) {
     if (users && users.length > 0) {
       const user = users[0];
       const userId = user.uid || user.create_user_id;
-      
+
       Logger.warn(`⚠️ [${requestId}] Fallback match found via ${email ? 'email' : 'phone'}: ${userId.substring(0, 8)}...`);
-      
+
       debug.attempts.push({
         method: 'fallback_matching',
         matchedBy: email ? 'email' : 'phone',
@@ -2111,7 +2111,7 @@ app.all('/webhook/test', (req, res) => {
   });
 });
 
-// Configuration test endpoint
+// Config test endpoint
 app.get('/webhook/config-test', (req, res) => {
   const requestId = `config_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`;
 
@@ -2160,6 +2160,138 @@ Logger.info('  - Always return HTTP 200 OK');
 Logger.info('  - Comprehensive error handling');
 Logger.info('  - Request ID tracking');
 Logger.info('  - Webhook debugging storage');
+
+// ========================================
+// TYPEFORM COMPLETION HANDLER
+// ========================================
+
+app.get('/typeform-complete', (req, res) => {
+  const requestId = `typeform_return_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`;
+
+  try {
+    const { user_id, form_type, error, debug } = req.query;
+
+    Logger.info(`🔙 Typeform return handler - Request ID: ${requestId}`, {
+      user_id: user_id ? user_id.substring(0, 8) + '...' : 'missing',
+      form_type,
+      error,
+      debug,
+      full_query: req.query
+    });
+
+    // Handle error cases from Typeform
+    if (error) {
+      Logger.warn(`⚠️ Typeform returned with error: ${error}`);
+      const errorParams = new URLSearchParams({
+        error: error,
+        source: 'typeform',
+        form_type: form_type || 'unknown'
+      });
+      return res.redirect(`/sign-in.html?${errorParams.toString()}`);
+    }
+
+    // Validate user_id is present
+    if (!user_id) {
+      Logger.error(`❌ No user_id provided in Typeform return - Request ID: ${requestId}`);
+      const errorParams = new URLSearchParams({
+        error: 'missing_user_id',
+        message: 'User ID missing from Typeform response',
+        source: 'typeform_return'
+      });
+      return res.redirect(`/sign-in.html?${errorParams.toString()}`);
+    }
+
+    // Validate user_id format using existing UUID service
+    if (!UUIDService.validateTypeformUUID(user_id)) {
+      Logger.error(`❌ Invalid user_id format from Typeform - Request ID: ${requestId}`, {
+        user_id: user_id,
+        format_valid: false
+      });
+      const errorParams = new URLSearchParams({
+        error: 'invalid_user_id',
+        message: 'Invalid user ID format from Typeform',
+        source: 'typeform_return'
+      });
+      return res.redirect(`/sign-in.html?${errorParams.toString()}`);
+    }
+
+    Logger.success(`✅ Valid user_id from Typeform: ${user_id.substring(0, 8)}... - Request ID: ${requestId}`);
+
+    // Build base parameters for redirect
+    const baseParams = new URLSearchParams({
+      create_user_id: user_id,
+      user_id: user_id, // Backward compatibility
+      source: 'typeform_complete',
+      form_completed: 'true'
+    });
+
+    // Add debug info if present
+    if (debug) {
+      baseParams.append('debug', debug);
+    }
+
+    // Route based on form type
+    let redirectUrl;
+    switch (form_type) {
+      case 'incident':
+      case 'incident_report':
+        // Redirect to transcription page
+        redirectUrl = `/transcription-status.html?${baseParams.toString()}`;
+        Logger.info(`📝 Redirecting incident form completion to transcription: ${user_id.substring(0, 8)}...`);
+        break;
+
+      case 'signup':
+      case 'user_signup':
+        // Check if dashboard exists, otherwise redirect to incident form
+        const dashboardExists = require('fs').existsSync(path.join(__dirname, 'public', 'dashboard.html'));
+        if (dashboardExists) {
+          redirectUrl = `/dashboard.html?${baseParams.toString()}`;
+          Logger.info(`👤 Redirecting signup completion to dashboard: ${user_id.substring(0, 8)}...`);
+        } else {
+          // Fallback to incident form if no dashboard
+          redirectUrl = `/incident.html?${baseParams.toString()}`;
+          Logger.info(`👤 Redirecting signup completion to incident form (no dashboard): ${user_id.substring(0, 8)}...`);
+        }
+        break;
+
+      default:
+        // Unknown form type - redirect to sign-in with parameters
+        Logger.warn(`❓ Unknown form_type: ${form_type} - Request ID: ${requestId}`);
+        baseParams.append('error', 'unknown_form_type');
+        baseParams.append('message', `Unknown form type: ${form_type}`);
+        redirectUrl = `/sign-in.html?${baseParams.toString()}`;
+    }
+
+    // Store completion data in webhook debugger for tracking
+    WebhookDebugger.storeWebhook({
+      type: 'typeform_completion',
+      data: {
+        user_id: user_id,
+        form_type: form_type,
+        redirect_url: redirectUrl,
+        query_params: req.query
+      },
+      timestamp: new Date().toISOString(),
+      requestId: requestId
+    });
+
+    Logger.success(`🔄 Typeform completion redirect: ${redirectUrl} - Request ID: ${requestId}`);
+    res.redirect(redirectUrl);
+
+  } catch (error) {
+    Logger.error(`❌ Typeform completion handler error - Request ID: ${requestId}:`, error);
+
+    // Graceful error handling - redirect to sign-in with error info
+    const errorParams = new URLSearchParams({
+      error: 'processing_error',
+      message: 'Error processing Typeform completion',
+      source: 'typeform_complete',
+      request_id: requestId
+    });
+
+    res.redirect(`/sign-in.html?${errorParams.toString()}`);
+  }
+});
 
 // ========================================
 // ZAPIER INTEGRATION ENDPOINTS
@@ -3108,17 +3240,11 @@ app.post('/api/admin/fix-user-data/:userId', async (req, res) => {
 app.get('/api/user/:userId/complete-data', async (req, res) => {
   try {
     const { userId } = req.params;
+    const { include_raw_data = false } = req.query;
 
     if (!validateBackendUserId(userId)) {
       return res.status(400).json({
         error: 'Invalid user ID format',
-        requestId: req.requestId
-      });
-    }
-
-    if (!supabaseEnabled) {
-      return res.status(503).json({
-        error: 'Database service not configured',
         requestId: req.requestId
       });
     }
@@ -3590,7 +3716,7 @@ app.get('/api/debug/users', async (req, res) => {
             .limit(parseInt(limit));
 
         if (search) {
-            query = query.or(`create_user_id.ilike.%${search}%,name.ilike.%${search}%,email.ilike.%${search}%`);
+            query = query.or(`name.ilike.%${search}%,email.ilike.%${search}%`);
         }
 
         const { data: users, error } = await query;
@@ -3805,7 +3931,8 @@ app.get('/', (req, res) => {
         incident: '/webhook/incident-report',
         test: '/webhook/test'
       },
-      transcription: '/transcription-status.html'
+      transcription: '/transcription-status.html',
+      typeform_return: '/typeform-complete'
     }
   });
 });
@@ -4897,11 +5024,6 @@ app.get('/api/debug/transcription-full', async (req, res) => {
 
     console.log(`📤 [${debugId}] SENDING SUCCESS RESPONSE`);
     res.json(response);
-
-    // Start background transcription processing - THIS IS THE CHANGE
-    // The transcription is now triggered explicitly via a POST request to /api/trigger-transcription
-    // This allows the client to decide when to start the processing.
-    // The polling mechanism will then check the status.
 
     // No immediate background processing here, rely on the explicit trigger endpoint.
 
