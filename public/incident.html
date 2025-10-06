@@ -875,32 +875,15 @@
             if (navigator.vibrate) navigator.vibrate(10);
             console.log('🔙 Go back clicked from incident page');
 
-            // Force navigation back - remove all restrictions
-            try {
-                // First try browser history
-                if (window.history.length > 1) {
-                    console.log('🔙 Using browser back navigation');
-                    window.history.back();
-                    return;
-                }
-
-                // Then try page history
-                if (window.pageHistory && window.pageHistory.length > 1 && window.currentPageIndex > 0) {
-                    window.currentPageIndex--;
-                    const previousPage = window.pageHistory[window.currentPageIndex];
-                    console.log('🔙 Navigating to previous page:', previousPage);
-                    sessionStorage.setItem('navigationIndex', window.currentPageIndex.toString());
-                    window.location.href = previousPage;
-                    return;
-                }
-
-                // Fallback to home page
-                console.log('🔙 Fallback navigation to home');
-                window.location.href = '/';
-
-            } catch (error) {
-                console.error('❌ Navigation error:', error);
-                // Emergency fallback
+            if (window.history.length > 1) {
+                window.history.back();
+            } else if (window.pageHistory && window.pageHistory.length > 1 && window.currentPageIndex > 0) {
+                window.currentPageIndex--;
+                const previousPage = window.pageHistory[window.currentPageIndex];
+                console.log('🔙 Navigating to:', previousPage);
+                window.location.href = previousPage;
+            } else {
+                console.log('🔙 No previous page, going to home');
                 window.location.href = '/';
             }
         }
@@ -1223,13 +1206,22 @@
                 continueBtn.disabled = true;
                 continueBtn.textContent = 'Preparing...';
 
-                // Use the existing valid session from logs
-                let userId = sessionStorage.getItem('user_id') || 
-                           sessionStorage.getItem('userId') ||
+                // Get the current session user ID from the logs
+                let userId = sessionStorage.getItem('userId') || 
                            sessionStorage.getItem('create_user_id') ||
-                           'ef40cb9c-61e7-4575-9ed3-5ecf146f9866'; // From the console logs
+                           localStorage.getItem('create_user_id');
 
-                console.log('🔑 Using session user ID:', userId.substring(0, 8) + '...');
+                // If no user ID exists, redirect to sign-in first
+                if (!userId) {
+                    console.warn('⚠️ No authenticated user found, redirecting to sign-in');
+                    // Store current page for redirect after sign-in
+                    sessionStorage.setItem('redirectAfterSignIn', '/incident.html');
+                    sessionStorage.setItem('pendingAction', 'continue_to_transcription');
+                    window.location.href = '/sign-in.html';
+                    return;
+                }
+
+                console.log('🔑 Using authenticated user ID:', userId.substring(0, 8) + '...');
 
                 // Store incident data
                 const incidentData = {
@@ -1237,37 +1229,45 @@
                     location: userLocation,
                     what3words: what3wordsData,
                     timestamp: new Date().toISOString(),
-                    address: document.getElementById('addressText')?.textContent || 'Location not captured',
-                    sessionId: sessionStorage.getItem('session_id') || sessionStorage.getItem('sessionId')
+                    address: document.getElementById('addressText')?.textContent || 'Location not captured'
                 };
 
-                // Update session storage with correct user ID
-                sessionStorage.setItem('userId', userId);
-                sessionStorage.setItem('create_user_id', userId);
-                sessionStorage.setItem('user_id', userId);
                 sessionStorage.setItem('incidentData', JSON.stringify(incidentData));
                 sessionStorage.setItem('userAuthenticated', 'true');
                 sessionStorage.setItem('authTime', new Date().toISOString());
 
-                // Force navigation to transcription
-                const transcriptionUrl = `/transcription-status.html?create_user_id=${encodeURIComponent(userId)}&user_id=${encodeURIComponent(userId)}&source=incident_form&authenticated=true&timestamp=${Date.now()}`;
-                console.log('🎤 Redirecting to transcription with session user:', transcriptionUrl);
+                // Check if user prefers Typeform or native flow
+                const useTypeform = localStorage.getItem('preferTypeform') === 'true';
                 
-                continueBtn.textContent = 'Redirecting...';
-                
-                // Use a short delay to ensure UI updates, then navigate
-                setTimeout(() => {
-                    window.location.href = transcriptionUrl;
-                }, 500);
+                if (useTypeform && userId) {
+                    continueBtn.textContent = 'Opening Typeform...';
+                    
+                    try {
+                        if (typeof window.redirectToTypeform === 'function') {
+                            await window.redirectToTypeform('incident', userId, {
+                                openInNewTab: false,
+                                source: 'incident_continue_button'
+                            });
+                            return;
+                        }
+                    } catch (typeformError) {
+                        console.error('❌ Typeform redirect failed, using native flow:', typeformError);
+                        continueBtn.textContent = 'Continuing to native form...';
+                    }
+                }
+
+                // Redirect to transcription with authentication context
+                const transcriptionUrl = `/transcription-status.html?create_user_id=${encodeURIComponent(userId)}&source=incident_form&authenticated=true&timestamp=${Date.now()}`;
+                console.log('🎤 Redirecting authenticated user to transcription:', transcriptionUrl);
+                window.location.href = transcriptionUrl;
 
             } catch (error) {
                 console.error('❌ Error in continue flow:', error);
                 
-                // Force navigation even on error with the valid session ID
-                const sessionUserId = 'ef40cb9c-61e7-4575-9ed3-5ecf146f9866';
-                const transcriptionUrl = `/transcription-status.html?create_user_id=${encodeURIComponent(sessionUserId)}&source=incident_form_recovery&timestamp=${Date.now()}`;
-                console.log('🔄 Emergency navigation with session ID:', transcriptionUrl);
-                window.location.href = transcriptionUrl;
+                // On error, redirect to sign-in with context
+                sessionStorage.setItem('redirectAfterSignIn', '/incident.html');
+                sessionStorage.setItem('errorMessage', 'Please sign in to continue with your incident report');
+                window.location.href = '/sign-in.html?error=authentication_required';
             }
         }
 
