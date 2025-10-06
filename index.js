@@ -25,7 +25,7 @@ const { createClient } = require('@supabase/supabase-js');
 // AUTH IMPORTS - NEW
 // ========================================
 const AuthService = require('./lib/authService');
-const { requireAuth, optionalAuth } = require('./lib/authMiddleware');
+const { requireAuth, optionalAuth } = require('./lib/lib/authMiddleware');
 
 // Import PDF generation modules - with error handling
 let fetchAllData, generatePDF, sendEmails;
