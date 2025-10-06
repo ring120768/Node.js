@@ -1206,12 +1206,31 @@
                 continueBtn.disabled = true;
                 continueBtn.textContent = 'Preparing...';
 
-                // Get user data
-                const userId = userData?.uid || sessionStorage.getItem('userId');
-                
-                if (!userId) {
-                    console.warn('⚠️ No user ID found, proceeding without authentication');
+                // Get user data from multiple sources
+                let userId = userData?.uid || 
+                           userData?.create_user_id || 
+                           sessionStorage.getItem('userId') || 
+                           sessionStorage.getItem('create_user_id') ||
+                           localStorage.getItem('create_user_id');
+
+                // Try to get from UUID service if available
+                if (!userId && typeof UUIDService !== 'undefined') {
+                    try {
+                        const session = UUIDService.getOrCreateSession();
+                        userId = session.user_id;
+                        console.log('✅ Got user ID from UUID service:', userId.substring(0, 8) + '...');
+                    } catch (error) {
+                        console.warn('Failed to get UUID from service:', error);
+                    }
                 }
+
+                if (!userId) {
+                    console.warn('⚠️ No user ID found, creating temporary session');
+                    // Generate a temporary user ID if none exists
+                    userId = 'temp_' + Date.now() + '_' + Math.random().toString(36).substr(2, 9);
+                }
+
+                console.log('🔑 Using user ID for transcription:', userId.substring(0, 8) + '...');
 
                 const incidentData = {
                     userId: userId,
@@ -1222,6 +1241,8 @@
                 };
 
                 sessionStorage.setItem('incidentData', JSON.stringify(incidentData));
+                sessionStorage.setItem('create_user_id', userId); // Ensure it's stored
+                sessionStorage.setItem('userId', userId); // Backward compatibility
 
                 // Check if user prefers Typeform or native flow
                 const useTypeform = localStorage.getItem('preferTypeform') === 'true';
@@ -1241,12 +1262,17 @@
                     }
                 }
 
-                // Default: use native safety-check flow
-                window.location.href = 'safety-check.html';
+                // Default: redirect directly to transcription with user ID
+                const transcriptionUrl = `/transcription-status.html?create_user_id=${encodeURIComponent(userId)}&source=incident_form&timestamp=${Date.now()}`;
+                console.log('🎤 Redirecting to transcription:', transcriptionUrl);
+                window.location.href = transcriptionUrl;
 
             } catch (error) {
                 console.error('❌ Error in continue flow:', error);
-                window.location.href = 'safety-check.html';
+                // Fallback with minimal user ID
+                const fallbackUserId = 'fallback_' + Date.now();
+                sessionStorage.setItem('create_user_id', fallbackUserId);
+                window.location.href = `/transcription-status.html?create_user_id=${encodeURIComponent(fallbackUserId)}&source=error_fallback`;
             }
         }
 

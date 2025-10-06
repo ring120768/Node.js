@@ -1378,6 +1378,20 @@
                     }
                 }
 
+                // Fallback to sessionStorage if not in localStorage
+                if (!candidateUserId) {
+                    candidateUserId = sessionStorage.getItem('create_user_id') || sessionStorage.getItem('userId');
+                    if (candidateUserId) {
+                        console.log('🔄 Retrieved user ID from sessionStorage:', candidateUserId.substring(0, 8) + '...');
+                        // Update URL to include the user ID for consistency
+                        const currentUrl = new URL(window.location);
+                        currentUrl.searchParams.set('create_user_id', candidateUserId);
+                        window.history.replaceState({}, '', currentUrl.toString());
+                        userIdSource = 'sessionStorage'; // Set source for tracking
+                    }
+                }
+
+
                 // Clean up any template placeholders
                 if (candidateUserId && candidateUserId.includes('{{')) {
                     console.warn('⚠️ Template placeholder detected, clearing:', candidateUserId);
@@ -1391,7 +1405,7 @@
                         const authCheck = await fetch('/api/auth/check', {
                             credentials: 'include'
                         });
-                        
+
                         if (authCheck.ok) {
                             const authData = await authCheck.json();
                             if (authData.authenticated && authData.user && authData.user.userId) {
@@ -2537,6 +2551,8 @@
                     const recordButton = document.getElementById('recordButton');
                     if (recordButton) {
                         recordButton.style.display = 'inline-block';
+                        recordButton.disabled = false;
+                        recordButton.textContent = '🎤 Start Recording';
                     }
                 }
             } catch (error) {
