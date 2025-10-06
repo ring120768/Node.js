@@ -1085,7 +1085,7 @@
         async function getConfig() {
             const cached = sessionStorage.getItem('app_config');
             if (cached) {
-                return JSON.parse(cached);
+                return JSON.JSON.parse(cached);
             }
 
             try {
@@ -1273,6 +1273,10 @@
             isRedirecting: false,
             hasConsent: false
         };
+
+        // Global variables for authentication status
+        let userData = null;
+        let emergencyContacts = [];
 
         // ============================
         // Enhanced User ID Validation (accepts both Typeform and direct signup)

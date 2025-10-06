@@ -237,15 +237,26 @@
                     // Show success message briefly before redirect
                     showSuccess('Sign-in successful! Redirecting...');
                     
+                    // Store authentication state
+                    sessionStorage.setItem('userAuthenticated', 'true');
+                    sessionStorage.setItem('authTime', new Date().toISOString());
+                    
                     // Check if there's a redirect URL 
                     let redirectUrl = sessionStorage.getItem('redirectAfterSignIn') || 
                                      new URLSearchParams(window.location.search).get('redirectTo') ||
                                      '/incident.html';
                     
+                    // Handle specific pending actions
+                    const pendingAction = sessionStorage.getItem('pendingAction');
+                    if (pendingAction === 'continue_to_transcription') {
+                        redirectUrl = `/transcription-status.html?create_user_id=${encodeURIComponent(result.userId)}&source=sign_in_redirect&authenticated=true`;
+                        sessionStorage.removeItem('pendingAction');
+                    }
+                    
                     // If redirecting to transcription, ensure user ID is in URL
                     if (redirectUrl.includes('transcription-status.html') && !redirectUrl.includes('create_user_id=')) {
                         const separator = redirectUrl.includes('?') ? '&' : '?';
-                        redirectUrl += `${separator}create_user_id=${encodeURIComponent(result.userId)}&source=sign_in_redirect`;
+                        redirectUrl += `${separator}create_user_id=${encodeURIComponent(result.userId)}&source=sign_in_redirect&authenticated=true`;
                     }
                     
                     sessionStorage.removeItem('redirectAfterSignIn');

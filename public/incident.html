@@ -1199,50 +1199,42 @@
                     try {
 
 
-        // Enhanced continue button with Typeform integration option
+        // Enhanced continue button with proper authentication
         async function handleContinueToReport() {
             try {
                 const continueBtn = document.getElementById('continueBtn');
                 continueBtn.disabled = true;
                 continueBtn.textContent = 'Preparing...';
 
-                // Get user data from multiple sources
-                let userId = userData?.uid || 
-                           userData?.create_user_id || 
-                           sessionStorage.getItem('userId') || 
+                // Get the current session user ID from the logs
+                let userId = sessionStorage.getItem('userId') || 
                            sessionStorage.getItem('create_user_id') ||
                            localStorage.getItem('create_user_id');
 
-                // Try to get from UUID service if available
-                if (!userId && typeof UUIDService !== 'undefined') {
-                    try {
-                        const session = UUIDService.getOrCreateSession();
-                        userId = session.user_id;
-                        console.log('✅ Got user ID from UUID service:', userId.substring(0, 8) + '...');
-                    } catch (error) {
-                        console.warn('Failed to get UUID from service:', error);
-                    }
-                }
-
+                // If no user ID exists, redirect to sign-in first
                 if (!userId) {
-                    console.warn('⚠️ No user ID found, creating temporary session');
-                    // Generate a temporary user ID if none exists
-                    userId = 'temp_' + Date.now() + '_' + Math.random().toString(36).substr(2, 9);
+                    console.warn('⚠️ No authenticated user found, redirecting to sign-in');
+                    // Store current page for redirect after sign-in
+                    sessionStorage.setItem('redirectAfterSignIn', '/incident.html');
+                    sessionStorage.setItem('pendingAction', 'continue_to_transcription');
+                    window.location.href = '/sign-in.html';
+                    return;
                 }
 
-                console.log('🔑 Using user ID for transcription:', userId.substring(0, 8) + '...');
+                console.log('🔑 Using authenticated user ID:', userId.substring(0, 8) + '...');
 
+                // Store incident data
                 const incidentData = {
                     userId: userId,
                     location: userLocation,
                     what3words: what3wordsData,
                     timestamp: new Date().toISOString(),
-                    address: document.getElementById('addressText').textContent
+                    address: document.getElementById('addressText')?.textContent || 'Location not captured'
                 };
 
                 sessionStorage.setItem('incidentData', JSON.stringify(incidentData));
-                sessionStorage.setItem('create_user_id', userId); // Ensure it's stored
-                sessionStorage.setItem('userId', userId); // Backward compatibility
+                sessionStorage.setItem('userAuthenticated', 'true');
+                sessionStorage.setItem('authTime', new Date().toISOString());
 
                 // Check if user prefers Typeform or native flow
                 const useTypeform = localStorage.getItem('preferTypeform') === 'true';
@@ -1251,28 +1243,31 @@
                     continueBtn.textContent = 'Opening Typeform...';
                     
                     try {
-                        await window.redirectToTypeform('incident', userId, {
-                            openInNewTab: false,
-                            source: 'incident_continue_button'
-                        });
-                        return;
+                        if (typeof window.redirectToTypeform === 'function') {
+                            await window.redirectToTypeform('incident', userId, {
+                                openInNewTab: false,
+                                source: 'incident_continue_button'
+                            });
+                            return;
+                        }
                     } catch (typeformError) {
                         console.error('❌ Typeform redirect failed, using native flow:', typeformError);
                         continueBtn.textContent = 'Continuing to native form...';
                     }
                 }
 
-                // Default: redirect directly to transcription with user ID
-                const transcriptionUrl = `/transcription-status.html?create_user_id=${encodeURIComponent(userId)}&source=incident_form&timestamp=${Date.now()}`;
-                console.log('🎤 Redirecting to transcription:', transcriptionUrl);
+                // Redirect to transcription with authentication context
+                const transcriptionUrl = `/transcription-status.html?create_user_id=${encodeURIComponent(userId)}&source=incident_form&authenticated=true&timestamp=${Date.now()}`;
+                console.log('🎤 Redirecting authenticated user to transcription:', transcriptionUrl);
                 window.location.href = transcriptionUrl;
 
             } catch (error) {
                 console.error('❌ Error in continue flow:', error);
-                // Fallback with minimal user ID
-                const fallbackUserId = 'fallback_' + Date.now();
-                sessionStorage.setItem('create_user_id', fallbackUserId);
-                window.location.href = `/transcription-status.html?create_user_id=${encodeURIComponent(fallbackUserId)}&source=error_fallback`;
+                
+                // On error, redirect to sign-in with context
+                sessionStorage.setItem('redirectAfterSignIn', '/incident.html');
+                sessionStorage.setItem('errorMessage', 'Please sign in to continue with your incident report');
+                window.location.href = '/sign-in.html?error=authentication_required';
             }
         }
 
