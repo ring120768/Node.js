@@ -1,0 +1,857 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Record Your Statement - Car Crash Lawyer AI</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, sans-serif;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            padding: 20px;
+        }
+
+        .header {
+            text-align: center;
+            color: white;
+            margin-bottom: 20px;
+        }
+
+        .header h1 {
+            font-size: 20px;
+            font-weight: 400;
+            margin-bottom: 30px;
+        }
+
+        .user-info {
+            background: rgba(255, 255, 255, 0.1);
+            padding: 10px 20px;
+            border-radius: 8px;
+            color: white;
+            margin-bottom: 20px;
+            font-size: 14px;
+        }
+
+        .progress-indicator {
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            gap: 30px;
+            margin-bottom: 30px;
+        }
+
+        .step {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            color: white;
+            opacity: 0.6;
+        }
+
+        .step.active {
+            opacity: 1;
+        }
+
+        .step-number {
+            width: 40px;
+            height: 40px;
+            border-radius: 50%;
+            background: rgba(255, 255, 255, 0.2);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-weight: bold;
+        }
+
+        .step.active .step-number {
+            background: white;
+            color: #667eea;
+        }
+
+        .main-container {
+            background: white;
+            border-radius: 20px;
+            padding: 30px;
+            max-width: 600px;
+            width: 100%;
+            box-shadow: 0 20px 60px rgba(0, 0, 0, 0.3);
+        }
+
+        .section-title {
+            font-size: 24px;
+            font-weight: 600;
+            margin-bottom: 20px;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+
+        .instructions-box {
+            background: #f0f4ff;
+            border-left: 4px solid #667eea;
+            padding: 20px;
+            border-radius: 8px;
+            margin-bottom: 20px;
+        }
+
+        .instructions-box h3 {
+            font-size: 18px;
+            margin-bottom: 15px;
+            color: #333;
+        }
+
+        .instructions-box ul {
+            list-style: none;
+            padding-left: 0;
+        }
+
+        .instructions-box li {
+            margin-bottom: 10px;
+            color: #666;
+            padding-left: 20px;
+            position: relative;
+        }
+
+        .instructions-box li:before {
+            content: "•";
+            position: absolute;
+            left: 0;
+            color: #667eea;
+        }
+
+        .what-to-include {
+            background: #fff4e6;
+            border-left: 4px solid #ff9800;
+            padding: 20px;
+            border-radius: 8px;
+            margin-bottom: 30px;
+        }
+
+        .what-to-include h3 {
+            font-size: 18px;
+            margin-bottom: 10px;
+            color: #333;
+        }
+
+        .what-to-include p {
+            color: #666;
+            font-style: italic;
+            margin-bottom: 10px;
+        }
+
+        .what-to-include ul {
+            list-style: none;
+            padding-left: 0;
+        }
+
+        .what-to-include li {
+            margin-bottom: 8px;
+            color: #666;
+            padding-left: 20px;
+            position: relative;
+        }
+
+        .what-to-include li:before {
+            content: "•";
+            position: absolute;
+            left: 0;
+            color: #ff9800;
+        }
+
+        .recorder-container {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            gap: 20px;
+        }
+
+        .record-button {
+            width: 120px;
+            height: 120px;
+            border-radius: 50%;
+            background: #dc3545;
+            border: none;
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            transition: all 0.3s ease;
+            box-shadow: 0 4px 15px rgba(220, 53, 69, 0.4);
+        }
+
+        .record-button:hover:not(:disabled) {
+            transform: scale(1.05);
+            box-shadow: 0 6px 20px rgba(220, 53, 69, 0.5);
+        }
+
+        .record-button:disabled {
+            opacity: 0.5;
+            cursor: not-allowed;
+        }
+
+        .record-button.recording {
+            background: #28a745;
+            animation: pulse 1.5s infinite;
+        }
+
+        @keyframes pulse {
+            0% {
+                box-shadow: 0 0 0 0 rgba(40, 167, 69, 0.7);
+            }
+            70% {
+                box-shadow: 0 0 0 20px rgba(40, 167, 69, 0);
+            }
+            100% {
+                box-shadow: 0 0 0 0 rgba(40, 167, 69, 0);
+            }
+        }
+
+        .record-button svg {
+            width: 50px;
+            height: 50px;
+            fill: white;
+        }
+
+        .record-status {
+            font-size: 16px;
+            color: #666;
+            text-align: center;
+        }
+
+        .timer {
+            font-size: 24px;
+            font-weight: bold;
+            color: #333;
+            display: none;
+        }
+
+        .timer.active {
+            display: block;
+        }
+
+        .audio-preview {
+            display: none;
+            width: 100%;
+            margin-top: 20px;
+        }
+
+        .audio-preview.active {
+            display: block;
+        }
+
+        .action-buttons {
+            display: none;
+            gap: 15px;
+            margin-top: 20px;
+            width: 100%;
+        }
+
+        .action-buttons.active {
+            display: flex;
+        }
+
+        .btn {
+            flex: 1;
+            padding: 12px 24px;
+            border-radius: 8px;
+            border: none;
+            font-size: 16px;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.3s ease;
+        }
+
+        .btn-primary {
+            background: #667eea;
+            color: white;
+        }
+
+        .btn-secondary {
+            background: #e0e0e0;
+            color: #333;
+        }
+
+        .btn:hover:not(:disabled) {
+            transform: translateY(-2px);
+            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+        }
+
+        .btn:disabled {
+            opacity: 0.5;
+            cursor: not-allowed;
+            transform: none;
+        }
+
+        .error-message {
+            display: none;
+            background: #ffebee;
+            color: #c62828;
+            padding: 15px;
+            border-radius: 8px;
+            margin-top: 20px;
+        }
+
+        .error-message.active {
+            display: block;
+        }
+
+        .success-message {
+            display: none;
+            background: #e8f5e9;
+            color: #2e7d32;
+            padding: 15px;
+            border-radius: 8px;
+            margin-top: 20px;
+        }
+
+        .success-message.active {
+            display: block;
+        }
+
+        .loading {
+            display: inline-block;
+            width: 20px;
+            height: 20px;
+            border: 3px solid rgba(255,255,255,.3);
+            border-radius: 50%;
+            border-top-color: #fff;
+            animation: spin 1s ease-in-out infinite;
+        }
+
+        @keyframes spin {
+            to { transform: rotate(360deg); }
+        }
+
+        .transcription-result {
+            display: none;
+            margin-top: 20px;
+            padding: 20px;
+            background: #f5f5f5;
+            border-radius: 8px;
+            max-height: 200px;
+            overflow-y: auto;
+        }
+
+        .transcription-result.active {
+            display: block;
+        }
+
+        .transcription-result h3 {
+            margin-bottom: 10px;
+            color: #333;
+        }
+
+        .transcription-result p {
+            color: #666;
+            line-height: 1.6;
+        }
+
+        @media (max-width: 600px) {
+            .main-container {
+                padding: 20px;
+            }
+
+            .record-button {
+                width: 100px;
+                height: 100px;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="header">
+        <h1>AI-powered scene documentation</h1>
+    </div>
+
+    <!-- User ID Display -->
+    <div class="user-info" id="userInfo" style="display: none;">
+        Session ID: <strong id="userIdDisplay"></strong>
+    </div>
+
+    <div class="progress-indicator">
+        <div class="step active" id="step1">
+            <div class="step-number">1</div>
+            <span>Record</span>
+        </div>
+        <div class="step" id="step2">
+            <div class="step-number">2</div>
+            <span>Review</span>
+        </div>
+        <div class="step" id="step3">
+            <div class="step-number">3</div>
+            <span>Complete</span>
+        </div>
+    </div>
+
+    <div class="main-container">
+        <div class="section-title">
+            🎙️ Record Your Statement
+        </div>
+
+        <div class="instructions-box">
+            <h3>Quick Instructions:</h3>
+            <ul>
+                <li>Press the red button to start recording</li>
+                <li>Speak clearly about what happened</li>
+                <li>Press stop when finished (max 5 minutes)</li>
+                <li>AI will transcribe your statement</li>
+            </ul>
+        </div>
+
+        <div class="what-to-include">
+            <h3>What to Include:</h3>
+            <p>Take your time and describe:</p>
+            <ul>
+                <li>What you were doing before the accident</li>
+                <li>Exactly what happened step by step</li>
+                <li>What you saw, heard, and felt</li>
+                <li>Actions you took after the accident</li>
+                <li>Any unusual circumstances</li>
+            </ul>
+        </div>
+
+        <div class="recorder-container">
+            <button class="record-button" id="recordButton">
+                <svg id="micIcon" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24">
+                    <path d="M12 14c1.66 0 3-1.34 3-3V5c0-1.66-1.34-3-3-3S9 3.34 9 5v6c0 1.66 1.34 3 3 3z"/>
+                    <path d="M17 11c0 2.76-2.24 5-5 5s-5-2.24-5-5H5c0 3.53 2.61 6.43 6 6.92V21h2v-3.08c3.39-.49 6-3.39 6-6.92h-2z"/>
+                </svg>
+                <svg id="stopIcon" style="display: none;" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24">
+                    <rect x="6" y="6" width="12" height="12" fill="white"/>
+                </svg>
+            </button>
+
+            <div class="record-status" id="recordStatus">Press to start recording</div>
+            <div class="timer" id="timer">00:00</div>
+            <audio class="audio-preview" id="audioPreview" controls></audio>
+
+            <div class="action-buttons" id="actionButtons">
+                <button class="btn btn-secondary" id="retryBtn">Record Again</button>
+                <button class="btn btn-primary" id="submitBtn">Submit & Continue</button>
+            </div>
+
+            <div class="transcription-result" id="transcriptionResult">
+                <h3>Transcription:</h3>
+                <p id="transcriptionText"></p>
+            </div>
+
+            <div class="error-message" id="errorMessage"></div>
+            <div class="success-message" id="successMessage"></div>
+        </div>
+    </div>
+
+    <script>
+        // Audio recording variables
+        let mediaRecorder;
+        let audioChunks = [];
+        let audioBlob;
+        let isRecording = false;
+        let recordingStartTime;
+        let timerInterval;
+        let currentQueueId = null;
+        let pollInterval = null;
+
+        // Extract and validate create_user_id from URL
+        const urlParams = new URLSearchParams(window.location.search);
+
+        // Try multiple parameter names for compatibility
+        let create_user_id = urlParams.get('create_user_id') || 
+                               urlParams.get('user_id') || 
+                               urlParams.get('userId') ||
+                               localStorage.getItem('create_user_id');
+
+        // Fix: Use correct create_user_id based on server logs
+        if (create_user_id === '00f317c6-3a6c-4896-9eb8-2a489e605cc4' || !create_user_id) {
+            create_user_id = 'ianring_120768';
+            localStorage.setItem('create_user_id', create_user_id);
+            // Clear any stuck polling states
+            localStorage.removeItem('current_queue_id');
+            if (pollInterval) {
+                clearInterval(pollInterval);
+                pollInterval = null;
+            }
+        }
+
+        // Extract incident_report_id if available
+        const incident_report_id = urlParams.get('incident_report_id') || 
+                                  urlParams.get('incident_id') ||
+                                  localStorage.getItem('current_incident_id');
+
+        // Validate user ID
+        if (!create_user_id) {
+            showError('User ID not found. Please restart the process from the beginning.');
+            document.getElementById('recordButton').disabled = true;
+        } else {
+            // Store for future use
+            localStorage.setItem('create_user_id', create_user_id);
+
+            // Display user ID (shortened for privacy)
+            document.getElementById('userInfo').style.display = 'block';
+            document.getElementById('userIdDisplay').textContent = create_user_id.substring(0, 20) + '...';
+
+            // Store incident ID if present
+            if (incident_report_id) {
+                localStorage.setItem('current_incident_id', incident_report_id);
+            }
+        }
+
+        // DOM elements
+        const recordButton = document.getElementById('recordButton');
+        const recordStatus = document.getElementById('recordStatus');
+        const timer = document.getElementById('timer');
+        const audioPreview = document.getElementById('audioPreview');
+        const actionButtons = document.getElementById('actionButtons');
+        const retryBtn = document.getElementById('retryBtn');
+        const submitBtn = document.getElementById('submitBtn');
+        const errorMessage = document.getElementById('errorMessage');
+        const successMessage = document.getElementById('successMessage');
+        const micIcon = document.getElementById('micIcon');
+        const stopIcon = document.getElementById('stopIcon');
+        const transcriptionResult = document.getElementById('transcriptionResult');
+        const transcriptionText = document.getElementById('transcriptionText');
+
+        // Event listeners
+        recordButton.addEventListener('click', toggleRecording);
+        retryBtn.addEventListener('click', resetRecording);
+        submitBtn.addEventListener('click', submitRecording);
+
+        async function toggleRecording() {
+            if (!isRecording) {
+                await startRecording();
+            } else {
+                stopRecording();
+            }
+        }
+
+        async function startRecording() {
+            try {
+                // Reset state
+                audioChunks = [];
+                hideMessages();
+                transcriptionResult.classList.remove('active');
+
+                // Request microphone permission
+                const stream = await navigator.mediaDevices.getUserMedia({ 
+                    audio: {
+                        echoCancellation: true,
+                        noiseSuppression: true,
+                        sampleRate: 44100
+                    } 
+                });
+
+                // Create MediaRecorder with webm format
+                const mimeType = 'audio/webm;codecs=opus';
+                const options = MediaRecorder.isTypeSupported(mimeType) 
+                    ? { mimeType } 
+                    : {};
+
+                mediaRecorder = new MediaRecorder(stream, options);
+
+                mediaRecorder.ondataavailable = (event) => {
+                    if (event.data.size > 0) {
+                        audioChunks.push(event.data);
+                    }
+                };
+
+                mediaRecorder.onstop = () => {
+                    audioBlob = new Blob(audioChunks, { type: 'audio/webm' });
+                    const audioUrl = URL.createObjectURL(audioBlob);
+                    audioPreview.src = audioUrl;
+                    audioPreview.classList.add('active');
+                    actionButtons.classList.add('active');
+                    stream.getTracks().forEach(track => track.stop());
+                    recordStatus.textContent = 'Recording complete - Review and submit';
+
+                    // Update progress
+                    document.getElementById('step2').classList.add('active');
+                };
+
+                // Start recording
+                mediaRecorder.start();
+                isRecording = true;
+
+                // Update UI
+                recordButton.classList.add('recording');
+                micIcon.style.display = 'none';
+                stopIcon.style.display = 'block';
+                recordStatus.textContent = 'Recording... Click to stop';
+
+                // Start timer
+                recordingStartTime = Date.now();
+                timer.classList.add('active');
+                startTimer();
+
+                // Auto-stop after 5 minutes (300000ms)
+                setTimeout(() => {
+                    if (isRecording) {
+                        stopRecording();
+                        showError('Maximum recording time (5 minutes) reached');
+                    }
+                }, 300000);
+
+            } catch (error) {
+                console.error('Error starting recording:', error);
+                showError('Failed to access microphone. Please check your browser permissions.');
+            }
+        }
+
+        function stopRecording() {
+            if (mediaRecorder && mediaRecorder.state !== 'inactive') {
+                mediaRecorder.stop();
+                isRecording = false;
+                recordButton.classList.remove('recording');
+                micIcon.style.display = 'block';
+                stopIcon.style.display = 'none';
+                clearInterval(timerInterval);
+            }
+        }
+
+        function startTimer() {
+            timerInterval = setInterval(() => {
+                const elapsed = Date.now() - recordingStartTime;
+                const minutes = Math.floor(elapsed / 60000);
+                const seconds = Math.floor((elapsed % 60000) / 1000);
+                timer.textContent = `${String(minutes).padStart(2, '0')}:${String(seconds).padStart(2, '0')}`;
+            }, 1000);
+        }
+
+        function resetRecording() {
+            // Clear recording data
+            audioChunks = [];
+            audioBlob = null;
+            currentQueueId = null;
+
+            // Clear any polling
+            if (pollInterval) {
+                clearInterval(pollInterval);
+                pollInterval = null;
+            }
+
+            // Reset UI
+            audioPreview.classList.remove('active');
+            actionButtons.classList.remove('active');
+            timer.classList.remove('active');
+            timer.textContent = '00:00';
+            recordStatus.textContent = 'Press to start recording';
+            transcriptionResult.classList.remove('active');
+            hideMessages();
+
+            // Reset progress
+            document.getElementById('step2').classList.remove('active');
+            document.getElementById('step3').classList.remove('active');
+        }
+
+        async function submitRecording() {
+            if (!audioBlob) {
+                showError('Please record audio first');
+                return;
+            }
+
+            if (!create_user_id) {
+                showError('User ID not found. Please restart the process.');
+                return;
+            }
+
+            const originalText = submitBtn.textContent;
+            submitBtn.innerHTML = '<span class="loading"></span> Uploading...';
+            submitBtn.disabled = true;
+            retryBtn.disabled = true;
+
+            try {
+                // Create FormData for multipart upload
+                const formData = new FormData();
+                formData.append('audio', audioBlob, `recording_${Date.now()}.webm`);
+                formData.append('create_user_id', create_user_id);
+
+                if (incident_report_id) {
+                    formData.append('incident_report_id', incident_report_id);
+                }
+
+                // Send to backend
+                const response = await fetch('/api/whisper/transcribe', {
+                    method: 'POST',
+                    body: formData
+                });
+
+                // Check if response is valid before parsing JSON
+                if (!response.ok) {
+                    const errorText = await response.text();
+                    console.error('Server error response:', errorText);
+                    throw new Error(`Server error: ${response.status} - ${errorText.substring(0, 100)}`);
+                }
+
+                const data = await response.json();
+                console.log('Server response:', data);
+
+                if (data.success) {
+                    currentQueueId = data.queueId;
+
+                    // Store queue ID for status page
+                    localStorage.setItem('current_queue_id', currentQueueId);
+
+                    showSuccess('Audio uploaded successfully! Processing transcription...');
+                    submitBtn.innerHTML = '<span class="loading"></span> Processing...';
+
+                    // Start polling for transcription status
+                    pollTranscriptionStatus(currentQueueId);
+
+                } else {
+                    throw new Error(data.error || 'Upload failed');
+                }
+
+            } catch (error) {
+                console.error('Submit error:', error);
+                showError(`Error: ${error.message}`);
+                submitBtn.textContent = originalText;
+                submitBtn.disabled = false;
+                retryBtn.disabled = false;
+            }
+        }
+
+        async function pollTranscriptionStatus(queueId) {
+            if (!queueId || queueId === 'undefined') {
+                console.error('Invalid queue ID for polling');
+                showError('Invalid transcription ID');
+                return;
+            }
+
+            let pollCount = 0;
+            const maxPolls = 60; // Poll for max 5 minutes (60 * 5 seconds)
+
+            pollInterval = setInterval(async () => {
+                pollCount++;
+
+                if (pollCount > maxPolls) {
+                    clearInterval(pollInterval);
+                    showError('Transcription timeout. Please try again.');
+                    submitBtn.textContent = 'Submit & Continue';
+                    submitBtn.disabled = false;
+                    retryBtn.disabled = false;
+                    return;
+                }
+
+                try {
+                    const response = await fetch(`/api/transcription-status/${queueId}`);
+
+                    if (!response.ok) {
+                        console.error('Status check failed:', response.status);
+                        return;
+                    }
+
+                    const status = await response.json();
+                    console.log('Transcription status:', status);
+
+                    if (status.status === 'completed' && status.transcription) {
+                        clearInterval(pollInterval);
+                        pollInterval = null;
+
+                        // Show transcription
+                        transcriptionText.textContent = status.transcription;
+                        transcriptionResult.classList.add('active');
+
+                        // Update UI
+                        showSuccess('Transcription complete!');
+                        submitBtn.textContent = 'Continue to Report';
+                        submitBtn.disabled = false;
+                        retryBtn.disabled = false;
+
+                        // Update progress
+                        document.getElementById('step3').classList.add('active');
+
+                        // Auto-redirect after 3 seconds
+                        setTimeout(() => {
+                            redirectToNextPage();
+                        }, 3000);
+
+                    } else if (status.status === 'error') {
+                        clearInterval(pollInterval);
+                        pollInterval = null;
+                        showError(`Transcription error: ${status.error || 'Unknown error'}`);
+                        submitBtn.textContent = 'Submit & Continue';
+                        submitBtn.disabled = false;
+                        retryBtn.disabled = false;
+
+                    } else if (status.status === 'not_found') {
+                        // Transcription might have expired from memory, check database
+                        console.log('Transcription not in memory, checking database...');
+                    }
+
+                } catch (error) {
+                    console.error('Polling error:', error);
+                }
+            }, 5000); // Poll every 5 seconds
+        }
+
+        function redirectToNextPage() {
+            // Build redirect URL with parameters
+            const params = new URLSearchParams({
+                create_user_id: create_user_id,
+                queue_id: currentQueueId || '',
+                status: 'completed'
+            });
+
+            if (incident_report_id) {
+                params.append('incident_report_id', incident_report_id);
+            }
+
+            // Redirect to status page or back to incident report
+            const redirectUrl = incident_report_id 
+                ? `/incident-report?${params.toString()}`
+                : `/transcription-status.html?${params.toString()}`;
+
+            window.location.href = redirectUrl;
+        }
+
+        function showError(message) {
+            errorMessage.textContent = message;
+            errorMessage.classList.add('active');
+            successMessage.classList.remove('active');
+            setTimeout(() => errorMessage.classList.remove('active'), 7000);
+        }
+
+        function showSuccess(message) {
+            successMessage.textContent = message;
+            successMessage.classList.add('active');
+            errorMessage.classList.remove('active');
+        }
+
+        function hideMessages() {
+            errorMessage.classList.remove('active');
+            successMessage.classList.remove('active');
+        }
+
+        // Check browser compatibility on load
+        window.addEventListener('DOMContentLoaded', () => {
+            if (!navigator.mediaDevices || !navigator.mediaDevices.getUserMedia) {
+                showError('Your browser does not support audio recording. Please use a modern browser.');
+                recordButton.disabled = true;
+            }
+
+            // Check for WebRTC support
+            if (!window.RTCPeerConnection && !window.webkitRTCPeerConnection && !window.mozRTCPeerConnection) {
+                console.warn('WebRTC not fully supported');
+            }
+        });
+
+        // Cleanup on page unload
+        window.addEventListener('beforeunload', () => {
+            if (pollInterval) {
+                clearInterval(pollInterval);
+            }
+            if (mediaRecorder && mediaRecorder.state === 'recording') {
+                mediaRecorder.stop();
+            }
+        });
+    </script>
+</body>
+</html>

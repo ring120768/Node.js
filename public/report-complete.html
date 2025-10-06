@@ -2,9 +2,7 @@
 <html lang="en">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
-    <meta name="apple-mobile-web-app-capable" content="yes">
-    <meta name="mobile-web-app-capable" content="yes">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Report Submitted - Car Crash Lawyer AI</title>
 
     <!-- Supabase Client -->
@@ -15,7 +13,6 @@
             margin: 0;
             padding: 0;
             box-sizing: border-box;
-            -webkit-tap-highlight-color: transparent;
         }
 
         body {
@@ -23,8 +20,6 @@
             background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
             min-height: 100vh;
             padding: 20px;
-            -webkit-font-smoothing: antialiased;
-            -moz-osx-font-smoothing: grayscale;
         }
 
         .container {
@@ -46,43 +41,6 @@
         .header p {
             opacity: 0.9;
             font-size: 14px;
-        }
-
-        /* GDPR Consent Warning */
-        .consent-warning {
-            background: #fef3c7;
-            border: 2px solid #f59e0b;
-            color: #92400e;
-            padding: 15px;
-            border-radius: 10px;
-            margin-bottom: 20px;
-            display: none;
-            animation: slideDown 0.5s ease-out;
-        }
-
-        .consent-warning.show {
-            display: block;
-        }
-
-        .consent-warning h4 {
-            margin-bottom: 10px;
-            color: #92400e;
-        }
-
-        .consent-btn {
-            background: #f59e0b;
-            color: white;
-            padding: 10px 20px;
-            border: none;
-            border-radius: 6px;
-            font-weight: bold;
-            cursor: pointer;
-            margin-top: 10px;
-            width: 100%;
-        }
-
-        .consent-btn:active {
-            transform: scale(0.98);
         }
 
         .success-banner {
@@ -153,9 +111,11 @@
             cursor: pointer;
             transition: all 0.3s;
             box-shadow: 0 4px 6px rgba(0,0,0,0.1);
-            -webkit-touch-callout: none;
-            -webkit-user-select: none;
-            user-select: none;
+        }
+
+        .emergency-btn:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 6px 12px rgba(0,0,0,0.15);
         }
 
         .emergency-btn:active {
@@ -197,104 +157,9 @@
             transition: all 0.3s;
         }
 
-        .find-me-btn:active {
-            transform: scale(0.98);
-        }
-
-        /* Dash-cam Upload Styles */
-        .dashcam-btn {
-            width: 100%;
-            padding: 15px;
-            background: #8b5cf6;
-            color: white;
-            border: none;
-            border-radius: 10px;
-            font-size: 16px;
-            font-weight: bold;
-            cursor: pointer;
-            margin-bottom: 15px;
-            transition: all 0.3s;
-        }
-
-        .dashcam-btn:hover {
-            background: #7c3aed;
-        }
-
-        .dashcam-btn:active {
-            transform: scale(0.98);
-        }
-
-        .dashcam-btn:disabled {
-            background: #9ca3af;
-            cursor: not-allowed;
-        }
-
-        .dashcam-preview {
-            margin-top: 15px;
-            display: none;
-        }
-
-        .dashcam-preview.active {
-            display: block;
-        }
-
-        .dashcam-preview video {
-            width: 100%;
-            max-height: 200px;
-            border-radius: 10px;
-            background: #000;
-        }
-
-        .dashcam-info {
-            background: #f3f4f6;
-            padding: 10px;
-            border-radius: 8px;
-            margin-top: 10px;
-            font-size: 14px;
-        }
-
-        .dashcam-progress {
-            width: 100%;
-            height: 8px;
-            background: #e5e7eb;
-            border-radius: 4px;
-            margin-top: 10px;
-            overflow: hidden;
-            display: none;
-        }
-
-        .dashcam-progress.active {
-            display: block;
-        }
-
-        .dashcam-progress-bar {
-            height: 100%;
-            background: #8b5cf6;
-            border-radius: 4px;
-            transition: width 0.3s ease;
-            width: 0%;
-        }
-
-        .dashcam-status {
-            text-align: center;
-            margin-top: 10px;
-            font-size: 14px;
-            color: #6b7280;
-            display: none;
-        }
-
-        .dashcam-status.active {
-            display: block;
-        }
-
-        .dashcam-status.success {
-            color: #10b981;
-            font-weight: bold;
-        }
-
-        .dashcam-status.error {
-            color: #ef4444;
-            font-weight: bold;
+        .find-me-btn:hover {
+            background: #0891b2;
+            transform: translateY(-2px);
         }
 
         .additional-controls {
@@ -322,8 +187,9 @@
             color: white;
         }
 
-        .witness-btn:active {
-            transform: scale(0.98);
+        .witness-btn:hover {
+            background: #059669;
+            transform: translateY(-2px);
         }
 
         .vehicle-btn {
@@ -331,7 +197,12 @@
             color: white;
         }
 
-        .vehicle-btn:active {
+        .vehicle-btn:hover {
+            background: #7c3aed;
+            transform: translateY(-2px);
+        }
+
+        .additional-btn:active {
             transform: scale(0.98);
         }
 
@@ -349,8 +220,9 @@
             margin-bottom: 10px;
         }
 
-        .website-btn:active {
-            transform: scale(0.98);
+        .website-btn:hover {
+            background: #2563eb;
+            transform: translateY(-2px);
         }
 
         .helper-text {
@@ -366,21 +238,6 @@
         .helper-text strong {
             color: #fbbf24;
             font-size: 16px;
-        }
-
-        /* Loading Spinner */
-        .loading-spinner {
-            display: inline-block;
-            width: 20px;
-            height: 20px;
-            border: 3px solid rgba(255,255,255,0.3);
-            border-radius: 50%;
-            border-top-color: white;
-            animation: spin 1s ease-in-out infinite;
-        }
-
-        @keyframes spin {
-            to { transform: rotate(360deg); }
         }
 
         /* Modal Styles */
@@ -463,8 +320,6 @@
             border-radius: 8px;
             font-size: 16px;
             transition: border-color 0.3s;
-            -webkit-appearance: none;
-            appearance: none;
         }
 
         .form-group input:focus,
@@ -501,8 +356,8 @@
             color: white;
         }
 
-        .modal-btn.primary:active {
-            transform: scale(0.98);
+        .modal-btn.primary:hover {
+            background: #2563eb;
         }
 
         .modal-btn.secondary {
@@ -510,8 +365,8 @@
             color: #333;
         }
 
-        .modal-btn.secondary:active {
-            transform: scale(0.98);
+        .modal-btn.secondary:hover {
+            background: #d1d5db;
         }
 
         .loading {
@@ -532,135 +387,13 @@
         .error-message.show {
             display: block;
         }
-
-        .success-message {
-            background: #d4edda;
-            border: 1px solid #52c41a;
-            color: #135200;
-            padding: 10px;
-            border-radius: 8px;
-            margin-bottom: 15px;
-            display: none;
-        }
-
-        .success-message.show {
-            display: block;
-        }
-
-        /* Mobile optimizations */
-        @media (max-width: 640px) {
-            .container {
-                padding: 10px;
-            }
-
-            .card {
-                padding: 15px;
-            }
-
-            .modal-content {
-                padding: 20px;
-                width: 95%;
-            }
-        }
-
-        /* iOS specific fixes */
-        @supports (-webkit-touch-callout: none) {
-            input, textarea {
-                font-size: 16px !important;
-            }
-        }
-
-        /* Navigation Arrows */
-        .nav-arrows {
-            position: fixed;
-            top: 50%;
-            left: 0;
-            right: 0;
-            transform: translateY(-50%);
-            z-index: 1000;
-            pointer-events: none;
-        }
-
-        .nav-arrow {
-            position: absolute;
-            width: 50px;
-            height: 50px;
-            background: rgba(255, 255, 255, 0.9);
-            border-radius: 50%;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            cursor: pointer;
-            pointer-events: auto;
-            transition: all 0.3s ease;
-            box-shadow: 0 4px 15px rgba(0, 0, 0, 0.2);
-            backdrop-filter: blur(10px);
-        }
-
-        .nav-arrow:hover {
-            background: rgba(255, 255, 255, 1);
-            transform: scale(1.1);
-            box-shadow: 0 6px 20px rgba(0, 0, 0, 0.3);
-        }
-
-        .nav-arrow.back {
-            left: 20px;
-        }
-
-        .nav-arrow.forward {
-            right: 20px;
-        }
-
-        .nav-arrow span {
-            font-size: 24px;
-            font-weight: bold;
-            color: #667eea;
-        }
-
-        @media (max-width: 640px) {
-            .nav-arrow {
-                width: 40px;
-                height: 40px;
-            }
-
-            .nav-arrow.back {
-                left: 10px;
-            }
-
-            .nav-arrow.forward {
-                right: 10px;
-            }
-
-            .nav-arrow span {
-                font-size: 20px;
-            }
-        }
     </style>
 </head>
 <body>
-    <!-- Navigation Arrows -->
-    <div class="nav-arrows">
-        <div class="nav-arrow back" onclick="goBack()" title="Go Back">
-            <span>←</span>
-        </div>
-        <div class="nav-arrow forward" onclick="goForward()" title="Go Forward">
-            <span>→</span>
-        </div>
-    </div>
-
     <div class="container">
         <div class="header">
             <h1>🚗 Report Road Traffic Incident</h1>
             <p>Secure, AI-powered incident documentation</p>
-        </div>
-
-        <!-- GDPR Consent Warning (hidden by default) -->
-        <div id="consentWarning" class="consent-warning">
-            <h4>⚠️ Consent Required</h4>
-            <p>You need to provide consent before accessing certain features. Your data will be protected under GDPR regulations.</p>
-            <button class="consent-btn" onclick="redirectToConsent()">
-                Provide Consent
-            </button>
         </div>
 
         <!-- Success Notification -->
@@ -699,24 +432,6 @@
                 📝 Start New Report
             </button>
 
-            <!-- Dash-cam Upload Button -->
-            <button class="dashcam-btn" id="dashcamBtn">
-                📹 Add Dash-cam Video
-            </button>
-
-            <!-- Hidden file input -->
-            <input type="file" id="dashcamInput" accept="video/*" style="display: none;">
-
-            <!-- Dash-cam Preview -->
-            <div class="dashcam-preview" id="dashcamPreview">
-                <video id="dashcamVideo" controls></video>
-                <div class="dashcam-info" id="dashcamInfo"></div>
-                <div class="dashcam-progress" id="dashcamProgress">
-                    <div class="dashcam-progress-bar" id="dashcamProgressBar"></div>
-                </div>
-                <div class="dashcam-status" id="dashcamStatus"></div>
-            </div>
-
             <div class="additional-controls">
                 <button class="additional-btn witness-btn" onclick="openWitnessModal()">
                     👥 Other Witnesses
@@ -733,7 +448,7 @@
         </button>
 
         <p class="helper-text">
-            Reference: <strong id="incident-ref">Loading...</strong><br>
+            Reference: <strong id="incident-ref">INC-2024-78432</strong><br>
             We'll be in touch within 24 hours
         </p>
     </div>
@@ -747,7 +462,6 @@
             </div>
 
             <div class="error-message" id="witnessError"></div>
-            <div class="success-message" id="witnessSuccess"></div>
 
             <form id="witnessForm">
                 <div class="form-group">
@@ -781,8 +495,7 @@
                         Cancel
                     </button>
                     <button type="submit" class="modal-btn primary">
-                        <span id="witnessSubmitText">Save Witness</span>
-                        <span id="witnessSubmitSpinner" class="loading-spinner" style="display:none;"></span>
+                        Save Witness
                     </button>
                 </div>
             </form>
@@ -798,7 +511,6 @@
             </div>
 
             <div class="error-message" id="vehicleError"></div>
-            <div class="success-message" id="vehicleSuccess"></div>
 
             <form id="vehicleForm">
                 <div class="form-group">
@@ -824,7 +536,7 @@
                 <div class="form-group">
                     <label for="vehicleReg">Vehicle Registration *</label>
                     <input type="text" id="vehicleReg" name="vehicleReg" required 
-                           placeholder="e.g., AB12 CDE" pattern="[A-Za-z0-9\s]+" maxlength="10">
+                           placeholder="e.g., AB12 CDE">
                 </div>
 
                 <div class="form-group">
@@ -860,461 +572,70 @@
                         Cancel
                     </button>
                     <button type="submit" class="modal-btn primary">
-                        <span id="vehicleSubmitText">Save Vehicle</span>
-                        <span id="vehicleSubmitSpinner" class="loading-spinner" style="display:none;"></span>
+                        Save Vehicle
                     </button>
                 </div>
             </form>
         </div>
     </div>
 
-    <script src="dashcamUploader.js"></script>
     <script>
-        // ============================
-        // Navigation Functions
-        // ============================
-        function goBack() {
-            if (window.history.length > 1) {
-                window.history.back();
-            } else {
-                window.location.href = '/';
-            }
+        // Initialize Supabase - Replace with your actual credentials
+        const SUPABASE_URL = 'YOUR_SUPABASE_URL';
+        const SUPABASE_ANON_KEY = 'YOUR_SUPABASE_ANON_KEY';
+        const supabase = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
+
+        // Get current user and incident data from URL params or session
+        const urlParams = new URLSearchParams(window.location.search);
+        const incidentId = urlParams.get('incident_id') || sessionStorage.getItem('incident_id');
+        const userId = urlParams.get('user_id') || sessionStorage.getItem('user_id');
+
+        // Update incident reference if available
+        if (incidentId) {
+            document.getElementById('incident-ref').textContent = incidentId;
         }
 
-        function goForward() {
-            window.history.forward();
-        }
-
-        // ============================
-        // Global State Management
-        // ============================
-        const appState = {
-            supabase: null,
-            config: null,
-            userId: null,
-            incidentId: null,
-            hasGDPRConsent: false,
-            userProfile: null,
-            isInitialized: false
-        };
-
-        let dashcamUploader = null;
-
-        // ============================
-        // Configuration and Initialization
-        // ============================
-
-        /**
-         * Fetch application configuration from backend
-         * @returns {Promise<Object>} Configuration object
-         */
-        async function getConfig() {
-            try {
-                // Check for cached config
-                const cached = sessionStorage.getItem('app_config');
-                if (cached) {
-                    return JSON.parse(cached);
-                }
-
-                const response = await fetch('/api/config');
-                if (!response.ok) {
-                    throw new Error('Failed to fetch configuration');
-                }
-
-                const config = await response.json();
-                // Cache for this session
-                sessionStorage.setItem('app_config', JSON.stringify(config));
-                return config;
-            } catch (error) {
-                console.error('Configuration fetch error:', error);
-                // Return minimal config to allow basic functionality
-                return { 
-                    supabaseUrl: null, 
-                    supabaseAnonKey: null,
-                    features: { gdpr: true }
-                };
-            }
-        }
-
-        /**
-         * Initialize Supabase client with dynamic configuration
-         */
-        async function initializeSupabase() {
-            try {
-                const config = await getConfig();
-                appState.config = config;
-
-                if (config.supabaseUrl && config.supabaseAnonKey) {
-                    appState.supabase = window.supabase.createClient(
-                        config.supabaseUrl, 
-                        config.supabaseAnonKey,
-                        {
-                            auth: {
-                                persistSession: true,
-                                storageKey: 'car-crash-lawyer-auth'
-                            }
-                        }
-                    );
-                    console.log('Supabase initialized successfully');
-                    return true;
-                } else {
-                    console.warn('Supabase configuration missing - operating in limited mode');
-                    return false;
-                }
-            } catch (error) {
-                console.error('Failed to initialize Supabase:', error);
-                return false;
-            }
-        }
-
-        /**
-         * Extract and validate user session data
-         */
-        function initializeSession() {
-            const urlParams = new URLSearchParams(window.location.search);
-
-            // Try multiple parameter names for compatibility
-            appState.userId = urlParams.get('create_user_id') || 
-                             urlParams.get('user_id') || 
-                             sessionStorage.getItem('create_user_id') ||
-                             localStorage.getItem('create_user_id');
-
-            appState.incidentId = urlParams.get('incident_id') || 
-                                 urlParams.get('incident_report_id') ||
-                                 sessionStorage.getItem('incident_id') ||
-                                 localStorage.getItem('current_incident_id');
-
-            // Store for persistence
-            if (appState.userId) {
-                sessionStorage.setItem('create_user_id', appState.userId);
-                localStorage.setItem('create_user_id', appState.userId);
-            }
-
-            if (appState.incidentId) {
-                sessionStorage.setItem('incident_id', appState.incidentId);
-                localStorage.setItem('current_incident_id', appState.incidentId);
-                // Update display
-                document.getElementById('incident-ref').textContent = `INC-${appState.incidentId.substring(0, 8)}`;
-            }
-
-            // Check for consent status from URL
-            const consentGiven = urlParams.get('consent_given');
-            if (consentGiven === 'true') {
-                appState.hasGDPRConsent = true;
-            }
-
-            console.log('Session initialized:', {
-                userId: appState.userId ? appState.userId.substring(0, 8) + '...' : null,
-                incidentId: appState.incidentId ? appState.incidentId.substring(0, 8) + '...' : null,
-                hasConsent: appState.hasGDPRConsent
-            });
-        }
-
-        // ============================
-        // Dash-cam Upload Initialization
-        // ============================
-        function initializeDashcam() {
-            if (appState.userId) {
-                // Initialize the uploader
-                dashcamUploader = new DashcamUploader({
-                    userId: appState.userId,
-                    incidentId: appState.incidentId || 'temp_' + Date.now(),
-                    onProgress: (progress) => {
-                        updateDashcamProgress(progress);
-                    },
-                    onSuccess: (result) => {
-                        showDashcamSuccess('Video uploaded successfully!');
-                        console.log('Dash-cam upload success:', result);
-                    },
-                    onError: (error) => {
-                        showDashcamError(error.message);
-                        console.error('Dash-cam upload error:', error);
-                    }
-                });
-
-                // Setup button click handler
-                document.getElementById('dashcamBtn').addEventListener('click', () => {
-                    if (!appState.hasGDPRConsent) {
-                        alert('Please provide consent to upload dash-cam videos.');
-                        redirectToConsent();
-                        return;
-                    }
-                    document.getElementById('dashcamInput').click();
-                });
-
-                // Setup file input change handler
-                document.getElementById('dashcamInput').addEventListener('change', (event) => {
-                    const file = event.target.files[0];
-                    if (file) {
-                        handleDashcamFile(file);
-                    }
-                });
-            } else {
-                console.warn('User ID not available - dash-cam upload disabled');
-                document.getElementById('dashcamBtn').disabled = true;
-                document.getElementById('dashcamBtn').textContent = '📹 Sign in to upload video';
-            }
-        }
-
-        // Handle dash-cam file selection
-        async function handleDashcamFile(file) {
-            // Show preview
-            showDashcamPreview(file);
-
-            // Upload the file
-            if (dashcamUploader) {
-                try {
-                    await dashcamUploader.uploadVideo(file);
-                } catch (error) {
-                    console.error('Upload failed:', error);
-                }
-            }
-        }
-
-        // Show video preview
-        function showDashcamPreview(file) {
-            const preview = document.getElementById('dashcamPreview');
-            const video = document.getElementById('dashcamVideo');
-            const info = document.getElementById('dashcamInfo');
-
-            // Create object URL for preview
-            const videoUrl = URL.createObjectURL(file);
-            video.src = videoUrl;
-
-            // Show file info
-            const fileSizeMB = (file.size / (1024 * 1024)).toFixed(2);
-            info.innerHTML = `
-                <strong>📹 Video Selected:</strong><br>
-                Name: ${file.name}<br>
-                Size: ${fileSizeMB} MB<br>
-                Type: ${file.type}
-            `;
-
-            preview.classList.add('active');
-        }
-
-        // Update upload progress
-        function updateDashcamProgress(progress) {
-            const progressElement = document.getElementById('dashcamProgress');
-            const progressBar = document.getElementById('dashcamProgressBar');
-            const status = document.getElementById('dashcamStatus');
-
-            progressElement.classList.add('active');
-            status.classList.add('active');
-
-            progressBar.style.width = `${progress}%`;
-            status.textContent = `Uploading... ${Math.round(progress)}%`;
-            status.className = 'dashcam-status active';
-        }
-
-        // Show success message
-        function showDashcamSuccess(message) {
-            const status = document.getElementById('dashcamStatus');
-            const progress = document.getElementById('dashcamProgress');
-
-            progress.classList.remove('active');
-            status.textContent = message;
-            status.className = 'dashcam-status active success';
-
-            // Hide success message after 3 seconds
-            setTimeout(() => {
-                status.classList.remove('active');
-            }, 3000);
-        }
-
-        // Show error message
-        function showDashcamError(message) {
-            const status = document.getElementById('dashcamStatus');
-            const progress = document.getElementById('dashcamProgress');
-
-            progress.classList.remove('active');
-            status.textContent = message;
-            status.className = 'dashcam-status active error';
-
-            // Hide error message after 5 seconds
-            setTimeout(() => {
-                status.classList.remove('active');
-            }, 5000);
-        }
-
-        // ============================
-        // GDPR Compliance Functions
-        // ============================
-
-        /**
-         * Check GDPR consent status for user
-         * @param {string} userId - User ID to check
-         * @returns {Promise<boolean>} Consent status
-         */
-        async function checkGDPRConsent(userId) {
-            if (!appState.supabase || !userId) {
-                console.warn('Cannot check GDPR consent - missing requirements');
-                return false;
-            }
-
-            try {
-                // First check gdpr_consent table
-                const { data: consentData, error: consentError } = await appState.supabase
-                    .from('gdpr_consent')
-                    .select('gdpr_consent, gdpr_consent_date')
-                    .eq('create_user_id', userId)
-                    .maybeSingle();
-
-                if (consentData && consentData.gdpr_consent === true) {
-                    console.log('GDPR consent found in consent table');
-                    return true;
-                }
-
-                // Fallback to user_signup table
-                const { data: userData, error: userError } = await appState.supabase
-                    .from('user_signup')
-                    .select('gdpr_consent, legal_support, gdpr_consent_date')
-                    .eq('create_user_id', userId)
-                    .maybeSingle();
-
-                if (userData) {
-                    const hasConsent = userData.gdpr_consent === true || 
-                                      userData.legal_support === 'Yes';
-                    console.log('GDPR consent status from user table:', hasConsent);
-                    return hasConsent;
-                }
-
-                console.log('No GDPR consent found for user');
-                return false;
-            } catch (error) {
-                console.error('Error checking GDPR consent:', error);
-                return false;
-            }
-        }
-
-        /**
-         * Load user profile with consent check
-         */
-        async function loadUserProfile() {
-            if (!appState.supabase || !appState.userId) {
-                return null;
-            }
-
-            try {
-                // Check GDPR consent first
-                appState.hasGDPRConsent = await checkGDPRConsent(appState.userId);
-
-                if (!appState.hasGDPRConsent) {
-                    console.log('No GDPR consent - showing warning');
-                    document.getElementById('consentWarning').classList.add('show');
-                    return null;
-                }
-
-                // Load full profile if consent granted
-                const { data, error } = await appState.supabase
-                    .from('user_signup')
-                    .select('*')
-                    .eq('create_user_id', appState.userId)
-                    .maybeSingle();
-
-                if (data) {
-                    appState.userProfile = data;
-                    console.log('User profile loaded');
-                }
-
-                return data;
-            } catch (error) {
-                console.error('Error loading user profile:', error);
-                return null;
-            }
-        }
-
-        /**
-         * Redirect to consent page
-         */
-        function redirectToConsent() {
-            const params = new URLSearchParams({
-                create_user_id: appState.userId,
-                incident_report_id: appState.incidentId || '',
-                return_url: window.location.href,
-                require_consent: 'true'
-            });
-
-            window.location.href = `/declaration.html?${params.toString()}`;
-        }
-
-        // ============================
         // Emergency Call Functions
-        // ============================
-
-        function makeEmergencyCall() {
-            // Direct emergency call - no database lookup needed
+        async function makeEmergencyCall() {
+            // For 999, we can directly use tel: without fetching from database
             window.location.href = 'tel:999';
         }
 
         async function makeRecoveryCall() {
-            if (!appState.hasGDPRConsent) {
-                alert('Please provide consent to access your stored information.');
-                redirectToConsent();
-                return;
-            }
-
             try {
-                let recoveryNumber = null;
+                // Fetch recovery number from user's profile
+                const { data, error } = await supabase
+                    .from('user_sign_up')
+                    .select('recovery_service_number')
+                    .eq('id', userId)
+                    .single();
 
-                // Try to get from cached profile first
-                if (appState.userProfile?.recovery_service_number) {
-                    recoveryNumber = appState.userProfile.recovery_service_number;
-                } else if (appState.supabase && appState.userId) {
-                    // Fetch from database
-                    const { data, error } = await appState.supabase
-                        .from('user_signup')
-                        .select('recovery_service_number')
-                        .eq('create_user_id', appState.userId)
-                        .maybeSingle();
+                if (error) throw error;
 
-                    if (data?.recovery_service_number) {
-                        recoveryNumber = data.recovery_service_number;
-                    }
-                }
-
-                if (recoveryNumber) {
-                    window.location.href = `tel:${recoveryNumber}`;
+                if (data && data.recovery_service_number) {
+                    window.location.href = `tel:${data.recovery_service_number}`;
                 } else {
-                    alert('Recovery service number not found. Please update your profile or call your recovery service directly.');
+                    alert('Recovery service number not found. Please update your profile.');
                 }
             } catch (error) {
                 console.error('Error fetching recovery number:', error);
-                alert('Unable to fetch recovery number. Please try again or call your recovery service directly.');
+                alert('Unable to fetch recovery number. Please try again.');
             }
         }
 
         async function makeEmergencyContactCall() {
-            if (!appState.hasGDPRConsent) {
-                alert('Please provide consent to access your stored information.');
-                redirectToConsent();
-                return;
-            }
-
             try {
-                let emergencyNumber = null;
+                // Fetch emergency contact from user's profile
+                const { data, error } = await supabase
+                    .from('user_sign_up')
+                    .select('emergency_contact_number')
+                    .eq('id', userId)
+                    .single();
 
-                // Try to get from cached profile first
-                if (appState.userProfile?.emergency_contact_number) {
-                    emergencyNumber = appState.userProfile.emergency_contact_number;
-                } else if (appState.supabase && appState.userId) {
-                    // Fetch from database
-                    const { data, error } = await appState.supabase
-                        .from('user_signup')
-                        .select('emergency_contact_number, emergency_contact_name')
-                        .eq('create_user_id', appState.userId)
-                        .maybeSingle();
+                if (error) throw error;
 
-                    if (data?.emergency_contact_number) {
-                        emergencyNumber = data.emergency_contact_number;
-                        if (data.emergency_contact_name) {
-                            console.log(`Calling emergency contact: ${data.emergency_contact_name}`);
-                        }
-                    }
-                }
-
-                if (emergencyNumber) {
-                    window.location.href = `tel:${emergencyNumber}`;
+                if (data && data.emergency_contact_number) {
+                    window.location.href = `tel:${data.emergency_contact_number}`;
                 } else {
                     alert('Emergency contact number not found. Please update your profile.');
                 }
@@ -1324,146 +645,76 @@
             }
         }
 
-        // ============================
-        // Report Functions
-        // ============================
-
+        // Start New Report
         function startNewReport() {
-            // Clear current incident data but keep user data
-            sessionStorage.removeItem('incident_id');
-            localStorage.removeItem('current_incident_id');
+            // Clear current session data
+            sessionStorage.clear();
 
-            // You'll need to set your actual Typeform URL here
-            const typeformUrl = 'https://YOUR_TYPEFORM_URL_FOR_INCIDENT_REPORTS';
-
-            // Add user ID to Typeform URL if available
-            if (appState.userId) {
-                const params = new URLSearchParams({
-                    create_user_id: appState.userId
-                });
-                window.location.href = `${typeformUrl}?${params.toString()}`;
-            } else {
-                window.location.href = typeformUrl;
-            }
+            // Redirect to your Typeform incident report
+            // Replace with your actual Typeform URL for incident reports
+            window.location.href = 'https://YOUR_TYPEFORM_URL_FOR_INCIDENT_REPORTS';
+            // Example: https://yourcompany.typeform.com/to/abc123
         }
 
+        // Go to Website
         function goToWebsite() {
-            window.location.href = 'https://www.carcrashlawyerai.com';
+            window.location.href = 'https://www.carcrashlawyerai.co.uk';
         }
 
-        // ============================
         // Modal Functions
-        // ============================
-
         function openWitnessModal() {
-            if (!appState.hasGDPRConsent) {
-                alert('Please provide consent to add witness information.');
-                redirectToConsent();
-                return;
-            }
             document.getElementById('witnessModal').classList.add('active');
         }
 
         function openVehicleModal() {
-            if (!appState.hasGDPRConsent) {
-                alert('Please provide consent to add vehicle information.');
-                redirectToConsent();
-                return;
-            }
             document.getElementById('vehicleModal').classList.add('active');
         }
 
         function closeModal(modalId) {
             document.getElementById(modalId).classList.remove('active');
-            // Reset form
+            // Clear form
             document.querySelector(`#${modalId} form`).reset();
-            // Hide messages
+            // Hide error message
             document.querySelector(`#${modalId} .error-message`).classList.remove('show');
-            document.querySelector(`#${modalId} .success-message`).classList.remove('show');
         }
-
-        function showModalError(modalId, message) {
-            const errorDiv = document.getElementById(`${modalId.replace('Modal', '')}Error`);
-            errorDiv.textContent = message;
-            errorDiv.classList.add('show');
-            // Hide after 5 seconds
-            setTimeout(() => errorDiv.classList.remove('show'), 5000);
-        }
-
-        function showModalSuccess(modalId, message) {
-            const successDiv = document.getElementById(`${modalId.replace('Modal', '')}Success`);
-            successDiv.textContent = message;
-            successDiv.classList.add('show');
-            // Hide after 3 seconds
-            setTimeout(() => {
-                successDiv.classList.remove('show');
-                closeModal(modalId);
-            }, 3000);
-        }
-
-        // ============================
-        // Form Submissions
-        // ============================
 
         // Handle Witness Form Submission
         document.getElementById('witnessForm').addEventListener('submit', async (e) => {
             e.preventDefault();
 
-            if (!appState.supabase) {
-                showModalError('witnessModal', 'Database connection not available. Please try again later.');
-                return;
-            }
-
             const form = e.target;
-            const submitBtn = form.querySelector('.modal-btn.primary');
-            const submitText = document.getElementById('witnessSubmitText');
-            const submitSpinner = document.getElementById('witnessSubmitSpinner');
+            const errorDiv = document.getElementById('witnessError');
 
             // Show loading state
             form.classList.add('loading');
-            submitBtn.disabled = true;
-            submitText.style.display = 'none';
-            submitSpinner.style.display = 'inline-block';
 
             try {
                 const witnessData = {
-                    incident_report_id: appState.incidentId || null,
-                    create_user_id: appState.userId,
-                    witness_name: form.witnessName.value.trim(),
-                    witness_address: form.witnessAddress.value.trim(),
-                    witness_mobile: form.witnessMobile.value.trim(),
-                    witness_email: form.witnessEmail.value.trim() || null,
-                    witness_statement: form.witnessStatement.value.trim(),
-                    created_at: new Date().toISOString()
+                    incident_id: incidentId,
+                    create_user_id: userId,
+                    witness_name: form.witnessName.value,
+                    witness_address: form.witnessAddress.value,
+                    witness_mobile: form.witnessMobile.value,
+                    witness_email: form.witnessEmail.value || null,
+                    witness_statement: form.witnessStatement.value
                 };
 
-                // Check if witness_reports table exists
-                const { data, error } = await appState.supabase
+                const { data, error } = await supabase
                     .from('witness_reports')
-                    .insert([witnessData])
-                    .select();
+                    .insert([witnessData]);
 
-                if (error) {
-                    // If table doesn't exist, try alternate table name
-                    if (error.code === '42P01') {
-                        console.warn('witness_reports table not found, trying alternate storage');
-                        // You might want to store in a different table or handle differently
-                    }
-                    throw error;
-                }
+                if (error) throw error;
 
-                console.log('Witness information saved:', data);
-                showModalSuccess('witnessModal', 'Witness information saved successfully!');
+                // Success - close modal and show confirmation
+                closeModal('witnessModal');
+                alert('Witness information saved successfully!');
 
             } catch (error) {
                 console.error('Error saving witness:', error);
-                showModalError('witnessModal', 'Failed to save witness information. Please try again.');
+                errorDiv.textContent = 'Failed to save witness information. Please try again.';
+                errorDiv.classList.add('show');
             } finally {
-                // Reset loading state
                 form.classList.remove('loading');
-                submitBtn.disabled = false;
-                submitText.style.display = 'inline';
-                submitSpinner.style.display = 'none';
             }
         });
 
@@ -1471,161 +722,54 @@
         document.getElementById('vehicleForm').addEventListener('submit', async (e) => {
             e.preventDefault();
 
-            if (!appState.supabase) {
-                showModalError('vehicleModal', 'Database connection not available. Please try again later.');
-                return;
-            }
-
             const form = e.target;
-            const submitBtn = form.querySelector('.modal-btn.primary');
-            const submitText = document.getElementById('vehicleSubmitText');
-            const submitSpinner = document.getElementById('vehicleSubmitSpinner');
+            const errorDiv = document.getElementById('vehicleError');
 
             // Show loading state
             form.classList.add('loading');
-            submitBtn.disabled = true;
-            submitText.style.display = 'none';
-            submitSpinner.style.display = 'inline-block';
 
             try {
                 const vehicleData = {
-                    incident_report_id: appState.incidentId || null,
-                    create_user_id: appState.userId,
-                    additional_driver_name: form.driverName.value.trim(),
-                    additional_driver_address: form.driverAddress.value.trim(),
-                    additional_driver_mobile: form.driverMobile.value.trim(),
-                    additional_driver_email: form.driverEmail.value.trim() || null,
-                    additional_registration_number: form.vehicleReg.value.trim().toUpperCase(),
-                    additional_make_of_vehicle: form.vehicleMake.value.trim(),
-                    additional_model_of_vehicle: form.vehicleModel.value.trim(),
-                    additional_vehicle_colour: form.vehicleColor.value.trim() || null,
-                    additional_insurance_company: form.insuranceCompany.value.trim() || null,
-                    additional_policy_number: form.insurancePolicy.value.trim() || null,
-                    submit_date: new Date().toISOString(),
-                    created_at: new Date().toISOString()
+                    incident_report_id: parseInt(incidentId) || null,
+                    create_user_id: userId,
+                    additional_driver_name: form.driverName.value,
+                    additional_driver_address: form.driverAddress.value,
+                    additional_driver_mobile: form.driverMobile.value,
+                    additional_driver_email: form.driverEmail.value || null,
+                    additional_registration_number: form.vehicleReg.value,
+                    additional_make_of_vehicle: form.vehicleMake.value,
+                    additional_model_of_vehicle: form.vehicleModel.value,
+                    additional_vehicle_colour: form.vehicleColor.value || null,
+                    additional_insurance_company: form.insuranceCompany.value || null,
+                    additional_policy_number: form.insurancePolicy.value || null,
+                    submit_date: new Date().toISOString()
                 };
 
-                // Check if additional_vehicles table exists
-                const { data, error } = await appState.supabase
+                const { data, error } = await supabase
                     .from('additional_vehicles')
-                    .insert([vehicleData])
-                    .select();
+                    .insert([vehicleData]);
 
-                if (error) {
-                    // If table doesn't exist, try alternate table name
-                    if (error.code === '42P01') {
-                        console.warn('additional_vehicles table not found, trying alternate storage');
-                        // You might want to store in a different table or handle differently
-                    }
-                    throw error;
-                }
+                if (error) throw error;
 
-                console.log('Vehicle information saved:', data);
-                showModalSuccess('vehicleModal', 'Vehicle information saved successfully!');
+                // Success - close modal and show confirmation
+                closeModal('vehicleModal');
+                alert('Vehicle information saved successfully!');
 
             } catch (error) {
                 console.error('Error saving vehicle:', error);
-                showModalError('vehicleModal', 'Failed to save vehicle information. Please try again.');
+                errorDiv.textContent = 'Failed to save vehicle information. Please try again.';
+                errorDiv.classList.add('show');
             } finally {
-                // Reset loading state
                 form.classList.remove('loading');
-                submitBtn.disabled = false;
-                submitText.style.display = 'inline';
-                submitSpinner.style.display = 'none';
             }
         });
 
-        // ============================
-        // Event Listeners
-        // ============================
-
         // Close modal when clicking outside
-        window.addEventListener('click', function(event) {
+        window.onclick = function(event) {
             if (event.target.classList.contains('modal')) {
                 event.target.classList.remove('active');
             }
-        });
-
-        // Prevent double-tap zoom on iOS
-        let lastTouchEnd = 0;
-        document.addEventListener('touchend', function(event) {
-            const now = Date.now();
-            if (now - lastTouchEnd <= 300) {
-                event.preventDefault();
-            }
-            lastTouchEnd = now;
-        }, false);
-
-        // ============================
-        // Page Initialization
-        // ============================
-
-        document.addEventListener('DOMContentLoaded', async () => {
-            console.log('Initializing report complete page...');
-
-            // Initialize session first
-            initializeSession();
-
-            // Check if we have required data
-            if (!appState.userId) {
-                console.warn('No user ID found - some features will be limited');
-                document.getElementById('consentWarning').innerHTML = `
-                    <h4>⚠️ Session Required</h4>
-                    <p>User session not found. Please start from the beginning.</p>
-                    <button class="consent-btn" onclick="startNewReport()">
-                        Start New Report
-                    </button>
-                `;
-                document.getElementById('consentWarning').classList.add('show');
-            }
-
-            // Initialize Supabase
-            const supabaseInitialized = await initializeSupabase();
-
-            if (supabaseInitialized) {
-                // Load user profile and check consent
-                await loadUserProfile();
-
-                // Initialize dash-cam functionality
-                initializeDashcam();
-            } else {
-                console.log('Operating without Supabase - limited functionality');
-                // Still allow emergency calls and basic navigation
-            }
-
-            appState.isInitialized = true;
-            console.log('Initialization complete', {
-                hasSupabase: !!appState.supabase,
-                hasConsent: appState.hasGDPRConsent,
-                hasProfile: !!appState.userProfile
-            });
-        });
-
-        // Handle page visibility changes (mobile browsers)
-        document.addEventListener('visibilitychange', () => {
-            if (!document.hidden && appState.isInitialized && !appState.hasGDPRConsent) {
-                // Recheck consent when page becomes visible
-                if (appState.userId) {
-                    checkGDPRConsent(appState.userId).then(hasConsent => {
-                        appState.hasGDPRConsent = hasConsent;
-                        if (hasConsent) {
-                            document.getElementById('consentWarning').classList.remove('show');
-                            loadUserProfile();
-                        }
-                    });
-                }
-            }
-        });
-
-        // Global error handler
-        window.addEventListener('error', (event) => {
-            console.error('Global error:', event.error);
-            // Don't show errors to users for minor issues
-        });
-
-        window.addEventListener('unhandledrejection', (event) => {
-            console.error('Unhandled promise rejection:', event.reason);
-        });
+        }
     </script>
 </body>
 </html>

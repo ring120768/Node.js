@@ -6,10 +6,6 @@
     <meta name="apple-mobile-web-app-capable" content="yes">
     <meta name="mobile-web-app-capable" content="yes">
     <title>Record Your Statement - Car Crash Lawyer AI</title>
-
-    <!-- Supabase Client Library -->
-    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
-
     <style>
         /* Base Styles */
         * {
@@ -55,114 +51,6 @@
             text-align: center;
             margin-bottom: 30px;
             font-size: 24px;
-        }
-
-        /* GDPR Notice */
-        .gdpr-notice {
-            background: #e8f4fd;
-            border: 1px solid #2196F3;
-            border-radius: 8px;
-            padding: 12px;
-            margin-bottom: 20px;
-            font-size: 13px;
-            color: #0c5460;
-            display: none;
-        }
-
-        .gdpr-notice.visible {
-            display: block;
-        }
-
-        .gdpr-notice a {
-            color: #0056b3;
-            text-decoration: underline;
-        }
-
-        /* Consent Banner Styles */
-        .consent-banner {
-            background: linear-gradient(135deg, #fef3c7, #fed7aa);
-            border: 2px solid #f59e0b;
-            border-radius: 12px;
-            padding: 20px;
-            margin-bottom: 20px;
-            display: none;
-            animation: slideIn 0.3s ease;
-        }
-
-        .consent-content {
-            display: flex;
-            flex-direction: column;
-            gap: 15px;
-        }
-
-        .consent-icon {
-            font-size: 36px;
-            text-align: center;
-            color: #f59e0b;
-        }
-
-        .consent-text {
-            text-align: center;
-        }
-
-        .consent-text h4 {
-            color: #92400e;
-            font-size: 18px;
-            margin-bottom: 10px;
-        }
-
-        .consent-text p {
-            color: #78350f;
-            font-size: 14px;
-            line-height: 1.5;
-            margin-bottom: 10px;
-        }
-
-        .consent-text ul {
-            list-style: none;
-            padding: 0;
-            text-align: left;
-            max-width: 400px;
-            margin: 0 auto;
-        }
-
-        .consent-text li {
-            padding: 5px 0;
-            font-size: 13px;
-            color: #78350f;
-        }
-
-        .consent-actions {
-            display: flex;
-            gap: 10px;
-            justify-content: center;
-            flex-wrap: wrap;
-        }
-
-        .consent-agree-btn,
-        .consent-decline-btn {
-            flex: 1;
-            min-width: 150px;
-        }
-
-        /* User Info Badge */
-        .user-info-badge {
-            background: #f0f7ff;
-            border: 1px solid #667eea;
-            border-radius: 8px;
-            padding: 10px 15px;
-            margin-bottom: 20px;
-            font-size: 12px;
-            color: #667eea;
-            display: none;
-        }
-
-        .user-info-badge.visible {
-            display: block;
-        }
-
-        .user-info-badge strong {
-            color: #333;
         }
 
         /* Progress Indicator */
@@ -463,7 +351,7 @@
             box-shadow: 0 4px 15px rgba(102, 126, 234, 0.3);
         }
 
-        .btn-primary:hover:not(:disabled) {
+        .btn-primary:hover {
             transform: translateY(-2px);
             box-shadow: 0 6px 20px rgba(102, 126, 234, 0.4);
         }
@@ -581,7 +469,7 @@
             font-weight: bold;
         }
 
-        /* Mobile Responsiveness */
+        /* Mobile Optimizations */
         @media (max-width: 640px) {
             .container {
                 padding: 20px;
@@ -623,21 +511,6 @@
                 font-size: 14px;
                 padding: 6px 0;
             }
-
-            .consent-content {
-                flex-direction: column;
-                gap: 15px;
-            }
-
-            .consent-actions {
-                width: 100%;
-                flex-direction: column;
-            }
-
-            .consent-agree-btn,
-            .consent-decline-btn {
-                width: 100%;
-            }
         }
 
         /* Loading Spinner */
@@ -673,28 +546,6 @@
             .btn:active {
                 transform: scale(0.98);
             }
-        }
-
-        /* Preview Ready Section */
-        .status-card.preview-ready {
-            animation: slideUp 0.5s ease, glow 2s infinite alternate;
-        }
-
-        @keyframes glow {
-            0% { box-shadow: 0 0 5px rgba(33, 150, 243, 0.3); }
-            100% { box-shadow: 0 0 20px rgba(33, 150, 243, 0.6); }
-        }
-
-        .btn-ghost {
-            background: transparent;
-            color: #666;
-            border: 2px solid #dee2e6;
-            transition: all 0.3s ease;
-        }
-
-        .btn-ghost:hover {
-            background: #f8f9fa;
-            border-color: #adb5bd;
         }
 
         /* Network Status Indicator */
@@ -738,72 +589,6 @@
         .network-status.offline .dot {
             background: #dc3545;
         }
-
-        /* Navigation Arrows */
-        .nav-arrows {
-            position: fixed;
-            top: 50%;
-            left: 0;
-            right: 0;
-            transform: translateY(-50%);
-            z-index: 1000;
-            pointer-events: none;
-        }
-
-        .nav-arrow {
-            position: absolute;
-            width: 50px;
-            height: 50px;
-            background: rgba(255, 255, 255, 0.9);
-            border-radius: 50%;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            cursor: pointer;
-            pointer-events: auto;
-            transition: all 0.3s ease;
-            box-shadow: 0 4px 15px rgba(0, 0, 0, 0.2);
-            backdrop-filter: blur(10px);
-        }
-
-        .nav-arrow:hover {
-            background: rgba(255, 255, 255, 1);
-            transform: scale(1.1);
-            box-shadow: 0 6px 20px rgba(0, 0, 0, 0.3);
-        }
-
-        .nav-arrow.back {
-            left: 20px;
-        }
-
-        .nav-arrow.forward {
-            right: 20px;
-        }
-
-        .nav-arrow span {
-            font-size: 24px;
-            font-weight: bold;
-            color: #667eea;
-        }
-
-        @media (max-width: 640px) {
-            .nav-arrow {
-                width: 40px;
-                height: 40px;
-            }
-
-            .nav-arrow.back {
-                left: 10px;
-            }
-
-            .nav-arrow.forward {
-                right: 10px;
-            }
-
-            .nav-arrow span {
-                font-size: 20px;
-            }
-        }
     </style>
 </head>
 <body>
@@ -813,54 +598,8 @@
         <span>Connected</span>
     </div>
 
-    <!-- Navigation Arrows -->
-    <div class="nav-arrows">
-        <div class="nav-arrow back" onclick="goBack()" title="Go Back">
-            <span>←</span>
-        </div>
-        <div class="nav-arrow forward" onclick="goForward()" title="Go Forward">
-            <span>→</span>
-        </div>
-    </div>
-
     <div class="container">
         <h1>🎤 Record Your Statement</h1>
-
-        <!-- GDPR Notice -->
-        <div class="gdpr-notice" id="gdprNotice">
-            <strong>Privacy Notice:</strong> Your audio recording will be processed using AI transcription services. 
-            By recording, you consent to this processing. Your data is protected under GDPR. 
-            <a href="https://carcrashlawyerai.com/privacy-policy" target="_blank">Learn more</a>
-        </div>
-
-        <!-- GDPR Consent Banner -->
-        <div class="consent-banner" id="consentBanner">
-            <div class="consent-content">
-                <div class="consent-icon">🔐</div>
-                <div class="consent-text">
-                    <h4>Important Privacy Information</h4>
-                    <p>By selecting 'Record Statement', you agree to our use of your voice data for transcription and AI analysis.</p>
-                    <ul>
-                        <li>✓ Your data will be processed according to our Privacy Policy</li>
-                        <li>✓ We comply with GDPR regulations to protect your information</li>
-                    </ul>
-                </div>
-                <div class="consent-actions">
-                    <button id="agreeRecordButton" class="btn btn-primary consent-agree-btn">
-                        ✅ Agree & Record
-                    </button>
-                    <button id="declineButton" class="btn btn-danger consent-decline-btn">
-                        ❌ Decline
-                    </button>
-                </div>
-            </div>
-        </div>
-
-        <!-- User Info Badge -->
-        <div class="user-info-badge" id="userInfoBadge">
-            Session ID: <strong id="userIdDisplay"></strong>
-            <span id="incidentDisplay" style="display: none;"> | Incident: <strong id="incidentIdDisplay"></strong></span>
-        </div>
 
         <!-- Progress Indicator with Animation -->
         <div class="progress-steps">
@@ -879,7 +618,7 @@
             </div>
             <div class="progress-step" id="step-summary">
                 <div class="circle">4</div>
-                <span>AI Transcription</span>
+                <span>AI Summary</span>
             </div>
         </div>
 
@@ -902,7 +641,7 @@
                 <li>Exact time and date of the accident</li>
                 <li>Weather and road conditions</li>
                 <li>What you saw, heard, and felt</li>
-                <li>Actions after the accident</li>
+                <li>Actions taken after the accident</li>
                 <li>Any unusual circumstances</li>
             </ul>
         </div>
@@ -931,17 +670,14 @@
 
         <!-- Recording Controls -->
         <div class="recording-controls">
-            <button id="testMicButton" class="btn btn-ghost" style="margin-bottom: 10px;">
-                🔧 Test Microphone
-            </button>
             <button id="recordButton" class="btn btn-primary">
                 🎤 Start Recording
             </button>
             <button id="stopButton" class="btn btn-danger" style="display: none;">
                 ⏹ Stop Recording
             </button>
-            <button id="retryButton" class="btn" style="display: none;">
-                🔄 Re-Record Statement
+            <button id="retryButton" class="btn">
+                🔄 Record Again
             </button>
         </div>
 
@@ -953,7 +689,7 @@
             <h3>📝 Your Transcription</h3>
             <div class="transcription-box" contenteditable="true" id="transcriptionText" placeholder="Your transcription will appear here...">
             </div>
-            <button class="btn btn-primary" id="confirmButton" style="margin-top: 20px;">
+            <button class="btn btn-primary" onclick="confirmTranscription()" style="margin-top: 20px;">
                 ✅ Confirm & Continue
             </button>
             <p style="text-align: center; color: #666; margin-top: 10px; font-size: 14px;">
@@ -963,7 +699,7 @@
 
         <!-- AI Summary Section -->
         <div id="summarySection">
-            <h3>🤖 AI Transcription</h3>
+            <h3>🤖 AI Summary</h3>
             <div class="summary-content">
                 <h4>Summary</h4>
                 <p id="summaryText" style="color: #555; line-height: 1.6;"></p>
@@ -980,586 +716,26 @@
         </div>
     </div>
 
-    <!-- Universal Navigation Helper -->
-    <script src="navigation.js"></script>
-
     <script>
-        // ============================
-        // Navigation Functions
-        // ============================
-        function loadNavigationHistory() {
-            try {
-                const storedHistory = sessionStorage.getItem('navigationHistory');
-                const storedIndex = sessionStorage.getItem('navigationIndex');
+        // Global Variables
+        let mediaRecorder = null;
+        let audioChunks = [];
+        let recordingStartTime;
+        let durationInterval;
+        let userId = localStorage.getItem('create_user_id') || 'user_' + Date.now();
+        let currentQueueId = null;
+        let ws = null;
+        let reconnectAttempts = 0;
+        let maxReconnectAttempts = 5;
+        let audioContext = null;
+        let analyser = null;
+        let microphone = null;
+        let animationId = null;
+
+        // Store user ID for future use
+        localStorage.setItem('create_user_id', userId);
 
-                if (storedHistory) {
-                    window.pageHistory = JSON.parse(storedHistory);
-                    window.currentPageIndex = storedIndex ? parseInt(storedIndex, 10) : 0;
-                } else {
-                    window.pageHistory = [];
-                    window.currentPageIndex = -1;
-                }
-
-                console.log('📚 Loaded navigation history:', { history: window.pageHistory, index: window.currentPageIndex });
-                updateNavigationArrows();
-            } catch (error) {
-                console.warn('Failed to load navigation history:', error);
-                window.pageHistory = [];
-                window.currentPageIndex = -1;
-            }
-        }
-
-        function addPageToHistory(url) {
-            if (!window.pageHistory) window.pageHistory = [];
-            if (!url) return;
-
-            // Don't add the same page twice in a row
-            if (window.pageHistory.length > 0 && window.pageHistory[window.pageHistory.length - 1] === url) {
-                return;
-            }
-
-            // Remove any forward history if we are navigating back
-            if (window.currentPageIndex < window.pageHistory.length - 1) {
-                window.pageHistory.splice(window.currentPageIndex + 1);
-            }
-
-            window.pageHistory.push(url);
-            window.currentPageIndex = window.pageHistory.length - 1;
-
-            // Store in sessionStorage for persistence across pages
-            sessionStorage.setItem('navigationHistory', JSON.stringify(window.pageHistory));
-            sessionStorage.setItem('navigationIndex', window.currentPageIndex.toString());
-
-            updateNavigationArrows();
-        }
-
-        function updateNavigationArrows() {
-            const backArrow = document.getElementById('backArrow') || document.querySelector('.nav-arrow.back');
-            const forwardArrow = document.getElementById('forwardArrow') || document.querySelector('.nav-arrow.forward');
-
-            const canGoBack = window.history.length > 1 || (window.pageHistory && window.pageHistory.length > 1 && window.currentPageIndex > 0);
-            const canGoForward = window.pageHistory && window.currentPageIndex < window.pageHistory.length - 1;
-
-            if (backArrow) {
-                backArrow.style.display = canGoBack ? 'flex' : 'none';
-                backArrow.style.opacity = canGoBack ? '1' : '0.5';
-            }
-            if (forwardArrow) {
-                forwardArrow.style.display = canGoForward ? 'flex' : 'none';
-                forwardArrow.style.opacity = canGoForward ? '1' : '0.5';
-            }
-        }
-
-        function goBack() {
-            console.log('🔙 Go back clicked from transcription page');
-
-            if (window.history.length > 1) {
-                window.history.back();
-            } else if (window.pageHistory && window.pageHistory.length > 1 && window.currentPageIndex > 0) {
-                window.currentPageIndex--;
-                const previousPage = window.pageHistory[window.currentPageIndex];
-                console.log('🔙 Navigating to:', previousPage);
-                window.location.href = previousPage;
-            } else {
-                console.log('🔙 No previous page, going to home');
-                window.location.href = '/';
-            }
-        }
-
-        function goForward() {
-            console.log('🔜 Go forward clicked from transcription page');
-
-            if (window.pageHistory && window.currentPageIndex < window.pageHistory.length - 1) {
-                window.currentPageIndex++;
-                const nextPage = window.pageHistory[window.currentPageIndex];
-                console.log('🔜 Navigating to:', nextPage);
-                window.location.href = nextPage;
-            } else {
-                window.history.forward();
-            }
-        }
-
-        // ============================
-        // Configuration Management
-        // ============================
-        async function getConfig() {
-            const cached = sessionStorage.getItem('app_config');
-            if (cached) {
-                return JSON.JSON.parse(cached);
-            }
-
-            try {
-                const response = await fetch('/api/config');
-                const config = await response.json();
-                sessionStorage.setItem('app_config', JSON.stringify(config));
-                return config;
-            } catch (error) {
-                console.error('Failed to fetch config:', error);
-                return {
-                    apiKey: 'fallback-key',
-                    environment: 'production'
-                };
-            }
-        }
-
-        // App configuration holder
-        let appConfig = null;
-        let supabase = null;
-
-        // ============================
-        // Supabase Configuration
-        // ============================
-        async function initializeSupabase() {
-            if (supabase) return supabase;
-
-            try {
-                const config = await getConfig();
-
-                if (config.supabaseUrl && config.supabaseAnonKey) {
-                    supabase = window.supabase.createClient(
-                        config.supabaseUrl,
-                        config.supabaseAnonKey
-                    );
-                    console.log('Supabase initialized successfully');
-                }
-                return supabase;
-            } catch (error) {
-                console.error('Failed to initialize Supabase:', error);
-                return null;
-            }
-        }
-
-        // Initialize configuration
-        async function initializeConfig() {
-            try {
-                appConfig = await getConfig();
-                console.log('Configuration loaded:', appConfig);
-
-                // Update any config-dependent settings
-                if (appConfig.maxRecordingTime) {
-                    CONFIG.MAX_RECORDING_TIME = appConfig.maxRecordingTime;
-                }
-                if (appConfig.pollInterval) {
-                    CONFIG.POLL_INTERVAL = appConfig.pollInterval;
-                }
-                if (appConfig.transcriptionQueueInterval) {
-                    CONFIG.TRANSCRIPTION_QUEUE_INTERVAL = appConfig.transcriptionQueueInterval * 60000;
-                }
-
-                return appConfig;
-            } catch (error) {
-                console.error('Failed to load configuration:', error);
-                appConfig = {
-                    apiKey: 'fallback-key',
-                    environment: 'production'
-                };
-                return appConfig;
-            }
-        }
-
-        // ============================
-        // Enhanced GDPR Consent Management
-        // ============================
-        async function logConsent(consentType, agreed) {
-            try {
-                const apiKey = appConfig?.apiKey || 'fallback-key';
-
-                const response = await fetch('/api/gdpr/log-consent', {
-                    method: 'POST',
-                    headers: {
-                        'Content-Type': 'application/json',
-                        'X-Api-Key': apiKey
-                    },
-                    body: JSON.stringify({
-                        create_user_id: state.userId,
-                        incident_id: state.incidentReportId,
-                        consent_type: consentType,
-                        consent_given: agreed,
-                        consent_date: new Date().toISOString(),
-                        page: 'transcription-status.html'
-                    })
-                });
-
-                if (!response.ok) {
-                    console.error('Failed to log consent, but continuing...');
-                } else {
-                    const result = await response.json();
-                    console.log('Consent logged:', result);
-
-                    // Update localStorage for quick checks
-                    localStorage.setItem(`gdpr_consent_${consentType}`, agreed ? 'true' : 'false');
-                    localStorage.setItem('gdpr_consent_date', new Date().toISOString());
-
-                    // Set general GDPR consent flag if agreed
-                    if (agreed) {
-                        localStorage.setItem('gdpr_consent', 'true');
-                    }
-                }
-            } catch (error) {
-                console.error('Error logging consent:', error);
-            }
-        }
-
-        async function checkGDPRConsent(userId) {
-            // Quick check from localStorage first
-            const localConsent = localStorage.getItem('gdpr_consent');
-            const recordingConsent = localStorage.getItem('gdpr_consent_recording_consent');
-
-            if (localConsent === 'true' || recordingConsent === 'true') {
-                return true;
-            }
-
-            if (!supabase || !userId) return false;
-
-            try {
-                // GDPR functionality has been removed - always return true
-                console.log('GDPR functionality removed - consent check bypassed');
-                return true;
-            } catch (error) {
-                console.error('Error in consent check (GDPR removed):', error);
-                return true;
-            }
-        }
-
-        // Show consent banner
-        function showConsentBanner() {
-            const consentBanner = document.getElementById('consentBanner');
-            const recordButton = document.getElementById('recordButton');
-
-            if (consentBanner) {
-                consentBanner.style.display = 'block';
-
-                // Hide the record button until consent is given
-                if (recordButton) {
-                    recordButton.style.display = 'none';
-                }
-
-                showStatus('Please review and accept the privacy notice to continue', 'info');
-            }
-        }
-
-        // ============================
-        // Configuration and Global Variables
-        // ============================
-        const CONFIG = {
-            MAX_RECORDING_TIME: 300000, // 5 minutes in milliseconds
-            POLL_INTERVAL: 5000, // 5 seconds
-            MAX_POLLS: 60, // Maximum polling attempts
-            RECONNECT_DELAY_BASE: 1000, // Base delay for reconnection
-            MAX_RECONNECT_ATTEMPTS: 5,
-            HEARTBEAT_INTERVAL: 30000, // 30 seconds
-            VISUALIZER_BARS: 20
-        };
-
-        // Global state management
-        const state = {
-            mediaRecorder: null,
-            audioChunks: [],
-            recordingStartTime: null,
-            durationInterval: null,
-            userId: null,
-            incidentReportId: null,
-            currentQueueId: null,
-            ws: null,
-            reconnectAttempts: 0,
-            audioContext: null,
-            analyser: null,
-            microphone: null,
-            animationId: null,
-            pollInterval: null,
-            pollCount: 0,
-            summaryData: null,
-            isProcessing: false,
-            isRedirecting: false,
-            hasConsent: false
-        };
-
-        // Global variables for authentication status
-        let userData = null;
-        let emergencyContacts = [];
-
-        // ============================
-        // Enhanced User ID Validation (accepts both Typeform and direct signup)
-        // ============================
-        function validateUserId(userId) {
-            if (!userId || typeof userId !== 'string') {
-                console.error('❌ User ID is null, undefined, or not a string:', userId);
-                return false;
-            }
-
-            const cleanUserId = userId.trim();
-
-            // Block obvious test/temporary patterns
-            const blockedPatterns = [
-                'temp_user_', 'test_user_', 'dummy_', 'mock_', 'sample_',
-                'undefined', 'null', 'anonymous', 'guest'
-            ];
-
-            for (const pattern of blockedPatterns) {
-                if (cleanUserId.toLowerCase().includes(pattern.toLowerCase())) {
-                    console.error('❌ Blocked suspicious user ID pattern:', cleanUserId);
-                    return false;
-                }
-            }
-
-            // Accept UUID format (standard Typeform format)
-            const uuidRegex = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
-            if (uuidRegex.test(cleanUserId)) {
-                console.log('✅ Valid Typeform UUID:', cleanUserId.substring(0, 8) + '...');
-                return true;
-            }
-
-            // Accept username format from Typeform (like ianring_120768)
-            const usernameRegex = /^[a-zA-Z][a-zA-Z0-9_-]{2,63}$/;
-            if (usernameRegex.test(cleanUserId)) {
-                console.log('✅ Valid Typeform username ID:', cleanUserId);
-                return true;
-            }
-
-            // Accept development/testing IDs in non-production
-            const hostname = window.location.hostname;
-            const isDevelopment = hostname.includes('replit') || 
-                                 hostname === 'localhost' || 
-                                 window.location.search.includes('debug=true');
-
-            if (isDevelopment) {
-                const devRegex = /^(dev_|test_|local_)[a-zA-Z0-9_-]{1,50}$/;
-                if (devRegex.test(cleanUserId)) {
-                    console.log('✅ Valid development user ID:', cleanUserId);
-                    return true;
-                }
-            }
-
-            console.error('❌ Invalid user ID format:', cleanUserId);
-            return false;
-        }
-
-        // Keep the old function name for backward compatibility
-        function validateTypeformUserId(userId) {
-            return validateUserId(userId);
-        }
-
-        // ============================
-        // Enhanced session initialization with better error handling
-        // ============================
-        async function initializeSession() {
-            console.log('🔄 Initializing session with enhanced user ID management...');
-
-            try {
-                // Extract parameters from URL with enhanced handling
-                const urlParams = new URLSearchParams(window.location.search);
-                console.log('🔍 All URL parameters:', Object.fromEntries(urlParams.entries()));
-
-                // Try multiple parameter names for user ID (Typeform compatibility)
-                const userIdSources = [
-                    'create_user_id',
-                    'user_id', 
-                    'userId',
-                    'typeform_user_id',
-                    'form_user_id'
-                ];
-
-                let candidateUserId = null;
-                let userIdSource = null;
-
-                // Check URL parameters first
-                for (const paramName of userIdSources) {
-                    const value = urlParams.get(paramName);
-                    if (value && value.trim()) {
-                        candidateUserId = value.trim();
-                        userIdSource = `url_param_${paramName}`;
-                        console.log(`📋 Found user ID candidate from ${paramName}:`, candidateUserId);
-                        break;
-                    }
-                }
-
-                // Fallback to localStorage if not in URL
-                if (!candidateUserId) {
-                    candidateUserId = localStorage.getItem('create_user_id') || localStorage.getItem('currentUserId');
-                    if (candidateUserId) {
-                        userIdSource = 'localStorage';
-                        console.log('📋 Found user ID candidate from localStorage:', candidateUserId);
-                    }
-                }
-
-                // Fallback to sessionStorage if not in localStorage
-                if (!candidateUserId) {
-                    candidateUserId = sessionStorage.getItem('create_user_id') || sessionStorage.getItem('userId');
-                    if (candidateUserId) {
-                        console.log('🔄 Retrieved user ID from sessionStorage:', candidateUserId.substring(0, 8) + '...');
-                        // Update URL to include the user ID for consistency
-                        const currentUrl = new URL(window.location);
-                        currentUrl.searchParams.set('create_user_id', candidateUserId);
-                        window.history.replaceState({}, '', currentUrl.toString());
-                        userIdSource = 'sessionStorage'; // Set source for tracking
-                    }
-                }
-
-
-                // Clean up any template placeholders
-                if (candidateUserId && candidateUserId.includes('{{')) {
-                    console.warn('⚠️ Template placeholder detected, clearing:', candidateUserId);
-                    candidateUserId = null;
-                }
-
-                // If still no user ID, try to get authenticated user from session
-                if (!candidateUserId) {
-                    console.log('🔍 No direct user ID found, checking authentication...');
-                    try {
-                        const authCheck = await fetch('/api/auth/check', {
-                            credentials: 'include'
-                        });
-
-                        if (authCheck.ok) {
-                            const authData = await authCheck.json();
-                            if (authData.authenticated && authData.user && authData.user.userId) {
-                                candidateUserId = authData.user.userId;
-                                userIdSource = 'authenticated_session';
-                                console.log('✅ Found authenticated user ID:', candidateUserId);
-                            }
-                        }
-                    } catch (authError) {
-                        console.warn('Authentication check failed:', authError);
-                    }
-                }
-
-                // Validate the user ID
-                if (!candidateUserId) {
-                    console.error('❌ No user ID found in URL parameters, localStorage, or session');
-                    showTranscriptionServiceError();
-                    return null;
-                }
-
-                // Enhanced validation - accept both Typeform UUIDs and direct signup user IDs
-                if (!validateUserId(candidateUserId)) {
-                    console.error('❌ User ID validation failed:', candidateUserId);
-                    showTranscriptionServiceError();
-                    return null;
-                }
-
-                // Set the validated user ID
-                state.userId = candidateUserId;
-
-                // Store for persistence and tracking
-                localStorage.setItem('create_user_id', state.userId);
-                localStorage.setItem('user_id_source', userIdSource);
-                localStorage.setItem('user_id_timestamp', new Date().toISOString());
-
-                console.log('✅ User ID validation successful:', {
-                    userId: state.userId,
-                    source: userIdSource,
-                    timestamp: new Date().toISOString()
-                });
-
-                // Extract incident report ID if available
-                state.incidentReportId = urlParams.get('incident_report_id') || 
-                                        urlParams.get('incident_id') ||
-                                        localStorage.getItem('current_incident_id');
-
-                if (state.incidentReportId) {
-                    localStorage.setItem('current_incident_id', state.incidentReportId);
-                    console.log('📋 Incident ID found:', state.incidentReportId);
-                }
-
-                // Check consent status
-                const consentGiven = urlParams.get('consent_given') === 'true';
-                if (consentGiven) {
-                    state.hasConsent = true;
-                    localStorage.setItem('gdpr_consent', 'true');
-                    console.log('✅ Consent already given');
-                }
-
-                // Update UI with session info
-                updateUserInfoBadge();
-
-                console.log('✅ Session initialized successfully:', {
-                    userId: state.userId,
-                    incidentId: state.incidentReportId,
-                    source: userIdSource,
-                    consentGiven: consentGiven,
-                    fullUrl: window.location.href
-                });
-
-                return state.userId;
-
-            } catch (error) {
-                console.error('❌ Error during session initialization:', error);
-                showStatus(`Initialization failed: ${error.message}`, 'error');
-                return null;
-            }
-        }
-
-        // ============================
-        // Enhanced error display for missing user ID
-        // ============================
-        function showTranscriptionServiceError() {
-            const container = document.querySelector('.container');
-            container.innerHTML = `
-                <div style="text-align: center; padding: 40px;">
-                    <h1 style="color: #ef4444;">🚫 Authentication Required</h1>
-                    <div style="background: #fee2e2; border: 1px solid #fecaca; border-radius: 8px; padding: 20px; margin: 20px 0;">
-                        <h3 style="color: #dc2626; margin: 0 0 15px 0;">Missing User Authentication</h3>
-                        <p style="color: #991b1b; margin: 0 0 15px 0;">
-                            This transcription service requires you to be properly signed in to link your recording 
-                            with your incident report data.
-                        </p>
-                        <div style="background: #fff; border: 1px solid #fecaca; border-radius: 4px; padding: 15px; margin: 15px 0; text-align: left;">
-                            <h4 style="margin: 0 0 10px 0; color: #dc2626;">Possible solutions:</h4>
-                            <ul style="color: #991b1b; text-align: left; margin: 0; padding-left: 20px;">
-                                <li>Sign in to your account first</li>
-                                <li>Complete the incident form before accessing transcription</li>
-                                <li>If coming from Typeform, ensure the URL contains your user ID</li>
-                            </ul>
-                        </div>
-                        <p style="color: #991b1b; margin: 15px 0 0 0; font-size: 14px;">
-                            Please sign in or complete the incident form first, then try again.
-                        </p>
-                    </div>
-                    <div style="margin-top: 30px;">
-                        <button onclick="window.location.href='/sign-in.html'" class="btn btn-primary">
-                            🔐 Sign In
-                        </button>
-                        <button onclick="window.location.href='/incident.html'" class="btn btn-primary" style="margin-left: 10px;">
-                            📋 Start Incident Report
-                        </button>
-                        <button onclick="window.location.href='/'" class="btn btn-ghost" style="margin-left: 10px;">
-                            🏠 Return to Home
-                        </button>
-                    </div>
-                </div>
-            `;
-        }
-
-        function updateUserInfoBadge() {
-            const badge = document.getElementById('userInfoBadge');
-            const userDisplay = document.getElementById('userIdDisplay');
-            const incidentDisplay = document.getElementById('incidentDisplay');
-            const incidentIdDisplay = document.getElementById('incidentIdDisplay');
-
-            if (state.userId) {
-                badge.classList.add('visible');
-                // Show shortened user ID for privacy
-                const displayId = state.userId.length > 12 ? 
-                    state.userId.substring(0, 12) + '...' : 
-                    state.userId;
-                userDisplay.textContent = displayId;
-
-                if (state.incidentReportId) {
-                    incidentDisplay.style.display = 'inline';
-                    const displayIncidentId = state.incidentReportId.length > 8 ? 
-                        state.incidentReportId.substring(0, 8) + '...' : 
-                        state.incidentReportId;
-                    incidentIdDisplay.textContent = displayIncidentId;
-                }
-            } else {
-                // Hide badge if no user ID
-                badge.classList.remove('visible');
-            }
-        }
-
-        // ============================
         // Network Status Monitoring
-        // ============================
         function updateNetworkStatus() {
             const statusElement = document.getElementById('networkStatus');
             const statusText = statusElement.querySelector('span:last-child');
@@ -1570,47 +746,42 @@
             } else {
                 statusElement.className = 'network-status offline';
                 statusText.textContent = 'Offline';
-                showStatus('Network connection lost. Recording will be saved when connection is restored.', 'error');
             }
         }
 
-        // ============================
-        // WebSocket Management
-        // ============================
-        function initWebSocket() {
-            if (state.ws && state.ws.readyState === WebSocket.OPEN) {
-                return; // Already connected
-            }
+        window.addEventListener('online', updateNetworkStatus);
+        window.addEventListener('offline', () => {
+            updateNetworkStatus();
+            showStatus('Network connection lost. Recording will be saved locally.', 'error');
+        });
 
+        // Initialize WebSocket Connection
+        function initWebSocket() {
             const protocol = window.location.protocol === 'https:' ? 'wss:' : 'ws:';
             const wsUrl = `${protocol}//${window.location.host}`;
 
             console.log('Connecting to WebSocket:', wsUrl);
-
+            
             try {
-                state.ws = new WebSocket(wsUrl);
-                setupWebSocketHandlers();
+                ws = new WebSocket(wsUrl);
             } catch (error) {
-                console.error('WebSocket creation failed:', error);
-                // Continue without WebSocket - use polling fallback
+                console.error('❌ WebSocket creation failed:', error);
+                showStatus('Connection setup failed. Some features may be limited.', 'warning');
+                return;
             }
-        }
 
-        function setupWebSocketHandlers() {
-            if (!state.ws) return;
-
-            state.ws.onopen = () => {
+            ws.onopen = () => {
                 console.log('WebSocket connected successfully');
-                state.reconnectAttempts = 0;
+                reconnectAttempts = 0;
 
                 // Subscribe to user updates
-                state.ws.send(JSON.stringify({
+                ws.send(JSON.stringify({
                     type: 'subscribe',
-                    userId: state.userId
+                    userId: userId
                 }));
             };
 
-            state.ws.onmessage = (event) => {
+            ws.onmessage = (event) => {
                 try {
                     const data = JSON.parse(event.data);
                     console.log('WebSocket message:', data);
@@ -1620,48 +791,35 @@
                 }
             };
 
-            state.ws.onerror = (error) => {
+            ws.onerror = (error) => {
                 console.error('WebSocket error:', error);
-                // Don't show error to user - fallback to polling
+                showStatus('Connection error. Some features may be limited.', 'warning');
             };
 
-            state.ws.onclose = () => {
+            ws.onclose = () => {
                 console.log('WebSocket disconnected');
-                // Only attempt reconnect if not redirecting
-                if (!state.isRedirecting) {
-                    attemptReconnect();
+
+                // Attempt to reconnect with exponential backoff
+                if (reconnectAttempts < maxReconnectAttempts) {
+                    reconnectAttempts++;
+                    const delay = Math.min(1000 * Math.pow(2, reconnectAttempts), 30000);
+                    console.log(`Reconnecting in ${delay}ms (attempt ${reconnectAttempts})`);
+                    setTimeout(initWebSocket, delay);
                 }
             };
 
-            // Setup heartbeat
-            setupHeartbeat();
-        }
-
-        function attemptReconnect() {
-            if (state.reconnectAttempts >= CONFIG.MAX_RECONNECT_ATTEMPTS) {
-                console.log('Max reconnection attempts reached, falling back to polling');
-                return;
-            }
-
-            state.reconnectAttempts++;
-            const delay = Math.min(CONFIG.RECONNECT_DELAY_BASE * Math.pow(2, state.reconnectAttempts), 30000);
-
-            console.log(`Reconnecting in ${delay}ms (attempt ${state.reconnectAttempts})`);
-            setTimeout(initWebSocket, delay);
-        }
-
-        function setupHeartbeat() {
+            // Heartbeat to keep connection alive
             setInterval(() => {
-                if (state.ws && state.ws.readyState === WebSocket.OPEN && !state.isRedirecting) {
-                    state.ws.send(JSON.stringify({ type: 'ping' }));
+                if (ws && ws.readyState === WebSocket.OPEN) {
+                    ws.send(JSON.stringify({ type: 'ping' }));
                 }
-            }, CONFIG.HEARTBEAT_INTERVAL);
+            }, 30000);
         }
 
-        // ============================
-        // Real-time Update Handling
-        // ============================
+        // Handle Real-time Updates
         function handleRealtimeUpdate(data) {
+            console.log('Processing realtime update:', data);
+
             const statusDiv = document.getElementById('statusMessage');
             const statusText = document.getElementById('statusText');
             const statusIndicator = statusDiv.querySelector('.status-indicator');
@@ -1675,7 +833,7 @@
                     updateProgress('step-transcribe', 'active');
                     statusIndicator.className = 'status-indicator processing';
                     statusText.textContent = data.message || 'Processing your recording...';
-                    statusDiv.style.background = '#e3f2fd';
+                    statusDiv.style.background = '#fff3e0';
                     break;
 
                 case 'transcribed':
@@ -1683,7 +841,7 @@
                     updateProgress('step-transcribe', 'complete');
                     updateProgress('step-summary', 'active');
                     statusIndicator.className = 'status-indicator processing';
-                    statusText.textContent = 'Generating AI transcription...';
+                    statusText.textContent = 'Generating AI summary...';
                     statusDiv.style.background = '#e3f2fd';
 
                     if (data.transcription) {
@@ -1707,38 +865,11 @@
                     statusText.textContent = 'Processing complete! ✅';
                     statusDiv.style.background = '#e8f5e9';
 
-                    state.isProcessing = false;
-                    console.log('Processing completed, isProcessing set to false');
-
                     if (data.transcription) {
                         showTranscription(data.transcription);
                     }
                     if (data.summary) {
-                        state.summaryData = data.summary;
                         showSummary(data.summary);
-                    }
-
-                    // Enable confirmation button
-                    const confirmBtn = document.getElementById('confirmButton');
-                    if (confirmBtn) {
-                        confirmBtn.disabled = false;
-                    }
-
-                    // Redirect to review page after a short delay
-                    console.log('Transcription completed. Redirecting to transcription review page...');
-                    setTimeout(() => {
-                        const params = new URLSearchParams({
-                            queueId: state.currentQueueId,
-                            userId: state.userId
-                        });
-                        // Use the correct existing page name
-                        window.location.href = `/transcription-review.html?${params.toString()}`;
-                    }, 2000);
-
-                    // Clear polling if active
-                    if (state.pollInterval) {
-                        clearInterval(state.pollInterval);
-                        state.pollInterval = null;
                     }
                     break;
 
@@ -1749,14 +880,6 @@
                     statusText.textContent = `Error: ${data.error || data.message || 'Processing failed'}`;
                     statusDiv.style.background = '#ffebee';
                     document.getElementById('retryButton').style.display = 'inline-block';
-
-                    state.isProcessing = false;
-                    console.log('Processing failed, isProcessing set to false');
-
-                    if (state.pollInterval) {
-                        clearInterval(state.pollInterval);
-                        state.pollInterval = null;
-                    }
                     break;
 
                 case 'subscribed':
@@ -1772,9 +895,7 @@
             }
         }
 
-        // ============================
-        // Progress Management
-        // ============================
+        // Update Progress Steps
         function updateProgress(stepId, status) {
             const step = document.getElementById(stepId);
             const allSteps = document.querySelectorAll('.progress-step');
@@ -1784,6 +905,7 @@
                 step.classList.add('active');
                 step.classList.remove('complete');
 
+                // Update progress line
                 const progressLine = document.getElementById('progressLine');
                 progressLine.style.width = `${(stepIndex / 3) * 100}%`;
 
@@ -1791,19 +913,18 @@
                 step.classList.remove('active');
                 step.classList.add('complete');
 
+                // Update progress line
                 const progressLine = document.getElementById('progressLine');
                 progressLine.style.width = `${((stepIndex + 1) / 4) * 100}%`;
             }
         }
 
-        // ============================
-        // Audio Visualizer
-        // ============================
+        // Initialize Audio Visualizer
         function initializeVisualizer() {
             const barsContainer = document.getElementById('visualizerBars');
-            barsContainer.innerHTML = ''; // Clear existing bars
 
-            for (let i = 0; i < CONFIG.VISUALIZER_BARS; i++) {
+            // Create visualizer bars
+            for (let i = 0; i < 20; i++) {
                 const bar = document.createElement('div');
                 bar.className = 'audio-bar';
                 bar.style.height = '20px';
@@ -1812,93 +933,42 @@
             }
         }
 
+        // Animate Visualizer
         function animateVisualizer() {
-            if (!state.analyser) return;
+            if (!analyser) return;
 
             const bars = document.querySelectorAll('.audio-bar');
-            const dataArray = new Uint8Array(state.analyser.frequencyBinCount);
+            const dataArray = new Uint8Array(analyser.frequencyBinCount);
 
             function animate() {
-                if (!state.mediaRecorder || state.mediaRecorder.state !== 'recording') {
+                if (!mediaRecorder || mediaRecorder.state !== 'recording') {
                     return;
                 }
 
-                state.analyser.getByteFrequencyData(dataArray);
+                analyser.getByteFrequencyData(dataArray);
 
                 bars.forEach((bar, index) => {
                     const value = dataArray[index * 10] || 0;
                     const height = Math.max(10, (value / 255) * 60);
                     bar.style.height = `${height}px`;
+                    bar.style.animation = `pulse ${0.5 + Math.random()}s ease infinite`;
                 });
 
-                state.animationId = requestAnimationFrame(animate);
+                animationId = requestAnimationFrame(animate);
             }
 
             animate();
         }
 
-        // ============================
-        // Microphone Test Function
-        // ============================
-        async function testMicrophone() {
-            const testButton = document.getElementById('testMicButton');
-            testButton.disabled = true;
-            testButton.innerHTML = '🔄 Testing...';
-
-            try {
-                const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
-
-                // Test successful
-                showStatus('✅ Microphone test successful! You can now record.', 'success');
-                testButton.innerHTML = '✅ Mic Works';
-                testButton.style.background = '#48bb78';
-                testButton.style.color = 'white';
-
-                // Enable record button
-                document.getElementById('recordButton').disabled = false;
-
-                // Stop the test stream
-                stream.getTracks().forEach(track => track.stop());
-
-            } catch (error) {
-                console.error('Microphone test failed:', error);
-                showStatus(`❌ Microphone test failed: ${error.message}`, 'error');
-                testButton.innerHTML = '❌ Test Failed';
-                testButton.style.background = '#ef4444';
-                testButton.style.color = 'white';
-            }
-
-            setTimeout(() => {
-                testButton.disabled = false;
-                testButton.innerHTML = '🔧 Test Microphone';
-                testButton.style.background = '';
-                testButton.style.color = '';
-            }, 3000);
-        }
-
-        // ============================
-        // Recording Functions
-        // ============================
+        // Start Recording
         async function startRecording() {
-            // Final consent check
-            if (!state.hasConsent) {
-                const localConsent = localStorage.getItem('gdpr_consent');
-                const recordingConsent = localStorage.getItem('gdpr_consent_recording_consent');
-
-                if (!localConsent && !recordingConsent) {
-                    showConsentBanner();
-                    return;
-                }
-            }
-
-            // Log audio recording consent
-            await logConsent('audio_recording', true);
-
             try {
+                // Check browser compatibility
                 if (!navigator.mediaDevices || !navigator.mediaDevices.getUserMedia) {
                     throw new Error('Your browser does not support audio recording');
                 }
 
+                // Request microphone permission with fallback options
                 const constraints = {
                     audio: {
                         echoCancellation: true,
@@ -1911,11 +981,11 @@
                 const stream = await navigator.mediaDevices.getUserMedia(constraints);
 
                 // Setup audio context for visualization
-                state.audioContext = new (window.AudioContext || window.webkitAudioContext)();
-                state.analyser = state.audioContext.createAnalyser();
-                state.microphone = state.audioContext.createMediaStreamSource(stream);
-                state.analyser.fftSize = 256;
-                state.microphone.connect(state.analyser);
+                audioContext = new (window.AudioContext || window.webkitAudioContext)();
+                analyser = audioContext.createAnalyser();
+                microphone = audioContext.createMediaStreamSource(stream);
+                analyser.fftSize = 256;
+                microphone.connect(analyser);
 
                 // Determine best mime type
                 const mimeTypes = [
@@ -1937,30 +1007,30 @@
                 console.log('Using mime type:', selectedMimeType);
 
                 // Initialize MediaRecorder
-                state.mediaRecorder = new MediaRecorder(stream, { 
+                mediaRecorder = new MediaRecorder(stream, { 
                     mimeType: selectedMimeType,
                     audioBitsPerSecond: 128000
                 });
 
-                state.audioChunks = [];
+                audioChunks = [];
 
-                state.mediaRecorder.ondataavailable = (event) => {
+                mediaRecorder.ondataavailable = (event) => {
                     if (event.data.size > 0) {
-                        state.audioChunks.push(event.data);
+                        audioChunks.push(event.data);
                     }
                 };
 
-                state.mediaRecorder.onstop = handleRecordingComplete;
+                mediaRecorder.onstop = handleRecordingComplete;
 
-                state.mediaRecorder.onerror = (event) => {
+                mediaRecorder.onerror = (event) => {
                     console.error('MediaRecorder error:', event);
                     showStatus('Recording error occurred. Please try again.', 'error');
                     resetRecordingUI();
                 };
 
                 // Start recording
-                state.mediaRecorder.start(1000); // Collect data every second
-                state.recordingStartTime = Date.now();
+                mediaRecorder.start(1000); // Collect data every second
+                recordingStartTime = Date.now();
 
                 // Update UI
                 updateProgress('step-record', 'active');
@@ -1975,82 +1045,53 @@
 
                 // Start duration timer
                 updateDuration();
-                state.durationInterval = setInterval(updateDuration, 100);
+                durationInterval = setInterval(updateDuration, 100);
 
                 // Auto-stop after 5 minutes
                 setTimeout(() => {
-                    if (state.mediaRecorder && state.mediaRecorder.state === 'recording') {
+                    if (mediaRecorder && mediaRecorder.state === 'recording') {
                         stopRecording();
                         showStatus('Maximum recording time reached (5 minutes)', 'info');
                     }
-                }, CONFIG.MAX_RECORDING_TIME);
+                }, 300000);
 
                 showStatus('Recording started', 'info');
 
             } catch (error) {
-                console.error('❌ Microphone access error:', error);
+                console.error('Error starting recording:', error);
 
                 if (error.name === 'NotAllowedError') {
-                    showStatus('🎤 Microphone permission denied. Please click the microphone icon in your browser\'s address bar and allow access.', 'error');
-
-                    // Show detailed help for microphone permissions
-                    const helpDiv = document.createElement('div');
-                    helpDiv.style.cssText = 'margin-top: 15px; padding: 15px; background: #fff3cd; border: 1px solid #ffeaa7; border-radius: 8px; font-size: 14px;';
-                    helpDiv.innerHTML = `
-                        <h4 style="margin: 0 0 10px 0; color: #856404;">🔧 How to Fix Microphone Access:</h4>
-                        <ol style="margin: 0; padding-left: 20px; color: #856404;">
-                            <li>Look for a microphone icon in your browser's address bar</li>
-                            <li>Click it and select "Always allow on this site"</li>
-                            <li>Refresh the page and try again</li>
-                            <li>If no icon appears, check your browser settings for microphone permissions</li>
-                        </ol>
-                    `;
-                    document.querySelector('.container').appendChild(helpDiv);
-
+                    showStatus('Microphone permission denied. Please allow microphone access.', 'error');
                 } else if (error.name === 'NotFoundError') {
-                    showStatus('🎤 No microphone found. Please connect a microphone and refresh the page.', 'error');
-                } else if (error.name === 'NotReadableError') {
-                    showStatus('🎤 Microphone is being used by another application. Please close other apps using the microphone.', 'error');
-                } else if (error.name === 'OverconstrainedError') {
-                    showStatus('🎤 Microphone constraints not supported. Trying with basic settings...', 'warning');
-
-                    // Retry with basic constraints
-                    setTimeout(async () => {
-                        try {
-                            const basicStream = await navigator.mediaDevices.getUserMedia({ audio: true });
-                            // Continue with basic stream setup...
-                            showStatus('✅ Microphone access granted with basic settings', 'success');
-                        } catch (retryError) {
-                            showStatus(`🎤 Microphone setup failed: ${retryError.message}`, 'error');
-                        }
-                    }, 2000);
+                    showStatus('No microphone found. Please connect a microphone.', 'error');
                 } else {
-                    showStatus(`🎤 Unable to start recording: ${error.message}`, 'error');
+                    showStatus(`Unable to start recording: ${error.message}`, 'error');
                 }
 
                 resetRecordingUI();
             }
         }
 
+        // Stop Recording
         function stopRecording() {
-            if (state.mediaRecorder && state.mediaRecorder.state === 'recording') {
-                state.mediaRecorder.stop();
+            if (mediaRecorder && mediaRecorder.state === 'recording') {
+                mediaRecorder.stop();
 
                 // Stop all tracks
-                state.mediaRecorder.stream.getTracks().forEach(track => track.stop());
+                mediaRecorder.stream.getTracks().forEach(track => track.stop());
 
                 // Clear interval
-                clearInterval(state.durationInterval);
+                clearInterval(durationInterval);
 
                 // Stop visualizer
-                if (state.animationId) {
-                    cancelAnimationFrame(state.animationId);
+                if (animationId) {
+                    cancelAnimationFrame(animationId);
                 }
 
                 // Close audio context
-                if (state.audioContext) {
-                    state.audioContext.close();
-                    state.audioContext = null;
+                if (audioContext) {
+                    audioContext.close();
+                    audioContext = null;
                 }
 
                 // Update UI
@@ -2062,14 +1103,14 @@
             }
         }
 
+        // Handle Recording Complete
         async function handleRecordingComplete() {
             try {
-                const audioBlob = new Blob(state.audioChunks, { 
-                    type: state.mediaRecorder.mimeType || 'audio/webm' 
-                });
+                const audioBlob = new Blob(audioChunks, { type: mediaRecorder.mimeType });
 
                 console.log('Recording complete. Blob size:', audioBlob.size);
 
+                // Check if blob is valid
                 if (audioBlob.size === 0) {
                     throw new Error('Recording is empty');
                 }
@@ -2084,7 +1125,7 @@
                 updateProgress('step-record', 'complete');
                 updateProgress('step-upload', 'active');
 
-                // Upload and process - NO GDPR CHECK HERE ANYMORE
+                // Upload and process
                 await uploadAndProcess(audioBlob);
 
             } catch (error) {
@@ -2094,44 +1135,22 @@
             }
         }
 
-        // ============================
-        // Enhanced upload function with proper user ID handling
-        // ============================
+        // Upload and Process Audio
         async function uploadAndProcess(audioBlob) {
-            console.log('🚀 Starting upload with user ID:', state.userId);
-
-            if (!state.userId) {
-                showStatus('❌ No user ID available for upload', 'error');
-                return;
-            }
-
             const formData = new FormData();
             formData.append('audio', audioBlob, 'recording.webm');
-            formData.append('create_user_id', state.userId); // Primary field for Supabase
-            formData.append('user_id', state.userId); // Backup field for compatibility
+            formData.append('create_user_id', userId);
 
-            if (state.incidentReportId) {
-                formData.append('incident_report_id', state.incidentReportId);
+            const incidentId = localStorage.getItem('incident_report_id');
+            if (incidentId) {
+                formData.append('incident_report_id', incidentId);
             }
 
-            // Add source tracking for debugging
-            formData.append('source', 'transcription_page');
-            formData.append('user_id_source', localStorage.getItem('user_id_source') || 'unknown');
-
             try {
-                showStatus('📤 Uploading audio...', 'info');
-                state.isProcessing = true;
-
-                const headers = {};
-                if (appConfig?.apiKey) {
-                    headers['X-Api-Key'] = appConfig.apiKey;
-                }
-
-                console.log('📤 Uploading to /api/whisper/transcribe with user ID:', state.userId);
+                showStatus('Uploading audio...', 'info');
 
                 const response = await fetch('/api/whisper/transcribe', {
                     method: 'POST',
-                    headers: headers,
                     body: formData
                 });
 
@@ -2142,29 +1161,27 @@
                 }
 
                 if (result.success && result.queueId) {
-                    state.currentQueueId = result.queueId;
+                    currentQueueId = result.queueId;
 
-                    console.log('✅ Upload successful:', {
-                        queueId: state.currentQueueId,
-                        userId: result.create_user_id,
-                        audioUrl: result.audioUrl
-                    });
+                    console.log('Upload successful. Queue ID:', currentQueueId);
 
-                    // Verify user ID matches
-                    if (result.create_user_id !== state.userId) {
-                        console.warn('⚠️ User ID mismatch:', {
-                            sent: state.userId,
-                            received: result.create_user_id
-                        });
+                    // Subscribe to updates for this queue ID
+                    if (ws && ws.readyState === WebSocket.OPEN) {
+                        ws.send(JSON.stringify({
+                            type: 'subscribe',
+                            queueId: currentQueueId,
+                            userId: userId
+                        }));
                     }
 
-                    // Update progress
+                    // Update UI
                     updateProgress('step-upload', 'complete');
                     updateProgress('step-transcribe', 'active');
-                    showStatus('✅ Upload successful! Processing transcription...', 'success');
 
-                    // Start polling for status updates
-                    if (!state.ws || state.ws.readyState !== WebSocket.OPEN) {
+                    showStatus('Upload successful! Processing transcription...', 'success');
+
+                    // Start polling as fallback if WebSocket is not connected
+                    if (!ws || ws.readyState !== WebSocket.OPEN) {
                         startPolling();
                     }
 
@@ -2173,13 +1190,13 @@
                 }
 
             } catch (error) {
-                console.error('❌ Upload error:', error);
-                state.isProcessing = false;
+                console.error('Upload error:', error);
 
+                // Handle network errors
                 if (!navigator.onLine) {
-                    showStatus('🌐 No internet connection. Please check your connection and try again.', 'error');
+                    showStatus('No internet connection. Please check your connection and try again.', 'error');
                 } else {
-                    showStatus(`❌ Upload failed: ${error.message}`, 'error');
+                    showStatus(`Upload failed: ${error.message}`, 'error');
                 }
 
                 document.getElementById('retryButton').style.display = 'inline-block';
@@ -2187,50 +1204,41 @@
             }
         }
 
-        // ============================
         // Polling Fallback
-        // ============================
-        function startPolling() {
-            console.log('Starting status polling for queue:', state.currentQueueId);
-            state.pollCount = 0;
+        let pollInterval;
+        let pollCount = 0;
+        const maxPolls = 60; // 5 minutes
 
-            state.pollInterval = setInterval(async () => {
+        function startPolling() {
+            console.log('Starting status polling for queue:', currentQueueId);
+
+            pollInterval = setInterval(async () => {
                 try {
-                    const response = await fetch(`/api/transcription-status/${state.currentQueueId}`);
+                    const response = await fetch(`/api/transcription-status/${currentQueueId}`);
                     const data = await response.json();
 
                     console.log('Poll response:', data);
 
                     if (data.status === 'completed' || data.status === 'COMPLETED') {
-                        clearInterval(state.pollInterval);
-                        state.pollInterval = null;
-                        handleRealtimeUpdate({...data, status: 'completed'});
+                        clearInterval(pollInterval);
+                        handleRealtimeUpdate(data);
                     } else if (data.status === 'failed' || data.status === 'FAILED') {
-                        clearInterval(state.pollInterval);
-                        state.pollInterval = null;
-                        handleRealtimeUpdate({...data, status: 'failed'});
-                    } else if (data.status === 'transcribed' || data.status === 'TRANSCRIBED') {
-                        handleRealtimeUpdate({...data, status: 'transcribed'});
-                    } else if (state.pollCount >= CONFIG.MAX_POLLS) {
-                        clearInterval(state.pollInterval);
-                        state.pollInterval = null;
+                        clearInterval(pollInterval);
+                        handleRealtimeUpdate(data);
+                    } else if (pollCount >= maxPolls) {
+                        clearInterval(pollInterval);
                         showStatus('Processing timeout. Please try again.', 'error');
                         document.getElementById('retryButton').style.display = 'inline-block';
-                        state.isProcessing = false;
-                        console.log('Polling timeout, isProcessing set to false');
                     }
 
-                    state.pollCount++;
+                    pollCount++;
                 } catch (error) {
                     console.error('Polling error:', error);
-                    // Don't clear polling on network errors
                 }
-            }, CONFIG.POLL_INTERVAL);
+            }, 5000); // Poll every 5 seconds
         }
 
-        // ============================
-        // Transcription and Summary Display
-        // ============================
+        // Show Transcription
         function showTranscription(text) {
             const transcriptionDiv = document.getElementById('transcriptionResult');
             const transcriptionText = document.getElementById('transcriptionText');
@@ -2242,6 +1250,7 @@
             transcriptionText.focus();
         }
 
+        // Show AI Summary
         function showSummary(summary) {
             const summarySection = document.getElementById('summarySection');
 
@@ -2266,9 +1275,7 @@
             summarySection.style.display = 'block';
         }
 
-        // ============================
-        // Confirmation and Save
-        // ============================
+        // Confirm Transcription
         async function confirmTranscription() {
             const editedText = document.getElementById('transcriptionText').textContent;
 
@@ -2277,142 +1284,57 @@
                 return;
             }
 
-            // Prevent double-submission
-            if (state.isRedirecting) {
-                console.log('Already redirecting, ignoring additional confirm click');
-                return;
-            }
-
-            // Disable button to prevent double-submission
-            const confirmBtn = document.getElementById('confirmButton');
-            confirmBtn.disabled = true;
-            confirmBtn.innerHTML = '<span class="loading-spinner"></span> Saving...';
-
             try {
-                showStatus('Saving transcription...', 'info');
-
-                // Use API key from config if available
-                const headers = {
-                    'Content-Type': 'application/json'
-                };
-                if (appConfig?.apiKey) {
-                    headers['X-Api-Key'] = appConfig.apiKey;
-                }
-
-                // First, update the transcription if it was edited
-                const updateResponse = await fetch('/api/update-transcription', {
+                const response = await fetch('/api/update-transcription', {
                     method: 'POST',
-                    headers: headers,
+                    headers: {
+                        'Content-Type': 'application/json',
+                    },
                     body: JSON.stringify({
-                        queueId: state.currentQueueId,
-                        userId: state.userId,
-                        create_user_id: state.userId,
-                        transcription: editedText,
-                        incident_report_id: state.incidentReportId || null
+                        queueId: currentQueueId,
+                        userId: userId,
+                        transcription: editedText
                     })
                 });
 
-                if (!updateResponse.ok) {
-                    throw new Error('Failed to update transcription');
-                }
+                if (response.ok) {
+                    showStatus('Transcription saved successfully!', 'success');
 
-                // Then save the transcription
-                const saveResponse = await fetch('/api/save-transcription', {
-                    method: 'POST',
-                    headers: headers,
-                    body: JSON.stringify({
-                        queueId: state.currentQueueId,
-                        userId: state.userId,
-                        create_user_id: state.userId,
-                        transcription: editedText,
-                        incident_report_id: state.incidentReportId || null
-                    })
-                });
-
-                if (saveResponse.ok) {
-                    const result = await saveResponse.json();
-                    showStatus('Transcription saved successfully! Redirecting to declaration...', 'success');
-
-                    // Store data in localStorage for declaration page
-                    localStorage.setItem('transcription_confirmed', 'true');
-                    localStorage.setItem('last_transcription', editedText);
-                    if (result.summary || state.summaryData) {
-                        localStorage.setItem('last_summary', JSON.stringify(result.summary || state.summaryData));
-                    }
-
-                    // Build redirect URL with all parameters
-                    const params = new URLSearchParams({
-                        create_user_id: state.userId,
-                        status: 'transcription_complete',
-                        operation: 'final_consent'
-                    });
-
-                    if (state.currentQueueId) {
-                        params.append('queue_id', state.currentQueueId);
-                    }
-
-                    if (state.incidentReportId) {
-                        params.append('incident_report_id', state.incidentReportId);
-                    }
-
-                    // Remove the beforeunload listener before redirect
-                    window.removeEventListener('beforeunload', handleBeforeUnload);
-
-                    // Clean up WebSocket before redirect
-                    if (state.ws) {
-                        state.ws.close();
-                        state.ws = null;
-                    }
-
-                    // Clear any active polling
-                    if (state.pollInterval) {
-                        clearInterval(state.pollInterval);
-                        state.pollInterval = null;
-                    }
-
-                    // Redirect to transcription review page
-                    console.log('Redirecting to transcription review...');
+                    // Wait briefly then redirect
                     setTimeout(() => {
-                        window.location.href = `/transcription-review.html?${params.toString()}`;
-                    }, 1000);
-
+                        window.location.href = `/declaration.html?create_user_id=${userId}&queueId=${currentQueueId}`;
+                    }, 1500);
                 } else {
-                    const error = await saveResponse.json();
-                    throw new Error(error.error || 'Failed to save transcription');
+                    throw new Error('Failed to save transcription');
                 }
 
             } catch (error) {
                 console.error('Error saving transcription:', error);
                 showStatus('Error saving transcription. Please try again.', 'error');
-
-                // Re-enable button
-                confirmBtn.disabled = false;
-                confirmBtn.innerHTML = '✅ Confirm & Continue';
             }
         }
 
-        // ============================
-        // UI Helper Functions
-        // ============================
+        // Update Recording Duration
         function updateDuration() {
-            if (!state.recordingStartTime) return;
+            if (!recordingStartTime) return;
 
-            const elapsed = Math.floor((Date.now() - state.recordingStartTime) / 1000);
+            const elapsed = Math.floor((Date.now() - recordingStartTime) / 1000);
             const minutes = Math.floor(elapsed / 60);
             const seconds = elapsed % 60;
 
-            const durationElement = document.getElementById('duration');
-            durationElement.textContent = `${minutes}:${seconds.toString().padStart(2, '0')}`;
+            document.getElementById('duration').textContent = 
+                `${minutes}:${seconds.toString().padStart(2, '0')}`;
 
             // Visual warning as approaching limit
             if (elapsed > 240) { // 4 minutes
-                durationElement.style.color = '#f59e0b';
+                document.getElementById('duration').style.color = '#f59e0b';
             }
             if (elapsed > 270) { // 4.5 minutes
-                durationElement.style.color = '#ef4444';
+                document.getElementById('duration').style.color = '#ef4444';
             }
         }
 
+        // Show Status Message
         function showStatus(message, type = 'info') {
             const statusDiv = document.getElementById('statusMessage');
             const statusText = document.getElementById('statusText');
@@ -2443,240 +1365,193 @@
             // Auto-hide info messages after 5 seconds
             if (type === 'info' || type === 'success') {
                 setTimeout(() => {
-                    if (statusText.textContent === message && !state.isRedirecting) {
+                    if (statusText.textContent === message) {
                         statusDiv.style.display = 'none';
                     }
                 }, 5000);
             }
         }
 
+        // Reset Recording UI
         function resetRecordingUI() {
             document.getElementById('recordButton').style.display = 'inline-block';
             document.getElementById('stopButton').style.display = 'none';
             document.getElementById('recordingStatus').classList.remove('active');
             document.getElementById('visualizer').classList.remove('active');
-            // Make retry button visible after recording complete or failed
             document.getElementById('retryButton').style.display = 'inline-block';
-            document.getElementById('retryButton').textContent = '🔄 Re-Record Statement'; // Ensure correct text
         }
 
-        function resetRecording() {
-            // Clear state
-            state.audioChunks = [];
-            state.currentQueueId = null;
-            state.summaryData = null;
-            state.isProcessing = false;
-            state.isRedirecting = false;
+        // Initialize on Page Load
+        document.addEventListener('DOMContentLoaded', () => {
+            console.log('Initializing transcription page');
+            console.log('User ID:', userId);
+            console.log('Current URL:', window.location.href);
+            console.log('URL Parameters:', new URLSearchParams(window.location.search));
 
-            // Clear polling
-            if (state.pollInterval) {
-                clearInterval(state.pollInterval);
-                state.pollInterval = null;
+            // Check for URL parameters that might contain user ID
+            const urlParams = new URLSearchParams(window.location.search);
+            const urlUserId = urlParams.get('user_id') || urlParams.get('userId') || urlParams.get('create_user_id');
+            
+            if (urlUserId) {
+                console.log('User ID found in URL parameters:', urlUserId);
+                userId = urlUserId;
+                localStorage.setItem('create_user_id', userId);
             }
 
-            // Reset UI
-            location.reload(); // Simple reload for complete reset
-        }
-
-        // ============================
-        // Extract beforeunload handler
-        // ============================
-        function handleBeforeUnload(e) {
-            // Check if we're in the middle of redirecting
-            if (state.isRedirecting) {
-                console.log('Redirecting, allowing navigation');
-                return; // Allow navigation during redirect
+            // Debug information display
+            if (window.location.search.includes('debug=true')) {
+                const debugInfo = document.createElement('div');
+                debugInfo.style.cssText = 'position:fixed;top:10px;left:10px;background:rgba(0,0,0,0.8);color:white;padding:10px;border-radius:5px;font-size:12px;z-index:9999;max-width:300px;';
+                debugInfo.innerHTML = `
+                    <strong>Debug Info:</strong><br>
+                    User ID: ${userId}<br>
+                    URL: ${window.location.href}<br>
+                    Referrer: ${document.referrer}<br>
+                    Local Storage: ${JSON.stringify(localStorage)}<br>
+                    <button onclick="this.parentElement.remove()">Close</button>
+                `;
+                document.body.appendChild(debugInfo);
             }
 
-            // Check for active recording
-            if (state.mediaRecorder && state.mediaRecorder.state === 'recording') {
-                e.preventDefault();
-                e.returnValue = 'Recording in progress. Are you sure you want to leave?';
-                return e.returnValue;
+            // Initialize components with error handling
+            try {
+                initializeVisualizer();
+                console.log('✅ Visualizer initialized');
+            } catch (error) {
+                console.error('❌ Visualizer initialization failed:', error);
+                showStatus('Warning: Audio visualizer unavailable', 'warning');
             }
-
-            // Check for processing state
-            if (state.isProcessing) {
-                e.preventDefault();
-                e.returnValue = 'Processing in progress. Are you sure you want to leave?';
-                return e.returnValue;
-            }
-        }
-
-        // ============================
-        // Event Listeners and Initialization - SIMPLIFIED
-        // ============================
-        document.addEventListener('DOMContentLoaded', async () => {
-            console.log('Initializing recording page with strict Typeform validation');
 
             try {
-                // Load navigation history first
-                loadNavigationHistory();
-
-                // Add current page to history
-                addPageToHistory(window.location.href);
-
-                // Initialize configuration first
-                await initializeConfig();
-                await initializeSupabase();
-
-                // Initialize session with strict validation
-                const userId = await initializeSession();
-
-                // Debug logging for user ID
-                console.log('Session initialization result:', {
-                    userId: userId,
-                    stateUserId: state.userId,
-                    urlParams: Object.fromEntries(new URLSearchParams(window.location.search)),
-                    localStorage: localStorage.getItem('create_user_id')
-                });
-
-                // If initialization failed, stop here
-                if (!userId) {
-                    console.error('Session initialization failed - halting page load');
-                    return; // Stop all further initialization
-                }
-
-                // Continue with normal initialization only if we have a valid Typeform user ID
-                const hasConsent = await checkGDPRConsent(state.userId);
-                console.log('GDPR consent status:', hasConsent);
-
-                state.hasConsent = hasConsent;
-
-                if (!hasConsent) {
-                    // Show consent banner for first-time users
-                    showConsentBanner();
-                    const gdprNotice = document.getElementById('gdprNotice');
-                    if (gdprNotice) {
-                        gdprNotice.classList.add('visible');
-                    }
-                } else {
-                    // User has consent, make sure record button is visible
-                    const recordButton = document.getElementById('recordButton');
-                    if (recordButton) {
-                        recordButton.style.display = 'inline-block';
-                        recordButton.disabled = false;
-                        recordButton.textContent = '🎤 Start Recording';
-                    }
-                }
+                initWebSocket();
+                console.log('✅ WebSocket initialization started');
             } catch (error) {
-                console.error('Error during DOMContentLoaded initialization:', error);
-                showStatus(`Initialization failed: ${error.message}`, 'error');
-                // Optionally display a more user-friendly error message
+                console.error('❌ WebSocket initialization failed:', error);
+                showStatus('Warning: Real-time updates unavailable', 'warning');
             }
 
-            // Initialize components - these should only run if session initialization succeeded
-            if (state.userId) {
-                initializeVisualizer();
-                initWebSocket();
+            try {
                 updateNetworkStatus();
+                console.log('✅ Network status updated');
+            } catch (error) {
+                console.error('❌ Network status update failed:', error);
+            }
 
-                // Set up event listeners
-                document.getElementById('testMicButton').addEventListener('click', testMicrophone);
+            // Set up event listeners with error handling
+            try {
                 document.getElementById('recordButton').addEventListener('click', startRecording);
                 document.getElementById('stopButton').addEventListener('click', stopRecording);
-                document.getElementById('retryButton').addEventListener('click', resetRecording);
-                document.getElementById('confirmButton').addEventListener('click', confirmTranscription);
-
-                // GDPR Consent Banner Listeners - FIXED DECLINE BUTTON
-                const consentBanner = document.getElementById('consentBanner');
-                const agreeRecordButton = document.getElementById('agreeRecordButton');
-                const declineButton = document.getElementById('declineButton');
-
-                if (agreeRecordButton) {
-                    agreeRecordButton.addEventListener('click', async () => {
-                        await logConsent('recording_consent', true);
-                        state.hasConsent = true;
-                        consentBanner.style.display = 'none';
-
-                        // Show the record button again and ensure it's enabled
-                        const recordButton = document.getElementById('recordButton');
-                        if (recordButton) {
-                            recordButton.style.display = 'inline-block';
-                            recordButton.disabled = false;
-                            recordButton.textContent = '🎤 Start Recording';
-                        }
-
-                        showStatus('Consent granted. You can now start recording.', 'success');
-                    });
-                }
-
-                // FIXED: Decline button no longer redirects
-                if (declineButton) {
-                    declineButton.addEventListener('click', async () => {
-                        await logConsent('recording_consent', false);
-
-                        // Hide banner
-                        consentBanner.style.display = 'none';
-
-                        // Disable recording functionality
-                        const recordButton = document.getElementById('recordButton');
-                        if (recordButton) {
-                            recordButton.disabled = true;
-                            recordButton.textContent = '🔒 Consent Required';
-                            recordButton.style.display = 'inline-block';
-                        }
-
-                        showStatus('Recording consent declined. You cannot record without consent.', 'warning');
-
-                        // Optional: Redirect to home after delay
-                        setTimeout(() => {
-                            if (confirm('Would you like to return to the home page?')) {
-                                window.location.href = 'https://carcrashlawyerai.com/';
-                            }
-                        }, 3000);
-                    });
-                }
-
-                // Network status monitoring
-                window.addEventListener('online', updateNetworkStatus);
-                window.addEventListener('offline', updateNetworkStatus);
-
-                // Handle visibility change (mobile browsers)
-                document.addEventListener('visibilitychange', () => {
-                    if (document.hidden && state.mediaRecorder && state.mediaRecorder.state === 'recording') {
-                        console.log('Page hidden while recording - stopping');
-                        stopRecording();
-                    }
+                document.getElementById('retryButton').addEventListener('click', () => {
+                    location.reload();
                 });
-
-                // Use the extracted handler function
-                window.addEventListener('beforeunload', handleBeforeUnload);
-
-                // Cleanup on page unload
-                window.addEventListener('unload', () => {
-                    if (state.pollInterval) {
-                        clearInterval(state.pollInterval);
-                    }
-                    if (state.ws && !state.isRedirecting) {
-                        state.ws.close();
-                    }
-                });
-
-                // Show initial status
-                showStatus('Ready to record your statement', 'info');
-
-                console.log('Initialization complete');
-            } else {
-                console.log('Session initialization failed, skipping further setup.');
+                console.log('✅ Event listeners attached');
+            } catch (error) {
+                console.error('❌ Event listeners setup failed:', error);
             }
+
+            // Handle visibility change (mobile browsers)
+            document.addEventListener('visibilitychange', () => {
+                if (document.hidden && mediaRecorder && mediaRecorder.state === 'recording') {
+                    console.log('Page hidden while recording - stopping');
+                    stopRecording();
+                }
+            });
+
+            // Prevent accidental navigation during recording
+            window.addEventListener('beforeunload', (e) => {
+                if (mediaRecorder && mediaRecorder.state === 'recording') {
+                    e.preventDefault();
+                    e.returnValue = 'Recording in progress. Are you sure you want to leave?';
+                }
+            });
+
+            // Show initial status
+            showStatus('Ready to record your statement', 'info');
+            console.log('✅ Transcription page initialized successfully');
         });
 
-        // Global error handlers
+        // Comprehensive error checking function
+        function checkSystemHealth() {
+            const issues = [];
+            
+            // Check required APIs
+            if (!navigator.mediaDevices) {
+                issues.push('Browser does not support media recording');
+            }
+            
+            if (!window.MediaRecorder) {
+                issues.push('Browser does not support MediaRecorder API');
+            }
+            
+            if (!window.WebSocket) {
+                issues.push('Browser does not support WebSocket');
+            }
+            
+            // Check secure context for HTTPS-only APIs
+            if (!window.isSecureContext) {
+                issues.push('Page not served over HTTPS - some features may be limited');
+            }
+            
+            // Check user ID
+            if (!userId || userId === 'user_' + Date.now()) {
+                issues.push('No user ID found - user may not be properly authenticated');
+            }
+            
+            if (issues.length > 0) {
+                console.warn('⚠️ System health issues:', issues);
+                const issueText = issues.join('; ');
+                showStatus(`System issues detected: ${issueText}`, 'warning');
+                
+                // Add debug info to page
+                const debugDiv = document.createElement('div');
+                debugDiv.style.cssText = 'background:#fff3cd;border:1px solid #ffeaa7;padding:15px;margin:20px 0;border-radius:8px;';
+                debugDiv.innerHTML = `
+                    <h4>⚠️ Debug Information</h4>
+                    <ul>
+                        ${issues.map(issue => `<li>${issue}</li>`).join('')}
+                    </ul>
+                    <p><strong>User ID:</strong> ${userId}</p>
+                    <p><strong>Current URL:</strong> ${window.location.href}</p>
+                    <p><strong>Referrer:</strong> ${document.referrer}</p>
+                    <p><strong>Secure Context:</strong> ${window.isSecureContext}</p>
+                `;
+                document.querySelector('.container').appendChild(debugDiv);
+            }
+            
+            return issues.length === 0;
+        }
+
+        // Handle errors globally
         window.addEventListener('error', (event) => {
             console.error('Global error:', event.error);
-            // Don't show error to user for minor issues
-            if (event.error && event.error.message && event.error.message.includes('ResizeObserver')) {
-                return; // Ignore ResizeObserver errors
-            }
+            console.error('Error details:', {
+                message: event.message,
+                filename: event.filename,
+                line: event.lineno,
+                column: event.colno,
+                stack: event.error?.stack
+            });
+            showStatus(`Error: ${event.message}. Check console for details.`, 'error');
         });
 
+        // Handle unhandled promise rejections
         window.addEventListener('unhandledrejection', (event) => {
             console.error('Unhandled promise rejection:', event.reason);
+            showStatus(`Promise rejection: ${event.reason}`, 'error');
         });
 
-        // Enhanced user ID management loaded
-        console.log('✅ Enhanced user ID management loaded');
+        // Run system health check after page load
+        window.addEventListener('load', () => {
+            setTimeout(() => {
+                console.log('🔍 Running system health check...');
+                const isHealthy = checkSystemHealth();
+                if (isHealthy) {
+                    console.log('✅ All system checks passed');
+                } else {
+                    console.warn('⚠️ Some system checks failed - see above');
+                }
+            }, 1000);
+        });
     </script>
 </body>
 </html>

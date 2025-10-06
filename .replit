@@ -7,7 +7,7 @@ requiredFiles = [".replit", "replit.nix", "package.json", "package-lock.json"]
 
 [nix]
 channel = "stable-24_11"
-packages = ["u-root-cmds", "pm2", "nano", "lsof"]
+packages = ["u-root-cmds"]
 
 [deployment]
 run = ["node", "index.js"]
@@ -19,15 +19,11 @@ localPort = 3000
 externalPort = 3000
 
 [[ports]]
-localPort = 3001
-externalPort = 3001
-
-[[ports]]
 localPort = 5000
 externalPort = 80
 
 [workflows]
-runButton = "Start Main Server"
+runButton = "Project"
 
 [[workflows.workflow]]
 name = "Run Main Server"
@@ -67,24 +63,6 @@ waitForPort = 5000
 
 [workflows.workflow.metadata]
 outputType = "webview"
-
-[[workflows.workflow]]
-name = "Main Server"
-author = 43588325
-mode = "sequential"
-
-[[workflows.workflow.tasks]]
-task = "shell.exec"
-args = "PORT=5000 node index.js"
-
-[[workflows.workflow]]
-name = "Start Main Server"
-author = 43588325
-mode = "sequential"
-
-[[workflows.workflow.tasks]]
-task = "shell.exec"
-args = "node index.js"
 
 [agent]
 expertMode = true
