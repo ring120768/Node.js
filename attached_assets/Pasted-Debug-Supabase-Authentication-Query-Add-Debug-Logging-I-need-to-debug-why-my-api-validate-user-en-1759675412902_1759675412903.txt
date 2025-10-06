@@ -1,0 +1,68 @@
+Debug Supabase Authentication Query - Add Debug Logging
+I need to debug why my /api/validate-user endpoint is returning "Username not found" even though the user ianring_120768 exists in my Supabase user_signup table.
+Problem: The endpoint returns {"valid":false,"error":"Username not found"} but the user clearly exists in the database.
+Task: Replace the existing /api/validate-user endpoint in index.js (around line 1847) with this enhanced debug version:
+javascriptapp.post('/api/validate-user', async (req, res) => {
+    try {
+        const { username } = req.body;
+        
+        console.log('🔍 Validating user:', username);
+
+        if (!username) {
+            return res.status(400).json({ 
+                valid: false, 
+                error: 'Username is required' 
+            });
+        }
+
+        // Debug: Test Supabase connection first
+        const { data: testData, error: testError } = await supabase
+            .from('user_signup')
+            .select('create_user_id')
+            .limit(5);
+
+        console.log('🔍 Supabase connection test:', { testData, testError });
+
+        // Debug: Look for the specific user
+        const { data: user, error } = await supabase
+            .from('user_signup')
+            .select('id, create_user_id, email, full_name')
+            .eq('create_user_id', username.trim())
+            .single();
+
+        console.log('🔍 User query result:', { user, error, searchingFor: username.trim() });
+
+        // Debug: Try case-insensitive search
+        const { data: userCaseInsensitive, error: errorCaseInsensitive } = await supabase
+            .from('user_signup')
+            .select('id, create_user_id, email, full_name')
+            .ilike('create_user_id', username.trim())
+            .single();
+
+        console.log('🔍 Case-insensitive search:', { userCaseInsensitive, errorCaseInsensitive });
+
+        if (error || !user) {
+            return res.status(401).json({ 
+                valid: false, 
+                error: 'Username not found',
+                debug: { error, searchedFor: username.trim() }
+            });
+        }
+
+        res.json({
+            valid: true,
+            userId: user.create_user_id,
+            email: user.email,
+            fullName: user.full_name
+        });
+
+    } catch (error) {
+        console.error('❌ Validate user error:', error);
+        res.status(500).json({ 
+            valid: false, 
+            error: 'Server error',
+            debug: error.message
+        });
+    }
+});
+Expected Result: After making this change, when I test the endpoint with the username ianring_120768, I should see detailed debug logs in the console that will help identify why the Supabase query isn't finding the user.

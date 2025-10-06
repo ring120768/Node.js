@@ -519,7 +519,14 @@ function validateBackendUserId(userId) {
     return true;
   }
 
-  // In development/flexible mode, accept alphanumeric IDs
+  // Accept Typeform username format (like ianring_120768)
+  const typeformUsernameRegex = /^[a-zA-Z][a-zA-Z0-9_-]{2,63}$/;
+  if (typeformUsernameRegex.test(cleanUserId)) {
+    Logger.success(`Valid Typeform username format: ${cleanUserId}`);
+    return true;
+  }
+
+  // In development/flexible mode, accept other alphanumeric IDs
   if (!STRICT_USER_VALIDATION) {
     const alphanumericRegex = /^[a-zA-Z0-9][a-zA-Z0-9_-]{2,63}$/;
     if (alphanumericRegex.test(cleanUserId)) {
@@ -1190,6 +1197,165 @@ function extractAnswer(formResponse, fieldRef) {
     case 'choice':
       return answer.choice?.label;
     case 'choices':
+
+
+// ========================================
+// USER MAPPING SYSTEM FOR USERNAME TO UUID CONVERSION
+// ========================================
+
+// Endpoint to map username to UUID
+app.post('/api/map-user', async (req, res) => {
+  try {
+    const { username, create_user_id } = req.body;
+
+    if (!username || !create_user_id) {
+      return res.status(400).json({
+        success: false,
+        error: 'Both username and create_user_id are required'
+      });
+    }
+
+    // Validate the UUID
+    if (!UUIDService.validateTypeformUUID(create_user_id)) {
+      return res.status(400).json({
+        success: false,
+        error: 'Invalid UUID format for create_user_id'
+      });
+    }
+
+    if (!supabaseEnabled) {
+      return res.status(503).json({
+        success: false,
+        error: 'Database not available'
+      });
+    }
+
+    // Check if user exists and update or create mapping
+    const { data: existingUser } = await supabase
+      .from('user_signup')
+      .select('*')
+      .eq('create_user_id', create_user_id)
+      .single();
+
+    if (existingUser) {
+      // Update existing user with username
+      const { error: updateError } = await supabase
+        .from('user_signup')
+        .update({ 
+          username: username,
+          updated_at: new Date().toISOString() 
+        })
+        .eq('create_user_id', create_user_id);
+
+      if (updateError) {
+        throw updateError;
+      }
+
+      Logger.success(`User mapping updated: ${username} -> ${create_user_id}`);
+    } else {
+      // Create new user with mapping
+      const { error: insertError } = await supabase
+        .from('user_signup')
+        .insert({
+          create_user_id: create_user_id,
+          username: username,
+          created_at: new Date().toISOString(),
+          updated_at: new Date().toISOString()
+        });
+
+      if (insertError) {
+        throw insertError;
+      }
+
+      Logger.success(`New user mapping created: ${username} -> ${create_user_id}`);
+    }
+
+    res.json({
+      success: true,
+      message: 'User mapping successful',
+      username: username,
+      create_user_id: create_user_id
+    });
+
+  } catch (error) {
+    Logger.error('User mapping error:', error);
+    res.status(500).json({
+      success: false,
+      error: error.message
+    });
+  }
+});
+
+// Enhanced user validation that checks both username and UUID
+app.post('/api/validate-user-enhanced', async (req, res) => {
+  try {
+    const { username, create_user_id } = req.body;
+
+    if (!username && !create_user_id) {
+      return res.status(400).json({
+        success: false,
+        error: 'Either username or create_user_id is required'
+      });
+    }
+
+    if (!supabaseEnabled) {
+      return res.status(503).json({
+        success: false,
+        error: 'Database not available'
+      });
+    }
+
+    let query = supabase.from('user_signup').select('*');
+
+    if (create_user_id) {
+      query = query.eq('create_user_id', create_user_id);
+    } else if (username) {
+      query = query.eq('username', username);
+    }
+
+    const { data: users, error } = await query;
+
+    if (error) {
+      throw error;
+    }
+
+    if (users && users.length > 0) {
+      const user = users[0];
+      
+      res.json({
+        valid: true,
+        user: {
+          create_user_id: user.create_user_id,
+          username: user.username,
+          email: user.email,
+          name: user.name
+        },
+        message: 'User validation successful'
+      });
+    } else {
+      // Try to find similar usernames
+      const { data: similarUsers } = await supabase
+        .from('user_signup')
+        .select('username')
+        .ilike('username', `%${username || ''}%`)
+        .limit(5);
+
+      res.json({
+        valid: false,
+        error: 'User not found',
+        suggestions: similarUsers?.map(u => u.username) || []
+      });
+    }
+
+  } catch (error) {
+    Logger.error('Enhanced user validation error:', error);
+    res.status(500).json({
+      success: false,
+      error: error.message
+    });
+  }
+});
+
       return answer.choices?.labels?.join(', ');
     case 'boolean':
       return answer.boolean;

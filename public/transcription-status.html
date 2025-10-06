@@ -1309,10 +1309,10 @@
                 return true;
             }
 
-            // Accept direct signup user IDs (username format from database)
-            const usernameRegex = /^[a-zA-Z0-9][a-zA-Z0-9_-]{2,63}$/;
+            // Accept username format from Typeform (like ianring_120768)
+            const usernameRegex = /^[a-zA-Z][a-zA-Z0-9_-]{2,63}$/;
             if (usernameRegex.test(cleanUserId)) {
-                console.log('✅ Valid direct signup user ID:', cleanUserId);
+                console.log('✅ Valid Typeform username ID:', cleanUserId);
                 return true;
             }
 
