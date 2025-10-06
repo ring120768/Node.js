@@ -1197,6 +1197,87 @@
                     }
 
                     try {
+
+
+        // Enhanced continue button with Typeform integration option
+        async function handleContinueToReport() {
+            try {
+                const continueBtn = document.getElementById('continueBtn');
+                continueBtn.disabled = true;
+                continueBtn.textContent = 'Preparing...';
+
+                // Get user data
+                const userId = userData?.uid || sessionStorage.getItem('userId');
+                
+                if (!userId) {
+                    console.warn('⚠️ No user ID found, proceeding without authentication');
+                }
+
+                const incidentData = {
+                    userId: userId,
+                    location: userLocation,
+                    what3words: what3wordsData,
+                    timestamp: new Date().toISOString(),
+                    address: document.getElementById('addressText').textContent
+                };
+
+                sessionStorage.setItem('incidentData', JSON.stringify(incidentData));
+
+                // Check if user prefers Typeform or native flow
+                const useTypeform = localStorage.getItem('preferTypeform') === 'true';
+                
+                if (useTypeform && userId) {
+                    continueBtn.textContent = 'Opening Typeform...';
+                    
+                    try {
+                        await window.redirectToTypeform('incident', userId, {
+                            openInNewTab: false,
+                            source: 'incident_continue_button'
+                        });
+                        return;
+                    } catch (typeformError) {
+                        console.error('❌ Typeform redirect failed, using native flow:', typeformError);
+                        continueBtn.textContent = 'Continuing to native form...';
+                    }
+                }
+
+                // Default: use native safety-check flow
+                window.location.href = 'safety-check.html';
+
+            } catch (error) {
+                console.error('❌ Error in continue flow:', error);
+                window.location.href = 'safety-check.html';
+            }
+        }
+
+        // Add toggle for Typeform preference (optional)
+        function addTypeformToggle() {
+            const emergencySection = document.querySelector('.emergency-section');
+            if (emergencySection) {
+                const toggleHtml = `
+                    <div style="margin-top: 15px; padding: 10px; background: rgba(255,255,255,0.7); border-radius: 8px; text-align: center;">
+                        <label style="font-size: 14px; color: #666; cursor: pointer;">
+                            <input type="checkbox" id="typeformToggle" style="margin-right: 8px;" ${localStorage.getItem('preferTypeform') === 'true' ? 'checked' : ''}>
+                            Use detailed Typeform for incident reporting
+                        </label>
+                    </div>
+                `;
+                emergencySection.insertAdjacentHTML('beforeend', toggleHtml);
+                
+                document.getElementById('typeformToggle').addEventListener('change', (e) => {
+                    localStorage.setItem('preferTypeform', e.target.checked ? 'true' : 'false');
+                    console.log('🔄 Typeform preference updated:', e.target.checked);
+                });
+            }
+        }
+
+        // Initialize Typeform toggle after DOM is ready
+        if (document.readyState === 'loading') {
+            document.addEventListener('DOMContentLoaded', addTypeformToggle);
+        } else {
+            addTypeformToggle();
+        }
+
                         console.log('🎤 Requesting microphone access...');
 
                         // Request microphone permission with optimized constraints
@@ -1441,20 +1522,7 @@
         function setupContinueButton() {
             document.getElementById('continueBtn').addEventListener('click', async function() {
                 if (navigator.vibrate) navigator.vibrate(20);
-
-                this.disabled = true;
-                this.textContent = 'Processing...';
-
-                const incidentData = {
-                    userId: userData?.uid || null,
-                    location: userLocation,
-                    what3words: what3wordsData,
-                    timestamp: new Date().toISOString(),
-                    address: document.getElementById('addressText').textContent
-                };
-
-                sessionStorage.setItem('incidentData', JSON.stringify(incidentData));
-                window.location.href = 'safety-check.html';
+                await handleContinueToReport();
             });
         }
 

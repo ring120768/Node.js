@@ -426,8 +426,38 @@
 
             console.log('Redirecting to Typeform with data:', hiddenFields);
 
-            // Redirect to Typeform
-            window.location.href = finalUrl;
+            // Use backend redirect service for consistent UUID handling
+            try {
+                const response = await fetch(`/api/redirect-to-typeform/incident?userId=${encodeURIComponent(userId)}`, {
+                    method: 'GET',
+                    headers: {
+                        'Content-Type': 'application/json'
+                    },
+                    credentials: 'include'
+                });
+
+                if (response.ok) {
+                    const data = await response.json();
+                    
+                    if (data.success && data.typeform_url) {
+                        // Store data for return flow
+                        sessionStorage.setItem('create_user_id', userId);
+                        sessionStorage.setItem('typeform_redirect_type', 'incident');
+                        
+                        console.log('🔗 Redirecting to Typeform with backend service');
+                        window.location.href = data.typeform_url;
+                    } else {
+                        throw new Error('Invalid response from redirect service');
+                    }
+                } else {
+                    throw new Error('Redirect service unavailable');
+                }
+            } catch (error) {
+                console.error('❌ Failed to use backend redirect service, falling back to direct URL:', error);
+                
+                // Fallback to direct redirect
+                window.location.href = finalUrl;
+            }
         }
     </script>
 </body>

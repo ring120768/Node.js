@@ -996,23 +996,57 @@
         setButtonLoading(button, 'Opening signup form...');
 
         try {
-          const typeformUrl = UUIDService.buildTypeformUrl(TYPEFORM_URLS.signup, {
-            product_id: 'car_crash_lawyer_ai',
-            source: 'signup_button'
+          // Get or create session for user ID
+          const session = UUIDService.getOrCreateSession();
+          
+          // Call backend redirectToTypeform function
+          const response = await fetch('/api/redirect-to-typeform/signup', {
+            method: 'GET',
+            headers: {
+              'Content-Type': 'application/json'
+            },
+            credentials: 'include'
           });
 
-          window.open(typeformUrl, '_blank');
-
-          // Log the action
-          logUserAction('signup_form_opened', {
-            hasSession: !!currentSession,
-            sessionVersion: currentSession?.version
-          });
+          if (response.ok) {
+            const data = await response.json();
+            
+            if (data.success && data.typeform_url) {
+              // Store user ID for return flow
+              sessionStorage.setItem('create_user_id', session.user_id);
+              sessionStorage.setItem('typeform_redirect_type', 'signup');
+              
+              window.open(data.typeform_url, '_blank');
+              
+              logUserAction('signup_form_opened', {
+                hasSession: !!currentSession,
+                sessionVersion: currentSession?.version,
+                userId: session.user_id.substring(0, 8) + '...'
+              });
+              
+              showNotification('Signup form opened with UUID tracking', 'success');
+            } else {
+              throw new Error('Invalid response from redirect service');
+            }
+          } else {
+            throw new Error('Redirect service unavailable');
+          }
 
         } catch (error) {
           console.error('❌ Failed to handle signup:', error);
-          window.open(TYPEFORM_URLS.signup, '_blank');
-          showNotification('Opened basic signup form', 'error');
+          
+          // Fallback to direct URL with UUID
+          try {
+            const typeformUrl = UUIDService.buildTypeformUrl(TYPEFORM_URLS.signup, {
+              product_id: 'car_crash_lawyer_ai',
+              source: 'signup_button_fallback'
+            });
+            window.open(typeformUrl, '_blank');
+            showNotification('Opened signup form (fallback mode)', 'error');
+          } catch (fallbackError) {
+            window.open(TYPEFORM_URLS.signup, '_blank');
+            showNotification('Opened basic signup form', 'error');
+          }
         }
 
         setTimeout(() => {
@@ -1041,22 +1075,55 @@
       setButtonLoading(button, 'Opening demo form...');
 
       try {
-        const typeformUrl = UUIDService.buildTypeformUrl(TYPEFORM_URLS.demo, {
-          product_id: 'demo',
-          source: 'demo_button'
+        // Get or create session for user ID
+        const session = UUIDService.getOrCreateSession();
+        
+        // Use backend redirect service for consistent UUID handling
+        const response = await fetch(`/api/redirect-to-typeform/demo?userId=${encodeURIComponent(session.user_id)}`, {
+          method: 'GET',
+          headers: {
+            'Content-Type': 'application/json'
+          },
+          credentials: 'include'
         });
 
-        window.open(typeformUrl, '_blank');
-
-        // Log the action
-        logUserAction('demo_form_opened', {
-          hasSession: !!currentSession
-        });
+        if (response.ok) {
+          const data = await response.json();
+          
+          if (data.success && data.typeform_url) {
+            sessionStorage.setItem('create_user_id', session.user_id);
+            sessionStorage.setItem('typeform_redirect_type', 'demo');
+            
+            window.open(data.typeform_url, '_blank');
+            
+            logUserAction('demo_form_opened', {
+              hasSession: !!currentSession,
+              userId: session.user_id.substring(0, 8) + '...'
+            });
+            
+            showNotification('Demo form opened with UUID tracking', 'success');
+          } else {
+            throw new Error('Invalid response from redirect service');
+          }
+        } else {
+          throw new Error('Redirect service unavailable');
+        }
 
       } catch (error) {
         console.error('❌ Failed to handle demo:', error);
-        window.open(TYPEFORM_URLS.demo, '_blank');
-        showNotification('Opened basic demo form', 'error');
+        
+        // Fallback to direct URL
+        try {
+          const typeformUrl = UUIDService.buildTypeformUrl(TYPEFORM_URLS.demo, {
+            product_id: 'demo',
+            source: 'demo_button_fallback'
+          });
+          window.open(typeformUrl, '_blank');
+          showNotification('Opened demo form (fallback mode)', 'error');
+        } catch (fallbackError) {
+          window.open(TYPEFORM_URLS.demo, '_blank');
+          showNotification('Opened basic demo form', 'error');
+        }
       }
 
       setTimeout(() => {

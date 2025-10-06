@@ -378,19 +378,63 @@
         });
 
         // Typeform signup button
-        document.getElementById('typeformSignUpBtn').addEventListener('click', () => {
+        document.getElementById('typeformSignUpBtn').addEventListener('click', async () => {
+            const button = document.getElementById('typeformSignUpBtn');
+            const originalText = button.textContent;
+            
             try {
-                const typeformUrl = UUIDService.buildTypeformUrl('https://form.typeform.com/to/b03aFxEO', {
-                    product_id: 'car_crash_lawyer_ai',
-                    source: 'signup_page'
+                button.textContent = 'Opening Typeform...';
+                button.disabled = true;
+                
+                // Get or create session for user ID
+                const session = UUIDService.getOrCreateSession();
+                
+                // Use backend redirect service for consistent UUID handling
+                const response = await fetch(`/api/redirect-to-typeform/signup?userId=${encodeURIComponent(session.user_id)}`, {
+                    method: 'GET',
+                    headers: {
+                        'Content-Type': 'application/json'
+                    },
+                    credentials: 'include'
                 });
 
-                console.log('🔗 Opening Typeform signup with UUID tracking');
-                window.open(typeformUrl, '_blank');
+                if (response.ok) {
+                    const data = await response.json();
+                    
+                    if (data.success && data.typeform_url) {
+                        // Store user ID for return flow
+                        sessionStorage.setItem('create_user_id', session.user_id);
+                        sessionStorage.setItem('typeform_redirect_type', 'signup');
+                        
+                        console.log('🔗 Opening Typeform signup with UUID tracking');
+                        window.open(data.typeform_url, '_blank');
+                        
+                        showSuccess('Typeform opened with UUID tracking');
+                    } else {
+                        throw new Error('Invalid response from redirect service');
+                    }
+                } else {
+                    throw new Error('Redirect service unavailable');
+                }
 
             } catch (error) {
                 console.error('❌ Failed to open Typeform:', error);
-                window.open('https://form.typeform.com/to/b03aFxEO', '_blank');
+                
+                // Fallback to direct URL with UUID
+                try {
+                    const typeformUrl = UUIDService.buildTypeformUrl('https://form.typeform.com/to/b03aFxEO', {
+                        product_id: 'car_crash_lawyer_ai',
+                        source: 'signup_page_fallback'
+                    });
+                    window.open(typeformUrl, '_blank');
+                    showError('Opened Typeform in fallback mode');
+                } catch (fallbackError) {
+                    window.open('https://form.typeform.com/to/b03aFxEO', '_blank');
+                    showError('Opened basic Typeform (no UUID tracking)');
+                }
+            } finally {
+                button.textContent = originalText;
+                button.disabled = false;
             }
         });
 

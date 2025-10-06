@@ -168,3 +168,140 @@
     
     console.log('✅ Universal navigation helper loaded');
 })();
+
+
+
+    // ====================================
+    // TYPEFORM INTEGRATION HELPER
+    // ====================================
+    
+    /**
+     * Universal Typeform redirect function
+     * @param {string} formType - 'signup', 'incident', or 'demo'
+     * @param {string} userId - User ID (optional, will be generated if not provided)
+     * @param {Object} additionalParams - Additional parameters
+     * @returns {Promise} - Promise that resolves when redirect is initiated
+     */
+    window.redirectToTypeform = async function(formType, userId = null, additionalParams = {}) {
+        try {
+            // Generate user ID if not provided
+            if (!userId && window.UUIDService) {
+                const session = window.UUIDService.getOrCreateSession();
+                userId = session.user_id;
+            }
+            
+            if (!userId) {
+                throw new Error('No user ID available for Typeform redirect');
+            }
+            
+            console.log(`🔗 Redirecting to Typeform: ${formType} with UUID: ${userId.substring(0, 8)}...`);
+            
+            // Build query parameters
+            const params = new URLSearchParams({
+                userId: userId,
+                ...additionalParams
+            });
+            
+            // Call backend redirect service
+            const response = await fetch(`/api/redirect-to-typeform/${formType}?${params.toString()}`, {
+                method: 'GET',
+                headers: {
+                    'Content-Type': 'application/json'
+                },
+                credentials: 'include'
+            });
+            
+            if (response.ok) {
+                const data = await response.json();
+                
+                if (data.success && data.typeform_url) {
+                    // Store redirect data for return flow
+                    sessionStorage.setItem('create_user_id', userId);
+                    sessionStorage.setItem('typeform_redirect_type', formType);
+                    sessionStorage.setItem('typeform_redirect_time', new Date().toISOString());
+                    
+                    // Open or redirect to Typeform
+                    if (additionalParams.openInNewTab !== false) {
+                        window.open(data.typeform_url, '_blank');
+                    } else {
+                        window.location.href = data.typeform_url;
+                    }
+                    
+                    return { success: true, url: data.typeform_url };
+                } else {
+                    throw new Error('Invalid response from redirect service');
+                }
+            } else {
+                throw new Error(`Redirect service error: ${response.status}`);
+            }
+            
+        } catch (error) {
+            console.error('❌ Typeform redirect failed:', error);
+            
+            // Fallback to direct URLs if backend service fails
+            const fallbackUrls = {
+                signup: 'https://form.typeform.com/to/b03aFxEO',
+                incident: 'https://form.typeform.com/to/WvM2ejru',
+                demo: 'https://form.typeform.com/to/XMBB3Xhq'
+            };
+            
+            const fallbackUrl = fallbackUrls[formType];
+            if (fallbackUrl) {
+                console.log(`📝 Using fallback URL for ${formType}: ${fallbackUrl}`);
+                
+                // Try to add UUID parameters manually
+                if (userId && window.UUIDService) {
+                    try {
+                        const enhancedUrl = window.UUIDService.buildTypeformUrl(fallbackUrl, {
+                            product_id: formType === 'demo' ? 'demo' : 'car_crash_lawyer_ai',
+                            source: `${formType}_fallback`,
+                            ...additionalParams
+                        });
+                        
+                        if (additionalParams.openInNewTab !== false) {
+                            window.open(enhancedUrl, '_blank');
+                        } else {
+                            window.location.href = enhancedUrl;
+                        }
+                        
+                        return { success: true, url: enhancedUrl, fallback: true };
+                    } catch (uuidError) {
+                        console.error('UUID service fallback failed:', uuidError);
+                    }
+                }
+                
+                // Last resort: basic URL
+                if (additionalParams.openInNewTab !== false) {
+                    window.open(fallbackUrl, '_blank');
+                } else {
+                    window.location.href = fallbackUrl;
+                }
+                
+                return { success: true, url: fallbackUrl, fallback: true, basic: true };
+            }
+            
+            throw new Error(`No fallback URL available for form type: ${formType}`);
+        }
+    };
+    
+    /**
+     * Check if user returned from Typeform
+     * @returns {Object|null} - Return data if user came from Typeform
+     */
+    window.checkTypeformReturn = function() {
+        const urlParams = new URLSearchParams(window.location.search);
+        const userId = urlParams.get('user_id') || urlParams.get('create_user_id');
+        const formType = urlParams.get('form_type');
+        const error = urlParams.get('error');
+        
+        if (userId || formType || error) {
+            return {
+                userId: userId,
+                formType: formType,
+                error: error,
+                timestamp: new Date().toISOString()
+            };
+        }
+        
+        return null;
+    };
