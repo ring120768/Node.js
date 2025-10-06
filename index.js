@@ -1347,6 +1347,545 @@ function extractWebhookUserData(webhookData) {
                 formResponse.token; // Fallback to response token
 
   if (!userId || !validateBackendUserId(userId)) {
+
+
+// ========================================
+// ENHANCED TYPEFORM WEBHOOK PROCESSOR
+// Extracts UUIDs from hidden fields with fallback strategies
+// ========================================
+
+/**
+ * Enhanced Typeform webhook processor with UUID extraction and validation
+ * @param {Object} formResponse - Typeform webhook form response
+ * @param {string} requestId - Request ID for logging
+ * @returns {Object} - Processing result with user ID and validation status
+ */
+async function processTypeformWebhook(formResponse, requestId) {
+  const result = {
+    success: false,
+    userId: null,
+    extractedFields: {},
+    authValid: false,
+    method: null,
+    error: null,
+    debug: {
+      requestId: requestId,
+      attempts: [],
+      hiddenFields: {},
+      variables: {},
+      answers: []
+    }
+  };
+
+  try {
+    Logger.info(`🔍 [${requestId}] Starting enhanced webhook processing`);
+
+    // Extract all data first
+    result.extractedFields = extractAllTypeformFields(formResponse);
+    
+    // Log hidden fields for debugging
+    if (formResponse.hidden) {
+      result.debug.hiddenFields = formResponse.hidden;
+      Logger.info(`🔒 [${requestId}] Hidden fields found:`, Object.keys(formResponse.hidden));
+    }
+
+    // Log variables for debugging
+    if (formResponse.variables) {
+      result.debug.variables = formResponse.variables.reduce((acc, v) => {
+        acc[v.key] = v.value;
+        return acc;
+      }, {});
+      Logger.info(`📊 [${requestId}] Variables found:`, Object.keys(result.debug.variables));
+    }
+
+    // Strategy 1: Extract from hidden fields (primary method)
+    const hiddenUserId = extractUserIdFromHidden(formResponse, requestId, result.debug);
+    if (hiddenUserId) {
+      const validation = await validateExtractedUserId(hiddenUserId, 'hidden_fields', requestId);
+      if (validation.valid) {
+        result.userId = hiddenUserId;
+        result.method = 'hidden_fields';
+        result.authValid = await validateAuthCode(
+          result.extractedFields.auth_code, 
+          hiddenUserId, 
+          result.extractedFields.product_id
+        );
+        result.success = true;
+        Logger.success(`✅ [${requestId}] User extracted from hidden fields: ${hiddenUserId.substring(0, 8)}...`);
+        return result;
+      }
+      result.debug.attempts.push({ method: 'hidden_fields', userId: hiddenUserId, valid: false });
+    }
+
+    // Strategy 2: Extract from variables (secondary method)
+    const variableUserId = extractUserIdFromVariables(formResponse, requestId, result.debug);
+    if (variableUserId) {
+      const validation = await validateExtractedUserId(variableUserId, 'variables', requestId);
+      if (validation.valid) {
+        result.userId = variableUserId;
+        result.method = 'variables';
+        result.authValid = await validateAuthCode(
+          result.extractedFields.auth_code, 
+          variableUserId, 
+          result.extractedFields.product_id
+        );
+        result.success = true;
+        Logger.success(`✅ [${requestId}] User extracted from variables: ${variableUserId.substring(0, 8)}...`);
+        return result;
+      }
+      result.debug.attempts.push({ method: 'variables', userId: variableUserId, valid: false });
+    }
+
+    // Strategy 3: Extract from form answers (legacy compatibility)
+    const answerUserId = extractUserIdFromAnswers(formResponse, requestId, result.debug);
+    if (answerUserId) {
+      const validation = await validateExtractedUserId(answerUserId, 'answers', requestId);
+      if (validation.valid) {
+        result.userId = answerUserId;
+        result.method = 'answers';
+        result.authValid = await validateAuthCode(
+          result.extractedFields.auth_code, 
+          answerUserId, 
+          result.extractedFields.product_id
+        );
+        result.success = true;
+        Logger.success(`✅ [${requestId}] User extracted from answers: ${answerUserId.substring(0, 8)}...`);
+        return result;
+      }
+      result.debug.attempts.push({ method: 'answers', userId: answerUserId, valid: false });
+    }
+
+    // Strategy 4: Fallback to email/phone matching
+    if (supabaseEnabled) {
+      const fallbackUserId = await fallbackUserMatching(result.extractedFields, requestId, result.debug);
+      if (fallbackUserId) {
+        result.userId = fallbackUserId;
+        result.method = 'fallback_matching';
+        result.authValid = false; // Auth code won't match for fallback
+        result.success = true;
+        Logger.warn(`⚠️ [${requestId}] User found via fallback matching: ${fallbackUserId.substring(0, 8)}...`);
+        return result;
+      }
+    }
+
+    // All strategies failed
+    result.error = 'No valid user ID found in any extraction method';
+    Logger.error(`❌ [${requestId}] All extraction strategies failed`, {
+      attempts: result.debug.attempts.length,
+      hiddenFields: Object.keys(result.debug.hiddenFields),
+      variables: Object.keys(result.debug.variables),
+      hasEmail: !!result.extractedFields.email,
+      hasPhone: !!result.extractedFields.phone
+    });
+
+    return result;
+
+  } catch (error) {
+    result.error = `Webhook processing error: ${error.message}`;
+    Logger.error(`❌ [${requestId}] Webhook processing error:`, error);
+    return result;
+  }
+}
+
+/**
+ * Extract user ID from hidden fields
+ */
+function extractUserIdFromHidden(formResponse, requestId, debug) {
+  if (!formResponse.hidden) {
+    Logger.info(`📭 [${requestId}] No hidden fields in form response`);
+    return null;
+  }
+
+  const hiddenFields = formResponse.hidden;
+  const userIdFields = ['user_id', 'create_user_id', 'userId', 'typeform_user_id'];
+
+  for (const field of userIdFields) {
+    if (hiddenFields[field] && typeof hiddenFields[field] === 'string') {
+      const userId = hiddenFields[field].trim();
+      Logger.info(`🔑 [${requestId}] Found ${field} in hidden: ${userId.substring(0, 8)}...`);
+      debug.attempts.push({ 
+        method: 'hidden_fields', 
+        field: field, 
+        userId: userId, 
+        source: 'hidden' 
+      });
+      return userId;
+    }
+  }
+
+  Logger.info(`🔍 [${requestId}] No user ID found in hidden fields:`, Object.keys(hiddenFields));
+  return null;
+}
+
+/**
+ * Extract user ID from variables
+ */
+function extractUserIdFromVariables(formResponse, requestId, debug) {
+  if (!formResponse.variables || !Array.isArray(formResponse.variables)) {
+    Logger.info(`📭 [${requestId}] No variables in form response`);
+    return null;
+  }
+
+  const userIdFields = ['user_id', 'create_user_id', 'userId', 'typeform_user_id'];
+
+  for (const variable of formResponse.variables) {
+    if (userIdFields.includes(variable.key) && variable.value) {
+      const userId = String(variable.value).trim();
+      Logger.info(`🔑 [${requestId}] Found ${variable.key} in variables: ${userId.substring(0, 8)}...`);
+      debug.attempts.push({ 
+        method: 'variables', 
+        field: variable.key, 
+        userId: userId, 
+        source: 'variables' 
+      });
+      return userId;
+    }
+  }
+
+  Logger.info(`🔍 [${requestId}] No user ID found in variables`);
+  return null;
+}
+
+/**
+ * Extract user ID from form answers
+ */
+function extractUserIdFromAnswers(formResponse, requestId, debug) {
+  if (!formResponse.answers || !Array.isArray(formResponse.answers)) {
+    Logger.info(`📭 [${requestId}] No answers in form response`);
+    return null;
+  }
+
+  const userIdFields = ['user_id', 'create_user_id', 'userId', 'typeform_user_id'];
+
+  for (const answer of formResponse.answers) {
+    if (answer.field && answer.field.ref) {
+      if (userIdFields.includes(answer.field.ref)) {
+        const userId = extractAnswer(formResponse, answer.field.ref);
+        if (userId && typeof userId === 'string') {
+          const trimmedUserId = userId.trim();
+          Logger.info(`🔑 [${requestId}] Found ${answer.field.ref} in answers: ${trimmedUserId.substring(0, 8)}...`);
+          debug.attempts.push({ 
+            method: 'answers', 
+            field: answer.field.ref, 
+            userId: trimmedUserId, 
+            source: 'answers' 
+          });
+          return trimmedUserId;
+        }
+      }
+    }
+  }
+
+  Logger.info(`🔍 [${requestId}] No user ID found in answers`);
+  return null;
+}
+
+/**
+ * Validate extracted user ID
+ */
+async function validateExtractedUserId(userId, source, requestId) {
+  const validation = {
+    valid: false,
+    format_valid: false,
+    exists_in_db: false,
+    error: null
+  };
+
+  try {
+    // Format validation
+    validation.format_valid = UUIDService.validateTypeformUUID(userId);
+    
+    if (!validation.format_valid) {
+      validation.error = 'Invalid UUID format';
+
+
+// ========================================
+// TYPEFORM REDIRECT FUNCTION WITH UUID PARAMETERS
+// ========================================
+
+/**
+ * Generate proper Typeform URLs with populated parameters
+ * @param {string} userId - User ID (UUID)
+ * @param {string} formType - 'incident' or 'signup'
+ * @param {Object} additionalParams - Additional parameters to include
+ * @returns {string} - Complete Typeform URL with parameters
+ */
+function redirectToTypeform(userId, formType = 'incident', additionalParams = {}) {
+  const typeformUrls = {
+    incident: 'https://form.typeform.com/to/WvM2ejru',
+    signup: 'https://form.typeform.com/to/b03aFxEO'
+  };
+
+  if (!typeformUrls[formType]) {
+    throw new Error(`Unknown form type: ${formType}`);
+  }
+
+  // Validate user ID
+  if (!UUIDService.validateTypeformUUID(userId)) {
+    throw new Error(`Invalid user ID format: ${userId}`);
+  }
+
+  // Generate auth code for validation
+  const productId = formType === 'incident' ? 'incident_report' : 'user_signup';
+  const authCode = generateAuthCode(userId, productId);
+
+  // Build parameters object
+  const params = {
+    user_id: userId,
+    create_user_id: userId, // Backward compatibility
+    product_id: productId,
+    auth_code: authCode,
+    timestamp: Date.now(),
+    source: 'car_crash_lawyer_ai',
+    ...additionalParams
+  };
+
+  // Store redirect data in sessionStorage for client-side access
+  if (typeof window !== 'undefined' && window.sessionStorage) {
+    sessionStorage.setItem('typeform_redirect_data', JSON.stringify({
+      userId: userId,
+      formType: formType,
+      authCode: authCode,
+      timestamp: new Date().toISOString(),
+      params: params
+    }));
+  }
+
+  // Build Typeform URL with hidden fields
+  const baseUrl = typeformUrls[formType];
+  const hiddenFields = Object.entries(params)
+    .map(([key, value]) => `${encodeURIComponent(key)}=${encodeURIComponent(value)}`)
+    .join('&');
+
+  const finalUrl = `${baseUrl}#${hiddenFields}`;
+
+  Logger.info(`🔗 Generated Typeform URL for ${formType}:`, {
+    userId: userId.substring(0, 8) + '...',
+    formType: formType,
+    authCode: authCode.substring(0, 8) + '...',
+    paramCount: Object.keys(params).length
+  });
+
+  return finalUrl;
+}
+
+/**
+ * Redirect endpoint for Typeform integration
+ */
+app.get('/api/redirect-to-typeform/:formType', (req, res) => {
+  try {
+    const { formType } = req.params;
+    const { userId, user_id, create_user_id } = req.query;
+
+    // Extract user ID from various sources
+    const finalUserId = userId || user_id || create_user_id;
+
+    if (!finalUserId) {
+      return res.status(400).json({
+        error: 'User ID is required',
+        message: 'Please provide userId, user_id, or create_user_id parameter',
+        requestId: req.requestId
+      });
+    }
+
+    // Generate Typeform URL
+    const typeformUrl = redirectToTypeform(finalUserId, formType, {
+      redirect_source: 'api_endpoint',
+      request_id: req.requestId
+    });
+
+    // Return URL for client-side redirect
+    res.json({
+      success: true,
+      typeform_url: typeformUrl,
+      user_id: finalUserId,
+      form_type: formType,
+      redirect_instructions: 'Use the typeform_url to redirect the user',
+      requestId: req.requestId
+    });
+
+  } catch (error) {
+    Logger.error('Typeform redirect error:', error);
+    res.status(400).json({
+      error: error.message,
+      requestId: req.requestId
+    });
+  }
+});
+
+/**
+ * Direct redirect endpoint (redirects immediately)
+ */
+app.get('/redirect/:formType', (req, res) => {
+  try {
+    const { formType } = req.params;
+    const { userId, user_id, create_user_id } = req.query;
+
+    const finalUserId = userId || user_id || create_user_id;
+
+    if (!finalUserId) {
+      return res.status(400).send(`
+        <html>
+          <body>
+            <h2>Error: User ID Required</h2>
+            <p>Please provide a user ID parameter (userId, user_id, or create_user_id)</p>
+            <p>Example: /redirect/incident?userId=your-uuid-here</p>
+          </body>
+        </html>
+      `);
+    }
+
+    const typeformUrl = redirectToTypeform(finalUserId, formType, {
+      redirect_source: 'direct_redirect',
+      request_id: req.requestId
+    });
+
+    // Immediate redirect
+    res.redirect(302, typeformUrl);
+
+  } catch (error) {
+    Logger.error('Direct redirect error:', error);
+    res.status(400).send(`
+      <html>
+        <body>
+          <h2>Redirect Error</h2>
+          <p>${error.message}</p>
+        </body>
+      </html>
+    `);
+  }
+});
+
+
+      Logger.warn(`⚠️ [${requestId}] Invalid UUID format from ${source}: ${userId}`);
+      return validation;
+    }
+
+    // Database existence check (if enabled)
+    if (supabaseEnabled) {
+      const { data: user, error } = await supabase
+        .from('user_signup')
+        .select('create_user_id, uid')
+        .or(`create_user_id.eq.${userId},uid.eq.${userId}`)
+        .single();
+
+      if (error && error.code !== 'PGRST116') { // Ignore "not found" errors
+        validation.error = `Database check failed: ${error.message}`;
+        Logger.warn(`⚠️ [${requestId}] DB check error: ${error.message}`);
+      } else if (user) {
+        validation.exists_in_db = true;
+        Logger.info(`✅ [${requestId}] User exists in database`);
+      } else {
+        Logger.warn(`⚠️ [${requestId}] User not found in database, but proceeding`);
+      }
+    }
+
+    validation.valid = validation.format_valid;
+    return validation;
+
+  } catch (error) {
+    validation.error = `Validation error: ${error.message}`;
+    Logger.error(`❌ [${requestId}] User validation error:`, error);
+    return validation;
+  }
+}
+
+/**
+ * Validate auth code (if provided)
+ */
+async function validateAuthCode(authCode, userId, productId) {
+  if (!authCode || !userId) {
+    return false;
+  }
+
+  try {
+    // Simple auth code validation - you can enhance this based on your needs
+    const expectedCode = generateAuthCode(userId, productId);
+    const isValid = authCode === expectedCode;
+    
+    Logger.info(`🔐 Auth code validation: ${isValid ? 'VALID' : 'INVALID'}`);
+    return isValid;
+
+  } catch (error) {
+    Logger.error('Auth code validation error:', error);
+    return false;
+  }
+}
+
+/**
+ * Generate auth code for validation
+ */
+function generateAuthCode(userId, productId = 'incident_report') {
+  if (!userId) return null;
+  
+  // Simple auth code generation - enhance based on your security requirements
+  const crypto = require('crypto');
+  const secret = process.env.WEBHOOK_SECRET || 'default_secret';
+  const data = `${userId}:${productId}:${secret}`;
+  
+  return crypto.createHash('sha256').update(data).digest('hex').substring(0, 16);
+}
+
+/**
+ * Fallback user matching by email/phone
+ */
+async function fallbackUserMatching(extractedFields, requestId, debug) {
+  if (!supabaseEnabled) {
+    Logger.info(`🔍 [${requestId}] Fallback matching skipped - no database`);
+    return null;
+  }
+
+  const { email, phone } = extractedFields;
+
+  if (!email && !phone) {
+    Logger.info(`🔍 [${requestId}] No email or phone for fallback matching`);
+    return null;
+  }
+
+  try {
+    let query = supabase.from('user_signup').select('create_user_id, uid, email, mobile');
+    
+    if (email && phone) {
+      query = query.or(`email.eq.${email},mobile.eq.${phone}`);
+    } else if (email) {
+      query = query.eq('email', email);
+    } else if (phone) {
+      query = query.eq('mobile', phone);
+    }
+
+    const { data: users, error } = await query;
+
+    if (error) {
+      Logger.error(`❌ [${requestId}] Fallback matching error:`, error);
+      return null;
+    }
+
+    if (users && users.length > 0) {
+      const user = users[0];
+      const userId = user.uid || user.create_user_id;
+      
+      Logger.warn(`⚠️ [${requestId}] Fallback match found via ${email ? 'email' : 'phone'}: ${userId.substring(0, 8)}...`);
+      
+      debug.attempts.push({
+        method: 'fallback_matching',
+        matchedBy: email ? 'email' : 'phone',
+        userId: userId,
+        source: 'database'
+      });
+
+      return userId;
+    }
+
+    Logger.info(`🔍 [${requestId}] No fallback matches found`);
+    return null;
+
+  } catch (error) {
+    Logger.error(`❌ [${requestId}] Fallback matching error:`, error);
+    return null;
+  }
+}
+
+
     Logger.error('Invalid or missing user ID in webhook data:', userId);
     return null;
   }
@@ -1438,7 +1977,7 @@ app.post('/webhook/signup', (req, res) => {
   });
 });
 
-// Ultra-robust incident report webhook endpoint - MAXIMUM 502 prevention
+// Enhanced incident report webhook endpoint with UUID extraction and fallback
 app.post('/webhook/incident-report', (req, res) => {
   const startTime = Date.now();
   const requestId = `incident_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`;
@@ -1473,13 +2012,16 @@ app.post('/webhook/incident-report', (req, res) => {
         return;
       }
 
-      // Extract data
-      const extractedFields = extractAllTypeformFields(formResponse);
-      const userId = formResponse.hidden?.create_user_id ||
-                    formResponse.variables?.find(v => v.key === 'create_user_id')?.value ||
-                    extractAnswer(formResponse, 'create_user_id');
+      // Enhanced user extraction and validation
+      const userExtractionResult = await processTypeformWebhook(formResponse, requestId);
 
-      Logger.info(`Processing incident for user: ${userId || 'NO_USER_ID'}`);
+      if (!userExtractionResult.success) {
+        Logger.error(`User extraction failed for ${requestId}: ${userExtractionResult.error}`);
+        return;
+      }
+
+      const { userId, extractedFields, authValid } = userExtractionResult;
+      Logger.info(`Processing incident for user: ${userId} (auth: ${authValid})`);
 
       // Database save with maximum error protection
       if (supabaseEnabled && userId) {
@@ -1488,15 +2030,20 @@ app.post('/webhook/incident-report', (req, res) => {
             .from('incident_reports')
             .insert({
               create_user_id: userId,
+              user_id: userId, // Consistency
               created_at: new Date().toISOString(),
               webhook_request_id: requestId,
-              raw_webhook_data: JSON.stringify(webhookData, null, 2)
+              raw_webhook_data: JSON.stringify(webhookData, null, 2),
+              auth_code: extractedFields.auth_code || null,
+              product_id: extractedFields.product_id || null,
+              extraction_method: userExtractionResult.method,
+              ...extractedFields
             });
 
           if (error) {
             Logger.error(`DB save failed: ${error.message}`);
           } else {
-            Logger.success(`✅ Incident saved for ${userId}`);
+            Logger.success(`✅ Incident saved for ${userId} using ${userExtractionResult.method}`);
           }
         } catch (dbError) {
           Logger.error(`DB error: ${dbError.message}`);
