@@ -3693,6 +3693,368 @@ async function checkExternalServices() {
 }
 
 // ========================================
+// TYPEFORM UUID INTEGRATION TESTING ENDPOINTS
+// ========================================
+
+// Test endpoint for URL generation
+app.get('/api/test/typeform-url/:formType', (req, res) => {
+  try {
+    const { formType } = req.params;
+    const { userId } = req.query;
+
+    const testUserId = userId || UUIDService.generate();
+    
+    console.log(`🧪 Testing Typeform URL generation: ${formType} with UUID: ${testUserId.substring(0, 8)}...`);
+
+    const typeformUrl = redirectToTypeform(testUserId, formType, {
+      test_mode: 'true',
+      source: 'integration_test',
+      timestamp: Date.now()
+    });
+
+    const urlObj = new URL(typeformUrl);
+    const params = new URLSearchParams(urlObj.hash.substring(1));
+
+    res.json({
+      success: true,
+      test_type: 'typeform_url_generation',
+      form_type: formType,
+      user_id: testUserId,
+      generated_url: typeformUrl,
+      extracted_parameters: Object.fromEntries(params.entries()),
+      validation: {
+        has_user_id: params.has('user_id'),
+        has_auth_code: params.has('auth_code'),
+        has_product_id: params.has('product_id'),
+        param_count: params.size
+      },
+      timestamp: new Date().toISOString(),
+      requestId: req.requestId
+    });
+
+  } catch (error) {
+    console.error('❌ Typeform URL test error:', error);
+    res.status(500).json({
+      success: false,
+      error: error.message,
+      test_type: 'typeform_url_generation',
+      requestId: req.requestId
+    });
+  }
+});
+
+// Test endpoint for webhook UUID extraction
+app.post('/api/test/webhook-extraction', async (req, res) => {
+  try {
+    const { payload, extraction_method } = req.body;
+
+    console.log(`🧪 Testing webhook UUID extraction: ${extraction_method}`);
+
+    if (!payload || !payload.form_response) {
+      return res.status(400).json({
+        success: false,
+        error: 'Invalid payload - form_response required',
+        test_type: 'webhook_extraction'
+      });
+    }
+
+    const requestId = `test_extract_${Date.now()}_${Math.random().toString(36).substr(2, 6)}`;
+
+    // Use the existing webhook processor
+    const extractionResult = await processTypeformWebhook(payload.form_response, requestId);
+
+    res.json({
+      success: true,
+      test_type: 'webhook_extraction',
+      extraction_method: extraction_method,
+      result: {
+        success: extractionResult.success,
+        user_id: extractionResult.userId,
+        method_used: extractionResult.method,
+        auth_valid: extractionResult.authValid,
+        error: extractionResult.error,
+        debug_info: extractionResult.debug
+      },
+      original_payload_size: JSON.stringify(payload).length,
+      timestamp: new Date().toISOString(),
+      requestId: requestId
+    });
+
+  } catch (error) {
+    console.error('❌ Webhook extraction test error:', error);
+    res.status(500).json({
+      success: false,
+      error: error.message,
+      test_type: 'webhook_extraction',
+      requestId: req.requestId
+    });
+  }
+});
+
+// Test endpoint for return journey flow
+app.get('/api/test/return-journey/:formType', (req, res) => {
+  try {
+    const { formType } = req.params;
+    const { userId, test_mode } = req.query;
+
+    const testUserId = userId || UUIDService.generate();
+    
+    console.log(`🧪 Testing return journey: ${formType} with UUID: ${testUserId.substring(0, 8)}...`);
+
+    // Simulate the return journey URL
+    const returnParams = new URLSearchParams({
+      user_id: testUserId,
+      form_type: formType,
+      test_mode: test_mode || 'true',
+      source: 'integration_test'
+    });
+
+    const returnUrl = `${req.protocol}://${req.get('host')}/typeform-complete?${returnParams.toString()}`;
+
+    // Determine expected redirect destination
+    let expectedRedirect;
+    switch (formType) {
+      case 'incident':
+        expectedRedirect = `/transcription-status.html?create_user_id=${testUserId}&user_id=${testUserId}&source=typeform_complete&form_completed=true`;
+        break;
+      case 'signup':
+        expectedRedirect = `/dashboard.html?create_user_id=${testUserId}&user_id=${testUserId}&source=typeform_complete&form_completed=true`;
+        break;
+      default:
+        expectedRedirect = `/sign-in.html?error=unknown_form_type&message=Unknown form type: ${formType}`;
+    }
+
+    res.json({
+      success: true,
+      test_type: 'return_journey',
+      form_type: formType,
+      user_id: testUserId,
+      return_url: returnUrl,
+      expected_redirect: expectedRedirect,
+      instructions: {
+        next_step: 'Visit the return_url to test the actual redirect',
+        manual_test: `curl -L "${returnUrl}"`,
+        expected_behavior: `Should redirect to: ${expectedRedirect}`
+      },
+      timestamp: new Date().toISOString(),
+      requestId: req.requestId
+    });
+
+  } catch (error) {
+    console.error('❌ Return journey test error:', error);
+    res.status(500).json({
+      success: false,
+      error: error.message,
+      test_type: 'return_journey',
+      requestId: req.requestId
+    });
+  }
+});
+
+// Test endpoint for database state checking
+app.get('/api/test/database-state/:userId', async (req, res) => {
+  try {
+    const { userId } = req.params;
+    const { create_test_data } = req.query;
+
+    console.log(`🧪 Testing database state for UUID: ${userId.substring(0, 8)}...`);
+
+    if (!supabaseEnabled) {
+      return res.json({
+        success: false,
+        error: 'Supabase not configured',
+        test_type: 'database_state',
+        skipped: true
+      });
+    }
+
+    const results = {
+      user_id: userId,
+      tables: {},
+      summary: {
+        total_tables: 0,
+        tables_with_data: 0,
+        total_records: 0
+      }
+    };
+
+    // Create test data if requested
+    if (create_test_data === 'true') {
+      console.log('🧪 Creating test data for database state check...');
+
+      try {
+        // Insert test incident report
+        const { data: incident, error: incidentError } = await supabase
+          .from('incident_reports')
+          .insert({
+            create_user_id: userId,
+            user_id: userId,
+            detailed_account_of_what_happened: 'Test incident for database state check',
+            webhook_request_id: `test_${Date.now()}`,
+            created_at: new Date().toISOString()
+          })
+          .select()
+          .single();
+
+        if (!incidentError) {
+          console.log('✅ Test incident report created:', incident.id);
+        }
+      } catch (createError) {
+        console.warn('⚠️ Could not create test data:', createError.message);
+      }
+    }
+
+    // Check standard tables
+    const tablesToCheck = [
+      'user_signup',
+      'incident_reports', 
+      'ai_transcription',
+      'transcription_queue',
+      'ai_summary',
+      'incident_evidence'
+    ];
+
+    for (const table of tablesToCheck) {
+      try {
+        const { data, error, count } = await supabase
+          .from(table)
+          .select('*', { count: 'exact' })
+          .eq('create_user_id', userId)
+          .order('created_at', { ascending: false })
+          .limit(3);
+
+        results.tables[table] = {
+          success: !error,
+          record_count: count || 0,
+          has_data: (count || 0) > 0,
+          sample_records: data || [],
+          latest_record_date: data && data.length > 0 ? data[0].created_at : null,
+          error: error?.message || null
+        };
+
+        results.summary.total_tables++;
+        if ((count || 0) > 0) {
+          results.summary.tables_with_data++;
+          results.summary.total_records += count || 0;
+        }
+
+      } catch (tableError) {
+        results.tables[table] = {
+          success: false,
+          error: tableError.message
+        };
+        results.summary.total_tables++;
+      }
+    }
+
+    console.log(`✅ Database state check complete: ${results.summary.total_records} total records across ${results.summary.tables_with_data} tables`);
+
+    res.json({
+      success: true,
+      test_type: 'database_state',
+      results: results,
+      test_created_data: create_test_data === 'true',
+      timestamp: new Date().toISOString(),
+      requestId: req.requestId
+    });
+
+  } catch (error) {
+    console.error('❌ Database state test error:', error);
+    res.status(500).json({
+      success: false,
+      error: error.message,
+      test_type: 'database_state',
+      requestId: req.requestId
+    });
+  }
+});
+
+// Comprehensive integration test endpoint
+app.get('/api/test/integration-full', async (req, res) => {
+  try {
+    const testUserId = UUIDService.generate();
+    console.log(`🧪 Running full integration test with UUID: ${testUserId.substring(0, 8)}...`);
+
+    const results = {
+      test_id: `integration_${Date.now()}`,
+      user_id: testUserId,
+      start_time: new Date().toISOString(),
+      tests: {},
+      summary: {
+        total_tests: 0,
+        passed_tests: 0,
+        failed_tests: 0
+      }
+    };
+
+    // Test 1: URL Generation
+    try {
+      const urlTest = await fetch(`${req.protocol}://${req.get('host')}/api/test/typeform-url/incident?userId=${testUserId}`);
+      const urlResult = await urlTest.json();
+      
+      results.tests.url_generation = {
+        success: urlResult.success && urlResult.validation.has_user_id && urlResult.validation.has_auth_code,
+        details: urlResult
+      };
+    } catch (error) {
+      results.tests.url_generation = { success: false, error: error.message };
+    }
+
+    // Test 2: Database State (with test data creation)
+    try {
+      const dbTest = await fetch(`${req.protocol}://${req.get('host')}/api/test/database-state/${testUserId}?create_test_data=true`);
+      const dbResult = await dbTest.json();
+      
+      results.tests.database_state = {
+        success: dbResult.success && dbResult.results.summary.total_records > 0,
+        details: dbResult
+      };
+    } catch (error) {
+      results.tests.database_state = { success: false, error: error.message };
+    }
+
+    // Test 3: Return Journey
+    try {
+      const returnTest = await fetch(`${req.protocol}://${req.get('host')}/api/test/return-journey/incident?userId=${testUserId}`);
+      const returnResult = await returnTest.json();
+      
+      results.tests.return_journey = {
+        success: returnResult.success && returnResult.expected_redirect,
+        details: returnResult
+      };
+    } catch (error) {
+      results.tests.return_journey = { success: false, error: error.message };
+    }
+
+    // Calculate summary
+    Object.values(results.tests).forEach(test => {
+      results.summary.total_tests++;
+      if (test.success) {
+        results.summary.passed_tests++;
+      } else {
+        results.summary.failed_tests++;
+      }
+    });
+
+    results.end_time = new Date().toISOString();
+    results.overall_success = results.summary.failed_tests === 0;
+
+    console.log(`✅ Integration test complete: ${results.summary.passed_tests}/${results.summary.total_tests} passed`);
+
+    res.json(results);
+
+  } catch (error) {
+    console.error('❌ Full integration test error:', error);
+    res.status(500).json({
+      success: false,
+      error: error.message,
+      test_type: 'integration_full',
+      requestId: req.requestId
+    });
+  }
+});
+
+// ========================================
 // DEBUG ENDPOINTS FOR USER INVESTIGATION
 // ========================================
 
