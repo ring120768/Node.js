@@ -2431,7 +2431,7 @@ app.post('/test/process-transcription-queue', checkSharedKey, async (req, res) =
   }
 });
 
-// --- MAINROUTES ---
+// --- MAIN ROUTES ---
 // Redirect endpoint for transcribe to transcription-status
 app.get('/transcribe', (req, res) => {
   // Preserve any query parameters when redirecting
@@ -2445,7 +2445,13 @@ app.get('/transcribe.html', (req, res) => {
   res.redirect('/transcription-status.html' + queryString);
 });
 
+// Serve the main landing page (instead of the technical status page)
 app.get('/', (req, res) => {
+  res.sendFile(path.join(__dirname, 'public', 'index.html'));
+});
+
+// Add a route for the system status (moved to /system-status)
+app.get('/system-status', (req, res) => {
   const htmlContent = `<!DOCTYPE html>
 <html lang="en">
 <head>
@@ -2604,6 +2610,10 @@ app.get('/', (req, res) => {
                 <li>✅ <strong>IMPROVED:</strong> File size limits and validation</li>
                 <li>✅ <strong>ADDED:</strong> Better retry logic for external APIs</li>
             </ul>
+        </div>
+
+        <div class="section">
+            <p><a href="/">← Back to Main Landing Page</a></p>
         </div>
     </div>
 </body>
