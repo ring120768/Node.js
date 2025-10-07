@@ -1,644 +1,207 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Sign Up - Car Crash Lawyer AI</title>
-    <style>
-        * {
-            margin: 0;
-            padding: 0;
-            box-sizing: border-box;
-        }
-
-        body {
-            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif;
-            background: linear-gradient(135deg, #0B7AB0 0%, #1EA1D4 100%);
-            min-height: 100vh;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            padding: 20px;
-        }
-
-        .signup-container {
-            background: white;
-            border-radius: 20px;
-            box-shadow: 0 20px 60px rgba(0, 0, 0, 0.3);
-            max-width: 450px;
-            width: 100%;
-            padding: 40px;
-            position: relative;
-            overflow: hidden;
-        }
-
-        .signup-container::before {
-            content: '';
-            position: absolute;
-            top: 0;
-            left: 0;
-            right: 0;
-            height: 5px;
-            background: linear-gradient(90deg, #0B7AB0, #1EA1D4, #0B7AB0);
-            background-size: 200% 100%;
-            animation: shimmer 3s infinite;
-        }
-
-        @keyframes shimmer {
-            0% { background-position: 0% 0%; }
-            50% { background-position: 100% 0%; }
-            100% { background-position: 0% 0%; }
-        }
-
-        .logo-section {
-            text-align: center;
-            margin-bottom: 30px;
-        }
-
-        .logo-section img {
-            width: 120px;
-            height: auto;
-            margin-bottom: 15px;
-            filter: drop-shadow(0 4px 8px rgba(11, 122, 176, 0.2));
-        }
-
-        .logo-section h1 {
-            color: #0B7AB0;
-            font-size: 28px;
-            font-weight: 700;
-            margin-bottom: 8px;
-        }
-
-        .logo-section p {
-            color: #666;
-            font-size: 14px;
-        }
-
-        .form-group {
-            margin-bottom: 20px;
-        }
-
-        .form-group label {
-            display: block;
-            color: #333;
-            font-weight: 600;
-            margin-bottom: 8px;
-            font-size: 14px;
-        }
-
-        .form-group input {
-            width: 100%;
-            padding: 12px 15px;
-            border: 2px solid #e0e0e0;
-            border-radius: 8px;
-            font-size: 16px;
-            transition: all 0.3s ease;
-        }
-
-        .form-group input:focus {
-            outline: none;
-            border-color: #0B7AB0;
-            box-shadow: 0 0 0 3px rgba(11, 122, 176, 0.1);
-        }
-
-        .form-group input.error {
-            border-color: #e74c3c;
-        }
-
-        .error-message {
-            color: #e74c3c;
-            font-size: 12px;
-            margin-top: 5px;
-            display: none;
-        }
-
-        .error-message.show {
-            display: block;
-        }
-
-        .password-strength {
-            margin-top: 8px;
-            display: none;
-        }
-
-        .password-strength.show {
-            display: block;
-        }
-
-        .strength-bar {
-            height: 4px;
-            background: #e0e0e0;
-            border-radius: 2px;
-            overflow: hidden;
-            margin-bottom: 5px;
-        }
-
-        .strength-bar-fill {
-            height: 100%;
-            transition: all 0.3s ease;
-            width: 0%;
-        }
-
-        .strength-bar-fill.weak {
-            background: #e74c3c;
-            width: 33%;
-        }
-
-        .strength-bar-fill.medium {
-            background: #f39c12;
-            width: 66%;
-        }
-
-        .strength-bar-fill.strong {
-            background: #27ae60;
-            width: 100%;
-        }
-
-        .strength-text {
-            font-size: 12px;
-            color: #666;
-        }
-
-        .gdpr-consent-section {
-            margin: 20px 0;
-            padding: 15px;
-            background: #f9f9f9;
-            border-radius: 8px;
-            border-left: 4px solid #0B7AB0;
-            animation: fadeIn 0.3s ease-in;
-        }
-
-        @keyframes fadeIn {
-            from { opacity: 0; transform: translateY(-10px); }
-            to { opacity: 1; transform: translateY(0); }
-        }
-
-        .gdpr-checkbox-label {
-            display: flex;
-            align-items: flex-start;
-            cursor: pointer;
-            transition: all 0.2s ease;
-        }
-
-        .gdpr-checkbox-label:hover {
-            background: rgba(11, 122, 176, 0.05);
-            padding: 5px;
-            margin: -5px;
-            border-radius: 3px;
-        }
-
-        .gdpr-checkbox-label input[type="checkbox"] {
-            margin-right: 10px;
-            margin-top: 4px;
-            width: 18px;
-            height: 18px;
-            cursor: pointer;
-            accent-color: #0B7AB0;
-        }
-
-        .gdpr-checkbox-label span {
-            font-size: 14px;
-            line-height: 1.5;
-            color: #333;
-        }
-
-        .gdpr-checkbox-label a {
-            color: #0B7AB0;
-            text-decoration: underline;
-        }
-
-        .gdpr-checkbox-label a:hover {
-            color: #1EA1D4;
-        }
-
-        .gdpr-info {
-            font-size: 12px;
-            color: #666;
-            margin-top: 10px;
-            margin-left: 28px;
-            line-height: 1.4;
-        }
-
-        .submit-btn {
-            width: 100%;
-            padding: 14px;
-            background: linear-gradient(135deg, #0B7AB0 0%, #1EA1D4 100%);
-            color: white;
-            border: none;
-            border-radius: 8px;
-            font-size: 16px;
-            font-weight: 600;
-            cursor: pointer;
-            transition: all 0.3s ease;
-            margin-top: 10px;
-        }
-
-        .submit-btn:hover:not(:disabled) {
-            transform: translateY(-2px);
-            box-shadow: 0 8px 20px rgba(11, 122, 176, 0.3);
-        }
-
-        .submit-btn:disabled {
-            background: #ccc;
-            cursor: not-allowed;
-            transform: none;
-        }
-
-        .submit-btn .spinner {
-            display: none;
-            border: 2px solid #ffffff;
-            border-top-color: transparent;
-            border-radius: 50%;
-            width: 16px;
-            height: 16px;
-            animation: spin 0.6s linear infinite;
-            margin: 0 auto;
-        }
-
-        .submit-btn.loading .spinner {
-            display: block;
-        }
-
-        .submit-btn.loading .btn-text {
-            display: none;
-        }
-
-        @keyframes spin {
-            to { transform: rotate(360deg); }
-        }
-
-        .alert {
-            padding: 12px 15px;
-            border-radius: 8px;
-            margin-bottom: 20px;
-            font-size: 14px;
-            display: none;
-        }
-
-        .alert.show {
-            display: block;
-        }
-
-        .alert.error {
-            background: #fee;
-            color: #c33;
-            border: 1px solid #fcc;
-        }
-
-        .alert.success {
-            background: #efe;
-            color: #3c3;
-            border: 1px solid #cfc;
-        }
-
-        .login-link {
-            text-align: center;
-            margin-top: 20px;
-            color: #666;
-            font-size: 14px;
-        }
-
-        .login-link a {
-            color: #0B7AB0;
-            text-decoration: none;
-            font-weight: 600;
-        }
-
-        .login-link a:hover {
-            text-decoration: underline;
-        }
-
-        @media (max-width: 480px) {
-            .signup-container {
-                padding: 30px 20px;
-            }
-
-            .logo-section h1 {
-                font-size: 24px;
-            }
-        }
-    </style>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Login - Car Crash Lawyer AI</title>
+  <style>
+    body {
+      margin: 0;
+      font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+      background-color: #f7f9fa;
+      display: flex;
+      flex-direction: column;
+      min-height: 100vh;
+    }
+    .nav {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      padding: 16px;
+      background-color: white;
+      box-shadow: 0 2px 4px rgba(0,0,0,0.05);
+      position: relative;
+      z-index: 10;
+    }
+    .nav button,
+    .nav a {
+      background-color: #007acc;
+      color: white;
+      padding: 6px 12px;
+      border-radius: 6px;
+      font-weight: bold;
+      font-size: 0.85rem;
+      cursor: pointer;
+      border: none;
+      text-decoration: none;
+      transition: background-color 0.3s ease, transform 0.2s ease;
+    }
+    .nav button:hover,
+    .nav a:hover {
+      background-color: #005f9e;
+      transform: translateY(-1px);
+    }
+    .container {
+      max-width: 400px;
+      margin: 40px auto;
+      padding: 20px;
+      background-color: white;
+      border-radius: 8px;
+      box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+    }
+    h1 {
+      text-align: center;
+      margin-bottom: 24px;
+      color: #333;
+    }
+    .form-group {
+      margin-bottom: 16px;
+    }
+    .form-group label {
+      display: block;
+      margin-bottom: 6px;
+      font-weight: 500;
+      color: #555;
+    }
+    .form-group input {
+      width: 100%;
+      padding: 10px;
+      border: 1px solid #ddd;
+      border-radius: 4px;
+      font-size: 16px;
+      box-sizing: border-box;
+    }
+    .form-group input:focus {
+      outline: none;
+      border-color: #007acc;
+      box-shadow: 0 0 0 2px rgba(0,120,204,0.2);
+    }
+    .btn {
+      display: block;
+      width: 100%;
+      padding: 12px;
+      background-color: #007acc;
+      color: white;
+      border: none;
+      border-radius: 4px;
+      font-size: 16px;
+      font-weight: 500;
+      cursor: pointer;
+      transition: background-color 0.3s;
+    }
+    .btn:hover {
+      background-color: #005f9e;
+    }
+    .error {
+      color: #e74c3c;
+      margin-top: 16px;
+      text-align: center;
+    }
+    .links {
+      margin-top: 20px;
+      text-align: center;
+    }
+    .links a {
+      color: #007acc;
+      text-decoration: none;
+    }
+    .links a:hover {
+      text-decoration: underline;
+    }
+  </style>
 </head>
 <body>
-    <div class="signup-container">
-        <div class="logo-section">
-            <img src="/branding.png" alt="Car Crash Lawyer AI" onerror="this.style.display='none'">
-            <h1>Create Account</h1>
-            <p>Your Legal First Responder</p>
-        </div>
+  <!-- Navigation Bar -->
+  <div class="nav">
+    <button onclick="window.history.back()">← Back</button>
+    <a href="index.html">🏠 Home</a>
+  </div>
 
-        <div id="alertBox" class="alert"></div>
+  <div class="container">
+    <h1>Login</h1>
+    <div id="error-message" class="error" style="display: none;"></div>
 
-        <form id="signupForm">
-            <div class="form-group">
-                <label for="fullName">Full Name</label>
-                <input 
-                    type="text" 
-                    id="fullName" 
-                    name="fullName" 
-                    required
-                    placeholder="John Doe"
-                    autocomplete="name"
-                >
-                <div class="error-message" id="fullNameError"></div>
-            </div>
+    <form id="login-form">
+      <div class="form-group">
+        <label for="email">Email</label>
+        <input type="email" id="email" name="email" required>
+      </div>
 
-            <div class="form-group">
-                <label for="email">Email Address</label>
-                <input 
-                    type="email" 
-                    id="email" 
-                    name="email" 
-                    required
-                    placeholder="your.email@example.com"
-                    autocomplete="email"
-                >
-                <div class="error-message" id="emailError"></div>
-            </div>
+      <div class="form-group">
+        <label for="password">Password</label>
+        <input type="password" id="password" name="password" required>
+      </div>
 
-            <div class="form-group">
-                <label for="password">Password</label>
-                <input 
-                    type="password" 
-                    id="password" 
-                    name="password" 
-                    required
-                    placeholder="Create a strong password"
-                    autocomplete="new-password"
-                >
-                <div class="password-strength" id="passwordStrength">
-                    <div class="strength-bar">
-                        <div class="strength-bar-fill" id="strengthBar"></div>
-                    </div>
-                    <div class="strength-text" id="strengthText"></div>
-                </div>
-                <div class="error-message" id="passwordError"></div>
-            </div>
+      <button type="submit" class="btn">Login</button>
+    </form>
 
-            <div class="form-group">
-                <label for="confirmPassword">Confirm Password</label>
-                <input 
-                    type="password" 
-                    id="confirmPassword" 
-                    name="confirmPassword" 
-                    required
-                    placeholder="Re-enter your password"
-                    autocomplete="new-password"
-                >
-                <div class="error-message" id="confirmPasswordError"></div>
-            </div>
-
-            <div class="gdpr-consent-section">
-                <label class="gdpr-checkbox-label">
-                    <input 
-                        type="checkbox" 
-                        id="gdprConsent" 
-                        name="gdpr_consent" 
-                        required
-                    >
-                    <span>
-                        I agree to the <a href="/privacy-policy.html" target="_blank">Privacy Policy</a> 
-                        and consent to processing my data for incident reporting, evidence storage, and AI transcription services.
-                    </span>
-                </label>
-                <p class="gdpr-info">
-                    ℹ️ Required for service functionality. You can request data deletion anytime by emailing privacy@carcrashlawyerai.com
-                </p>
-            </div>
-
-            <button type="submit" class="submit-btn" id="submitBtn" disabled>
-                <span class="btn-text">Create Account</span>
-                <div class="spinner"></div>
-            </button>
-        </form>
-
-        <div class="login-link">
-            Already have an account? <a href="/login.html">Log in</a>
-        </div>
+    <div class="links">
+      <p>Don't have an account? <a href="signup.html">Sign Up</a></p>
+      <p><a href="#" id="forgot-password">Forgot Password?</a></p>
     </div>
+  </div>
 
-    <script>
-        const form = document.getElementById('signupForm');
-        const submitBtn = document.getElementById('submitBtn');
-        const alertBox = document.getElementById('alertBox');
-        const fullNameInput = document.getElementById('fullName');
-        const emailInput = document.getElementById('email');
-        const passwordInput = document.getElementById('password');
-        const confirmPasswordInput = document.getElementById('confirmPassword');
-        const gdprCheckbox = document.getElementById('gdprConsent');
-        const strengthBar = document.getElementById('strengthBar');
-        const strengthText = document.getElementById('strengthText');
-        const passwordStrength = document.getElementById('passwordStrength');
+  <script>
+    // Authentication now handled by backend Supabase integration
 
-        // Email validation
-        function validateEmail(email) {
-            const re = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
-            return re.test(email);
-        }
+    // Handle login form submission
+    document.getElementById('login-form').addEventListener('submit', async (e) => {
+      e.preventDefault();
 
-        // Password strength checker
-        function checkPasswordStrength(password) {
-            let strength = 0;
-            let feedback = [];
+      const email = document.getElementById('email').value;
+      const password = document.getElementById('password').value;
+      const errorElement = document.getElementById('error-message');
 
-            if (password.length >= 8) strength++;
-            if (password.length >= 12) strength++;
-            if (/[a-z]/.test(password) && /[A-Z]/.test(password)) strength++;
-            if (/\d/.test(password)) strength++;
-            if (/[^a-zA-Z\d]/.test(password)) strength++;
-
-            strengthBar.className = 'strength-bar-fill';
-
-            if (strength <= 2) {
-                strengthBar.classList.add('weak');
-                strengthText.textContent = 'Weak password';
-                return false;
-            } else if (strength <= 3) {
-                strengthBar.classList.add('medium');
-                strengthText.textContent = 'Medium password';
-                return true;
-            } else {
-                strengthBar.classList.add('strong');
-                strengthText.textContent = 'Strong password';
-                return true;
-            }
-        }
-
-        // Show error
-        function showError(field, message) {
-            const input = document.getElementById(field);
-            const error = document.getElementById(field + 'Error');
-            input.classList.add('error');
-            error.textContent = message;
-            error.classList.add('show');
-        }
-
-        // Clear error
-        function clearError(field) {
-            const input = document.getElementById(field);
-            const error = document.getElementById(field + 'Error');
-            input.classList.remove('error');
-            error.classList.remove('show');
-        }
-
-        // Clear all errors
-        function clearAllErrors() {
-            ['fullName', 'email', 'password', 'confirmPassword'].forEach(clearError);
-        }
-
-        // Show alert
-        function showAlert(message, type) {
-            alertBox.textContent = message;
-            alertBox.className = 'alert ' + type + ' show';
-            setTimeout(() => {
-                alertBox.classList.remove('show');
-            }, 5000);
-        }
-
-        // Update submit button state
-        function updateSubmitButton() {
-            const isFormValid = fullNameInput.value.trim() &&
-                                emailInput.value.trim() &&
-                                passwordInput.value &&
-                                confirmPasswordInput.value &&
-                                gdprCheckbox.checked;
-            submitBtn.disabled = !isFormValid;
-        }
-
-        // Form validation
-        function validateForm() {
-            clearAllErrors();
-            let isValid = true;
-
-            // Validate full name
-            if (!fullNameInput.value.trim()) {
-                showError('fullName', 'Full name is required');
-                isValid = false;
-            } else if (fullNameInput.value.trim().length < 2) {
-                showError('fullName', 'Please enter your full name');
-                isValid = false;
-            }
-
-            // Validate email
-            if (!emailInput.value) {
-                showError('email', 'Email is required');
-                isValid = false;
-            } else if (!validateEmail(emailInput.value)) {
-                showError('email', 'Please enter a valid email address');
-                isValid = false;
-            }
-
-            // Validate password
-            if (!passwordInput.value) {
-                showError('password', 'Password is required');
-                isValid = false;
-            } else if (passwordInput.value.length < 8) {
-                showError('password', 'Password must be at least 8 characters');
-                isValid = false;
-            } else if (!checkPasswordStrength(passwordInput.value)) {
-                showError('password', 'Password is too weak. Use uppercase, lowercase, numbers, and symbols');
-                isValid = false;
-            }
-
-            // Validate confirm password
-            if (!confirmPasswordInput.value) {
-                showError('confirmPassword', 'Please confirm your password');
-                isValid = false;
-            } else if (passwordInput.value !== confirmPasswordInput.value) {
-                showError('confirmPassword', 'Passwords do not match');
-                isValid = false;
-            }
-
-            // Validate GDPR consent
-            if (!gdprCheckbox.checked) {
-                showAlert('Please accept the Privacy Policy to create an account', 'error');
-                isValid = false;
-            }
-
-            return isValid;
-        }
-
-        // Password strength on input
-        passwordInput.addEventListener('input', function() {
-            clearError('password');
-            if (this.value) {
-                passwordStrength.classList.add('show');
-                checkPasswordStrength(this.value);
-            } else {
-                passwordStrength.classList.remove('show');
-            }
-            updateSubmitButton();
+      try {
+        // Send credentials to backend for authentication
+        const response = await fetch('/auth/login', {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json'
+          },
+          body: JSON.stringify({ email, password })
         });
 
-        // Update submit button on any input change
-        [fullNameInput, emailInput, passwordInput, confirmPasswordInput].forEach(input => {
-            input.addEventListener('input', function() {
-                clearError(this.id);
-                updateSubmitButton();
-            });
-        });
+        const data = await response.json();
 
-        gdprCheckbox.addEventListener('change', updateSubmitButton);
+        if (data.success) {
+          // Redirect to dashboard or home page
+          window.location.href = 'index.html';
+        } else {
+          errorElement.textContent = data.error || 'Login failed';
+          errorElement.style.display = 'block';
+        }
+      } catch (error) {
+        console.error('Login error:', error);
+        errorElement.textContent = error.message || 'Login failed';
+        errorElement.style.display = 'block';
+      }
+    });
 
-        // Form submission
-        form.addEventListener('submit', async function(e) {
-            e.preventDefault();
+    // Handle forgot password
+    document.getElementById('forgot-password').addEventListener('click', async (e) => {
+      e.preventDefault();
 
-            if (!validateForm()) {
-                return;
-            }
+      const email = document.getElementById('email').value;
+      const errorElement = document.getElementById('error-message');
 
-            // Disable button and show loading
-            submitBtn.disabled = true;
-            submitBtn.classList.add('loading');
+      if (!email) {
+        errorElement.textContent = 'Please enter your email address';
+        errorElement.style.display = 'block';
+        return;
+      }
 
-            try {
-                const response = await fetch('/api/auth/signup', {
-                    method: 'POST',
-                    headers: {
-                        'Content-Type': 'application/json',
-                    },
-                    credentials: 'include',
-                    body: JSON.stringify({
-                        fullName: fullNameInput.value.trim(),
-                        email: emailInput.value.trim(),
-                        password: passwordInput.value,
-                        gdpr_consent: gdprCheckbox.checked,
-                        gdpr_consent_date: new Date().toISOString()
-                    })
-                });
-
-                const data = await response.json();
-
-                if (response.ok && data.success) {
-                    showAlert('Login successful! Redirecting...', 'success');
-
-                    // Check if there's a redirect parameter
-                    const urlParams = new URLSearchParams(window.location.search);
-                    const redirectUrl = urlParams.get('redirect');
-
-                    // Redirect after brief delay
-                    setTimeout(() => {
-                        if (redirectUrl) {
-                            window.location.href = '/' + redirectUrl;
-                        } else {
-                            window.location.href = '/incident.html';
-                        }
-                    }, 1500);
-                } else {
-                    showAlert(data.error || 'Failed to create account. Please try again.', 'error');
-                    submitBtn.disabled = false;
-                    submitBtn.classList.remove('loading');
-                    updateSubmitButton();
-                }
-            } catch (error) {
-                console.error('Signup error:', error);
-                showAlert('Network error. Please check your connection and try again.', 'error');
-                submitBtn.disabled = false;
-                submitBtn.classList.remove('loading');
-                updateSubmitButton();
-            }
-        });
-    </script>
+      try {
+        // Password reset functionality to be implemented with Supabase
+        errorElement.textContent = 'Password reset functionality coming soon!';
+        errorElement.style.display = 'block';
+        errorElement.style.color = '#f39c12'; // Orange color for info
+      } catch (error) {
+        console.error('Password reset error:', error);
+        errorElement.textContent = error.message || 'Failed to send password reset email';
+        errorElement.style.display = 'block';
+      }
+    });
+  </script>
 </body>
 </html>

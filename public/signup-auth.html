@@ -9,6 +9,7 @@
             margin: 0;
             padding: 0;
             box-sizing: border-box;
+        }
 
         body {
             font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif;
@@ -459,19 +460,9 @@
 
                     showAlert('Account created successfully! Redirecting...', 'success');
 
-                    // Check if there's a redirect parameter
-                    const urlParams = new URLSearchParams(window.location.search);
-                    const redirectUrl = urlParams.get('redirect');
-                    
-                    // Redirect after 1.5 seconds
+                    // Redirect to Step 2 after 1.5 seconds
                     setTimeout(() => {
-                        if (redirectUrl && redirectUrl.includes('incident')) {
-                            // If coming from incident page, go there directly
-                            window.location.href = '/incident.html';
-                        } else {
-                            // Default flow to step 2
-                            window.location.href = '/signup-step2.html';
-                        }
+                        window.location.href = '/signup-step2.html';
                     }, 1500);
                 } else {
                     showAlert(data.error || 'Failed to create account. Please try again.', 'error');
