@@ -1,6 +1,4 @@
 
-#!/usr/bin/env node
-
 /**
  * Car Crash Lawyer AI - Server Entry Point
  * Minimal startup file for the new modular architecture
