@@ -1744,10 +1744,17 @@ app.get('/health', async (req, res) => {
 });
 
 // ========================================
-// MOUNT AUTH ROUTES
+// MOUNT ROUTES
 // ========================================
 const authRoutes = require('./src/routes/auth.routes');
+const transcriptionRoutes = require('./src/routes/transcription.routes');
+
+// Initialize transcription controller with dependencies
+const transcriptionController = require('./src/controllers/transcription.controller');
+transcriptionController.initializeController(transcriptionStatuses, broadcastTranscriptionUpdate);
+
 app.use('/api/auth', authRoutes);
+app.use('/api/transcription', transcriptionRoutes);
 
 // ========================================
 // GDPR CONSENT MANAGEMENT ENDPOINTS (NEW)
@@ -2440,395 +2447,30 @@ app.get('/system-status', (req, res) => {
   res.send(htmlContent);
 });
 
-// ========================================
-// TRANSCRIPTION ENDPOINTS
-// ========================================
-
-// Whisper transcription
-app.post('/api/whisper/transcribe', upload.single('audio'), async (req, res) => {
-  try {
-    logger.info('🎤 Received transcription request');
-
-    if (!req.file) {
-      return sendError(res, 400, 'No audio file provided', 'MISSING_FILE');
-    }
-
-    const create_user_id = req.body.create_user_id ||
-      req.query.create_user_id ||
-      req.headers['x-user-id'];
-
-    if (!create_user_id) {
-      logger.info('❌ Missing create_user_id in transcription request');
-      return sendError(res, 400, 'create_user_id is required', 'MISSING_USER_ID');
-    }
-
-    const validation = validateUserId(create_user_id);
-    if (!validation.valid) {
-      return sendError(res, 400, validation.error, 'INVALID_USER_ID');
-    }
-
-    logger.info(`Processing transcription for user: ${create_user_id}`);
-
-    const transcriptionId = `trans_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`;
-    const fileName = `${create_user_id}/recording_${Date.now()}.webm`;
-
-    const { data: uploadData, error: uploadError } = await supabase.storage
-      .from('incident-audio')
-      .upload(fileName, req.file.buffer, {
-        contentType: req.file.mimetype,
-        upsert: true
-      });
-
-    if (uploadError) {
-      logger.error(`Upload error: ${uploadError.message}`);
-      return sendError(res, 500, 'Failed to upload audio', 'UPLOAD_FAILED');
-    }
-
-    const { data: { publicUrl } } = supabase.storage
-      .from('incident-audio')
-      .getPublicUrl(fileName);
-
-    logger.info(`Audio file uploaded to Supabase: ${fileName}`);
-
-    const { data: queueData, error: queueError } = await supabase
-      .from('transcription_queue')
-      .insert([{
-        create_user_id: create_user_id,
-        incident_report_id: req.body.incident_report_id || null,
-        audio_url: publicUrl,
-        status: CONSTANTS.TRANSCRIPTION_STATUS.PENDING,
-        retry_count: 0,
-        created_at: new Date().toISOString()
-      }])
-      .select()
-      .single();
-
-    if (queueError) {
-      logger.error('Queue error:', queueError);
-    }
-
-    const queueId = queueData?.id || transcriptionId;
-
-    transcriptionStatuses.set(queueId.toString(), {
-      status: CONSTANTS.TRANSCRIPTION_STATUS.PROCESSING,
-      transcription: null,
-      summary: null,
-      error: null,
-      create_user_id: create_user_id,
-      updatedAt: Date.now()
-    });
-
-    res.json({
-      success: true,
-      message: 'Audio uploaded and queued for transcription',
-      queueId: queueId.toString(),
-      audioUrl: publicUrl,
-      create_user_id: create_user_id,
-      requestId: req.requestId
-    });
-
-    processTranscriptionFromBuffer(
-      queueId,
-      req.file.buffer,
-      create_user_id,
-      req.body.incident_report_id,
-      publicUrl
-    );
-  } catch (error) {
-    logger.error('Transcription error:', error);
-    sendError(res, 500, 'Failed to process audio', 'PROCESSING_FAILED');
-  }
+// Legacy transcription endpoints (redirects to new routes)
+app.post('/api/whisper/transcribe', (req, res) => {
+  res.redirect(307, '/api/transcription/transcribe');
 });
 
-// Check transcription status
-app.get('/api/transcription-status/:queueId', async (req, res) => {
-  const { queueId } = req.params;
-
-  if (!queueId || queueId === 'undefined') {
-    return sendError(res, 400, 'Invalid queue ID', 'INVALID_QUEUE_ID');
-  }
-
-  const status = transcriptionStatuses.get(queueId);
-
-  if (status) {
-    res.json({
-      ...status,
-      requestId: req.requestId
-    });
-  } else {
-    if (supabaseEnabled) {
-      try {
-        const { data, error } = await supabase
-          .from('transcription_queue')
-          .select('*')
-          .eq('id', queueId)
-          .single();
-
-        if (data) {
-          res.json({
-            status: data.status,
-            transcription: data.transcription_text,
-            error: data.error_message,
-            create_user_id: data.create_user_id,
-            requestId: req.requestId
-          });
-        } else {
-          res.json({
-            status: 'not_found',
-            message: 'Transcription not found or expired',
-            requestId: req.requestId
-          });
-        }
-      } catch (error) {
-        res.json({
-          status: 'not_found',
-          message: 'Transcription not found or expired',
-          requestId: req.requestId
-        });
-      }
-    } else {
-      res.json({
-        status: 'not_found',
-        message: 'Transcription not found or expired',
-        requestId: req.requestId
-      });
-    }
-  }
+app.get('/api/transcription-status/:queueId', (req, res) => {
+  res.redirect(`/api/transcription/status/${req.params.queueId}`);
 });
 
-// Update transcription
-app.post('/api/update-transcription', checkGDPRConsent, async (req, res) => {
-  try {
-    const { queueId, userId, transcription } = req.body;
-
-    if (!userId) {
-      return sendError(res, 400, 'User ID required', 'MISSING_USER_ID');
-    }
-
-    if (!transcription) {
-      return sendError(res, 400, 'Missing transcription text', 'MISSING_TRANSCRIPTION');
-    }
-
-    logger.info('Updating transcription', { userId, queueId });
-
-    await gdprService.logActivity(userId, 'DATA_UPDATE', {
-      type: 'transcription',
-      action: 'manual_edit'
-    }, req);
-
-    // Get latest transcription to update
-    const latestResult = await Transcription.getLatestTranscription(userId, false);
-    
-    let updateResult;
-    
-    if (latestResult.success && latestResult.data) {
-      // Update existing transcription
-      updateResult = await Transcription.updateTranscription(latestResult.data.id, {
-        transcription_text: transcription,
-        metadata: {
-          ...latestResult.data.metadata,
-          last_edited: new Date().toISOString(),
-          edit_source: 'manual_update'
-        }
-      });
-    } else {
-      // Create new transcription if none exists
-      updateResult = await Transcription.saveTranscription({
-        create_user_id: userId,
-        incident_report_id: null,
-        transcription_text: transcription,
-        audio_url: '',
-        metadata: {
-          source: 'manual_creation',
-          created_via: 'update_endpoint'
-        }
-      });
-    }
-
-    if (!updateResult.success) {
-      return sendError(res, 500, updateResult.error, 'UPDATE_FAILED');
-    }
-
-    const summary = await generateAISummary(transcription, userId, queueId || userId, supabase);
-
-    if (queueId) {
-      broadcastTranscriptionUpdate(queueId, {
-        type: 'updated',
-        status: CONSTANTS.TRANSCRIPTION_STATUS.COMPLETED,
-        transcription: transcription,
-        summary: summary,
-        message: 'Transcription updated successfully'
-      });
-    }
-
-    res.json({
-      success: true,
-      summary: summary,
-      transcription_id: updateResult.data?.id,
-      requestId: req.requestId
-    });
-  } catch (error) {
-    logger.error('Update transcription error', error);
-    sendError(res, 500, 'Failed to update transcription', 'UPDATE_FAILED');
-  }
+app.post('/api/update-transcription', (req, res) => {
+  res.redirect(307, '/api/transcription/update');
 });
 
-// Save transcription
-app.post('/api/save-transcription', checkGDPRConsent, async (req, res) => {
-  try {
-    const { userId, incidentId, transcription, audioUrl, duration } = req.body;
-
-    if (!userId) {
-      return sendError(res, 400, 'User ID required', 'MISSING_USER_ID',
-        'Personal data cannot be saved without proper user identification');
-    }
-
-    if (!transcription) {
-      return sendError(res, 400, 'Transcription text is required', 'MISSING_TRANSCRIPTION');
-    }
-
-    logger.info('Saving transcription', { userId });
-
-    await gdprService.logActivity(userId, 'DATA_SAVE', {
-      type: 'transcription',
-      has_audio: !!audioUrl
-    }, req);
-
-    if (!supabaseEnabled) {
-      return res.json({
-        success: true,
-        message: 'Transcription received (Supabase not configured)',
-        requestId: req.requestId
-      });
-    }
-
-    // Use Transcription model
-    const result = await Transcription.saveTranscription({
-      create_user_id: userId,
-      incident_report_id: incidentId,
-      transcription_text: transcription,
-      audio_url: audioUrl,
-      metadata: {
-        duration: duration,
-        source: 'manual_save',
-        timestamp: new Date().toISOString()
-      }
-    });
-
-    if (!result.success) {
-      return sendError(res, 500, result.error, 'SAVE_FAILED');
-    }
-
-    res.json({
-      success: true,
-      message: 'Transcription saved successfully',
-      transcription_id: result.data?.id,
-      requestId: req.requestId
-    });
-
-  } catch (error) {
-    logger.error('Save transcription error', error);
-    sendError(res, 500, 'Failed to save transcription', 'SAVE_FAILED', error.message);
-  }
+app.post('/api/save-transcription', (req, res) => {
+  res.redirect(307, '/api/transcription/save');
 });
 
-          // Get latest transcription
-app.get('/api/user/:userId/latest-transcription', async (req, res) => {
-  try {
-    const { userId } = req.params;
-    logger.info('Getting latest transcription', { userId });
-
-    if (!supabaseEnabled) {
-      return res.json({
-        exists: false,
-        transcription: null,
-        requestId: req.requestId
-      });
-    }
-
-    await gdprService.logActivity(userId, 'DATA_ACCESS', {
-      type: 'transcription_retrieval'
-    }, req);
-
-    // Use Transcription model
-    const result = await Transcription.getLatestTranscription(userId);
-
-    if (!result.success) {
-      return sendError(res, 500, result.error, 'RETRIEVAL_FAILED');
-    }
-
-    if (result.data) {
-      return res.json({
-        exists: true,
-        transcription: result.data,
-        aiSummary: result.data.ai_summary || null,
-        status: 'completed',
-        requestId: req.requestId
-      });
-    }
-
-    // Fallback to incident reports for backward compatibility
-    const { data: incidentData } = await supabase
-      .from('incident_reports')
-      .select('witness_statement_text, witness_statement_audio')
-      .eq('create_user_id', userId)
-      .order('created_at', { ascending: false })
-      .limit(1)
-      .single();
-
-    res.json({
-      exists: !!incidentData?.witness_statement_text,
-      transcription: incidentData ? {
-        transcription_text: incidentData.witness_statement_text,
-        audio_url: incidentData.witness_statement_audio
-      } : null,
-      status: incidentData?.witness_statement_text ? 'completed' : 'not_found',
-      requestId: req.requestId
-    });
-
-  } catch (error) {
-    logger.error('Get transcription status error', error);
-    sendError(res, 500, 'Failed to get transcription status', 'RETRIEVAL_FAILED');
-  }
+app.get('/api/user/:userId/latest-transcription', (req, res) => {
+  res.redirect(`/api/transcription/user/${req.params.userId}/latest`);
 });
 
-          // Get all transcriptions for a user
-          app.get('/api/user/:userId/transcriptions', async (req, res) => {
-            try {
-              const { userId } = req.params;
-              const { limit, offset, includeSummary } = req.query;
-
-              const validation = validateUserId(userId);
-              if (!validation.valid) {
-                return sendError(res, 400, validation.error, 'INVALID_USER_ID');
-              }
-
-              await gdprService.logActivity(userId, 'DATA_ACCESS', {
-                type: 'transcriptions_list'
-              }, req);
-
-              const result = await Transcription.getTranscriptionByUserId(userId, {
-                limit: parseInt(limit) || 10,
-                offset: parseInt(offset) || 0,
-                includeSummary: includeSummary !== 'false'
-              });
-
-              if (!result.success) {
-                return sendError(res, 500, result.error, 'RETRIEVAL_FAILED');
-              }
-
-              res.json({
-                success: true,
-                transcriptions: result.data,
-                pagination: result.pagination,
-                requestId: req.requestId
-              });
-
-            } catch (error) {
-              logger.error('Error getting user transcriptions', error);
-              sendError(res, 500, 'Failed to get transcriptions', 'RETRIEVAL_FAILED');
-            }
-          });
+app.get('/api/user/:userId/transcriptions', (req, res) => {
+  res.redirect(`/api/transcription/user/${req.params.userId}/all`);
+});
 
           // ========================================
           // AI LISTENING TRANSCRIPT ENDPOINTS (NEW)
