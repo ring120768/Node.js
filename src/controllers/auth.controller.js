@@ -1,4 +1,3 @@
-
 /**
  * Authentication Controller for Car Crash Lawyer AI
  * Contains all authentication-related logic moved from index.js
@@ -84,8 +83,8 @@ async function signup(req, res) {
       create_user_id: userId,
       email: email,
       username: username,
-      first_name: fullName.split(' ')[0] || '',
-      last_name: fullName.split(' ').slice(1).join(' ') || '',
+      name: fullName.split(' ')[0] || '',
+      surname: fullName.split(' ').slice(1).join(' ') || '',
       phone: phone || null,
       created_at: new Date().toISOString(),
       source: 'auth_signup',
@@ -137,8 +136,8 @@ async function signup(req, res) {
       maxAge: 7 * 24 * 60 * 60 * 1000
     });
 
-    logger.success('User signup complete with GDPR consent', { 
-      userId, 
+    logger.success('User signup complete with GDPR consent', {
+      userId,
       email,
       consentVersion: config.constants.GDPR.CURRENT_POLICY_VERSION
     });
@@ -209,7 +208,7 @@ async function login(req, res) {
         id: authResult.userId,
         email: authResult.user.email,
         username: userData?.username,
-        fullName: `${userData?.first_name || ''} ${userData?.last_name || ''}`.trim()
+        fullName: `${userData?.name || ''} ${userData?.surname || ''}`.trim()
       },
       session: {
         access_token: authResult.session.access_token
@@ -258,7 +257,7 @@ async function checkSession(req, res) {
         id: req.userId,
         email: req.user.email,
         username: userData?.username,
-        fullName: `${userData?.first_name || ''} ${userData?.last_name || ''}`.trim()
+        fullName: `${userData?.name || ''} ${userData?.surname || ''}`.trim()
       }
     });
   } catch (error) {

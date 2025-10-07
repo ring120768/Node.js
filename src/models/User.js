@@ -1,4 +1,3 @@
-
 /**
  * User Model - Car Crash Lawyer AI
  * Handles all user-related database operations with Supabase
@@ -274,6 +273,7 @@ async function getUserDataBatch(userId) {
 
     logger.success('User data batch fetched successfully', {
       userId,
+      fullName: `${user?.name || ''} ${user?.surname || ''}`.trim() || 'N/A',
       incidents: userData.incidents.length,
       transcriptions: userData.transcriptions.length,
       summaries: userData.summaries.length,
