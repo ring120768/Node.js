@@ -330,10 +330,10 @@ if (config.supabase.anonKey && supabaseEnabled) {
 // (GDPR FUNCTIONS MOVED TO src/services/gdprService.js)
 // ========================================
 
-// Schedule data retention enforcement
+// Initialize GDPR service with Supabase
 if (supabaseEnabled) {
-  setInterval(() => gdprService.enforceDataRetention(), 24 * 60 * 60 * 1000);
-  logger.info('Data retention policy scheduled');
+  gdprService.initialize(supabase, true);
+  logger.info('GDPR service initialized and data retention scheduled');
 }
 
 // ========================================
@@ -1748,198 +1748,25 @@ app.get('/health', async (req, res) => {
 // ========================================
 const authRoutes = require('./src/routes/auth.routes');
 const transcriptionRoutes = require('./src/routes/transcription.routes');
+const gdprRoutes = require('./src/routes/gdpr.routes');
 
-// Initialize transcription controller with dependencies
+// Initialize controllers with dependencies
 const transcriptionController = require('./src/controllers/transcription.controller');
 transcriptionController.initializeController(transcriptionStatuses, broadcastTranscriptionUpdate);
 
+const gdprController = require('./src/controllers/gdpr.controller');
+gdprController.initializeController(supabase);
+
+// Make imageProcessor available to routes
+app.locals.imageProcessor = imageProcessor;
+
 app.use('/api/auth', authRoutes);
 app.use('/api/transcription', transcriptionRoutes);
+app.use('/api/gdpr', gdprRoutes);
 
 // ========================================
-// GDPR CONSENT MANAGEMENT ENDPOINTS (NEW)
+// (GDPR ENDPOINTS MOVED TO src/routes/gdpr.routes.js)
 // ========================================
-
-/**
- * Get GDPR consent status for a user
- * GET /api/gdpr/consent/:userId
- */
-app.get('/api/gdpr/consent/:userId', async (req, res) => {
-  if (!supabaseEnabled) {
-    return sendError(res, 503, 'Service not configured', 'SERVICE_UNAVAILABLE');
-  }
-
-  try {
-    const { userId } = req.params;
-
-    const validation = validateUserId(userId);
-    if (!validation.valid) {
-      return sendError(res, 400, validation.error, 'INVALID_USER_ID');
-    }
-
-    const { data: user, error } = await supabase
-      .from('user_signup')
-      .select('gdpr_consent, gdpr_consent_date, gdpr_consent_version, gdpr_consent_ip')
-      .eq('create_user_id', userId)
-      .single();
-
-    if (error || !user) {
-      return sendError(res, 404, 'User not found', 'USER_NOT_FOUND');
-    }
-
-    await gdprService.logActivity(userId, 'CONSENT_STATUS_CHECK', {
-      has_consent: user.gdpr_consent
-    }, req);
-
-    res.json({
-      success: true,
-      userId: userId,
-      gdprConsent: {
-        granted: user.gdpr_consent || false,
-        date: user.gdpr_consent_date || null,
-        version: user.gdpr_consent_version || null,
-        ip: user.gdpr_consent_ip || null
-      },
-      requestId: req.requestId
-    });
-  } catch (error) {
-    logger.error('Error fetching GDPR consent:', error);
-    sendError(res, 500, 'Failed to fetch consent status', 'CONSENT_FETCH_FAILED');
-  }
-});
-
-/**
- * Update GDPR consent for a user
- * PUT /api/gdpr/consent/:userId
- */
-app.put('/api/gdpr/consent/:userId', async (req, res) => {
-  if (!supabaseEnabled) {
-    return sendError(res, 503, 'Service not configured', 'SERVICE_UNAVAILABLE');
-  }
-
-  try {
-    const { userId } = req.params;
-    const { gdprConsent } = req.body;
-
-    const validation = validateUserId(userId);
-    if (!validation.valid) {
-      return sendError(res, 400, validation.error, 'INVALID_USER_ID');
-    }
-
-    if (typeof gdprConsent !== 'boolean') {
-      return sendError(res, 400, 'gdprConsent must be a boolean value', 'INVALID_CONSENT_VALUE');
-    }
-
-    const updateData = {
-      gdpr_consent: gdprConsent,
-      updated_at: new Date().toISOString()
-    };
-
-    // If granting consent, capture consent metadata
-    if (gdprConsent === true) {
-      updateData.gdpr_consent_date = new Date().toISOString();
-      updateData.gdpr_consent_ip = req.clientIp || 'unknown';
-      updateData.gdpr_consent_version = CONSTANTS.GDPR.CURRENT_POLICY_VERSION;
-      updateData.gdpr_consent_user_agent = req.get('user-agent') || 'unknown';
-    }
-
-    const { data, error } = await supabase
-      .from('user_signup')
-      .update(updateData)
-      .eq('create_user_id', userId)
-      .select()
-      .single();
-
-    if (error) {
-      logger.error('Error updating GDPR consent:', error);
-      return sendError(res, 500, 'Failed to update consent', 'CONSENT_UPDATE_FAILED');
-    }
-
-    if (!data) {
-      return sendError(res, 404, 'User not found', 'USER_NOT_FOUND');
-    }
-
-    // Log the consent change
-    await gdprService.logActivity(userId, gdprConsent ? 'CONSENT_GRANTED' : 'CONSENT_WITHDRAWN', {
-      consent_type: 'manual_update',
-      consent_method: 'api',
-      consent_version: gdprConsent ? CONSTANTS.GDPR.CURRENT_POLICY_VERSION : null,
-      ip_address: req.clientIp || 'unknown',
-      user_agent: req.get('user-agent') || 'unknown'
-    }, req);
-
-    logger.success('GDPR consent updated', { userId, consentGranted: gdprConsent });
-
-    res.json({
-      success: true,
-      message: gdprConsent ? 'Consent granted successfully' : 'Consent withdrawn successfully',
-      userId: userId,
-      gdprConsent: {
-        granted: gdprConsent,
-        date: gdprConsent ? updateData.gdpr_consent_date : null,
-        version: gdprConsent ? CONSTANTS.GDPR.CURRENT_POLICY_VERSION : null
-      },
-      requestId: req.requestId
-    });
-  } catch (error) {
-    logger.error('Error updating GDPR consent:', error);
-    sendError(res, 500, 'Failed to update consent', 'INTERNAL_ERROR');
-  }
-});
-
-/**
- * Get GDPR audit log for a user
- * GET /api/gdpr/audit-log/:userId
- */
-app.get('/api/gdpr/audit-log/:userId', checkSharedKey, async (req, res) => {
-  if (!supabaseEnabled) {
-    return sendError(res, 503, 'Service not configured', 'SERVICE_UNAVAILABLE');
-  }
-
-  try {
-    const { userId } = req.params;
-    const { limit = 50, offset = 0, activityType } = req.query;
-
-    const validation = validateUserId(userId);
-    if (!validation.valid) {
-      return sendError(res, 400, validation.error, 'INVALID_USER_ID');
-    }
-
-    let query = supabase
-      .from('gdpr_audit_log')
-      .select('*', { count: 'exact' })
-      .eq('user_id', userId)
-      .order('timestamp', { ascending: false })
-      .range(parseInt(offset), parseInt(offset) + parseInt(limit) - 1);
-
-    if (activityType) {
-      query = query.eq('activity_type', activityType);
-    }
-
-    const { data, error, count } = await query;
-
-    if (error) {
-      logger.error('Error fetching audit log:', error);
-      return sendError(res, 500, 'Failed to fetch audit log', 'AUDIT_FETCH_FAILED');
-    }
-
-    res.json({
-      success: true,
-      userId: userId,
-      auditLog: data || [],
-      pagination: {
-        total: count || 0,
-        limit: parseInt(limit),
-        offset: parseInt(offset),
-        hasMore: (count || 0) > (parseInt(offset) + parseInt(limit))
-      },
-      requestId: req.requestId
-    });
-  } catch (error) {
-    logger.error('Error fetching audit log:', error);
-    sendError(res, 500, 'Failed to fetch audit log', 'INTERNAL_ERROR');
-  }
-});
 
 // ========================================
 // WHAT3WORDS API ENDPOINTS
@@ -2228,89 +2055,9 @@ app.post('/test/process-transcription-queue', checkSharedKey, async (req, res) =
 // GDPR ENDPOINTS
 // ========================================
 
-// GDPR data export
-app.get('/api/gdpr/export/:userId', checkSharedKey, async (req, res) => {
-  if (!supabaseEnabled) {
-    return sendError(res, 503, 'Service not configured', 'SERVICE_UNAVAILABLE');
-  }
-
-  const { userId } = req.params;
-
-  try {
-    const validation = validateUserId(userId);
-    if (!validation.valid) {
-      return sendError(res, 400, validation.error, 'INVALID_USER_ID');
-    }
-
-    const { data: user } = await supabase
-      .from('user_signup')
-      .select('*')
-      .eq('create_user_id', userId)
-      .single();
-
-    if (!user) {
-      return sendError(res, 404, 'User not found', 'USER_NOT_FOUND');
-    }
-
-    const userDataResult = await User.getUserDataBatch(userId);
-    
-    if (!userDataResult.success) {
-      return sendError(res, 404, userDataResult.error, userDataResult.code || 'USER_DATA_ERROR');
-    }
-
-    const userData = userDataResult.data;
-
-    await gdprService.logActivity(userId, 'DATA_EXPORT', {
-      requested_by: req.clientIp,
-      items_exported: {
-        incidents: userData.incidents.length,
-        transcriptions: userData.transcriptions.length,
-        images: userData.images.length
-      }
-    }, req);
-
-    res.json({
-      export_date: new Date().toISOString(),
-      user_id: userId,
-      data: userData,
-      gdpr_info: {
-        right_to_access: true,
-        right_to_portability: true,
-        export_format: 'JSON'
-      },
-      requestId: req.requestId
-    });
-  } catch (error) {
-    logger.error('GDPR export error', error);
-    sendError(res, 500, 'Failed to export data', 'EXPORT_FAILED');
-  }
-});
-
-// GDPR delete images
-app.delete('/api/gdpr/delete-images', checkSharedKey, async (req, res) => {
-  if (!supabaseEnabled || !imageProcessor) {
-    return sendError(res, 503, 'Service not configured', 'SERVICE_UNAVAILABLE');
-  }
-
-  try {
-    const { userId } = req.body;
-
-    if (!userId) {
-      return sendError(res, 400, 'User ID required', 'MISSING_USER_ID');
-    }
-
-    const result = await imageProcessor.deleteAllUserImages(userId);
-
-    res.json({
-      success: true,
-      ...result,
-      requestId: req.requestId
-    });
-  } catch (error) {
-    logger.error('Error deleting images', error);
-    sendError(res, 500, 'Failed to delete images', 'DELETE_FAILED');
-  }
-});
+// ========================================
+// (GDPR EXPORT AND DELETE ENDPOINTS MOVED TO src/routes/gdpr.routes.js)
+// ========================================
 
 // ========================================
 // MAIN ROUTES
