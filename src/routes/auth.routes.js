@@ -5,7 +5,7 @@
  */
 
 const express = require('express');
-const { optionalAuth } = require('../../lib/middleware/authMiddleware');
+const { optionalAuth } = require('../middleware/auth');
 const authController = require('../controllers/auth.controller');
 
 const router = express.Router();
