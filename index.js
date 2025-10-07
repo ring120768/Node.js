@@ -47,6 +47,11 @@ const CONSTANTS = require('./src/config/constants');
 const logger = require('./src/utils/logger');
 
 // ========================================
+// VALIDATION UTILITIES
+// ========================================
+const { validateUserId } = require('./src/utils/validators');
+
+// ========================================
 // EXPRESS APP SETUP
 // ========================================
 const app = express();
@@ -153,29 +158,7 @@ app.use((req, res, next) => {
 // UTILITY FUNCTIONS
 // ========================================
 
-/**
- * Validate user ID format
- */
-function validateUserId(userId) {
-  if (!userId) {
-    return { valid: false, error: 'User ID is required' };
-  }
 
-  // UUID format (Supabase auth format)
-  const uuidRegex = /^[a-f0-9]{8}-[a-f0-9]{4}-4[a-f0-9]{3}-[89ab][a-f0-9]{3}-[a-f0-9]{12}$/i;
-
-  // Custom format (alphanumeric, 8-64 chars)
-  const customRegex = /^[a-zA-Z0-9]{8,64}$/;
-
-  if (!uuidRegex.test(userId) && !customRegex.test(userId)) {
-    return {
-      valid: false,
-      error: 'Invalid user ID format. Must be UUID or alphanumeric (8-64 chars)'
-    };
-  }
-
-  return { valid: true };
-}
 
 /**
  * Standardized error response helper
