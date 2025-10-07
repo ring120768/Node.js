@@ -60,9 +60,11 @@ const { sendError, redactUrl } = require('./src/utils/response');
 const { apiLimiter, strictLimiter } = require('./src/middleware/rateLimit');
 
 // ========================================
-// GDPR MIDDLEWARE
+// GDPR MIDDLEWARE & SERVICE
 // ========================================
-const { initGDPR, checkGDPRConsent, logGDPRActivity, enforceDataRetention } = require('./src/middleware/gdpr');
+const { initGDPR, checkGDPRConsent } = require('./src/middleware/gdpr');
+const gdprService = require('./src/services/gdprService');
+
 
 // ========================================
 // AI SERVICE
@@ -325,7 +327,7 @@ if (config.supabase.anonKey && supabaseEnabled) {
 }
 
 // ========================================
-// (GDPR FUNCTIONS MOVED TO src/middleware/gdpr.js)
+// (GDPR FUNCTIONS MOVED TO src/services/gdprService.js)
 // ========================================
 
 // Schedule data retention enforcement
@@ -1134,7 +1136,7 @@ class ImageProcessor {
 
       for (const field of imageFields) {
         if (webhookData[field] && webhookData[field].startsWith('http')) {
-          logger.debug(`Processing ${field}...`);
+          logger.info(`Processing ${field}...`);
 
           try {
             const imageBuffer = await this.downloadImage(webhookData[field]);
@@ -1179,7 +1181,7 @@ class ImageProcessor {
         }
       }
 
-      await logGDPRActivity(webhookData.create_user_id, 'IMAGES_PROCESSED', {
+      await gdprService.logActivity(webhookData.create_user_id, 'IMAGES_PROCESSED', {
         count: processedImages.length,
         types: Object.keys(uploadedImages)
       });
@@ -1499,7 +1501,7 @@ class ImageProcessor {
 
       if (updateError) throw updateError;
 
-      await logGDPRActivity(createUserId, 'DATA_DELETED', {
+      await gdprService.logActivity(createUserId, 'DATA_DELETED', {
         type: 'images',
         count: deletionResults.filter(r => r.deleted).length
       });
@@ -1535,7 +1537,7 @@ async function generateUserPDF(create_user_id, source = 'direct') {
     throw new Error(validation.error);
   }
 
-  await logGDPRActivity(create_user_id, 'PDF_GENERATION', {
+  await gdprService.logActivity(create_user_id, 'PDF_GENERATION', {
     type: 'complete_report',
     source: source
   });
@@ -1852,7 +1854,7 @@ app.post('/api/auth/signup', async (req, res) => {
     // LOG GDPR CONSENT IN AUDIT TRAIL
     // ========================================
     try {
-      await logGDPRActivity(userId, 'CONSENT_GIVEN', {
+      await gdprService.logActivity(userId, 'CONSENT_GIVEN', {
         consent_type: CONSTANTS.GDPR.CONSENT_TYPES.SIGNUP,
         consent_method: 'checkbox',
         consent_version: CONSTANTS.GDPR.CURRENT_POLICY_VERSION,
@@ -2027,7 +2029,7 @@ app.get('/api/gdpr/consent/:userId', async (req, res) => {
       return sendError(res, 404, 'User not found', 'USER_NOT_FOUND');
     }
 
-    await logGDPRActivity(userId, 'CONSENT_STATUS_CHECK', {
+    await gdprService.logActivity(userId, 'CONSENT_STATUS_CHECK', {
       has_consent: user.gdpr_consent
     }, req);
 
@@ -2100,7 +2102,7 @@ app.put('/api/gdpr/consent/:userId', async (req, res) => {
     }
 
     // Log the consent change
-    await logGDPRActivity(userId, gdprConsent ? 'CONSENT_GRANTED' : 'CONSENT_WITHDRAWN', {
+    await gdprService.logActivity(userId, gdprConsent ? 'CONSENT_GRANTED' : 'CONSENT_WITHDRAWN', {
       consent_type: 'manual_update',
       consent_method: 'api',
       consent_version: gdprConsent ? CONSTANTS.GDPR.CURRENT_POLICY_VERSION : null,
@@ -2342,7 +2344,7 @@ app.get('/api/debug/user/:userId', checkSharedKey, async (req, res) => {
     const { userId } = req.params;
     logger.info('Debug check for user', { userId });
 
-    await logGDPRActivity(userId, 'DATA_ACCESS', {
+    await gdprService.logActivity(userId, 'DATA_ACCESS', {
       type: 'debug_view',
       ip: req.clientIp
     }, req);
@@ -2486,7 +2488,7 @@ app.get('/api/gdpr/export/:userId', checkSharedKey, async (req, res) => {
 
     const userData = await getUserDataBatch(userId);
 
-    await logGDPRActivity(userId, 'DATA_EXPORT', {
+    await gdprService.logActivity(userId, 'DATA_EXPORT', {
       requested_by: req.clientIp,
       items_exported: {
         incidents: userData.incidents.length,
@@ -2844,7 +2846,7 @@ app.post('/api/update-transcription', checkGDPRConsent, async (req, res) => {
 
     logger.info('Updating transcription', { userId, queueId });
 
-    await logGDPRActivity(userId, 'DATA_UPDATE', {
+    await gdprService.logActivity(userId, 'DATA_UPDATE', {
       type: 'transcription',
       action: 'manual_edit'
     }, req);
@@ -2916,7 +2918,7 @@ app.post('/api/save-transcription', checkGDPRConsent, async (req, res) => {
 
     logger.info('Saving transcription', { userId });
 
-    await logGDPRActivity(userId, 'DATA_SAVE', {
+    await gdprService.logActivity(userId, 'DATA_SAVE', {
       type: 'transcription',
       has_audio: !!audioUrl
     }, req);
@@ -3007,7 +3009,7 @@ app.post('/api/save-transcription', checkGDPRConsent, async (req, res) => {
             });
           }
 
-          await logGDPRActivity(userId, 'DATA_ACCESS', {
+          await gdprService.logActivity(userId, 'DATA_ACCESS', {
             type: 'transcription_retrieval'
           }, req);
 
@@ -3122,7 +3124,7 @@ app.post('/api/save-transcription', checkGDPRConsent, async (req, res) => {
           }
 
           if (!user.gdpr_consent) {
-            await logGDPRActivity(userId, 'CONSENT_VIOLATION_PREVENTED', {
+            await gdprService.logActivity(userId, 'CONSENT_VIOLATION_PREVENTED', {
               action: 'ai_listening_save_blocked',
               reason: 'No GDPR consent'
             }, req);
@@ -3162,7 +3164,7 @@ app.post('/api/save-transcription', checkGDPRConsent, async (req, res) => {
           }
 
           // Log GDPR activity
-          await logGDPRActivity(userId, 'AI_LISTENING_SAVED', {
+          await gdprService.logActivity(userId, 'AI_LISTENING_SAVED', {
             transcript_id: savedTranscript.id,
             incident_id: incidentId,
             duration_seconds: totalDuration,
@@ -3281,7 +3283,7 @@ app.post('/api/save-transcription', checkGDPRConsent, async (req, res) => {
           }
 
           // Log GDPR activity
-          await logGDPRActivity(userId, 'DATA_ACCESS', {
+          await gdprService.logActivity(userId, 'DATA_ACCESS', {
             type: 'ai_listening_transcripts',
             count: transcripts?.length || 0
           }, req);
@@ -3351,7 +3353,7 @@ app.post('/api/save-transcription', checkGDPRConsent, async (req, res) => {
           const userName = `${data.first_name || ''} ${data.last_name || ''}`.trim() || 'User';
 
           // Log GDPR activity for emergency contact access
-          await logGDPRActivity(userId, 'EMERGENCY_CONTACT_ACCESSED', {
+          await gdprService.logActivity(userId, 'EMERGENCY_CONTACT_ACCESSED', {
             has_contact: !!contactNumber,
             source: 'emergency_feature'
           }, req);
@@ -3442,7 +3444,7 @@ app.post('/api/save-transcription', checkGDPRConsent, async (req, res) => {
           }
 
           // Log GDPR activity
-          await logGDPRActivity(userId, 'DATA_UPDATE', {
+          await gdprService.logActivity(userId, 'DATA_UPDATE', {
             type: 'emergency_contact',
             action: 'updated'
           }, req);
@@ -3531,7 +3533,7 @@ app.post('/api/save-transcription', checkGDPRConsent, async (req, res) => {
             });
           }
 
-          await logGDPRActivity(user_id, 'EMERGENCY_CALL_LOGGED', {
+          await gdprService.logActivity(user_id, 'EMERGENCY_CALL_LOGGED', {
             service: service_called
           }, req);
 
@@ -3599,7 +3601,7 @@ app.post('/api/save-transcription', checkGDPRConsent, async (req, res) => {
 
           const signedUrl = await imageProcessor.getSignedUrl(storagePath, 3600);
 
-          await logGDPRActivity(userId, 'IMAGE_UPLOADED', {
+          await gdprService.logActivity(userId, 'IMAGE_UPLOADED', {
             type: 'what3words',
             location: what3words
           }, req);
@@ -3636,7 +3638,7 @@ app.post('/api/save-transcription', checkGDPRConsent, async (req, res) => {
             throw error;
           }
 
-          await logGDPRActivity(userId, 'IMAGES_ACCESSED', {
+          await gdprService.logActivity(userId, 'IMAGES_ACCESSED', {
             count: images?.length || 0
           }, req);
 
@@ -3668,7 +3670,7 @@ app.post('/api/save-transcription', checkGDPRConsent, async (req, res) => {
 
           const signedUrl = await imageProcessor.getSignedUrl(path, 3600);
 
-          await logGDPRActivity(userId, 'SIGNED_URL_GENERATED', {
+          await gdprService.logActivity(userId, 'SIGNED_URL_GENERATED', {
             image_type: imageType,
             path: path
           }, req);
@@ -3748,7 +3750,7 @@ app.post('/api/save-transcription', checkGDPRConsent, async (req, res) => {
             return sendError(res, 404, 'PDF not found', 'PDF_NOT_FOUND');
           }
 
-          await logGDPRActivity(userId, 'PDF_DOWNLOADED', {}, req);
+          await gdprService.logActivity(userId, 'PDF_DOWNLOADED', {}, req);
 
           if (data.pdf_url) {
             res.redirect(data.pdf_url);
@@ -3810,7 +3812,7 @@ app.post('/api/save-transcription', checkGDPRConsent, async (req, res) => {
             return sendError(res, 400, 'Missing create_user_id', 'MISSING_USER_ID');
           }
 
-          await logGDPRActivity(webhookData.create_user_id, 'SIGNUP_PROCESSING', {
+          await gdprService.logActivity(webhookData.create_user_id, 'SIGNUP_PROCESSING', {
             source: 'webhook',
             has_images: true
           }, req);
@@ -3856,7 +3858,7 @@ app.post('/api/save-transcription', checkGDPRConsent, async (req, res) => {
 
           const incidentId = webhookData.id || webhookData.incident_report_id;
 
-          await logGDPRActivity(webhookData.create_user_id, 'INCIDENT_REPORT', {
+          await gdprService.logActivity(webhookData.create_user_id, 'INCIDENT_REPORT', {
             incident_id: incidentId,
             source: 'webhook'
           }, req);

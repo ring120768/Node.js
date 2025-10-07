@@ -20,28 +20,7 @@ function initGDPR(supabaseInstance, enabled) {
   supabaseEnabled = enabled;
 }
 
-/**
- * Log GDPR activity
- */
-async function logGDPRActivity(userId, activityType, details, req = null) {
-  if (!supabaseEnabled) return;
-
-  try {
-    await supabase
-      .from('gdpr_audit_log')
-      .insert({
-        user_id: userId,
-        activity_type: activityType,
-        details: details,
-        ip_address: req?.clientIp || 'unknown',
-        user_agent: req?.get('user-agent') || 'unknown',
-        request_id: req?.requestId || null,
-        timestamp: new Date().toISOString()
-      });
-  } catch (error) {
-    logger.error('GDPR audit log error', error);
-  }
-}
+// GDPR activity logging moved to gdprService
 
 /**
  * GDPR Consent Check Middleware
@@ -94,57 +73,9 @@ async function checkGDPRConsent(req, res, next) {
   }
 }
 
-/**
- * Data Retention Policy Enforcement
- */
-async function enforceDataRetention() {
-  if (!supabaseEnabled) return;
-
-  const retentionDays = config.dataRetention?.days || 365;
-  const cutoffDate = new Date();
-  cutoffDate.setDate(cutoffDate.getDate() - retentionDays);
-
-  try {
-    // Archive old incident reports
-    const { data: oldReports } = await supabase
-      .from('incident_reports')
-      .select('id, create_user_id')
-      .lt('created_at', cutoffDate.toISOString())
-      .eq('archived', false);
-
-    if (oldReports && oldReports.length > 0) {
-      for (const report of oldReports) {
-        await supabase
-          .from('incident_reports')
-          .update({
-            archived: true,
-            archived_at: new Date().toISOString()
-          })
-          .eq('id', report.id);
-
-        await logGDPRActivity(report.create_user_id, 'DATA_ARCHIVED', {
-          report_id: report.id,
-          reason: 'Data retention policy'
-        });
-      }
-
-      logger.info(`Archived ${oldReports.length} old reports per retention policy`);
-    }
-
-    // Clean up old transcription queue items
-    await supabase
-      .from('transcription_queue')
-      .delete()
-      .lt('created_at', cutoffDate.toISOString())
-      .eq('status', 'completed');
-  } catch (error) {
-    logger.error('Data retention enforcement error', error);
-  }
-}
+// Data retention enforcement moved to gdprService
 
 module.exports = {
   initGDPR,
-  checkGDPRConsent,
-  logGDPRActivity,
-  enforceDataRetention
+  checkGDPRConsent
 };
