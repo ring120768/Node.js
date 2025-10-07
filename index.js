@@ -1597,39 +1597,10 @@ async function generateUserPDF(create_user_id, source = 'direct') {
   };
 }
 
-/**
- * Batch fetch user data
- */
-async function getUserDataBatch(userId) {
-  try {
-    const [
-      { data: user, error: userError },
-      { data: incidents, error: incidentError },
-      { data: transcriptions, error: transcriptionError },
-      { data: summaries, error: summaryError },
-      { data: images, error: imageError }
-    ] = await Promise.all([
-      supabase.from('user_signup').select('*').eq('create_user_id', userId).single(),
-      supabase.from('incident_reports').select('*').eq('create_user_id', userId),
-      supabase.from('ai_transcription').select('*').eq('create_user_id', userId),
-      supabase.from('ai_summary').select('*').eq('create_user_id', userId),
-      supabase.from('incident_images').select('*').eq('create_user_id', userId)
-    ]);
-
-    if (userError) throw userError;
-
-    return {
-      user,
-      incidents: incidents || [],
-      transcriptions: transcriptions || [],
-      summaries: summaries || [],
-      images: images || []
-    };
-  } catch (error) {
-    logger.error('Error fetching user data batch:', error);
-    throw error;
-  }
-}
+// ========================================
+// USER MODEL
+// ========================================
+const User = require('./src/models/User');
 
 /**
  * Process Typeform data
@@ -2349,7 +2320,13 @@ app.get('/api/debug/user/:userId', checkSharedKey, async (req, res) => {
       ip: req.clientIp
     }, req);
 
-    const userData = await getUserDataBatch(userId);
+    const userDataResult = await User.getUserDataBatch(userId);
+    
+    if (!userDataResult.success) {
+      return sendError(res, 404, userDataResult.error, userDataResult.code || 'USER_DATA_ERROR');
+    }
+
+    const userData = userDataResult.data;
 
     res.json({
       userId,
@@ -2360,7 +2337,9 @@ app.get('/api/debug/user/:userId', checkSharedKey, async (req, res) => {
         incidentCount: userData.incidents.length,
         transcriptionCount: userData.transcriptions.length,
         summaryCount: userData.summaries.length,
-        imageCount: userData.images.length
+        imageCount: userData.images.length,
+        aiListeningCount: userData.aiListeningTranscripts.length,
+        emergencyCallCount: userData.emergencyCalls.length
       },
       requestId: req.requestId
     });
@@ -2486,7 +2465,13 @@ app.get('/api/gdpr/export/:userId', checkSharedKey, async (req, res) => {
       return sendError(res, 404, 'User not found', 'USER_NOT_FOUND');
     }
 
-    const userData = await getUserDataBatch(userId);
+    const userDataResult = await User.getUserDataBatch(userId);
+    
+    if (!userDataResult.success) {
+      return sendError(res, 404, userDataResult.error, userDataResult.code || 'USER_DATA_ERROR');
+    }
+
+    const userData = userDataResult.data;
 
     await gdprService.logActivity(userId, 'DATA_EXPORT', {
       requested_by: req.clientIp,
