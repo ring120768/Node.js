@@ -14,9 +14,6 @@ const WebSocket = require('ws');
 const { Readable } = require('stream');
 require('dotenv').config();
 
-// Import rate limiting
-const rateLimit = require('express-rate-limit');
-
 // Import Supabase client
 const { createClient } = require('@supabase/supabase-js');
 
@@ -58,6 +55,11 @@ const { validateUserId } = require('./src/utils/validators');
 const { sendError, redactUrl } = require('./src/utils/response');
 
 // ========================================
+// RATE LIMITING MIDDLEWARE
+// ========================================
+const { apiLimiter, strictLimiter } = require('./src/middleware/rateLimit');
+
+// ========================================
 // EXPRESS APP SETUP
 // ========================================
 const app = express();
@@ -87,28 +89,6 @@ const upload = multer({
       cb(new Error(`Invalid file type: ${file.mimetype}. Allowed types: ${allowedMimeTypes.join(', ')}`));
     }
   }
-});
-
-// ========================================
-// RATE LIMITING
-// ========================================
-const apiLimiter = rateLimit({
-  windowMs: 15 * 60 * 1000, // 15 minutes
-  max: 100,
-  message: 'Too many requests from this IP, please try again later.',
-  standardHeaders: true,
-  legacyHeaders: false,
-  trustProxy: true,
-  skip: (req) => req.path === '/health'
-});
-
-const strictLimiter = rateLimit({
-  windowMs: 15 * 60 * 1000,
-  max: 10,
-  message: 'Rate limit exceeded for this operation.',
-  standardHeaders: true,
-  legacyHeaders: false,
-  trustProxy: true
 });
 
 // ========================================
