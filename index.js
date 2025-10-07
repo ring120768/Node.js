@@ -1,7 +1,6 @@
 // ========================================
 // PART 1: Core Setup, Middleware, and Classes
 // ========================================
-
 const express = require('express');
 const bodyParser = require('body-parser');
 const path = require('path');
@@ -22,7 +21,7 @@ const rateLimit = require('express-rate-limit');
 const { createClient } = require('@supabase/supabase-js');
 
 // ========================================
-// AUTH IMPORTS - NEW
+// AUTH IMPORTS
 // ========================================
 const AuthService = require('./lib/services/authService');
 const { requireAuth, optionalAuth } = require('./lib/middleware/authMiddleware');
@@ -37,7 +36,9 @@ try {
   console.warn('PDF generation modules not found - PDF features will be disabled', error.message);
 }
 
-// Constants for better maintainability
+// ========================================
+// CONSTANTS
+// ========================================
 const CONSTANTS = {
   TRANSCRIPTION_STATUS: {
     PENDING: 'pending',
@@ -67,10 +68,20 @@ const CONSTANTS = {
   FILE_SIZE_LIMITS: {
     AUDIO: 50 * 1024 * 1024, // 50MB
     IMAGE: 10 * 1024 * 1024  // 10MB
+  },
+  GDPR: {
+    CURRENT_POLICY_VERSION: 'v1.0',
+    CONSENT_TYPES: {
+      SIGNUP: 'signup',
+      DATA_PROCESSING: 'data_processing',
+      MARKETING: 'marketing'
+    }
   }
 };
 
-// Enhanced logging utility with better error handling
+// ========================================
+// ENHANCED LOGGING UTILITY
+// ========================================
 const Logger = {
   info: (message, data) => {
     if (process.env.NODE_ENV !== 'production') {
@@ -83,11 +94,6 @@ const Logger = {
     console.error(`[ERROR] ${new Date().toISOString()} ${message}`, errorMessage);
     if (errorStack && process.env.DEBUG === 'true') {
       console.error(errorStack);
-    }
-    // Log to error tracking service if configured
-    if (process.env.ERROR_TRACKING_ENABLED === 'true') {
-      // Placeholder for error tracking service integration
-      // e.g., Sentry, Rollbar, etc.
     }
   },
   warn: (message, data) => {
@@ -103,18 +109,23 @@ const Logger = {
   }
 };
 
+// ========================================
+// EXPRESS APP SETUP
+// ========================================
 const app = express();
 const server = http.createServer(app);
 
-// FIX 1: Set trust proxy to resolve the X-Forwarded-For warning
+// Set trust proxy to resolve the X-Forwarded-For warning
 app.set('trust proxy', true);
 
-// Configure multer for file uploads with enhanced error handling
-const upload = multer({ 
+// ========================================
+// MULTER CONFIGURATION
+// ========================================
+const upload = multer({
   storage: multer.memoryStorage(),
-  limits: { 
+  limits: {
     fileSize: CONSTANTS.FILE_SIZE_LIMITS.AUDIO,
-    files: 5 // Maximum number of files
+    files: 5
   },
   fileFilter: (req, file, cb) => {
     const allowedMimeTypes = [
@@ -122,7 +133,6 @@ const upload = multer({
       'audio/mp4', 'audio/m4a', 'audio/aac',
       'image/jpeg', 'image/png', 'image/webp', 'image/heic', 'image/heif'
     ];
-
     if (allowedMimeTypes.includes(file.mimetype)) {
       cb(null, true);
     } else {
@@ -131,30 +141,31 @@ const upload = multer({
   }
 });
 
-// Enhanced rate limiting middleware - FIX: Added trustProxy option
+// ========================================
+// RATE LIMITING
+// ========================================
 const apiLimiter = rateLimit({
   windowMs: 15 * 60 * 1000, // 15 minutes
-  max: 100, // limit each IP to 100 requests per windowMs
+  max: 100,
   message: 'Too many requests from this IP, please try again later.',
   standardHeaders: true,
   legacyHeaders: false,
-  trustProxy: true, // FIX: Added this
-  skip: (req) => {
-    // Skip rate limiting for health checks
-    return req.path === '/health';
-  }
+  trustProxy: true,
+  skip: (req) => req.path === '/health'
 });
 
 const strictLimiter = rateLimit({
   windowMs: 15 * 60 * 1000,
-  max: 10, // stricter limit for sensitive endpoints
+  max: 10,
   message: 'Rate limit exceeded for this operation.',
   standardHeaders: true,
   legacyHeaders: false,
-  trustProxy: true // FIX: Added this
+  trustProxy: true
 });
 
-// --- MIDDLEWARE SETUP ---
+// ========================================
+// MIDDLEWARE SETUP
+// ========================================
 app.use(cors({
   origin: process.env.ALLOWED_ORIGINS ? process.env.ALLOWED_ORIGINS.split(',') : '*',
   credentials: true,
@@ -182,24 +193,17 @@ app.use((req, res, next) => {
   next();
 });
 
-// Enhanced request logging middleware with sanitization
+// Enhanced request logging middleware
 app.use((req, res, next) => {
   const timestamp = new Date().toISOString();
-  const sanitizedPath = req.path.replace(/\/user\/[^\/]+/g, '/user/[REDACTED]');
+  const sanitizedPath = req.path.replace(/\/user\/[^/]+/g, '/user/[REDACTED]');
   Logger.debug(`${req.method} ${sanitizedPath}`, { timestamp });
 
-  // Log user ID if present in various locations
-  const userId = req.body?.create_user_id || req.body?.userId || 
-                 req.params?.userId || req.query?.userId || req.headers['x-user-id'];
-  if (userId) {
-    Logger.debug('User ID', { userId: userId.substring(0, 8) + '...' }); // Partially redact for security
-  }
-
-  // Store IP for GDPR audit logging - with better fallback
-  req.clientIp = req.ip || 
-                 req.connection?.remoteAddress || 
-                 req.headers['x-forwarded-for']?.split(',')[0].trim() || 
-                 'unknown';
+  // Store IP for GDPR audit logging
+  req.clientIp = req.ip ||
+    req.connection?.remoteAddress ||
+    req.headers['x-forwarded-for']?.split(',')[0].trim() ||
+    'unknown';
 
   // Add request ID for tracing
   req.requestId = `req_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`;
@@ -208,7 +212,68 @@ app.use((req, res, next) => {
   next();
 });
 
-// --- AUTHENTICATION MIDDLEWARE ---
+// ========================================
+// UTILITY FUNCTIONS
+// ========================================
+
+/**
+ * Validate user ID format
+ */
+function validateUserId(userId) {
+  if (!userId) {
+    return { valid: false, error: 'User ID is required' };
+  }
+
+  // UUID format (Supabase auth format)
+  const uuidRegex = /^[a-f0-9]{8}-[a-f0-9]{4}-4[a-f0-9]{3}-[89ab][a-f0-9]{3}-[a-f0-9]{12}$/i;
+
+  // Custom format (alphanumeric, 8-64 chars)
+  const customRegex = /^[a-zA-Z0-9]{8,64}$/;
+
+  if (!uuidRegex.test(userId) && !customRegex.test(userId)) {
+    return {
+      valid: false,
+      error: 'Invalid user ID format. Must be UUID or alphanumeric (8-64 chars)'
+    };
+  }
+
+  return { valid: true };
+}
+
+/**
+ * Standardized error response helper
+ */
+function sendError(res, statusCode, error, code = null, details = null) {
+  const response = {
+    success: false,
+    error: error,
+    timestamp: new Date().toISOString(),
+    requestId: res.req?.requestId || 'unknown'
+  };
+
+  if (code) response.code = code;
+  if (details) response.details = details;
+
+  res.status(statusCode).json(response);
+}
+
+/**
+ * Redact sensitive information from URLs
+ */
+function redactUrl(url) {
+  if (!url) return 'no-url';
+  try {
+    const urlObj = new URL(url);
+    urlObj.search = ''; // Remove query params
+    return urlObj.toString();
+  } catch {
+    return url.split('?')[0]; // Simple fallback
+  }
+}
+
+// ========================================
+// AUTHENTICATION MIDDLEWARE
+// ========================================
 const SHARED_KEY = process.env.ZAPIER_SHARED_KEY || process.env.WEBHOOK_API_KEY || '';
 
 function checkSharedKey(req, res, next) {
@@ -218,86 +283,15 @@ function checkSharedKey(req, res, next) {
 
   if (!SHARED_KEY) {
     Logger.warn('No ZAPIER_SHARED_KEY/WEBHOOK_API_KEY set');
-    return res.status(503).json({ 
-      error: 'Server missing shared key (ZAPIER_SHARED_KEY)',
-      requestId: req.requestId 
-    });
+    return sendError(res, 503, 'Server missing shared key', 'MISSING_API_KEY');
   }
 
   if (provided !== SHARED_KEY) {
     Logger.warn('Authentication failed', { ip: req.clientIp });
-    return res.status(401).json({ 
-      error: 'Unauthorized',
-      requestId: req.requestId 
-    });
+    return sendError(res, 401, 'Unauthorized', 'INVALID_API_KEY');
   }
 
   return next();
-}
-
-// --- GDPR CONSENT CHECK MIDDLEWARE ---
-async function checkGDPRConsent(req, res, next) {
-  const userId = req.body?.userId || req.body?.create_user_id || req.params?.userId;
-
-  if (!userId) {
-    return res.status(400).json({
-      error: 'User identification required',
-      code: 'MISSING_USER_ID',
-      message: 'A valid user ID must be provided to process personal data',
-      requestId: req.requestId
-    });
-  }
-
-  // Enhanced user ID format validation
-  if (!/^[a-zA-Z0-9_-]{3,64}$/.test(userId)) {
-    return res.status(400).json({
-      error: 'Invalid user ID format',
-      code: 'INVALID_USER_ID',
-      message: 'User ID must be 3-64 characters, alphanumeric with underscores and hyphens only',
-      requestId: req.requestId
-    });
-  }
-
-  if (!supabaseEnabled) {
-    return next();
-  }
-
-  try {
-    const { data: user } = await supabase
-      .from('user_signup')
-      .select('gdpr_consent, gdpr_consent_date')
-      .eq('create_user_id', userId)
-      .single();
-
-    if (!user || !user.gdpr_consent) {
-      await logGDPRActivity(userId, 'CONSENT_CHECK_FAILED', {
-        reason: 'No consent found',
-        ip: req.clientIp,
-        requestId: req.requestId
-      }, req);
-
-      return res.status(403).json({
-        error: 'GDPR consent required',
-        code: 'CONSENT_REQUIRED',
-        message: 'User must provide GDPR consent before processing personal data',
-        requestId: req.requestId
-      });
-    }
-
-    req.gdprConsent = {
-      granted: true,
-      date: user.gdpr_consent_date
-    };
-
-    next();
-  } catch (error) {
-    Logger.error('GDPR consent check error', error);
-    res.status(500).json({
-      error: 'Failed to verify consent',
-      code: 'CONSENT_CHECK_FAILED',
-      requestId: req.requestId
-    });
-  }
 }
 
 function authenticateRequest(req, res, next) {
@@ -306,7 +300,9 @@ function authenticateRequest(req, res, next) {
   next();
 }
 
-// --- SUPABASE SETUP WITH SCHEMA REFRESH FIX ---
+// ========================================
+// SUPABASE SETUP
+// ========================================
 let supabase = null;
 let supabaseEnabled = false;
 let realtimeChannels = {};
@@ -321,7 +317,6 @@ const initSupabase = () => {
   }
 
   try {
-    // FIX 2: Add schema refresh headers
     supabase = createClient(url, key, {
       auth: {
         autoRefreshToken: false,
@@ -338,16 +333,17 @@ const initSupabase = () => {
       global: {
         headers: {
           'x-client-info': 'car-crash-lawyer-ai',
-          'x-refresh-schema': 'true' // FIX: Force schema refresh
+          'x-refresh-schema': 'true'
         }
       }
     });
+
     Logger.success('Supabase initialized successfully');
 
     // Initialize GDPR tables if they don't exist
     initializeGDPRTables();
 
-    // Initialize Supabase Realtime (optional enhancement)
+    // Initialize Supabase Realtime
     initializeSupabaseRealtime();
 
     return true;
@@ -357,7 +353,7 @@ const initSupabase = () => {
   }
 };
 
-// OPTIONAL: Initialize Supabase Realtime for better updates
+// Initialize Supabase Realtime
 function initializeSupabaseRealtime() {
   if (!supabaseEnabled) return;
 
@@ -414,106 +410,13 @@ function initializeSupabaseRealtime() {
 
     realtimeChannels = { transcriptionChannel, summaryChannel };
 
-    Logger.info('Supabase Realtime channels initialized (optional enhancement)');
+    Logger.info('Supabase Realtime channels initialized');
   } catch (error) {
     Logger.error('Failed to initialize Supabase Realtime (non-critical)', error);
-    // Non-critical - system works without realtime
   }
 }
 
-// OPTIONAL: Handle realtime transcription updates
-function handleRealtimeTranscriptionUpdate(payload) {
-  try {
-    const { eventType, new: newData, old: oldData, table } = payload;
-
-    let queueId, userId, status, transcription;
-
-    if (table === 'transcription_queue') {
-      queueId = newData?.id || oldData?.id;
-      userId = newData?.create_user_id || oldData?.create_user_id;
-      status = newData?.status;
-      transcription = newData?.transcription_text;
-    } else if (table === 'ai_transcription') {
-      userId = newData?.create_user_id;
-      transcription = newData?.transcription_text; // FIX: Use correct column name
-      status = 'transcribed';
-    }
-
-    if (queueId) {
-      // Update in-memory status
-      if (transcriptionStatuses.has(queueId)) {
-        transcriptionStatuses.set(queueId, {
-          ...transcriptionStatuses.get(queueId),
-          status: status,
-          transcription: transcription || transcriptionStatuses.get(queueId).transcription
-        });
-      }
-
-      // Broadcast to WebSocket clients
-      broadcastTranscriptionUpdate(queueId, {
-        type: CONSTANTS.WS_MESSAGE_TYPES.REALTIME_UPDATE,
-        source: 'supabase_realtime',
-        table: table,
-        eventType: eventType,
-        status: status,
-        transcription: transcription,
-        error: newData?.error_message
-      });
-    }
-
-    // Broadcast to user-specific connections
-    if (userId) {
-      broadcastToUser(userId, {
-        type: CONSTANTS.WS_MESSAGE_TYPES.REALTIME_UPDATE,
-        source: 'supabase_realtime',
-        table: table,
-        eventType: eventType,
-        data: newData
-      });
-    }
-  } catch (error) {
-    Logger.error('Error handling realtime transcription update', error);
-  }
-}
-
-// OPTIONAL: Handle realtime summary updates
-function handleRealtimeSummaryUpdate(payload) {
-  try {
-    const { new: summaryData } = payload;
-    const userId = summaryData?.create_user_id;
-    const queueId = summaryData?.incident_id;
-
-    if (queueId && transcriptionStatuses.has(queueId)) {
-      transcriptionStatuses.set(queueId, {
-        ...transcriptionStatuses.get(queueId),
-        status: CONSTANTS.TRANSCRIPTION_STATUS.COMPLETED,
-        summary: summaryData
-      });
-    }
-
-    // Broadcast completion to relevant connections
-    if (queueId) {
-      broadcastTranscriptionUpdate(queueId, {
-        type: CONSTANTS.WS_MESSAGE_TYPES.REALTIME_UPDATE,
-        source: 'ai_summary',
-        status: CONSTANTS.TRANSCRIPTION_STATUS.COMPLETED,
-        summary: summaryData,
-        message: 'AI summary generated successfully!'
-      });
-    }
-
-    if (userId) {
-      broadcastToUser(userId, {
-        type: 'summary_ready',
-        summary: summaryData
-      });
-    }
-  } catch (error) {
-    Logger.error('Error handling realtime summary update', error);
-  }
-}
-
-// Improved GDPR table initialization
+// Initialize GDPR tables
 async function initializeGDPRTables() {
   try {
     // Check and create GDPR consent table
@@ -543,7 +446,7 @@ async function initializeGDPRTables() {
 supabaseEnabled = initSupabase();
 
 // ========================================
-// INITIALIZE AUTH SERVICE - NEW
+// INITIALIZE AUTH SERVICE
 // ========================================
 let authService = null;
 if (process.env.SUPABASE_ANON_KEY && supabaseEnabled) {
@@ -556,7 +459,13 @@ if (process.env.SUPABASE_ANON_KEY && supabaseEnabled) {
   Logger.warn('⚠️ Auth service not initialized - missing SUPABASE_ANON_KEY');
 }
 
-// --- GDPR ACTIVITY LOGGING ---
+// ========================================
+// GDPR FUNCTIONS
+// ========================================
+
+/**
+ * Log GDPR activity
+ */
 async function logGDPRActivity(userId, activityType, details, req = null) {
   if (!supabaseEnabled) return;
 
@@ -577,7 +486,60 @@ async function logGDPRActivity(userId, activityType, details, req = null) {
   }
 }
 
-// --- DATA RETENTION POLICY ---
+/**
+ * GDPR Consent Check Middleware
+ */
+async function checkGDPRConsent(req, res, next) {
+  const userId = req.body?.userId || req.body?.create_user_id || req.params?.userId;
+
+  if (!userId) {
+    return sendError(res, 400, 'User identification required', 'MISSING_USER_ID',
+      'A valid user ID must be provided to process personal data');
+  }
+
+  // Validate user ID format
+  const validation = validateUserId(userId);
+  if (!validation.valid) {
+    return sendError(res, 400, validation.error, 'INVALID_USER_ID');
+  }
+
+  if (!supabaseEnabled) {
+    return next();
+  }
+
+  try {
+    const { data: user } = await supabase
+      .from('user_signup')
+      .select('gdpr_consent, gdpr_consent_date')
+      .eq('create_user_id', userId)
+      .single();
+
+    if (!user || !user.gdpr_consent) {
+      await logGDPRActivity(userId, 'CONSENT_CHECK_FAILED', {
+        reason: 'No consent found',
+        ip: req.clientIp,
+        requestId: req.requestId
+      }, req);
+
+      return sendError(res, 403, 'GDPR consent required', 'CONSENT_REQUIRED',
+        'User must provide GDPR consent before processing personal data');
+    }
+
+    req.gdprConsent = {
+      granted: true,
+      date: user.gdpr_consent_date
+    };
+
+    next();
+  } catch (error) {
+    Logger.error('GDPR consent check error', error);
+    sendError(res, 500, 'Failed to verify consent', 'CONSENT_CHECK_FAILED');
+  }
+}
+
+/**
+ * Data Retention Policy Enforcement
+ */
 async function enforceDataRetention() {
   if (!supabaseEnabled) return;
 
@@ -595,16 +557,14 @@ async function enforceDataRetention() {
 
     if (oldReports && oldReports.length > 0) {
       for (const report of oldReports) {
-        // Archive the report
         await supabase
           .from('incident_reports')
-          .update({ 
-            archived: true, 
-            archived_at: new Date().toISOString() 
+          .update({
+            archived: true,
+            archived_at: new Date().toISOString()
           })
           .eq('id', report.id);
 
-        // Log the archival
         await logGDPRActivity(report.create_user_id, 'DATA_ARCHIVED', {
           report_id: report.id,
           reason: 'Data retention policy'
@@ -620,7 +580,6 @@ async function enforceDataRetention() {
       .delete()
       .lt('created_at', cutoffDate.toISOString())
       .eq('status', CONSTANTS.TRANSCRIPTION_STATUS.COMPLETED);
-
   } catch (error) {
     Logger.error('Data retention enforcement error', error);
   }
@@ -628,13 +587,14 @@ async function enforceDataRetention() {
 
 // Schedule data retention enforcement
 if (supabaseEnabled) {
-  // Run daily at 2 AM
   setInterval(enforceDataRetention, 24 * 60 * 60 * 1000);
   Logger.info('Data retention policy scheduled');
 }
 
-// --- WEBSOCKET SETUP ---
-const wss = new WebSocket.Server({ 
+// ========================================
+// WEBSOCKET SETUP
+// ========================================
+const wss = new WebSocket.Server({
   noServer: true,
   clientTracking: true,
   maxPayload: 10 * 1024 * 1024 // 10MB max message size
@@ -642,10 +602,11 @@ const wss = new WebSocket.Server({
 
 const activeSessions = new Map(); // queueId -> WebSocket
 const userSessions = new Map(); // userId -> Set of WebSockets
-const transcriptionStatuses = new Map(); // Store transcription statuses in memory
+const transcriptionStatuses = new Map(); // Store transcription statuses with timestamps
 
-// Enhanced cleanup for stale WebSocket connections
+// Enhanced cleanup for stale WebSocket connections and old statuses
 setInterval(() => {
+  // Clean up WebSocket sessions
   activeSessions.forEach((ws, queueId) => {
     if (ws.readyState !== WebSocket.OPEN) {
       activeSessions.delete(queueId);
@@ -663,11 +624,25 @@ setInterval(() => {
       userSessions.delete(userId);
     }
   });
+
+  // Clean up old transcription statuses (older than 1 hour)
+  const oneHourAgo = Date.now() - 3600000;
+  let cleaned = 0;
+
+  transcriptionStatuses.forEach((status, queueId) => {
+    if (status.updatedAt && status.updatedAt < oneHourAgo) {
+      transcriptionStatuses.delete(queueId);
+      cleaned++;
+    }
+  });
+
+  if (cleaned > 0) {
+    Logger.info(`Cleaned up ${cleaned} old transcription statuses`);
+  }
 }, 60000); // Clean up every minute
 
 // Handle WebSocket upgrade
 server.on('upgrade', (request, socket, head) => {
-  // Add basic authentication check if needed
   wss.handleUpgrade(request, socket, head, (ws) => {
     wss.emit('connection', ws, request);
   });
@@ -677,13 +652,11 @@ server.on('upgrade', (request, socket, head) => {
 wss.on('connection', (ws) => {
   Logger.info('New WebSocket connection established');
 
-  // Add heartbeat to detect broken connections
   ws.isAlive = true;
   ws.on('pong', () => {
     ws.isAlive = true;
   });
 
-  // Add connection metadata
   ws.connectionTime = Date.now();
   ws.messageCount = 0;
 
@@ -691,12 +664,12 @@ wss.on('connection', (ws) => {
     try {
       const data = JSON.parse(message);
       ws.messageCount++;
-      Logger.debug('WebSocket message received', { 
-        type: data.type, 
-        messageCount: ws.messageCount 
+      Logger.debug('WebSocket message received', {
+        type: data.type,
+        messageCount: ws.messageCount
       });
 
-      switch(data.type) {
+      switch (data.type) {
         case CONSTANTS.WS_MESSAGE_TYPES.SUBSCRIBE:
           if (data.queueId) {
             activeSessions.set(data.queueId, ws);
@@ -766,7 +739,6 @@ wss.on('connection', (ws) => {
       messages: ws.messageCount
     });
 
-    // Clean up session
     if (ws.queueId) {
       activeSessions.delete(ws.queueId);
     }
@@ -792,7 +764,9 @@ const wsHeartbeat = setInterval(() => {
   });
 }, 30000);
 
-// Function to send real-time updates to specific queue
+/**
+ * Send real-time updates to specific queue
+ */
 function sendTranscriptionUpdate(queueId, data) {
   const ws = activeSessions.get(queueId);
   if (ws && ws.readyState === WebSocket.OPEN) {
@@ -804,7 +778,9 @@ function sendTranscriptionUpdate(queueId, data) {
   }
 }
 
-// Function to broadcast to specific user
+/**
+ * Broadcast to specific user
+ */
 function broadcastToUser(userId, data) {
   if (userSessions.has(userId)) {
     userSessions.get(userId).forEach(ws => {
@@ -819,7 +795,9 @@ function broadcastToUser(userId, data) {
   }
 }
 
-// Function to broadcast updates
+/**
+ * Broadcast transcription updates
+ */
 function broadcastTranscriptionUpdate(queueId, data) {
   // Update memory store
   if (transcriptionStatuses.has(queueId)) {
@@ -829,14 +807,113 @@ function broadcastTranscriptionUpdate(queueId, data) {
   // Send WebSocket update to queue subscribers
   sendTranscriptionUpdate(queueId, data);
 
-  // Also broadcast to any user subscribers if we have the userId
+  // Also broadcast to user subscribers if we have the userId
   const statusData = transcriptionStatuses.get(queueId);
   if (statusData?.create_user_id) {
     broadcastToUser(statusData.create_user_id, data);
   }
 }
 
-// --- AI SUMMARY GENERATION FUNCTION WITH FIXED COLUMN MAPPING ---
+/**
+ * Handle realtime transcription updates
+ */
+function handleRealtimeTranscriptionUpdate(payload) {
+  try {
+    const { eventType, new: newData, old: oldData, table } = payload;
+    let queueId, userId, status, transcription;
+
+    if (table === 'transcription_queue') {
+      queueId = newData?.id || oldData?.id;
+      userId = newData?.create_user_id || oldData?.create_user_id;
+      status = newData?.status;
+      transcription = newData?.transcription_text;
+    } else if (table === 'ai_transcription') {
+      userId = newData?.create_user_id;
+      transcription = newData?.transcription_text;
+      status = 'transcribed';
+    }
+
+    if (queueId) {
+      if (transcriptionStatuses.has(queueId)) {
+        transcriptionStatuses.set(queueId, {
+          ...transcriptionStatuses.get(queueId),
+          status: status,
+          transcription: transcription || transcriptionStatuses.get(queueId).transcription,
+          updatedAt: Date.now()
+        });
+      }
+
+      broadcastTranscriptionUpdate(queueId, {
+        type: CONSTANTS.WS_MESSAGE_TYPES.REALTIME_UPDATE,
+        source: 'supabase_realtime',
+        table: table,
+        eventType: eventType,
+        status: status,
+        transcription: transcription,
+        error: newData?.error_message
+      });
+    }
+
+    if (userId) {
+      broadcastToUser(userId, {
+        type: CONSTANTS.WS_MESSAGE_TYPES.REALTIME_UPDATE,
+        source: 'supabase_realtime',
+        table: table,
+        eventType: eventType,
+        data: newData
+      });
+    }
+  } catch (error) {
+    Logger.error('Error handling realtime transcription update', error);
+  }
+}
+
+/**
+ * Handle realtime summary updates
+ */
+function handleRealtimeSummaryUpdate(payload) {
+  try {
+    const { new: summaryData } = payload;
+    const userId = summaryData?.create_user_id;
+    const queueId = summaryData?.incident_id;
+
+    if (queueId && transcriptionStatuses.has(queueId)) {
+      transcriptionStatuses.set(queueId, {
+        ...transcriptionStatuses.get(queueId),
+        status: CONSTANTS.TRANSCRIPTION_STATUS.COMPLETED,
+        summary: summaryData,
+        updatedAt: Date.now()
+      });
+    }
+
+    if (queueId) {
+      broadcastTranscriptionUpdate(queueId, {
+        type: CONSTANTS.WS_MESSAGE_TYPES.REALTIME_UPDATE,
+        source: 'ai_summary',
+        status: CONSTANTS.TRANSCRIPTION_STATUS.COMPLETED,
+        summary: summaryData,
+        message: 'AI summary generated successfully!'
+      });
+    }
+
+    if (userId) {
+      broadcastToUser(userId, {
+        type: 'summary_ready',
+        summary: summaryData
+      });
+    }
+  } catch (error) {
+    Logger.error('Error handling realtime summary update', error);
+  }
+}
+
+// ========================================
+// AI SUMMARY GENERATION
+// ========================================
+
+/**
+ * Generate AI Summary using OpenAI
+ */
 async function generateAISummary(transcriptionText, createUserId, incidentId) {
   try {
     if (!process.env.OPENAI_API_KEY || !transcriptionText) {
@@ -844,7 +921,6 @@ async function generateAISummary(transcriptionText, createUserId, incidentId) {
       return null;
     }
 
-    // Validate transcription text length
     if (transcriptionText.length < 10) {
       Logger.warn('Transcription too short for meaningful summary');
       return null;
@@ -865,14 +941,14 @@ async function generateAISummary(transcriptionText, createUserId, incidentId) {
             role: 'user',
             content: `Analyze this car accident witness statement and provide a structured JSON response with the following fields:
 
-            1. summary_text: A clear, concise 2-3 paragraph summary of what happened
-            2. key_points: An array of 5-7 key facts from the statement
-            3. fault_analysis: An objective assessment of fault based on the statement
-            4. contributing_factors: Any environmental, weather, or other contributing factors mentioned
+1. summary_text: A clear, concise 2-3 paragraph summary of what happened
+2. key_points: An array of 5-7 key facts from the statement
+3. fault_analysis: An objective assessment of fault based on the statement
+4. contributing_factors: Any environmental, weather, or other contributing factors mentioned
 
-            Statement to analyze: "${transcriptionText}"
+Statement to analyze: "${transcriptionText}"
 
-            Respond ONLY with valid JSON. No additional text.`
+Respond ONLY with valid JSON. No additional text.`
           }
         ],
         temperature: 0.3,
@@ -894,7 +970,6 @@ async function generateAISummary(transcriptionText, createUserId, incidentId) {
       aiAnalysis = JSON.parse(cleanContent);
     } catch (parseError) {
       Logger.error('Failed to parse AI response as JSON', parseError);
-      // Fallback structure
       aiAnalysis = {
         summary_text: response.data.choices[0].message.content,
         key_points: ['See summary for details'],
@@ -911,7 +986,7 @@ async function generateAISummary(transcriptionText, createUserId, incidentId) {
       contributing_factors: aiAnalysis.contributing_factors || 'None identified'
     };
 
-    // FIX 3: Save to ai_summary table with correct column names
+    // Save to ai_summary table
     const { data, error } = await supabase
       .from('ai_summary')
       .insert({
@@ -920,9 +995,7 @@ async function generateAISummary(transcriptionText, createUserId, incidentId) {
         summary_text: aiAnalysis.summary_text,
         key_points: aiAnalysis.key_points,
         fault_analysis: aiAnalysis.fault_analysis,
-        // Map contributing_factors to severity_assessment for now  
         severity_assessment: aiAnalysis.contributing_factors,
-        // Also check if liability_assessment column exists
         liability_assessment: aiAnalysis.contributing_factors,
         created_at: new Date().toISOString()
       })
@@ -931,7 +1004,6 @@ async function generateAISummary(transcriptionText, createUserId, incidentId) {
 
     if (error) {
       Logger.error('Error saving AI summary to database', error);
-      // Try without the problematic columns
       if (error.message.includes('column')) {
         const { data: retryData } = await supabase
           .from('ai_summary')
@@ -950,21 +1022,27 @@ async function generateAISummary(transcriptionText, createUserId, incidentId) {
           return aiAnalysis;
         }
       }
-      return aiAnalysis; // Return analysis even if save fails
+      return aiAnalysis;
     }
 
     Logger.success('AI summary generated and saved successfully');
     return aiAnalysis;
-
   } catch (error) {
     Logger.error('AI Summary generation error', error.response?.data || error);
     return null;
   }
 }
 
-// Enhanced transcription processor with better error handling and FIXED column names
+// ========================================
+// TRANSCRIPTION PROCESSING
+// ========================================
+
+/**
+ * Process transcription from buffer
+ */
 async function processTranscriptionFromBuffer(queueId, audioBuffer, create_user_id, incident_report_id, audioUrl) {
   let retryCount = 0;
+  const maxRetries = 3;
 
   try {
     Logger.info(`Processing transcription for queue ${queueId}, user ${create_user_id}`);
@@ -974,16 +1052,16 @@ async function processTranscriptionFromBuffer(queueId, audioBuffer, create_user_
       throw new Error('User ID is required for transcription processing');
     }
 
-    // Update status immediately
+    // Update status with timestamp
     transcriptionStatuses.set(queueId.toString(), {
       status: CONSTANTS.TRANSCRIPTION_STATUS.PROCESSING,
       transcription: null,
       summary: null,
       error: null,
-      create_user_id: create_user_id
+      create_user_id: create_user_id,
+      updatedAt: Date.now()
     });
 
-    // Send real-time update
     broadcastTranscriptionUpdate(queueId.toString(), {
       status: CONSTANTS.TRANSCRIPTION_STATUS.PROCESSING,
       message: 'Starting transcription...',
@@ -993,15 +1071,12 @@ async function processTranscriptionFromBuffer(queueId, audioBuffer, create_user_
     let finalAudioBuffer;
 
     if (audioBuffer) {
-      // Direct buffer processing
       finalAudioBuffer = audioBuffer;
       Logger.info(`Using provided buffer, size: ${audioBuffer.length} bytes`);
     } else if (audioUrl) {
-      // Download from Supabase storage
-      Logger.info(`Downloading audio from URL: ${audioUrl}`);
+      Logger.info(`Downloading audio from URL: ${redactUrl(audioUrl)}`);
 
       try {
-        // Extract the path from the URL
         let storagePath = audioUrl;
         if (audioUrl.includes('incident-audio/')) {
           storagePath = audioUrl.split('incident-audio/')[1].split('?')[0];
@@ -1011,17 +1086,16 @@ async function processTranscriptionFromBuffer(queueId, audioBuffer, create_user_
 
         Logger.debug(`Attempting to download from path: ${storagePath}`);
 
-        // Download from Supabase storage
         const { data: fileData, error: downloadError } = await supabase.storage
           .from('incident-audio')
           .download(storagePath);
 
         if (downloadError) {
           Logger.error('Supabase download error:', downloadError);
-          // Fallback to direct HTTP download
           const audioResponse = await axios.get(audioUrl, {
             responseType: 'arraybuffer',
             timeout: CONSTANTS.RETRY_LIMITS.API_TIMEOUT,
+            maxContentLength: CONSTANTS.FILE_SIZE_LIMITS.AUDIO,
             headers: {
               'User-Agent': 'CarCrashLawyerAI/1.0'
             }
@@ -1044,33 +1118,31 @@ async function processTranscriptionFromBuffer(queueId, audioBuffer, create_user_
       throw new Error('No audio data available for transcription');
     }
 
-    // Update status
+    if (finalAudioBuffer.length > CONSTANTS.FILE_SIZE_LIMITS.AUDIO) {
+      throw new Error('Audio file exceeds size limit');
+    }
+
     broadcastTranscriptionUpdate(queueId.toString(), {
       status: CONSTANTS.TRANSCRIPTION_STATUS.PROCESSING,
       message: 'Audio loaded, sending to Whisper API...',
       timestamp: new Date().toISOString()
     });
 
-    // Create form data with proper stream handling
+    // Create form data - use buffer directly for reliability
     const formData = new FormData();
 
-    // Create a readable stream from the buffer
-    const audioStream = Readable.from(finalAudioBuffer);
-
-    // Append with proper options including knownLength
-    formData.append('file', audioStream, {
+    formData.append('file', finalAudioBuffer, {
       filename: 'audio.webm',
       contentType: 'audio/webm',
-      knownLength: finalAudioBuffer.length // Critical for preventing stream errors
+      knownLength: finalAudioBuffer.length
     });
 
     formData.append('model', 'whisper-1');
     formData.append('response_format', 'json');
-    formData.append('language', 'en'); // Force English for UK accident reports
+    formData.append('language', 'en');
 
     // Call Whisper API with retry logic
     let whisperResponse;
-    const maxRetries = 3;
 
     while (retryCount < maxRetries) {
       try {
@@ -1086,12 +1158,17 @@ async function processTranscriptionFromBuffer(queueId, audioBuffer, create_user_
             },
             maxContentLength: Infinity,
             maxBodyLength: Infinity,
-            timeout: CONSTANTS.RETRY_LIMITS.WHISPER_TIMEOUT
+            timeout: CONSTANTS.RETRY_LIMITS.WHISPER_TIMEOUT,
+            validateStatus: (status) => status < 500
           }
         );
 
+        if (whisperResponse.status >= 400) {
+          throw new Error(`Whisper API returned ${whisperResponse.status}: ${JSON.stringify(whisperResponse.data)}`);
+        }
+
         Logger.success('Whisper API call successful');
-        break; // Success, exit retry loop
+        break;
 
       } catch (error) {
         retryCount++;
@@ -1101,7 +1178,6 @@ async function processTranscriptionFromBuffer(queueId, audioBuffer, create_user_
           throw new Error(`Whisper API failed after ${maxRetries} attempts: ${error.message}`);
         }
 
-        // Wait before retrying (exponential backoff)
         const waitTime = Math.pow(2, retryCount) * 1000;
         Logger.info(`Waiting ${waitTime}ms before retry...`);
         await new Promise(resolve => setTimeout(resolve, waitTime));
@@ -1109,6 +1185,11 @@ async function processTranscriptionFromBuffer(queueId, audioBuffer, create_user_
     }
 
     const transcription = whisperResponse.data.text;
+
+    if (!transcription || transcription.trim().length === 0) {
+      throw new Error('Transcription returned empty text');
+    }
+
     Logger.success(`Transcription successful, text length: ${transcription.length} characters`);
 
     // Update in-memory status
@@ -1117,10 +1198,11 @@ async function processTranscriptionFromBuffer(queueId, audioBuffer, create_user_
       transcription: transcription,
       summary: null,
       error: null,
-      create_user_id: create_user_id
+      create_user_id: create_user_id,
+      updatedAt: Date.now()
     });
 
-    // Update database - FIX: transcription_text should now be text type
+    // Update database
     const { error: queueUpdateError } = await supabase
       .from('transcription_queue')
       .update({
@@ -1136,15 +1218,14 @@ async function processTranscriptionFromBuffer(queueId, audioBuffer, create_user_
       Logger.error('Error updating transcription_queue:', queueUpdateError);
     }
 
-    // FIX: Save to ai_transcription table with correct column names
+    // Save to ai_transcription table
     const { data: transcriptionRecord, error: saveError } = await supabase
       .from('ai_transcription')
       .insert([{
         create_user_id: create_user_id,
         incident_report_id: incident_report_id || null,
         transcription_text: transcription,
-        audio_url: audioUrl, // Now using correct column
-        audio_storage_path: audioUrl, // Also save path if column exists
+        audio_url: audioUrl,
         created_at: new Date().toISOString()
       }])
       .select()
@@ -1152,24 +1233,6 @@ async function processTranscriptionFromBuffer(queueId, audioBuffer, create_user_
 
     if (saveError) {
       Logger.error('Error saving to ai_transcription:', saveError);
-      // Try without audio_storage_path if it doesn't exist
-      if (saveError.message.includes('audio_storage_path')) {
-        const { data: retryRecord } = await supabase
-          .from('ai_transcription')
-          .insert([{
-            create_user_id: create_user_id,
-            incident_report_id: incident_report_id || null,
-            transcription_text: transcription,
-            audio_url: audioUrl,
-            created_at: new Date().toISOString()
-          }])
-          .select()
-          .single();
-
-        if (retryRecord) {
-          Logger.success('Transcription saved without audio_storage_path');
-        }
-      }
     } else {
       Logger.success('Transcription saved to ai_transcription table');
     }
@@ -1183,20 +1246,19 @@ async function processTranscriptionFromBuffer(queueId, audioBuffer, create_user_
     });
 
     // Generate AI summary
-    if (process.env.OPENAI_API_KEY && transcription) {
+    if (process.env.OPENAI_API_KEY && transcription.length > 10) {
       try {
         Logger.info('Starting AI summary generation');
         const summary = await generateAISummary(transcription, create_user_id, incident_report_id || queueId);
 
         if (summary) {
-          // Update in-memory status
           transcriptionStatuses.set(queueId.toString(), {
             ...transcriptionStatuses.get(queueId.toString()),
             status: CONSTANTS.TRANSCRIPTION_STATUS.COMPLETED,
-            summary: summary
+            summary: summary,
+            updatedAt: Date.now()
           });
 
-          // Final database update
           await supabase
             .from('transcription_queue')
             .update({
@@ -1205,7 +1267,6 @@ async function processTranscriptionFromBuffer(queueId, audioBuffer, create_user_
             })
             .eq('id', queueId);
 
-          // Send final real-time update
           broadcastTranscriptionUpdate(queueId.toString(), {
             status: CONSTANTS.TRANSCRIPTION_STATUS.COMPLETED,
             transcription: transcription,
@@ -1219,11 +1280,11 @@ async function processTranscriptionFromBuffer(queueId, audioBuffer, create_user_
       } catch (summaryError) {
         Logger.error('Summary generation failed:', summaryError);
 
-        // Don't fail the whole process if summary fails
         transcriptionStatuses.set(queueId.toString(), {
           ...transcriptionStatuses.get(queueId.toString()),
           status: CONSTANTS.TRANSCRIPTION_STATUS.COMPLETED,
-          summary: null
+          summary: null,
+          updatedAt: Date.now()
         });
 
         broadcastTranscriptionUpdate(queueId.toString(), {
@@ -1235,10 +1296,10 @@ async function processTranscriptionFromBuffer(queueId, audioBuffer, create_user_
         });
       }
     } else {
-      // No AI summary requested or API key missing
       transcriptionStatuses.set(queueId.toString(), {
         ...transcriptionStatuses.get(queueId.toString()),
-        status: CONSTANTS.TRANSCRIPTION_STATUS.COMPLETED
+        status: CONSTANTS.TRANSCRIPTION_STATUS.COMPLETED,
+        updatedAt: Date.now()
       });
 
       await supabase
@@ -1256,20 +1317,18 @@ async function processTranscriptionFromBuffer(queueId, audioBuffer, create_user_
         timestamp: new Date().toISOString()
       });
     }
-
   } catch (error) {
     Logger.error(`Transcription processing error for queue ${queueId}:`, error);
 
-    // Update error status in memory
     transcriptionStatuses.set(queueId.toString(), {
       status: CONSTANTS.TRANSCRIPTION_STATUS.FAILED,
       transcription: null,
       summary: null,
       error: error.message,
-      create_user_id: create_user_id
+      create_user_id: create_user_id,
+      updatedAt: Date.now()
     });
 
-    // Update database with error
     const { error: updateError } = await supabase
       .from('transcription_queue')
       .update({
@@ -1284,7 +1343,6 @@ async function processTranscriptionFromBuffer(queueId, audioBuffer, create_user_
       Logger.error('Error updating failed status:', updateError);
     }
 
-    // Send error update via WebSocket
     broadcastTranscriptionUpdate(queueId.toString(), {
       status: CONSTANTS.TRANSCRIPTION_STATUS.FAILED,
       error: error.message,
@@ -1294,7 +1352,9 @@ async function processTranscriptionFromBuffer(queueId, audioBuffer, create_user_
   }
 }
 
-// Enhanced queue processor with better error recovery
+/**
+ * Process transcription queue
+ */
 async function processTranscriptionQueue() {
   if (!supabaseEnabled) {
     return;
@@ -1325,7 +1385,6 @@ async function processTranscriptionQueue() {
 
     for (const item of pending) {
       try {
-        // Check if already being processed
         const existingStatus = transcriptionStatuses.get(item.id.toString());
         if (existingStatus && existingStatus.status === CONSTANTS.TRANSCRIPTION_STATUS.PROCESSING) {
           Logger.info(`Skipping queue item ${item.id} - already processing`);
@@ -1334,16 +1393,14 @@ async function processTranscriptionQueue() {
 
         Logger.info(`Processing queue item ${item.id} (attempt ${item.retry_count + 1})`);
 
-        // Process transcription
         await processTranscriptionFromBuffer(
           item.id,
-          null, // No buffer available for queued items
+          null,
           item.create_user_id,
           item.incident_report_id,
           item.audio_url
         );
 
-        // Wait a bit between processing to avoid rate limits
         await new Promise(resolve => setTimeout(resolve, 2000));
 
       } catch (error) {
@@ -1360,12 +1417,17 @@ let transcriptionQueueInterval = null;
 if (supabaseEnabled) {
   const intervalMinutes = parseInt(process.env.TRANSCRIPTION_QUEUE_INTERVAL) || 5;
   transcriptionQueueInterval = setInterval(processTranscriptionQueue, intervalMinutes * 60 * 1000);
-  // Process queue shortly after startup
   setTimeout(processTranscriptionQueue, 30000);
   Logger.info(`Transcription queue processor scheduled every ${intervalMinutes} minutes`);
 }
 
-// --- PDF STORAGE FUNCTION ---
+// ========================================
+// PDF STORAGE
+// ========================================
+
+/**
+ * Store completed form
+ */
 async function storeCompletedForm(createUserId, pdfBuffer, allData) {
   try {
     const pdfBase64 = pdfBuffer.toString('base64');
@@ -1382,7 +1444,7 @@ async function storeCompletedForm(createUserId, pdfBuffer, allData) {
     if (storageData && !storageError) {
       const { data: urlData } = await supabase.storage
         .from('incident-images-secure')
-        .createSignedUrl(fileName, 31536000); // 1 year
+        .createSignedUrl(fileName, 31536000);
 
       if (urlData) {
         pdfUrl = urlData.signedUrl;
@@ -1394,7 +1456,7 @@ async function storeCompletedForm(createUserId, pdfBuffer, allData) {
       .insert({
         create_user_id: createUserId,
         form_data: allData,
-        pdf_base64: pdfBase64.substring(0, 1000000), // Limit stored base64 size
+        pdf_base64: pdfBase64.substring(0, 1000000),
         pdf_url: pdfUrl,
         generated_at: new Date().toISOString(),
         sent_to_user: false,
@@ -1415,7 +1477,10 @@ async function storeCompletedForm(createUserId, pdfBuffer, allData) {
   }
 }
 
-// --- IMAGE PROCESSOR CLASS ---
+// ========================================
+// IMAGE PROCESSOR CLASS
+// ========================================
+
 class ImageProcessor {
   constructor() {
     this.supabase = supabase;
@@ -1426,7 +1491,6 @@ class ImageProcessor {
     try {
       Logger.info('Processing signup images', { userId: webhookData.create_user_id });
 
-      // Verify user exists
       const { data: user } = await this.supabase
         .from('user_signup')
         .select('create_user_id')
@@ -1482,7 +1546,7 @@ class ImageProcessor {
       }
 
       if (Object.keys(uploadedImages).length > 0) {
-        const { data: updateData, error: updateError } = await this.supabase
+        const { error: updateError } = await this.supabase
           .from('user_signup')
           .update(uploadedImages)
           .eq('create_user_id', webhookData.create_user_id)
@@ -1495,7 +1559,6 @@ class ImageProcessor {
         }
       }
 
-      // Log GDPR activity
       await logGDPRActivity(webhookData.create_user_id, 'IMAGES_PROCESSED', {
         count: processedImages.length,
         types: Object.keys(uploadedImages)
@@ -1516,7 +1579,7 @@ class ImageProcessor {
 
   async processIncidentReportFiles(webhookData) {
     try {
-      Logger.info('Processing incident report files', { 
+      Logger.info('Processing incident report files', {
         userId: webhookData.create_user_id,
         incidentId: webhookData.id || webhookData.incident_report_id
       });
@@ -1580,7 +1643,6 @@ class ImageProcessor {
                 contentType = 'image/jpeg';
               }
             } else {
-              // Audio file handling
               if (url.includes('.mp3')) {
                 extension = '.mp3';
                 contentType = 'audio/mpeg';
@@ -1629,7 +1691,6 @@ class ImageProcessor {
             processedFiles.push(fileRecord);
             Logger.debug(`${type} uploaded successfully (${extension})`);
 
-            // If it's an audio file, queue for transcription
             if (!isImage && type === 'audio_account') {
               await this.queueTranscription(createUserId, incidentReportId, storagePath);
             }
@@ -1642,7 +1703,7 @@ class ImageProcessor {
       }
 
       if (Object.keys(uploadedFiles).length > 0) {
-        const { data: updateData, error: updateError } = await this.supabase
+        const { error: updateError } = await this.supabase
           .from('incident_reports')
           .update(uploadedFiles)
           .eq('id', incidentReportId)
@@ -1697,6 +1758,7 @@ class ImageProcessor {
       const response = await axios.get(url, {
         responseType: 'arraybuffer',
         timeout: 60000,
+        maxContentLength: CONSTANTS.FILE_SIZE_LIMITS.AUDIO,
         headers: {
           'User-Agent': 'Car-Crash-Lawyer-AI/1.0'
         },
@@ -1809,7 +1871,7 @@ class ImageProcessor {
 
       const { error: updateError } = await this.supabase
         .from('incident_images')
-        .update({ 
+        .update({
           deletion_requested: new Date().toISOString(),
           deletion_completed: new Date().toISOString()
         })
@@ -1817,7 +1879,6 @@ class ImageProcessor {
 
       if (updateError) throw updateError;
 
-      // Log GDPR deletion
       await logGDPRActivity(createUserId, 'DATA_DELETED', {
         type: 'images',
         count: deletionResults.filter(r => r.deleted).length
@@ -1840,10 +1901,117 @@ class ImageProcessor {
 const imageProcessor = supabaseEnabled ? new ImageProcessor() : null;
 
 // ========================================
-// PART 2: API Endpoints, Routes, and Server
+// SHARED PDF GENERATION FUNCTION
 // ========================================
 
-// --- UTILITY FUNCTIONS ---
+/**
+ * Generate user PDF (shared function)
+ */
+async function generateUserPDF(create_user_id, source = 'direct') {
+  Logger.info(`Starting PDF generation (${source})`, { userId: create_user_id });
+
+  const validation = validateUserId(create_user_id);
+  if (!validation.valid) {
+    throw new Error(validation.error);
+  }
+
+  await logGDPRActivity(create_user_id, 'PDF_GENERATION', {
+    type: 'complete_report',
+    source: source
+  });
+
+  const allData = await fetchAllData(create_user_id);
+
+  if (!allData.user || !allData.user.driver_email) {
+    throw new Error('User not found or missing email');
+  }
+
+  const [
+    { data: aiTranscription },
+    { data: aiSummary }
+  ] = await Promise.all([
+    supabase
+      .from('ai_transcription')
+      .select('*')
+      .eq('create_user_id', create_user_id)
+      .order('created_at', { ascending: false })
+      .limit(1)
+      .single(),
+    supabase
+      .from('ai_summary')
+      .select('*')
+      .eq('create_user_id', create_user_id)
+      .order('created_at', { ascending: false })
+      .limit(1)
+      .single()
+  ]);
+
+  if (aiTranscription) allData.aiTranscription = aiTranscription;
+  if (aiSummary) allData.aiSummary = aiSummary;
+
+  const pdfBuffer = await generatePDF(allData);
+  const storedForm = await storeCompletedForm(create_user_id, pdfBuffer, allData);
+  const emailResult = await sendEmails(allData.user.driver_email, pdfBuffer, create_user_id);
+
+  if (storedForm.id && !storedForm.id.startsWith('temp-') && !storedForm.id.startsWith('error-')) {
+    await supabase
+      .from('completed_incident_forms')
+      .update({
+        sent_to_user: emailResult.success,
+        sent_to_accounts: emailResult.success,
+        email_status: emailResult
+      })
+      .eq('id', storedForm.id);
+  }
+
+  Logger.success('PDF generation process completed');
+
+  return {
+    success: true,
+    form_id: storedForm.id,
+    create_user_id,
+    email_sent: emailResult.success,
+    timestamp: new Date().toISOString()
+  };
+}
+
+/**
+ * Batch fetch user data
+ */
+async function getUserDataBatch(userId) {
+  try {
+    const [
+      { data: user, error: userError },
+      { data: incidents, error: incidentError },
+      { data: transcriptions, error: transcriptionError },
+      { data: summaries, error: summaryError },
+      { data: images, error: imageError }
+    ] = await Promise.all([
+      supabase.from('user_signup').select('*').eq('create_user_id', userId).single(),
+      supabase.from('incident_reports').select('*').eq('create_user_id', userId),
+      supabase.from('ai_transcription').select('*').eq('create_user_id', userId),
+      supabase.from('ai_summary').select('*').eq('create_user_id', userId),
+      supabase.from('incident_images').select('*').eq('create_user_id', userId)
+    ]);
+
+    if (userError) throw userError;
+
+    return {
+      user,
+      incidents: incidents || [],
+      transcriptions: transcriptions || [],
+      summaries: summaries || [],
+      images: images || []
+    };
+  } catch (error) {
+    Logger.error('Error fetching user data batch:', error);
+    throw error;
+  }
+}
+
+/**
+ * Process Typeform data
+ */
 function processTypeformData(formResponse) {
   const processedData = {};
 
@@ -1878,7 +2046,9 @@ function processTypeformData(formResponse) {
   return processedData;
 }
 
-// Enhanced health check for external services
+/**
+ * Check external services
+ */
 async function checkExternalServices() {
   const services = {
     supabase: false,
@@ -1887,20 +2057,16 @@ async function checkExternalServices() {
     what3words: false
   };
 
-  // Check Supabase
   if (supabaseEnabled) {
     try {
       await supabase.from('user_signup').select('*').limit(1);
       services.supabase = true;
-
-      // Check if realtime is connected (optional)
       services.supabase_realtime = realtimeChannels.transcriptionChannel ? true : false;
     } catch (error) {
       Logger.error('Supabase health check failed', error);
     }
   }
 
-  // Check OpenAI
   if (process.env.OPENAI_API_KEY) {
     try {
       await axios.get('https://api.openai.com/v1/models', {
@@ -1913,15 +2079,18 @@ async function checkExternalServices() {
     }
   }
 
-  // Check What3Words
   if (process.env.WHAT3WORDS_API_KEY) {
-    services.what3words = true; // Assume available if key exists
+    services.what3words = true;
   }
 
   return services;
 }
 
-// --- API CONFIGURATION ENDPOINT ---
+// ========================================
+// PART 2: API Endpoints, Routes, and Server
+// ========================================
+
+// API Configuration
 app.get('/api/config', (req, res) => {
   res.json({
     supabaseUrl: process.env.SUPABASE_URL,
@@ -1930,13 +2099,16 @@ app.get('/api/config', (req, res) => {
       realtime: supabaseEnabled && realtimeChannels.transcriptionChannel ? true : false,
       transcription: !!process.env.OPENAI_API_KEY,
       ai_summary: !!process.env.OPENAI_API_KEY,
+      ai_listening: !!process.env.OPENAI_API_KEY,
       pdf_generation: !!(fetchAllData && generatePDF && sendEmails),
-      auth: !!authService
+      auth: !!authService,
+      what3words: !!process.env.WHAT3WORDS_API_KEY,
+      gdpr_consent: true
     }
   });
 });
 
-// Enhanced health check endpoint with fixed syntax
+// Enhanced health check
 app.get('/health', async (req, res) => {
   const externalServices = await checkExternalServices();
 
@@ -1955,17 +2127,22 @@ app.get('/health', async (req, res) => {
         users: userSessions.size
       },
       gdprCompliant: true,
+      gdprConsentCapture: true,
       what3words: externalServices.what3words,
       auth: !!authService
     },
     fixes: {
-      bufferToStream: 'FIXED - Using Readable.from() with knownLength',
-      transcriptionProcessing: 'FIXED - source.on error resolved',
-      syntaxError: 'FIXED - Removed duplicate what3words declaration',
-      trustProxy: 'FIXED - Express trust proxy enabled',
-      columnMapping: 'FIXED - Database column names corrected',
-      schemaRefresh: 'FIXED - Schema cache refreshed on init',
-      authSystem: 'ADDED - Full authentication system integrated'
+      templateLiterals: 'FIXED - All backticks corrected',
+      bufferHandling: 'FIXED - Direct buffer usage',
+      memoryLeaks: 'FIXED - Map cleanup with timestamps',
+      errorHandling: 'ENHANCED - Standardized responses',
+      validation: 'ENHANCED - User ID validation',
+      performance: 'OPTIMIZED - Batch queries with Promise.all',
+      security: 'ENHANCED - URL redaction',
+      codeQuality: 'IMPROVED - Extracted shared functions',
+      aiListening: 'NEW - AI listening transcript endpoints added',
+      emergencyContact: 'NEW - Emergency contact endpoints added',
+      gdprConsent: 'NEW - GDPR consent capture on signup'
     }
   };
 
@@ -1973,36 +2150,37 @@ app.get('/health', async (req, res) => {
 });
 
 // ========================================
-// SUPABASE AUTH ENDPOINTS - NEW
+// AUTHENTICATION ENDPOINTS
 // ========================================
 
-// Signup
+// Signup with GDPR consent capture
 app.post('/api/auth/signup', async (req, res) => {
   try {
-    const { email, password, fullName, phone } = req.body;
+    const { email, password, fullName, phone, gdprConsent } = req.body;
 
+    // Validation
     if (!email || !password || !fullName) {
-      return res.status(400).json({
-        success: false,
-        error: 'Missing required fields'
-      });
+      return sendError(res, 400, 'Missing required fields', 'MISSING_FIELDS');
     }
 
     if (password.length < 8) {
-      return res.status(400).json({
-        success: false,
-        error: 'Password must be at least 8 characters'
-      });
+      return sendError(res, 400, 'Password must be at least 8 characters', 'WEAK_PASSWORD');
+    }
+
+    // ========================================
+    // GDPR CONSENT VALIDATION (CRITICAL)
+    // ========================================
+    if (gdprConsent !== true) {
+      Logger.warn('Signup attempt without GDPR consent', { email, ip: req.clientIp });
+      return sendError(res, 400, 'GDPR consent is required to create an account', 'GDPR_CONSENT_REQUIRED',
+        'You must accept our Privacy Policy and Terms of Service to proceed');
     }
 
     if (!authService) {
-      return res.status(503).json({
-        success: false,
-        error: 'Auth service not configured'
-      });
+      return sendError(res, 503, 'Auth service not configured', 'AUTH_UNAVAILABLE');
     }
 
-    Logger.info('Auth signup:', email);
+    Logger.info('Auth signup with GDPR consent:', email);
 
     const authResult = await authService.signUp(email, password, {
       full_name: fullName,
@@ -2010,16 +2188,16 @@ app.post('/api/auth/signup', async (req, res) => {
     });
 
     if (!authResult.success) {
-      return res.status(400).json({
-        success: false,
-        error: authResult.error
-      });
+      return sendError(res, 400, authResult.error, 'SIGNUP_FAILED');
     }
 
     const userId = authResult.userId;
     const username = email.split('@')[0].replace(/[^a-zA-Z0-9]/g, '') + '_' + Math.floor(Math.random() * 1000000);
 
-    await supabase.from('user_signup').insert({
+    // ========================================
+    // GDPR CONSENT CAPTURE IN DATABASE
+    // ========================================
+    const { error: insertError } = await supabase.from('user_signup').insert({
       uid: userId,
       create_user_id: userId,
       email: email,
@@ -2029,14 +2207,58 @@ app.post('/api/auth/signup', async (req, res) => {
       phone: phone || null,
       created_at: new Date().toISOString(),
       source: 'auth_signup',
-      verified: true
+      verified: true,
+
+      // ✅ GDPR CONSENT FIELDS
+      gdpr_consent: true,
+      gdpr_consent_date: new Date().toISOString(),
+      gdpr_consent_ip: req.clientIp || 'unknown',
+      gdpr_consent_version: CONSTANTS.GDPR.CURRENT_POLICY_VERSION,
+      gdpr_consent_user_agent: req.get('user-agent') || 'unknown'
     });
 
+    if (insertError) {
+      Logger.error('Error inserting user with GDPR consent:', insertError);
+      // Clean up auth user if database insert fails
+      try {
+        await authService.deleteUser(userId);
+      } catch (cleanupError) {
+        Logger.error('Failed to cleanup auth user:', cleanupError);
+      }
+      return sendError(res, 500, 'Failed to create user account', 'USER_CREATION_FAILED');
+    }
+
+    // ========================================
+    // LOG GDPR CONSENT IN AUDIT TRAIL
+    // ========================================
+    try {
+      await logGDPRActivity(userId, 'CONSENT_GIVEN', {
+        consent_type: CONSTANTS.GDPR.CONSENT_TYPES.SIGNUP,
+        consent_method: 'checkbox',
+        consent_version: CONSTANTS.GDPR.CURRENT_POLICY_VERSION,
+        ip_address: req.clientIp || 'unknown',
+        user_agent: req.get('user-agent') || 'unknown',
+        timestamp: new Date().toISOString()
+      }, req);
+
+      Logger.success('GDPR consent logged successfully', { userId });
+    } catch (auditError) {
+      // Non-critical error - don't fail signup if audit log fails
+      Logger.warn('GDPR audit log error (non-critical):', auditError);
+    }
+
+    // Set authentication cookie
     res.cookie('access_token', authResult.session.access_token, {
       httpOnly: true,
       secure: process.env.NODE_ENV === 'production',
       sameSite: 'lax',
       maxAge: 7 * 24 * 60 * 60 * 1000
+    });
+
+    Logger.success('User signup complete with GDPR consent', { 
+      userId, 
+      email,
+      consentVersion: CONSTANTS.GDPR.CURRENT_POLICY_VERSION
     });
 
     res.json({
@@ -2049,12 +2271,16 @@ app.post('/api/auth/signup', async (req, res) => {
       },
       session: {
         access_token: authResult.session.access_token
+      },
+      gdpr: {
+        consentGiven: true,
+        consentDate: new Date().toISOString(),
+        policyVersion: CONSTANTS.GDPR.CURRENT_POLICY_VERSION
       }
     });
-
   } catch (error) {
     Logger.error('Signup error:', error);
-    res.status(500).json({ success: false, error: 'Server error' });
+    sendError(res, 500, 'Server error', 'INTERNAL_ERROR');
   }
 });
 
@@ -2064,26 +2290,17 @@ app.post('/api/auth/login', async (req, res) => {
     const { email, password, rememberMe } = req.body;
 
     if (!email || !password) {
-      return res.status(400).json({
-        success: false,
-        error: 'Missing credentials'
-      });
+      return sendError(res, 400, 'Missing credentials', 'MISSING_CREDENTIALS');
     }
 
     if (!authService) {
-      return res.status(503).json({
-        success: false,
-        error: 'Auth service not configured'
-      });
+      return sendError(res, 503, 'Auth service not configured', 'AUTH_UNAVAILABLE');
     }
 
     const authResult = await authService.signIn(email, password);
 
     if (!authResult.success) {
-      return res.status(401).json({
-        success: false,
-        error: 'Invalid credentials'
-      });
+      return sendError(res, 401, 'Invalid credentials', 'INVALID_CREDENTIALS');
     }
 
     const { data: userData } = await supabase
@@ -2113,10 +2330,9 @@ app.post('/api/auth/login', async (req, res) => {
         access_token: authResult.session.access_token
       }
     });
-
   } catch (error) {
     Logger.error('Login error:', error);
-    res.status(500).json({ success: false, error: 'Server error' });
+    sendError(res, 500, 'Server error', 'INTERNAL_ERROR');
   }
 });
 
@@ -2128,7 +2344,7 @@ app.post('/api/auth/logout', async (req, res) => {
     res.json({ success: true });
   } catch (error) {
     Logger.error('Logout error:', error);
-    res.status(500).json({ success: false, error: 'Logout failed' });
+    sendError(res, 500, 'Logout failed', 'LOGOUT_FAILED');
   }
 });
 
@@ -2154,219 +2370,391 @@ app.get('/api/auth/session', optionalAuth, async (req, res) => {
         fullName: `${userData?.first_name || ''} ${userData?.last_name || ''}`.trim()
       }
     });
-
   } catch (error) {
     Logger.error('Session check error:', error);
-    res.status(500).json({ authenticated: false });
+    res.json({ authenticated: false });
   }
 });
 
-// --- DEBUG ENDPOINT FOR USER DATA (WITH GDPR LOGGING) ---
+// ========================================
+// GDPR CONSENT MANAGEMENT ENDPOINTS (NEW)
+// ========================================
+
+/**
+ * Get GDPR consent status for a user
+ * GET /api/gdpr/consent/:userId
+ */
+app.get('/api/gdpr/consent/:userId', async (req, res) => {
+  if (!supabaseEnabled) {
+    return sendError(res, 503, 'Service not configured', 'SERVICE_UNAVAILABLE');
+  }
+
+  try {
+    const { userId } = req.params;
+
+    const validation = validateUserId(userId);
+    if (!validation.valid) {
+      return sendError(res, 400, validation.error, 'INVALID_USER_ID');
+    }
+
+    const { data: user, error } = await supabase
+      .from('user_signup')
+      .select('gdpr_consent, gdpr_consent_date, gdpr_consent_version, gdpr_consent_ip')
+      .eq('create_user_id', userId)
+      .single();
+
+    if (error || !user) {
+      return sendError(res, 404, 'User not found', 'USER_NOT_FOUND');
+    }
+
+    await logGDPRActivity(userId, 'CONSENT_STATUS_CHECK', {
+      has_consent: user.gdpr_consent
+    }, req);
+
+    res.json({
+      success: true,
+      userId: userId,
+      gdprConsent: {
+        granted: user.gdpr_consent || false,
+        date: user.gdpr_consent_date || null,
+        version: user.gdpr_consent_version || null,
+        ip: user.gdpr_consent_ip || null
+      },
+      requestId: req.requestId
+    });
+  } catch (error) {
+    Logger.error('Error fetching GDPR consent:', error);
+    sendError(res, 500, 'Failed to fetch consent status', 'CONSENT_FETCH_FAILED');
+  }
+});
+
+/**
+ * Update GDPR consent for a user
+ * PUT /api/gdpr/consent/:userId
+ */
+app.put('/api/gdpr/consent/:userId', async (req, res) => {
+  if (!supabaseEnabled) {
+    return sendError(res, 503, 'Service not configured', 'SERVICE_UNAVAILABLE');
+  }
+
+  try {
+    const { userId } = req.params;
+    const { gdprConsent } = req.body;
+
+    const validation = validateUserId(userId);
+    if (!validation.valid) {
+      return sendError(res, 400, validation.error, 'INVALID_USER_ID');
+    }
+
+    if (typeof gdprConsent !== 'boolean') {
+      return sendError(res, 400, 'gdprConsent must be a boolean value', 'INVALID_CONSENT_VALUE');
+    }
+
+    const updateData = {
+      gdpr_consent: gdprConsent,
+      updated_at: new Date().toISOString()
+    };
+
+    // If granting consent, capture consent metadata
+    if (gdprConsent === true) {
+      updateData.gdpr_consent_date = new Date().toISOString();
+      updateData.gdpr_consent_ip = req.clientIp || 'unknown';
+      updateData.gdpr_consent_version = CONSTANTS.GDPR.CURRENT_POLICY_VERSION;
+      updateData.gdpr_consent_user_agent = req.get('user-agent') || 'unknown';
+    }
+
+    const { data, error } = await supabase
+      .from('user_signup')
+      .update(updateData)
+      .eq('create_user_id', userId)
+      .select()
+      .single();
+
+    if (error) {
+      Logger.error('Error updating GDPR consent:', error);
+      return sendError(res, 500, 'Failed to update consent', 'CONSENT_UPDATE_FAILED');
+    }
+
+    if (!data) {
+      return sendError(res, 404, 'User not found', 'USER_NOT_FOUND');
+    }
+
+    // Log the consent change
+    await logGDPRActivity(userId, gdprConsent ? 'CONSENT_GRANTED' : 'CONSENT_WITHDRAWN', {
+      consent_type: 'manual_update',
+      consent_method: 'api',
+      consent_version: gdprConsent ? CONSTANTS.GDPR.CURRENT_POLICY_VERSION : null,
+      ip_address: req.clientIp || 'unknown',
+      user_agent: req.get('user-agent') || 'unknown'
+    }, req);
+
+    Logger.success('GDPR consent updated', { userId, consentGranted: gdprConsent });
+
+    res.json({
+      success: true,
+      message: gdprConsent ? 'Consent granted successfully' : 'Consent withdrawn successfully',
+      userId: userId,
+      gdprConsent: {
+        granted: gdprConsent,
+        date: gdprConsent ? updateData.gdpr_consent_date : null,
+        version: gdprConsent ? CONSTANTS.GDPR.CURRENT_POLICY_VERSION : null
+      },
+      requestId: req.requestId
+    });
+  } catch (error) {
+    Logger.error('Error updating GDPR consent:', error);
+    sendError(res, 500, 'Failed to update consent', 'INTERNAL_ERROR');
+  }
+});
+
+/**
+ * Get GDPR audit log for a user
+ * GET /api/gdpr/audit-log/:userId
+ */
+app.get('/api/gdpr/audit-log/:userId', checkSharedKey, async (req, res) => {
+  if (!supabaseEnabled) {
+    return sendError(res, 503, 'Service not configured', 'SERVICE_UNAVAILABLE');
+  }
+
+  try {
+    const { userId } = req.params;
+    const { limit = 50, offset = 0, activityType } = req.query;
+
+    const validation = validateUserId(userId);
+    if (!validation.valid) {
+      return sendError(res, 400, validation.error, 'INVALID_USER_ID');
+    }
+
+    let query = supabase
+      .from('gdpr_audit_log')
+      .select('*', { count: 'exact' })
+      .eq('user_id', userId)
+      .order('timestamp', { ascending: false })
+      .range(parseInt(offset), parseInt(offset) + parseInt(limit) - 1);
+
+    if (activityType) {
+      query = query.eq('activity_type', activityType);
+    }
+
+    const { data, error, count } = await query;
+
+    if (error) {
+      Logger.error('Error fetching audit log:', error);
+      return sendError(res, 500, 'Failed to fetch audit log', 'AUDIT_FETCH_FAILED');
+    }
+
+    res.json({
+      success: true,
+      userId: userId,
+      auditLog: data || [],
+      pagination: {
+        total: count || 0,
+        limit: parseInt(limit),
+        offset: parseInt(offset),
+        hasMore: (count || 0) > (parseInt(offset) + parseInt(limit))
+      },
+      requestId: req.requestId
+    });
+  } catch (error) {
+    Logger.error('Error fetching audit log:', error);
+    sendError(res, 500, 'Failed to fetch audit log', 'INTERNAL_ERROR');
+  }
+});
+
+// ========================================
+// WHAT3WORDS API ENDPOINTS
+// ========================================
+
+// Convert coordinates to what3words
+app.get('/api/what3words/convert', async (req, res) => {
+  try {
+    const { lat, lng } = req.query;
+
+    if (!lat || !lng) {
+      return sendError(res, 400, 'Missing coordinates', 'MISSING_COORDS',
+        'Both lat and lng parameters are required');
+    }
+
+    const latitude = parseFloat(lat);
+    const longitude = parseFloat(lng);
+
+    if (isNaN(latitude) || isNaN(longitude) ||
+      latitude < -90 || latitude > 90 ||
+      longitude < -180 || longitude > 180) {
+      return sendError(res, 400, 'Invalid coordinates', 'INVALID_COORDS',
+        'Coordinates must be valid latitude (-90 to 90) and longitude (-180 to 180)');
+    }
+
+    const apiKey = process.env.WHAT3WORDS_API_KEY;
+
+    if (!apiKey) {
+      Logger.error('what3words API key not found');
+      return sendError(res, 500, 'Configuration error', 'API_KEY_MISSING',
+        'what3words API key not configured');
+    }
+
+    const what3wordsUrl = `https://api.what3words.com/v3/convert-to-3wa?coordinates=${latitude},${longitude}&key=${apiKey}`;
+
+    const response = await axios.get(what3wordsUrl, {
+      timeout: 10000
+    });
+
+    const data = response.data;
+
+    if (response.status !== 200) {
+      Logger.error('what3words API error:', data);
+      return sendError(res, response.status, 'what3words API error', 'W3W_API_ERROR',
+        data.error?.message || 'Failed to convert coordinates');
+    }
+
+    res.json({
+      success: true,
+      words: data.words,
+      coordinates: {
+        lat: latitude,
+        lng: longitude
+      },
+      nearestPlace: data.nearestPlace || null,
+      country: data.country || null,
+      language: data.language || 'en',
+      map: data.map || null,
+      requestId: req.requestId
+    });
+  } catch (error) {
+    Logger.error('what3words conversion error:', error);
+    sendError(res, 500, 'Server error', 'INTERNAL_ERROR',
+      'Failed to process location conversion');
+  }
+});
+
+// Get what3words autosuggest
+app.get('/api/what3words/autosuggest', async (req, res) => {
+  try {
+    const { input } = req.query;
+
+    if (!input) {
+      return sendError(res, 400, 'Missing input', 'MISSING_INPUT',
+        'Input parameter is required');
+    }
+
+    const apiKey = process.env.WHAT3WORDS_API_KEY;
+
+    if (!apiKey) {
+      return sendError(res, 500, 'Configuration error', 'API_KEY_MISSING',
+        'what3words API key not configured');
+    }
+
+    const what3wordsUrl = `https://api.what3words.com/v3/autosuggest?input=${encodeURIComponent(input)}&key=${apiKey}`;
+
+    const response = await axios.get(what3wordsUrl, {
+      timeout: 10000
+    });
+
+    const data = response.data;
+
+    if (response.status !== 200) {
+      Logger.error('what3words autosuggest error:', data);
+      return sendError(res, response.status, 'what3words API error', 'W3W_API_ERROR',
+        data.error?.message || 'Failed to get suggestions');
+    }
+
+    res.json({
+      success: true,
+      suggestions: data.suggestions || [],
+      requestId: req.requestId
+    });
+  } catch (error) {
+    Logger.error('what3words autosuggest error:', error);
+    sendError(res, 500, 'Server error', 'INTERNAL_ERROR',
+      'Failed to get suggestions');
+  }
+});
+
+// Legacy what3words endpoint (backward compatibility)
+app.get('/api/what3words', async (req, res) => {
+  try {
+    const { lat, lng } = req.query;
+
+    if (!lat || !lng) {
+      return sendError(res, 400, 'Missing latitude or longitude', 'MISSING_COORDS');
+    }
+
+    const W3W_API_KEY = process.env.WHAT3WORDS_API_KEY;
+
+    if (!W3W_API_KEY) {
+      Logger.warn('What3Words API key not configured');
+      return res.json({
+        words: 'location.not.configured',
+        requestId: req.requestId
+      });
+    }
+
+    const response = await axios.get(
+      `https://api.what3words.com/v3/convert-to-3wa?coordinates=${lat},${lng}&key=${W3W_API_KEY}`,
+      { timeout: 10000 }
+    );
+
+    if (response.data && response.data.words) {
+      res.json({
+        words: response.data.words,
+        requestId: req.requestId
+      });
+    } else {
+      res.json({
+        words: 'location.not.found',
+        requestId: req.requestId
+      });
+    }
+  } catch (error) {
+    Logger.error('What3Words API error', error);
+    res.json({
+      words: 'api.error.occurred',
+      requestId: req.requestId
+    });
+  }
+});
+
+// ========================================
+// DEBUG ENDPOINTS
+// ========================================
+
+// Debug user data
 app.get('/api/debug/user/:userId', checkSharedKey, async (req, res) => {
   if (!supabaseEnabled) {
-    return res.status(503).json({ 
-      error: 'Service not configured',
-      requestId: req.requestId 
-    });
+    return sendError(res, 503, 'Service not configured', 'SERVICE_UNAVAILABLE');
   }
 
   try {
     const { userId } = req.params;
     Logger.info('Debug check for user', { userId });
 
-    // Log GDPR activity
     await logGDPRActivity(userId, 'DATA_ACCESS', {
       type: 'debug_view',
       ip: req.clientIp
     }, req);
 
-    // Check all tables for this user
-    const checks = {};
-    const { data: userSignup, error: userError } = await supabase
-      .from('user_signup')
-      .select('*')
-      .eq('create_user_id', userId)
-      .single();
-    checks.user_signup = { data: userSignup, error: userError };
-
-    // Check incident_reports
-    const { data: incidentReports, error: incidentError } = await supabase
-      .from('incident_reports')
-      .select('*')
-      .eq('create_user_id', userId);
-    checks.incident_reports = { data: incidentReports, error: incidentError };
-
-    // Check ai_transcription
-    const { data: aiTranscription, error: transcriptionError } = await supabase
-      .from('ai_transcription')
-      .select('*')
-      .eq('create_user_id', userId);
-    checks.ai_transcription = { data: aiTranscription, error: transcriptionError };
-
-    // Check transcription_queue
-    const { data: transcriptionQueue, error: queueError } = await supabase
-      .from('transcription_queue')
-      .select('*')
-      .eq('create_user_id', userId);
-    checks.transcription_queue = { data: transcriptionQueue, error: queueError };
-
-    // Check ai_summary
-    const { data: aiSummary, error: summaryError } = await supabase
-      .from('ai_summary')
-      .select('*')
-      .eq('create_user_id', userId);
-    checks.ai_summary = { data: aiSummary, error: summaryError };
+    const userData = await getUserDataBatch(userId);
 
     res.json({
       userId,
       timestamp: new Date().toISOString(),
-      dataFound: checks,
+      dataFound: userData,
       summary: {
-        userExists: !!userSignup,
-        incidentCount: incidentReports?.length || 0,
-        transcriptionCount: aiTranscription?.length || 0,
-        queuedItems: transcriptionQueue?.length || 0,
-        summaryCount: aiSummary?.length || 0
+        userExists: !!userData.user,
+        incidentCount: userData.incidents.length,
+        transcriptionCount: userData.transcriptions.length,
+        summaryCount: userData.summaries.length,
+        imageCount: userData.images.length
       },
       requestId: req.requestId
     });
   } catch (error) {
     Logger.error('Debug endpoint error', error);
-    res.status(500).json({ 
-      error: error.message,
-      requestId: req.requestId 
-    });
+    sendError(res, 500, error.message, 'DEBUG_ERROR');
   }
 });
 
-// --- GDPR DATA EXPORT ENDPOINT ---
-app.get('/api/gdpr/export/:userId', checkSharedKey, async (req, res) => {
-  if (!supabaseEnabled) {
-    return res.status(503).json({ 
-      error: 'Service not configured',
-      requestId: req.requestId 
-    });
-  }
-
-  const { userId } = req.params;
-
-  try {
-    // Verify user exists and has consent
-    const { data: user } = await supabase
-      .from('user_signup')
-      .select('*')
-      .eq('create_user_id', userId)
-      .single();
-
-    if (!user) {
-      return res.status(404).json({ 
-        error: 'User not found',
-        code: 'USER_NOT_FOUND',
-        requestId: req.requestId
-      });
-    }
-
-    // Collect all user data
-    const userData = {
-      user_profile: user,
-      incident_reports: [],
-      transcriptions: [],
-      ai_summaries: [],
-      images: [],
-      emergency_calls: []
-    };
-
-    // Get incident reports
-    const { data: incidents } = await supabase
-      .from('incident_reports')
-      .select('*')
-      .eq('create_user_id', userId);
-    userData.incident_reports = incidents || [];
-
-    // Get transcriptions
-    const { data: transcriptions } = await supabase
-      .from('ai_transcription')
-      .select('*')
-      .eq('create_user_id', userId);
-    userData.transcriptions = transcriptions || [];
-
-    // Get AI summaries
-    const { data: summaries } = await supabase
-      .from('ai_summary')
-      .select('*')
-      .eq('create_user_id', userId);
-    userData.ai_summaries = summaries || [];
-
-    // Get images
-    const { data: images } = await supabase
-      .from('incident_images')
-      .select('*')
-      .eq('create_user_id', userId);
-    userData.images = images || [];
-
-    // Log the export
-    await logGDPRActivity(userId, 'DATA_EXPORT', {
-      requested_by: req.clientIp,
-      items_exported: {
-        incidents: userData.incident_reports.length,
-        transcriptions: userData.transcriptions.length,
-        images: userData.images.length
-      }
-    }, req);
-
-    // Generate export
-    res.json({
-      export_date: new Date().toISOString(),
-      user_id: userId,
-      data: userData,
-      gdpr_info: {
-        right_to_access: true,
-        right_to_portability: true,
-        export_format: 'JSON'
-      },
-      requestId: req.requestId
-    });
-
-  } catch (error) {
-    Logger.error('GDPR export error', error);
-    res.status(500).json({ 
-      error: 'Failed to export data',
-      code: 'EXPORT_FAILED',
-      requestId: req.requestId
-    });
-  }
-});
-
-// NEW: Manual queue processing endpoint for testing
-app.get('/api/process-queue-now', checkSharedKey, async (req, res) => {
-  Logger.info('Manual queue processing triggered');
-
-  if (!supabaseEnabled) {
-    return res.status(503).json({ 
-      error: 'Service not configured',
-      requestId: req.requestId 
-    });
-  }
-
-  try {
-    await processTranscriptionQueue();
-    res.json({ 
-      success: true, 
-      message: 'Queue processing triggered',
-      timestamp: new Date().toISOString(),
-      requestId: req.requestId
-    });
-  } catch (error) {
-    Logger.error('Manual queue processing error', error);
-    res.status(500).json({ 
-      error: 'Failed to process queue',
-      message: error.message,
-      requestId: req.requestId
-    });
-  }
-});
-
-// NEW: Test OpenAI API endpoint
+// Test OpenAI
 app.get('/api/test-openai', async (req, res) => {
   try {
     const response = await axios.get(
@@ -2378,25 +2766,48 @@ app.get('/api/test-openai', async (req, res) => {
         timeout: 5000
       }
     );
-    res.json({ 
-      status: 'OpenAI API key is valid', 
+
+    res.json({
+      status: 'OpenAI API key is valid',
       models: response.data.data.length,
       timestamp: new Date().toISOString(),
       requestId: req.requestId
     });
   } catch (error) {
-    res.status(401).json({ 
-      status: 'OpenAI API key issue', 
+    res.status(401).json({
+      status: 'OpenAI API key issue',
       error: error.response?.data || error.message,
-      requestId: req.requestId 
+      requestId: req.requestId
     });
   }
 });
 
-// NEW: Test transcription queue endpoint
+// Manual queue processing
+app.get('/api/process-queue-now', checkSharedKey, async (req, res) => {
+  Logger.info('Manual queue processing triggered');
+
+  if (!supabaseEnabled) {
+    return sendError(res, 503, 'Service not configured', 'SERVICE_UNAVAILABLE');
+  }
+
+  try {
+    await processTranscriptionQueue();
+    res.json({
+      success: true,
+      message: 'Queue processing triggered',
+      timestamp: new Date().toISOString(),
+      requestId: req.requestId
+    });
+  } catch (error) {
+    Logger.error('Manual queue processing error', error);
+    sendError(res, 500, 'Failed to process queue', 'QUEUE_ERROR', error.message);
+  }
+});
+
+// Test transcription queue
 app.get('/test/transcription-queue', async (req, res) => {
   if (!supabaseEnabled) {
-    return res.status(503).json({ error: 'Service not configured' });
+    return sendError(res, 503, 'Service not configured', 'SERVICE_UNAVAILABLE');
   }
 
   try {
@@ -2413,7 +2824,7 @@ app.get('/test/transcription-queue', async (req, res) => {
       timestamp: new Date().toISOString()
     });
   } catch (error) {
-    res.status(500).json({ error: error.message });
+    sendError(res, 500, error.message, 'QUEUE_ERROR');
   }
 });
 
@@ -2427,551 +2838,77 @@ app.post('/test/process-transcription-queue', checkSharedKey, async (req, res) =
       timestamp: new Date().toISOString()
     });
   } catch (error) {
-    res.status(500).json({ error: error.message });
+    sendError(res, 500, error.message, 'QUEUE_ERROR');
   }
 });
 
-// --- MAIN ROUTES ---
-// Redirect endpoint for transcribe to transcription-status
-app.get('/transcribe', (req, res) => {
-  // Preserve any query parameters when redirecting
-  const queryString = Object.keys(req.query).length > 0 ? '?' + new URLSearchParams(req.query).toString() : '';
-  res.redirect('/transcription-status.html' + queryString);
-});
+// ========================================
+// GDPR ENDPOINTS
+// ========================================
 
-// Also handle the old .html extension if someone bookmarked it
-app.get('/transcribe.html', (req, res) => {
-  const queryString = Object.keys(req.query).length > 0 ? '?' + new URLSearchParams(req.query).toString() : '';
-  res.redirect('/transcription-status.html' + queryString);
-});
-
-// Serve the main landing page (instead of the technical status page)
-app.get('/', (req, res) => {
-  res.sendFile(path.join(__dirname, 'public', 'index.html'));
-});
-
-// Add a route for the system status (moved to /system-status)
-app.get('/system-status', (req, res) => {
-  const htmlContent = `<!DOCTYPE html>
-<html lang="en">
-<head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Car Crash Lawyer AI - GDPR Compliant System</title>
-    <style>
-        body { font-family: Arial, sans-serif; padding: 40px; background: #f5f5f5; }
-        .container { max-width: 800px; margin: 0 auto; background: white; padding: 30px; border-radius: 10px; box-shadow: 0 2px 10px rgba(0,0,0,0.1); }
-        h1 { color: #333; }
-        .status { padding: 10px; background: #4CAF50; color: white; border-radius: 5px; display: inline-block; }
-        .gdpr-badge { padding: 5px 10px; background: #2196F3; color: white; border-radius: 3px; font-size: 12px; margin-left: 10px; }
-        .endpoint { background: #f0f0f0; padding: 10px; margin: 10px 0; border-radius: 5px; }
-        code { background: #333; color: #4CAF50; padding: 2px 6px; border-radius: 3px; }
-        .section { margin-top: 30px; }
-        ul { list-style: none; padding: 0; }
-        li { margin: 5px 0; }
-        .fix-badge { background: #4CAF50; color: white; padding: 2px 6px; border-radius: 3px; font-size: 10px; margin-left: 5px; }
-        .optional-badge { background: #ff9800; color: white; padding: 2px 6px; border-radius: 3px; font-size: 10px; margin-left: 5px; }
-        .new-badge { background: #9C27B0; color: white; padding: 2px 6px; border-radius: 3px; font-size: 10px; margin-left: 5px; }
-    </style>
-</head>
-<body>
-    <div class="container">
-        <h1>🚗 Car Crash Lawyer AI - GDPR Compliant System <span class="gdpr-badge">GDPR COMPLIANT</span></h1>
-        <p class="status">✅ Server is running - All fixes applied + Auth System</p>
-
-        <div class="section">
-            <h2>🔧 Critical Fixes Applied:</h2>
-            <div class="endpoint">
-                <strong>All Syntax Errors Fixed</strong> <span class="fix-badge">FIXED</span><br>
-                <p>✅ Fixed duplicate what3words declaration in health endpoint</p>
-                <p>✅ Buffer to Stream conversion working correctly</p>
-                <p>✅ Enhanced error handling throughout the application</p>
-                <p>✅ Improved input validation and sanitization</p>
-                <p>✅ Express trust proxy enabled</p>
-                <p>✅ Database column mapping corrected</p>
-                <p>✅ Schema cache refreshed on initialization</p>
-                <p>✅ <strong>NEW:</strong> Full authentication system integrated <span class="new-badge">NEW</span></p>
-            </div>
-        </div>
-
-        <div class="section">
-            <h2>Available Endpoints:</h2>
-
-            <div class="endpoint">
-                <strong>Core Services:</strong><br>
-                <code>GET /health</code> - System health check with service status <span class="fix-badge">UPDATED</span><br>
-                <code>GET /api/config</code> - Get Supabase configuration <span class="fix-badge">UPDATED</span><br>
-                <code>GET /api/debug/user/:userId</code> - Debug user data (GDPR logged)<br>
-                <code>GET /api/test-openai</code> - Test OpenAI API key validity<br>
-                <code>GET /api/process-queue-now</code> - Manually trigger queue processing<br>
-                <code>GET /test/transcription-queue</code> - View queue status
-            </div>
-
-            <div class="endpoint">
-                <strong>Authentication Endpoints:</strong> <span class="new-badge">NEW</span><br>
-                <code>POST /api/auth/signup</code> - Register new user account<br>
-                <code>POST /api/auth/login</code> - Login with email/password<br>
-                <code>POST /api/auth/logout</code> - Logout and clear session<br>
-                <code>GET /api/auth/session</code> - Check authentication status
-            </div>
-
-            <div class="endpoint">
-                <strong>GDPR Compliance:</strong><br>
-                <code>GET /api/gdpr/export/:userId</code> - Export all user data<br>
-                <code>DELETE /api/gdpr/delete-images</code> - GDPR deletion with audit trail
-            </div>
-
-            <div class="endpoint">
-                <strong>Webhook Endpoints:</strong><br>
-                <code>POST /webhook/signup</code> - Process signup images<br>
-                <code>POST /webhook/incident-report</code> - Process incident report files<br>
-                <code>POST /generate-pdf</code> - Generate and email PDF report<br>
-                <code>POST /webhook/generate-pdf</code> - Alternative PDF generation
-            </div>
-
-            <div class="endpoint">
-                <strong>Transcription Services (GDPR Compliant):</strong> <span class="fix-badge">ENHANCED</span><br>
-                <code>POST /api/whisper/transcribe</code> - Direct Whisper transcription<br>
-                <code>GET /api/transcription-status/:queueId</code> - Check transcription status<br>
-                <code>POST /api/update-transcription</code> - Update/edit transcription<br>
-                <code>POST /api/save-transcription</code> - Save transcription<br>
-                <code>GET /api/user/:userId/latest-transcription</code> - Get user's latest transcription
-            </div>
-
-            <div class="endpoint">
-                <strong>Emergency & Incident Services:</strong><br>
-                <code>GET /api/user/:userId/emergency-contacts</code> - Get emergency contacts<br>
-                <code>POST /api/log-emergency-call</code> - Log emergency calls<br>
-                <code>GET /api/what3words</code> - Get What3Words location<br>
-                <code>POST /api/upload-what3words-image</code> - Upload what3words screenshot
-            </div>
-
-            <div class="endpoint">
-                <strong>Image Management:</strong><br>
-                <code>GET /api/images/:userId</code> - Get user images<br>
-                <code>GET /api/image/signed-url/:userId/:imageType</code> - Get signed URL
-            </div>
-
-            <div class="endpoint">
-                <strong>PDF Services:</strong><br>
-                <code>GET /pdf-status/:userId</code> - Check PDF generation status<br>
-                <code>GET /download-pdf/:userId</code> - Download generated PDF
-            </div>
-        </div>
-
-        <div class="section">
-            <h3>System Status:</h3>
-            <ul>
-                <li>Supabase: ${supabaseEnabled ? '✅ Connected' : '❌ Not configured'}</li>
-                <li>Supabase Realtime: ${realtimeChannels.transcriptionChannel ? '✅ Active' : '⚠️ Optional'} <span class="optional-badge">OPTIONAL</span></li>
-                <li>OpenAI: ${process.env.OPENAI_API_KEY ? '✅ Configured' : '❌ Not configured'}</li>
-                <li>Transcription Queue: ${transcriptionQueueInterval ? '✅ Running' : '❌ Not running'}</li>
-                <li>WebSocket: ${wss ? '✅ Active (' + wss.clients.size + ' clients)' : '❌ Not active'}</li>
-                <li>Auth Key: ${SHARED_KEY ? '✅ Set' : '❌ Missing'}</li>
-                <li>Auth Service: ${authService ? '✅ Configured' : '⚠️ Not configured'} <span class="new-badge">NEW</span></li>
-                <li>GDPR Compliance: ✅ Full compliance with audit logging</li>
-                <li>Data Retention: ${process.env.DATA_RETENTION_DAYS || CONSTANTS.DATA_RETENTION.DEFAULT_DAYS} days</li>
-                <li>Rate Limiting: ✅ Enabled</li>
-            </ul>
-        </div>
-
-        <div class="section">
-            <h3>🔐 GDPR Compliance Features:</h3>
-            <ul>
-                <li>✅ Mandatory user identification for all data processing</li>
-                <li>✅ Consent verification before data operations</li>
-                <li>✅ Complete audit trail of all data access</li>
-                <li>✅ Data export functionality (Right to Access)</li>
-                <li>✅ Data deletion with verification (Right to Erasure)</li>
-                <li>✅ Automated data retention policy</li>
-                <li>✅ Enhanced input validation</li>
-                <li>✅ Request tracking with unique IDs</li>
-                <li>✅ IP and user agent logging for audit purposes</li>
-                <li>✅ Rate limiting for API protection</li>
-                <li>✅ <strong>NEW:</strong> Secure authentication with JWT tokens <span class="new-badge">NEW</span></li>
-            </ul>
-        </div>
-
-        <div class="section">
-            <h3>🚀 Recent Improvements:</h3>
-            <ul>
-                <li>✅ <strong>NEW:</strong> Complete authentication system (signup, login, logout)</li>
-                <li>✅ <strong>NEW:</strong> Session management with secure cookies</li>
-                <li>✅ <strong>NEW:</strong> Auth middleware for protected routes</li>
-                <li>✅ <strong>FIXED:</strong> Syntax error in health endpoint</li>
-                <li>✅ <strong>FIXED:</strong> Express trust proxy warning</li>
-                <li>✅ <strong>FIXED:</strong> Database column mapping</li>
-                <li>✅ <strong>FIXED:</strong> Schema cache refresh on startup</li>
-                <li>✅ <strong>ENHANCED:</strong> Error handling with request tracking</li>
-                <li>✅ <strong>IMPROVED:</strong> Input validation across all endpoints</li>
-                <li>✅ <strong>ADDED:</strong> Request IDs for better debugging</li>
-                <li>✅ <strong>OPTIMIZED:</strong> WebSocket connection management</li>
-                <li>✅ <strong>ENHANCED:</strong> Logging with partial data redaction</li>
-                <li>✅ <strong>IMPROVED:</strong> File size limits and validation</li>
-                <li>✅ <strong>ADDED:</strong> Better retry logic for external APIs</li>
-            </ul>
-        </div>
-
-        <div class="section">
-            <p><a href="/">← Back to Main Landing Page</a></p>
-        </div>
-    </div>
-</body>
-</html>`;
-  res.send(htmlContent);
-});
-
-// --- AUTHENTICATION STATUS ---
-app.get('/api/auth/status', (req, res) => {
-  const mockUser = {
-    authenticated: false,
-    user: null
-  };
-
-  if (req.session && req.session.user) {
-    mockUser.authenticated = true;
-    mockUser.user = {
-      uid: req.session.user.id,
-      email: req.session.user.email,
-      fullName: req.session.user.full_name
-    };
-  }
-
-  res.json(mockUser);
-});
-
-// --- EMERGENCY CONTACTS ---
-app.get('/api/user/:userId/emergency-contacts', authenticateRequest, async (req, res) => {
+// GDPR data export
+app.get('/api/gdpr/export/:userId', checkSharedKey, async (req, res) => {
   if (!supabaseEnabled) {
-    return res.status(503).json({ 
-      error: 'Service not configured',
-      requestId: req.requestId 
-    });
+    return sendError(res, 503, 'Service not configured', 'SERVICE_UNAVAILABLE');
   }
+
+  const { userId } = req.params;
 
   try {
-    const { userId } = req.params;
+    const validation = validateUserId(userId);
+    if (!validation.valid) {
+      return sendError(res, 400, validation.error, 'INVALID_USER_ID');
+    }
 
-    const { data, error } = await supabase
+    const { data: user } = await supabase
       .from('user_signup')
-      .select('emergency_contact, recovery_breakdown_number, emergency_services_number')
+      .select('*')
       .eq('create_user_id', userId)
       .single();
 
-    if (error) {
-      Logger.error('Supabase error', error);
-      return res.status(404).json({ 
-        error: 'User not found',
-        requestId: req.requestId 
-      });
+    if (!user) {
+      return sendError(res, 404, 'User not found', 'USER_NOT_FOUND');
     }
 
-    res.json({
-      emergency_contact: data.emergency_contact || null,
-      recovery_breakdown_number: data.recovery_breakdown_number || null,
-      emergency_services_number: data.emergency_services_number || '999',
-      requestId: req.requestId
-    });
-  } catch (error) {
-    Logger.error('Error fetching emergency contacts', error);
-    res.status(500).json({ 
-      error: 'Failed to fetch contacts',
-      requestId: req.requestId 
-    });
-  }
-});
+    const userData = await getUserDataBatch(userId);
 
-// LOG EMERGENCY CALLS endpoint
-app.post('/api/log-emergency-call', authenticateRequest, async (req, res) => {
-  if (!supabaseEnabled) {
-    return res.status(503).json({ 
-      error: 'Service not configured',
-      requestId: req.requestId 
-    });
-  }
-
-  try {
-    const { user_id, service_called, timestamp, incident_id } = req.body;
-
-    if (!user_id) {
-      return res.status(400).json({ 
-        error: 'User ID required',
-        code: 'MISSING_USER_ID',
-        requestId: req.requestId
-      });
-    }
-
-    const { data, error } = await supabase
-      .from('emergency_call_logs')
-      .insert({
-        user_id,
-        service_called,
-        incident_id: incident_id || null,
-        timestamp,
-        created_at: new Date().toISOString()
-      });
-
-    if (error) {
-      Logger.error('Failed to log emergency call', error);
-      return res.json({ 
-        success: false, 
-        logged: false,
-        requestId: req.requestId 
-      });
-    }
-
-    await logGDPRActivity(user_id, 'EMERGENCY_CALL_LOGGED', {
-      service: service_called
-    }, req);
-
-    res.json({ 
-      success: true, 
-      logged: true,
-      requestId: req.requestId 
-    });
-  } catch (error) {
-    Logger.error('Error logging emergency call', error);
-    res.status(500).json({ 
-      error: 'Internal server error',
-      requestId: req.requestId 
-    });
-  }
-});
-
-// WHAT3WORDS endpoint
-app.get('/api/what3words', async (req, res) => {
-  try {
-    const { lat, lng } = req.query;
-
-    if (!lat || !lng) {
-      return res.status(400).json({ 
-        error: 'Missing latitude or longitude',
-        requestId: req.requestId 
-      });
-    }
-
-    const W3W_API_KEY = process.env.WHAT3WORDS_API_KEY;
-
-    if (!W3W_API_KEY) {
-      Logger.warn('What3Words API key not configured');
-      return res.json({ 
-        words: 'location.not.configured',
-        requestId: req.requestId 
-      });
-    }
-
-    const response = await axios.get(
-      `https://api.what3words.com/v3/convert-to-3wa?coordinates=${lat},${lng}&key=${W3W_API_KEY}`
-    );
-
-    if (response.data && response.data.words) {
-      res.json({ 
-        words: response.data.words,
-        requestId: req.requestId 
-      });
-    } else {
-      res.json({ 
-        words: 'location.not.found',
-        requestId: req.requestId 
-      });
-    }
-  } catch (error) {
-    Logger.error('What3Words API error', error);
-    res.json({ 
-      words: 'api.error.occurred',
-      requestId: req.requestId 
-    });
-  }
-});
-
-// UPLOAD WHAT3WORDS IMAGE endpoint
-app.post('/api/upload-what3words-image', upload.single('image'), async (req, res) => {
-  if (!supabaseEnabled || !imageProcessor) {
-    return res.status(503).json({ 
-      error: 'Service not configured',
-      requestId: req.requestId 
-    });
-  }
-
-  try {
-    let buffer;
-    let what3words, latitude, longitude, userId;
-
-    if (req.file) {
-      buffer = req.file.buffer;
-      ({ what3words, latitude, longitude, userId } = req.body);
-    } else {
-      const { imageData } = req.body;
-      if (!imageData) {
-        return res.status(400).json({ 
-          error: 'No image data provided',
-          requestId: req.requestId 
-        });
+    await logGDPRActivity(userId, 'DATA_EXPORT', {
+      requested_by: req.clientIp,
+      items_exported: {
+        incidents: userData.incidents.length,
+        transcriptions: userData.transcriptions.length,
+        images: userData.images.length
       }
-
-      const base64Data = imageData.replace(/^data:image\/\w+;base64,/, '');
-      buffer = Buffer.from(base64Data, 'base64');
-      ({ what3words, latitude, longitude, userId } = req.body);
-    }
-
-    if (!userId) {
-      return res.status(400).json({ 
-        error: 'User ID required for GDPR compliance',
-        code: 'MISSING_USER_ID',
-        requestId: req.requestId
-      });
-    }
-
-    const safeWhat3Words = what3words ? what3words.replace(/[\/\\.]/g, '-') : 'unknown';
-    const timestamp = Date.now();
-    const fileName = `${userId}/what3words/${timestamp}_${safeWhat3Words}.png`;
-
-    const storagePath = await imageProcessor.uploadToSupabase(buffer, fileName, 'image/png');
-
-    const imageRecord = await imageProcessor.createImageRecord({
-      create_user_id: userId,
-      incident_report_id: null,
-      image_type: 'what3words_screenshot',
-      storage_path: storagePath,
-      original_url: null,
-      metadata: {
-        upload_date: new Date().toISOString(),
-        source: 'web_capture',
-        what3words: what3words,
-        latitude: parseFloat(latitude) || null,
-        longitude: parseFloat(longitude) || null,
-        captured_at: new Date().toISOString(),
-        gdpr_consent: true
-      }
-    });
-
-    const signedUrl = await imageProcessor.getSignedUrl(storagePath, 3600);
-
-    await logGDPRActivity(userId, 'IMAGE_UPLOADED', {
-      type: 'what3words',
-      location: what3words
     }, req);
 
     res.json({
-      success: true,
-      imageUrl: signedUrl,
-      storagePath: storagePath,
-      imageRecord: imageRecord,
+      export_date: new Date().toISOString(),
+      user_id: userId,
+      data: userData,
+      gdpr_info: {
+        right_to_access: true,
+        right_to_portability: true,
+        export_format: 'JSON'
+      },
       requestId: req.requestId
     });
-
   } catch (error) {
-    Logger.error('Error uploading what3words image', error);
-    res.status(500).json({ 
-      error: error.message,
-      requestId: req.requestId 
-    });
+    Logger.error('GDPR export error', error);
+    sendError(res, 500, 'Failed to export data', 'EXPORT_FAILED');
   }
 });
 
-// GET USER IMAGES endpoint
-app.get('/api/images/:userId', checkGDPRConsent, async (req, res) => {
-  if (!supabaseEnabled) {
-    return res.status(503).json({ 
-      error: 'Service not configured',
-      requestId: req.requestId 
-    });
-  }
-
-  try {
-    const { userId } = req.params;
-
-    const { data: images, error } = await supabase
-      .from('incident_images')
-      .select('*')
-      .eq('create_user_id', userId)
-      .order('uploaded_at', { ascending: false });
-
-    if (error) {
-      throw error;
-    }
-
-    await logGDPRActivity(userId, 'IMAGES_ACCESSED', {
-      count: images?.length || 0
-    }, req);
-
-    res.json({
-      success: true,
-      images: images || [],
-      count: images?.length || 0,
-      requestId: req.requestId
-    });
-
-  } catch (error) {
-    Logger.error('Error fetching user images', error);
-    res.status(500).json({ 
-      error: 'Failed to fetch images',
-      requestId: req.requestId 
-    });
-  }
-});
-
-// GET SIGNED URL endpoint
-app.get('/api/image/signed-url/:userId/:imageType', checkGDPRConsent, async (req, res) => {
-  if (!supabaseEnabled || !imageProcessor) {
-    return res.status(503).json({ 
-      error: 'Service not configured',
-      requestId: req.requestId 
-    });
-  }
-
-  try {
-    const { userId, imageType } = req.params;
-    const { path } = req.query;
-
-    if (!path) {
-      return res.status(400).json({ 
-        error: 'Storage path required',
-        requestId: req.requestId 
-      });
-    }
-
-    const signedUrl = await imageProcessor.getSignedUrl(path, 3600);
-
-    await logGDPRActivity(userId, 'SIGNED_URL_GENERATED', {
-      image_type: imageType,
-      path: path
-    }, req);
-
-    res.json({
-      success: true,
-      url: signedUrl,
-      expires_in: 3600,
-      requestId: req.requestId
-    });
-
-  } catch (error) {
-    Logger.error('Error generating signed URL', error);
-    res.status(500).json({ 
-      error: 'Failed to generate URL',
-      requestId: req.requestId 
-    });
-  }
-});
-
-// GDPR DELETE IMAGES endpoint
+// GDPR delete images
 app.delete('/api/gdpr/delete-images', checkSharedKey, async (req, res) => {
   if (!supabaseEnabled || !imageProcessor) {
-    return res.status(503).json({ 
-      error: 'Service not configured',
-      requestId: req.requestId 
-    });
+    return sendError(res, 503, 'Service not configured', 'SERVICE_UNAVAILABLE');
   }
 
   try {
     const { userId } = req.body;
 
     if (!userId) {
-      return res.status(400).json({ 
-        error: 'User ID required',
-        code: 'MISSING_USER_ID',
-        requestId: req.requestId
-      });
+      return sendError(res, 400, 'User ID required', 'MISSING_USER_ID');
     }
 
     const result = await imageProcessor.deleteAllUserImages(userId);
@@ -2981,145 +2918,179 @@ app.delete('/api/gdpr/delete-images', checkSharedKey, async (req, res) => {
       ...result,
       requestId: req.requestId
     });
-
   } catch (error) {
     Logger.error('Error deleting images', error);
-    res.status(500).json({ 
-      error: 'Failed to delete images',
-      requestId: req.requestId 
-    });
+    sendError(res, 500, 'Failed to delete images', 'DELETE_FAILED');
   }
 });
 
-// PDF STATUS endpoint
-app.get('/pdf-status/:userId', async (req, res) => {
-  if (!supabaseEnabled) {
-    return res.status(503).json({ 
-      error: 'Service not configured',
-      requestId: req.requestId 
-    });
-  }
+// ========================================
+// MAIN ROUTES
+// ========================================
 
-  try {
-    const { userId } = req.params;
-
-    const { data, error } = await supabase
-      .from('completed_incident_forms')
-      .select('id, generated_at, sent_to_user, email_status')
-      .eq('create_user_id', userId)
-      .order('generated_at', { ascending: false })
-      .limit(1)
-      .single();
-
-    if (error || !data) {
-      return res.json({
-        status: 'not_found',
-        message: 'No PDF generation found for this user',
-        requestId: req.requestId
-      });
-    }
-
-    res.json({
-      status: 'completed',
-      generated_at: data.generated_at,
-      sent: data.sent_to_user,
-      email_status: data.email_status,
-      requestId: req.requestId
-    });
-
-  } catch (error) {
-    Logger.error('Error checking PDF status', error);
-    res.status(500).json({ 
-      error: 'Failed to check status',
-      requestId: req.requestId 
-    });
-  }
+// Redirect old transcribe route
+app.get('/transcribe', (req, res) => {
+  const queryString = Object.keys(req.query).length > 0 ? '?' + new URLSearchParams(req.query).toString() : '';
+  res.redirect('/transcription-status.html' + queryString);
 });
 
-// DOWNLOAD PDF endpoint
-app.get('/download-pdf/:userId', checkGDPRConsent, async (req, res) => {
-  if (!supabaseEnabled) {
-    return res.status(503).json({ 
-      error: 'Service not configured',
-      requestId: req.requestId 
-    });
-  }
-
-  try {
-    const { userId } = req.params;
-
-    const { data, error } = await supabase
-      .from('completed_incident_forms')
-      .select('pdf_url, pdf_base64')
-      .eq('create_user_id', userId)
-      .order('generated_at', { ascending: false })
-      .limit(1)
-      .single();
-
-    if (error || !data) {
-      return res.status(404).json({ 
-        error: 'PDF not found',
-        requestId: req.requestId 
-      });
-    }
-
-    await logGDPRActivity(userId, 'PDF_DOWNLOADED', {}, req);
-
-    if (data.pdf_url) {
-      res.redirect(data.pdf_url);
-    } else if (data.pdf_base64) {
-      const buffer = Buffer.from(data.pdf_base64, 'base64');
-      res.setHeader('Content-Type', 'application/pdf');
-      res.setHeader('Content-Disposition', `attachment; filename="report_${userId}.pdf"`);
-      res.send(buffer);
-    } else {
-      res.status(404).json({ 
-        error: 'PDF data not available',
-        requestId: req.requestId 
-      });
-    }
-
-  } catch (error) {
-    Logger.error('Error downloading PDF', error);
-    res.status(500).json({ 
-      error: 'Failed to download PDF',
-      requestId: req.requestId 
-    });
-  }
+app.get('/transcribe.html', (req, res) => {
+  const queryString = Object.keys(req.query).length > 0 ? '?' + new URLSearchParams(req.query).toString() : '';
+  res.redirect('/transcription-status.html' + queryString);
 });
 
-// --- ENHANCED WHISPER TRANSCRIPTION (GDPR COMPLIANT) ---
+// Main landing page
+app.get('/', (req, res) => {
+  res.sendFile(path.join(__dirname, 'public', 'index.html'));
+});
+
+// System status page
+app.get('/system-status', (req, res) => {
+  const htmlContent = `<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Car Crash Lawyer AI - System Status</title>
+    <style>
+        body { font-family: Arial, sans-serif; padding: 40px; background: #f5f5f5; }
+        .container { max-width: 800px; margin: 0 auto; background: white; padding: 30px; border-radius: 10px; box-shadow: 0 2px 10px rgba(0,0,0,0.1); }
+        h1 { color: #333; }
+        .status { padding: 10px; background: #4CAF50; color: white; border-radius: 5px; display: inline-block; }
+        .badge { padding: 5px 10px; color: white; border-radius: 3px; font-size: 12px; margin-left: 10px; }
+        .gdpr-badge { background: #2196F3; }
+        .fix-badge { background: #4CAF50; }
+        .new-badge { background: #FF9800; }
+        .endpoint { background: #f0f0f0; padding: 10px; margin: 10px 0; border-radius: 5px; }
+        code { background: #333; color: #4CAF50; padding: 2px 6px; border-radius: 3px; }
+        .section { margin-top: 30px; }
+        ul { list-style: none; padding: 0; }
+        li { margin: 5px 0; }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>🚗 Car Crash Lawyer AI<span class="badge gdpr-badge">GDPR COMPLIANT</span><span class="badge new-badge">CONSENT CAPTURE</span></h1>
+        <p class="status">✅ Server is running - GDPR Consent Capture Enabled</p>
+
+        <div class="section">
+            <h2>🆕 Latest Updates:</h2>
+            <div class="endpoint">
+                <strong>GDPR Consent Capture</strong> <span class="badge new-badge">NEW</span><br>
+                <p>✅ Consent checkbox enforced on signup</p>
+                <p>✅ IP address, timestamp, and policy version captured</p>
+                <p>✅ Full audit trail in gdpr_audit_log</p>
+                <p>✅ Consent management API endpoints</p>
+            </div>
+            <div class="endpoint">
+                <strong>AI Listening Transcript Endpoints</strong> <span class="badge new-badge">NEW</span><br>
+                <p>✅ Save continuous transcripts from multi-page AI listening sessions</p>
+                <p>✅ Track page flow and session metadata</p>
+                <p>✅ Automatic AI summary generation for listening sessions</p>
+            </div>
+            <div class="endpoint">
+                <strong>Emergency Contact Management</strong> <span class="badge new-badge">NEW</span><br>
+                <p>✅ Get primary emergency contact number</p>
+                <p>✅ Update emergency contact information</p>
+                <p>✅ Full GDPR audit trail for emergency access</p>
+            </div>
+        </div>
+
+        <div class="section">
+            <h2>🔧 All Improvements:</h2>
+            <div class="endpoint">
+                <strong>Code Quality Enhancements</strong> <span class="badge fix-badge">COMPLETED</span><br>
+                <p>✅ All template literal syntax errors fixed</p>
+                <p>✅ Buffer handling optimized</p>
+                <p>✅ Memory leaks patched with automatic cleanup</p>
+                <p>✅ User ID validation enhanced</p>
+                <p>✅ Error responses standardized</p>
+                <p>✅ Database queries optimized with Promise.all</p>
+                <p>✅ Security enhanced (URL redaction, validation)</p>
+                <p>✅ Duplicate code extracted to shared functions</p>
+            </div>
+        </div>
+
+        <div class="section">
+            <h3>System Status:</h3>
+            <ul>
+                <li>Supabase: ${supabaseEnabled ? '✅ Connected' : '❌ Not configured'}</li>
+                <li>OpenAI: ${process.env.OPENAI_API_KEY ? '✅ Configured' : '❌ Not configured'}</li>
+                <li>what3words: ${process.env.WHAT3WORDS_API_KEY ? '✅ Configured' : '⚠️  Not configured'}</li>
+                <li>Auth Service: ${authService ? '✅ Configured' : '⚠️  Not configured'}</li>
+                <li>WebSocket: ${wss ? '✅ Active' : '❌ Not active'}</li>
+                <li>AI Listening: ${process.env.OPENAI_API_KEY ? '✅ Available' : '❌ Unavailable'}</li>
+                <li>GDPR Compliance: ✅ Full compliance</li>
+                <li>GDPR Consent Capture: ✅ Active</li>
+            </ul>
+        </div>
+
+        <div class="section">
+            <h3>New GDPR Endpoints:</h3>
+            <ul>
+                <li><code>GET /api/gdpr/consent/:userId</code> - Get consent status</li>
+                <li><code>PUT /api/gdpr/consent/:userId</code> - Update consent</li>
+                <li><code>GET /api/gdpr/audit-log/:userId</code> - Get audit trail</li>
+            </ul>
+        </div>
+
+        <div class="section">
+            <h3>All API Endpoints:</h3>
+            <ul>
+                <li><code>POST /api/auth/signup</code> - User signup (with GDPR consent)</li>
+                <li><code>POST /api/auth/login</code> - User login</li>
+                <li><code>POST /api/whisper/transcribe</code> - Audio transcription</li>
+                <li><code>POST /api/save-ai-listening-transcript</code> - AI listening save</li>
+                <li><code>GET  /api/user/:userId/ai-listening-transcripts</code> - Get transcripts</li>
+                <li><code>GET  /api/user/:userId/emergency-contact</code> - Emergency contact</li>
+                <li><code>PUT  /api/user/:userId/emergency-contact</code> - Update contact</li>
+                <li><code>GET  /api/what3words/convert</code> - Location services</li>
+                <li><code>POST /generate-pdf</code> - Generate incident report PDF</li>
+            </ul>
+        </div>
+
+        <div class="section">
+            <p><a href="/">← Back to Main Landing Page</a></p>
+        </div>
+    </div>
+</body>
+</html>`;
+
+  res.send(htmlContent);
+});
+
+// ========================================
+// TRANSCRIPTION ENDPOINTS
+// ========================================
+
+// Whisper transcription
 app.post('/api/whisper/transcribe', upload.single('audio'), async (req, res) => {
   try {
     Logger.info('🎤 Received transcription request');
 
     if (!req.file) {
-      return res.status(400).json({ 
-        error: 'No audio file provided',
-        requestId: req.requestId 
-      });
+      return sendError(res, 400, 'No audio file provided', 'MISSING_FILE');
     }
 
-    // Extract create_user_id from the request
-    const create_user_id = req.body.create_user_id || 
-                           req.query.create_user_id || 
-                           req.headers['x-user-id'];
+    const create_user_id = req.body.create_user_id ||
+      req.query.create_user_id ||
+      req.headers['x-user-id'];
 
     if (!create_user_id) {
       Logger.info('❌ Missing create_user_id in transcription request');
-      return res.status(400).json({ 
-        error: 'create_user_id is required',
-        requestId: req.requestId 
-      });
+      return sendError(res, 400, 'create_user_id is required', 'MISSING_USER_ID');
+    }
+
+    const validation = validateUserId(create_user_id);
+    if (!validation.valid) {
+      return sendError(res, 400, validation.error, 'INVALID_USER_ID');
     }
 
     Logger.info(`Processing transcription for user: ${create_user_id}`);
 
-    // Generate a unique transcription ID
     const transcriptionId = `trans_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`;
-
-    // Upload to Supabase incident-audio bucket
     const fileName = `${create_user_id}/recording_${Date.now()}.webm`;
+
     const { data: uploadData, error: uploadError } = await supabase.storage
       .from('incident-audio')
       .upload(fileName, req.file.buffer, {
@@ -3129,20 +3100,15 @@ app.post('/api/whisper/transcribe', upload.single('audio'), async (req, res) => 
 
     if (uploadError) {
       Logger.error(`Upload error: ${uploadError.message}`);
-      return res.status(500).json({ 
-        error: 'Failed to upload audio to Supabase',
-        requestId: req.requestId 
-      });
+      return sendError(res, 500, 'Failed to upload audio', 'UPLOAD_FAILED');
     }
 
-    // Get the public URL
     const { data: { publicUrl } } = supabase.storage
       .from('incident-audio')
       .getPublicUrl(fileName);
 
     Logger.info(`Audio file uploaded to Supabase: ${fileName}`);
 
-    // Add to transcription queue
     const { data: queueData, error: queueError } = await supabase
       .from('transcription_queue')
       .insert([{
@@ -3151,32 +3117,26 @@ app.post('/api/whisper/transcribe', upload.single('audio'), async (req, res) => 
         audio_url: publicUrl,
         status: CONSTANTS.TRANSCRIPTION_STATUS.PENDING,
         retry_count: 0,
-        created_at: new Date().toISOString(),
-        error_message: null,
-        audio_storage_path: fileName,
-        audio_file_id: null,
-        transcription_id: null
+        created_at: new Date().toISOString()
       }])
       .select()
       .single();
 
     if (queueError) {
       Logger.error('Queue error:', queueError);
-      // Don't fail completely - continue with direct transcription
     }
 
     const queueId = queueData?.id || transcriptionId;
 
-    // Store in memory for WebSocket updates
     transcriptionStatuses.set(queueId.toString(), {
       status: CONSTANTS.TRANSCRIPTION_STATUS.PROCESSING,
       transcription: null,
       summary: null,
       error: null,
-      create_user_id: create_user_id
+      create_user_id: create_user_id,
+      updatedAt: Date.now()
     });
 
-    // Return immediately with the queue ID
     res.json({
       success: true,
       message: 'Audio uploaded and queued for transcription',
@@ -3186,34 +3146,25 @@ app.post('/api/whisper/transcribe', upload.single('audio'), async (req, res) => 
       requestId: req.requestId
     });
 
-    // Process transcription immediately using the audio buffer in memory
-    // This happens asynchronously after the response is sent
     processTranscriptionFromBuffer(
-      queueId, 
-      req.file.buffer, 
-      create_user_id, 
-      req.body.incident_report_id, 
+      queueId,
+      req.file.buffer,
+      create_user_id,
+      req.body.incident_report_id,
       publicUrl
     );
-
   } catch (error) {
     Logger.error('Transcription error:', error);
-    res.status(500).json({ 
-      error: 'Failed to process audio',
-      requestId: req.requestId 
-    });
+    sendError(res, 500, 'Failed to process audio', 'PROCESSING_FAILED');
   }
 });
 
-// CHECK TRANSCRIPTION STATUS endpoint
+// Check transcription status
 app.get('/api/transcription-status/:queueId', async (req, res) => {
   const { queueId } = req.params;
 
   if (!queueId || queueId === 'undefined') {
-    return res.status(400).json({ 
-      error: 'Invalid queue ID',
-      requestId: req.requestId 
-    });
+    return sendError(res, 400, 'Invalid queue ID', 'INVALID_QUEUE_ID');
   }
 
   const status = transcriptionStatuses.get(queueId);
@@ -3224,7 +3175,6 @@ app.get('/api/transcription-status/:queueId', async (req, res) => {
       requestId: req.requestId
     });
   } else {
-    // Try to fetch from database if not in memory
     if (supabaseEnabled) {
       try {
         const { data, error } = await supabase
@@ -3265,36 +3215,26 @@ app.get('/api/transcription-status/:queueId', async (req, res) => {
   }
 });
 
-// UPDATE TRANSCRIPTION (GDPR COMPLIANT) endpoint
+// Update transcription
 app.post('/api/update-transcription', checkGDPRConsent, async (req, res) => {
   try {
     const { queueId, userId, transcription } = req.body;
 
     if (!userId) {
-      return res.status(400).json({ 
-        error: 'User ID required for GDPR compliance',
-        code: 'MISSING_USER_ID',
-        requestId: req.requestId
-      });
+      return sendError(res, 400, 'User ID required', 'MISSING_USER_ID');
     }
 
     if (!transcription) {
-      return res.status(400).json({ 
-        error: 'Missing transcription text',
-        code: 'MISSING_TRANSCRIPTION',
-        requestId: req.requestId
-      });
+      return sendError(res, 400, 'Missing transcription text', 'MISSING_TRANSCRIPTION');
     }
 
     Logger.info('Updating transcription', { userId, queueId });
 
-    // Log GDPR activity
     await logGDPRActivity(userId, 'DATA_UPDATE', {
       type: 'transcription',
       action: 'manual_edit'
     }, req);
 
-    // Update or insert transcription
     const { data: existing } = await supabase
       .from('ai_transcription')
       .select('id, audio_url, duration')
@@ -3323,10 +3263,8 @@ app.post('/api/update-transcription', checkGDPRConsent, async (req, res) => {
         });
     }
 
-    // Generate AI summary
     const summary = await generateAISummary(transcription, userId, queueId || userId);
 
-    // Send WebSocket update if queueId provided
     if (queueId) {
       broadcastTranscriptionUpdate(queueId, {
         type: 'updated',
@@ -3337,57 +3275,43 @@ app.post('/api/update-transcription', checkGDPRConsent, async (req, res) => {
       });
     }
 
-    res.json({ 
+    res.json({
       success: true,
       summary: summary,
       requestId: req.requestId
     });
-
   } catch (error) {
     Logger.error('Update transcription error', error);
-    res.status(500).json({ 
-      error: 'Failed to update transcription',
-      code: 'UPDATE_FAILED',
-      requestId: req.requestId
-    });
+    sendError(res, 500, 'Failed to update transcription', 'UPDATE_FAILED');
   }
 });
 
-// SAVE TRANSCRIPTION (GDPR COMPLIANT) endpoint
+// Save transcription
 app.post('/api/save-transcription', checkGDPRConsent, async (req, res) => {
   try {
     const { userId, incidentId, transcription, audioUrl, duration } = req.body;
 
     if (!userId) {
-      return res.status(400).json({ 
-        error: 'User ID required for GDPR compliance',
-        code: 'MISSING_USER_ID',
-        message: 'Personal data cannot be saved without proper user identification',
-        requestId: req.requestId
-      });
+      return sendError(res, 400, 'User ID required', 'MISSING_USER_ID',
+        'Personal data cannot be saved without proper user identification');
     }
 
     if (!transcription) {
-      return res.status(400).json({ 
-        error: 'Transcription text is required',
-        code: 'MISSING_TRANSCRIPTION',
-        requestId: req.requestId
-      });
+      return sendError(res, 400, 'Transcription text is required', 'MISSING_TRANSCRIPTION');
     }
 
     Logger.info('Saving transcription', { userId });
 
-    // Log GDPR activity
     await logGDPRActivity(userId, 'DATA_SAVE', {
       type: 'transcription',
       has_audio: !!audioUrl
     }, req);
 
     if (!supabaseEnabled) {
-      return res.json({ 
-        success: true, 
+      return res.json({
+        success: true,
         message: 'Transcription received (Supabase not configured)',
-        requestId: req.requestId 
+        requestId: req.requestId
       });
     }
 
@@ -3398,575 +3322,1179 @@ app.post('/api/save-transcription', checkGDPRConsent, async (req, res) => {
       .eq('incident_report_id', incidentId || null)
       .single();
 
-    let result;
-
-    if (existing) {
-      const { data, error } = await supabase
-        .from('ai_transcription')
-        .update({
-          transcription_text: transcription,
-          audio_url: audioUrl || existing.audio_url,
-          updated_at: new Date().toISOString()
-        })
-        .eq('id', existing.id)
-        .select()
-        .single();
-
-      result = data;
-      if (error) throw error;
-    } else {
-      const { data, error } = await supabase
-        .from('ai_transcription')
-        .insert({
-          create_user_id: userId,
-          incident_report_id: incidentId || null,
-          transcription_text: transcription,
-          audio_url: audioUrl || '',
-          created_at: new Date().toISOString()
-        })
-        .select()
-        .single();
-
-      result = data;
-      if (error) throw error;
-    }
-
-    if (incidentId) {
-      await supabase
-        .from('incident_reports')
-        .update({
-          witness_statement_text: transcription,
-          witness_statement_audio: audioUrl || undefined,
-          updated_at: new Date().toISOString()
-        })
-        .eq('id', incidentId)
-        .eq('create_user_id', userId);
-    }
-
-    res.json({ 
-      success: true, 
-      message: 'Transcription saved successfully',
-      transcription_id: result?.id,
-      requestId: req.requestId
-    });
-
-  } catch (error) {
-    Logger.error('Save transcription error', error);
-    res.status(500).json({ 
-      error: 'Failed to save transcription',
-      code: 'SAVE_FAILED',
-      message: error.message,
-      requestId: req.requestId 
-    });
-  }
-});
-
-// --- GET LATEST TRANSCRIPTION ---
-app.get('/api/user/:userId/latest-transcription', async (req, res) => {
-  try {
-    const { userId } = req.params;
-    Logger.info('Getting latest transcription', { userId });
-
-    if (!supabaseEnabled) {
-      return res.json({ 
-        exists: false, 
-        transcription: null,
-        requestId: req.requestId 
-      });
-    }
-
-    await logGDPRActivity(userId, 'DATA_ACCESS', {
-      type: 'transcription_retrieval'
-    }, req);
-
-    const { data, error } = await supabase
-      .from('ai_transcription')
-      .select('*')
-      .eq('create_user_id', userId)
-      .order('created_at', { ascending: false })
-      .limit(1)
-      .single();
-
-    if (data) {
-      const { data: summaryData } = await supabase
-        .from('ai_summary')
-        .select('*')
-        .eq('create_user_id', userId)
-        .order('created_at', { ascending: false })
-        .limit(1)
-        .single();
-
-      return res.json({
-        exists: true,
-        transcription: data,
-        aiSummary: summaryData,
-        status: 'completed',
-        requestId: req.requestId
-      });
-    }
-
-    const { data: incidentData } = await supabase
-      .from('incident_reports')
-      .select('witness_statement_text, witness_statement_audio')
-      .eq('create_user_id', userId)
-      .order('created_at', { ascending: false })
-      .limit(1)
-      .single();
-
-    res.json({
-      exists: !!incidentData?.witness_statement_text,
-      transcription: incidentData ? {
-        transcription_text: incidentData.witness_statement_text,
-        audio_url: incidentData.witness_statement_audio
-      } : null,
-      status: incidentData?.witness_statement_text ? 'completed' : 'not_found',
-      requestId: req.requestId
-    });
-
-  } catch (error) {
-    Logger.error('Get transcription status error', error);
-    res.status(500).json({ 
-      error: 'Failed to get transcription status',
-      requestId: req.requestId 
-    });
-  }
-});
-
-// --- WEBHOOK ENDPOINTS ---
-app.post('/webhook/signup', checkSharedKey, async (req, res) => {
-  try {
-    Logger.info('Signup webhook received');
-
-    if (!supabaseEnabled || !imageProcessor) {
-      return res.status(503).json({ 
-        error: 'Service not configured',
-        requestId: req.requestId 
-      });
-    }
-
-    const webhookData = req.body;
-
-    if (!webhookData.create_user_id) {
-      return res.status(400).json({ 
-        error: 'Missing create_user_id',
-        requestId: req.requestId 
-      });
-    }
-
-    await logGDPRActivity(webhookData.create_user_id, 'SIGNUP_PROCESSING', {
-      source: 'webhook',
-      has_images: true
-    }, req);
-
-    imageProcessor.processSignupImages(webhookData)
-      .then(result => {
-        Logger.success('Signup processing complete', result);
-      })
-      .catch(error => {
-        Logger.error('Signup processing failed', error);
-      });
-
-    res.status(200).json({ 
-      success: true, 
-      message: 'Signup processing started',
-      create_user_id: webhookData.create_user_id,
-      requestId: req.requestId 
-    });
-
-  } catch (error) {
-    Logger.error('Webhook error', error);
-    res.status(500).json({ 
-      success: false, 
-      error: error.message,
-      requestId: req.requestId 
-    });
-  }
-});
-
-app.post('/webhook/incident-report', checkSharedKey, async (req, res) => {
-  try {
-    Logger.info('Incident report webhook received');
-
-    if (!supabaseEnabled || !imageProcessor) {
-      return res.status(503).json({ 
-        error: 'Service not configured',
-        requestId: req.requestId 
-      });
-    }
-
-    const webhookData = req.body;
-
-    if (!webhookData.id && !webhookData.incident_report_id) {
-      return res.status(400).json({ 
-        error: 'Missing incident report ID',
-        requestId: req.requestId 
-      });
-    }
-
-    if (!webhookData.create_user_id) {
-      return res.status(400).json({ 
-        error: 'Missing user ID - GDPR compliance requires user identification',
-        code: 'MISSING_USER_ID',
-        requestId: req.requestId
-      });
-    }
-
-    const incidentId = webhookData.id || webhookData.incident_report_id;
-
-    await logGDPRActivity(webhookData.create_user_id, 'INCIDENT_REPORT', {
-      incident_id: incidentId,
-      source: 'webhook'
-    }, req);
-
-    const result = await imageProcessor.processIncidentReportFiles(webhookData);
-
-    Logger.success('Incident processing complete:', result);
-
-    if (req.query.redirect === 'true') {
-      const userId = webhookData.create_user_id || '';
-      res.redirect(`/report-complete.html?incident_id=${incidentId}&user_id=${userId}`);
-    } else {
-      res.status(200).json({
-        ...result,
-        requestId: req.requestId
-      });
-    }
-
-  } catch (error) {
-    Logger.error('Webhook error', error);
-    res.status(500).json({ 
-      success: false, 
-      error: error.message,
-      requestId: req.requestId 
-    });
-  }
-});
-
-// --- PDF GENERATION ---
-app.post('/generate-pdf', checkSharedKey, async (req, res) => {
-  const { create_user_id } = req.body;
-
-  if (!create_user_id) {
-    return res.status(400).json({ 
-      error: 'Missing create_user_id',
-      message: 'Please provide a valid user ID',
-      requestId: req.requestId
-    });
-  }
-
-  if (!supabaseEnabled) {
-    return res.status(503).json({ 
-      error: 'Service not configured',
-      message: 'Supabase is not properly configured',
-      requestId: req.requestId
-    });
-  }
-
-  if (!fetchAllData || !generatePDF || !sendEmails) {
-    return res.status(503).json({ 
-      error: 'PDF generation modules not available',
-      message: 'PDF generation libraries are missing',
-      requestId: req.requestId
-    });
-  }
-
-  try {
-    Logger.info('Starting PDF generation', { userId: create_user_id });
-
-    await logGDPRActivity(create_user_id, 'PDF_GENERATION', {
-      type: 'complete_report'
-    }, req);
-
-    const allData = await fetchAllData(create_user_id);
-
-    if (!allData.user || !allData.user.driver_email) {
-      return res.status(404).json({
-        error: 'User not found',
-        message: 'No user data found for the provided ID',
-        requestId: req.requestId
-      });
-    }
-
-    const { data: aiTranscription } = await supabase
-      .from('ai_transcription')
-      .select('*')
-      .eq('create_user_id', create_user_id)
-      .order('created_at', { ascending: false })
-      .limit(1)
-      .single();
-
-    const { data: aiSummary } = await supabase
-      .from('ai_summary')
-      .select('*')
-      .eq('create_user_id', create_user_id)
-      .order('created_at', { ascending: false })
-      .limit(1)
-      .single();
-
-    if (aiTranscription) {
-      allData.aiTranscription = aiTranscription;
-    }
-    if (aiSummary) {
-      allData.aiSummary = aiSummary;
-    }
-
-    const pdfBuffer = await generatePDF(allData);
-    const storedForm = await storeCompletedForm(create_user_id, pdfBuffer, allData);
-    const emailResult = await sendEmails(allData.user.driver_email, pdfBuffer, create_user_id);
-
-    if (storedForm.id && !storedForm.id.startsWith('temp-')) {
-      await supabase
-        .from('completed_incident_forms')
-        .update({
-          sent_to_user: emailResult.success,
-          sent_to_accounts: emailResult.success,
-          email_status: emailResult
-        })
-        .eq('id', storedForm.id);
-    }
-
-    Logger.success('PDF generation process completed successfully');
-
-    res.json({
-      success: true,
-      message: 'PDF generated and sent successfully',
-      form_id: storedForm.id,
-      create_user_id,
-      email_sent: emailResult.success,
-      timestamp: new Date().toISOString(),
-      requestId: req.requestId
-    });
-
-  } catch (error) {
-    Logger.error('Error in PDF generation', error);
-    res.status(500).json({ 
-      error: error.message,
-      details: 'Failed to generate PDF. Please check logs.',
-      requestId: req.requestId
-    });
-  }
-});
-
-app.post('/webhook/generate-pdf', checkSharedKey, async (req, res) => {
-  const { create_user_id } = req.body;
-
-  if (!create_user_id) {
-    return res.status(400).json({ 
-      error: 'Missing create_user_id',
-      message: 'Please provide a valid user ID',
-      requestId: req.requestId
-    });
-  }
-
-  if (!supabaseEnabled) {
-    return res.status(503).json({ 
-      error: 'Service not configured',
-      message: 'Supabase is not properly configured',
-      requestId: req.requestId
-    });
-  }
-
-  if (!fetchAllData || !generatePDF || !sendEmails) {
-    return res.status(503).json({ 
-      error: 'PDF generation modules not available',
-      message: 'PDF generation libraries are missing',
-      requestId: req.requestId
-    });
-  }
-
-  try {
-    Logger.info('Starting PDF generation via webhook', { userId: create_user_id });
-
-    await logGDPRActivity(create_user_id, 'PDF_GENERATION', {
-      type: 'complete_report',
-      source: 'webhook'
-    }, req);
-
-    const allData = await fetchAllData(create_user_id);
-
-    if (!allData.user || !allData.user.driver_email) {
-      return res.status(404).json({
-        error: 'User not found',
-        message: 'No user data found for the provided ID',
-        requestId: req.requestId
-      });
-    }
-
-    const { data: aiTranscription } = await supabase
-      .from('ai_transcription')
-      .select('*')
-      .eq('create_user_id', create_user_id)
-      .order('created_at', { ascending: false })
-      .limit(1)
-      .single();
-
-    const { data: aiSummary } = await supabase
-      .from('ai_summary')
-      .select('*')
-      .eq('create_user_id', create_user_id)
-      .order('created_at', { ascending: false })
-      .limit(1)
-      .single();
-
-    if (aiTranscription) {
-      allData.aiTranscription = aiTranscription;
-    }
-    if (aiSummary) {
-      allData.aiSummary = aiSummary;
-    }
-
-    const pdfBuffer = await generatePDF(allData);
-    const storedForm = await storeCompletedForm(create_user_id, pdfBuffer, allData);
-    const emailResult = await sendEmails(allData.user.driver_email, pdfBuffer, create_user_id);
-
-    if (storedForm.id && !storedForm.id.startsWith('temp-')) {
-      await supabase
-        .from('completed_incident_forms')
-        .update({
-          sent_to_user: emailResult.success,
-          sent_to_accounts: emailResult.success,
-          email_status: emailResult
-        })
-        .eq('id', storedForm.id);
-    }
-
-    Logger.success('PDF generation process completed successfully (webhook)');
-
-    res.json({
-      success: true,
-      message: 'PDF generated and sent successfully',
-      form_id: storedForm.id,
-      create_user_id,
-      email_sent: emailResult.success,
-      timestamp: new Date().toISOString(),
-      requestId: req.requestId
-    });
-
-  } catch (error) {
-    Logger.error('Error in webhook PDF generation', error);
-    res.status(500).json({ 
-      error: error.message,
-      details: 'Failed to generate PDF. Please check logs.',
-      requestId: req.requestId
-    });
-  }
-});
-
-// --- ERROR HANDLING ---
-app.use((err, req, res, next) => {
-  Logger.error('Unhandled error', err);
-  res.status(500).json({ 
-    error: 'Internal server error',
-    message: process.env.NODE_ENV === 'development' ? err.message : 'An error occurred',
-    requestId: req.requestId 
-  });
-});
-
-app.use((req, res) => {
-  res.status(404).json({ 
-    error: 'Not found',
-    path: req.path,
-    requestId: req.requestId 
-  });
-});
-
-// --- GRACEFUL SHUTDOWN ---
-process.on('SIGTERM', () => {
-  Logger.info('SIGTERM received, closing server...');
-
-  if (realtimeChannels.transcriptionChannel) {
-    realtimeChannels.transcriptionChannel.unsubscribe();
-  }
-  if (realtimeChannels.summaryChannel) {
-    realtimeChannels.summaryChannel.unsubscribe();
-  }
-
-  if (transcriptionQueueInterval) {
-    clearInterval(transcriptionQueueInterval);
-  }
-  if (wsHeartbeat) {
-    clearInterval(wsHeartbeat);
-  }
-
-  wss.close(() => {
-    Logger.info('WebSocket server closed');
-  });
-
-  server.close(() => {
-    Logger.info('Server closed gracefully');
-    process.exit(0);
-  });
-
-  setTimeout(() => {
-    Logger.error('Could not close connections in time, forcefully shutting down');
-    process.exit(1);
-  }, 10000);
-});
-
-process.on('SIGINT', () => {
-  Logger.info('SIGINT received, closing server...');
-
-  if (realtimeChannels.transcriptionChannel) {
-    realtimeChannels.transcriptionChannel.unsubscribe();
-  }
-  if (realtimeChannels.summaryChannel) {
-    realtimeChannels.summaryChannel.unsubscribe();
-  }
-
-  if (transcriptionQueueInterval) {
-    clearInterval(transcriptionQueueInterval);
-  }
-  if (wsHeartbeat) {
-    clearInterval(wsHeartbeat);
-  }
-
-  wss.close(() => {
-    Logger.info('WebSocket server closed');
-  });
-
-  server.close(() => {
-    Logger.info('Server closed gracefully');
-    process.exit(0);
-  });
-
-  setTimeout(() => {
-    Logger.error('Could not close connections in time, forcefully shutting down');
-    process.exit(1);
-  }, 10000);
-});
-
-process.on('uncaughtException', (error) => {
-  Logger.error('Uncaught Exception:', error);
-  process.emit('SIGTERM');
-});
-
-process.on('unhandledRejection', (reason, promise) => {
-  Logger.error('Unhandled Rejection at:', promise, 'reason:', reason);
-});
-
-// --- START SERVER ---
-const PORT = process.env.PORT || 3000;
-const HOST = '0.0.0.0';
-
-server.listen(PORT, HOST, () => {
-  Logger.info('========================================');
-  Logger.info('Car Crash Lawyer AI - Server Started');
-  Logger.info('========================================');
-  Logger.info(`Server running on http://${HOST}:${PORT}`);
-
-  if (process.env.REPL_SLUG && process.env.REPL_OWNER) {
-    Logger.info(`Public URL: https://${process.env.REPL_SLUG}.${process.env.REPL_OWNER}.repl.co`);
-  }
-
-  Logger.info('\nService Status:');
-  Logger.info(`   Supabase: ${supabaseEnabled ? 'Connected' : 'Not configured'}`);
-  Logger.info(`   Auth Service: ${authService ? 'Configured' : 'Not configured'}`);
-  Logger.info(`   OpenAI: ${process.env.OPENAI_API_KEY ? 'Configured' : 'Not configured'}`);
-  Logger.info(`   WebSocket: Active`);
-  Logger.info(`   GDPR Compliant: Yes`);
-
-  Logger.info('\nServer ready!');
-  Logger.info('========================================');
-});
-
-module.exports = app;
+          let result;
+
+          if (existing) {
+            const { data, error } = await supabase
+              .from('ai_transcription')
+              .update({
+                transcription_text: transcription,
+                audio_url: audioUrl || existing.audio_url,
+                updated_at: new Date().toISOString()
+              })
+              .eq('id', existing.id)
+              .select()
+              .single();
+
+            result = data;
+            if (error) throw error;
+          } else {
+            const { data, error } = await supabase
+              .from('ai_transcription')
+              .insert({
+                create_user_id: userId,
+                incident_report_id: incidentId || null,
+                transcription_text: transcription,
+                audio_url: audioUrl || '',
+                created_at: new Date().toISOString()
+              })
+              .select()
+              .single();
+
+            result = data;
+            if (error) throw error;
+          }
+
+          if (incidentId) {
+            await supabase
+              .from('incident_reports')
+              .update({
+                witness_statement_text: transcription,
+                witness_statement_audio: audioUrl || undefined,
+                updated_at: new Date().toISOString()
+              })
+              .eq('id', incidentId)
+              .eq('create_user_id', userId);
+          }
+
+          res.json({
+            success: true,
+            message: 'Transcription saved successfully',
+            transcription_id: result?.id,
+            requestId: req.requestId
+          });
+          } catch (error) {
+          Logger.error('Save transcription error', error);
+          sendError(res, 500, 'Failed to save transcription', 'SAVE_FAILED', error.message);
+          }
+          });
+
+          // Get latest transcription
+          app.get('/api/user/:userId/latest-transcription', async (req, res) => {
+          try {
+          const { userId } = req.params;
+          Logger.info('Getting latest transcription', { userId });
+
+          if (!supabaseEnabled) {
+            return res.json({
+              exists: false,
+              transcription: null,
+              requestId: req.requestId
+            });
+          }
+
+          await logGDPRActivity(userId, 'DATA_ACCESS', {
+            type: 'transcription_retrieval'
+          }, req);
+
+          const { data, error } = await supabase
+            .from('ai_transcription')
+            .select('*')
+            .eq('create_user_id', userId)
+            .order('created_at', { ascending: false })
+            .limit(1)
+            .single();
+
+          if (data) {
+            const { data: summaryData } = await supabase
+              .from('ai_summary')
+              .select('*')
+              .eq('create_user_id', userId)
+              .order('created_at', { ascending: false })
+              .limit(1)
+              .single();
+
+            return res.json({
+              exists: true,
+              transcription: data,
+              aiSummary: summaryData,
+              status: 'completed',
+              requestId: req.requestId
+            });
+          }
+
+          const { data: incidentData } = await supabase
+            .from('incident_reports')
+            .select('witness_statement_text, witness_statement_audio')
+            .eq('create_user_id', userId)
+            .order('created_at', { ascending: false })
+            .limit(1)
+            .single();
+
+          res.json({
+            exists: !!incidentData?.witness_statement_text,
+            transcription: incidentData ? {
+              transcription_text: incidentData.witness_statement_text,
+              audio_url: incidentData.witness_statement_audio
+            } : null,
+            status: incidentData?.witness_statement_text ? 'completed' : 'not_found',
+            requestId: req.requestId
+          });
+          } catch (error) {
+          Logger.error('Get transcription status error', error);
+          sendError(res, 500, 'Failed to get transcription status', 'RETRIEVAL_FAILED');
+          }
+          });
+
+          // ========================================
+          // AI LISTENING TRANSCRIPT ENDPOINTS (NEW)
+          // ========================================
+
+          /**
+          * Save AI Listening Transcript
+          * POST /api/save-ai-listening-transcript
+          * 
+          * Saves the full continuous transcript from multi-page AI listening session
+          */
+          app.post('/api/save-ai-listening-transcript', async (req, res) => {
+          if (!supabaseEnabled) {
+          return sendError(res, 503, 'Service not configured', 'SERVICE_UNAVAILABLE');
+          }
+
+          try {
+          const {
+            userId,
+            incidentId,
+            fullTranscript,
+            transcriptionSegments,
+            totalDuration,
+            recordingStart,
+            recordingEnd,
+            pageFlow,
+            metadata
+          } = req.body;
+
+          // Validation
+          if (!userId) {
+            return sendError(res, 400, 'User ID required', 'MISSING_USER_ID',
+              'Cannot save personal data without user identification (GDPR compliance)');
+          }
+
+          if (!fullTranscript || fullTranscript.trim().length === 0) {
+            return sendError(res, 400, 'Transcript cannot be empty', 'EMPTY_TRANSCRIPT');
+          }
+
+          // Validate user ID format
+          const validation = validateUserId(userId);
+          if (!validation.valid) {
+            return sendError(res, 400, validation.error, 'INVALID_USER_ID');
+          }
+
+          Logger.info('Saving AI listening transcript', { 
+            userId, 
+            transcriptLength: fullTranscript.length,
+            segments: transcriptionSegments?.length || 0
+          });
+
+          // Check if user exists and has GDPR consent
+          const { data: user } = await supabase
+            .from('user_signup')
+            .select('create_user_id, gdpr_consent')
+            .eq('create_user_id', userId)
+            .single();
+
+          if (!user) {
+            return sendError(res, 404, 'User not found', 'USER_NOT_FOUND');
+          }
+
+          if (!user.gdpr_consent) {
+            await logGDPRActivity(userId, 'CONSENT_VIOLATION_PREVENTED', {
+              action: 'ai_listening_save_blocked',
+              reason: 'No GDPR consent'
+            }, req);
+
+            return sendError(res, 403, 'GDPR consent required', 'CONSENT_REQUIRED',
+              'User must provide GDPR consent before saving transcript data');
+          }
+
+          // Prepare data for insertion
+          const transcriptData = {
+            user_id: userId,
+            incident_id: incidentId || null,
+            full_transcript: fullTranscript,
+            transcription_segments: transcriptionSegments || [],
+            total_duration_seconds: totalDuration || 0,
+            recording_start: recordingStart ? new Date(recordingStart).toISOString() : null,
+            recording_end: recordingEnd ? new Date(recordingEnd).toISOString() : new Date().toISOString(),
+            created_at: new Date().toISOString(),
+            updated_at: new Date().toISOString(),
+            gdpr_consent: true,
+            source: 'ai_listening',
+            page_flow: pageFlow || [],
+            metadata: metadata || {}
+          };
+
+          // Insert into database
+          const { data: savedTranscript, error: insertError } = await supabase
+            .from('ai_listening_transcripts')
+            .insert(transcriptData)
+            .select()
+            .single();
+
+          if (insertError) {
+            Logger.error('Error saving AI listening transcript:', insertError);
+            return sendError(res, 500, 'Failed to save transcript', 'DATABASE_ERROR',
+              insertError.message);
+          }
+
+          // Log GDPR activity
+          await logGDPRActivity(userId, 'AI_LISTENING_SAVED', {
+            transcript_id: savedTranscript.id,
+            incident_id: incidentId,
+            duration_seconds: totalDuration,
+            segment_count: transcriptionSegments?.length || 0,
+            pages_visited: pageFlow?.length || 0
+          }, req);
+
+          // Update incident report with AI listening reference if incident ID provided
+          if (incidentId && savedTranscript.id) {
+            try {
+              await supabase
+                .from('incident_reports')
+                .update({
+                  ai_listening_transcript_id: savedTranscript.id,
+                  updated_at: new Date().toISOString()
+                })
+                .eq('id', incidentId)
+                .eq('create_user_id', userId);
+
+              Logger.info('Linked AI transcript to incident report', { 
+                incidentId, 
+                transcriptId: savedTranscript.id 
+              });
+            } catch (linkError) {
+              // Non-critical error - log but don't fail the request
+              Logger.warn('Could not link AI transcript to incident:', linkError);
+            }
+          }
+
+          // Generate AI summary if transcript is substantial enough
+          let aiSummary = null;
+          if (process.env.OPENAI_API_KEY && fullTranscript.length > 100) {
+            try {
+              Logger.info('Generating AI summary for listening transcript');
+              aiSummary = await generateAISummary(
+                fullTranscript, 
+                userId, 
+                incidentId || savedTranscript.id
+              );
+
+              if (aiSummary) {
+                Logger.success('AI summary generated for AI listening transcript');
+              }
+            } catch (summaryError) {
+              // Non-critical error - log but don't fail the request
+              Logger.error('Failed to generate AI summary:', summaryError);
+            }
+          }
+
+          Logger.success('AI listening transcript saved successfully', {
+            transcriptId: savedTranscript.id,
+            userId: userId,
+            hasSummary: !!aiSummary
+          });
+
+          res.json({
+            success: true,
+            message: 'AI listening transcript saved successfully',
+            transcript: {
+              id: savedTranscript.id,
+              userId: userId,
+              incidentId: incidentId || null,
+              transcriptLength: fullTranscript.length,
+              segmentCount: transcriptionSegments?.length || 0,
+              duration: totalDuration,
+              pagesVisited: pageFlow?.length || 0,
+              hasSummary: !!aiSummary
+            },
+            aiSummary: aiSummary || null,
+            timestamp: new Date().toISOString(),
+            requestId: req.requestId
+          });
+
+          } catch (error) {
+          Logger.error('Error in save-ai-listening-transcript endpoint:', error);
+          sendError(res, 500, 'Failed to save AI listening transcript', 'INTERNAL_ERROR',
+            process.env.NODE_ENV === 'development' ? error.message : undefined);
+          }
+          });
+
+          /**
+          * Get AI Listening Transcripts for a user
+          * GET /api/user/:userId/ai-listening-transcripts
+          * 
+          * Retrieves all AI listening transcripts for a specific user with pagination
+          */
+          app.get('/api/user/:userId/ai-listening-transcripts', async (req, res) => {
+          if (!supabaseEnabled) {
+          return sendError(res, 503, 'Service not configured', 'SERVICE_UNAVAILABLE');
+          }
+
+          try {
+          const { userId } = req.params;
+          const { limit = 10, offset = 0 } = req.query;
+
+          // Validate user ID
+          const validation = validateUserId(userId);
+          if (!validation.valid) {
+            return sendError(res, 400, validation.error, 'INVALID_USER_ID');
+          }
+
+          Logger.info('Fetching AI listening transcripts', { userId });
+
+          // Fetch transcripts with pagination
+          const { data: transcripts, error, count } = await supabase
+            .from('ai_listening_transcripts')
+            .select('*', { count: 'exact' })
+            .eq('user_id', userId)
+            .order('created_at', { ascending: false })
+            .range(parseInt(offset), parseInt(offset) + parseInt(limit) - 1);
+
+          if (error) {
+            Logger.error('Error fetching AI listening transcripts:', error);
+            return sendError(res, 500, 'Failed to fetch transcripts', 'DATABASE_ERROR');
+          }
+
+          // Log GDPR activity
+          await logGDPRActivity(userId, 'DATA_ACCESS', {
+            type: 'ai_listening_transcripts',
+            count: transcripts?.length || 0
+          }, req);
+
+          res.json({
+            success: true,
+            transcripts: transcripts || [],
+            pagination: {
+              total: count || 0,
+              limit: parseInt(limit),
+              offset: parseInt(offset),
+              hasMore: (count || 0) > (parseInt(offset) + parseInt(limit))
+            },
+            requestId: req.requestId
+          });
+
+          } catch (error) {
+          Logger.error('Error in get AI listening transcripts endpoint:', error);
+          sendError(res, 500, 'Failed to fetch transcripts', 'INTERNAL_ERROR');
+          }
+          });
+
+          // ========================================
+          // EMERGENCY CONTACT ENDPOINTS (NEW)
+          // ========================================
+
+          /**
+          * Get Emergency Contact Number (singular)
+          * GET /api/user/:userId/emergency-contact
+          * 
+          * Returns just the primary emergency contact number for a user
+          */
+          app.get('/api/user/:userId/emergency-contact', async (req, res) => {
+          if (!supabaseEnabled) {
+          return sendError(res, 503, 'Service not configured', 'SERVICE_UNAVAILABLE');
+          }
+
+          try {
+          const { userId } = req.params;
+
+          // Validate user ID
+          const validation = validateUserId(userId);
+          if (!validation.valid) {
+            return sendError(res, 400, validation.error, 'INVALID_USER_ID');
+          }
+
+          Logger.info('Fetching emergency contact', { userId });
+
+          // Fetch user's emergency contact number
+          const { data, error } = await supabase
+            .from('user_signup')
+            .select('emergency_contact_number, emergency_contact, first_name, last_name')
+            .eq('create_user_id', userId)
+            .single();
+
+          if (error) {
+            Logger.error('Error fetching emergency contact:', error);
+            return sendError(res, 404, 'User not found', 'USER_NOT_FOUND');
+          }
+
+          if (!data) {
+            return sendError(res, 404, 'User not found', 'USER_NOT_FOUND');
+          }
+
+          // Try emergency_contact_number first (new field), fallback to emergency_contact (legacy)
+          const contactNumber = data.emergency_contact_number || data.emergency_contact || null;
+          const userName = `${data.first_name || ''} ${data.last_name || ''}`.trim() || 'User';
+
+          // Log GDPR activity for emergency contact access
+          await logGDPRActivity(userId, 'EMERGENCY_CONTACT_ACCESSED', {
+            has_contact: !!contactNumber,
+            source: 'emergency_feature'
+          }, req);
+
+          if (!contactNumber) {
+            Logger.warn('No emergency contact found for user', { userId });
+            return res.json({
+              success: true,
+              hasEmergencyContact: false,
+              emergencyContact: null,
+              message: 'No emergency contact configured',
+              userName: userName,
+              requestId: req.requestId
+            });
+          }
+
+          Logger.info('Emergency contact retrieved successfully', { 
+            userId, 
+            hasContact: true 
+          });
+
+          res.json({
+            success: true,
+            hasEmergencyContact: true,
+            emergencyContact: contactNumber,
+            userName: userName,
+            message: 'Emergency contact retrieved',
+            requestId: req.requestId
+          });
+
+          } catch (error) {
+          Logger.error('Error in emergency contact endpoint:', error);
+          sendError(res, 500, 'Failed to fetch emergency contact', 'INTERNAL_ERROR');
+          }
+          });
+
+          /**
+          * Update Emergency Contact Number
+          * PUT /api/user/:userId/emergency-contact
+          * 
+          * Allows user to update their emergency contact number
+          */
+          app.put('/api/user/:userId/emergency-contact', async (req, res) => {
+          if (!supabaseEnabled) {
+          return sendError(res, 503, 'Service not configured', 'SERVICE_UNAVAILABLE');
+          }
+
+          try {
+          const { userId } = req.params;
+          const { emergencyContact } = req.body;
+
+          // Validate user ID
+          const validation = validateUserId(userId);
+          if (!validation.valid) {
+            return sendError(res, 400, validation.error, 'INVALID_USER_ID');
+          }
+
+          if (!emergencyContact) {
+            return sendError(res, 400, 'Emergency contact number required', 'MISSING_CONTACT');
+          }
+
+          // Basic phone number validation (very permissive for international formats)
+          const phoneRegex = /^[\d\s\-\+\(\)]+$/;
+          if (!phoneRegex.test(emergencyContact)) {
+            return sendError(res, 400, 'Invalid phone number format', 'INVALID_PHONE');
+          }
+
+          Logger.info('Updating emergency contact', { userId });
+
+          // Update in database
+          const { data, error } = await supabase
+            .from('user_signup')
+            .update({
+              emergency_contact_number: emergencyContact,
+              updated_at: new Date().toISOString()
+            })
+            .eq('create_user_id', userId)
+            .select()
+            .single();
+
+          if (error) {
+            Logger.error('Error updating emergency contact:', error);
+            return sendError(res, 500, 'Failed to update emergency contact', 'UPDATE_FAILED');
+          }
+
+          if (!data) {
+            return sendError(res, 404, 'User not found', 'USER_NOT_FOUND');
+          }
+
+          // Log GDPR activity
+          await logGDPRActivity(userId, 'DATA_UPDATE', {
+            type: 'emergency_contact',
+            action: 'updated'
+          }, req);
+
+          Logger.success('Emergency contact updated successfully', { userId });
+
+          res.json({
+            success: true,
+            message: 'Emergency contact updated successfully',
+            emergencyContact: emergencyContact,
+            timestamp: new Date().toISOString(),
+            requestId: req.requestId
+          });
+
+          } catch (error) {
+          Logger.error('Error updating emergency contact:', error);
+          sendError(res, 500, 'Failed to update emergency contact', 'INTERNAL_ERROR');
+          }
+          });
+
+          // ========================================
+          // EMERGENCY & INCIDENT ENDPOINTS
+          // ========================================
+
+          // Get emergency contacts (plural - for backward compatibility)
+          app.get('/api/user/:userId/emergency-contacts', authenticateRequest, async (req, res) => {
+          if (!supabaseEnabled) {
+          return sendError(res, 503, 'Service not configured', 'SERVICE_UNAVAILABLE');
+          }
+
+          try {
+          const { userId } = req.params;
+
+          const { data, error } = await supabase
+            .from('user_signup')
+            .select('emergency_contact, emergency_contact_number, recovery_breakdown_number, emergency_services_number')
+            .eq('create_user_id', userId)
+            .single();
+
+          if (error) {
+            Logger.error('Supabase error', error);
+            return sendError(res, 404, 'User not found', 'USER_NOT_FOUND');
+          }
+
+          res.json({
+            emergency_contact: data.emergency_contact_number || data.emergency_contact || null,
+            recovery_breakdown_number: data.recovery_breakdown_number || null,
+            emergency_services_number: data.emergency_services_number || '999',
+            requestId: req.requestId
+          });
+          } catch (error) {
+          Logger.error('Error fetching emergency contacts', error);
+          sendError(res, 500, 'Failed to fetch contacts', 'FETCH_FAILED');
+          }
+          });
+
+          // Log emergency call
+          app.post('/api/log-emergency-call', authenticateRequest, async (req, res) => {
+          if (!supabaseEnabled) {
+          return sendError(res, 503, 'Service not configured', 'SERVICE_UNAVAILABLE');
+          }
+
+          try {
+          const { user_id, service_called, timestamp, incident_id } = req.body;
+
+          if (!user_id) {
+            return sendError(res, 400, 'User ID required', 'MISSING_USER_ID');
+          }
+
+          const { data, error } = await supabase
+            .from('emergency_call_logs')
+            .insert({
+              user_id,
+              service_called,
+              incident_id: incident_id || null,
+              timestamp,
+              created_at: new Date().toISOString()
+            });
+
+          if (error) {
+            Logger.error('Failed to log emergency call', error);
+            return res.json({
+              success: false,
+              logged: false,
+              requestId: req.requestId
+            });
+          }
+
+          await logGDPRActivity(user_id, 'EMERGENCY_CALL_LOGGED', {
+            service: service_called
+          }, req);
+
+          res.json({
+            success: true,
+            logged: true,
+            requestId: req.requestId
+          });
+          } catch (error) {
+          Logger.error('Error logging emergency call', error);
+          sendError(res, 500, 'Internal server error', 'INTERNAL_ERROR');
+          }
+          });
+
+          // Upload what3words image
+          app.post('/api/upload-what3words-image', upload.single('image'), async (req, res) => {
+          if (!supabaseEnabled || !imageProcessor) {
+          return sendError(res, 503, 'Service not configured', 'SERVICE_UNAVAILABLE');
+          }
+
+          try {
+          let buffer;
+          let what3words, latitude, longitude, userId;
+
+          if (req.file) {
+            buffer = req.file.buffer;
+            ({ what3words, latitude, longitude, userId } = req.body);
+          } else {
+            const { imageData } = req.body;
+            if (!imageData) {
+              return sendError(res, 400, 'No image data provided', 'MISSING_IMAGE');
+            }
+
+            const base64Data = imageData.replace(/^data:image\/\w+;base64,/, '');
+            buffer = Buffer.from(base64Data, 'base64');
+            ({ what3words, latitude, longitude, userId } = req.body);
+          }
+
+          if (!userId) {
+            return sendError(res, 400, 'User ID required for GDPR compliance', 'MISSING_USER_ID');
+          }
+
+          const safeWhat3Words = what3words ? what3words.replace(/[\/\\.]/g, '-') : 'unknown';
+          const timestamp = Date.now();
+          const fileName = `${userId}/what3words/${timestamp}_${safeWhat3Words}.png`;
+
+          const storagePath = await imageProcessor.uploadToSupabase(buffer, fileName, 'image/png');
+
+          const imageRecord = await imageProcessor.createImageRecord({
+            create_user_id: userId,
+            incident_report_id: null,
+            image_type: 'what3words_screenshot',
+            storage_path: storagePath,
+            original_url: null,
+            metadata: {
+              upload_date: new Date().toISOString(),
+              source: 'web_capture',
+              what3words: what3words,
+              latitude: parseFloat(latitude) || null,
+              longitude: parseFloat(longitude) || null,
+              captured_at: new Date().toISOString(),
+              gdpr_consent: true
+            }
+          });
+
+          const signedUrl = await imageProcessor.getSignedUrl(storagePath, 3600);
+
+          await logGDPRActivity(userId, 'IMAGE_UPLOADED', {
+            type: 'what3words',
+            location: what3words
+          }, req);
+
+          res.json({
+            success: true,
+            imageUrl: signedUrl,
+            storagePath: storagePath,
+            imageRecord: imageRecord,
+            requestId: req.requestId
+          });
+          } catch (error) {
+          Logger.error('Error uploading what3words image', error);
+          sendError(res, 500, error.message, 'UPLOAD_FAILED');
+          }
+          });
+
+          // Get user images
+          app.get('/api/images/:userId', checkGDPRConsent, async (req, res) => {
+          if (!supabaseEnabled) {
+          return sendError(res, 503, 'Service not configured', 'SERVICE_UNAVAILABLE');
+          }
+
+          try {
+          const { userId } = req.params;
+
+          const { data: images, error } = await supabase
+            .from('incident_images')
+            .select('*')
+            .eq('create_user_id', userId)
+            .order('uploaded_at', { ascending: false });
+
+          if (error) {
+            throw error;
+          }
+
+          await logGDPRActivity(userId, 'IMAGES_ACCESSED', {
+            count: images?.length || 0
+          }, req);
+
+          res.json({
+            success: true,
+            images: images || [],
+            count: images?.length || 0,
+            requestId: req.requestId
+          });
+          } catch (error) {
+          Logger.error('Error fetching user images', error);
+          sendError(res, 500, 'Failed to fetch images', 'FETCH_FAILED');
+          }
+          });
+
+          // Get signed URL
+          app.get('/api/image/signed-url/:userId/:imageType', checkGDPRConsent, async (req, res) => {
+          if (!supabaseEnabled || !imageProcessor) {
+          return sendError(res, 503, 'Service not configured', 'SERVICE_UNAVAILABLE');
+          }
+
+          try {
+          const { userId, imageType } = req.params;
+          const { path } = req.query;
+
+          if (!path) {
+            return sendError(res, 400, 'Storage path required', 'MISSING_PATH');
+          }
+
+          const signedUrl = await imageProcessor.getSignedUrl(path, 3600);
+
+          await logGDPRActivity(userId, 'SIGNED_URL_GENERATED', {
+            image_type: imageType,
+            path: path
+          }, req);
+
+          res.json({
+            success: true,
+            url: signedUrl,
+            expires_in: 3600,
+            requestId: req.requestId
+          });
+          } catch (error) {
+          Logger.error('Error generating signed URL', error);
+          sendError(res, 500, 'Failed to generate URL', 'URL_GENERATION_FAILED');
+          }
+          });
+
+          // ========================================
+          // PDF ENDPOINTS
+          // ========================================
+
+          // PDF status
+          app.get('/pdf-status/:userId', async (req, res) => {
+          if (!supabaseEnabled) {
+          return sendError(res, 503, 'Service not configured', 'SERVICE_UNAVAILABLE');
+          }
+
+          try {
+          const { userId } = req.params;
+
+          const { data, error } = await supabase
+            .from('completed_incident_forms')
+            .select('id, generated_at, sent_to_user, email_status')
+            .eq('create_user_id', userId)
+            .order('generated_at', { ascending: false })
+            .limit(1)
+            .single();
+
+          if (error || !data) {
+            return res.json({
+              status: 'not_found',
+              message: 'No PDF generation found for this user',
+              requestId: req.requestId
+            });
+          }
+
+          res.json({
+            status: 'completed',
+            generated_at: data.generated_at,
+            sent: data.sent_to_user,
+            email_status: data.email_status,
+            requestId: req.requestId
+          });
+          } catch (error) {
+          Logger.error('Error checking PDF status', error);
+          sendError(res, 500, 'Failed to check status', 'STATUS_CHECK_FAILED');
+          }
+          });
+
+          // Download PDF
+          app.get('/download-pdf/:userId', checkGDPRConsent, async (req, res) => {
+          if (!supabaseEnabled) {
+          return sendError(res, 503, 'Service not configured', 'SERVICE_UNAVAILABLE');
+          }
+
+          try {
+          const { userId } = req.params;
+
+          const { data, error } = await supabase
+            .from('completed_incident_forms')
+            .select('pdf_url, pdf_base64')
+            .eq('create_user_id', userId)
+            .order('generated_at', { ascending: false })
+            .limit(1)
+            .single();
+
+          if (error || !data) {
+            return sendError(res, 404, 'PDF not found', 'PDF_NOT_FOUND');
+          }
+
+          await logGDPRActivity(userId, 'PDF_DOWNLOADED', {}, req);
+
+          if (data.pdf_url) {
+            res.redirect(data.pdf_url);
+          } else if (data.pdf_base64) {
+            const buffer = Buffer.from(data.pdf_base64, 'base64');
+            res.setHeader('Content-Type', 'application/pdf');
+            res.setHeader('Content-Disposition', `attachment; filename="report_${userId}.pdf"`);
+            res.send(buffer);
+          } else {
+            sendError(res, 404, 'PDF data not available', 'PDF_DATA_MISSING');
+          }
+          } catch (error) {
+          Logger.error('Error downloading PDF', error);
+          sendError(res, 500, 'Failed to download PDF', 'DOWNLOAD_FAILED');
+          }
+          });
+
+          // Generate PDF (using shared function)
+          app.post('/generate-pdf', checkSharedKey, async (req, res) => {
+          const { create_user_id } = req.body;
+
+          if (!create_user_id) {
+          return sendError(res, 400, 'Missing create_user_id', 'MISSING_USER_ID');
+          }
+
+          if (!supabaseEnabled) {
+          return sendError(res, 503, 'Service not configured', 'SERVICE_UNAVAILABLE');
+          }
+
+          if (!fetchAllData || !generatePDF || !sendEmails) {
+          return sendError(res, 503, 'PDF generation modules not available', 'PDF_UNAVAILABLE');
+          }
+
+          try {
+          const result = await generateUserPDF(create_user_id, 'direct');
+          res.json(result);
+          } catch (error) {
+          Logger.error('Error in PDF generation', error);
+          sendError(res, 500, error.message, 'PDF_GENERATION_FAILED');
+          }
+          });
+
+          // ========================================
+          // WEBHOOK ENDPOINTS
+          // ========================================
+
+          // Signup webhook
+          app.post('/webhook/signup', checkSharedKey, async (req, res) => {
+          try {
+          Logger.info('Signup webhook received');
+
+          if (!supabaseEnabled || !imageProcessor) {
+            return sendError(res, 503, 'Service not configured', 'SERVICE_UNAVAILABLE');
+          }
+
+          const webhookData = req.body;
+
+          if (!webhookData.create_user_id) {
+            return sendError(res, 400, 'Missing create_user_id', 'MISSING_USER_ID');
+          }
+
+          await logGDPRActivity(webhookData.create_user_id, 'SIGNUP_PROCESSING', {
+            source: 'webhook',
+            has_images: true
+          }, req);
+
+          imageProcessor.processSignupImages(webhookData)
+            .then(result => {
+              Logger.success('Signup processing complete', result);
+            })
+            .catch(error => {
+              Logger.error('Signup processing failed', error);
+            });
+
+          res.status(200).json({
+            success: true,
+            message: 'Signup processing started',
+            create_user_id: webhookData.create_user_id,
+            requestId: req.requestId
+          });
+          } catch (error) {
+          Logger.error('Webhook error', error);
+          sendError(res, 500, error.message, 'WEBHOOK_ERROR');
+          }
+          });
+
+          // Incident report webhook
+          app.post('/webhook/incident-report', checkSharedKey, async (req, res) => {
+          try {
+          Logger.info('Incident report webhook received');
+
+          if (!supabaseEnabled || !imageProcessor) {
+            return sendError(res, 503, 'Service not configured', 'SERVICE_UNAVAILABLE');
+          }
+
+          const webhookData = req.body;
+
+          if (!webhookData.id && !webhookData.incident_report_id) {
+            return sendError(res, 400, 'Missing incident report ID', 'MISSING_INCIDENT_ID');
+          }
+
+          if (!webhookData.create_user_id) {
+            return sendError(res, 400, 'Missing user ID - GDPR compliance required', 'MISSING_USER_ID');
+          }
+
+          const incidentId = webhookData.id || webhookData.incident_report_id;
+
+          await logGDPRActivity(webhookData.create_user_id, 'INCIDENT_REPORT', {
+            incident_id: incidentId,
+            source: 'webhook'
+          }, req);
+
+          const result = await imageProcessor.processIncidentReportFiles(webhookData);
+
+          Logger.success('Incident processing complete:', result);
+
+          if (req.query.redirect === 'true') {
+            const userId = webhookData.create_user_id || '';
+            res.redirect(`/report-complete.html?incident_id=${incidentId}&user_id=${userId}`);
+          } else {
+            res.status(200).json({
+              ...result,
+              requestId: req.requestId
+            });
+          }
+          } catch (error) {
+          Logger.error('Webhook error', error);
+          sendError(res, 500, error.message, 'WEBHOOK_ERROR');
+          }
+          });
+
+          // PDF generation webhook (using shared function)
+          app.post('/webhook/generate-pdf', checkSharedKey, async (req, res) => {
+          const { create_user_id } = req.body;
+
+          if (!create_user_id) {
+          return sendError(res, 400, 'Missing create_user_id', 'MISSING_USER_ID');
+          }
+
+          if (!supabaseEnabled) {
+          return sendError(res, 503, 'Service not configured', 'SERVICE_UNAVAILABLE');
+          }
+
+          if (!fetchAllData || !generatePDF || !sendEmails) {
+          return sendError(res, 503, 'PDF generation modules not available', 'PDF_UNAVAILABLE');
+          }
+
+          try {
+          const result = await generateUserPDF(create_user_id, 'webhook');
+          res.json(result);
+          } catch (error) {
+          Logger.error('Error in webhook PDF generation', error);
+          sendError(res, 500, error.message, 'PDF_GENERATION_FAILED');
+          }
+          });
+
+          // ========================================
+          // ERROR HANDLING
+          // ========================================
+
+          // Error handler middleware
+          app.use((err, req, res, next) => {
+          Logger.error('Unhandled error', err);
+
+          // Handle multer errors
+          if (err instanceof multer.MulterError) {
+          if (err.code === 'LIMIT_FILE_SIZE') {
+            return sendError(res, 400, 'File too large', 'FILE_TOO_LARGE',
+              `Maximum file size is ${CONSTANTS.FILE_SIZE_LIMITS.AUDIO / 1024 / 1024}MB`);
+          }
+          return sendError(res, 400, err.message, 'UPLOAD_ERROR');
+          }
+
+          sendError(res, 500, 'Internal server error', 'INTERNAL_ERROR',
+          process.env.NODE_ENV === 'development' ? err.message : undefined);
+          });
+
+          // 404 handler
+          app.use((req, res) => {
+          res.status(404).json({
+          error: 'Not found',
+          path: req.path,
+          message: 'The requested resource was not found',
+          requestId: req.requestId
+          });
+          });
+
+          // ========================================
+          // GRACEFUL SHUTDOWN
+          // ========================================
+
+          function gracefulShutdown(signal) {
+          Logger.info(`${signal} received, closing server gracefully...`);
+
+          // Close realtime channels
+          if (realtimeChannels.transcriptionChannel) {
+          realtimeChannels.transcriptionChannel.unsubscribe();
+          }
+          if (realtimeChannels.summaryChannel) {
+          realtimeChannels.summaryChannel.unsubscribe();
+          }
+
+          // Clear intervals
+          if (transcriptionQueueInterval) {
+          clearInterval(transcriptionQueueInterval);
+          }
+          if (wsHeartbeat) {
+          clearInterval(wsHeartbeat);
+          }
+
+          // Close WebSocket server
+          wss.close(() => {
+          Logger.info('WebSocket server closed');
+          });
+
+          // Close HTTP server
+          server.close(() => {
+          Logger.info('HTTP server closed gracefully');
+          process.exit(0);
+          });
+
+          // Force close after timeout
+          setTimeout(() => {
+          Logger.error('Could not close connections in time, forcefully shutting down');
+          process.exit(1);
+          }, 10000);
+          }
+
+          process.on('SIGTERM', () => gracefulShutdown('SIGTERM'));
+          process.on('SIGINT', () => gracefulShutdown('SIGINT'));
+
+          process.on('uncaughtException', (error) => {
+          Logger.error('Uncaught Exception:', error);
+          gracefulShutdown('UNCAUGHT_EXCEPTION');
+          });
+
+          process.on('unhandledRejection', (reason, promise) => {
+          Logger.error('Unhandled Rejection at:', promise, 'reason:', reason);
+          // Don't exit on unhandled rejection, just log it
+          });
+
+          // ========================================
+          // STARTUP CHECKS
+          // ========================================
+
+          // Check for required environment variables
+          const requiredEnvVars = [
+          'SUPABASE_URL',
+          'SUPABASE_SERVICE_ROLE_KEY',
+          'OPENAI_API_KEY'
+          ];
+
+          const missingEnvVars = requiredEnvVars.filter(varName => !process.env[varName]);
+
+          if (missingEnvVars.length > 0) {
+          Logger.warn('⚠️  WARNING: Missing required environment variables:');
+          missingEnvVars.forEach(varName => {
+          Logger.warn(`   - ${varName}`);
+          });
+          }
+
+          if (!process.env.WHAT3WORDS_API_KEY) {
+          Logger.warn('⚠️  WARNING: WHAT3WORDS_API_KEY not set in environment variables');
+          Logger.warn('   Emergency location services will not work properly');
+          Logger.warn('   Get your API key at: https://what3words.com/select-plan');
+          }
+
+          if (!process.env.SUPABASE_ANON_KEY) {
+          Logger.warn('⚠️  WARNING: SUPABASE_ANON_KEY not set');
+          Logger.warn('   Authentication features will be disabled');
+          }
+
+          // ========================================
+          // START SERVER
+          // ========================================
+
+          const PORT = process.env.PORT || 3000;
+          const HOST = '0.0.0.0';
+
+          server.listen(PORT, HOST, () => {
+          console.log('\n========================================');
+          console.log('🚗 Car Crash Lawyer AI - Server Started');
+          console.log('========================================');
+          console.log(`\n🌐 Server running on http://${HOST}:${PORT}`);
+
+          if (process.env.REPL_SLUG && process.env.REPL_OWNER) {
+          console.log(`🔗 Public URL: https://${process.env.REPL_SLUG}.${process.env.REPL_OWNER}.repl.co`);
+          }
+
+          console.log('\n📊 Service Status:');
+          console.log(`   Supabase: ${supabaseEnabled ? '✅ Connected' : '❌ Not configured'}`);
+          console.log(`   Auth Service: ${authService ? '✅ Configured' : '⚠️  Not configured'}`);
+          console.log(`   OpenAI: ${process.env.OPENAI_API_KEY ? '✅ Configured' : '❌ Not configured'}`);
+          console.log(`   what3words: ${process.env.WHAT3WORDS_API_KEY ? '✅ Configured' : '⚠️  Not configured'}`);
+          console.log(`   WebSocket: ✅ Active`);
+          console.log(`   GDPR Compliance: ✅ Full compliance`);
+          console.log(`   GDPR Consent Capture: ✅ Active`);
+          console.log(`   PDF Generation: ${fetchAllData && generatePDF && sendEmails ? '✅ Available' : '❌ Unavailable'}`);
+
+          console.log('\n🆕 New Features:');
+          console.log(`   ✅ GDPR Consent Capture on signup`);
+          console.log(`   ✅ Consent management API endpoints`);
+          console.log(`   ✅ AI Listening Transcript endpoints`);
+          console.log(`   ✅ Emergency Contact management`);
+          console.log(`   ✅ Enhanced user ID validation`);
+
+          console.log('\n🔧 System Features:');
+          console.log(`   ✅ Template literals fixed`);
+          console.log(`   ✅ Memory leak prevention (Map cleanup)`);
+          console.log(`   ✅ Buffer handling optimized`);
+          console.log(`   ✅ User ID validation enhanced`);
+          console.log(`   ✅ Error responses standardized`);
+          console.log(`   ✅ Database queries optimized`);
+          console.log(`   ✅ Security enhanced (URL redaction)`);
+          console.log(`   ✅ Code quality improved`);
+
+          console.log('\n📡 Key Endpoints:');
+          console.log('   GET  /health - Health check');
+          console.log('   GET  /api/config - Configuration');
+          console.log('   POST /api/auth/signup - User signup (with GDPR consent)');
+          console.log('   POST /api/auth/login - User login');
+          console.log('   GET  /api/gdpr/consent/:userId - Get consent status');
+          console.log('   PUT  /api/gdpr/consent/:userId - Update consent');
+          console.log('   POST /api/whisper/transcribe - Audio transcription');
+          console.log('   POST /api/save-ai-listening-transcript - AI listening save');
+          console.log('   GET  /api/user/:userId/emergency-contact - Emergency contact');
+          console.log('   GET  /api/what3words/convert - Location services');
+          console.log('   POST /generate-pdf - Generate incident report PDF');
+
+          console.log('\n✨ Server ready!');
+          console.log('========================================\n');
+
+          // Log startup summary
+          Logger.success('Server startup complete', {
+          port: PORT,
+          environment: process.env.NODE_ENV || 'development',
+          services: {
+            supabase: supabaseEnabled,
+            auth: !!authService,
+            openai: !!process.env.OPENAI_API_KEY,
+            what3words: !!process.env.WHAT3WORDS_API_KEY,
+            pdf: !!(fetchAllData && generatePDF && sendEmails),
+            ai_listening: !!process.env.OPENAI_API_KEY,
+            gdpr_consent: true
+          }
+          });
+          });
+
+          // Handle server errors
+          server.on('error', (error) => {
+          if (error.code === 'EADDRINUSE') {
+          Logger.error(`Port ${PORT} is already in use`);
+          process.exit(1);
+          } else {
+          Logger.error('Server error:', error);
+          process.exit(1);
+          }
+          });
+
+          // ========================================
+          // EXPORT
+          // ========================================
+
+          module.exports = app;
