@@ -1749,6 +1749,11 @@ app.get('/health', async (req, res) => {
 const authRoutes = require('./src/routes/auth.routes');
 const transcriptionRoutes = require('./src/routes/transcription.routes');
 const gdprRoutes = require('./src/routes/gdpr.routes');
+const emergencyRoutes = require('./src/routes/emergency.routes');
+const pdfRoutes = require('./src/routes/pdf.routes');
+const webhookRoutes = require('./src/routes/webhook.routes');
+const locationRoutes = require('./src/routes/location.routes');
+const debugRoutes = require('./src/routes/debug.routes');
 
 // Initialize controllers with dependencies
 const transcriptionController = require('./src/controllers/transcription.controller');
@@ -1757,20 +1762,32 @@ transcriptionController.initializeController(transcriptionStatuses, broadcastTra
 const gdprController = require('./src/controllers/gdpr.controller');
 gdprController.initializeController(supabase);
 
+const webhookController = require('./src/controllers/webhook.controller');
+webhookController.initializeController(imageProcessor);
+
 // Make imageProcessor available to routes
 app.locals.imageProcessor = imageProcessor;
 
+// Mount all routes
 app.use('/api/auth', authRoutes);
 app.use('/api/transcription', transcriptionRoutes);
 app.use('/api/gdpr', gdprRoutes);
+app.use('/api/emergency', emergencyRoutes);
+app.use('/api/pdf', pdfRoutes);
+app.use('/api/webhooks', webhookRoutes);
+app.use('/api/location', locationRoutes);
+app.use('/api/debug', debugRoutes);
 
 // ========================================
 // (GDPR ENDPOINTS MOVED TO src/routes/gdpr.routes.js)
+// (EMERGENCY ENDPOINTS MOVED TO src/routes/emergency.routes.js)
+// (PDF ENDPOINTS MOVED TO src/routes/pdf.routes.js)
+// (WEBHOOK ENDPOINTS MOVED TO src/routes/webhook.routes.js)
+// (LOCATION/WHAT3WORDS ENDPOINTS MOVED TO src/routes/location.routes.js)
+// (DEBUG ENDPOINTS MOVED TO src/routes/debug.routes.js)
 // ========================================
 
-// ========================================
-// WHAT3WORDS API ENDPOINTS
-// ========================================
+// Legacy endpoint redirects - will be removed in future versions
 
 // Convert coordinates to what3words
 app.get('/api/what3words/convert', async (req, res) => {
@@ -2194,7 +2211,7 @@ app.get('/system-status', (req, res) => {
   res.send(htmlContent);
 });
 
-// Legacy transcription endpoints (redirects to new routes)
+// Legacy endpoint redirects (will be removed in future versions)
 app.post('/api/whisper/transcribe', (req, res) => {
   res.redirect(307, '/api/transcription/transcribe');
 });
@@ -2217,6 +2234,66 @@ app.get('/api/user/:userId/latest-transcription', (req, res) => {
 
 app.get('/api/user/:userId/transcriptions', (req, res) => {
   res.redirect(`/api/transcription/user/${req.params.userId}/all`);
+});
+
+// Legacy what3words endpoints
+app.get('/api/what3words/convert', (req, res) => {
+  res.redirect(`/api/location/convert?${new URLSearchParams(req.query).toString()}`);
+});
+
+app.get('/api/what3words/autosuggest', (req, res) => {
+  res.redirect(`/api/location/autosuggest?${new URLSearchParams(req.query).toString()}`);
+});
+
+app.get('/api/what3words', (req, res) => {
+  res.redirect(`/api/location/legacy?${new URLSearchParams(req.query).toString()}`);
+});
+
+// Legacy PDF endpoints
+app.post('/generate-pdf', (req, res) => {
+  res.redirect(307, '/api/pdf/generate');
+});
+
+app.get('/pdf-status/:userId', (req, res) => {
+  res.redirect(`/api/pdf/status/${req.params.userId}`);
+});
+
+app.get('/download-pdf/:userId', (req, res) => {
+  res.redirect(`/api/pdf/download/${req.params.userId}`);
+});
+
+// Legacy webhook endpoints
+app.post('/webhook/signup', (req, res) => {
+  res.redirect(307, '/api/webhooks/signup');
+});
+
+app.post('/webhook/incident-report', (req, res) => {
+  res.redirect(307, '/api/webhooks/incident-report');
+});
+
+app.post('/webhook/generate-pdf', (req, res) => {
+  res.redirect(307, '/api/webhooks/generate-pdf');
+});
+
+// Legacy debug endpoints
+app.get('/api/debug/user/:userId', (req, res) => {
+  res.redirect(`/api/debug/user/${req.params.userId}`);
+});
+
+app.get('/api/test-openai', (req, res) => {
+  res.redirect('/api/debug/test-openai');
+});
+
+app.get('/api/process-queue-now', (req, res) => {
+  res.redirect('/api/debug/process-queue');
+});
+
+app.get('/test/transcription-queue', (req, res) => {
+  res.redirect('/api/debug/transcription-queue');
+});
+
+app.post('/test/process-transcription-queue', (req, res) => {
+  res.redirect(307, '/api/debug/process-transcription-queue');
 });
 
           // ========================================
