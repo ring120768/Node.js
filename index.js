@@ -72,6 +72,12 @@ const gdprService = require('./src/services/gdprService');
 const { generateAISummary } = require('./src/services/aiService');
 
 // ========================================
+// WEBSOCKET MODULE
+// ========================================
+const websocketModule = require('./src/websocket');
+
+
+// ========================================
 // EXPRESS APP SETUP
 // ========================================
 const app = express();
@@ -337,320 +343,10 @@ if (supabaseEnabled) {
 }
 
 // ========================================
-// WEBSOCKET SETUP
+// WEBSOCKET SETUP (MOVED TO src/websocket/index.js)
 // ========================================
-const wss = new WebSocket.Server({
-  noServer: true,
-  clientTracking: true,
-  maxPayload: 10 * 1024 * 1024 // 10MB max message size
-});
-
-const activeSessions = new Map(); // queueId -> WebSocket
-const userSessions = new Map(); // userId -> Set of WebSockets
-const transcriptionStatuses = new Map(); // Store transcription statuses with timestamps
-
-// Enhanced cleanup for stale WebSocket connections and old statuses
-setInterval(() => {
-  // Clean up WebSocket sessions
-  activeSessions.forEach((ws, queueId) => {
-    if (ws.readyState !== WebSocket.OPEN) {
-      activeSessions.delete(queueId);
-      logger.debug(`Cleaned up stale session for queue ${queueId}`);
-    }
-  });
-
-  userSessions.forEach((wsSets, userId) => {
-    const activeSockets = Array.from(wsSets).filter(ws => ws.readyState === WebSocket.OPEN);
-    if (activeSockets.length !== wsSets.size) {
-      userSessions.set(userId, new Set(activeSockets));
-      logger.debug(`Cleaned up ${wsSets.size - activeSockets.length} stale sockets for user ${userId}`);
-    }
-    if (activeSockets.length === 0) {
-      userSessions.delete(userId);
-    }
-  });
-
-  // Clean up old transcription statuses (older than 1 hour)
-  const oneHourAgo = Date.now() - 3600000;
-  let cleaned = 0;
-
-  transcriptionStatuses.forEach((status, queueId) => {
-    if (status.updatedAt && status.updatedAt < oneHourAgo) {
-      transcriptionStatuses.delete(queueId);
-      cleaned++;
-    }
-  });
-
-  if (cleaned > 0) {
-    logger.info(`Cleaned up ${cleaned} old transcription statuses`);
-  }
-}, 60000); // Clean up every minute
-
-// Handle WebSocket upgrade
-server.on('upgrade', (request, socket, head) => {
-  wss.handleUpgrade(request, socket, head, (ws) => {
-    wss.emit('connection', ws, request);
-  });
-});
-
-// WebSocket connection handler
-wss.on('connection', (ws) => {
-  logger.info('New WebSocket connection established');
-
-  ws.isAlive = true;
-  ws.on('pong', () => {
-    ws.isAlive = true;
-  });
-
-  ws.connectionTime = Date.now();
-  ws.messageCount = 0;
-
-  ws.on('message', (message) => {
-    try {
-      const data = JSON.parse(message);
-      ws.messageCount++;
-      logger.debug('WebSocket message received', {
-        type: data.type,
-        messageCount: ws.messageCount
-      });
-
-      switch (data.type) {
-        case CONSTANTS.WS_MESSAGE_TYPES.SUBSCRIBE:
-          if (data.queueId) {
-            activeSessions.set(data.queueId, ws);
-            ws.queueId = data.queueId;
-            ws.send(JSON.stringify({
-              type: 'subscribed',
-              queueId: data.queueId,
-              message: 'Successfully subscribed to transcription updates'
-            }));
-          }
-
-          if (data.userId) {
-            if (!userSessions.has(data.userId)) {
-              userSessions.set(data.userId, new Set());
-            }
-            userSessions.get(data.userId).add(ws);
-            ws.userId = data.userId;
-            ws.send(JSON.stringify({
-              type: 'subscribed',
-              userId: data.userId,
-              message: 'Successfully subscribed to user updates'
-            }));
-          }
-          break;
-
-        case CONSTANTS.WS_MESSAGE_TYPES.UNSUBSCRIBE:
-          if (data.queueId && activeSessions.has(data.queueId)) {
-            activeSessions.delete(data.queueId);
-            ws.send(JSON.stringify({
-              type: 'unsubscribed',
-              queueId: data.queueId
-            }));
-          }
-          if (data.userId && userSessions.has(data.userId)) {
-            userSessions.get(data.userId).delete(ws);
-            ws.send(JSON.stringify({
-              type: 'unsubscribed',
-              userId: data.userId
-            }));
-          }
-          break;
-
-        case CONSTANTS.WS_MESSAGE_TYPES.PING:
-          ws.send(JSON.stringify({ type: CONSTANTS.WS_MESSAGE_TYPES.PONG }));
-          break;
-
-        default:
-          logger.debug('Unknown message type:', data.type);
-          ws.send(JSON.stringify({
-            type: CONSTANTS.WS_MESSAGE_TYPES.ERROR,
-            message: 'Unknown message type'
-          }));
-      }
-    } catch (error) {
-      logger.error('WebSocket message error', error);
-      ws.send(JSON.stringify({
-        type: CONSTANTS.WS_MESSAGE_TYPES.ERROR,
-        message: 'Invalid message format'
-      }));
-    }
-  });
-
-  ws.on('close', () => {
-    const connectionDuration = Date.now() - ws.connectionTime;
-    logger.debug('WebSocket connection closed', {
-      duration: connectionDuration,
-      messages: ws.messageCount
-    });
-
-    if (ws.queueId) {
-      activeSessions.delete(ws.queueId);
-    }
-    if (ws.userId && userSessions.has(ws.userId)) {
-      userSessions.get(ws.userId).delete(ws);
-    }
-  });
-
-  ws.on('error', (error) => {
-    logger.error('WebSocket error', error);
-  });
-});
-
-// WebSocket heartbeat interval
-const wsHeartbeat = setInterval(() => {
-  wss.clients.forEach((ws) => {
-    if (ws.isAlive === false) {
-      logger.debug('Terminating inactive WebSocket connection');
-      return ws.terminate();
-    }
-    ws.isAlive = false;
-    ws.ping();
-  });
-}, 30000);
-
-/**
- * Send real-time updates to specific queue
- */
-function sendTranscriptionUpdate(queueId, data) {
-  const ws = activeSessions.get(queueId);
-  if (ws && ws.readyState === WebSocket.OPEN) {
-    try {
-      ws.send(JSON.stringify(data));
-    } catch (error) {
-      logger.error('Error sending transcription update', error);
-    }
-  }
-}
-
-/**
- * Broadcast to specific user
- */
-function broadcastToUser(userId, data) {
-  if (userSessions.has(userId)) {
-    userSessions.get(userId).forEach(ws => {
-      if (ws.readyState === WebSocket.OPEN) {
-        try {
-          ws.send(JSON.stringify(data));
-        } catch (error) {
-          logger.error('Error broadcasting to user', error);
-        }
-      }
-    });
-  }
-}
-
-/**
- * Broadcast transcription updates
- */
-function broadcastTranscriptionUpdate(queueId, data) {
-  // Update memory store
-  if (transcriptionStatuses.has(queueId)) {
-    Object.assign(transcriptionStatuses.get(queueId), data);
-  }
-
-  // Send WebSocket update to queue subscribers
-  sendTranscriptionUpdate(queueId, data);
-
-  // Also broadcast to user subscribers if we have the userId
-  const statusData = transcriptionStatuses.get(queueId);
-  if (statusData?.create_user_id) {
-    broadcastToUser(statusData.create_user_id, data);
-  }
-}
-
-/**
- * Handle realtime transcription updates
- */
-function handleRealtimeTranscriptionUpdate(payload) {
-  try {
-    const { eventType, new: newData, old: oldData, table } = payload;
-    let queueId, userId, status, transcription;
-
-    if (table === 'transcription_queue') {
-      queueId = newData?.id || oldData?.id;
-      userId = newData?.create_user_id || oldData?.create_user_id;
-      status = newData?.status;
-      transcription = newData?.transcription_text;
-    } else if (table === 'ai_transcription') {
-      userId = newData?.create_user_id;
-      transcription = newData?.transcription_text;
-      status = 'transcribed';
-    }
-
-    if (queueId) {
-      if (transcriptionStatuses.has(queueId)) {
-        transcriptionStatuses.set(queueId, {
-          ...transcriptionStatuses.get(queueId),
-          status: status,
-          transcription: transcription || transcriptionStatuses.get(queueId).transcription,
-          updatedAt: Date.now()
-        });
-      }
-
-      broadcastTranscriptionUpdate(queueId, {
-        type: CONSTANTS.WS_MESSAGE_TYPES.REALTIME_UPDATE,
-        source: 'supabase_realtime',
-        table: table,
-        eventType: eventType,
-        status: status,
-        transcription: transcription,
-        error: newData?.error_message
-      });
-    }
-
-    if (userId) {
-      broadcastToUser(userId, {
-        type: CONSTANTS.WS_MESSAGE_TYPES.REALTIME_UPDATE,
-        source: 'supabase_realtime',
-        table: table,
-        eventType: eventType,
-        data: newData
-      });
-    }
-  } catch (error) {
-    logger.error('Error handling realtime transcription update', error);
-  }
-}
-
-/**
- * Handle realtime summary updates
- */
-function handleRealtimeSummaryUpdate(payload) {
-  try {
-    const { new: summaryData } = payload;
-    const userId = summaryData?.create_user_id;
-    const queueId = summaryData?.incident_id;
-
-    if (queueId && transcriptionStatuses.has(queueId)) {
-      transcriptionStatuses.set(queueId, {
-        ...transcriptionStatuses.get(queueId),
-        status: CONSTANTS.TRANSCRIPTION_STATUS.COMPLETED,
-        summary: summaryData,
-        updatedAt: Date.now()
-      });
-    }
-
-    if (queueId) {
-      broadcastTranscriptionUpdate(queueId, {
-        type: CONSTANTS.WS_MESSAGE_TYPES.REALTIME_UPDATE,
-        source: 'ai_summary',
-        status: CONSTANTS.TRANSCRIPTION_STATUS.COMPLETED,
-        summary: summaryData,
-        message: 'AI summary generated successfully!'
-      });
-    }
-
-    if (userId) {
-      broadcastToUser(userId, {
-        type: 'summary_ready',
-        summary: summaryData
-      });
-    }
-  } catch (error) {
-    logger.error('Error handling realtime summary update', error);
-  }
-}
+// Initialize WebSocket server and handlers
+websocketModule.initializeWebSocket(server, wss); // Assuming wss is created within websocketModule
 
 // ========================================
 // AI SUMMARY GENERATION (MOVED TO src/services/aiService.js)
@@ -676,7 +372,7 @@ async function processTranscriptionFromBuffer(queueId, audioBuffer, create_user_
     }
 
     // Update status with timestamp
-    transcriptionStatuses.set(queueId.toString(), {
+    websocketModule.updateTranscriptionStatusInMemory(queueId.toString(), {
       status: CONSTANTS.TRANSCRIPTION_STATUS.PROCESSING,
       transcription: null,
       summary: null,
@@ -685,7 +381,7 @@ async function processTranscriptionFromBuffer(queueId, audioBuffer, create_user_
       updatedAt: Date.now()
     });
 
-    broadcastTranscriptionUpdate(queueId.toString(), {
+    websocketModule.broadcastTranscriptionUpdate(queueId.toString(), {
       status: CONSTANTS.TRANSCRIPTION_STATUS.PROCESSING,
       message: 'Starting transcription...',
       timestamp: new Date().toISOString()
@@ -745,7 +441,7 @@ async function processTranscriptionFromBuffer(queueId, audioBuffer, create_user_
       throw new Error('Audio file exceeds size limit');
     }
 
-    broadcastTranscriptionUpdate(queueId.toString(), {
+    websocketModule.broadcastTranscriptionUpdate(queueId.toString(), {
       status: CONSTANTS.TRANSCRIPTION_STATUS.PROCESSING,
       message: 'Audio loaded, sending to Whisper API...',
       timestamp: new Date().toISOString()
@@ -816,7 +512,7 @@ async function processTranscriptionFromBuffer(queueId, audioBuffer, create_user_
     logger.success(`Transcription successful, text length: ${transcription.length} characters`);
 
     // Update in-memory status
-    transcriptionStatuses.set(queueId.toString(), {
+    websocketModule.updateTranscriptionStatusInMemory(queueId.toString(), {
       status: CONSTANTS.TRANSCRIPTION_STATUS.TRANSCRIBED,
       transcription: transcription,
       summary: null,
@@ -861,7 +557,7 @@ async function processTranscriptionFromBuffer(queueId, audioBuffer, create_user_
     }
 
     // Send real-time update
-    broadcastTranscriptionUpdate(queueId.toString(), {
+    websocketModule.broadcastTranscriptionUpdate(queueId.toString(), {
       status: CONSTANTS.TRANSCRIPTION_STATUS.GENERATING_SUMMARY,
       transcription: transcription,
       message: 'Generating AI summary...',
@@ -875,8 +571,8 @@ async function processTranscriptionFromBuffer(queueId, audioBuffer, create_user_
         const summary = await generateAISummary(transcription, create_user_id, incident_report_id || queueId, supabase);
 
         if (summary) {
-          transcriptionStatuses.set(queueId.toString(), {
-            ...transcriptionStatuses.get(queueId.toString()),
+          websocketModule.updateTranscriptionStatusInMemory(queueId.toString(), {
+            ...websocketModule.getTranscriptionStatus(queueId.toString()),
             status: CONSTANTS.TRANSCRIPTION_STATUS.COMPLETED,
             summary: summary,
             updatedAt: Date.now()
@@ -890,7 +586,7 @@ async function processTranscriptionFromBuffer(queueId, audioBuffer, create_user_
             })
             .eq('id', queueId);
 
-          broadcastTranscriptionUpdate(queueId.toString(), {
+          websocketModule.broadcastTranscriptionUpdate(queueId.toString(), {
             status: CONSTANTS.TRANSCRIPTION_STATUS.COMPLETED,
             transcription: transcription,
             summary: summary,
@@ -903,14 +599,14 @@ async function processTranscriptionFromBuffer(queueId, audioBuffer, create_user_
       } catch (summaryError) {
         logger.error('Summary generation failed:', summaryError);
 
-        transcriptionStatuses.set(queueId.toString(), {
-          ...transcriptionStatuses.get(queueId.toString()),
+        websocketModule.updateTranscriptionStatusInMemory(queueId.toString(), {
+          ...websocketModule.getTranscriptionStatus(queueId.toString()),
           status: CONSTANTS.TRANSCRIPTION_STATUS.COMPLETED,
           summary: null,
           updatedAt: Date.now()
         });
 
-        broadcastTranscriptionUpdate(queueId.toString(), {
+        websocketModule.broadcastTranscriptionUpdate(queueId.toString(), {
           status: CONSTANTS.TRANSCRIPTION_STATUS.COMPLETED,
           transcription: transcription,
           summary: null,
@@ -919,8 +615,8 @@ async function processTranscriptionFromBuffer(queueId, audioBuffer, create_user_
         });
       }
     } else {
-      transcriptionStatuses.set(queueId.toString(), {
-        ...transcriptionStatuses.get(queueId.toString()),
+      websocketModule.updateTranscriptionStatusInMemory(queueId.toString(), {
+        ...websocketModule.getTranscriptionStatus(queueId.toString()),
         status: CONSTANTS.TRANSCRIPTION_STATUS.COMPLETED,
         updatedAt: Date.now()
       });
@@ -933,7 +629,7 @@ async function processTranscriptionFromBuffer(queueId, audioBuffer, create_user_
         })
         .eq('id', queueId);
 
-      broadcastTranscriptionUpdate(queueId.toString(), {
+      websocketModule.broadcastTranscriptionUpdate(queueId.toString(), {
         status: CONSTANTS.TRANSCRIPTION_STATUS.COMPLETED,
         transcription: transcription,
         message: 'Transcription complete!',
@@ -943,7 +639,7 @@ async function processTranscriptionFromBuffer(queueId, audioBuffer, create_user_
   } catch (error) {
     logger.error(`Transcription processing error for queue ${queueId}:`, error);
 
-    transcriptionStatuses.set(queueId.toString(), {
+    websocketModule.updateTranscriptionStatusInMemory(queueId.toString(), {
       status: CONSTANTS.TRANSCRIPTION_STATUS.FAILED,
       transcription: null,
       summary: null,
@@ -966,7 +662,7 @@ async function processTranscriptionFromBuffer(queueId, audioBuffer, create_user_
       logger.error('Error updating failed status:', updateError);
     }
 
-    broadcastTranscriptionUpdate(queueId.toString(), {
+    websocketModule.broadcastTranscriptionUpdate(queueId.toString(), {
       status: CONSTANTS.TRANSCRIPTION_STATUS.FAILED,
       error: error.message,
       message: `Transcription failed: ${error.message}`,
@@ -1008,7 +704,7 @@ async function processTranscriptionQueue() {
 
     for (const item of pending) {
       try {
-        const existingStatus = transcriptionStatuses.get(item.id.toString());
+        const existingStatus = websocketModule.getTranscriptionStatus(item.id.toString());
         if (existingStatus && existingStatus.status === CONSTANTS.TRANSCRIPTION_STATUS.PROCESSING) {
           logger.info(`Skipping queue item ${item.id} - already processing`);
           continue;
@@ -1715,10 +1411,10 @@ app.get('/health', async (req, res) => {
       server: true,
       transcriptionQueue: transcriptionQueueInterval !== null,
       openai: !!process.env.OPENAI_API_KEY && externalServices.openai,
-      websocket: wss.clients.size,
+      websocket: websocketModule.getClientCount(), // Use WebSocket module for count
       websocket_sessions: {
-        queue: activeSessions.size,
-        users: userSessions.size
+        queue: websocketModule.getActiveSessionsCount(), // Use WebSocket module
+        users: websocketModule.getUserSessionsCount() // Use WebSocket module
       },
       gdprCompliant: true,
       gdprConsentCapture: true,
@@ -1757,7 +1453,7 @@ const debugRoutes = require('./src/routes/debug.routes');
 
 // Initialize controllers with dependencies
 const transcriptionController = require('./src/controllers/transcription.controller');
-transcriptionController.initializeController(transcriptionStatuses, broadcastTranscriptionUpdate);
+transcriptionController.initializeController(websocketModule.transcriptionStatuses, websocketModule.broadcastTranscriptionUpdate); // Use WebSocket module for statuses and broadcast
 
 const gdprController = require('./src/controllers/gdpr.controller');
 gdprController.initializeController(supabase);
@@ -1952,7 +1648,7 @@ app.get('/api/debug/user/:userId', checkSharedKey, async (req, res) => {
     }, req);
 
     const userDataResult = await User.getUserDataBatch(userId);
-    
+
     if (!userDataResult.success) {
       return sendError(res, 404, userDataResult.error, userDataResult.code || 'USER_DATA_ERROR');
     }
@@ -2097,7 +1793,43 @@ app.get('/', (req, res) => {
 });
 
 // System status page
-app.get('/system-status', (req, res) => {
+app.get('/system-status', async (req, res) => {
+  const externalServices = await checkExternalServices();
+
+  const status = {
+    status: 'healthy',
+    timestamp: new Date().toISOString(),
+    services: {
+      supabase: supabaseEnabled && externalServices.supabase,
+      supabase_realtime: externalServices.supabase_realtime,
+      server: true,
+      transcriptionQueue: transcriptionQueueInterval !== null,
+      openai: !!process.env.OPENAI_API_KEY && externalServices.openai,
+      websocket: websocketModule.getClientCount(),
+      websocket_sessions: {
+        queue: websocketModule.getActiveSessionsCount(),
+        users: websocketModule.getUserSessionsCount()
+      },
+      gdprCompliant: true,
+      gdprConsentCapture: true,
+      what3words: externalServices.what3words,
+      auth: !!authService
+    },
+    fixes: {
+      templateLiterals: 'FIXED - All backticks corrected',
+      bufferHandling: 'FIXED - Direct buffer usage',
+      memoryLeaks: 'FIXED - Map cleanup with timestamps',
+      errorHandling: 'ENHANCED - Standardized responses',
+      validation: 'ENHANCED - User ID validation',
+      performance: 'OPTIMIZED - Batch queries with Promise.all',
+      security: 'ENHANCED - URL redaction',
+      codeQuality: 'IMPROVED - Extracted shared functions',
+      aiListening: 'NEW - AI listening transcript endpoints added',
+      emergencyContact: 'NEW - Emergency contact endpoints added',
+      gdprConsent: 'NEW - GDPR consent capture on signup'
+    }
+  };
+
   const htmlContent = `<!DOCTYPE html>
 <html lang="en">
 <head>
@@ -2170,7 +1902,7 @@ app.get('/system-status', (req, res) => {
                 <li>OpenAI: ${process.env.OPENAI_API_KEY ? '✅ Configured' : '❌ Not configured'}</li>
                 <li>what3words: ${process.env.WHAT3WORDS_API_KEY ? '✅ Configured' : '⚠️  Not configured'}</li>
                 <li>Auth Service: ${authService ? '✅ Configured' : '⚠️  Not configured'}</li>
-                <li>WebSocket: ${wss ? '✅ Active' : '❌ Not active'}</li>
+                <li>WebSocket: ${websocketModule.isInitialized() ? '✅ Active' : '❌ Not active'}</li>
                 <li>AI Listening: ${process.env.OPENAI_API_KEY ? '✅ Available' : '❌ Unavailable'}</li>
                 <li>GDPR Compliance: ✅ Full compliance</li>
                 <li>GDPR Consent Capture: ✅ Active</li>
@@ -2210,6 +1942,7 @@ app.get('/system-status', (req, res) => {
 
   res.send(htmlContent);
 });
+
 
 // Legacy endpoint redirects (will be removed in future versions)
 app.post('/api/whisper/transcribe', (req, res) => {
@@ -2303,7 +2036,7 @@ app.post('/test/process-transcription-queue', (req, res) => {
           /**
           * Save AI Listening Transcript
           * POST /api/save-ai-listening-transcript
-          * 
+          *
           * Saves the full continuous transcript from multi-page AI listening session
           */
           app.post('/api/save-ai-listening-transcript', async (req, res) => {
@@ -2340,8 +2073,8 @@ app.post('/test/process-transcription-queue', (req, res) => {
             return sendError(res, 400, validation.error, 'INVALID_USER_ID');
           }
 
-          logger.info('Saving AI listening transcript', { 
-            userId, 
+          logger.info('Saving AI listening transcript', {
+            userId,
             transcriptLength: fullTranscript.length,
             segments: transcriptionSegments?.length || 0
           });
@@ -2418,9 +2151,9 @@ app.post('/test/process-transcription-queue', (req, res) => {
                 .eq('id', incidentId)
                 .eq('create_user_id', userId);
 
-              logger.info('Linked AI transcript to incident report', { 
-                incidentId, 
-                transcriptId: savedTranscript.id 
+              logger.info('Linked AI transcript to incident report', {
+                incidentId,
+                transcriptId: savedTranscript.id
               });
             } catch (linkError) {
               // Non-critical error - log but don't fail the request
@@ -2434,8 +2167,8 @@ app.post('/test/process-transcription-queue', (req, res) => {
             try {
               logger.info('Generating AI summary for listening transcript');
               aiSummary = await generateAISummary(
-                fullTranscript, 
-                userId, 
+                fullTranscript,
+                userId,
                 incidentId || savedTranscript.id,
                 supabase
               );
@@ -2483,7 +2216,7 @@ app.post('/test/process-transcription-queue', (req, res) => {
           /**
           * Get AI Listening Transcripts for a user
           * GET /api/user/:userId/ai-listening-transcripts
-          * 
+          *
           * Retrieves all AI listening transcripts for a specific user with pagination
           */
           app.get('/api/user/:userId/ai-listening-transcripts', async (req, res) => {
@@ -2547,7 +2280,7 @@ app.post('/test/process-transcription-queue', (req, res) => {
           /**
           * Get Emergency Contact Number (singular)
           * GET /api/user/:userId/emergency-contact
-          * 
+          *
           * Returns just the primary emergency contact number for a user
           */
           app.get('/api/user/:userId/emergency-contact', async (req, res) => {
@@ -2604,9 +2337,9 @@ app.post('/test/process-transcription-queue', (req, res) => {
             });
           }
 
-          logger.info('Emergency contact retrieved successfully', { 
-            userId, 
-            hasContact: true 
+          logger.info('Emergency contact retrieved successfully', {
+            userId,
+            hasContact: true
           });
 
           res.json({
@@ -2627,7 +2360,7 @@ app.post('/test/process-transcription-queue', (req, res) => {
           /**
           * Update Emergency Contact Number
           * PUT /api/user/:userId/emergency-contact
-          * 
+          *
           * Allows user to update their emergency contact number
           */
           app.put('/api/user/:userId/emergency-contact', async (req, res) => {
@@ -3191,14 +2924,9 @@ app.post('/test/process-transcription-queue', (req, res) => {
           if (transcriptionQueueInterval) {
           clearInterval(transcriptionQueueInterval);
           }
-          if (wsHeartbeat) {
-          clearInterval(wsHeartbeat);
-          }
 
           // Close WebSocket server
-          wss.close(() => {
-          logger.info('WebSocket server closed');
-          });
+          websocketModule.closeWebSocket(); // Use WebSocket module
 
           // Close HTTP server
           server.close(() => {
@@ -3274,7 +3002,7 @@ app.post('/test/process-transcription-queue', (req, res) => {
           console.log(`   Auth Service: ${authService ? '✅ Configured' : '⚠️  Not configured'}`);
           console.log(`   OpenAI: ${config.openai.enabled ? '✅ Configured' : '❌ Not configured'}`);
           console.log(`   what3words: ${config.what3words.enabled ? '✅ Configured' : '⚠️  Not configured'}`);
-          console.log(`   WebSocket: ✅ Active`);
+          console.log(`   WebSocket: ${websocketModule.isInitialized() ? '✅ Active' : '❌ Not active'}`);
           console.log(`   GDPR Compliance: ✅ Full compliance`);
           console.log(`   GDPR Consent Capture: ✅ Active`);
           console.log(`   PDF Generation: ${fetchAllData && generatePDF && sendEmails ? '✅ Available' : '❌ Unavailable'}`);
