@@ -37,9 +37,10 @@ try {
 }
 
 // ========================================
-// CONSTANTS
+// CONFIGURATION
 // ========================================
-const CONSTANTS = require('./src/config/constants');
+const config = require('./src/config');
+const CONSTANTS = config.constants;
 
 // ========================================
 // LOGGING UTILITY
@@ -114,7 +115,7 @@ const strictLimiter = rateLimit({
 // MIDDLEWARE SETUP
 // ========================================
 app.use(cors({
-  origin: process.env.ALLOWED_ORIGINS ? process.env.ALLOWED_ORIGINS.split(',') : '*',
+  origin: config.cors.origins,
   credentials: true,
   methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS'],
   allowedHeaders: ['Content-Type', 'Authorization', 'X-Api-Key', 'X-User-Id']
@@ -166,19 +167,17 @@ app.use((req, res, next) => {
 // ========================================
 // AUTHENTICATION MIDDLEWARE
 // ========================================
-const SHARED_KEY = process.env.ZAPIER_SHARED_KEY || process.env.WEBHOOK_API_KEY || '';
-
 function checkSharedKey(req, res, next) {
   const headerKey = req.get('X-Api-Key');
   const bearer = (req.headers.authorization || '').replace(/^Bearer\s+/i, '');
   const provided = headerKey || bearer || '';
 
-  if (!SHARED_KEY) {
+  if (!config.webhook.apiKey) {
     logger.warn('No ZAPIER_SHARED_KEY/WEBHOOK_API_KEY set');
     return sendError(res, 503, 'Server missing shared key', 'MISSING_API_KEY');
   }
 
-  if (provided !== SHARED_KEY) {
+  if (provided !== config.webhook.apiKey) {
     logger.warn('Authentication failed', { ip: req.clientIp });
     return sendError(res, 401, 'Unauthorized', 'INVALID_API_KEY');
   }
@@ -200,16 +199,13 @@ let supabaseEnabled = false;
 let realtimeChannels = {};
 
 const initSupabase = () => {
-  const url = process.env.SUPABASE_URL;
-  const key = process.env.SUPABASE_SERVICE_ROLE_KEY || process.env.SUPABASE_SERVICE_KEY;
-
-  if (!url || !key) {
+  if (!config.supabase.url || !config.supabase.serviceKey) {
     logger.error('SUPABASE_URL or SUPABASE_SERVICE_KEY not found');
     return false;
   }
 
   try {
-    supabase = createClient(url, key, {
+    supabase = createClient(config.supabase.url, config.supabase.serviceKey, {
       auth: {
         autoRefreshToken: false,
         persistSession: false
@@ -341,10 +337,10 @@ supabaseEnabled = initSupabase();
 // INITIALIZE AUTH SERVICE
 // ========================================
 let authService = null;
-if (process.env.SUPABASE_ANON_KEY && supabaseEnabled) {
+if (config.supabase.anonKey && supabaseEnabled) {
   authService = new AuthService(
-    process.env.SUPABASE_URL,
-    process.env.SUPABASE_ANON_KEY
+    config.supabase.url,
+    config.supabase.anonKey
   );
   logger.success('✅ Supabase Auth service initialized');
 } else {
@@ -435,7 +431,7 @@ async function checkGDPRConsent(req, res, next) {
 async function enforceDataRetention() {
   if (!supabaseEnabled) return;
 
-  const retentionDays = parseInt(process.env.DATA_RETENTION_DAYS) || CONSTANTS.DATA_RETENTION.DEFAULT_DAYS;
+  const retentionDays = config.dataRetention.days;
   const cutoffDate = new Date();
   cutoffDate.setDate(cutoffDate.getDate() - retentionDays);
 
@@ -808,7 +804,7 @@ function handleRealtimeSummaryUpdate(payload) {
  */
 async function generateAISummary(transcriptionText, createUserId, incidentId) {
   try {
-    if (!process.env.OPENAI_API_KEY || !transcriptionText) {
+    if (!config.openai.apiKey || !transcriptionText) {
       logger.info('Cannot generate AI summary - missing API key or transcription');
       return null;
     }
@@ -848,7 +844,7 @@ Respond ONLY with valid JSON. No additional text.`
       },
       {
         headers: {
-          'Authorization': `Bearer ${process.env.OPENAI_API_KEY}`,
+          'Authorization': `Bearer ${config.openai.apiKey}`,
           'Content-Type': 'application/json'
         },
         timeout: CONSTANTS.RETRY_LIMITS.API_TIMEOUT
@@ -1046,7 +1042,7 @@ async function processTranscriptionFromBuffer(queueId, audioBuffer, create_user_
           {
             headers: {
               ...formData.getHeaders(),
-              'Authorization': `Bearer ${process.env.OPENAI_API_KEY}`
+              'Authorization': `Bearer ${config.openai.apiKey}`
             },
             maxContentLength: Infinity,
             maxBodyLength: Infinity,
@@ -1138,7 +1134,7 @@ async function processTranscriptionFromBuffer(queueId, audioBuffer, create_user_
     });
 
     // Generate AI summary
-    if (process.env.OPENAI_API_KEY && transcription.length > 10) {
+    if (config.openai.apiKey && transcription.length > 10) {
       try {
         logger.info('Starting AI summary generation');
         const summary = await generateAISummary(transcription, create_user_id, incident_report_id || queueId);
@@ -1307,10 +1303,9 @@ async function processTranscriptionQueue() {
 // Schedule transcription queue processing
 let transcriptionQueueInterval = null;
 if (supabaseEnabled) {
-  const intervalMinutes = parseInt(process.env.TRANSCRIPTION_QUEUE_INTERVAL) || 5;
-  transcriptionQueueInterval = setInterval(processTranscriptionQueue, intervalMinutes * 60 * 1000);
+  transcriptionQueueInterval = setInterval(processTranscriptionQueue, config.queue.intervalMinutes * 60 * 1000);
   setTimeout(processTranscriptionQueue, 30000);
-  logger.info(`Transcription queue processor scheduled every ${intervalMinutes} minutes`);
+  logger.info(`Transcription queue processor scheduled every ${config.queue.intervalMinutes} minutes`);
 }
 
 // ========================================
@@ -1959,10 +1954,10 @@ async function checkExternalServices() {
     }
   }
 
-  if (process.env.OPENAI_API_KEY) {
+  if (config.openai.apiKey) {
     try {
       await axios.get('https://api.openai.com/v1/models', {
-        headers: { 'Authorization': `Bearer ${process.env.OPENAI_API_KEY}` },
+        headers: { 'Authorization': `Bearer ${config.openai.apiKey}` },
         timeout: 5000
       });
       services.openai = true;
@@ -1971,7 +1966,7 @@ async function checkExternalServices() {
     }
   }
 
-  if (process.env.WHAT3WORDS_API_KEY) {
+  if (config.what3words.apiKey) {
     services.what3words = true;
   }
 
@@ -1985,16 +1980,16 @@ async function checkExternalServices() {
 // API Configuration
 app.get('/api/config', (req, res) => {
   res.json({
-    supabaseUrl: process.env.SUPABASE_URL,
-    supabaseAnonKey: process.env.SUPABASE_ANON_KEY || process.env.ANON_PUBLIC,
+    supabaseUrl: config.supabase.url,
+    supabaseAnonKey: config.supabase.anonKey,
     features: {
       realtime: supabaseEnabled && realtimeChannels.transcriptionChannel ? true : false,
-      transcription: !!process.env.OPENAI_API_KEY,
-      ai_summary: !!process.env.OPENAI_API_KEY,
-      ai_listening: !!process.env.OPENAI_API_KEY,
+      transcription: config.openai.enabled,
+      ai_summary: config.openai.enabled,
+      ai_listening: config.openai.enabled,
       pdf_generation: !!(fetchAllData && generatePDF && sendEmails),
       auth: !!authService,
-      what3words: !!process.env.WHAT3WORDS_API_KEY,
+      what3words: config.what3words.enabled,
       gdpr_consent: true
     }
   });
@@ -2477,15 +2472,13 @@ app.get('/api/what3words/convert', async (req, res) => {
         'Coordinates must be valid latitude (-90 to 90) and longitude (-180 to 180)');
     }
 
-    const apiKey = process.env.WHAT3WORDS_API_KEY;
-
-    if (!apiKey) {
+    if (!config.what3words.apiKey) {
       logger.error('what3words API key not found');
       return sendError(res, 500, 'Configuration error', 'API_KEY_MISSING',
         'what3words API key not configured');
     }
 
-    const what3wordsUrl = `https://api.what3words.com/v3/convert-to-3wa?coordinates=${latitude},${longitude}&key=${apiKey}`;
+    const what3wordsUrl = `https://api.what3words.com/v3/convert-to-3wa?coordinates=${latitude},${longitude}&key=${config.what3words.apiKey}`;
 
     const response = await axios.get(what3wordsUrl, {
       timeout: 10000
@@ -2529,14 +2522,12 @@ app.get('/api/what3words/autosuggest', async (req, res) => {
         'Input parameter is required');
     }
 
-    const apiKey = process.env.WHAT3WORDS_API_KEY;
-
-    if (!apiKey) {
+    if (!config.what3words.apiKey) {
       return sendError(res, 500, 'Configuration error', 'API_KEY_MISSING',
         'what3words API key not configured');
     }
 
-    const what3wordsUrl = `https://api.what3words.com/v3/autosuggest?input=${encodeURIComponent(input)}&key=${apiKey}`;
+    const what3wordsUrl = `https://api.what3words.com/v3/autosuggest?input=${encodeURIComponent(input)}&key=${config.what3words.apiKey}`;
 
     const response = await axios.get(what3wordsUrl, {
       timeout: 10000
@@ -2571,9 +2562,7 @@ app.get('/api/what3words', async (req, res) => {
       return sendError(res, 400, 'Missing latitude or longitude', 'MISSING_COORDS');
     }
 
-    const W3W_API_KEY = process.env.WHAT3WORDS_API_KEY;
-
-    if (!W3W_API_KEY) {
+    if (!config.what3words.apiKey) {
       logger.warn('What3Words API key not configured');
       return res.json({
         words: 'location.not.configured',
@@ -2582,7 +2571,7 @@ app.get('/api/what3words', async (req, res) => {
     }
 
     const response = await axios.get(
-      `https://api.what3words.com/v3/convert-to-3wa?coordinates=${lat},${lng}&key=${W3W_API_KEY}`,
+      `https://api.what3words.com/v3/convert-to-3wa?coordinates=${lat},${lng}&key=${config.what3words.apiKey}`,
       { timeout: 10000 }
     );
 
@@ -2653,7 +2642,7 @@ app.get('/api/test-openai', async (req, res) => {
       'https://api.openai.com/v1/models',
       {
         headers: {
-          'Authorization': `Bearer ${process.env.OPENAI_API_KEY}`
+          'Authorization': `Bearer ${config.openai.apiKey}`
         },
         timeout: 5000
       }
@@ -3472,7 +3461,7 @@ app.post('/api/save-transcription', checkGDPRConsent, async (req, res) => {
 
           // Generate AI summary if transcript is substantial enough
           let aiSummary = null;
-          if (process.env.OPENAI_API_KEY && fullTranscript.length > 100) {
+          if (config.openai.apiKey && fullTranscript.length > 100) {
             try {
               logger.info('Generating AI summary for listening transcript');
               aiSummary = await generateAISummary(
@@ -4272,28 +4261,26 @@ app.post('/api/save-transcription', checkGDPRConsent, async (req, res) => {
           // ========================================
 
           // Check for required environment variables
-          const requiredEnvVars = [
-          'SUPABASE_URL',
-          'SUPABASE_SERVICE_ROLE_KEY',
-          'OPENAI_API_KEY'
-          ];
+          // Check for required configuration
+          const missingConfig = [];
+          if (!config.supabase.url) missingConfig.push('SUPABASE_URL');
+          if (!config.supabase.serviceKey) missingConfig.push('SUPABASE_SERVICE_ROLE_KEY');
+          if (!config.openai.apiKey) missingConfig.push('OPENAI_API_KEY');
 
-          const missingEnvVars = requiredEnvVars.filter(varName => !process.env[varName]);
-
-          if (missingEnvVars.length > 0) {
+          if (missingConfig.length > 0) {
           logger.warn('⚠️  WARNING: Missing required environment variables:');
-          missingEnvVars.forEach(varName => {
+          missingConfig.forEach(varName => {
           logger.warn(`   - ${varName}`);
           });
           }
 
-          if (!process.env.WHAT3WORDS_API_KEY) {
+          if (!config.what3words.enabled) {
           logger.warn('⚠️  WARNING: WHAT3WORDS_API_KEY not set in environment variables');
           logger.warn('   Emergency location services will not work properly');
           logger.warn('   Get your API key at: https://what3words.com/select-plan');
           }
 
-          if (!process.env.SUPABASE_ANON_KEY) {
+          if (!config.supabase.anonKey) {
           logger.warn('⚠️  WARNING: SUPABASE_ANON_KEY not set');
           logger.warn('   Authentication features will be disabled');
           }
@@ -4302,14 +4289,11 @@ app.post('/api/save-transcription', checkGDPRConsent, async (req, res) => {
           // START SERVER
           // ========================================
 
-          const PORT = process.env.PORT || 3000;
-          const HOST = '0.0.0.0';
-
-          server.listen(PORT, HOST, () => {
+          server.listen(config.server.port, config.server.host, () => {
           console.log('\n========================================');
           console.log('🚗 Car Crash Lawyer AI - Server Started');
           console.log('========================================');
-          console.log(`\n🌐 Server running on http://${HOST}:${PORT}`);
+          console.log(`\n🌐 Server running on http://${config.server.host}:${config.server.port}`);
 
           if (process.env.REPL_SLUG && process.env.REPL_OWNER) {
           console.log(`🔗 Public URL: https://${process.env.REPL_SLUG}.${process.env.REPL_OWNER}.repl.co`);
@@ -4318,8 +4302,8 @@ app.post('/api/save-transcription', checkGDPRConsent, async (req, res) => {
           console.log('\n📊 Service Status:');
           console.log(`   Supabase: ${supabaseEnabled ? '✅ Connected' : '❌ Not configured'}`);
           console.log(`   Auth Service: ${authService ? '✅ Configured' : '⚠️  Not configured'}`);
-          console.log(`   OpenAI: ${process.env.OPENAI_API_KEY ? '✅ Configured' : '❌ Not configured'}`);
-          console.log(`   what3words: ${process.env.WHAT3WORDS_API_KEY ? '✅ Configured' : '⚠️  Not configured'}`);
+          console.log(`   OpenAI: ${config.openai.enabled ? '✅ Configured' : '❌ Not configured'}`);
+          console.log(`   what3words: ${config.what3words.enabled ? '✅ Configured' : '⚠️  Not configured'}`);
           console.log(`   WebSocket: ✅ Active`);
           console.log(`   GDPR Compliance: ✅ Full compliance`);
           console.log(`   GDPR Consent Capture: ✅ Active`);
@@ -4360,15 +4344,15 @@ app.post('/api/save-transcription', checkGDPRConsent, async (req, res) => {
 
           // Log startup summary
           logger.success('Server startup complete', {
-          port: PORT,
-          environment: process.env.NODE_ENV || 'development',
+          port: config.server.port,
+          environment: config.server.env,
           services: {
             supabase: supabaseEnabled,
             auth: !!authService,
-            openai: !!process.env.OPENAI_API_KEY,
-            what3words: !!process.env.WHAT3WORDS_API_KEY,
+            openai: config.openai.enabled,
+            what3words: config.what3words.enabled,
             pdf: !!(fetchAllData && generatePDF && sendEmails),
-            ai_listening: !!process.env.OPENAI_API_KEY,
+            ai_listening: config.openai.enabled,
             gdpr_consent: true
           }
           });
@@ -4377,7 +4361,7 @@ app.post('/api/save-transcription', checkGDPRConsent, async (req, res) => {
           // Handle server errors
           server.on('error', (error) => {
           if (error.code === 'EADDRINUSE') {
-          logger.error(`Port ${PORT} is already in use`);
+          logger.error(`Port ${config.server.port} is already in use`);
           process.exit(1);
           } else {
           logger.error('Server error:', error);
