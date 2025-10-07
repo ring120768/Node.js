@@ -53,6 +53,11 @@ async function startServer() {
       logger.warn('⚠️  WARNING: SUPABASE_ANON_KEY not set - auth features disabled');
     }
 
+    // Validate that server and app are properly configured
+    if (!server) {
+      throw new Error('HTTP server not initialized');
+    }
+
     // Start server
     server.listen(config.server.port, '0.0.0.0', () => {
       console.log('\n========================================');

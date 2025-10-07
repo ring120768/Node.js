@@ -23,7 +23,7 @@ localPort = 5000
 externalPort = 80
 
 [workflows]
-runButton = "Project"
+runButton = "Start Server"
 
 [[workflows.workflow]]
 name = "Run Main Server"
@@ -63,6 +63,33 @@ waitForPort = 5000
 
 [workflows.workflow.metadata]
 outputType = "webview"
+
+[[workflows.workflow]]
+name = "Run New Server"
+author = 43588325
+mode = "sequential"
+
+[[workflows.workflow.tasks]]
+task = "shell.exec"
+args = "node index.new.js"
+
+[[workflows.workflow]]
+name = "Run Tests"
+author = 43588325
+mode = "sequential"
+
+[[workflows.workflow.tasks]]
+task = "shell.exec"
+args = "node run-tests.js"
+
+[[workflows.workflow]]
+name = "Start Server"
+author = 43588325
+mode = "sequential"
+
+[[workflows.workflow.tasks]]
+task = "shell.exec"
+args = "node start-server.js"
 
 [agent]
 expertMode = true
