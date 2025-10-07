@@ -429,6 +429,41 @@
 
     <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
     <script>
+        // ============================================
+        // AUTHENTICATION CHECK (RUNS FIRST)
+        // ============================================
+        async function checkAuthentication() {
+            try {
+                const authResponse = await fetch('/api/auth/session', {
+                    credentials: 'include'
+                });
+
+                const authData = await authResponse.json();
+
+                // HARD REDIRECT if not authenticated
+                if (!authResponse.ok || !authData.authenticated) {
+                    // Save current URL as redirect target
+                    const returnUrl = window.location.pathname + window.location.search;
+                    window.location.href = `/login.html?redirect=${encodeURIComponent(returnUrl)}`;
+                    return false;
+                }
+
+                // User is authenticated - store user info
+                if (authData.user) {
+                    window.currentUser = authData.user;
+                    console.log('User authenticated:', authData.user.email);
+                }
+
+                return true;
+
+            } catch (error) {
+                console.error('Auth check failed:', error);
+                // On error, redirect to login for security
+                window.location.href = '/login.html?redirect=incident.html';
+                return false;
+            }
+        }
+
         // Global variables to store collected data
         let userData = null;
         let emergencyContacts = null;
@@ -443,47 +478,50 @@
         let isRecording = false;
         let what3wordsStoragePath = null;
 
-        // Initialize on page load
+        // Initialize on page load - AUTH CHECK RUNS FIRST
         document.addEventListener('DOMContentLoaded', async () => {
             console.log('Initializing incident report page...');
-            await checkUserAuthentication();
+
+            // CHECK AUTH FIRST - If not authenticated, user is redirected
+            const isAuthenticated = await checkAuthentication();
+            if (!isAuthenticated) {
+                return; // Stop execution if not authenticated
+            }
+
+            // Continue with initialization only if authenticated
+            await loadUserData();
             setupEmergencyButtons();
             setupLocationButton();
             setupVoiceRecording();
             setupContinueButton();
         });
 
-        // Check user authentication and fetch emergency contacts
-        async function checkUserAuthentication() {
+        // Load user data and emergency contacts (after auth is confirmed)
+        async function loadUserData() {
             try {
-                const authResponse = await fetch('/api/auth/status');
-                if (!authResponse.ok) {
-                    console.warn('Authentication check failed');
-                    return;
-                }
-
-                const authData = await authResponse.json();
-
-                if (authData.authenticated && authData.user && authData.user.uid) {
-                    userData = authData.user;
-                    console.log('User authenticated:', userData.uid);
+                // User data is already in window.currentUser from auth check
+                if (window.currentUser) {
+                    userData = window.currentUser;
+                    console.log('User data loaded:', userData.uid || userData.email);
 
                     // Fetch emergency contacts
-                    try {
-                        const contactsResponse = await fetch(`/api/user/${userData.uid}/emergency-contacts`);
-                        if (contactsResponse.ok) {
-                            emergencyContacts = await contactsResponse.json();
-                            console.log('Emergency contacts loaded');
-                            updateEmergencyButtons();
+                    if (userData.uid) {
+                        try {
+                            const contactsResponse = await fetch(`/api/user/${userData.uid}/emergency-contacts`, {
+                                credentials: 'include'
+                            });
+                            if (contactsResponse.ok) {
+                                emergencyContacts = await contactsResponse.json();
+                                console.log('Emergency contacts loaded');
+                                updateEmergencyButtons();
+                            }
+                        } catch (error) {
+                            console.error('Failed to fetch emergency contacts:', error);
                         }
-                    } catch (error) {
-                        console.error('Failed to fetch emergency contacts:', error);
                     }
-                } else {
-                    console.warn('User not authenticated');
                 }
             } catch (error) {
-                console.error('Authentication check error:', error);
+                console.error('Failed to load user data:', error);
             }
         }
 
@@ -612,9 +650,11 @@
                             document.getElementById('addressText').textContent = 'Unable to fetch address';
                         }
 
-                        // Fetch What3Words
+                        // Fetch What3Words using the new endpoint
                         try {
-                            const w3wResponse = await fetch(`/api/what3words?lat=${userLocation.lat}&lng=${userLocation.lng}`);
+                            const w3wResponse = await fetch(`/api/what3words/convert?lat=${userLocation.lat}&lng=${userLocation.lng}`, {
+                                credentials: 'include'
+                            });
                             const w3wData = await w3wResponse.json();
                             if (w3wData.words) {
                                 what3wordsData = w3wData.words;
@@ -700,11 +740,12 @@
                 formData.append('what3words', what3wordsData);
                 formData.append('latitude', userLocation?.lat || '');
                 formData.append('longitude', userLocation?.lng || '');
-                formData.append('userId', userData?.uid || '');
+                formData.append('userId', userData?.uid || userData?.id || '');
 
                 const response = await fetch('/api/upload-what3words-image', {
                     method: 'POST',
-                    body: formData
+                    body: formData,
+                    credentials: 'include'
                 });
 
                 if (response.ok) {
@@ -819,7 +860,8 @@
 
                 const response = await fetch('/api/whisper/transcribe', {
                     method: 'POST',
-                    body: formData
+                    body: formData,
+                    credentials: 'include'
                 });
 
                 if (response.ok) {
@@ -851,7 +893,7 @@
 
                 // Store all collected data in sessionStorage
                 const incidentData = {
-                    userId: userData?.uid || null,
+                    userId: userData?.uid || userData?.id || null,
                     location: userLocation,
                     what3words: what3wordsData,
                     what3wordsStoragePath: what3wordsStoragePath,
