@@ -52,6 +52,11 @@ const logger = require('./src/utils/logger');
 const { validateUserId } = require('./src/utils/validators');
 
 // ========================================
+// RESPONSE UTILITIES
+// ========================================
+const { sendError, redactUrl } = require('./src/utils/response');
+
+// ========================================
 // EXPRESS APP SETUP
 // ========================================
 const app = express();
@@ -157,39 +162,6 @@ app.use((req, res, next) => {
 // ========================================
 // UTILITY FUNCTIONS
 // ========================================
-
-
-
-/**
- * Standardized error response helper
- */
-function sendError(res, statusCode, error, code = null, details = null) {
-  const response = {
-    success: false,
-    error: error,
-    timestamp: new Date().toISOString(),
-    requestId: res.req?.requestId || 'unknown'
-  };
-
-  if (code) response.code = code;
-  if (details) response.details = details;
-
-  res.status(statusCode).json(response);
-}
-
-/**
- * Redact sensitive information from URLs
- */
-function redactUrl(url) {
-  if (!url) return 'no-url';
-  try {
-    const urlObj = new URL(url);
-    urlObj.search = ''; // Remove query params
-    return urlObj.toString();
-  } catch {
-    return url.split('?')[0]; // Simple fallback
-  }
-}
 
 // ========================================
 // AUTHENTICATION MIDDLEWARE
