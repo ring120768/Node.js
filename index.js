@@ -42,34 +42,9 @@ try {
 const CONSTANTS = require('./src/config/constants');
 
 // ========================================
-// ENHANCED LOGGING UTILITY
+// LOGGING UTILITY
 // ========================================
-const Logger = {
-  info: (message, data) => {
-    if (process.env.NODE_ENV !== 'production') {
-      console.log(`[INFO] ${new Date().toISOString()} ${message}`, data || '');
-    }
-  },
-  error: (message, error) => {
-    const errorMessage = error?.message || error || '';
-    const errorStack = error?.stack || '';
-    console.error(`[ERROR] ${new Date().toISOString()} ${message}`, errorMessage);
-    if (errorStack && process.env.DEBUG === 'true') {
-      console.error(errorStack);
-    }
-  },
-  warn: (message, data) => {
-    console.warn(`[WARN] ${new Date().toISOString()} ${message}`, data || '');
-  },
-  debug: (message, data) => {
-    if (process.env.DEBUG === 'true') {
-      console.log(`[DEBUG] ${new Date().toISOString()} ${message}`, data || '');
-    }
-  },
-  success: (message, data) => {
-    console.log(`[✅ SUCCESS] ${new Date().toISOString()} ${message}`, data || '');
-  }
-};
+const logger = require('./src/utils/logger');
 
 // ========================================
 // EXPRESS APP SETUP
@@ -159,7 +134,7 @@ app.use((req, res, next) => {
 app.use((req, res, next) => {
   const timestamp = new Date().toISOString();
   const sanitizedPath = req.path.replace(/\/user\/[^/]+/g, '/user/[REDACTED]');
-  Logger.debug(`${req.method} ${sanitizedPath}`, { timestamp });
+  logger.debug(`${req.method} ${sanitizedPath}`, { timestamp });
 
   // Store IP for GDPR audit logging
   req.clientIp = req.ip ||
@@ -244,12 +219,12 @@ function checkSharedKey(req, res, next) {
   const provided = headerKey || bearer || '';
 
   if (!SHARED_KEY) {
-    Logger.warn('No ZAPIER_SHARED_KEY/WEBHOOK_API_KEY set');
+    logger.warn('No ZAPIER_SHARED_KEY/WEBHOOK_API_KEY set');
     return sendError(res, 503, 'Server missing shared key', 'MISSING_API_KEY');
   }
 
   if (provided !== SHARED_KEY) {
-    Logger.warn('Authentication failed', { ip: req.clientIp });
+    logger.warn('Authentication failed', { ip: req.clientIp });
     return sendError(res, 401, 'Unauthorized', 'INVALID_API_KEY');
   }
 
@@ -258,7 +233,7 @@ function checkSharedKey(req, res, next) {
 
 function authenticateRequest(req, res, next) {
   // Placeholder for future auth implementation
-  Logger.debug('authenticateRequest called');
+  logger.debug('authenticateRequest called');
   next();
 }
 
@@ -274,7 +249,7 @@ const initSupabase = () => {
   const key = process.env.SUPABASE_SERVICE_ROLE_KEY || process.env.SUPABASE_SERVICE_KEY;
 
   if (!url || !key) {
-    Logger.error('SUPABASE_URL or SUPABASE_SERVICE_KEY not found');
+    logger.error('SUPABASE_URL or SUPABASE_SERVICE_KEY not found');
     return false;
   }
 
@@ -300,7 +275,7 @@ const initSupabase = () => {
       }
     });
 
-    Logger.success('Supabase initialized successfully');
+    logger.success('Supabase initialized successfully');
 
     // Initialize GDPR tables if they don't exist
     initializeGDPRTables();
@@ -310,7 +285,7 @@ const initSupabase = () => {
 
     return true;
   } catch (error) {
-    Logger.error('Error initializing Supabase', error);
+    logger.error('Error initializing Supabase', error);
     return false;
   }
 };
@@ -331,7 +306,7 @@ function initializeSupabaseRealtime() {
           table: 'transcription_queue'
         },
         (payload) => {
-          Logger.info('Realtime transcription update:', payload.eventType);
+          logger.info('Realtime transcription update:', payload.eventType);
           handleRealtimeTranscriptionUpdate(payload);
         }
       )
@@ -343,12 +318,12 @@ function initializeSupabaseRealtime() {
           table: 'ai_transcription'
         },
         (payload) => {
-          Logger.info('Realtime AI transcription update:', payload.eventType);
+          logger.info('Realtime AI transcription update:', payload.eventType);
           handleRealtimeTranscriptionUpdate(payload);
         }
       )
       .subscribe((status) => {
-        Logger.info('Transcription realtime subscription status:', status);
+        logger.info('Transcription realtime subscription status:', status);
       });
 
     // Subscribe to ai_summary changes
@@ -362,19 +337,19 @@ function initializeSupabaseRealtime() {
           table: 'ai_summary'
         },
         (payload) => {
-          Logger.info('AI Summary created:', payload.new?.id);
+          logger.info('AI Summary created:', payload.new?.id);
           handleRealtimeSummaryUpdate(payload);
         }
       )
       .subscribe((status) => {
-        Logger.info('Summary realtime subscription status:', status);
+        logger.info('Summary realtime subscription status:', status);
       });
 
     realtimeChannels = { transcriptionChannel, summaryChannel };
 
-    Logger.info('Supabase Realtime channels initialized');
+    logger.info('Supabase Realtime channels initialized');
   } catch (error) {
-    Logger.error('Failed to initialize Supabase Realtime (non-critical)', error);
+    logger.error('Failed to initialize Supabase Realtime (non-critical)', error);
   }
 }
 
@@ -388,7 +363,7 @@ async function initializeGDPRTables() {
       .limit(1);
 
     if (consentError && consentError.code === '42P01') {
-      Logger.info('GDPR consent table needs creation (handle via migrations)');
+      logger.info('GDPR consent table needs creation (handle via migrations)');
     }
 
     // Check and create GDPR audit log table
@@ -398,10 +373,10 @@ async function initializeGDPRTables() {
       .limit(1);
 
     if (auditError && auditError.code === '42P01') {
-      Logger.info('GDPR audit log table needs creation (handle via migrations)');
+      logger.info('GDPR audit log table needs creation (handle via migrations)');
     }
   } catch (error) {
-    Logger.error('Error checking GDPR tables', error);
+    logger.error('Error checking GDPR tables', error);
   }
 }
 
@@ -416,9 +391,9 @@ if (process.env.SUPABASE_ANON_KEY && supabaseEnabled) {
     process.env.SUPABASE_URL,
     process.env.SUPABASE_ANON_KEY
   );
-  Logger.success('✅ Supabase Auth service initialized');
+  logger.success('✅ Supabase Auth service initialized');
 } else {
-  Logger.warn('⚠️ Auth service not initialized - missing SUPABASE_ANON_KEY');
+  logger.warn('⚠️ Auth service not initialized - missing SUPABASE_ANON_KEY');
 }
 
 // ========================================
@@ -444,7 +419,7 @@ async function logGDPRActivity(userId, activityType, details, req = null) {
         timestamp: new Date().toISOString()
       });
   } catch (error) {
-    Logger.error('GDPR audit log error', error);
+    logger.error('GDPR audit log error', error);
   }
 }
 
@@ -494,7 +469,7 @@ async function checkGDPRConsent(req, res, next) {
 
     next();
   } catch (error) {
-    Logger.error('GDPR consent check error', error);
+    logger.error('GDPR consent check error', error);
     sendError(res, 500, 'Failed to verify consent', 'CONSENT_CHECK_FAILED');
   }
 }
@@ -533,7 +508,7 @@ async function enforceDataRetention() {
         });
       }
 
-      Logger.info(`Archived ${oldReports.length} old reports per retention policy`);
+      logger.info(`Archived ${oldReports.length} old reports per retention policy`);
     }
 
     // Clean up old transcription queue items
@@ -543,14 +518,14 @@ async function enforceDataRetention() {
       .lt('created_at', cutoffDate.toISOString())
       .eq('status', CONSTANTS.TRANSCRIPTION_STATUS.COMPLETED);
   } catch (error) {
-    Logger.error('Data retention enforcement error', error);
+    logger.error('Data retention enforcement error', error);
   }
 }
 
 // Schedule data retention enforcement
 if (supabaseEnabled) {
   setInterval(enforceDataRetention, 24 * 60 * 60 * 1000);
-  Logger.info('Data retention policy scheduled');
+  logger.info('Data retention policy scheduled');
 }
 
 // ========================================
@@ -572,7 +547,7 @@ setInterval(() => {
   activeSessions.forEach((ws, queueId) => {
     if (ws.readyState !== WebSocket.OPEN) {
       activeSessions.delete(queueId);
-      Logger.debug(`Cleaned up stale session for queue ${queueId}`);
+      logger.debug(`Cleaned up stale session for queue ${queueId}`);
     }
   });
 
@@ -580,7 +555,7 @@ setInterval(() => {
     const activeSockets = Array.from(wsSets).filter(ws => ws.readyState === WebSocket.OPEN);
     if (activeSockets.length !== wsSets.size) {
       userSessions.set(userId, new Set(activeSockets));
-      Logger.debug(`Cleaned up ${wsSets.size - activeSockets.length} stale sockets for user ${userId}`);
+      logger.debug(`Cleaned up ${wsSets.size - activeSockets.length} stale sockets for user ${userId}`);
     }
     if (activeSockets.length === 0) {
       userSessions.delete(userId);
@@ -599,7 +574,7 @@ setInterval(() => {
   });
 
   if (cleaned > 0) {
-    Logger.info(`Cleaned up ${cleaned} old transcription statuses`);
+    logger.info(`Cleaned up ${cleaned} old transcription statuses`);
   }
 }, 60000); // Clean up every minute
 
@@ -612,7 +587,7 @@ server.on('upgrade', (request, socket, head) => {
 
 // WebSocket connection handler
 wss.on('connection', (ws) => {
-  Logger.info('New WebSocket connection established');
+  logger.info('New WebSocket connection established');
 
   ws.isAlive = true;
   ws.on('pong', () => {
@@ -626,7 +601,7 @@ wss.on('connection', (ws) => {
     try {
       const data = JSON.parse(message);
       ws.messageCount++;
-      Logger.debug('WebSocket message received', {
+      logger.debug('WebSocket message received', {
         type: data.type,
         messageCount: ws.messageCount
       });
@@ -679,14 +654,14 @@ wss.on('connection', (ws) => {
           break;
 
         default:
-          Logger.debug('Unknown message type:', data.type);
+          logger.debug('Unknown message type:', data.type);
           ws.send(JSON.stringify({
             type: CONSTANTS.WS_MESSAGE_TYPES.ERROR,
             message: 'Unknown message type'
           }));
       }
     } catch (error) {
-      Logger.error('WebSocket message error', error);
+      logger.error('WebSocket message error', error);
       ws.send(JSON.stringify({
         type: CONSTANTS.WS_MESSAGE_TYPES.ERROR,
         message: 'Invalid message format'
@@ -696,7 +671,7 @@ wss.on('connection', (ws) => {
 
   ws.on('close', () => {
     const connectionDuration = Date.now() - ws.connectionTime;
-    Logger.debug('WebSocket connection closed', {
+    logger.debug('WebSocket connection closed', {
       duration: connectionDuration,
       messages: ws.messageCount
     });
@@ -710,7 +685,7 @@ wss.on('connection', (ws) => {
   });
 
   ws.on('error', (error) => {
-    Logger.error('WebSocket error', error);
+    logger.error('WebSocket error', error);
   });
 });
 
@@ -718,7 +693,7 @@ wss.on('connection', (ws) => {
 const wsHeartbeat = setInterval(() => {
   wss.clients.forEach((ws) => {
     if (ws.isAlive === false) {
-      Logger.debug('Terminating inactive WebSocket connection');
+      logger.debug('Terminating inactive WebSocket connection');
       return ws.terminate();
     }
     ws.isAlive = false;
@@ -735,7 +710,7 @@ function sendTranscriptionUpdate(queueId, data) {
     try {
       ws.send(JSON.stringify(data));
     } catch (error) {
-      Logger.error('Error sending transcription update', error);
+      logger.error('Error sending transcription update', error);
     }
   }
 }
@@ -750,7 +725,7 @@ function broadcastToUser(userId, data) {
         try {
           ws.send(JSON.stringify(data));
         } catch (error) {
-          Logger.error('Error broadcasting to user', error);
+          logger.error('Error broadcasting to user', error);
         }
       }
     });
@@ -826,7 +801,7 @@ function handleRealtimeTranscriptionUpdate(payload) {
       });
     }
   } catch (error) {
-    Logger.error('Error handling realtime transcription update', error);
+    logger.error('Error handling realtime transcription update', error);
   }
 }
 
@@ -865,7 +840,7 @@ function handleRealtimeSummaryUpdate(payload) {
       });
     }
   } catch (error) {
-    Logger.error('Error handling realtime summary update', error);
+    logger.error('Error handling realtime summary update', error);
   }
 }
 
@@ -879,16 +854,16 @@ function handleRealtimeSummaryUpdate(payload) {
 async function generateAISummary(transcriptionText, createUserId, incidentId) {
   try {
     if (!process.env.OPENAI_API_KEY || !transcriptionText) {
-      Logger.info('Cannot generate AI summary - missing API key or transcription');
+      logger.info('Cannot generate AI summary - missing API key or transcription');
       return null;
     }
 
     if (transcriptionText.length < 10) {
-      Logger.warn('Transcription too short for meaningful summary');
+      logger.warn('Transcription too short for meaningful summary');
       return null;
     }
 
-    Logger.info('Generating AI summary for user', { userId: createUserId });
+    logger.info('Generating AI summary for user', { userId: createUserId });
 
     const response = await axios.post(
       'https://api.openai.com/v1/chat/completions',
@@ -931,7 +906,7 @@ Respond ONLY with valid JSON. No additional text.`
       const cleanContent = content.replace(/```json\n?/g, '').replace(/```\n?/g, '').trim();
       aiAnalysis = JSON.parse(cleanContent);
     } catch (parseError) {
-      Logger.error('Failed to parse AI response as JSON', parseError);
+      logger.error('Failed to parse AI response as JSON', parseError);
       aiAnalysis = {
         summary_text: response.data.choices[0].message.content,
         key_points: ['See summary for details'],
@@ -965,7 +940,7 @@ Respond ONLY with valid JSON. No additional text.`
       .single();
 
     if (error) {
-      Logger.error('Error saving AI summary to database', error);
+      logger.error('Error saving AI summary to database', error);
       if (error.message.includes('column')) {
         const { data: retryData } = await supabase
           .from('ai_summary')
@@ -980,17 +955,17 @@ Respond ONLY with valid JSON. No additional text.`
           .single();
 
         if (retryData) {
-          Logger.success('AI summary saved with basic fields');
+          logger.success('AI summary saved with basic fields');
           return aiAnalysis;
         }
       }
       return aiAnalysis;
     }
 
-    Logger.success('AI summary generated and saved successfully');
+    logger.success('AI summary generated and saved successfully');
     return aiAnalysis;
   } catch (error) {
-    Logger.error('AI Summary generation error', error.response?.data || error);
+    logger.error('AI Summary generation error', error.response?.data || error);
     return null;
   }
 }
@@ -1007,7 +982,7 @@ async function processTranscriptionFromBuffer(queueId, audioBuffer, create_user_
   const maxRetries = 3;
 
   try {
-    Logger.info(`Processing transcription for queue ${queueId}, user ${create_user_id}`);
+    logger.info(`Processing transcription for queue ${queueId}, user ${create_user_id}`);
 
     // Validate inputs
     if (!create_user_id) {
@@ -1034,9 +1009,9 @@ async function processTranscriptionFromBuffer(queueId, audioBuffer, create_user_
 
     if (audioBuffer) {
       finalAudioBuffer = audioBuffer;
-      Logger.info(`Using provided buffer, size: ${audioBuffer.length} bytes`);
+      logger.info(`Using provided buffer, size: ${audioBuffer.length} bytes`);
     } else if (audioUrl) {
-      Logger.info(`Downloading audio from URL: ${redactUrl(audioUrl)}`);
+      logger.info(`Downloading audio from URL: ${redactUrl(audioUrl)}`);
 
       try {
         let storagePath = audioUrl;
@@ -1046,14 +1021,14 @@ async function processTranscriptionFromBuffer(queueId, audioBuffer, create_user_
           storagePath = audioUrl.split('/').slice(-2).join('/');
         }
 
-        Logger.debug(`Attempting to download from path: ${storagePath}`);
+        logger.debug(`Attempting to download from path: ${storagePath}`);
 
         const { data: fileData, error: downloadError } = await supabase.storage
           .from('incident-audio')
           .download(storagePath);
 
         if (downloadError) {
-          Logger.error('Supabase download error:', downloadError);
+          logger.error('Supabase download error:', downloadError);
           const audioResponse = await axios.get(audioUrl, {
             responseType: 'arraybuffer',
             timeout: CONSTANTS.RETRY_LIMITS.API_TIMEOUT,
@@ -1067,9 +1042,9 @@ async function processTranscriptionFromBuffer(queueId, audioBuffer, create_user_
           finalAudioBuffer = Buffer.from(await fileData.arrayBuffer());
         }
 
-        Logger.info(`Downloaded buffer size: ${finalAudioBuffer.length} bytes`);
+        logger.info(`Downloaded buffer size: ${finalAudioBuffer.length} bytes`);
       } catch (downloadError) {
-        Logger.error('Audio download failed:', downloadError);
+        logger.error('Audio download failed:', downloadError);
         throw new Error(`Failed to download audio: ${downloadError.message}`);
       }
     } else {
@@ -1108,7 +1083,7 @@ async function processTranscriptionFromBuffer(queueId, audioBuffer, create_user_
 
     while (retryCount < maxRetries) {
       try {
-        Logger.info(`Whisper API attempt ${retryCount + 1}/${maxRetries}`);
+        logger.info(`Whisper API attempt ${retryCount + 1}/${maxRetries}`);
 
         whisperResponse = await axios.post(
           'https://api.openai.com/v1/audio/transcriptions',
@@ -1129,19 +1104,19 @@ async function processTranscriptionFromBuffer(queueId, audioBuffer, create_user_
           throw new Error(`Whisper API returned ${whisperResponse.status}: ${JSON.stringify(whisperResponse.data)}`);
         }
 
-        Logger.success('Whisper API call successful');
+        logger.success('Whisper API call successful');
         break;
 
       } catch (error) {
         retryCount++;
-        Logger.error(`Whisper API attempt ${retryCount} failed:`, error.response?.data || error.message);
+        logger.error(`Whisper API attempt ${retryCount} failed:`, error.response?.data || error.message);
 
         if (retryCount >= maxRetries) {
           throw new Error(`Whisper API failed after ${maxRetries} attempts: ${error.message}`);
         }
 
         const waitTime = Math.pow(2, retryCount) * 1000;
-        Logger.info(`Waiting ${waitTime}ms before retry...`);
+        logger.info(`Waiting ${waitTime}ms before retry...`);
         await new Promise(resolve => setTimeout(resolve, waitTime));
       }
     }
@@ -1152,7 +1127,7 @@ async function processTranscriptionFromBuffer(queueId, audioBuffer, create_user_
       throw new Error('Transcription returned empty text');
     }
 
-    Logger.success(`Transcription successful, text length: ${transcription.length} characters`);
+    logger.success(`Transcription successful, text length: ${transcription.length} characters`);
 
     // Update in-memory status
     transcriptionStatuses.set(queueId.toString(), {
@@ -1177,7 +1152,7 @@ async function processTranscriptionFromBuffer(queueId, audioBuffer, create_user_
       .eq('id', queueId);
 
     if (queueUpdateError) {
-      Logger.error('Error updating transcription_queue:', queueUpdateError);
+      logger.error('Error updating transcription_queue:', queueUpdateError);
     }
 
     // Save to ai_transcription table
@@ -1194,9 +1169,9 @@ async function processTranscriptionFromBuffer(queueId, audioBuffer, create_user_
       .single();
 
     if (saveError) {
-      Logger.error('Error saving to ai_transcription:', saveError);
+      logger.error('Error saving to ai_transcription:', saveError);
     } else {
-      Logger.success('Transcription saved to ai_transcription table');
+      logger.success('Transcription saved to ai_transcription table');
     }
 
     // Send real-time update
@@ -1210,7 +1185,7 @@ async function processTranscriptionFromBuffer(queueId, audioBuffer, create_user_
     // Generate AI summary
     if (process.env.OPENAI_API_KEY && transcription.length > 10) {
       try {
-        Logger.info('Starting AI summary generation');
+        logger.info('Starting AI summary generation');
         const summary = await generateAISummary(transcription, create_user_id, incident_report_id || queueId);
 
         if (summary) {
@@ -1237,10 +1212,10 @@ async function processTranscriptionFromBuffer(queueId, audioBuffer, create_user_
             timestamp: new Date().toISOString()
           });
 
-          Logger.success('AI summary generated and process completed successfully');
+          logger.success('AI summary generated and process completed successfully');
         }
       } catch (summaryError) {
-        Logger.error('Summary generation failed:', summaryError);
+        logger.error('Summary generation failed:', summaryError);
 
         transcriptionStatuses.set(queueId.toString(), {
           ...transcriptionStatuses.get(queueId.toString()),
@@ -1280,7 +1255,7 @@ async function processTranscriptionFromBuffer(queueId, audioBuffer, create_user_
       });
     }
   } catch (error) {
-    Logger.error(`Transcription processing error for queue ${queueId}:`, error);
+    logger.error(`Transcription processing error for queue ${queueId}:`, error);
 
     transcriptionStatuses.set(queueId.toString(), {
       status: CONSTANTS.TRANSCRIPTION_STATUS.FAILED,
@@ -1302,7 +1277,7 @@ async function processTranscriptionFromBuffer(queueId, audioBuffer, create_user_
       .eq('id', queueId);
 
     if (updateError) {
-      Logger.error('Error updating failed status:', updateError);
+      logger.error('Error updating failed status:', updateError);
     }
 
     broadcastTranscriptionUpdate(queueId.toString(), {
@@ -1323,7 +1298,7 @@ async function processTranscriptionQueue() {
   }
 
   try {
-    Logger.debug('Checking for pending transcriptions...');
+    logger.debug('Checking for pending transcriptions...');
 
     const { data: pending, error } = await supabase
       .from('transcription_queue')
@@ -1334,26 +1309,26 @@ async function processTranscriptionQueue() {
       .limit(10);
 
     if (error) {
-      Logger.error('Error fetching transcription queue', error);
+      logger.error('Error fetching transcription queue', error);
       return;
     }
 
     if (!pending || pending.length === 0) {
-      Logger.debug('No pending transcriptions found');
+      logger.debug('No pending transcriptions found');
       return;
     }
 
-    Logger.info(`Processing ${pending.length} transcription items from queue`);
+    logger.info(`Processing ${pending.length} transcription items from queue`);
 
     for (const item of pending) {
       try {
         const existingStatus = transcriptionStatuses.get(item.id.toString());
         if (existingStatus && existingStatus.status === CONSTANTS.TRANSCRIPTION_STATUS.PROCESSING) {
-          Logger.info(`Skipping queue item ${item.id} - already processing`);
+          logger.info(`Skipping queue item ${item.id} - already processing`);
           continue;
         }
 
-        Logger.info(`Processing queue item ${item.id} (attempt ${item.retry_count + 1})`);
+        logger.info(`Processing queue item ${item.id} (attempt ${item.retry_count + 1})`);
 
         await processTranscriptionFromBuffer(
           item.id,
@@ -1366,11 +1341,11 @@ async function processTranscriptionQueue() {
         await new Promise(resolve => setTimeout(resolve, 2000));
 
       } catch (error) {
-        Logger.error(`Error processing transcription item ${item.id}:`, error);
+        logger.error(`Error processing transcription item ${item.id}:`, error);
       }
     }
   } catch (error) {
-    Logger.error('Fatal error in transcription queue processor:', error);
+    logger.error('Fatal error in transcription queue processor:', error);
   }
 }
 
@@ -1380,7 +1355,7 @@ if (supabaseEnabled) {
   const intervalMinutes = parseInt(process.env.TRANSCRIPTION_QUEUE_INTERVAL) || 5;
   transcriptionQueueInterval = setInterval(processTranscriptionQueue, intervalMinutes * 60 * 1000);
   setTimeout(processTranscriptionQueue, 30000);
-  Logger.info(`Transcription queue processor scheduled every ${intervalMinutes} minutes`);
+  logger.info(`Transcription queue processor scheduled every ${intervalMinutes} minutes`);
 }
 
 // ========================================
@@ -1429,12 +1404,12 @@ async function storeCompletedForm(createUserId, pdfBuffer, allData) {
       .single();
 
     if (error) {
-      Logger.error('Error storing completed form', error);
+      logger.error('Error storing completed form', error);
     }
 
     return data || { id: `temp-${Date.now()}` };
   } catch (error) {
-    Logger.error('Error in storeCompletedForm', error);
+    logger.error('Error in storeCompletedForm', error);
     return { id: `error-${Date.now()}` };
   }
 }
@@ -1451,7 +1426,7 @@ class ImageProcessor {
 
   async processSignupImages(webhookData) {
     try {
-      Logger.info('Processing signup images', { userId: webhookData.create_user_id });
+      logger.info('Processing signup images', { userId: webhookData.create_user_id });
 
       const { data: user } = await this.supabase
         .from('user_signup')
@@ -1476,7 +1451,7 @@ class ImageProcessor {
 
       for (const field of imageFields) {
         if (webhookData[field] && webhookData[field].startsWith('http')) {
-          Logger.debug(`Processing ${field}...`);
+          logger.debug(`Processing ${field}...`);
 
           try {
             const imageBuffer = await this.downloadImage(webhookData[field]);
@@ -1498,10 +1473,10 @@ class ImageProcessor {
             });
 
             processedImages.push(imageRecord);
-            Logger.debug(`${field} uploaded successfully`);
+            logger.debug(`${field} uploaded successfully`);
 
           } catch (imgError) {
-            Logger.error(`Error processing ${field}`, imgError);
+            logger.error(`Error processing ${field}`, imgError);
             uploadedImages[field] = null;
           }
         }
@@ -1515,9 +1490,9 @@ class ImageProcessor {
           .select();
 
         if (updateError) {
-          Logger.error('Error updating user_signup', updateError);
+          logger.error('Error updating user_signup', updateError);
         } else {
-          Logger.info('Updated user_signup with storage paths');
+          logger.info('Updated user_signup with storage paths');
         }
       }
 
@@ -1534,14 +1509,14 @@ class ImageProcessor {
       };
 
     } catch (error) {
-      Logger.error('Error in processSignupImages', error);
+      logger.error('Error in processSignupImages', error);
       throw error;
     }
   }
 
   async processIncidentReportFiles(webhookData) {
     try {
-      Logger.info('Processing incident report files', {
+      logger.info('Processing incident report files', {
         userId: webhookData.create_user_id,
         incidentId: webhookData.id || webhookData.incident_report_id
       });
@@ -1578,7 +1553,7 @@ class ImageProcessor {
         const { field, type, isImage } = fileInfo;
 
         if (webhookData[field] && webhookData[field].startsWith('http')) {
-          Logger.debug(`Processing ${field} (${type})...`);
+          logger.debug(`Processing ${field} (${type})...`);
 
           try {
             const fileBuffer = await this.downloadFile(webhookData[field]);
@@ -1651,14 +1626,14 @@ class ImageProcessor {
             });
 
             processedFiles.push(fileRecord);
-            Logger.debug(`${type} uploaded successfully (${extension})`);
+            logger.debug(`${type} uploaded successfully (${extension})`);
 
             if (!isImage && type === 'audio_account') {
               await this.queueTranscription(createUserId, incidentReportId, storagePath);
             }
 
           } catch (fileError) {
-            Logger.error(`Error processing ${field}`, fileError);
+            logger.error(`Error processing ${field}`, fileError);
             uploadedFiles[field] = null;
           }
         }
@@ -1672,9 +1647,9 @@ class ImageProcessor {
           .select();
 
         if (updateError) {
-          Logger.error('Error updating incident_reports', updateError);
+          logger.error('Error updating incident_reports', updateError);
         } else {
-          Logger.info('Updated incident_reports with storage paths');
+          logger.info('Updated incident_reports with storage paths');
         }
       }
 
@@ -1687,7 +1662,7 @@ class ImageProcessor {
       };
 
     } catch (error) {
-      Logger.error('Error in processIncidentReportFiles', error);
+      logger.error('Error in processIncidentReportFiles', error);
       throw error;
     }
   }
@@ -1709,9 +1684,9 @@ class ImageProcessor {
           created_at: new Date().toISOString()
         });
 
-      Logger.debug('Audio queued for transcription');
+      logger.debug('Audio queued for transcription');
     } catch (error) {
-      Logger.error('Error queuing transcription', error);
+      logger.error('Error queuing transcription', error);
     }
   }
 
@@ -1729,7 +1704,7 @@ class ImageProcessor {
 
       return Buffer.from(response.data);
     } catch (error) {
-      Logger.error('Error downloading file', error);
+      logger.error('Error downloading file', error);
       throw new Error(`Failed to download file: ${error.message}`);
     }
   }
@@ -1753,7 +1728,7 @@ class ImageProcessor {
 
       return data.path;
     } catch (error) {
-      Logger.error('Error uploading to Supabase', error);
+      logger.error('Error uploading to Supabase', error);
       throw new Error(`Failed to upload to storage: ${error.message}`);
     }
   }
@@ -1775,7 +1750,7 @@ class ImageProcessor {
       .single();
 
     if (error) {
-      Logger.error('Error creating image record', error);
+      logger.error('Error creating image record', error);
       return null;
     }
 
@@ -1806,7 +1781,7 @@ class ImageProcessor {
       }]);
 
     if (error) {
-      Logger.error('Error logging access', error);
+      logger.error('Error logging access', error);
     }
   }
 
@@ -1853,7 +1828,7 @@ class ImageProcessor {
       };
 
     } catch (error) {
-      Logger.error('Error deleting user images', error);
+      logger.error('Error deleting user images', error);
       throw error;
     }
   }
@@ -1870,7 +1845,7 @@ const imageProcessor = supabaseEnabled ? new ImageProcessor() : null;
  * Generate user PDF (shared function)
  */
 async function generateUserPDF(create_user_id, source = 'direct') {
-  Logger.info(`Starting PDF generation (${source})`, { userId: create_user_id });
+  logger.info(`Starting PDF generation (${source})`, { userId: create_user_id });
 
   const validation = validateUserId(create_user_id);
   if (!validation.valid) {
@@ -1926,7 +1901,7 @@ async function generateUserPDF(create_user_id, source = 'direct') {
       .eq('id', storedForm.id);
   }
 
-  Logger.success('PDF generation process completed');
+  logger.success('PDF generation process completed');
 
   return {
     success: true,
@@ -1966,7 +1941,7 @@ async function getUserDataBatch(userId) {
       images: images || []
     };
   } catch (error) {
-    Logger.error('Error fetching user data batch:', error);
+    logger.error('Error fetching user data batch:', error);
     throw error;
   }
 }
@@ -2025,7 +2000,7 @@ async function checkExternalServices() {
       services.supabase = true;
       services.supabase_realtime = realtimeChannels.transcriptionChannel ? true : false;
     } catch (error) {
-      Logger.error('Supabase health check failed', error);
+      logger.error('Supabase health check failed', error);
     }
   }
 
@@ -2037,7 +2012,7 @@ async function checkExternalServices() {
       });
       services.openai = true;
     } catch (error) {
-      Logger.error('OpenAI health check failed', error);
+      logger.error('OpenAI health check failed', error);
     }
   }
 
@@ -2133,7 +2108,7 @@ app.post('/api/auth/signup', async (req, res) => {
     // GDPR CONSENT VALIDATION (CRITICAL)
     // ========================================
     if (gdprConsent !== true) {
-      Logger.warn('Signup attempt without GDPR consent', { email, ip: req.clientIp });
+      logger.warn('Signup attempt without GDPR consent', { email, ip: req.clientIp });
       return sendError(res, 400, 'GDPR consent is required to create an account', 'GDPR_CONSENT_REQUIRED',
         'You must accept our Privacy Policy and Terms of Service to proceed');
     }
@@ -2142,7 +2117,7 @@ app.post('/api/auth/signup', async (req, res) => {
       return sendError(res, 503, 'Auth service not configured', 'AUTH_UNAVAILABLE');
     }
 
-    Logger.info('Auth signup with GDPR consent:', email);
+    logger.info('Auth signup with GDPR consent:', email);
 
     const authResult = await authService.signUp(email, password, {
       full_name: fullName,
@@ -2180,12 +2155,12 @@ app.post('/api/auth/signup', async (req, res) => {
     });
 
     if (insertError) {
-      Logger.error('Error inserting user with GDPR consent:', insertError);
+      logger.error('Error inserting user with GDPR consent:', insertError);
       // Clean up auth user if database insert fails
       try {
         await authService.deleteUser(userId);
       } catch (cleanupError) {
-        Logger.error('Failed to cleanup auth user:', cleanupError);
+        logger.error('Failed to cleanup auth user:', cleanupError);
       }
       return sendError(res, 500, 'Failed to create user account', 'USER_CREATION_FAILED');
     }
@@ -2203,10 +2178,10 @@ app.post('/api/auth/signup', async (req, res) => {
         timestamp: new Date().toISOString()
       }, req);
 
-      Logger.success('GDPR consent logged successfully', { userId });
+      logger.success('GDPR consent logged successfully', { userId });
     } catch (auditError) {
       // Non-critical error - don't fail signup if audit log fails
-      Logger.warn('GDPR audit log error (non-critical):', auditError);
+      logger.warn('GDPR audit log error (non-critical):', auditError);
     }
 
     // Set authentication cookie
@@ -2217,7 +2192,7 @@ app.post('/api/auth/signup', async (req, res) => {
       maxAge: 7 * 24 * 60 * 60 * 1000
     });
 
-    Logger.success('User signup complete with GDPR consent', { 
+    logger.success('User signup complete with GDPR consent', { 
       userId, 
       email,
       consentVersion: CONSTANTS.GDPR.CURRENT_POLICY_VERSION
@@ -2241,7 +2216,7 @@ app.post('/api/auth/signup', async (req, res) => {
       }
     });
   } catch (error) {
-    Logger.error('Signup error:', error);
+    logger.error('Signup error:', error);
     sendError(res, 500, 'Server error', 'INTERNAL_ERROR');
   }
 });
@@ -2293,7 +2268,7 @@ app.post('/api/auth/login', async (req, res) => {
       }
     });
   } catch (error) {
-    Logger.error('Login error:', error);
+    logger.error('Login error:', error);
     sendError(res, 500, 'Server error', 'INTERNAL_ERROR');
   }
 });
@@ -2305,7 +2280,7 @@ app.post('/api/auth/logout', async (req, res) => {
     res.clearCookie('access_token');
     res.json({ success: true });
   } catch (error) {
-    Logger.error('Logout error:', error);
+    logger.error('Logout error:', error);
     sendError(res, 500, 'Logout failed', 'LOGOUT_FAILED');
   }
 });
@@ -2333,7 +2308,7 @@ app.get('/api/auth/session', optionalAuth, async (req, res) => {
       }
     });
   } catch (error) {
-    Logger.error('Session check error:', error);
+    logger.error('Session check error:', error);
     res.json({ authenticated: false });
   }
 });
@@ -2385,7 +2360,7 @@ app.get('/api/gdpr/consent/:userId', async (req, res) => {
       requestId: req.requestId
     });
   } catch (error) {
-    Logger.error('Error fetching GDPR consent:', error);
+    logger.error('Error fetching GDPR consent:', error);
     sendError(res, 500, 'Failed to fetch consent status', 'CONSENT_FETCH_FAILED');
   }
 });
@@ -2433,7 +2408,7 @@ app.put('/api/gdpr/consent/:userId', async (req, res) => {
       .single();
 
     if (error) {
-      Logger.error('Error updating GDPR consent:', error);
+      logger.error('Error updating GDPR consent:', error);
       return sendError(res, 500, 'Failed to update consent', 'CONSENT_UPDATE_FAILED');
     }
 
@@ -2450,7 +2425,7 @@ app.put('/api/gdpr/consent/:userId', async (req, res) => {
       user_agent: req.get('user-agent') || 'unknown'
     }, req);
 
-    Logger.success('GDPR consent updated', { userId, consentGranted: gdprConsent });
+    logger.success('GDPR consent updated', { userId, consentGranted: gdprConsent });
 
     res.json({
       success: true,
@@ -2464,7 +2439,7 @@ app.put('/api/gdpr/consent/:userId', async (req, res) => {
       requestId: req.requestId
     });
   } catch (error) {
-    Logger.error('Error updating GDPR consent:', error);
+    logger.error('Error updating GDPR consent:', error);
     sendError(res, 500, 'Failed to update consent', 'INTERNAL_ERROR');
   }
 });
@@ -2501,7 +2476,7 @@ app.get('/api/gdpr/audit-log/:userId', checkSharedKey, async (req, res) => {
     const { data, error, count } = await query;
 
     if (error) {
-      Logger.error('Error fetching audit log:', error);
+      logger.error('Error fetching audit log:', error);
       return sendError(res, 500, 'Failed to fetch audit log', 'AUDIT_FETCH_FAILED');
     }
 
@@ -2518,7 +2493,7 @@ app.get('/api/gdpr/audit-log/:userId', checkSharedKey, async (req, res) => {
       requestId: req.requestId
     });
   } catch (error) {
-    Logger.error('Error fetching audit log:', error);
+    logger.error('Error fetching audit log:', error);
     sendError(res, 500, 'Failed to fetch audit log', 'INTERNAL_ERROR');
   }
 });
@@ -2550,7 +2525,7 @@ app.get('/api/what3words/convert', async (req, res) => {
     const apiKey = process.env.WHAT3WORDS_API_KEY;
 
     if (!apiKey) {
-      Logger.error('what3words API key not found');
+      logger.error('what3words API key not found');
       return sendError(res, 500, 'Configuration error', 'API_KEY_MISSING',
         'what3words API key not configured');
     }
@@ -2564,7 +2539,7 @@ app.get('/api/what3words/convert', async (req, res) => {
     const data = response.data;
 
     if (response.status !== 200) {
-      Logger.error('what3words API error:', data);
+      logger.error('what3words API error:', data);
       return sendError(res, response.status, 'what3words API error', 'W3W_API_ERROR',
         data.error?.message || 'Failed to convert coordinates');
     }
@@ -2583,7 +2558,7 @@ app.get('/api/what3words/convert', async (req, res) => {
       requestId: req.requestId
     });
   } catch (error) {
-    Logger.error('what3words conversion error:', error);
+    logger.error('what3words conversion error:', error);
     sendError(res, 500, 'Server error', 'INTERNAL_ERROR',
       'Failed to process location conversion');
   }
@@ -2615,7 +2590,7 @@ app.get('/api/what3words/autosuggest', async (req, res) => {
     const data = response.data;
 
     if (response.status !== 200) {
-      Logger.error('what3words autosuggest error:', data);
+      logger.error('what3words autosuggest error:', data);
       return sendError(res, response.status, 'what3words API error', 'W3W_API_ERROR',
         data.error?.message || 'Failed to get suggestions');
     }
@@ -2626,7 +2601,7 @@ app.get('/api/what3words/autosuggest', async (req, res) => {
       requestId: req.requestId
     });
   } catch (error) {
-    Logger.error('what3words autosuggest error:', error);
+    logger.error('what3words autosuggest error:', error);
     sendError(res, 500, 'Server error', 'INTERNAL_ERROR',
       'Failed to get suggestions');
   }
@@ -2644,7 +2619,7 @@ app.get('/api/what3words', async (req, res) => {
     const W3W_API_KEY = process.env.WHAT3WORDS_API_KEY;
 
     if (!W3W_API_KEY) {
-      Logger.warn('What3Words API key not configured');
+      logger.warn('What3Words API key not configured');
       return res.json({
         words: 'location.not.configured',
         requestId: req.requestId
@@ -2668,7 +2643,7 @@ app.get('/api/what3words', async (req, res) => {
       });
     }
   } catch (error) {
-    Logger.error('What3Words API error', error);
+    logger.error('What3Words API error', error);
     res.json({
       words: 'api.error.occurred',
       requestId: req.requestId
@@ -2688,7 +2663,7 @@ app.get('/api/debug/user/:userId', checkSharedKey, async (req, res) => {
 
   try {
     const { userId } = req.params;
-    Logger.info('Debug check for user', { userId });
+    logger.info('Debug check for user', { userId });
 
     await logGDPRActivity(userId, 'DATA_ACCESS', {
       type: 'debug_view',
@@ -2711,7 +2686,7 @@ app.get('/api/debug/user/:userId', checkSharedKey, async (req, res) => {
       requestId: req.requestId
     });
   } catch (error) {
-    Logger.error('Debug endpoint error', error);
+    logger.error('Debug endpoint error', error);
     sendError(res, 500, error.message, 'DEBUG_ERROR');
   }
 });
@@ -2746,7 +2721,7 @@ app.get('/api/test-openai', async (req, res) => {
 
 // Manual queue processing
 app.get('/api/process-queue-now', checkSharedKey, async (req, res) => {
-  Logger.info('Manual queue processing triggered');
+  logger.info('Manual queue processing triggered');
 
   if (!supabaseEnabled) {
     return sendError(res, 503, 'Service not configured', 'SERVICE_UNAVAILABLE');
@@ -2761,7 +2736,7 @@ app.get('/api/process-queue-now', checkSharedKey, async (req, res) => {
       requestId: req.requestId
     });
   } catch (error) {
-    Logger.error('Manual queue processing error', error);
+    logger.error('Manual queue processing error', error);
     sendError(res, 500, 'Failed to process queue', 'QUEUE_ERROR', error.message);
   }
 });
@@ -2792,7 +2767,7 @@ app.get('/test/transcription-queue', async (req, res) => {
 
 app.post('/test/process-transcription-queue', checkSharedKey, async (req, res) => {
   try {
-    Logger.info('Manual transcription queue processing triggered');
+    logger.info('Manual transcription queue processing triggered');
     await processTranscriptionQueue();
     res.json({
       success: true,
@@ -2855,7 +2830,7 @@ app.get('/api/gdpr/export/:userId', checkSharedKey, async (req, res) => {
       requestId: req.requestId
     });
   } catch (error) {
-    Logger.error('GDPR export error', error);
+    logger.error('GDPR export error', error);
     sendError(res, 500, 'Failed to export data', 'EXPORT_FAILED');
   }
 });
@@ -2881,7 +2856,7 @@ app.delete('/api/gdpr/delete-images', checkSharedKey, async (req, res) => {
       requestId: req.requestId
     });
   } catch (error) {
-    Logger.error('Error deleting images', error);
+    logger.error('Error deleting images', error);
     sendError(res, 500, 'Failed to delete images', 'DELETE_FAILED');
   }
 });
@@ -3028,7 +3003,7 @@ app.get('/system-status', (req, res) => {
 // Whisper transcription
 app.post('/api/whisper/transcribe', upload.single('audio'), async (req, res) => {
   try {
-    Logger.info('🎤 Received transcription request');
+    logger.info('🎤 Received transcription request');
 
     if (!req.file) {
       return sendError(res, 400, 'No audio file provided', 'MISSING_FILE');
@@ -3039,7 +3014,7 @@ app.post('/api/whisper/transcribe', upload.single('audio'), async (req, res) => 
       req.headers['x-user-id'];
 
     if (!create_user_id) {
-      Logger.info('❌ Missing create_user_id in transcription request');
+      logger.info('❌ Missing create_user_id in transcription request');
       return sendError(res, 400, 'create_user_id is required', 'MISSING_USER_ID');
     }
 
@@ -3048,7 +3023,7 @@ app.post('/api/whisper/transcribe', upload.single('audio'), async (req, res) => 
       return sendError(res, 400, validation.error, 'INVALID_USER_ID');
     }
 
-    Logger.info(`Processing transcription for user: ${create_user_id}`);
+    logger.info(`Processing transcription for user: ${create_user_id}`);
 
     const transcriptionId = `trans_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`;
     const fileName = `${create_user_id}/recording_${Date.now()}.webm`;
@@ -3061,7 +3036,7 @@ app.post('/api/whisper/transcribe', upload.single('audio'), async (req, res) => 
       });
 
     if (uploadError) {
-      Logger.error(`Upload error: ${uploadError.message}`);
+      logger.error(`Upload error: ${uploadError.message}`);
       return sendError(res, 500, 'Failed to upload audio', 'UPLOAD_FAILED');
     }
 
@@ -3069,7 +3044,7 @@ app.post('/api/whisper/transcribe', upload.single('audio'), async (req, res) => 
       .from('incident-audio')
       .getPublicUrl(fileName);
 
-    Logger.info(`Audio file uploaded to Supabase: ${fileName}`);
+    logger.info(`Audio file uploaded to Supabase: ${fileName}`);
 
     const { data: queueData, error: queueError } = await supabase
       .from('transcription_queue')
@@ -3085,7 +3060,7 @@ app.post('/api/whisper/transcribe', upload.single('audio'), async (req, res) => 
       .single();
 
     if (queueError) {
-      Logger.error('Queue error:', queueError);
+      logger.error('Queue error:', queueError);
     }
 
     const queueId = queueData?.id || transcriptionId;
@@ -3116,7 +3091,7 @@ app.post('/api/whisper/transcribe', upload.single('audio'), async (req, res) => 
       publicUrl
     );
   } catch (error) {
-    Logger.error('Transcription error:', error);
+    logger.error('Transcription error:', error);
     sendError(res, 500, 'Failed to process audio', 'PROCESSING_FAILED');
   }
 });
@@ -3190,7 +3165,7 @@ app.post('/api/update-transcription', checkGDPRConsent, async (req, res) => {
       return sendError(res, 400, 'Missing transcription text', 'MISSING_TRANSCRIPTION');
     }
 
-    Logger.info('Updating transcription', { userId, queueId });
+    logger.info('Updating transcription', { userId, queueId });
 
     await logGDPRActivity(userId, 'DATA_UPDATE', {
       type: 'transcription',
@@ -3243,7 +3218,7 @@ app.post('/api/update-transcription', checkGDPRConsent, async (req, res) => {
       requestId: req.requestId
     });
   } catch (error) {
-    Logger.error('Update transcription error', error);
+    logger.error('Update transcription error', error);
     sendError(res, 500, 'Failed to update transcription', 'UPDATE_FAILED');
   }
 });
@@ -3262,7 +3237,7 @@ app.post('/api/save-transcription', checkGDPRConsent, async (req, res) => {
       return sendError(res, 400, 'Transcription text is required', 'MISSING_TRANSCRIPTION');
     }
 
-    Logger.info('Saving transcription', { userId });
+    logger.info('Saving transcription', { userId });
 
     await logGDPRActivity(userId, 'DATA_SAVE', {
       type: 'transcription',
@@ -3336,7 +3311,7 @@ app.post('/api/save-transcription', checkGDPRConsent, async (req, res) => {
             requestId: req.requestId
           });
           } catch (error) {
-          Logger.error('Save transcription error', error);
+          logger.error('Save transcription error', error);
           sendError(res, 500, 'Failed to save transcription', 'SAVE_FAILED', error.message);
           }
           });
@@ -3345,7 +3320,7 @@ app.post('/api/save-transcription', checkGDPRConsent, async (req, res) => {
           app.get('/api/user/:userId/latest-transcription', async (req, res) => {
           try {
           const { userId } = req.params;
-          Logger.info('Getting latest transcription', { userId });
+          logger.info('Getting latest transcription', { userId });
 
           if (!supabaseEnabled) {
             return res.json({
@@ -3403,7 +3378,7 @@ app.post('/api/save-transcription', checkGDPRConsent, async (req, res) => {
             requestId: req.requestId
           });
           } catch (error) {
-          Logger.error('Get transcription status error', error);
+          logger.error('Get transcription status error', error);
           sendError(res, 500, 'Failed to get transcription status', 'RETRIEVAL_FAILED');
           }
           });
@@ -3452,7 +3427,7 @@ app.post('/api/save-transcription', checkGDPRConsent, async (req, res) => {
             return sendError(res, 400, validation.error, 'INVALID_USER_ID');
           }
 
-          Logger.info('Saving AI listening transcript', { 
+          logger.info('Saving AI listening transcript', { 
             userId, 
             transcriptLength: fullTranscript.length,
             segments: transcriptionSegments?.length || 0
@@ -3504,7 +3479,7 @@ app.post('/api/save-transcription', checkGDPRConsent, async (req, res) => {
             .single();
 
           if (insertError) {
-            Logger.error('Error saving AI listening transcript:', insertError);
+            logger.error('Error saving AI listening transcript:', insertError);
             return sendError(res, 500, 'Failed to save transcript', 'DATABASE_ERROR',
               insertError.message);
           }
@@ -3530,13 +3505,13 @@ app.post('/api/save-transcription', checkGDPRConsent, async (req, res) => {
                 .eq('id', incidentId)
                 .eq('create_user_id', userId);
 
-              Logger.info('Linked AI transcript to incident report', { 
+              logger.info('Linked AI transcript to incident report', { 
                 incidentId, 
                 transcriptId: savedTranscript.id 
               });
             } catch (linkError) {
               // Non-critical error - log but don't fail the request
-              Logger.warn('Could not link AI transcript to incident:', linkError);
+              logger.warn('Could not link AI transcript to incident:', linkError);
             }
           }
 
@@ -3544,7 +3519,7 @@ app.post('/api/save-transcription', checkGDPRConsent, async (req, res) => {
           let aiSummary = null;
           if (process.env.OPENAI_API_KEY && fullTranscript.length > 100) {
             try {
-              Logger.info('Generating AI summary for listening transcript');
+              logger.info('Generating AI summary for listening transcript');
               aiSummary = await generateAISummary(
                 fullTranscript, 
                 userId, 
@@ -3552,15 +3527,15 @@ app.post('/api/save-transcription', checkGDPRConsent, async (req, res) => {
               );
 
               if (aiSummary) {
-                Logger.success('AI summary generated for AI listening transcript');
+                logger.success('AI summary generated for AI listening transcript');
               }
             } catch (summaryError) {
               // Non-critical error - log but don't fail the request
-              Logger.error('Failed to generate AI summary:', summaryError);
+              logger.error('Failed to generate AI summary:', summaryError);
             }
           }
 
-          Logger.success('AI listening transcript saved successfully', {
+          logger.success('AI listening transcript saved successfully', {
             transcriptId: savedTranscript.id,
             userId: userId,
             hasSummary: !!aiSummary
@@ -3585,7 +3560,7 @@ app.post('/api/save-transcription', checkGDPRConsent, async (req, res) => {
           });
 
           } catch (error) {
-          Logger.error('Error in save-ai-listening-transcript endpoint:', error);
+          logger.error('Error in save-ai-listening-transcript endpoint:', error);
           sendError(res, 500, 'Failed to save AI listening transcript', 'INTERNAL_ERROR',
             process.env.NODE_ENV === 'development' ? error.message : undefined);
           }
@@ -3612,7 +3587,7 @@ app.post('/api/save-transcription', checkGDPRConsent, async (req, res) => {
             return sendError(res, 400, validation.error, 'INVALID_USER_ID');
           }
 
-          Logger.info('Fetching AI listening transcripts', { userId });
+          logger.info('Fetching AI listening transcripts', { userId });
 
           // Fetch transcripts with pagination
           const { data: transcripts, error, count } = await supabase
@@ -3623,7 +3598,7 @@ app.post('/api/save-transcription', checkGDPRConsent, async (req, res) => {
             .range(parseInt(offset), parseInt(offset) + parseInt(limit) - 1);
 
           if (error) {
-            Logger.error('Error fetching AI listening transcripts:', error);
+            logger.error('Error fetching AI listening transcripts:', error);
             return sendError(res, 500, 'Failed to fetch transcripts', 'DATABASE_ERROR');
           }
 
@@ -3646,7 +3621,7 @@ app.post('/api/save-transcription', checkGDPRConsent, async (req, res) => {
           });
 
           } catch (error) {
-          Logger.error('Error in get AI listening transcripts endpoint:', error);
+          logger.error('Error in get AI listening transcripts endpoint:', error);
           sendError(res, 500, 'Failed to fetch transcripts', 'INTERNAL_ERROR');
           }
           });
@@ -3675,7 +3650,7 @@ app.post('/api/save-transcription', checkGDPRConsent, async (req, res) => {
             return sendError(res, 400, validation.error, 'INVALID_USER_ID');
           }
 
-          Logger.info('Fetching emergency contact', { userId });
+          logger.info('Fetching emergency contact', { userId });
 
           // Fetch user's emergency contact number
           const { data, error } = await supabase
@@ -3685,7 +3660,7 @@ app.post('/api/save-transcription', checkGDPRConsent, async (req, res) => {
             .single();
 
           if (error) {
-            Logger.error('Error fetching emergency contact:', error);
+            logger.error('Error fetching emergency contact:', error);
             return sendError(res, 404, 'User not found', 'USER_NOT_FOUND');
           }
 
@@ -3704,7 +3679,7 @@ app.post('/api/save-transcription', checkGDPRConsent, async (req, res) => {
           }, req);
 
           if (!contactNumber) {
-            Logger.warn('No emergency contact found for user', { userId });
+            logger.warn('No emergency contact found for user', { userId });
             return res.json({
               success: true,
               hasEmergencyContact: false,
@@ -3715,7 +3690,7 @@ app.post('/api/save-transcription', checkGDPRConsent, async (req, res) => {
             });
           }
 
-          Logger.info('Emergency contact retrieved successfully', { 
+          logger.info('Emergency contact retrieved successfully', { 
             userId, 
             hasContact: true 
           });
@@ -3730,7 +3705,7 @@ app.post('/api/save-transcription', checkGDPRConsent, async (req, res) => {
           });
 
           } catch (error) {
-          Logger.error('Error in emergency contact endpoint:', error);
+          logger.error('Error in emergency contact endpoint:', error);
           sendError(res, 500, 'Failed to fetch emergency contact', 'INTERNAL_ERROR');
           }
           });
@@ -3766,7 +3741,7 @@ app.post('/api/save-transcription', checkGDPRConsent, async (req, res) => {
             return sendError(res, 400, 'Invalid phone number format', 'INVALID_PHONE');
           }
 
-          Logger.info('Updating emergency contact', { userId });
+          logger.info('Updating emergency contact', { userId });
 
           // Update in database
           const { data, error } = await supabase
@@ -3780,7 +3755,7 @@ app.post('/api/save-transcription', checkGDPRConsent, async (req, res) => {
             .single();
 
           if (error) {
-            Logger.error('Error updating emergency contact:', error);
+            logger.error('Error updating emergency contact:', error);
             return sendError(res, 500, 'Failed to update emergency contact', 'UPDATE_FAILED');
           }
 
@@ -3794,7 +3769,7 @@ app.post('/api/save-transcription', checkGDPRConsent, async (req, res) => {
             action: 'updated'
           }, req);
 
-          Logger.success('Emergency contact updated successfully', { userId });
+          logger.success('Emergency contact updated successfully', { userId });
 
           res.json({
             success: true,
@@ -3805,7 +3780,7 @@ app.post('/api/save-transcription', checkGDPRConsent, async (req, res) => {
           });
 
           } catch (error) {
-          Logger.error('Error updating emergency contact:', error);
+          logger.error('Error updating emergency contact:', error);
           sendError(res, 500, 'Failed to update emergency contact', 'INTERNAL_ERROR');
           }
           });
@@ -3830,7 +3805,7 @@ app.post('/api/save-transcription', checkGDPRConsent, async (req, res) => {
             .single();
 
           if (error) {
-            Logger.error('Supabase error', error);
+            logger.error('Supabase error', error);
             return sendError(res, 404, 'User not found', 'USER_NOT_FOUND');
           }
 
@@ -3841,7 +3816,7 @@ app.post('/api/save-transcription', checkGDPRConsent, async (req, res) => {
             requestId: req.requestId
           });
           } catch (error) {
-          Logger.error('Error fetching emergency contacts', error);
+          logger.error('Error fetching emergency contacts', error);
           sendError(res, 500, 'Failed to fetch contacts', 'FETCH_FAILED');
           }
           });
@@ -3870,7 +3845,7 @@ app.post('/api/save-transcription', checkGDPRConsent, async (req, res) => {
             });
 
           if (error) {
-            Logger.error('Failed to log emergency call', error);
+            logger.error('Failed to log emergency call', error);
             return res.json({
               success: false,
               logged: false,
@@ -3888,7 +3863,7 @@ app.post('/api/save-transcription', checkGDPRConsent, async (req, res) => {
             requestId: req.requestId
           });
           } catch (error) {
-          Logger.error('Error logging emergency call', error);
+          logger.error('Error logging emergency call', error);
           sendError(res, 500, 'Internal server error', 'INTERNAL_ERROR');
           }
           });
@@ -3959,7 +3934,7 @@ app.post('/api/save-transcription', checkGDPRConsent, async (req, res) => {
             requestId: req.requestId
           });
           } catch (error) {
-          Logger.error('Error uploading what3words image', error);
+          logger.error('Error uploading what3words image', error);
           sendError(res, 500, error.message, 'UPLOAD_FAILED');
           }
           });
@@ -3994,7 +3969,7 @@ app.post('/api/save-transcription', checkGDPRConsent, async (req, res) => {
             requestId: req.requestId
           });
           } catch (error) {
-          Logger.error('Error fetching user images', error);
+          logger.error('Error fetching user images', error);
           sendError(res, 500, 'Failed to fetch images', 'FETCH_FAILED');
           }
           });
@@ -4027,7 +4002,7 @@ app.post('/api/save-transcription', checkGDPRConsent, async (req, res) => {
             requestId: req.requestId
           });
           } catch (error) {
-          Logger.error('Error generating signed URL', error);
+          logger.error('Error generating signed URL', error);
           sendError(res, 500, 'Failed to generate URL', 'URL_GENERATION_FAILED');
           }
           });
@@ -4069,7 +4044,7 @@ app.post('/api/save-transcription', checkGDPRConsent, async (req, res) => {
             requestId: req.requestId
           });
           } catch (error) {
-          Logger.error('Error checking PDF status', error);
+          logger.error('Error checking PDF status', error);
           sendError(res, 500, 'Failed to check status', 'STATUS_CHECK_FAILED');
           }
           });
@@ -4108,7 +4083,7 @@ app.post('/api/save-transcription', checkGDPRConsent, async (req, res) => {
             sendError(res, 404, 'PDF data not available', 'PDF_DATA_MISSING');
           }
           } catch (error) {
-          Logger.error('Error downloading PDF', error);
+          logger.error('Error downloading PDF', error);
           sendError(res, 500, 'Failed to download PDF', 'DOWNLOAD_FAILED');
           }
           });
@@ -4133,7 +4108,7 @@ app.post('/api/save-transcription', checkGDPRConsent, async (req, res) => {
           const result = await generateUserPDF(create_user_id, 'direct');
           res.json(result);
           } catch (error) {
-          Logger.error('Error in PDF generation', error);
+          logger.error('Error in PDF generation', error);
           sendError(res, 500, error.message, 'PDF_GENERATION_FAILED');
           }
           });
@@ -4145,7 +4120,7 @@ app.post('/api/save-transcription', checkGDPRConsent, async (req, res) => {
           // Signup webhook
           app.post('/webhook/signup', checkSharedKey, async (req, res) => {
           try {
-          Logger.info('Signup webhook received');
+          logger.info('Signup webhook received');
 
           if (!supabaseEnabled || !imageProcessor) {
             return sendError(res, 503, 'Service not configured', 'SERVICE_UNAVAILABLE');
@@ -4164,10 +4139,10 @@ app.post('/api/save-transcription', checkGDPRConsent, async (req, res) => {
 
           imageProcessor.processSignupImages(webhookData)
             .then(result => {
-              Logger.success('Signup processing complete', result);
+              logger.success('Signup processing complete', result);
             })
             .catch(error => {
-              Logger.error('Signup processing failed', error);
+              logger.error('Signup processing failed', error);
             });
 
           res.status(200).json({
@@ -4177,7 +4152,7 @@ app.post('/api/save-transcription', checkGDPRConsent, async (req, res) => {
             requestId: req.requestId
           });
           } catch (error) {
-          Logger.error('Webhook error', error);
+          logger.error('Webhook error', error);
           sendError(res, 500, error.message, 'WEBHOOK_ERROR');
           }
           });
@@ -4185,7 +4160,7 @@ app.post('/api/save-transcription', checkGDPRConsent, async (req, res) => {
           // Incident report webhook
           app.post('/webhook/incident-report', checkSharedKey, async (req, res) => {
           try {
-          Logger.info('Incident report webhook received');
+          logger.info('Incident report webhook received');
 
           if (!supabaseEnabled || !imageProcessor) {
             return sendError(res, 503, 'Service not configured', 'SERVICE_UNAVAILABLE');
@@ -4210,7 +4185,7 @@ app.post('/api/save-transcription', checkGDPRConsent, async (req, res) => {
 
           const result = await imageProcessor.processIncidentReportFiles(webhookData);
 
-          Logger.success('Incident processing complete:', result);
+          logger.success('Incident processing complete:', result);
 
           if (req.query.redirect === 'true') {
             const userId = webhookData.create_user_id || '';
@@ -4222,7 +4197,7 @@ app.post('/api/save-transcription', checkGDPRConsent, async (req, res) => {
             });
           }
           } catch (error) {
-          Logger.error('Webhook error', error);
+          logger.error('Webhook error', error);
           sendError(res, 500, error.message, 'WEBHOOK_ERROR');
           }
           });
@@ -4247,7 +4222,7 @@ app.post('/api/save-transcription', checkGDPRConsent, async (req, res) => {
           const result = await generateUserPDF(create_user_id, 'webhook');
           res.json(result);
           } catch (error) {
-          Logger.error('Error in webhook PDF generation', error);
+          logger.error('Error in webhook PDF generation', error);
           sendError(res, 500, error.message, 'PDF_GENERATION_FAILED');
           }
           });
@@ -4258,7 +4233,7 @@ app.post('/api/save-transcription', checkGDPRConsent, async (req, res) => {
 
           // Error handler middleware
           app.use((err, req, res, next) => {
-          Logger.error('Unhandled error', err);
+          logger.error('Unhandled error', err);
 
           // Handle multer errors
           if (err instanceof multer.MulterError) {
@@ -4288,7 +4263,7 @@ app.post('/api/save-transcription', checkGDPRConsent, async (req, res) => {
           // ========================================
 
           function gracefulShutdown(signal) {
-          Logger.info(`${signal} received, closing server gracefully...`);
+          logger.info(`${signal} received, closing server gracefully...`);
 
           // Close realtime channels
           if (realtimeChannels.transcriptionChannel) {
@@ -4308,18 +4283,18 @@ app.post('/api/save-transcription', checkGDPRConsent, async (req, res) => {
 
           // Close WebSocket server
           wss.close(() => {
-          Logger.info('WebSocket server closed');
+          logger.info('WebSocket server closed');
           });
 
           // Close HTTP server
           server.close(() => {
-          Logger.info('HTTP server closed gracefully');
+          logger.info('HTTP server closed gracefully');
           process.exit(0);
           });
 
           // Force close after timeout
           setTimeout(() => {
-          Logger.error('Could not close connections in time, forcefully shutting down');
+          logger.error('Could not close connections in time, forcefully shutting down');
           process.exit(1);
           }, 10000);
           }
@@ -4328,12 +4303,12 @@ app.post('/api/save-transcription', checkGDPRConsent, async (req, res) => {
           process.on('SIGINT', () => gracefulShutdown('SIGINT'));
 
           process.on('uncaughtException', (error) => {
-          Logger.error('Uncaught Exception:', error);
+          logger.error('Uncaught Exception:', error);
           gracefulShutdown('UNCAUGHT_EXCEPTION');
           });
 
           process.on('unhandledRejection', (reason, promise) => {
-          Logger.error('Unhandled Rejection at:', promise, 'reason:', reason);
+          logger.error('Unhandled Rejection at:', promise, 'reason:', reason);
           // Don't exit on unhandled rejection, just log it
           });
 
@@ -4351,21 +4326,21 @@ app.post('/api/save-transcription', checkGDPRConsent, async (req, res) => {
           const missingEnvVars = requiredEnvVars.filter(varName => !process.env[varName]);
 
           if (missingEnvVars.length > 0) {
-          Logger.warn('⚠️  WARNING: Missing required environment variables:');
+          logger.warn('⚠️  WARNING: Missing required environment variables:');
           missingEnvVars.forEach(varName => {
-          Logger.warn(`   - ${varName}`);
+          logger.warn(`   - ${varName}`);
           });
           }
 
           if (!process.env.WHAT3WORDS_API_KEY) {
-          Logger.warn('⚠️  WARNING: WHAT3WORDS_API_KEY not set in environment variables');
-          Logger.warn('   Emergency location services will not work properly');
-          Logger.warn('   Get your API key at: https://what3words.com/select-plan');
+          logger.warn('⚠️  WARNING: WHAT3WORDS_API_KEY not set in environment variables');
+          logger.warn('   Emergency location services will not work properly');
+          logger.warn('   Get your API key at: https://what3words.com/select-plan');
           }
 
           if (!process.env.SUPABASE_ANON_KEY) {
-          Logger.warn('⚠️  WARNING: SUPABASE_ANON_KEY not set');
-          Logger.warn('   Authentication features will be disabled');
+          logger.warn('⚠️  WARNING: SUPABASE_ANON_KEY not set');
+          logger.warn('   Authentication features will be disabled');
           }
 
           // ========================================
@@ -4429,7 +4404,7 @@ app.post('/api/save-transcription', checkGDPRConsent, async (req, res) => {
           console.log('========================================\n');
 
           // Log startup summary
-          Logger.success('Server startup complete', {
+          logger.success('Server startup complete', {
           port: PORT,
           environment: process.env.NODE_ENV || 'development',
           services: {
@@ -4447,10 +4422,10 @@ app.post('/api/save-transcription', checkGDPRConsent, async (req, res) => {
           // Handle server errors
           server.on('error', (error) => {
           if (error.code === 'EADDRINUSE') {
-          Logger.error(`Port ${PORT} is already in use`);
+          logger.error(`Port ${PORT} is already in use`);
           process.exit(1);
           } else {
-          Logger.error('Server error:', error);
+          logger.error('Server error:', error);
           process.exit(1);
           }
           });
