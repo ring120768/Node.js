@@ -65,6 +65,11 @@ const { apiLimiter, strictLimiter } = require('./src/middleware/rateLimit');
 const { initGDPR, checkGDPRConsent, logGDPRActivity, enforceDataRetention } = require('./src/middleware/gdpr');
 
 // ========================================
+// AI SERVICE
+// ========================================
+const { generateAISummary } = require('./src/services/aiService');
+
+// ========================================
 // EXPRESS APP SETUP
 // ========================================
 const app = express();
@@ -646,130 +651,8 @@ function handleRealtimeSummaryUpdate(payload) {
 }
 
 // ========================================
-// AI SUMMARY GENERATION
+// AI SUMMARY GENERATION (MOVED TO src/services/aiService.js)
 // ========================================
-
-/**
- * Generate AI Summary using OpenAI
- */
-async function generateAISummary(transcriptionText, createUserId, incidentId) {
-  try {
-    if (!config.openai.apiKey || !transcriptionText) {
-      logger.info('Cannot generate AI summary - missing API key or transcription');
-      return null;
-    }
-
-    if (transcriptionText.length < 10) {
-      logger.warn('Transcription too short for meaningful summary');
-      return null;
-    }
-
-    logger.info('Generating AI summary for user', { userId: createUserId });
-
-    const response = await axios.post(
-      'https://api.openai.com/v1/chat/completions',
-      {
-        model: 'gpt-4-turbo-preview',
-        messages: [
-          {
-            role: 'system',
-            content: 'You are a legal assistant analyzing car accident statements. Provide objective, factual analysis in JSON format.'
-          },
-          {
-            role: 'user',
-            content: `Analyze this car accident witness statement and provide a structured JSON response with the following fields:
-
-1. summary_text: A clear, concise 2-3 paragraph summary of what happened
-2. key_points: An array of 5-7 key facts from the statement
-3. fault_analysis: An objective assessment of fault based on the statement
-4. contributing_factors: Any environmental, weather, or other contributing factors mentioned
-
-Statement to analyze: "${transcriptionText}"
-
-Respond ONLY with valid JSON. No additional text.`
-          }
-        ],
-        temperature: 0.3,
-        max_tokens: 1500
-      },
-      {
-        headers: {
-          'Authorization': `Bearer ${config.openai.apiKey}`,
-          'Content-Type': 'application/json'
-        },
-        timeout: CONSTANTS.RETRY_LIMITS.API_TIMEOUT
-      }
-    );
-
-    let aiAnalysis;
-    try {
-      const content = response.data.choices[0].message.content;
-      const cleanContent = content.replace(/```json\n?/g, '').replace(/```\n?/g, '').trim();
-      aiAnalysis = JSON.parse(cleanContent);
-    } catch (parseError) {
-      logger.error('Failed to parse AI response as JSON', parseError);
-      aiAnalysis = {
-        summary_text: response.data.choices[0].message.content,
-        key_points: ['See summary for details'],
-        fault_analysis: 'Manual review recommended',
-        contributing_factors: 'See summary text'
-      };
-    }
-
-    // Validate AI analysis structure
-    aiAnalysis = {
-      summary_text: aiAnalysis.summary_text || 'Summary generation failed',
-      key_points: Array.isArray(aiAnalysis.key_points) ? aiAnalysis.key_points : [],
-      fault_analysis: aiAnalysis.fault_analysis || 'Unable to determine',
-      contributing_factors: aiAnalysis.contributing_factors || 'None identified'
-    };
-
-    // Save to ai_summary table
-    const { data, error } = await supabase
-      .from('ai_summary')
-      .insert({
-        create_user_id: createUserId,
-        incident_id: incidentId || createUserId,
-        summary_text: aiAnalysis.summary_text,
-        key_points: aiAnalysis.key_points,
-        fault_analysis: aiAnalysis.fault_analysis,
-        severity_assessment: aiAnalysis.contributing_factors,
-        liability_assessment: aiAnalysis.contributing_factors,
-        created_at: new Date().toISOString()
-      })
-      .select()
-      .single();
-
-    if (error) {
-      logger.error('Error saving AI summary to database', error);
-      if (error.message.includes('column')) {
-        const { data: retryData } = await supabase
-          .from('ai_summary')
-          .insert({
-            create_user_id: createUserId,
-            incident_id: incidentId || createUserId,
-            summary_text: aiAnalysis.summary_text,
-            key_points: aiAnalysis.key_points,
-            created_at: new Date().toISOString()
-          })
-          .select()
-          .single();
-
-        if (retryData) {
-          logger.success('AI summary saved with basic fields');
-          return aiAnalysis;
-        }
-      }
-      return aiAnalysis;
-    }
-
-    logger.success('AI summary generated and saved successfully');
-    return aiAnalysis;
-  } catch (error) {
-    logger.error('AI Summary generation error', error.response?.data || error);
-    return null;
-  }
-}
 
 // ========================================
 // TRANSCRIPTION PROCESSING
@@ -987,7 +870,7 @@ async function processTranscriptionFromBuffer(queueId, audioBuffer, create_user_
     if (config.openai.apiKey && transcription.length > 10) {
       try {
         logger.info('Starting AI summary generation');
-        const summary = await generateAISummary(transcription, create_user_id, incident_report_id || queueId);
+        const summary = await generateAISummary(transcription, create_user_id, incident_report_id || queueId, supabase);
 
         if (summary) {
           transcriptionStatuses.set(queueId.toString(), {
@@ -2994,7 +2877,7 @@ app.post('/api/update-transcription', checkGDPRConsent, async (req, res) => {
         });
     }
 
-    const summary = await generateAISummary(transcription, userId, queueId || userId);
+    const summary = await generateAISummary(transcription, userId, queueId || userId, supabase);
 
     if (queueId) {
       broadcastTranscriptionUpdate(queueId, {
@@ -3317,7 +3200,8 @@ app.post('/api/save-transcription', checkGDPRConsent, async (req, res) => {
               aiSummary = await generateAISummary(
                 fullTranscript, 
                 userId, 
-                incidentId || savedTranscript.id
+                incidentId || savedTranscript.id,
+                supabase
               );
 
               if (aiSummary) {
