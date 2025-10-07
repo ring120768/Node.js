@@ -29,7 +29,6 @@ const { sendError, redactUrl } = require('./utils/response');
 const { apiLimiter, strictLimiter } = require('./middleware/rateLimit');
 const { initGDPR, checkGDPRConsent } = require('./middleware/gdpr');
 const requestLogger = require('./middleware/requestLogger');
-const { errorHandler, notFoundHandler } = require('./middleware/errorHandler');
 
 // Import services
 const AuthService = require('../lib/services/authService');
@@ -323,9 +322,32 @@ function createApp() {
   // ERROR HANDLING
   // ========================================
 
-  // Use consolidated error handling middleware
-  app.use(errorHandler);
-  app.use(notFoundHandler);
+  // Error handler middleware
+  app.use((err, req, res, next) => {
+    logger.error('Unhandled error', err);
+
+    // Handle multer errors
+    if (err instanceof multer.MulterError) {
+      if (err.code === 'LIMIT_FILE_SIZE') {
+        return sendError(res, 400, 'File too large', 'FILE_TOO_LARGE',
+          `Maximum file size is ${CONSTANTS.FILE_SIZE_LIMITS.AUDIO / 1024 / 1024}MB`);
+      }
+      return sendError(res, 400, err.message, 'UPLOAD_ERROR');
+    }
+
+    sendError(res, 500, 'Internal server error', 'INTERNAL_ERROR',
+      process.env.NODE_ENV === 'development' ? err.message : undefined);
+  });
+
+  // 404 handler
+  app.use((req, res) => {
+    res.status(404).json({
+      error: 'Not found',
+      path: req.path,
+      message: 'The requested resource was not found',
+      requestId: req.requestId
+    });
+  });
 
   // ========================================
   // GRACEFUL SHUTDOWN SETUP

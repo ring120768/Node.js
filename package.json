@@ -5,11 +5,7 @@
   "main": "index.js",
   "scripts": {
     "start": "node index.js",
-    "dev": "nodemon index.js",
-    "test": "node run-tests.js",
-    "test:transcription": "node test-transcription.js",
-    "test:performance": "node performance-comparison.js",
-    "health-check": "node check-server.js"
+    "dev": "nodemon index.js"
   },
   "dependencies": {
     "@supabase/supabase-js": "^2.57.4",
