@@ -440,11 +440,9 @@
 
                 const authData = await authResponse.json();
 
-                // HARD REDIRECT if not authenticated
+                // If not authenticated, show signup/login choice
                 if (!authResponse.ok || !authData.authenticated) {
-                    // Save current URL as redirect target
-                    const returnUrl = window.location.pathname + window.location.search;
-                    window.location.href = `/login.html?redirect=${encodeURIComponent(returnUrl)}`;
+                    showAuthChoiceModal();
                     return false;
                 }
 
@@ -458,10 +456,80 @@
 
             } catch (error) {
                 console.error('Auth check failed:', error);
-                // On error, redirect to login for security
-                window.location.href = '/login.html?redirect=incident.html';
+                // On error, show auth choice
+                showAuthChoiceModal();
                 return false;
             }
+        }
+
+        // Show modal asking user to sign up or log in
+        function showAuthChoiceModal() {
+            const modalHTML = `
+                <div style="
+                    position: fixed;
+                    top: 0;
+                    left: 0;
+                    width: 100%;
+                    height: 100%;
+                    background: rgba(0,0,0,0.8);
+                    z-index: 10000;
+                    display: flex;
+                    align-items: center;
+                    justify-content: center;
+                " id="authModal">
+                    <div style="
+                        background: white;
+                        border-radius: 15px;
+                        padding: 30px;
+                        max-width: 400px;
+                        width: 90%;
+                        text-align: center;
+                        box-shadow: 0 20px 60px rgba(0,0,0,0.3);
+                    ">
+                        <h2 style="color: #0B7AB0; margin-bottom: 15px;">Account Required</h2>
+                        <p style="color: #666; margin-bottom: 25px; line-height: 1.5;">
+                            To report an incident and protect your legal rights, you need an account. 
+                            This ensures your data is secure and accessible only to you.
+                        </p>
+                        
+                        <div style="display: flex; flex-direction: column; gap: 15px;">
+                            <button onclick="window.location.href='/signup-auth.html?redirect=incident.html'" style="
+                                padding: 15px;
+                                background: linear-gradient(135deg, #0B7AB0 0%, #1EA1D4 100%);
+                                color: white;
+                                border: none;
+                                border-radius: 8px;
+                                font-size: 16px;
+                                font-weight: 600;
+                                cursor: pointer;
+                                transition: transform 0.2s;
+                            " onmouseover="this.style.transform='translateY(-2px)'" onmouseout="this.style.transform='translateY(0)'">
+                                🆕 Create New Account
+                            </button>
+                            
+                            <button onclick="window.location.href='/login.html?redirect=incident.html'" style="
+                                padding: 15px;
+                                background: #f8f9fa;
+                                color: #0B7AB0;
+                                border: 2px solid #0B7AB0;
+                                border-radius: 8px;
+                                font-size: 16px;
+                                font-weight: 600;
+                                cursor: pointer;
+                                transition: all 0.2s;
+                            " onmouseover="this.style.background='#0B7AB0'; this.style.color='white'" onmouseout="this.style.background='#f8f9fa'; this.style.color='#0B7AB0'">
+                                👤 I Already Have an Account
+                            </button>
+                        </div>
+                        
+                        <p style="font-size: 12px; color: #999; margin-top: 20px;">
+                            Your data is protected and GDPR compliant
+                        </p>
+                    </div>
+                </div>
+            `;
+            
+            document.body.insertAdjacentHTML('beforeend', modalHTML);
         }
 
         // Global variables to store collected data
