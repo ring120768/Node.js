@@ -89,7 +89,7 @@ mode = "sequential"
 
 [[workflows.workflow.tasks]]
 task = "shell.exec"
-args = "node start-server.js"
+args = "node index.js"
 
 [agent]
 expertMode = true
