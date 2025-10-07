@@ -1598,9 +1598,10 @@ async function generateUserPDF(create_user_id, source = 'direct') {
 }
 
 // ========================================
-// USER MODEL
+// MODELS
 // ========================================
 const User = require('./src/models/User');
+const Transcription = require('./src/models/Transcription');
 
 /**
  * Process Typeform data
@@ -2836,32 +2837,37 @@ app.post('/api/update-transcription', checkGDPRConsent, async (req, res) => {
       action: 'manual_edit'
     }, req);
 
-    const { data: existing } = await supabase
-      .from('ai_transcription')
-      .select('id, audio_url, duration')
-      .eq('create_user_id', userId)
-      .order('created_at', { ascending: false })
-      .limit(1)
-      .single();
-
-    if (existing) {
-      await supabase
-        .from('ai_transcription')
-        .update({
-          transcription_text: transcription,
-          updated_at: new Date().toISOString()
-        })
-        .eq('id', existing.id);
+    // Get latest transcription to update
+    const latestResult = await Transcription.getLatestTranscription(userId, false);
+    
+    let updateResult;
+    
+    if (latestResult.success && latestResult.data) {
+      // Update existing transcription
+      updateResult = await Transcription.updateTranscription(latestResult.data.id, {
+        transcription_text: transcription,
+        metadata: {
+          ...latestResult.data.metadata,
+          last_edited: new Date().toISOString(),
+          edit_source: 'manual_update'
+        }
+      });
     } else {
-      await supabase
-        .from('ai_transcription')
-        .insert({
-          create_user_id: userId,
-          incident_report_id: null,
-          transcription_text: transcription,
-          audio_url: '',
-          created_at: new Date().toISOString()
-        });
+      // Create new transcription if none exists
+      updateResult = await Transcription.saveTranscription({
+        create_user_id: userId,
+        incident_report_id: null,
+        transcription_text: transcription,
+        audio_url: '',
+        metadata: {
+          source: 'manual_creation',
+          created_via: 'update_endpoint'
+        }
+      });
+    }
+
+    if (!updateResult.success) {
+      return sendError(res, 500, updateResult.error, 'UPDATE_FAILED');
     }
 
     const summary = await generateAISummary(transcription, userId, queueId || userId, supabase);
@@ -2879,6 +2885,7 @@ app.post('/api/update-transcription', checkGDPRConsent, async (req, res) => {
     res.json({
       success: true,
       summary: summary,
+      transcription_id: updateResult.data?.id,
       requestId: req.requestId
     });
   } catch (error) {
@@ -2916,135 +2923,132 @@ app.post('/api/save-transcription', checkGDPRConsent, async (req, res) => {
       });
     }
 
-    const { data: existing } = await supabase
-      .from('ai_transcription')
-      .select('id, audio_url')
-      .eq('create_user_id', userId)
-      .eq('incident_report_id', incidentId || null)
-      .single();
+    // Use Transcription model
+    const result = await Transcription.saveTranscription({
+      create_user_id: userId,
+      incident_report_id: incidentId,
+      transcription_text: transcription,
+      audio_url: audioUrl,
+      metadata: {
+        duration: duration,
+        source: 'manual_save',
+        timestamp: new Date().toISOString()
+      }
+    });
 
-          let result;
+    if (!result.success) {
+      return sendError(res, 500, result.error, 'SAVE_FAILED');
+    }
 
-          if (existing) {
-            const { data, error } = await supabase
-              .from('ai_transcription')
-              .update({
-                transcription_text: transcription,
-                audio_url: audioUrl || existing.audio_url,
-                updated_at: new Date().toISOString()
-              })
-              .eq('id', existing.id)
-              .select()
-              .single();
+    res.json({
+      success: true,
+      message: 'Transcription saved successfully',
+      transcription_id: result.data?.id,
+      requestId: req.requestId
+    });
 
-            result = data;
-            if (error) throw error;
-          } else {
-            const { data, error } = await supabase
-              .from('ai_transcription')
-              .insert({
-                create_user_id: userId,
-                incident_report_id: incidentId || null,
-                transcription_text: transcription,
-                audio_url: audioUrl || '',
-                created_at: new Date().toISOString()
-              })
-              .select()
-              .single();
-
-            result = data;
-            if (error) throw error;
-          }
-
-          if (incidentId) {
-            await supabase
-              .from('incident_reports')
-              .update({
-                witness_statement_text: transcription,
-                witness_statement_audio: audioUrl || undefined,
-                updated_at: new Date().toISOString()
-              })
-              .eq('id', incidentId)
-              .eq('create_user_id', userId);
-          }
-
-          res.json({
-            success: true,
-            message: 'Transcription saved successfully',
-            transcription_id: result?.id,
-            requestId: req.requestId
-          });
-          } catch (error) {
-          logger.error('Save transcription error', error);
-          sendError(res, 500, 'Failed to save transcription', 'SAVE_FAILED', error.message);
-          }
-          });
+  } catch (error) {
+    logger.error('Save transcription error', error);
+    sendError(res, 500, 'Failed to save transcription', 'SAVE_FAILED', error.message);
+  }
+});
 
           // Get latest transcription
-          app.get('/api/user/:userId/latest-transcription', async (req, res) => {
-          try {
-          const { userId } = req.params;
-          logger.info('Getting latest transcription', { userId });
+app.get('/api/user/:userId/latest-transcription', async (req, res) => {
+  try {
+    const { userId } = req.params;
+    logger.info('Getting latest transcription', { userId });
 
-          if (!supabaseEnabled) {
-            return res.json({
-              exists: false,
-              transcription: null,
-              requestId: req.requestId
-            });
-          }
+    if (!supabaseEnabled) {
+      return res.json({
+        exists: false,
+        transcription: null,
+        requestId: req.requestId
+      });
+    }
 
-          await gdprService.logActivity(userId, 'DATA_ACCESS', {
-            type: 'transcription_retrieval'
-          }, req);
+    await gdprService.logActivity(userId, 'DATA_ACCESS', {
+      type: 'transcription_retrieval'
+    }, req);
 
-          const { data, error } = await supabase
-            .from('ai_transcription')
-            .select('*')
-            .eq('create_user_id', userId)
-            .order('created_at', { ascending: false })
-            .limit(1)
-            .single();
+    // Use Transcription model
+    const result = await Transcription.getLatestTranscription(userId);
 
-          if (data) {
-            const { data: summaryData } = await supabase
-              .from('ai_summary')
-              .select('*')
-              .eq('create_user_id', userId)
-              .order('created_at', { ascending: false })
-              .limit(1)
-              .single();
+    if (!result.success) {
+      return sendError(res, 500, result.error, 'RETRIEVAL_FAILED');
+    }
 
-            return res.json({
-              exists: true,
-              transcription: data,
-              aiSummary: summaryData,
-              status: 'completed',
-              requestId: req.requestId
-            });
-          }
+    if (result.data) {
+      return res.json({
+        exists: true,
+        transcription: result.data,
+        aiSummary: result.data.ai_summary || null,
+        status: 'completed',
+        requestId: req.requestId
+      });
+    }
 
-          const { data: incidentData } = await supabase
-            .from('incident_reports')
-            .select('witness_statement_text, witness_statement_audio')
-            .eq('create_user_id', userId)
-            .order('created_at', { ascending: false })
-            .limit(1)
-            .single();
+    // Fallback to incident reports for backward compatibility
+    const { data: incidentData } = await supabase
+      .from('incident_reports')
+      .select('witness_statement_text, witness_statement_audio')
+      .eq('create_user_id', userId)
+      .order('created_at', { ascending: false })
+      .limit(1)
+      .single();
 
-          res.json({
-            exists: !!incidentData?.witness_statement_text,
-            transcription: incidentData ? {
-              transcription_text: incidentData.witness_statement_text,
-              audio_url: incidentData.witness_statement_audio
-            } : null,
-            status: incidentData?.witness_statement_text ? 'completed' : 'not_found',
-            requestId: req.requestId
-          });
-          } catch (error) {
-          logger.error('Get transcription status error', error);
-          sendError(res, 500, 'Failed to get transcription status', 'RETRIEVAL_FAILED');
-          }
+    res.json({
+      exists: !!incidentData?.witness_statement_text,
+      transcription: incidentData ? {
+        transcription_text: incidentData.witness_statement_text,
+        audio_url: incidentData.witness_statement_audio
+      } : null,
+      status: incidentData?.witness_statement_text ? 'completed' : 'not_found',
+      requestId: req.requestId
+    });
+
+  } catch (error) {
+    logger.error('Get transcription status error', error);
+    sendError(res, 500, 'Failed to get transcription status', 'RETRIEVAL_FAILED');
+  }
+});
+
+          // Get all transcriptions for a user
+          app.get('/api/user/:userId/transcriptions', async (req, res) => {
+            try {
+              const { userId } = req.params;
+              const { limit, offset, includeSummary } = req.query;
+
+              const validation = validateUserId(userId);
+              if (!validation.valid) {
+                return sendError(res, 400, validation.error, 'INVALID_USER_ID');
+              }
+
+              await gdprService.logActivity(userId, 'DATA_ACCESS', {
+                type: 'transcriptions_list'
+              }, req);
+
+              const result = await Transcription.getTranscriptionByUserId(userId, {
+                limit: parseInt(limit) || 10,
+                offset: parseInt(offset) || 0,
+                includeSummary: includeSummary !== 'false'
+              });
+
+              if (!result.success) {
+                return sendError(res, 500, result.error, 'RETRIEVAL_FAILED');
+              }
+
+              res.json({
+                success: true,
+                transcriptions: result.data,
+                pagination: result.pagination,
+                requestId: req.requestId
+              });
+
+            } catch (error) {
+              logger.error('Error getting user transcriptions', error);
+              sendError(res, 500, 'Failed to get transcriptions', 'RETRIEVAL_FAILED');
+            }
           });
 
           // ========================================
