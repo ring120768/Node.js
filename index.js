@@ -39,45 +39,7 @@ try {
 // ========================================
 // CONSTANTS
 // ========================================
-const CONSTANTS = {
-  TRANSCRIPTION_STATUS: {
-    PENDING: 'pending',
-    PROCESSING: 'processing',
-    TRANSCRIBED: 'transcribed',
-    GENERATING_SUMMARY: 'generating_summary',
-    COMPLETED: 'completed',
-    FAILED: 'failed'
-  },
-  RETRY_LIMITS: {
-    TRANSCRIPTION: 5,
-    API_TIMEOUT: 30000,
-    WHISPER_TIMEOUT: 60000
-  },
-  DATA_RETENTION: {
-    DEFAULT_DAYS: 365
-  },
-  WS_MESSAGE_TYPES: {
-    SUBSCRIBE: 'subscribe',
-    UNSUBSCRIBE: 'unsubscribe',
-    PING: 'ping',
-    PONG: 'pong',
-    ERROR: 'error',
-    STATUS: 'status',
-    REALTIME_UPDATE: 'realtime_update'
-  },
-  FILE_SIZE_LIMITS: {
-    AUDIO: 50 * 1024 * 1024, // 50MB
-    IMAGE: 10 * 1024 * 1024  // 10MB
-  },
-  GDPR: {
-    CURRENT_POLICY_VERSION: 'v1.0',
-    CONSENT_TYPES: {
-      SIGNUP: 'signup',
-      DATA_PROCESSING: 'data_processing',
-      MARKETING: 'marketing'
-    }
-  }
-};
+const CONSTANTS = require('./src/config/constants');
 
 // ========================================
 // ENHANCED LOGGING UTILITY
