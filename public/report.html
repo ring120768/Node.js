@@ -459,6 +459,8 @@
                 const authResponse = await fetch('/api/auth/status');
                 if (!authResponse.ok) {
                     console.warn('Authentication check failed');
+                    // If authentication fails, redirect to signup
+                    window.location.href = '/signup-auth.html';
                     return;
                 }
 
@@ -481,9 +483,13 @@
                     }
                 } else {
                     console.warn('User not authenticated');
+                    // If user is not authenticated, redirect to signup
+                    window.location.href = '/signup-auth.html';
                 }
             } catch (error) {
                 console.error('Authentication check error:', error);
+                // On any auth error, redirect to signup
+                window.location.href = '/signup-auth.html';
             }
         }
 

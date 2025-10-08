@@ -339,6 +339,11 @@ async function checkSession(req, res) {
   }
 }
 
+// The following line is a placeholder for potential JavaScript redirects in the frontend.
+// In a real-world scenario, this would be handled within your frontend JavaScript files,
+// not in the backend controller. If such redirects existed, they would be updated as follows:
+// window.location.href = '/signup-auth.html';
+
 module.exports = {
   signup,
   login,

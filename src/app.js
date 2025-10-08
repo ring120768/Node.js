@@ -1,4 +1,3 @@
-
 /**
  * Express Application Configuration
  * Sets up middleware, database, WebSocket, and routes
