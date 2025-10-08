@@ -37,7 +37,7 @@ if (config.supabase.url && config.supabase.serviceKey) {
  */
 async function signup(req, res) {
   try {
-    const { email, password, fullName, phone, gdprConsent } = req.body;
+    const { email, password, fullName, name, surname, phone, gdprConsent } = req.body;
 
     // Validation
     if (!email || !password || !fullName) {
@@ -75,6 +75,16 @@ async function signup(req, res) {
     const userId = authResult.userId;
     const username = email.split('@')[0].replace(/[^a-zA-Z0-9]/g, '') + '_' + Math.floor(Math.random() * 1000000);
 
+    // Extract name and surname - use provided fields or split fullName
+    let firstName = name;
+    let lastName = surname;
+    
+    if (!firstName && !lastName && fullName) {
+      const nameParts = fullName.trim().split(' ');
+      firstName = nameParts[0] || '';
+      lastName = nameParts.slice(1).join(' ') || '';
+    }
+
     // ========================================
     // GDPR CONSENT CAPTURE IN DATABASE
     // ========================================
@@ -83,8 +93,8 @@ async function signup(req, res) {
       create_user_id: userId,
       email: email,
       username: username,
-      name: fullName.split(' ')[0] || '',
-      surname: fullName.split(' ').slice(1).join(' ') || '',
+      name: firstName || '',
+      surname: lastName || '',
       phone: phone || null,
       created_at: new Date().toISOString(),
       source: 'auth_signup',
@@ -98,7 +108,17 @@ async function signup(req, res) {
     });
 
     if (insertError) {
-      logger.error('Error inserting user with GDPR consent:', insertError);
+      logger.error('Error inserting user with GDPR consent:', {
+        error: insertError,
+        userData: {
+          uid: userId,
+          email: email,
+          username: username,
+          name: firstName,
+          surname: lastName,
+          phone: phone
+        }
+      });
       // Clean up auth user if database insert fails
       try {
         await authService.deleteUser(userId);

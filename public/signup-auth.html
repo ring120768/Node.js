@@ -391,7 +391,7 @@
                 <div class="helper-text">Optional - for important updates about your case</div>
             </div>
 
-            <!-- GDPR CONSENT CHECKBOX -->
+            <!-- GDPR Consent Checkbox -->
             <div class="gdpr-consent" id="gdprConsentBox">
                 <div class="checkbox-wrapper">
                     <input 
@@ -557,20 +557,21 @@
             e.preventDefault();
             clearAllErrors();
 
-            // Get form data
-            const name = document.getElementById('name').value.trim();
-            const surname = document.getElementById('surname').value.trim();
+            const name = nameInput.value.trim();
+            const surname = surnameInput.value.trim();
+            
             const formData = {
                 email: emailInput.value.trim(),
                 password: passwordInput.value,
-                fullName: `${name} ${surname}`.trim(), // Combine name and surname into fullName
-                phone: mobileInput.value.trim() || null, // Use the mobile input value, or null if empty
+                fullName: `${name} ${surname}`.trim(),
+                name: nameInput.value.trim(),
+                surname: surnameInput.value.trim(),
+                phone: mobileInput.value.trim() || null,
                 gdprConsent: gdprConsentCheckbox.checked,
-                consentTimestamp: new Date().toISOString(), // Add consent timestamp
-                ipAddress: null // Will be captured server-side if needed
+                consentTimestamp: new Date().toISOString(),
+                ipAddress: null
             };
 
-            // Validation
             let hasErrors = false;
 
             if (!formData.email) {
@@ -606,7 +607,6 @@
 
             if (hasErrors) return;
 
-            // Show loading state
             submitBtn.disabled = true;
             submitBtn.classList.add('loading');
 
@@ -622,7 +622,6 @@
                 const data = await response.json();
 
                 if (response.ok && data.success) {
-                    // Store user ID for next steps
                     if (data.userId) {
                         sessionStorage.setItem('userId', data.userId);
                         sessionStorage.setItem('userEmail', emailInput.value.trim());
@@ -630,24 +629,35 @@
 
                     showAlert('Account created successfully! Redirecting...', 'success');
 
-                    // Redirect to dashboard or next step after 1.5 seconds
                     setTimeout(() => {
                         window.location.href = '/dashboard.html';
                     }, 1500);
                 } else {
-                    showAlert(data.error || 'Failed to create account. Please try again.', 'error');
+                    console.error('Signup failed:', data);
+                    let errorMessage = 'Signup failed. Please try again.';
+
+                    if (data.error) {
+                        errorMessage = data.error;
+                    } else if (data.message) {
+                        errorMessage = data.message;
+                    }
+
+                    showAlert(errorMessage, 'error');
                     submitBtn.disabled = false;
                     submitBtn.classList.remove('loading');
                 }
             } catch (error) {
                 console.error('Signup error:', error);
+                console.error('Error details:', {
+                    message: error.message,
+                    stack: error.stack
+                });
                 showAlert('Network error. Please check your connection and try again.', 'error');
                 submitBtn.disabled = false;
                 submitBtn.classList.remove('loading');
             }
         });
 
-        // Clear errors on input
         [emailInput, passwordInput, nameInput, surnameInput].forEach(input => {
             input.addEventListener('input', function() {
                 clearError(this.id);
