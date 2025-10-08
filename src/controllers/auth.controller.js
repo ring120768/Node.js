@@ -201,7 +201,7 @@ async function signup(req, res) {
       consentVersion: config.constants.GDPR.CURRENT_POLICY_VERSION
     });
 
-    res.json({
+    const responseData = {
       success: true,
       user: {
         id: userId,
@@ -218,7 +218,10 @@ async function signup(req, res) {
         consentDate: new Date().toISOString(),
         policyVersion: config.constants.GDPR.CURRENT_POLICY_VERSION
       }
-    });
+    };
+
+    logger.info('Sending signup response:', { success: true, userId, email });
+    res.json(responseData);
   } catch (error) {
     logger.error('Unexpected signup error:', { error: error.message, stack: error.stack });
     sendError(res, 500, 'Server error', 'INTERNAL_ERROR');
