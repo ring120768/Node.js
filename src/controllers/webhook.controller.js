@@ -103,7 +103,7 @@ async function handleSignup(req, res) {
   const { createClient } = require('@supabase/supabase-js');
   
   try {
-    logger.info('Signup webhook received');
+    logger.info('Typeform signup webhook received');
 
     if (!this.imageProcessor) {
       return sendError(res, 503, 'Service not configured', 'SERVICE_UNAVAILABLE');
@@ -111,25 +111,55 @@ async function handleSignup(req, res) {
 
     const webhookData = req.body;
     
-    // Extract verification fields from request body
+    // Extract fields from Typeform webhook payload
     const { 
-      create_user_id: user_id, 
-      email, 
-      auth_code, 
-      product_id,
+      user_id,           // Hidden field from signup
+      email,             // Hidden field from signup  
+      auth_code,         // Hidden field from signup
+      product_id,        // Hidden field from signup
+      first_name,        // Typeform field
+      last_name,         // Typeform field
+      phone,             // Typeform field
+      address,           // Typeform field
+      postcode,          // Typeform field
+      date_of_birth,     // Typeform field
+      emergency_contact_name,     // Typeform field
+      emergency_contact_number,   // Typeform field
+      vehicle_registration,       // Typeform field
+      vehicle_make,              // Typeform field
+      vehicle_model,             // Typeform field
+      vehicle_colour,            // Typeform field
+      insurance_company,         // Typeform field
+      insurance_policy_number,   // Typeform field
+      driving_license_picture,   // Typeform image URL
+      vehicle_picture_front,     // Typeform image URL
+      vehicle_picture_driver_side,   // Typeform image URL
+      vehicle_picture_passenger_side, // Typeform image URL
+      vehicle_picture_back,          // Typeform image URL
       ...otherFields 
     } = webhookData;
 
-    console.log('📝 Extracted webhook fields:', {
+    console.log('📝 Extracted Typeform webhook fields:', {
       user_id,
       email,
       auth_code: auth_code ? `${auth_code.substring(0, 8)}...` : 'missing',
       product_id,
+      first_name,
+      last_name,
+      phone: phone ? `${phone.substring(0, 4)}****` : 'missing',
+      vehicle_registration,
+      imageFieldsCount: [
+        'driving_license_picture',
+        'vehicle_picture_front', 
+        'vehicle_picture_driver_side',
+        'vehicle_picture_passenger_side',
+        'vehicle_picture_back'
+      ].filter(field => webhookData[field]).length,
       otherFieldsCount: Object.keys(otherFields).length
     });
 
     if (!user_id) {
-      return sendError(res, 400, 'Missing create_user_id', 'MISSING_USER_ID');
+      return sendError(res, 400, 'Missing user_id', 'MISSING_USER_ID');
     }
 
     if (!email || !auth_code) {
@@ -144,10 +174,10 @@ async function handleSignup(req, res) {
       }
     });
 
-    // Verify auth_code by querying pending_typeform_completions
+    // VERIFY auth_code FIRST before processing any data
     console.log('🔍 Verifying auth code for user:', user_id);
     
-    const { data: verification, error: verificationError } = await supabase
+    const { data: verification, error: verifyError } = await supabase
       .from('pending_typeform_completions')
       .select('*')
       .eq('user_id', user_id)
@@ -156,49 +186,112 @@ async function handleSignup(req, res) {
       .eq('completed', false)
       .single();
 
-    console.log('🔐 Verification result:', {
-      found: !!verification,
-      error: verificationError?.message,
-      expired: verification ? verification.expires_at < new Date().toISOString() : 'n/a'
-    });
-
     // Validation checks
-    if (verificationError || !verification) {
-      logger.warn('Invalid verification code attempt', { user_id, email, auth_code: auth_code?.substring(0, 8) });
-      return sendError(res, 403, 'Invalid or expired verification code', 'INVALID_VERIFICATION');
+    if (verifyError || !verification) {
+      console.error('❌ Auth code verification failed:', verifyError);
+      return res.status(403).json({ 
+        success: false, 
+        error: 'Invalid or expired verification code' 
+      });
     }
 
-    // Check if verification code has expired
-    if (verification.expires_at < new Date().toISOString()) {
-      logger.warn('Expired verification code attempt', { user_id, expires_at: verification.expires_at });
-      return sendError(res, 403, 'Verification code expired', 'VERIFICATION_EXPIRED');
+    // Check expiration
+    if (new Date(verification.expires_at) < new Date()) {
+      console.error('❌ Auth code expired:', verification.expires_at);
+      return res.status(403).json({ 
+        success: false, 
+        error: 'Verification code expired. Please sign up again.' 
+      });
     }
 
-    console.log('✅ Verification successful:', {
-      verification_id: verification.id,
-      user_id: verification.user_id,
-      created_at: verification.created_at,
-      expires_at: verification.expires_at
-    });
+    console.log('✅ Auth code verified successfully for user:', user_id);
 
     // Log GDPR activity after successful verification
     await gdprService.logActivity(user_id, 'SIGNUP_PROCESSING', {
-      source: 'webhook',
+      source: 'typeform_webhook',
       has_images: true,
       verification_id: verification.id
     }, req);
 
-    // Process Typeform data (existing logic)
+    // Check if user already exists in user_signup table
+    const { data: existingUser } = await supabase
+      .from('user_signup')
+      .select('create_user_id')
+      .eq('create_user_id', user_id)
+      .single();
+
+    // Prepare user data for insertion/update
+    const userData = {
+      create_user_id: user_id,
+      email: email,
+      first_name: first_name || null,
+      last_name: last_name || null,
+      phone: phone || null,
+      address: address || null,
+      postcode: postcode || null,
+      date_of_birth: date_of_birth || null,
+      emergency_contact_name: emergency_contact_name || null,
+      emergency_contact_number: emergency_contact_number || null,
+      vehicle_registration: vehicle_registration || null,
+      vehicle_make: vehicle_make || null,
+      vehicle_model: vehicle_model || null,
+      vehicle_colour: vehicle_colour || null,
+      insurance_company: insurance_company || null,
+      insurance_policy_number: insurance_policy_number || null,
+      product_id: product_id || null,
+      typeform_completed: true,
+      typeform_completion_date: new Date().toISOString(),
+      updated_at: new Date().toISOString()
+    };
+
+    let userResult;
+    if (existingUser) {
+      // Update existing user
+      console.log('📝 Updating existing user in user_signup table:', user_id);
+      const { data, error } = await supabase
+        .from('user_signup')
+        .update(userData)
+        .eq('create_user_id', user_id)
+        .select();
+      
+      userResult = { data, error };
+    } else {
+      // Insert new user
+      console.log('📝 Inserting new user into user_signup table:', user_id);
+      userData.created_at = new Date().toISOString();
+      
+      const { data, error } = await supabase
+        .from('user_signup')
+        .insert([userData])
+        .select();
+      
+      userResult = { data, error };
+    }
+
+    if (userResult.error) {
+      logger.error('Error saving user data to user_signup table:', userResult.error);
+      return sendError(res, 500, 'Failed to save user data', 'USER_SAVE_ERROR');
+    }
+
+    console.log('✅ User data saved to user_signup table successfully');
+
+    // Process images if they exist
     logger.info('🚀 Starting image processing for verified user:', user_id);
     
+    // Prepare webhook data with create_user_id for image processor compatibility
+    const imageProcessingData = {
+      ...webhookData,
+      create_user_id: user_id  // Ensure image processor gets the right field name
+    };
+
     const processingResult = await new Promise((resolve, reject) => {
-      this.imageProcessor.processSignupImages(webhookData)
+      this.imageProcessor.processSignupImages(imageProcessingData)
         .then(result => {
-          logger.success('Signup processing complete', result);
+          logger.success('Image processing complete', result);
           resolve(result);
         })
         .catch(error => {
-          logger.error('Signup processing failed', error);
+          logger.error('Image processing failed', error);
           reject(error);
         });
     });
@@ -234,17 +327,18 @@ async function handleSignup(req, res) {
     res.status(200).json({
       success: true,
       message: 'Profile completed successfully',
-      create_user_id: user_id,
+      user_id: user_id,
       verification_id: verification.id,
+      images_processed: processingResult?.processedImages?.length || 0,
       requestId: req.requestId
     });
 
   } catch (error) {
-    logger.error('Webhook error', error);
+    logger.error('Typeform signup webhook error', error);
     console.log('❌ Signup webhook error:', {
       message: error.message,
       stack: error.stack?.substring(0, 500),
-      user_id: req.body?.create_user_id
+      user_id: req.body?.user_id
     });
     
     sendError(res, 500, error.message, 'WEBHOOK_ERROR');
