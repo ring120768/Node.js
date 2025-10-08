@@ -100,6 +100,8 @@ async function generateUserPDF(create_user_id, source = 'webhook') {
  * POST /api/webhooks/signup
  */
 async function handleSignup(req, res) {
+  const { createClient } = require('@supabase/supabase-js');
+  
   try {
     logger.info('Signup webhook received');
 
@@ -108,32 +110,143 @@ async function handleSignup(req, res) {
     }
 
     const webhookData = req.body;
+    
+    // Extract verification fields from request body
+    const { 
+      create_user_id: user_id, 
+      email, 
+      auth_code, 
+      product_id,
+      ...otherFields 
+    } = webhookData;
 
-    if (!webhookData.create_user_id) {
+    console.log('📝 Extracted webhook fields:', {
+      user_id,
+      email,
+      auth_code: auth_code ? `${auth_code.substring(0, 8)}...` : 'missing',
+      product_id,
+      otherFieldsCount: Object.keys(otherFields).length
+    });
+
+    if (!user_id) {
       return sendError(res, 400, 'Missing create_user_id', 'MISSING_USER_ID');
     }
 
-    await gdprService.logActivity(webhookData.create_user_id, 'SIGNUP_PROCESSING', {
+    if (!email || !auth_code) {
+      return sendError(res, 400, 'Missing email or auth_code for verification', 'MISSING_VERIFICATION_DATA');
+    }
+
+    // Initialize Supabase client for verification
+    const supabase = createClient(config.supabase.url, config.supabase.serviceKey, {
+      auth: {
+        autoRefreshToken: false,
+        persistSession: false
+      }
+    });
+
+    // Verify auth_code by querying pending_typeform_completions
+    console.log('🔍 Verifying auth code for user:', user_id);
+    
+    const { data: verification, error: verificationError } = await supabase
+      .from('pending_typeform_completions')
+      .select('*')
+      .eq('user_id', user_id)
+      .eq('auth_code', auth_code)
+      .eq('email', email)
+      .eq('completed', false)
+      .single();
+
+    console.log('🔐 Verification result:', {
+      found: !!verification,
+      error: verificationError?.message,
+      expired: verification ? verification.expires_at < new Date().toISOString() : 'n/a'
+    });
+
+    // Validation checks
+    if (verificationError || !verification) {
+      logger.warn('Invalid verification code attempt', { user_id, email, auth_code: auth_code?.substring(0, 8) });
+      return sendError(res, 403, 'Invalid or expired verification code', 'INVALID_VERIFICATION');
+    }
+
+    // Check if verification code has expired
+    if (verification.expires_at < new Date().toISOString()) {
+      logger.warn('Expired verification code attempt', { user_id, expires_at: verification.expires_at });
+      return sendError(res, 403, 'Verification code expired', 'VERIFICATION_EXPIRED');
+    }
+
+    console.log('✅ Verification successful:', {
+      verification_id: verification.id,
+      user_id: verification.user_id,
+      created_at: verification.created_at,
+      expires_at: verification.expires_at
+    });
+
+    // Log GDPR activity after successful verification
+    await gdprService.logActivity(user_id, 'SIGNUP_PROCESSING', {
       source: 'webhook',
-      has_images: true
+      has_images: true,
+      verification_id: verification.id
     }, req);
 
-    this.imageProcessor.processSignupImages(webhookData)
-      .then(result => {
-        logger.success('Signup processing complete', result);
+    // Process Typeform data (existing logic)
+    logger.info('🚀 Starting image processing for verified user:', user_id);
+    
+    const processingResult = await new Promise((resolve, reject) => {
+      this.imageProcessor.processSignupImages(webhookData)
+        .then(result => {
+          logger.success('Signup processing complete', result);
+          resolve(result);
+        })
+        .catch(error => {
+          logger.error('Signup processing failed', error);
+          reject(error);
+        });
+    });
+
+    console.log('📸 Image processing completed:', {
+      user_id,
+      success: true,
+      processed_items: processingResult?.processedImages?.length || 0
+    });
+
+    // Mark verification as completed AFTER successful processing
+    const { error: completionError } = await supabase
+      .from('pending_typeform_completions')
+      .update({ 
+        completed: true, 
+        completed_at: new Date().toISOString() 
       })
-      .catch(error => {
-        logger.error('Signup processing failed', error);
+      .eq('id', verification.id);
+
+    if (completionError) {
+      logger.error('Failed to mark verification as completed', completionError);
+      console.log('⚠️ Completion marking failed:', {
+        verification_id: verification.id,
+        error: completionError.message
       });
+    } else {
+      console.log('✅ Verification marked as completed:', {
+        verification_id: verification.id,
+        completed_at: new Date().toISOString()
+      });
+    }
 
     res.status(200).json({
       success: true,
-      message: 'Signup processing started',
-      create_user_id: webhookData.create_user_id,
+      message: 'Profile completed successfully',
+      create_user_id: user_id,
+      verification_id: verification.id,
       requestId: req.requestId
     });
+
   } catch (error) {
     logger.error('Webhook error', error);
+    console.log('❌ Signup webhook error:', {
+      message: error.message,
+      stack: error.stack?.substring(0, 500),
+      user_id: req.body?.create_user_id
+    });
+    
     sendError(res, 500, error.message, 'WEBHOOK_ERROR');
   }
 }
