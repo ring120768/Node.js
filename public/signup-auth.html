@@ -627,10 +627,11 @@
                         sessionStorage.setItem('userEmail', data.user.email);
                     }
 
-                    showAlert('Account created successfully! Redirecting...', 'success');
+                    showAlert('Account created successfully! Redirecting to onboarding...', 'success');
 
                     setTimeout(() => {
-                        window.location.href = '/index.html';
+                        // Redirect to Typeform with hidden field data
+                        redirectToTypeformWithUserData(data.user);
                     }, 1500);
                 } else {
                     console.error('Signup failed:', { response, data });
@@ -666,6 +667,47 @@
                 clearError(this.id);
             });
         });
+
+        // Function to redirect to Typeform with user data
+        function redirectToTypeformWithUserData(userData) {
+            // Your Typeform URL base (replace with your actual Typeform URL)
+            const typeformBaseUrl = 'https://your-typeform-id.typeform.com/to/your-form-id';
+            
+            // Generate auth code (you can modify this logic as needed)
+            const authCode = generateAuthCode(userData.id);
+            
+            // Create hidden fields object
+            const hiddenFields = {
+                user_id: userData.id,
+                'product-id': 'car-crash-lawyer-ai', // Your product identifier
+                auth_code: authCode,
+                user_email: userData.email, // Additional field if you want to include email
+                signup_timestamp: new Date().toISOString() // Additional timestamp field
+            };
+
+            // Build URL with hidden fields as query parameters
+            const params = new URLSearchParams();
+            Object.keys(hiddenFields).forEach(key => {
+                if (hiddenFields[key] !== null && hiddenFields[key] !== undefined) {
+                    params.append(key, hiddenFields[key].toString());
+                }
+            });
+
+            const finalUrl = `${typeformBaseUrl}?${params.toString()}`;
+            
+            console.log('Redirecting to Typeform with hidden fields:', hiddenFields);
+            console.log('Final Typeform URL:', finalUrl);
+
+            // Redirect to Typeform
+            window.location.href = finalUrl;
+        }
+
+        // Generate a simple auth code (you can enhance this as needed)
+        function generateAuthCode(userId) {
+            const timestamp = Date.now().toString();
+            const random = Math.random().toString(36).substring(2, 15);
+            return btoa(`${userId}_${timestamp}_${random}`).substring(0, 16);
+        }
     </script>
 </body>
 </html>

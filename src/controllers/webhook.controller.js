@@ -1,4 +1,3 @@
-
 /**
  * Webhook Controller for Car Crash Lawyer AI
  * Handles Typeform webhooks and automated processing
@@ -32,7 +31,7 @@ function initializeController(imageProcessor) {
  */
 async function generateUserPDF(create_user_id, source = 'webhook') {
   const { createClient } = require('@supabase/supabase-js');
-  
+
   const supabase = createClient(config.supabase.url, config.supabase.serviceKey, {
     auth: {
       autoRefreshToken: false,
@@ -82,7 +81,7 @@ async function generateUserPDF(create_user_id, source = 'webhook') {
   if (aiSummary) allData.aiSummary = aiSummary;
 
   const pdfBuffer = await generatePDF(allData);
-  
+
   // Store completed form logic would go here
   const emailResult = await sendEmails(allData.user.driver_email, pdfBuffer, create_user_id);
 
@@ -211,9 +210,164 @@ async function handleGeneratePdf(req, res) {
   }
 }
 
+/**
+ * Typeform webhook handler
+ * POST /api/webhooks/typeform
+ */
+async function handleTypeformWebhook(req, res) {
+  try {
+    const webhookData = req.body;
+    logger.info('Typeform webhook received:', { 
+      event_id: webhookData.event_id,
+      form_id: webhookData.form_id 
+    });
+
+    // Extract hidden fields from the webhook data
+    const hiddenFields = extractHiddenFields(webhookData);
+    logger.info('Extracted hidden fields:', hiddenFields);
+
+    // Validate auth code if present
+    if (hiddenFields.auth_code && hiddenFields.user_id) {
+      const isValidAuth = validateAuthCode(hiddenFields.auth_code, hiddenFields.user_id);
+      if (!isValidAuth) {
+        logger.warn('Invalid auth code in Typeform webhook', { 
+          user_id: hiddenFields.user_id,
+          auth_code: hiddenFields.auth_code 
+        });
+        return sendError(res, 401, 'Invalid authentication', 'INVALID_AUTH');
+      }
+    }
+
+    // Process the webhook data with hidden fields context
+    const result = await processTypeformData(webhookData, hiddenFields);
+
+    logger.success('Typeform webhook processed successfully', { result, hiddenFields });
+    res.json({ success: true, message: 'Webhook processed', user_id: hiddenFields.user_id });
+  } catch (error) {
+    logger.error('Typeform webhook error:', error);
+    sendError(res, 500, 'Webhook processing failed', 'WEBHOOK_ERROR');
+  }
+}
+
+/**
+ * Generic webhook handler (example, can be extended)
+ * POST /api/webhooks/generic
+ */
+async function handleGenericWebhook(req, res) {
+  try {
+    logger.info('Generic webhook received');
+    const webhookData = req.body;
+
+    // Basic processing for generic webhooks
+    logger.info('Generic webhook data:', webhookData);
+
+    res.status(200).json({
+      success: true,
+      message: 'Generic webhook received',
+      data: webhookData,
+      requestId: req.requestId
+    });
+  } catch (error) {
+    logger.error('Generic webhook error', error);
+    sendError(res, 500, error.message, 'WEBHOOK_ERROR');
+  }
+}
+
+/**
+ * Extract hidden fields from Typeform webhook data
+ */
+function extractHiddenFields(webhookData) {
+  const hiddenFields = {};
+
+  try {
+    if (webhookData.form_response && webhookData.form_response.hidden) {
+      const hidden = webhookData.form_response.hidden;
+
+      // Extract the hidden fields you're interested in
+      if (hidden.user_id) hiddenFields.user_id = hidden.user_id;
+      if (hidden['product-id']) hiddenFields.product_id = hidden['product-id'];
+      if (hidden.auth_code) hiddenFields.auth_code = hidden.auth_code;
+      if (hidden.user_email) hiddenFields.user_email = hidden.user_email;
+      if (hidden.signup_timestamp) hiddenFields.signup_timestamp = hidden.signup_timestamp;
+    }
+  } catch (error) {
+    logger.error('Error extracting hidden fields:', error);
+  }
+
+  return hiddenFields;
+}
+
+/**
+ * Validate auth code (simple validation - enhance as needed)
+ */
+function validateAuthCode(authCode, userId) {
+  try {
+    // Decode the auth code
+    const decoded = atob(authCode);
+    const [codeUserId] = decoded.split('_');
+
+    // Check if the user ID matches
+    return codeUserId === userId;
+  } catch (error) {
+    logger.error('Auth code validation error:', error);
+    return false;
+  }
+}
+
+/**
+ * Process Typeform data with hidden fields context
+ */
+async function processTypeformData(webhookData, hiddenFields = {}) {
+  try {
+    // Your existing processing logic here
+    // Now you have access to hiddenFields.user_id, hiddenFields.product_id, etc.
+
+    logger.info('Processing Typeform data for user:', {
+      user_id: hiddenFields.user_id,
+      product_id: hiddenFields.product_id,
+      form_id: webhookData.form_id
+    });
+
+    // Example: Update user record with Typeform completion
+    if (hiddenFields.user_id && config.supabase.url) {
+      const { createClient } = require('@supabase/supabase-js');
+      const supabase = createClient(config.supabase.url, config.supabase.serviceKey);
+
+      const { error } = await supabase
+        .from('user_signup')
+        .update({ 
+          typeform_completed: true,
+          typeform_completion_date: new Date().toISOString(),
+          typeform_response_id: webhookData.form_response?.token
+        })
+        .eq('uid', hiddenFields.user_id);
+
+      if (error) {
+        logger.error('Error updating user Typeform completion:', error);
+      } else {
+        logger.success('User Typeform completion recorded', { user_id: hiddenFields.user_id });
+      }
+    }
+
+    return {
+      processed: true,
+      user_id: hiddenFields.user_id,
+      timestamp: new Date().toISOString()
+    };
+
+  } catch (error) {
+    logger.error('Error processing Typeform data:', error);
+    throw error;
+  }
+}
+
 module.exports = {
   initializeController,
   handleSignup,
   handleIncidentReport,
-  handleGeneratePdf
+  handleGeneratePdf,
+  handleTypeformWebhook,
+  handleGenericWebhook,
+  extractHiddenFields,
+  validateAuthCode
 };
