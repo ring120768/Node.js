@@ -205,18 +205,7 @@ async function signup(req, res) {
       success: true,
       user: {
         id: userId,
-        email: email,
-        username: username,
-        name: firstName,
-        surname: lastName
-      },
-      session: {
-        access_token: authResult.session.access_token
-      },
-      gdpr: {
-        consentGiven: true,
-        consentDate: new Date().toISOString(),
-        policyVersion: config.constants.GDPR.CURRENT_POLICY_VERSION
+        email: email
       }
     };
 
