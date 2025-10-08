@@ -37,11 +37,37 @@ if (config.supabase.url && config.supabase.serviceKey) {
  */
 async function signup(req, res) {
   try {
+    // Log the entire request body for debugging
+    logger.info('Raw signup request body:', JSON.stringify(req.body, null, 2));
+
     const { email, password, name, surname, mobile, gdprConsent } = req.body;
 
-    // Validation
-    if (!email || !password || !name || !surname) {
-      return sendError(res, 400, 'Missing required fields', 'MISSING_FIELDS');
+    // Debug: Log received fields with actual values
+    logger.info('Parsed signup fields:', {
+      email: email || 'MISSING',
+      emailType: typeof email,
+      password: password ? `[${password.length} chars]` : 'MISSING',
+      name: name || 'MISSING',
+      nameType: typeof name,
+      surname: surname || 'MISSING',
+      surnameType: typeof surname,
+      mobile: mobile || 'null/empty',
+      mobileType: typeof mobile,
+      gdprConsent: gdprConsent,
+      gdprConsentType: typeof gdprConsent,
+      allFields: Object.keys(req.body)
+    });
+
+    // Validation with specific field checking
+    const missingFields = [];
+    if (!email || email.trim() === '') missingFields.push('email');
+    if (!password || password.trim() === '') missingFields.push('password');
+    if (!name || name.trim() === '') missingFields.push('name');
+    if (!surname || surname.trim() === '') missingFields.push('surname');
+
+    if (missingFields.length > 0) {
+      logger.error('Missing required fields:', { missing: missingFields });
+      return sendError(res, 400, `Missing required fields: ${missingFields.join(', ')}`, 'MISSING_FIELDS');
     }
 
     if (password.length < 8) {
@@ -69,6 +95,12 @@ async function signup(req, res) {
     });
 
     if (!authResult.success) {
+      // Log detailed error from auth service
+      logger.error('AuthService signUp failed:', {
+        error: authResult.error,
+        email: email,
+        providedData: { name, surname, mobile }
+      });
       return sendError(res, 400, authResult.error, 'SIGNUP_FAILED');
     }
 
@@ -103,7 +135,8 @@ async function signup(req, res) {
 
     if (insertError) {
       logger.error('Error inserting user with GDPR consent:', {
-        error: insertError,
+        error: insertError.message, // Log specific error message
+        details: insertError,
         userData: {
           uid: userId,
           email: email,
@@ -116,8 +149,9 @@ async function signup(req, res) {
       // Clean up auth user if database insert fails
       try {
         await authService.deleteUser(userId);
+        logger.info('Cleaned up auth user due to database insert failure', { userId });
       } catch (cleanupError) {
-        logger.error('Failed to cleanup auth user:', cleanupError);
+        logger.error('Failed to cleanup auth user after database insert failure:', { userId, cleanupError });
       }
       return sendError(res, 500, 'Failed to create user account', 'USER_CREATION_FAILED');
     }
@@ -138,7 +172,7 @@ async function signup(req, res) {
       logger.success('GDPR consent logged successfully', { userId });
     } catch (auditError) {
       // Non-critical error - don't fail signup if audit log fails
-      logger.warn('GDPR audit log error (non-critical):', auditError);
+      logger.warn('GDPR audit log error (non-critical):', { userId, auditError });
     }
 
     // Set authentication cookie
@@ -174,7 +208,7 @@ async function signup(req, res) {
       }
     });
   } catch (error) {
-    logger.error('Signup error:', error);
+    logger.error('Unexpected signup error:', { error: error.message, stack: error.stack });
     sendError(res, 500, 'Server error', 'INTERNAL_ERROR');
   }
 }
@@ -198,6 +232,8 @@ async function login(req, res) {
     const authResult = await authService.signIn(email, password);
 
     if (!authResult.success) {
+      // Log failed login attempt
+      logger.warn('Failed login attempt:', { email, error: authResult.error });
       return sendError(res, 401, 'Invalid credentials', 'INVALID_CREDENTIALS');
     }
 
@@ -206,6 +242,9 @@ async function login(req, res) {
       .select('*')
       .eq('uid', authResult.userId)
       .single();
+
+    // Log successful login
+    logger.info('User login successful', { userId: authResult.userId, email: email });
 
     const cookieMaxAge = rememberMe ? 7 * 24 * 60 * 60 * 1000 : 24 * 60 * 60 * 1000;
 
@@ -229,7 +268,7 @@ async function login(req, res) {
       }
     });
   } catch (error) {
-    logger.error('Login error:', error);
+    logger.error('Login error:', { error: error.message, stack: error.stack });
     sendError(res, 500, 'Server error', 'INTERNAL_ERROR');
   }
 }
@@ -240,11 +279,17 @@ async function login(req, res) {
  */
 async function logout(req, res) {
   try {
-    if (authService) await authService.signOut();
+    // Clear the session from Supabase Auth if authService is available
+    if (authService) {
+      await authService.signOut();
+      logger.info('User signed out from Auth service');
+    }
+    // Clear the authentication cookie
     res.clearCookie('access_token');
+    logger.info('Access token cookie cleared');
     res.json({ success: true });
   } catch (error) {
-    logger.error('Logout error:', error);
+    logger.error('Logout error:', { error: error.message, stack: error.stack });
     sendError(res, 500, 'Logout failed', 'LOGOUT_FAILED');
   }
 }
@@ -256,15 +301,24 @@ async function logout(req, res) {
 async function checkSession(req, res) {
   try {
     if (!req.user) {
+      // No user object attached to request, session is invalid or expired
       return res.json({ authenticated: false, user: null });
     }
 
-    const { data: userData } = await supabase
+    // Fetch user details from our user_signup table to ensure consistency
+    const { data: userData, error: userError } = await supabase
       .from('user_signup')
       .select('*')
       .eq('uid', req.userId)
       .single();
 
+    if (userError) {
+      logger.error('Error fetching user data during session check:', { userId: req.userId, error: userError.message });
+      // If user data is not found in our table, consider session invalid
+      return res.json({ authenticated: false, user: null });
+    }
+
+    // If user data is found, session is considered valid
     res.json({
       authenticated: true,
       user: {
@@ -275,8 +329,9 @@ async function checkSession(req, res) {
       }
     });
   } catch (error) {
-    logger.error('Session check error:', error);
-    res.json({ authenticated: false });
+    logger.error('Session check error:', { error: error.message, stack: error.stack });
+    // In case of unexpected errors, assume not authenticated
+    res.json({ authenticated: false, user: null });
   }
 }
 
