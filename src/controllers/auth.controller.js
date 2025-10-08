@@ -91,7 +91,7 @@ async function signup(req, res) {
 
     const authResult = await authService.signUp(email, password, {
       full_name: `${name} ${surname}`.trim(),
-      phone: mobile
+      phone: mobile || null
     });
 
     if (!authResult.success) {
@@ -101,6 +101,18 @@ async function signup(req, res) {
         email: email,
         providedData: { name, surname, mobile }
       });
+
+      // Check if user already exists
+      if (authResult.error && (
+        authResult.error.includes('User already registered') ||
+        authResult.error.includes('already registered') ||
+        authResult.error.includes('already exists') ||
+        authResult.error.toLowerCase().includes('duplicate')
+      )) {
+        logger.info('Signup attempt with existing email:', { email });
+        return sendError(res, 409, 'User already exists. Please log in to your account.', 'USER_EXISTS');
+      }
+
       return sendError(res, 400, authResult.error, 'SIGNUP_FAILED');
     }
 
