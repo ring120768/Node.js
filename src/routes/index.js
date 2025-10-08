@@ -1,4 +1,3 @@
-
 /**
  * Central Router for Car Crash Lawyer AI
  * Aggregates all route modules and health check endpoints
@@ -48,7 +47,7 @@ async function checkExternalServices() {
 router.get('/health', async (req, res) => {
   try {
     const externalServices = await checkExternalServices();
-    
+
     // Get WebSocket status from app locals if available
     const websocketModule = req.app.locals.websocketModule;
     const supabaseEnabled = req.app.locals.supabaseEnabled;
