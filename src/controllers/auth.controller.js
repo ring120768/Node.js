@@ -37,7 +37,7 @@ if (config.supabase.url && config.supabase.serviceKey) {
  */
 async function signup(req, res) {
   try {
-    const { email, password, name, surname, phone, gdprConsent } = req.body;
+    const { email, password, name, surname, mobile, gdprConsent } = req.body;
 
     // Validation
     if (!email || !password || !name || !surname) {
@@ -65,7 +65,7 @@ async function signup(req, res) {
 
     const authResult = await authService.signUp(email, password, {
       full_name: `${name} ${surname}`.trim(),
-      phone: phone
+      phone: mobile
     });
 
     if (!authResult.success) {
@@ -89,7 +89,7 @@ async function signup(req, res) {
       username: username,
       name: firstName || '',
       surname: lastName || '',
-      phone: phone || null,
+      phone: mobile || null,
       created_at: new Date().toISOString(),
       source: 'auth_signup',
       verified: true,
@@ -110,7 +110,7 @@ async function signup(req, res) {
           username: username,
           name: firstName,
           surname: lastName,
-          phone: phone
+          phone: mobile
         }
       });
       // Clean up auth user if database insert fails
