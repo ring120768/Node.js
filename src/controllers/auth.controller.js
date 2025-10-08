@@ -199,6 +199,36 @@ async function signup(req, res) {
 
     console.log('Generated auth_code:', authCode);
 
+    // Create user_signup record
+    const { data: userSignupData, error: userSignupError } = await supabase
+      .from('user_signup')
+      .insert({
+        user_id: authResult.userId,
+        create_user_id: authResult.userId,
+        name: name,
+        surname: surname,
+        email: email,
+        mobile: mobile || null,
+        gdpr_consent: true,
+        gdpr_consent_date: new Date().toISOString(),
+        consent_given: true,
+        consent_date: new Date().toISOString(),
+        consent_source: 'signup',
+        gdpr_consent_ip: req.ip || req.connection?.remoteAddress || 'unknown',
+        gdpr_consent_version: 'v1.0',
+        account_status: 'active'
+      })
+      .select()
+      .single();
+
+    // Handle user_signup errors
+    if (userSignupError) {
+      console.error('Error creating user_signup record:', userSignupError);
+      console.warn('Proceeding without initial user_signup record - webhook will handle it');
+    } else {
+      console.log('Created user_signup record:', userSignupData.id);
+    }
+
     // Set authentication cookie
     res.cookie('access_token', authResult.session.access_token, {
       httpOnly: true,
