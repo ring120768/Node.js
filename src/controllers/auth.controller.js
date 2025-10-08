@@ -37,10 +37,10 @@ if (config.supabase.url && config.supabase.serviceKey) {
  */
 async function signup(req, res) {
   try {
-    const { email, password, fullName, name, surname, phone, gdprConsent } = req.body;
+    const { email, password, name, surname, phone, gdprConsent } = req.body;
 
     // Validation
-    if (!email || !password || !fullName) {
+    if (!email || !password || !name || !surname) {
       return sendError(res, 400, 'Missing required fields', 'MISSING_FIELDS');
     }
 
@@ -64,7 +64,7 @@ async function signup(req, res) {
     logger.info('Auth signup with GDPR consent:', email);
 
     const authResult = await authService.signUp(email, password, {
-      full_name: fullName,
+      full_name: `${name} ${surname}`.trim(),
       phone: phone
     });
 
@@ -75,15 +75,9 @@ async function signup(req, res) {
     const userId = authResult.userId;
     const username = email.split('@')[0].replace(/[^a-zA-Z0-9]/g, '') + '_' + Math.floor(Math.random() * 1000000);
 
-    // Extract name and surname - use provided fields or split fullName
-    let firstName = name;
-    let lastName = surname;
-    
-    if (!firstName && !lastName && fullName) {
-      const nameParts = fullName.trim().split(' ');
-      firstName = nameParts[0] || '';
-      lastName = nameParts.slice(1).join(' ') || '';
-    }
+    // Use provided name and surname fields
+    const firstName = name || '';
+    const lastName = surname || '';
 
     // ========================================
     // GDPR CONSENT CAPTURE IN DATABASE
@@ -167,7 +161,8 @@ async function signup(req, res) {
         id: userId,
         email: email,
         username: username,
-        fullName: fullName
+        name: firstName,
+        surname: lastName
       },
       session: {
         access_token: authResult.session.access_token
