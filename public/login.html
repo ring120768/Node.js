@@ -76,6 +76,53 @@
       border-color: #007acc;
       box-shadow: 0 0 0 2px rgba(0,120,204,0.2);
     }
+
+    /* GDPR Consent Checkbox */
+    .gdpr-consent {
+      margin: 20px 0;
+      padding: 12px;
+      background: #f8f9fa;
+      border: 2px solid #e0e0e0;
+      border-radius: 6px;
+    }
+
+    .gdpr-consent.error {
+      border-color: #e74c3c;
+      background: #fff5f5;
+    }
+
+    .checkbox-wrapper {
+      display: flex;
+      align-items: flex-start;
+      gap: 10px;
+    }
+
+    .checkbox-wrapper input[type="checkbox"] {
+      width: 18px;
+      height: 18px;
+      margin-top: 2px;
+      cursor: pointer;
+      flex-shrink: 0;
+      accent-color: #007acc;
+    }
+
+    .checkbox-label {
+      font-size: 13px;
+      color: #555;
+      line-height: 1.5;
+      cursor: pointer;
+    }
+
+    .checkbox-label a {
+      color: #007acc;
+      text-decoration: none;
+      font-weight: 600;
+    }
+
+    .checkbox-label a:hover {
+      text-decoration: underline;
+    }
+
     .btn {
       display: block;
       width: 100%;
@@ -92,10 +139,15 @@
     .btn:hover {
       background-color: #005f9e;
     }
+    .btn:disabled {
+      background-color: #ccc;
+      cursor: not-allowed;
+    }
     .error {
       color: #e74c3c;
       margin-top: 16px;
       text-align: center;
+      font-size: 14px;
     }
     .links {
       margin-top: 20px;
@@ -132,17 +184,44 @@
         <input type="password" id="password" name="password" required>
       </div>
 
-      <button type="submit" class="btn">Login</button>
+      <!-- GDPR CONSENT CHECKBOX -->
+      <div class="gdpr-consent" id="gdprConsentBox">
+        <div class="checkbox-wrapper">
+          <input 
+            type="checkbox" 
+            id="gdprConsent" 
+            name="gdprConsent" 
+            required
+          >
+          <label for="gdprConsent" class="checkbox-label">
+            I consent to the processing of my personal data including audio/video recordings, photographs, medical information, and location data through AI transcription services and secure storage as detailed in our <a href="/privacy-policy.html" target="_blank">Privacy Policy</a>.
+          </label>
+        </div>
+        <div class="error" id="gdprConsentError" style="display: none; text-align: left; margin-top: 8px; font-size: 12px;"></div>
+      </div>
+
+      <button type="submit" class="btn" id="loginBtn">Login</button>
     </form>
 
     <div class="links">
-      <p>Don't have an account? <a href="signup.html">Sign Up</a></p>
+      <p>Don't have an account? <a href="signup-auth.html">Sign Up</a></p>
       <p><a href="#" id="forgot-password">Forgot Password?</a></p>
     </div>
   </div>
 
   <script>
-    // Authentication now handled by backend Supabase integration
+    const gdprConsentCheckbox = document.getElementById('gdprConsent');
+    const gdprConsentBox = document.getElementById('gdprConsentBox');
+    const gdprConsentError = document.getElementById('gdprConsentError');
+    const loginBtn = document.getElementById('loginBtn');
+
+    // Clear GDPR error when checkbox is clicked
+    gdprConsentCheckbox.addEventListener('change', function() {
+      if (this.checked) {
+        gdprConsentBox.classList.remove('error');
+        gdprConsentError.style.display = 'none';
+      }
+    });
 
     // Handle login form submission
     document.getElementById('login-form').addEventListener('submit', async (e) => {
@@ -152,6 +231,16 @@
       const password = document.getElementById('password').value;
       const errorElement = document.getElementById('error-message');
 
+      // Validate GDPR consent
+      if (!gdprConsentCheckbox.checked) {
+        gdprConsentBox.classList.add('error');
+        gdprConsentError.textContent = 'You must consent to data processing to continue';
+        gdprConsentError.style.display = 'block';
+        return;
+      }
+
+      loginBtn.disabled = true;
+
       try {
         // Send credentials to backend for authentication
         const response = await fetch('/auth/login', {
@@ -159,7 +248,12 @@
           headers: {
             'Content-Type': 'application/json'
           },
-          body: JSON.stringify({ email, password })
+          body: JSON.stringify({ 
+            email, 
+            password,
+            gdprConsent: gdprConsentCheckbox.checked,
+            consentTimestamp: new Date().toISOString()
+          })
         });
 
         const data = await response.json();
@@ -170,11 +264,13 @@
         } else {
           errorElement.textContent = data.error || 'Login failed';
           errorElement.style.display = 'block';
+          loginBtn.disabled = false;
         }
       } catch (error) {
         console.error('Login error:', error);
         errorElement.textContent = error.message || 'Login failed';
         errorElement.style.display = 'block';
+        loginBtn.disabled = false;
       }
     });
 

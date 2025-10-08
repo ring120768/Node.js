@@ -145,6 +145,60 @@
             background: #27ae60;
         }
 
+        /* Name fields in a row */
+        .name-row {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 15px;
+            margin-bottom: 20px;
+        }
+
+        /* GDPR Consent Checkbox */
+        .gdpr-consent {
+            margin: 25px 0;
+            padding: 15px;
+            background: #f8f9fa;
+            border: 2px solid #e0e0e0;
+            border-radius: 8px;
+        }
+
+        .gdpr-consent.error {
+            border-color: #e74c3c;
+            background: #fff5f5;
+        }
+
+        .checkbox-wrapper {
+            display: flex;
+            align-items: flex-start;
+            gap: 12px;
+        }
+
+        .checkbox-wrapper input[type="checkbox"] {
+            width: 20px;
+            height: 20px;
+            margin-top: 2px;
+            cursor: pointer;
+            flex-shrink: 0;
+            accent-color: #0B7AB0;
+        }
+
+        .checkbox-label {
+            font-size: 14px;
+            color: #555;
+            line-height: 1.5;
+            cursor: pointer;
+        }
+
+        .checkbox-label a {
+            color: #0B7AB0;
+            text-decoration: none;
+            font-weight: 600;
+        }
+
+        .checkbox-label a:hover {
+            text-decoration: underline;
+        }
+
         .submit-btn {
             width: 100%;
             padding: 14px;
@@ -248,6 +302,11 @@
             .logo-section h1 {
                 font-size: 24px;
             }
+
+            .name-row {
+                grid-template-columns: 1fr;
+                gap: 20px;
+            }
         }
     </style>
 </head>
@@ -292,29 +351,60 @@
                 <div class="error-message" id="passwordError"></div>
             </div>
 
-            <div class="form-group">
-                <label for="fullName">Full Name *</label>
-                <input 
-                    type="text" 
-                    id="fullName" 
-                    name="fullName" 
-                    required
-                    placeholder="John Doe"
-                    autocomplete="name"
-                >
-                <div class="error-message" id="fullNameError"></div>
+            <div class="name-row">
+                <div class="form-group">
+                    <label for="name">Name *</label>
+                    <input 
+                        type="text" 
+                        id="name" 
+                        name="name" 
+                        required
+                        placeholder="John"
+                        autocomplete="given-name"
+                    >
+                    <div class="error-message" id="nameError"></div>
+                </div>
+
+                <div class="form-group">
+                    <label for="surname">Surname *</label>
+                    <input 
+                        type="text" 
+                        id="surname" 
+                        name="surname" 
+                        required
+                        placeholder="Doe"
+                        autocomplete="family-name"
+                    >
+                    <div class="error-message" id="surnameError"></div>
+                </div>
             </div>
 
             <div class="form-group">
-                <label for="phone">Phone Number</label>
+                <label for="mobile">Mobile Number</label>
                 <input 
                     type="tel" 
-                    id="phone" 
-                    name="phone" 
-                    placeholder="(555) 123-4567"
+                    id="mobile" 
+                    name="mobile" 
+                    placeholder="+44 1234 567890"
                     autocomplete="tel"
                 >
                 <div class="helper-text">Optional - for important updates about your case</div>
+            </div>
+
+            <!-- GDPR CONSENT CHECKBOX -->
+            <div class="gdpr-consent" id="gdprConsentBox">
+                <div class="checkbox-wrapper">
+                    <input 
+                        type="checkbox" 
+                        id="gdprConsent" 
+                        name="gdprConsent" 
+                        required
+                    >
+                    <label for="gdprConsent" class="checkbox-label">
+                        I agree to the <a href="/privacy-policy.html" target="_blank">Privacy Policy</a> and consent to my data being processed as described, including AI transcription services and secure storage.
+                    </label>
+                </div>
+                <div class="error-message" id="gdprConsentError"></div>
             </div>
 
             <button type="submit" class="submit-btn" id="submitBtn">
@@ -334,8 +424,11 @@
         const alertBox = document.getElementById('alertBox');
         const emailInput = document.getElementById('email');
         const passwordInput = document.getElementById('password');
-        const fullNameInput = document.getElementById('fullName');
-        const phoneInput = document.getElementById('phone');
+        const nameInput = document.getElementById('name');
+        const surnameInput = document.getElementById('surname');
+        const mobileInput = document.getElementById('mobile');
+        const gdprConsentCheckbox = document.getElementById('gdprConsent');
+        const gdprConsentBox = document.getElementById('gdprConsentBox');
 
         // Password strength checker
         passwordInput.addEventListener('input', function() {
@@ -354,6 +447,14 @@
             else if (strength >= 4) strengthBar.classList.add('strong');
         });
 
+        // Clear GDPR error when checkbox is clicked
+        gdprConsentCheckbox.addEventListener('change', function() {
+            if (this.checked) {
+                gdprConsentBox.classList.remove('error');
+                clearError('gdprConsent');
+            }
+        });
+
         // Email validation
         function validateEmail(email) {
             const re = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
@@ -364,22 +465,38 @@
         function showError(field, message) {
             const input = document.getElementById(field);
             const error = document.getElementById(field + 'Error');
-            input.classList.add('error');
-            error.textContent = message;
-            error.classList.add('show');
+
+            if (field === 'gdprConsent') {
+                gdprConsentBox.classList.add('error');
+            } else if (input) {
+                input.classList.add('error');
+            }
+
+            if (error) {
+                error.textContent = message;
+                error.classList.add('show');
+            }
         }
 
         // Clear error
         function clearError(field) {
             const input = document.getElementById(field);
             const error = document.getElementById(field + 'Error');
-            input.classList.remove('error');
-            error.classList.remove('show');
+
+            if (field === 'gdprConsent') {
+                gdprConsentBox.classList.remove('error');
+            } else if (input) {
+                input.classList.remove('error');
+            }
+
+            if (error) {
+                error.classList.remove('show');
+            }
         }
 
         // Clear all errors
         function clearAllErrors() {
-            ['email', 'password', 'fullName'].forEach(clearError);
+            ['email', 'password', 'name', 'surname', 'gdprConsent'].forEach(clearError);
         }
 
         // Show alert
@@ -414,24 +531,82 @@
                 isValid = false;
             }
 
-            // Validate full name
-            if (!fullNameInput.value) {
-                showError('fullName', 'Full name is required');
+            // Validate name
+            if (!nameInput.value) {
+                showError('name', 'Name is required');
+                isValid = false;
+            }
+
+            // Validate surname
+            if (!surnameInput.value) {
+                showError('surname', 'Surname is required');
+                isValid = false;
+            }
+
+            // Validate GDPR consent
+            if (!gdprConsentCheckbox.checked) {
+                showError('gdprConsent', 'You must agree to the Privacy Policy to create an account');
                 isValid = false;
             }
 
             return isValid;
         }
 
-        // Form submission
+        // Handle form submission
         form.addEventListener('submit', async function(e) {
             e.preventDefault();
+            clearAllErrors();
 
-            if (!validateForm()) {
-                return;
+            // Get form data
+            const name = document.getElementById('name').value.trim();
+            const surname = document.getElementById('surname').value.trim();
+            const formData = {
+                email: emailInput.value.trim(),
+                password: passwordInput.value,
+                fullName: `${name} ${surname}`.trim(), // Combine name and surname into fullName
+                phone: mobileInput.value.trim() || null, // Use the mobile input value, or null if empty
+                gdprConsent: gdprConsentCheckbox.checked,
+                consentTimestamp: new Date().toISOString(), // Add consent timestamp
+                ipAddress: null // Will be captured server-side if needed
+            };
+
+            // Validation
+            let hasErrors = false;
+
+            if (!formData.email) {
+                showError('email', 'Email is required');
+                hasErrors = true;
+            } else if (!validateEmail(formData.email)) {
+                showError('email', 'Please enter a valid email address');
+                hasErrors = true;
             }
 
-            // Disable button and show loading
+            if (!formData.password) {
+                showError('password', 'Password is required');
+                hasErrors = true;
+            } else if (formData.password.length < 8) {
+                showError('password', 'Password must be at least 8 characters');
+                hasErrors = true;
+            }
+
+            if (!name) {
+                showError('name', 'First name is required');
+                hasErrors = true;
+            }
+
+            if (!surname) {
+                showError('surname', 'Last name is required');
+                hasErrors = true;
+            }
+
+            if (!formData.gdprConsent) {
+                showError('gdprConsent', 'You must accept the privacy policy to continue');
+                hasErrors = true;
+            }
+
+            if (hasErrors) return;
+
+            // Show loading state
             submitBtn.disabled = true;
             submitBtn.classList.add('loading');
 
@@ -441,12 +616,7 @@
                     headers: {
                         'Content-Type': 'application/json',
                     },
-                    body: JSON.stringify({
-                        email: emailInput.value.trim(),
-                        password: passwordInput.value,
-                        fullName: fullNameInput.value.trim(),
-                        phone: phoneInput.value.trim() || null
-                    })
+                    body: JSON.stringify(formData)
                 });
 
                 const data = await response.json();
@@ -460,9 +630,9 @@
 
                     showAlert('Account created successfully! Redirecting...', 'success');
 
-                    // Redirect to Step 2 after 1.5 seconds
+                    // Redirect to dashboard or next step after 1.5 seconds
                     setTimeout(() => {
-                        window.location.href = '/signup-step2.html';
+                        window.location.href = '/dashboard.html';
                     }, 1500);
                 } else {
                     showAlert(data.error || 'Failed to create account. Please try again.', 'error');
@@ -478,7 +648,7 @@
         });
 
         // Clear errors on input
-        [emailInput, passwordInput, fullNameInput].forEach(input => {
+        [emailInput, passwordInput, nameInput, surnameInput].forEach(input => {
             input.addEventListener('input', function() {
                 clearError(this.id);
             });

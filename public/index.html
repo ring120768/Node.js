@@ -148,6 +148,73 @@
             font-size: 20px;
         }
 
+        /* Divider */
+        .divider {
+            display: flex;
+            align-items: center;
+            gap: 15px;
+            margin: 10px 0;
+        }
+
+        .divider::before,
+        .divider::after {
+            content: '';
+            flex: 1;
+            height: 2px;
+            background: rgba(255, 255, 255, 0.3);
+        }
+
+        .divider span {
+            color: rgba(255, 255, 255, 0.8);
+            font-size: 14px;
+            font-weight: 500;
+            text-transform: uppercase;
+            letter-spacing: 1px;
+        }
+
+        /* Auth Buttons Container */
+        .auth-buttons {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 15px;
+        }
+
+        .auth-btn {
+            padding: 14px 20px;
+            border: 2px solid white;
+            border-radius: 10px;
+            font-size: 16px;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.2);
+        }
+
+        .auth-btn.login {
+            background: transparent;
+            color: white;
+        }
+
+        .auth-btn.login:hover {
+            background: white;
+            color: #0B7AB0;
+            transform: translateY(-2px);
+            box-shadow: 0 6px 16px rgba(255, 255, 255, 0.3);
+        }
+
+        .auth-btn.signup {
+            background: white;
+            color: #0B7AB0;
+        }
+
+        .auth-btn.signup:hover {
+            background: #0B7AB0;
+            color: white;
+            border-color: #0B7AB0;
+            transform: translateY(-2px);
+            box-shadow: 0 6px 16px rgba(11, 122, 176, 0.4);
+        }
+
         /* Emergency Modal */
         .modal-overlay {
             display: none;
@@ -389,6 +456,10 @@
             .emergency-modal {
                 padding: 24px;
             }
+
+            .auth-buttons {
+                grid-template-columns: 1fr;
+            }
         }
     </style>
 </head>
@@ -408,8 +479,6 @@
 
     <div class="button-container">
         <!-- REPORT INCIDENT BUTTON -->
-
-        <!-- REPORT INCIDENT BUTTON -->
         <button class="secondary-btn" onclick="navigateToIncident()">
             <span class="btn-icon">📝</span>
             Report an Incident
@@ -426,6 +495,21 @@
             <span class="btn-icon">🎬</span>
             Try Demo
         </button>
+
+        <!-- DIVIDER -->
+        <div class="divider">
+            <span>Account</span>
+        </div>
+
+        <!-- AUTH BUTTONS -->
+        <div class="auth-buttons">
+            <button class="auth-btn login" onclick="window.location.href='/login.html'">
+                🔑 Login
+            </button>
+            <button class="auth-btn signup" onclick="window.location.href='/signup-auth.html'">
+                ✨ Sign Up
+            </button>
+        </div>
     </div>
 
     <!-- EMERGENCY MODAL -->
