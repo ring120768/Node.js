@@ -3,6 +3,7 @@
  * Contains all authentication-related logic moved from index.js
  */
 
+const crypto = require('crypto');
 const { validateUserId } = require('../utils/validators');
 const { sendError } = require('../utils/response');
 const logger = require('../utils/logger');
@@ -187,6 +188,17 @@ async function signup(req, res) {
       logger.warn('GDPR audit log error (non-critical):', { userId, auditError });
     }
 
+    // Generate auth_code for Typeform integration
+    const secret = process.env.TYPEFORM_SECRET || 'car-crash-lawyer-ai-secret-2024';
+    const authCodeInput = `${authResult.userId}${email}${secret}`;
+    const authCode = crypto
+      .createHash('sha256')
+      .update(authCodeInput)
+      .digest('hex')
+      .substring(0, 32);
+
+    console.log('Generated auth_code:', authCode);
+
     // Set authentication cookie
     res.cookie('access_token', authResult.session.access_token, {
       httpOnly: true,
@@ -206,7 +218,8 @@ async function signup(req, res) {
       user: {
         id: userId,
         email: email
-      }
+      },
+      authCode: authCode
     };
 
     logger.info('Sending signup response:', { success: true, userId, email });
