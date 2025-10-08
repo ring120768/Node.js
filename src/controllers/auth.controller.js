@@ -94,8 +94,7 @@ async function signup(req, res) {
       gdpr_consent: true,
       gdpr_consent_date: new Date().toISOString(),
       gdpr_consent_ip: req.clientIp || 'unknown',
-      gdpr_consent_version: config.constants.GDPR.CURRENT_POLICY_VERSION,
-      gdpr_consent_user_agent: req.get('user-agent') || 'unknown'
+      gdpr_consent_version: config.constants.GDPR.CURRENT_POLICY_VERSION
     });
 
     if (insertError) {
