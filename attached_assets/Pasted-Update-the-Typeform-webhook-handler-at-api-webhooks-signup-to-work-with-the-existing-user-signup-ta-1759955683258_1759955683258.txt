@@ -1,0 +1,131 @@
+Update the Typeform webhook handler at /api/webhooks/signup to work with the existing user_signup table.
+
+The webhook should:
+
+1. VERIFY AUTH CODE (add at the beginning):
+   
+   Extract from request body:
+   - user_id (from Typeform hidden field)
+   - email (from Typeform hidden field)
+   - auth_code (from Typeform hidden field)
+   - product_id (from Typeform hidden field)
+   - ...all other Typeform form data
+
+   Verify auth_code:
+   const { data: verification, error } = await supabase
+     .from('pending_typeform_completions')
+     .select('*')
+     .eq('user_id', user_id)
+     .eq('auth_code', auth_code)
+     .eq('email', email)
+     .eq('completed', false)
+     .single();
+
+   Validation:
+   - If error or !verification: return 403 "Invalid or expired verification code"
+   - If verification.expires_at < new Date(): return 403 "Verification code expired"
+   - Log verification details for debugging
+
+2. PROCESS TYPEFORM DATA (keep existing logic):
+   
+   - Download images from Typeform URLs
+   - Upload to Supabase storage: /{user_id}/images/
+   
+   - UPDATE user_signup table WHERE user_id = ? (NOT create_user_id):
+   
+   UPDATE user_signup SET
+     -- Address fields
+     street_address = ?,
+     street_address_optional = ?,
+     town = ?,
+     postcode = ?,
+     country = ?, -- or keep default 'United Kingdom'
+     date_of_birth = ?,
+     
+     -- Vehicle fields  
+     vehicle_make = ?,
+     vehicle_model = ?,
+     vehicle_colour = ?,
+     vehicle_condition = ?,
+     car_registration_number = ?,
+     driving_license_number = ?,
+     
+     -- Insurance fields
+     insurance_company = ?,
+     policy_number = ?,
+     policy_holder = ?,
+     cover_type = ?,
+     
+     -- Emergency contacts
+     emergency_contact = ?,
+     emergency_contact_number = ?,
+     emergency_company = ?,
+     emergency_email = ?,
+     
+     -- Recovery service
+     recovery_company = ?,
+     recovery_breakdown_email = ?,
+     recovery_breakdown_number = ?,
+     recovery_service_number = ?,
+     
+     -- Image URLs (from Supabase storage)
+     driving_license_picture = ?,
+     vehicle_picture_front = ?,
+     vehicle_picture_driver_side = ?,
+     vehicle_picture_passenger_side = ?,
+     vehicle_picture_back = ?,
+     
+     -- Form tracking
+     form_id = ?,
+     session_id = ?,
+     source = 'typeform',
+     product_id = ?,
+     submit_date = now(),
+     time_stamp = now(),
+     form_responses = ?, -- jsonb with all form answers
+     raw_webhook_data = ?, -- jsonb with complete webhook payload
+     
+     -- Update timestamp
+     updated_at = now()
+     
+   WHERE user_id = ?
+
+   - Create incident_images records (keep existing logic)
+   - Store any other data in appropriate tables
+
+3. MARK VERIFICATION COMPLETE (add at the end):
+   
+   UPDATE pending_typeform_completions
+   SET 
+     completed = true,
+     completed_at = now()
+   WHERE user_id = ? AND auth_code = ?
+
+4. LINK USER DATA:
+   Ensure user_id (UUID) links all tables:
+   - pending_typeform_completions.user_id → auth.users(id)
+   - user_signup.user_id → auth.users(id)  
+   - gdpr_consent.user_id → auth.users(id)
+   - incident_images.user_id → auth.users(id)
+
+5. RETURN SUCCESS:
+   {
+     success: true,
+     message: "Profile completed successfully",
+     user_id: user_id
+   }
+
+Key points:
+- Keep ALL existing Typeform webhook processing logic
+- Only ADD auth_code verification at the start
+- Only ADD completion marking at the end  
+- Use user_id (UUID) for all WHERE clauses, not create_user_id
+- Store complete form_responses and raw_webhook_data in jsonb fields for debugging
+
+Add extensive console.log statements:
+- Log verification status
+- Log UPDATE query parameters
+- Log completion marking result
+- Log any errors with full context
+
+If the existing webhook uses create_user_id for lookups, UPDATE to use user_id instead.

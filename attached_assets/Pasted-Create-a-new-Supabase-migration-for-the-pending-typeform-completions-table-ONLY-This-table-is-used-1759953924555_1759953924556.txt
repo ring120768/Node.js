@@ -1,0 +1,49 @@
+Create a new Supabase migration for the pending_typeform_completions table ONLY.
+
+This table is used to verify auth codes when users return from Typeform.
+The existing user_signup table will continue to store the actual profile data.
+
+Execute this SQL in Supabase SQL Editor:
+
+-- Create pending_typeform_completions table for auth code verification
+CREATE TABLE IF NOT EXISTS pending_typeform_completions (
+    id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
+    user_id UUID NOT NULL REFERENCES auth.users(id) ON DELETE CASCADE,
+    auth_code VARCHAR(64) NOT NULL,
+    email VARCHAR(255) NOT NULL,
+    completed BOOLEAN DEFAULT FALSE,
+    created_at TIMESTAMPTZ DEFAULT NOW(),
+    expires_at TIMESTAMPTZ NOT NULL,
+    completed_at TIMESTAMPTZ,
+    UNIQUE(user_id, auth_code)
+);
+
+-- Create indexes for performance
+CREATE INDEX IF NOT EXISTS idx_pending_typeform_auth_code ON pending_typeform_completions(auth_code);
+CREATE INDEX IF NOT EXISTS idx_pending_typeform_user_id ON pending_typeform_completions(user_id);
+CREATE INDEX IF NOT EXISTS idx_pending_typeform_email ON pending_typeform_completions(email);
+CREATE INDEX IF NOT EXISTS idx_pending_typeform_completed ON pending_typeform_completions(completed);
+CREATE INDEX IF NOT EXISTS idx_pending_typeform_expires ON pending_typeform_completions(expires_at);
+
+-- Enable Row Level Security
+ALTER TABLE pending_typeform_completions ENABLE ROW LEVEL SECURITY;
+
+-- Policy: Service role can do everything
+CREATE POLICY "Service role can manage all pending completions"
+ON pending_typeform_completions
+FOR ALL
+TO service_role
+USING (true);
+
+-- Policy: Authenticated users can read their own records
+CREATE POLICY "Users can view their own pending completions"
+ON pending_typeform_completions
+FOR SELECT
+TO authenticated
+USING (auth.uid() = user_id);
+
+-- Add comment to table
+COMMENT ON TABLE pending_typeform_completions IS 'Tracks pending Typeform profile completions with auth codes for verification. Works with existing user_signup table.';
+
+Note: This does NOT modify the existing user_signup table.
+The user_signup table will continue to receive data from the Typeform webhook as it does currently.

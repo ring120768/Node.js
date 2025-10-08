@@ -1,0 +1,91 @@
+Create the signup endpoint at /api/auth/signup in src/controllers/authController.js
+
+Requirements:
+
+1. Accept POST requests with JSON body:
+   {
+     email: string (required),
+     password: string (required, min 8 chars),
+     name: string (required),
+     surname: string (required),
+     mobile: string (optional),
+     gdprConsent: boolean (required, must be true)
+   }
+
+2. Validation:
+   - Return 400 if gdprConsent is not true
+   - Return 400 if any required field is missing
+   - Validate email format
+   - Validate password length (min 8 characters)
+
+3. Create Supabase Auth user:
+   - Use supabase.auth.signUp()
+   - Pass email and password
+   - Include metadata: { name, surname, mobile }
+
+4. Generate auth_code:
+   - Use crypto.createHash('sha256')
+   - Hash input: userId + email + (process.env.TYPEFORM_SECRET || 'car-crash-lawyer-ai-secret-2024')
+   - Take first 32 characters of hex digest
+
+5. Create initial record in user_signup table:
+   INSERT INTO user_signup (
+     user_id,                    -- UUID from Supabase Auth (NOT NULL)
+     create_user_id,             -- Same UUID as text (for backwards compatibility)
+     name,
+     surname,
+     email,
+     mobile,
+     created_at,                 -- Will auto-fill with now()
+     gdpr_consent,               -- true
+     gdpr_consent_date,          -- now()
+     consent_given,              -- true  
+     consent_date,               -- now()
+     consent_source,             -- 'signup'
+     gdpr_consent_ip,            -- req.ip
+     gdpr_consent_version,       -- 'v1.0' (default)
+     account_status              -- 'active' (default)
+   ) VALUES (?, ?, ?, ?, ?, ?, now(), true, now(), true, now(), 'signup', ?, 'v1.0', 'active')
+
+6. ALSO store in separate gdpr_consent table for audit:
+   INSERT INTO gdpr_consent (
+     user_id,
+     consent_given,
+     consent_date,
+     consent_type,
+     ip_address
+   ) VALUES (?, true, now(), 'signup', ?)
+
+7. Store verification in pending_typeform_completions table:
+   INSERT INTO pending_typeform_completions (
+     user_id,
+     auth_code,
+     email,
+     completed,
+     created_at,
+     expires_at
+   ) VALUES (?, ?, ?, false, now(), now() + interval '24 hours')
+
+8. Return success response:
+   {
+     success: true,
+     user: {
+       id: "supabase_user_uuid",
+       email: "user@example.com"
+     },
+     authCode: "generated_auth_code_32_chars"
+   }
+
+9. Error handling:
+   - Catch all errors
+   - Log errors to console with context
+   - Return appropriate HTTP status codes
+   - Return user-friendly error messages
+
+IMPORTANT: 
+- Use user_id (UUID) as the primary foreign key to auth.users(id)
+- Also populate create_user_id (text) with the same UUID for backwards compatibility
+- All other profile fields will be filled by the Typeform webhook later
+
+Import required modules: crypto, supabase
+Add this function to the existing authController exports
