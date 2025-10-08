@@ -1,3 +1,4 @@
+
 <!DOCTYPE html>
 <html lang="en">
 <head>
@@ -313,7 +314,7 @@
 <body>
     <div class="signup-container">
         <div class="logo-section">
-            <img src="/images/al-mascot.png" alt="Car Crash Lawyer AI Mascot" onerror="this.style.display='none'">
+            <img src="/images/mascot.png" alt="Car Crash Lawyer AI Mascot" onerror="this.style.display='none'">
             <h1>Create Your Account</h1>
             <p>Your Legal First Responder</p>
         </div>
@@ -419,6 +420,8 @@
     </div>
 
     <script>
+        console.log('Car Crash Lawyer AI - Signup Page Loaded');
+
         const form = document.getElementById('signupForm');
         const submitBtn = document.getElementById('submitBtn');
         const alertBox = document.getElementById('alertBox');
@@ -435,6 +438,8 @@
             const password = this.value;
             const strengthBar = document.getElementById('passwordStrengthBar');
 
+            console.log('Password strength check for:', password.length, 'characters');
+
             let strength = 0;
             if (password.length >= 8) strength++;
             if (password.match(/[a-z]/) && password.match(/[A-Z]/)) strength++;
@@ -445,10 +450,13 @@
             if (strength === 1) strengthBar.classList.add('weak');
             else if (strength === 2 || strength === 3) strengthBar.classList.add('medium');
             else if (strength >= 4) strengthBar.classList.add('strong');
+
+            console.log('Password strength:', { strength, level: strengthBar.classList.contains('strong') ? 'strong' : strengthBar.classList.contains('medium') ? 'medium' : 'weak' });
         });
 
         // Clear GDPR error when checkbox is clicked
         gdprConsentCheckbox.addEventListener('change', function() {
+            console.log('GDPR consent changed:', this.checked);
             if (this.checked) {
                 gdprConsentBox.classList.remove('error');
                 clearError('gdprConsent');
@@ -463,6 +471,7 @@
 
         // Show error
         function showError(field, message) {
+            console.log('Showing error for field:', field, 'Message:', message);
             const input = document.getElementById(field);
             const error = document.getElementById(field + 'Error');
 
@@ -480,6 +489,7 @@
 
         // Clear error
         function clearError(field) {
+            console.log('Clearing error for field:', field);
             const input = document.getElementById(field);
             const error = document.getElementById(field + 'Error');
 
@@ -501,6 +511,7 @@
 
         // Show alert
         function showAlert(message, type) {
+            console.log('Showing alert:', type, message);
             alertBox.textContent = message;
             alertBox.className = 'alert ' + type + ' show';
             setTimeout(() => {
@@ -508,58 +519,68 @@
             }, 5000);
         }
 
-        // Form validation
-        function validateForm() {
-            clearAllErrors();
-            let isValid = true;
+        // Real-time input validation
+        [emailInput, passwordInput, nameInput, surnameInput].forEach(input => {
+            input.addEventListener('input', function() {
+                clearError(this.id);
+            });
+        });
 
-            // Validate email
-            if (!emailInput.value) {
-                showError('email', 'Email is required');
-                isValid = false;
-            } else if (!validateEmail(emailInput.value)) {
-                showError('email', 'Please enter a valid email address');
-                isValid = false;
+        // Generate auth code
+        function generateAuthCode(userId) {
+            const timestamp = Date.now().toString();
+            const random = Math.random().toString(36).substring(2, 15);
+            const authCode = btoa(`${userId}_${timestamp}_${random}`).substring(0, 16);
+            console.log('Generated auth code:', authCode);
+            return authCode;
+        }
+
+        // Redirect to Typeform with user data
+        function redirectToTypeform(userData) {
+            console.log('Redirecting to Typeform with user data:', userData);
+
+            const typeformBaseUrl = 'https://form.typeform.com/to/b03aFxEO';
+            const authCode = generateAuthCode(userData.id);
+            
+            // Create hash parameters
+            const hashParams = new URLSearchParams({
+                user_id: userData.id,
+                product_id: 'car_crash_lawyer_ai',
+                auth_code: authCode,
+                email: userData.email
+            });
+
+            const finalUrl = `${typeformBaseUrl}#${hashParams.toString()}`;
+            
+            console.log('Final Typeform URL:', finalUrl);
+            console.log('Hash parameters:', Object.fromEntries(hashParams));
+
+            // Store user data in both storage types
+            const storageData = {
+                userId: userData.id,
+                userEmail: userData.email,
+                authCode: authCode,
+                signupTimestamp: new Date().toISOString()
+            };
+
+            try {
+                sessionStorage.setItem('carCrashLawyerUser', JSON.stringify(storageData));
+                localStorage.setItem('carCrashLawyerUser', JSON.stringify(storageData));
+                console.log('User data stored in both sessionStorage and localStorage:', storageData);
+            } catch (storageError) {
+                console.error('Storage error:', storageError);
             }
 
-            // Validate password
-            if (!passwordInput.value) {
-                showError('password', 'Password is required');
-                isValid = false;
-            } else if (passwordInput.value.length < 8) {
-                showError('password', 'Password must be at least 8 characters');
-                isValid = false;
-            }
-
-            // Validate name
-            if (!nameInput.value) {
-                showError('name', 'Name is required');
-                isValid = false;
-            }
-
-            // Validate surname
-            if (!surnameInput.value) {
-                showError('surname', 'Surname is required');
-                isValid = false;
-            }
-
-            // Validate GDPR consent
-            if (!gdprConsentCheckbox.checked) {
-                showError('gdprConsent', 'You must agree to the Privacy Policy to create an account');
-                isValid = false;
-            }
-
-            return isValid;
+            // Redirect to Typeform
+            window.location.href = finalUrl;
         }
 
         // Handle form submission
         form.addEventListener('submit', async function(e) {
             e.preventDefault();
+            console.log('Form submission started');
             clearAllErrors();
 
-            const name = nameInput.value.trim();
-            const surname = surnameInput.value.trim();
-            
             const formData = {
                 email: emailInput.value.trim(),
                 password: passwordInput.value,
@@ -569,6 +590,9 @@
                 gdprConsent: gdprConsentCheckbox.checked
             };
 
+            console.log('Form data prepared:', { ...formData, password: '[REDACTED]' });
+
+            // Client-side validation
             let hasErrors = false;
 
             if (!formData.email) {
@@ -587,12 +611,12 @@
                 hasErrors = true;
             }
 
-            if (!name) {
+            if (!formData.name) {
                 showError('name', 'First name is required');
                 hasErrors = true;
             }
 
-            if (!surname) {
+            if (!formData.surname) {
                 showError('surname', 'Last name is required');
                 hasErrors = true;
             }
@@ -602,8 +626,14 @@
                 hasErrors = true;
             }
 
-            if (hasErrors) return;
+            if (hasErrors) {
+                console.log('Client-side validation failed');
+                return;
+            }
 
+            console.log('Client-side validation passed, submitting to server');
+
+            // Show loading state
             submitBtn.disabled = true;
             submitBtn.classList.add('loading');
 
@@ -617,27 +647,20 @@
                 });
 
                 const data = await response.json();
-
                 console.log('Signup response:', { status: response.status, ok: response.ok, data });
 
                 if (response.ok && data.success) {
-                    // Store user data if available
-                    if (data.user && data.user.id) {
-                        sessionStorage.setItem('userId', data.user.id);
-                        sessionStorage.setItem('userEmail', data.user.email);
-                    }
-
+                    console.log('Signup successful!');
                     showAlert('Account created successfully! Redirecting to onboarding...', 'success');
 
                     setTimeout(() => {
-                        // Redirect to Typeform with hidden field data
-                        redirectToTypeformWithUserData(data.user);
+                        redirectToTypeform(data.user);
                     }, 1500);
+
                 } else {
                     console.error('Signup failed:', { response, data });
                     let errorMessage = 'Signup failed. Please try again.';
 
-                    // Handle different error formats
                     if (data.error) {
                         errorMessage = data.error;
                     } else if (data.message) {
@@ -651,63 +674,14 @@
                     submitBtn.classList.remove('loading');
                 }
             } catch (error) {
-                console.error('Signup error:', error);
-                console.error('Error details:', {
-                    message: error.message,
-                    stack: error.stack
-                });
+                console.error('Network error during signup:', error);
                 showAlert('Network error. Please check your connection and try again.', 'error');
                 submitBtn.disabled = false;
                 submitBtn.classList.remove('loading');
             }
         });
 
-        [emailInput, passwordInput, nameInput, surnameInput].forEach(input => {
-            input.addEventListener('input', function() {
-                clearError(this.id);
-            });
-        });
-
-        // Function to redirect to Typeform with user data
-        function redirectToTypeformWithUserData(userData) {
-            // Your Typeform URL base (replace with your actual Typeform URL)
-            const typeformBaseUrl = 'https://your-typeform-id.typeform.com/to/your-form-id';
-            
-            // Generate auth code (you can modify this logic as needed)
-            const authCode = generateAuthCode(userData.id);
-            
-            // Create hidden fields object
-            const hiddenFields = {
-                user_id: userData.id,
-                'product-id': 'car-crash-lawyer-ai', // Your product identifier
-                auth_code: authCode,
-                user_email: userData.email, // Additional field if you want to include email
-                signup_timestamp: new Date().toISOString() // Additional timestamp field
-            };
-
-            // Build URL with hidden fields as query parameters
-            const params = new URLSearchParams();
-            Object.keys(hiddenFields).forEach(key => {
-                if (hiddenFields[key] !== null && hiddenFields[key] !== undefined) {
-                    params.append(key, hiddenFields[key].toString());
-                }
-            });
-
-            const finalUrl = `${typeformBaseUrl}?${params.toString()}`;
-            
-            console.log('Redirecting to Typeform with hidden fields:', hiddenFields);
-            console.log('Final Typeform URL:', finalUrl);
-
-            // Redirect to Typeform
-            window.location.href = finalUrl;
-        }
-
-        // Generate a simple auth code (you can enhance this as needed)
-        function generateAuthCode(userId) {
-            const timestamp = Date.now().toString();
-            const random = Math.random().toString(36).substring(2, 15);
-            return btoa(`${userId}_${timestamp}_${random}`).substring(0, 16);
-        }
+        console.log('Signup page JavaScript initialized successfully');
     </script>
 </body>
 </html>
