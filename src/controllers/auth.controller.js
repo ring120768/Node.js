@@ -112,57 +112,61 @@ async function signup(req, res) {
     const userId = authResult.userId;
     logger.success('✅ Auth user created successfully:', { userId, email });
 
-    // Generate username
-    const username = email.split('@')[0].replace(/[^a-zA-Z0-9]/g, '') + '_' + Math.floor(Math.random() * 1000000);
-
     // ========================================
-    // DATABASE INSERT WITH PROPER FIELD MAPPING
+    // DATABASE INSERT WITH SCHEMA-ACCURATE FIELDS
     // ========================================
 
-    // Prepare the insert data - only include fields that exist in your table
     const insertData = {
-      // User identification
-      uid: userId,
-      create_user_id: userId,
-      user_id: userId, // Some tables use user_id instead of uid
+      // PRIMARY KEY: Supabase Auth UUID (NOT NULL)
+      user_id: userId,
 
-      // Basic info
+      // LEGACY FIELD: Redundant text field (for backwards compatibility)
+      create_user_id: userId,
+
+      // BASIC USER INFO (from signup form)
       email: email,
-      username: username,
       name: name || '',
       surname: surname || '',
-      first_name: name || '', // Some tables use first_name
-      last_name: surname || '', // Some tables use last_name
+      mobile: null,  // Not collected during signup, Typeform will fill this later
 
-      // Phone - set to null or empty string if not collected
-      phone: null,
-      mobile_number: null, // Some tables use mobile_number
-
-      // Timestamps
+      // TIMESTAMPS
       created_at: new Date().toISOString(),
       updated_at: new Date().toISOString(),
 
-      // Metadata
-      source: 'auth_signup',
-      verified: true,
-      signup_completed: false, // They still need to complete Typeform
-      current_step: 1,
-
-      // GDPR CONSENT FIELDS
+      // GDPR CONSENT FIELDS (CRITICAL FOR COMPLIANCE)
       gdpr_consent: true,
       gdpr_consent_date: new Date().toISOString(),
       gdpr_consent_ip: req.clientIp || 'unknown',
-      gdpr_consent_version: config.constants.GDPR.CURRENT_POLICY_VERSION
+      gdpr_consent_version: 'v1.0',  // Matches schema default
+
+      // ACCOUNT STATUS
+      account_status: 'active',  // Matches schema default
+
+      // DATA SOURCE TRACKING
+      source: 'auth_signup',
+
+      // CONSENT TRACKING (duplicate fields for legacy compatibility)
+      consent_given: true,
+      consent_date: new Date().toISOString(),
+      consent_source: 'signup_form',
+
+      // FEATURE FLAGS
+      voice_transcription: true,  // Default enabled
+      legal_support: false,       // Default disabled
+      legal_case_active: false,   // Default disabled
+
+      // PROVIDER TYPE
+      provider_type: 'email'  // Matches schema default
     };
 
-    logger.info('🔵 Attempting database insert with data:', {
-      uid: insertData.uid,
+    logger.info('🔵 Attempting database insert with schema-accurate data:', {
+      user_id: insertData.user_id,
       email: insertData.email,
-      username: insertData.username,
       name: insertData.name,
       surname: insertData.surname,
-      phone: insertData.phone,
-      gdpr_consent: insertData.gdpr_consent
+      mobile: insertData.mobile,
+      gdpr_consent: insertData.gdpr_consent,
+      source: insertData.source
     });
 
     const { data: insertedData, error: insertError } = await supabase
@@ -177,11 +181,7 @@ async function signup(req, res) {
         errorDetails: insertError.details,
         errorHint: insertError.hint,
         fullError: JSON.stringify(insertError, null, 2),
-        attemptedData: {
-          uid: insertData.uid,
-          email: insertData.email,
-          username: insertData.username
-        }
+        attemptedFields: Object.keys(insertData)
       });
 
       // Clean up auth user if database insert fails
@@ -207,6 +207,7 @@ async function signup(req, res) {
 
     logger.success('✅ User record inserted into database successfully:', { 
       userId, 
+      recordId: insertedData?.[0]?.id,
       insertedRecordCount: insertedData?.length 
     });
 
@@ -217,7 +218,7 @@ async function signup(req, res) {
       await gdprService.logActivity(userId, 'CONSENT_GIVEN', {
         consent_type: config.constants.GDPR.CONSENT_TYPES.SIGNUP,
         consent_method: 'checkbox',
-        consent_version: config.constants.GDPR.CURRENT_POLICY_VERSION,
+        consent_version: 'v1.0',
         ip_address: req.clientIp || 'unknown',
         user_agent: req.get('user-agent') || 'unknown',
         timestamp: new Date().toISOString()
@@ -254,7 +255,7 @@ async function signup(req, res) {
     logger.success('✅ User signup complete with GDPR consent', {
       userId,
       email,
-      consentVersion: config.constants.GDPR.CURRENT_POLICY_VERSION
+      consentVersion: 'v1.0'
     });
 
     const responseData = {
@@ -303,7 +304,7 @@ async function login(req, res) {
     const { data: userData } = await supabase
       .from('user_signup')
       .select('*')
-      .eq('user_id', authResult.userId)  // ✅ Changed from 'uid' to 'user_id'
+      .eq('user_id', authResult.userId)
       .single();
 
     logger.info('User login successful', { userId: authResult.userId, email: email });
@@ -322,7 +323,6 @@ async function login(req, res) {
       user: {
         id: authResult.userId,
         email: authResult.user.email,
-        username: userData?.username,
         fullName: `${userData?.name || ''} ${userData?.surname || ''}`.trim()
       },
       session: {
@@ -367,7 +367,7 @@ async function checkSession(req, res) {
     const { data: userData, error: userError } = await supabase
       .from('user_signup')
       .select('*')
-      .eq('user_id', req.userId)  // ✅ Changed from 'uid' to 'user_id'
+      .eq('user_id', req.userId)
       .single();
 
     if (userError) {
@@ -383,7 +383,6 @@ async function checkSession(req, res) {
       user: {
         id: req.userId,
         email: req.user.email,
-        username: userData?.username,
         fullName: `${userData?.name || ''} ${userData?.surname || ''}`.trim()
       }
     });
