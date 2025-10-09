@@ -303,7 +303,7 @@ async function login(req, res) {
     const { data: userData } = await supabase
       .from('user_signup')
       .select('*')
-      .eq('uid', authResult.userId)
+      .eq('user_id', authResult.userId)  // ✅ Changed from 'uid' to 'user_id'
       .single();
 
     logger.info('User login successful', { userId: authResult.userId, email: email });
@@ -367,7 +367,7 @@ async function checkSession(req, res) {
     const { data: userData, error: userError } = await supabase
       .from('user_signup')
       .select('*')
-      .eq('uid', req.userId)
+      .eq('user_id', req.userId)  // ✅ Changed from 'uid' to 'user_id'
       .single();
 
     if (userError) {
