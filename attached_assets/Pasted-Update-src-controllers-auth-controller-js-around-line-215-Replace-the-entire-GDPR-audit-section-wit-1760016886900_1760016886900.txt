@@ -1,0 +1,86 @@
+Update src/controllers/auth.controller.js around line 215:
+Replace the entire GDPR audit section with this bulletproof version:
+javascriptlogger.success('✅ User record inserted into database successfully:', { 
+  userId, 
+  recordId: insertedData?.[0]?.id,
+  insertedRecordCount: insertedData?.length 
+});
+
+// ========================================
+// LOG GDPR CONSENT IN AUDIT TRAIL (NON-BLOCKING)
+// ========================================
+logger.info('🔍 Attempting GDPR audit log (non-critical)...');
+
+// Use setImmediate to make this truly async and non-blocking
+setImmediate(async () => {
+  try {
+    // Check if gdprService and required config exist
+    if (!gdprService || !gdprService.logActivity) {
+      logger.warn('⚠️ GDPR service not available, skipping audit log');
+      return;
+    }
+
+    // Check if GDPR constants exist
+    const consentType = config.constants?.GDPR?.CONSENT_TYPES?.SIGNUP || 'SIGNUP';
+    
+    await gdprService.logActivity(userId, 'CONSENT_GIVEN', {
+      consent_type: consentType,
+      consent_method: 'checkbox',
+      consent_version: 'v1.0',
+      ip_address: req.clientIp || 'unknown',
+      user_agent: req.get('user-agent') || 'unknown',
+      timestamp: new Date().toISOString()
+    }, req);
+
+    logger.success('✅ GDPR consent logged successfully', { userId });
+  } catch (auditError) {
+    // Completely non-critical - log and continue
+    logger.warn('⚠️ GDPR audit log failed (non-critical):', { 
+      userId, 
+      error: auditError.message,
+      stack: auditError.stack,
+      errorDetails: JSON.stringify(auditError, null, 2)
+    });
+  }
+});
+
+// DON'T WAIT FOR GDPR LOG - CONTINUE IMMEDIATELY
+
+// Generate auth_code for Typeform integration
+logger.info('🔍 Generating auth_code...');
+const secret = process.env.TYPEFORM_SECRET || 'car-crash-lawyer-ai-secret-2024';
+const authCodeInput = `${authResult.userId}${email}${secret}`;
+const authCode = crypto
+  .createHash('sha256')
+  .update(authCodeInput)
+  .digest('hex')
+  .substring(0, 32);
+
+logger.info('🔑 Generated auth_code:', authCode);
+
+// Set authentication cookie
+logger.info('🔍 Setting authentication cookie...');
+res.cookie('access_token', authResult.session.access_token, {
+  httpOnly: true,
+  secure: process.env.NODE_ENV === 'production',
+  sameSite: 'lax',
+  maxAge: 7 * 24 * 60 * 60 * 1000
+});
+
+logger.success('✅ User signup complete with GDPR consent', {
+  userId,
+  email,
+  consentVersion: 'v1.0'
+});
+
+const responseData = {
+  success: true,
+  user: {
+    id: userId,
+    email: email
+  },
+  authCode: authCode
+};
+
+logger.info('📤 Sending signup response:', { success: true, userId, email });
+res.json(responseData);
