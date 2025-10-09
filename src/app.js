@@ -93,19 +93,7 @@ function createApp() {
   }));
 
   // Body parsing middleware with increased limits for audio files
-  app.use(express.json({
-    limit: '50mb',
-    verify: (req, res, buf) => {
-      // Debug: Log JSON parsing attempts
-      if (req.url.includes('/api/auth/signup')) {
-        logger.debug('📝 JSON parsing for signup:', {
-          contentType: req.get('content-type'),
-          contentLength: req.get('content-length'),
-          bodySize: buf.length
-        });
-      }
-    }
-  }));
+  app.use(express.json({ limit: '50mb' }));
   app.use(express.urlencoded({ extended: true, limit: '50mb' }));
   app.use(cookieParser());
   app.use(express.static(path.join(__dirname, '../public')));
@@ -128,23 +116,7 @@ function createApp() {
   // Request logging middleware
   app.use(requestLogger);
 
-  // Signup-specific debugging middleware
-  app.use('/api/auth/signup', (req, res, next) => {
-    logger.info('🔵 SIGNUP REQUEST DEBUG:', {
-      method: req.method,
-      url: req.url,
-      contentType: req.get('content-type'),
-      contentLength: req.get('content-length'),
-      userAgent: req.get('user-agent')?.substring(0, 50),
-      origin: req.get('origin'),
-      hasBody: !!req.body,
-      bodyType: typeof req.body,
-      bodyKeys: req.body ? Object.keys(req.body) : 'NO_BODY',
-      rawBodyExists: !!req.rawBody,
-      timestamp: new Date().toISOString()
-    });
-    next();
-  });
+  
 
   // ========================================
   // SUPABASE INITIALIZATION
@@ -355,15 +327,10 @@ function createApp() {
   // JSON parsing error handler
   app.use((error, req, res, next) => {
     if (error instanceof SyntaxError && error.status === 400 && 'body' in error) {
-      logger.error('❌ JSON parsing error:', {
-        url: req.url,
-        method: req.method,
-        contentType: req.get('content-type'),
-        error: error.message
-      });
+      logger.error('❌ JSON parsing error:', error.message);
       return res.status(400).json({
         success: false,
-        error: 'Invalid JSON in request body',
+        error: 'Invalid JSON format',
         code: 'INVALID_JSON'
       });
     }

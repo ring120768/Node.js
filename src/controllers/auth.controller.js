@@ -392,34 +392,18 @@ async function signup(req, res) {
     logger.info('📤 Sending signup response:', { success: true, userId, email });
     res.json(responseData);
   } catch (error) {
-    logger.error('❌ Unexpected signup error - FULL DETAILS:', { 
-      message: error.message,
-      name: error.name,
-      stack: error.stack,
-      timestamp: new Date().toISOString(),
-      requestUrl: req.url,
-      requestMethod: req.method,
-      userAgent: req.get('user-agent')?.substring(0, 100),
-      contentType: req.get('content-type'),
-      bodyKeys: req.body ? Object.keys(req.body) : 'NO_BODY'
+    logger.error('❌ Unexpected signup error:', { 
+      error: error.message, 
+      stack: error.stack?.substring(0, 200),
+      timestamp: new Date().toISOString()
     });
-    
-    // Log the specific error type
-    if (error.name === 'ValidationError') {
-      logger.error('❌ Validation Error Details:', error.errors);
-    } else if (error.name === 'DatabaseError') {
-      logger.error('❌ Database Error Details:', error.detail);
-    } else if (error.code) {
-      logger.error('❌ Error Code:', error.code);
-    }
     
     // Ensure JSON response even in unexpected errors
     if (!res.headersSent) {
-      res.status(500).json({
+      return res.status(500).json({
         success: false,
-        error: 'Internal server error during signup. Please try again.',
-        code: 'INTERNAL_ERROR',
-        timestamp: new Date().toISOString()
+        error: 'Internal server error. Please try again later.',
+        code: 'INTERNAL_ERROR'
       });
     }
   }
