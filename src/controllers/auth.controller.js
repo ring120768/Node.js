@@ -156,7 +156,7 @@ async function signup(req, res) {
           username: username,
           name: firstName,
           surname: lastName,
-          phone: mobile
+          phone: phone
         }
       });
       // Clean up auth user if database insert fails
@@ -199,36 +199,7 @@ async function signup(req, res) {
 
     console.log('Generated auth_code:', authCode);
 
-    // Create initial record in user_signup table
-    const { data: userSignupData, error: userSignupError } = await supabase
-      .from('user_signup')
-      .insert({
-        user_id: authResult.userId,              // UUID from Supabase Auth (required)
-        create_user_id: authResult.userId,       // Same UUID as text (backwards compat)
-        name: name,
-        surname: surname,
-        email: email,
-        mobile: phone || null,
-        created_at: new Date().toISOString(),    // Explicit or let default handle
-        gdpr_consent: true,
-        gdpr_consent_date: new Date().toISOString(),
-        consent_given: true,
-        consent_date: new Date().toISOString(),
-        consent_source: 'signup',
-        gdpr_consent_ip: req.ip || req.connection?.remoteAddress || 'unknown',
-        gdpr_consent_version: 'v1.0',
-        account_status: 'active'
-      })
-      .select()
-      .single();
-
-    if (userSignupError) {
-      console.error('Error creating user_signup record:', userSignupError);
-      // Don't fail the signup, webhook will handle it
-      console.warn('Proceeding without initial user_signup record');
-    } else {
-      console.log('Created initial user_signup record:', userSignupData.id);
-    }
+    // Note: user_signup record creation is handled above with GDPR consent
 
     // Set authentication cookie
     res.cookie('access_token', authResult.session.access_token, {
