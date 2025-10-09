@@ -39,21 +39,17 @@ if (config.supabase.url && config.supabase.serviceKey) {
 async function signup(req, res) {
   try {
     // Log the entire request body for debugging
-    logger.info('Raw signup request body:', JSON.stringify(req.body, null, 2));
+    logger.info('🔵 Raw signup request body:', JSON.stringify(req.body, null, 2));
 
     const { email, password, name, surname, gdprConsent } = req.body;
 
     // Debug: Log received fields with actual values
-    logger.info('Parsed signup fields:', {
+    logger.info('🔵 Parsed signup fields:', {
       email: email || 'MISSING',
-      emailType: typeof email,
       password: password ? `[${password.length} chars]` : 'MISSING',
       name: name || 'MISSING',
-      nameType: typeof name,
       surname: surname || 'MISSING',
-      surnameType: typeof surname,
       gdprConsent: gdprConsent,
-      gdprConsentType: typeof gdprConsent,
       allFields: Object.keys(req.body)
     });
 
@@ -65,7 +61,7 @@ async function signup(req, res) {
     if (!surname || surname.trim() === '') missingFields.push('surname');
 
     if (missingFields.length > 0) {
-      logger.error('Missing required fields:', { missing: missingFields });
+      logger.error('❌ Missing required fields:', { missing: missingFields });
       return sendError(res, 400, `Missing required fields: ${missingFields.join(', ')}`, 'MISSING_FIELDS');
     }
 
@@ -77,7 +73,7 @@ async function signup(req, res) {
     // GDPR CONSENT VALIDATION (CRITICAL)
     // ========================================
     if (gdprConsent !== true) {
-      logger.warn('Signup attempt without GDPR consent', { email, ip: req.clientIp });
+      logger.warn('⚠️ Signup attempt without GDPR consent', { email, ip: req.clientIp });
       return sendError(res, 400, 'GDPR consent is required to create an account', 'GDPR_CONSENT_REQUIRED',
         'You must accept our Privacy Policy and Terms of Service to proceed');
     }
@@ -86,18 +82,17 @@ async function signup(req, res) {
       return sendError(res, 503, 'Auth service not configured', 'AUTH_UNAVAILABLE');
     }
 
-    logger.info('Auth signup with GDPR consent:', email);
+    logger.info('🟢 Starting auth signup with GDPR consent:', email);
 
+    // Create auth user
     const authResult = await authService.signUp(email, password, {
       full_name: `${name} ${surname}`.trim()
     });
 
     if (!authResult.success) {
-      // Log detailed error from auth service
-      logger.error('AuthService signUp failed:', {
+      logger.error('❌ AuthService signUp failed:', {
         error: authResult.error,
-        email: email,
-        providedData: { name, surname }
+        email: email
       });
 
       // Check if user already exists
@@ -107,7 +102,7 @@ async function signup(req, res) {
         authResult.error.includes('already exists') ||
         authResult.error.toLowerCase().includes('duplicate')
       )) {
-        logger.info('Signup attempt with existing email:', { email });
+        logger.info('ℹ️ Signup attempt with existing email:', { email });
         return sendError(res, 409, 'User already exists. Please log in to your account.', 'USER_EXISTS');
       }
 
@@ -115,54 +110,105 @@ async function signup(req, res) {
     }
 
     const userId = authResult.userId;
+    logger.success('✅ Auth user created successfully:', { userId, email });
+
+    // Generate username
     const username = email.split('@')[0].replace(/[^a-zA-Z0-9]/g, '') + '_' + Math.floor(Math.random() * 1000000);
 
-    // Use provided name and surname fields
-    const firstName = name || '';
-    const lastName = surname || '';
+    // ========================================
+    // DATABASE INSERT WITH PROPER FIELD MAPPING
+    // ========================================
 
-    // ========================================
-    // GDPR CONSENT CAPTURE IN DATABASE
-    // ========================================
-    const { error: insertError } = await supabase.from('user_signup').insert({
+    // Prepare the insert data - only include fields that exist in your table
+    const insertData = {
+      // User identification
       uid: userId,
       create_user_id: userId,
+      user_id: userId, // Some tables use user_id instead of uid
+
+      // Basic info
       email: email,
       username: username,
-      name: firstName || '',
-      surname: lastName || '',
+      name: name || '',
+      surname: surname || '',
+      first_name: name || '', // Some tables use first_name
+      last_name: surname || '', // Some tables use last_name
+
+      // Phone - set to null or empty string if not collected
+      phone: null,
+      mobile_number: null, // Some tables use mobile_number
+
+      // Timestamps
       created_at: new Date().toISOString(),
+      updated_at: new Date().toISOString(),
+
+      // Metadata
       source: 'auth_signup',
       verified: true,
+      signup_completed: false, // They still need to complete Typeform
+      current_step: 1,
 
-      // ✅ GDPR CONSENT FIELDS
+      // GDPR CONSENT FIELDS
       gdpr_consent: true,
       gdpr_consent_date: new Date().toISOString(),
       gdpr_consent_ip: req.clientIp || 'unknown',
       gdpr_consent_version: config.constants.GDPR.CURRENT_POLICY_VERSION
+    };
+
+    logger.info('🔵 Attempting database insert with data:', {
+      uid: insertData.uid,
+      email: insertData.email,
+      username: insertData.username,
+      name: insertData.name,
+      surname: insertData.surname,
+      phone: insertData.phone,
+      gdpr_consent: insertData.gdpr_consent
     });
 
+    const { data: insertedData, error: insertError } = await supabase
+      .from('user_signup')
+      .insert(insertData)
+      .select();
+
     if (insertError) {
-      logger.error('Error inserting user with GDPR consent:', {
-        error: insertError.message, // Log specific error message
-        details: insertError,
-        userData: {
-          uid: userId,
-          email: email,
-          username: username,
-          name: firstName,
-          surname: lastName
+      logger.error('❌ DATABASE INSERT FAILED - Full Error Details:', {
+        errorMessage: insertError.message,
+        errorCode: insertError.code,
+        errorDetails: insertError.details,
+        errorHint: insertError.hint,
+        fullError: JSON.stringify(insertError, null, 2),
+        attemptedData: {
+          uid: insertData.uid,
+          email: insertData.email,
+          username: insertData.username
         }
       });
+
       // Clean up auth user if database insert fails
       try {
         await authService.deleteUser(userId);
-        logger.info('Cleaned up auth user due to database insert failure', { userId });
+        logger.info('🧹 Cleaned up auth user due to database insert failure', { userId });
       } catch (cleanupError) {
-        logger.error('Failed to cleanup auth user after database insert failure:', { userId, cleanupError });
+        logger.error('❌ Failed to cleanup auth user after database insert failure:', { 
+          userId, 
+          cleanupError: cleanupError.message 
+        });
       }
-      return sendError(res, 500, 'Failed to create user account', 'USER_CREATION_FAILED');
+
+      // Return detailed error to help debug
+      return sendError(
+        res, 
+        500, 
+        `Failed to create user account: ${insertError.message}`, 
+        'USER_CREATION_FAILED',
+        insertError.hint || 'Please check server logs for details'
+      );
     }
+
+    logger.success('✅ User record inserted into database successfully:', { 
+      userId, 
+      insertedRecordCount: insertedData?.length 
+    });
 
     // ========================================
     // LOG GDPR CONSENT IN AUDIT TRAIL
@@ -177,10 +223,13 @@ async function signup(req, res) {
         timestamp: new Date().toISOString()
       }, req);
 
-      logger.success('GDPR consent logged successfully', { userId });
+      logger.success('✅ GDPR consent logged successfully', { userId });
     } catch (auditError) {
       // Non-critical error - don't fail signup if audit log fails
-      logger.warn('GDPR audit log error (non-critical):', { userId, auditError });
+      logger.warn('⚠️ GDPR audit log error (non-critical):', { 
+        userId, 
+        error: auditError.message 
+      });
     }
 
     // Generate auth_code for Typeform integration
@@ -192,9 +241,7 @@ async function signup(req, res) {
       .digest('hex')
       .substring(0, 32);
 
-    console.log('Generated auth_code:', authCode);
-
-    // Note: user_signup record creation is handled above with GDPR consent
+    logger.info('🔑 Generated auth_code:', authCode);
 
     // Set authentication cookie
     res.cookie('access_token', authResult.session.access_token, {
@@ -204,7 +251,7 @@ async function signup(req, res) {
       maxAge: 7 * 24 * 60 * 60 * 1000
     });
 
-    logger.success('User signup complete with GDPR consent', {
+    logger.success('✅ User signup complete with GDPR consent', {
       userId,
       email,
       consentVersion: config.constants.GDPR.CURRENT_POLICY_VERSION
@@ -219,10 +266,13 @@ async function signup(req, res) {
       authCode: authCode
     };
 
-    logger.info('Sending signup response:', { success: true, userId, email });
+    logger.info('📤 Sending signup response:', { success: true, userId, email });
     res.json(responseData);
   } catch (error) {
-    logger.error('Unexpected signup error:', { error: error.message, stack: error.stack });
+    logger.error('❌ Unexpected signup error:', { 
+      error: error.message, 
+      stack: error.stack 
+    });
     sendError(res, 500, 'Server error', 'INTERNAL_ERROR');
   }
 }
@@ -246,7 +296,6 @@ async function login(req, res) {
     const authResult = await authService.signIn(email, password);
 
     if (!authResult.success) {
-      // Log failed login attempt
       logger.warn('Failed login attempt:', { email, error: authResult.error });
       return sendError(res, 401, 'Invalid credentials', 'INVALID_CREDENTIALS');
     }
@@ -257,7 +306,6 @@ async function login(req, res) {
       .eq('uid', authResult.userId)
       .single();
 
-    // Log successful login
     logger.info('User login successful', { userId: authResult.userId, email: email });
 
     const cookieMaxAge = rememberMe ? 7 * 24 * 60 * 60 * 1000 : 24 * 60 * 60 * 1000;
@@ -293,12 +341,10 @@ async function login(req, res) {
  */
 async function logout(req, res) {
   try {
-    // Clear the session from Supabase Auth if authService is available
     if (authService) {
       await authService.signOut();
       logger.info('User signed out from Auth service');
     }
-    // Clear the authentication cookie
     res.clearCookie('access_token');
     logger.info('Access token cookie cleared');
     res.json({ success: true });
@@ -315,11 +361,9 @@ async function logout(req, res) {
 async function checkSession(req, res) {
   try {
     if (!req.user) {
-      // No user object attached to request, session is invalid or expired
       return res.json({ authenticated: false, user: null });
     }
 
-    // Fetch user details from our user_signup table to ensure consistency
     const { data: userData, error: userError } = await supabase
       .from('user_signup')
       .select('*')
@@ -327,12 +371,13 @@ async function checkSession(req, res) {
       .single();
 
     if (userError) {
-      logger.error('Error fetching user data during session check:', { userId: req.userId, error: userError.message });
-      // If user data is not found in our table, consider session invalid
+      logger.error('Error fetching user data during session check:', { 
+        userId: req.userId, 
+        error: userError.message 
+      });
       return res.json({ authenticated: false, user: null });
     }
 
-    // If user data is found, session is considered valid
     res.json({
       authenticated: true,
       user: {
@@ -344,15 +389,9 @@ async function checkSession(req, res) {
     });
   } catch (error) {
     logger.error('Session check error:', { error: error.message, stack: error.stack });
-    // In case of unexpected errors, assume not authenticated
     res.json({ authenticated: false, user: null });
   }
 }
-
-// The following line is a placeholder for potential JavaScript redirects in the frontend.
-// In a real-world scenario, this would be handled within your frontend JavaScript files,
-// not in the backend controller. If such redirects existed, they would be updated as follows:
-// window.location.href = '/signup-auth.html';
 
 module.exports = {
   signup,
