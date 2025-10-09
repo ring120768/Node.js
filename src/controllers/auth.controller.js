@@ -41,7 +41,7 @@ async function signup(req, res) {
     // Log the entire request body for debugging
     logger.info('Raw signup request body:', JSON.stringify(req.body, null, 2));
 
-    const { email, password, name, surname, mobile, gdprConsent } = req.body;
+    const { email, password, name, surname, phone, gdprConsent } = req.body;
 
     // Debug: Log received fields with actual values
     logger.info('Parsed signup fields:', {
@@ -52,8 +52,8 @@ async function signup(req, res) {
       nameType: typeof name,
       surname: surname || 'MISSING',
       surnameType: typeof surname,
-      mobile: mobile || 'null/empty',
-      mobileType: typeof mobile,
+      phone: phone || 'null/empty',
+      phoneType: typeof phone,
       gdprConsent: gdprConsent,
       gdprConsentType: typeof gdprConsent,
       allFields: Object.keys(req.body)
@@ -92,7 +92,7 @@ async function signup(req, res) {
 
     const authResult = await authService.signUp(email, password, {
       full_name: `${name} ${surname}`.trim(),
-      phone: mobile || null
+      phone: phone || null
     });
 
     if (!authResult.success) {
@@ -100,7 +100,7 @@ async function signup(req, res) {
       logger.error('AuthService signUp failed:', {
         error: authResult.error,
         email: email,
-        providedData: { name, surname, mobile }
+        providedData: { name, surname, phone }
       });
 
       // Check if user already exists
@@ -134,7 +134,7 @@ async function signup(req, res) {
       username: username,
       name: firstName || '',
       surname: lastName || '',
-      phone: mobile || null,
+      phone: phone || null,
       created_at: new Date().toISOString(),
       source: 'auth_signup',
       verified: true,
@@ -208,7 +208,7 @@ async function signup(req, res) {
         name: name,
         surname: surname,
         email: email,
-        mobile: mobile || null,
+        mobile: phone || null,
         created_at: new Date().toISOString(),    // Explicit or let default handle
         gdpr_consent: true,
         gdpr_consent_date: new Date().toISOString(),
