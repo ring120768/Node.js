@@ -92,8 +92,21 @@ function createApp() {
     allowedHeaders: ['Content-Type', 'Authorization', 'X-Api-Key', 'X-User-Id']
   }));
 
-  app.use(bodyParser.json({ limit: '50mb' }));
-  app.use(bodyParser.urlencoded({ extended: true, limit: '50mb' }));
+  // Body parsing middleware with increased limits for audio files
+  app.use(express.json({
+    limit: '50mb',
+    verify: (req, res, buf) => {
+      // Debug: Log JSON parsing attempts
+      if (req.url.includes('/api/auth/signup')) {
+        logger.debug('📝 JSON parsing for signup:', {
+          contentType: req.get('content-type'),
+          contentLength: req.get('content-length'),
+          bodySize: buf.length
+        });
+      }
+    }
+  }));
+  app.use(express.urlencoded({ extended: true, limit: '50mb' }));
   app.use(cookieParser());
   app.use(express.static(path.join(__dirname, '../public')));
 
@@ -320,6 +333,24 @@ function createApp() {
   // ========================================
   // ERROR HANDLING
   // ========================================
+
+  // JSON parsing error handler
+  app.use((error, req, res, next) => {
+    if (error instanceof SyntaxError && error.status === 400 && 'body' in error) {
+      logger.error('❌ JSON parsing error:', {
+        url: req.url,
+        method: req.method,
+        contentType: req.get('content-type'),
+        error: error.message
+      });
+      return res.status(400).json({
+        success: false,
+        error: 'Invalid JSON in request body',
+        code: 'INVALID_JSON'
+      });
+    }
+    next(error);
+  });
 
   // Error handler middleware
   app.use((err, req, res, next) => {

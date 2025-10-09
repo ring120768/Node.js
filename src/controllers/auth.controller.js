@@ -53,6 +53,9 @@ if (config.supabase.url && config.supabase.serviceKey) {
  * POST /api/auth/signup
  */
 async function signup(req, res) {
+  // Ensure we always send JSON responses
+  res.setHeader('Content-Type', 'application/json');
+  
   try {
     // Log detailed debugging info at start
     logger.info('🔵 Signup attempt started:', {
@@ -61,8 +64,21 @@ async function signup(req, res) {
       userAgent: req.get('user-agent')?.substring(0, 100),
       hasAuthService: !!authService,
       hasSupabaseClient: !!supabase,
-      bodyKeys: Object.keys(req.body || {})
+      bodyKeys: Object.keys(req.body || {}),
+      contentType: req.get('content-type'),
+      method: req.method,
+      url: req.url
     });
+
+    // Check if request body exists
+    if (!req.body || Object.keys(req.body).length === 0) {
+      logger.error('❌ Empty request body received');
+      return res.status(400).json({
+        success: false,
+        error: 'Request body is empty or malformed',
+        code: 'EMPTY_BODY'
+      });
+    }
 
     // Log the entire request body for debugging
     logger.info('🔵 Raw signup request body:', JSON.stringify(req.body, null, 2));
@@ -317,9 +333,18 @@ async function signup(req, res) {
   } catch (error) {
     logger.error('❌ Unexpected signup error:', { 
       error: error.message, 
-      stack: error.stack 
+      stack: error.stack,
+      timestamp: new Date().toISOString()
     });
-    sendError(res, 500, 'Server error', 'INTERNAL_ERROR');
+    
+    // Ensure JSON response even in unexpected errors
+    if (!res.headersSent) {
+      res.status(500).json({
+        success: false,
+        error: 'Internal server error. Please try again later.',
+        code: 'INTERNAL_ERROR'
+      });
+    }
   }
 }
 
