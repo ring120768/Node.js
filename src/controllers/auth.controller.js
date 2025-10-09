@@ -435,22 +435,37 @@ async function signup(req, res) {
     // Ensure proper JSON response with status code
     res.status(200).json(responseData);
   } catch (error) {
-    logger.error('❌ Unexpected signup error:', { 
+    logger.error('❌ SIGNUP CRITICAL ERROR - Full Details:', { 
       error: error.message, 
-      stack: error.stack?.substring(0, 500),
+      errorName: error.name,
+      errorCode: error.code,
+      stack: error.stack,
       timestamp: new Date().toISOString(),
       url: req.url,
       method: req.method,
-      body: JSON.stringify(req.body)
+      requestId: req.requestId,
+      body: JSON.stringify(req.body),
+      hasAuthService: !!authService,
+      hasSupabase: !!supabase,
+      configCheck: {
+        hasSupabaseUrl: !!config?.supabase?.url,
+        hasAnonKey: !!config?.supabase?.anonKey,
+        hasServiceKey: !!config?.supabase?.serviceKey
+      }
     });
+
+    // Log the full error object for debugging
+    console.error('🚨 FULL ERROR OBJECT:', error);
+    console.error('🚨 ERROR STACK TRACE:', error.stack);
 
     // Ensure JSON response even in unexpected errors
     if (!res.headersSent) {
       res.status(500).json({
         success: false,
-        error: 'Internal server error. Please try again later.',
+        error: 'Server error',
         code: 'INTERNAL_ERROR',
-        timestamp: new Date().toISOString()
+        timestamp: new Date().toISOString(),
+        requestId: req.requestId
       });
     }
   }
