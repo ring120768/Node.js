@@ -87,9 +87,7 @@ try {
       services: {
         supabase: !!process.env.SUPABASE_URL,
         openai: !!process.env.OPENAI_API_KEY,
-        what3words: !!process.env.WHAT3WORDS_API_KEY,
-        dvla: !!process.env.DVLA_API_KEY,
-        stripe: !!process.env.STRIPE_SECRET_KEY
+        what3words: !!process.env.WHAT3WORDS_API_KEY
       }
     });
   });

@@ -41,7 +41,7 @@ mode = "sequential"
 
 [[workflows.workflow.tasks]]
 task = "shell.exec"
-args = "DEBUG_PORT=3001 node simple-debug-server.js"
+args = "node simple-debug-server.js"
 
 [[workflows.workflow]]
 name = "Project"

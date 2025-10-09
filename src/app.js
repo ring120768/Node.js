@@ -92,16 +92,8 @@ function createApp() {
     allowedHeaders: ['Content-Type', 'Authorization', 'X-Api-Key', 'X-User-Id']
   }));
 
-  // Body parsing middleware with increased limits for audio files
-  app.use(express.json({ 
-    limit: '50mb',
-    strict: false,
-    type: 'application/json'
-  }));
-  app.use(express.urlencoded({ 
-    extended: true, 
-    limit: '50mb' 
-  }));
+  app.use(bodyParser.json({ limit: '50mb' }));
+  app.use(bodyParser.urlencoded({ extended: true, limit: '50mb' }));
   app.use(cookieParser());
   app.use(express.static(path.join(__dirname, '../public')));
 
@@ -122,8 +114,6 @@ function createApp() {
 
   // Request logging middleware
   app.use(requestLogger);
-
-  
 
   // ========================================
   // SUPABASE INITIALIZATION
@@ -330,30 +320,6 @@ function createApp() {
   // ========================================
   // ERROR HANDLING
   // ========================================
-
-  // JSON parsing error handler - must come after body parser middleware
-  app.use((error, req, res, next) => {
-    // Always ensure JSON response for API routes
-    if (req.path.startsWith('/api/')) {
-      res.setHeader('Content-Type', 'application/json');
-    }
-
-    if (error instanceof SyntaxError && error.status === 400 && 'body' in error) {
-      logger.error('❌ JSON parsing error:', {
-        error: error.message,
-        path: req.path,
-        method: req.method,
-        contentType: req.get('content-type')
-      });
-      return res.status(400).json({
-        success: false,
-        error: 'Invalid JSON format in request body',
-        code: 'INVALID_JSON',
-        details: 'Please check that your request body is valid JSON'
-      });
-    }
-    next(error);
-  });
 
   // Error handler middleware
   app.use((err, req, res, next) => {

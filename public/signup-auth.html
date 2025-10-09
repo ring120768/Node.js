@@ -1,3 +1,4 @@
+
 <!DOCTYPE html>
 <html lang="en">
 <head>
@@ -351,18 +352,35 @@
                 <div class="error-message" id="passwordError"></div>
             </div>
 
-            <div class="form-group">
-                <label for="fullName">Full Name *</label>
-                <input 
-                    type="text" 
-                    id="fullName" 
-                    name="fullName" 
-                    required
-                    placeholder="John Doe"
-                    autocomplete="name"
-                >
-                <div class="error-message" id="fullNameError"></div>
+            <div class="name-row">
+                <div class="form-group">
+                    <label for="name">Name *</label>
+                    <input 
+                        type="text" 
+                        id="name" 
+                        name="name" 
+                        required
+                        placeholder="John"
+                        autocomplete="given-name"
+                    >
+                    <div class="error-message" id="nameError"></div>
+                </div>
+
+                <div class="form-group">
+                    <label for="surname">Surname *</label>
+                    <input 
+                        type="text" 
+                        id="surname" 
+                        name="surname" 
+                        required
+                        placeholder="Doe"
+                        autocomplete="family-name"
+                    >
+                    <div class="error-message" id="surnameError"></div>
+                </div>
             </div>
+
+            
 
             <!-- GDPR Consent Checkbox -->
             <div class="gdpr-consent" id="gdprConsentBox">
@@ -392,14 +410,16 @@
     </div>
 
     <script>
-        console.log('🚀 Car Crash Lawyer AI - Signup Page Loaded');
+        console.log('Car Crash Lawyer AI - Signup Page Loaded');
 
         const form = document.getElementById('signupForm');
         const submitBtn = document.getElementById('submitBtn');
         const alertBox = document.getElementById('alertBox');
         const emailInput = document.getElementById('email');
         const passwordInput = document.getElementById('password');
-        const fullNameInput = document.getElementById('fullName'); // Changed from nameInput and surnameInput
+        const nameInput = document.getElementById('name');
+        const surnameInput = document.getElementById('surname');
+        
         const gdprConsentCheckbox = document.getElementById('gdprConsent');
         const gdprConsentBox = document.getElementById('gdprConsentBox');
 
@@ -407,6 +427,8 @@
         passwordInput.addEventListener('input', function() {
             const password = this.value;
             const strengthBar = document.getElementById('passwordStrengthBar');
+
+            console.log('Password strength check for:', password.length, 'characters');
 
             let strength = 0;
             if (password.length >= 8) strength++;
@@ -418,10 +440,13 @@
             if (strength === 1) strengthBar.classList.add('weak');
             else if (strength === 2 || strength === 3) strengthBar.classList.add('medium');
             else if (strength >= 4) strengthBar.classList.add('strong');
+
+            console.log('Password strength:', { strength, level: strengthBar.classList.contains('strong') ? 'strong' : strengthBar.classList.contains('medium') ? 'medium' : 'weak' });
         });
 
         // Clear GDPR error when checkbox is clicked
         gdprConsentCheckbox.addEventListener('change', function() {
+            console.log('GDPR consent changed:', this.checked);
             if (this.checked) {
                 gdprConsentBox.classList.remove('error');
                 clearError('gdprConsent');
@@ -436,7 +461,7 @@
 
         // Show error
         function showError(field, message) {
-            console.log('❌ Error for field:', field, 'Message:', message);
+            console.log('Showing error for field:', field, 'Message:', message);
             const input = document.getElementById(field);
             const error = document.getElementById(field + 'Error');
 
@@ -454,6 +479,7 @@
 
         // Clear error
         function clearError(field) {
+            console.log('Clearing error for field:', field);
             const input = document.getElementById(field);
             const error = document.getElementById(field + 'Error');
 
@@ -470,12 +496,12 @@
 
         // Clear all errors
         function clearAllErrors() {
-            ['email', 'password', 'fullName', 'gdprConsent'].forEach(clearError);
+            ['email', 'password', 'name', 'surname', 'gdprConsent'].forEach(clearError);
         }
 
         // Show alert
         function showAlert(message, type) {
-            console.log('📢 Alert:', type, message);
+            console.log('Showing alert:', type, message);
             alertBox.textContent = message;
             alertBox.className = 'alert ' + type + ' show';
             setTimeout(() => {
@@ -484,50 +510,45 @@
         }
 
         // Real-time input validation
-        [emailInput, passwordInput, fullNameInput].forEach(input => {
+        [emailInput, passwordInput, nameInput, surnameInput].forEach(input => {
             input.addEventListener('input', function() {
                 clearError(this.id);
             });
         });
 
-        /**
-         * Redirect to Typeform with user data
-         * CRITICAL: Uses QUERY parameters (?), not hash parameters (#)
-         * Uses server-generated authCode for security
-         */
-        function redirectToTypeform(userData, authCode) {
-            console.log('🎯 Redirecting to Typeform with user data');
-            console.log('📋 User ID:', userData.id);
-            console.log('📧 Email:', userData.email);
-            console.log('👤 Full Name:', userData.name); // Now directly using 'name' for full name
-            console.log('🔐 Auth Code:', authCode);
+        // Generate auth code
+        function generateAuthCode(userId) {
+            const timestamp = Date.now().toString();
+            const random = Math.random().toString(36).substring(2, 15);
+            const authCode = btoa(`${userId}_${timestamp}_${random}`).substring(0, 16);
+            console.log('Generated auth code:', authCode);
+            return authCode;
+        }
+
+        // Redirect to Typeform with user data
+        function redirectToTypeform(userData) {
+            console.log('Redirecting to Typeform with user data:', userData);
 
             const typeformBaseUrl = 'https://form.typeform.com/to/b03aFxEO';
-
-            // IMPORTANT: Use URLSearchParams for QUERY parameters (?)
-            const queryParams = new URLSearchParams({
+            const authCode = generateAuthCode(userData.id);
+            
+            // Create hash parameters
+            const hashParams = new URLSearchParams({
                 user_id: userData.id,
                 product_id: 'car_crash_lawyer_ai',
                 auth_code: authCode,
                 email: userData.email
             });
 
-            // Add full name if available (for pre-filling)
-            if (userData.name) {
-                queryParams.set('name', userData.name); // Using 'name' for full name
-            }
+            const finalUrl = `${typeformBaseUrl}#${hashParams.toString()}`;
+            
+            console.log('Final Typeform URL:', finalUrl);
+            console.log('Hash parameters:', Object.fromEntries(hashParams));
 
-            // Build final URL with QUERY parameters (not hash)
-            const finalUrl = `${typeformBaseUrl}?${queryParams.toString()}`;
-
-            console.log('🌐 Final Typeform URL:', finalUrl);
-            console.log('📝 Query parameters:', Object.fromEntries(queryParams));
-
-            // Store user data for verification when returning from Typeform
+            // Store user data in both storage types
             const storageData = {
                 userId: userData.id,
                 userEmail: userData.email,
-                userName: userData.name, // Storing the full name
                 authCode: authCode,
                 signupTimestamp: new Date().toISOString()
             };
@@ -535,36 +556,30 @@
             try {
                 sessionStorage.setItem('carCrashLawyerUser', JSON.stringify(storageData));
                 localStorage.setItem('carCrashLawyerUser', JSON.stringify(storageData));
-                console.log('💾 User data stored in sessionStorage and localStorage');
+                console.log('User data stored in both sessionStorage and localStorage:', storageData);
             } catch (storageError) {
-                console.error('⚠️ Storage error:', storageError);
+                console.error('Storage error:', storageError);
             }
 
             // Redirect to Typeform
-            console.log('🚀 Redirecting now...');
             window.location.href = finalUrl;
         }
 
         // Handle form submission
         form.addEventListener('submit', async function(e) {
             e.preventDefault();
-            console.log('📝 Form submission started');
+            console.log('Form submission started');
             clearAllErrors();
 
-            // Server data - only auth fields
-            const serverData = {
+            const formData = {
                 email: emailInput.value.trim(),
                 password: passwordInput.value,
+                name: nameInput.value.trim(),
+                surname: surnameInput.value.trim(),
                 gdprConsent: gdprConsentCheckbox.checked
             };
 
-            // Form data for validation and Typeform redirect
-            const formData = {
-                ...serverData,
-                fullName: fullNameInput.value.trim() // Use fullName from the single input
-            };
-
-            console.log('✅ Form data prepared (password redacted)');
+            console.log('Form data prepared:', { ...formData, password: '[REDACTED]' });
 
             // Client-side validation
             let hasErrors = false;
@@ -585,8 +600,13 @@
                 hasErrors = true;
             }
 
-            if (!formData.fullName) { // Validate the single fullName field
-                showError('fullName', 'Full name is required');
+            if (!formData.name) {
+                showError('name', 'First name is required');
+                hasErrors = true;
+            }
+
+            if (!formData.surname) {
+                showError('surname', 'Last name is required');
                 hasErrors = true;
             }
 
@@ -596,63 +616,38 @@
             }
 
             if (hasErrors) {
-                console.log('❌ Client-side validation failed');
+                console.log('Client-side validation failed');
                 return;
             }
 
-            console.log('✅ Client-side validation passed, submitting to server');
+            console.log('Client-side validation passed, submitting to server');
 
             // Show loading state
             submitBtn.disabled = true;
             submitBtn.classList.add('loading');
 
             try {
-                console.log('📡 Sending signup request to /api/auth/signup (auth fields only)');
-
                 const response = await fetch('/api/auth/signup', {
                     method: 'POST',
                     headers: {
                         'Content-Type': 'application/json',
                     },
-                    body: JSON.stringify(serverData) // Only send auth fields to server
+                    body: JSON.stringify(formData)
                 });
 
-                let data;
-                try {
-                    data = await response.json();
-                } catch (parseError) {
-                    console.error('❌ Failed to parse response as JSON:', parseError);
-                    console.log('Raw response text:', await response.text());
-                    throw new Error('Invalid server response format');
-                }
+                const data = await response.json();
+                console.log('Signup response:', { status: response.status, ok: response.ok, data });
 
-                console.log('📥 Signup response received');
-                console.log('Status:', response.status);
-                console.log('Success:', data?.success);
-                console.log('Full response:', data);
-
-                if (response.ok && data?.success) {
-                    console.log('✅ Signup successful!');
-                    console.log('👤 User ID:', data.user?.id);
-                    console.log('🔐 Auth Code received:', data.authCode ? 'YES' : 'NO');
-
+                if (response.ok && data.success) {
+                    console.log('Signup successful!');
                     showAlert('Account created successfully! Redirecting to onboarding...', 'success');
 
-                    // Store full name for Typeform redirect
-                    const userForTypeform = {
-                        ...data.user,
-                        name: formData.fullName // Use the fullName for the 'name' field in user object
-                    };
-
-                    // IMPORTANT: Pass the server-generated authCode and full name data
                     setTimeout(() => {
-                        redirectToTypeform(userForTypeform, data.authCode);
+                        redirectToTypeform(data.user);
                     }, 1500);
 
                 } else {
-                    console.error('❌ Signup failed');
-                    console.error('Response:', data);
-
+                    console.error('Signup failed:', { response, data });
                     let errorMessage = 'Signup failed. Please try again.';
 
                     if (data.error) {
@@ -668,27 +663,14 @@
                     submitBtn.classList.remove('loading');
                 }
             } catch (error) {
-                console.error('❌ Network error during signup:', error);
-                console.error('Error details:', {
-                    name: error.name,
-                    message: error.message,
-                    stack: error.stack
-                });
-
-                let errorMessage = 'Network error. Please check your connection and try again.';
-                if (error.message.includes('Invalid server response')) {
-                    errorMessage = 'Server returned invalid response. Please try again.';
-                } else if (error.message.includes('Failed to fetch')) {
-                    errorMessage = 'Cannot connect to server. Please check your connection.';
-                }
-
-                showAlert(errorMessage, 'error');
+                console.error('Network error during signup:', error);
+                showAlert('Network error. Please check your connection and try again.', 'error');
                 submitBtn.disabled = false;
                 submitBtn.classList.remove('loading');
             }
         });
 
-        console.log('✅ Signup page JavaScript initialized successfully');
+        console.log('Signup page JavaScript initialized successfully');
     </script>
 </body>
 </html>

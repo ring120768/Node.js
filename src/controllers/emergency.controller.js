@@ -44,7 +44,7 @@ async function getEmergencyContact(req, res) {
     const { data, error } = await supabase
       .from('user_signup')
       .select('emergency_contact_number, emergency_contact, first_name, last_name')
-      .eq('user_id', userId)
+      .eq('create_user_id', userId)
       .single();
 
     if (error) {
@@ -128,7 +128,7 @@ async function updateEmergencyContact(req, res) {
         emergency_contact_number: emergencyContact,
         updated_at: new Date().toISOString()
       })
-      .eq('user_id', userId)
+      .eq('create_user_id', userId)
       .select()
       .single();
 
@@ -177,7 +177,7 @@ async function getEmergencyContacts(req, res) {
     const { data, error } = await supabase
       .from('user_signup')
       .select('emergency_contact, emergency_contact_number, recovery_breakdown_number, emergency_services_number')
-      .eq('user_id', userId)
+      .eq('create_user_id', userId)
       .single();
 
     if (error) {

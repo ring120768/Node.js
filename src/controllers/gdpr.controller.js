@@ -42,7 +42,7 @@ async function getConsent(req, res) {
     const { data: user, error } = await supabase
       .from('user_signup')
       .select('gdpr_consent, gdpr_consent_date, gdpr_consent_version, gdpr_consent_ip')
-      .eq('user_id', userId)
+      .eq('create_user_id', userId)
       .single();
 
     if (error || !user) {
@@ -110,7 +110,7 @@ async function updateConsent(req, res) {
     const { data, error } = await supabase
       .from('user_signup')
       .update(updateData)
-      .eq('user_id', userId)
+      .eq('create_user_id', userId)
       .select()
       .single();
 
@@ -229,7 +229,7 @@ async function exportData(req, res) {
     const { data: user } = await supabase
       .from('user_signup')
       .select('*')
-      .eq('user_id', userId)
+      .eq('create_user_id', userId)
       .single();
 
     if (!user) {
