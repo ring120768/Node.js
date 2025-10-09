@@ -1,110 +1,108 @@
-
 /**
- * Car Crash Lawyer AI - Server Entry Point
- * Minimal startup file for the new modular architecture
+ * Centralized Configuration for Car Crash Lawyer AI
+ * Environment-based configuration with validation
  */
 
-require('dotenv').config();
+const logger = require('../utils/logger');
 
-const path = require('path');
-const fs = require('fs');
-
-// Validate environment
-if (!process.env.SUPABASE_URL || !process.env.SUPABASE_SERVICE_ROLE_KEY) {
-  console.error('❌ Missing required environment variables');
-  console.error('Required: SUPABASE_URL, SUPABASE_SERVICE_ROLE_KEY');
-  process.exit(1);
-}
-
-// Set default port if not specified
-const PORT = process.env.PORT || 5000;
-process.env.PORT = PORT;
-
-console.log('🚀 Starting Car Crash Lawyer AI Server...');
-console.log(`📍 Port: ${PORT}`);
-console.log(`🌍 Environment: ${process.env.NODE_ENV || 'development'}`);
-
-// Check for required modular files
-const requiredFiles = [
-  'src/app.js',
-  'src/config/index.js',
-  'src/utils/logger.js',
-  'src/routes/index.js'
+// Validate required environment variables
+const requiredEnvVars = [
+  'SUPABASE_URL',
+  'SUPABASE_ANON_KEY',  // ✅ Only need ANON key now
+  'OPENAI_API_KEY'
 ];
 
-console.log('🔍 Checking required files...');
-for (const file of requiredFiles) {
-  const filePath = path.join(__dirname, file);
-  if (!fs.existsSync(filePath)) {
-    console.error(`❌ Missing required file: ${file}`);
-    console.log('💡 Run migration or restore from backup if needed');
-    process.exit(1);
-  }
+const missingVars = requiredEnvVars.filter(varName => !process.env[varName]);
+
+if (missingVars.length > 0) {
+  logger.error('❌ Missing required environment variables:', missingVars);
+  throw new Error(`Missing required environment variables: ${missingVars.join(', ')}`);
 }
-console.log('✅ All required files present');
 
-// Initialize logger early
-const logger = require('./src/utils/logger');
+const config = {
+  // Application settings
+  app: {
+    name: 'Car Crash Lawyer AI',
+    port: process.env.PORT || 5000,
+    env: process.env.NODE_ENV || 'development',
+    baseUrl: process.env.BASE_URL || 'http://localhost:5000'
+  },
 
-// Handle uncaught exceptions
-process.on('uncaughtException', (error) => {
-  logger.error('Uncaught Exception:', error);
-  process.exit(1);
-});
+  // Supabase configuration - ANON KEY ONLY
+  supabase: {
+    url: process.env.SUPABASE_URL,
+    anonKey: process.env.SUPABASE_ANON_KEY,
+    // ❌ REMOVED: serviceKey - no longer needed
+  },
 
-process.on('unhandledRejection', (reason, promise) => {
-  logger.error('Unhandled Rejection at:', promise, 'reason:', reason);
-  process.exit(1);
-});
+  // OpenAI configuration
+  openai: {
+    apiKey: process.env.OPENAI_API_KEY,
+    whisperModel: 'whisper-1',
+    gptModel: process.env.OPENAI_MODEL || 'gpt-4-turbo-preview'
+  },
 
-// Graceful shutdown handling
-process.on('SIGTERM', () => {
-  logger.info('SIGTERM received, closing server gracefully...');
-  process.exit(0);
-});
+  // What3Words API
+  what3words: {
+    apiKey: process.env.WHAT3WORDS_API_KEY
+  },
 
-process.on('SIGINT', () => {
-  logger.info('SIGINT received, closing server gracefully...');
-  process.exit(0);
-});
-
-try {
-  // Start the modular application
-  const app = require('./src/app');
-  
-  // Start server
-  const server = app.listen(PORT, '0.0.0.0', () => {
-    console.log('\n========================================');
-    console.log('🚗 Car Crash Lawyer AI - Server Started');
-    console.log('========================================');
-    console.log(`🌐 Server running on http://0.0.0.0:${PORT}`);
-    console.log('🔗 Public URL: https://workspace.ring120768.repl.co\n');
-    
-    logger.info('Server startup complete', {
-      port: PORT,
-      environment: process.env.NODE_ENV || 'development',
-      architecture: 'modular',
-      services: {
-        supabase: !!process.env.SUPABASE_URL,
-        openai: !!process.env.OPENAI_API_KEY,
-        what3words: !!process.env.WHAT3WORDS_API_KEY
+  // Email configuration
+  email: {
+    smtp: {
+      host: process.env.SMTP_HOST,
+      port: parseInt(process.env.SMTP_PORT || '587'),
+      secure: process.env.SMTP_SECURE === 'true',
+      auth: {
+        user: process.env.SMTP_USER,
+        pass: process.env.SMTP_PASS
       }
-    });
-  });
+    },
+    from: process.env.EMAIL_FROM || 'noreply@carcrashlawyerai.com'
+  },
 
-  // Handle server errors
-  server.on('error', (error) => {
-    if (error.code === 'EADDRINUSE') {
-      logger.error(`Port ${PORT} is already in use`);
-      process.exit(1);
-    } else {
-      logger.error('Server error:', error);
-      process.exit(1);
-    }
-  });
+  // Webhook authentication
+  webhooks: {
+    zapierSharedKey: process.env.ZAPIER_SHARED_KEY
+  },
 
-} catch (error) {
-  console.error('❌ Failed to start server:', error.message);
-  logger.error('Server startup failed:', error);
-  process.exit(1);
-}
+  // Typeform integration
+  typeform: {
+    secret: process.env.TYPEFORM_SECRET || 'car-crash-lawyer-ai-secret-2024'
+  },
+
+  // File upload limits
+  upload: {
+    maxFileSize: parseInt(process.env.MAX_FILE_SIZE || '10485760'), // 10MB default
+    allowedImageTypes: ['image/jpeg', 'image/png', 'image/jpg', 'image/heic'],
+    allowedAudioTypes: ['audio/mpeg', 'audio/wav', 'audio/m4a', 'audio/mp3']
+  },
+
+  // Rate limiting
+  rateLimit: {
+    windowMs: 15 * 60 * 1000, // 15 minutes
+    max: 100 // requests per window
+  },
+
+  // Session/Cookie settings
+  session: {
+    cookieName: 'access_token',
+    maxAge: 7 * 24 * 60 * 60 * 1000, // 7 days
+    rememberMeMaxAge: 30 * 24 * 60 * 60 * 1000 // 30 days
+  },
+
+  // Logging
+  logging: {
+    level: process.env.LOG_LEVEL || 'info',
+    pretty: process.env.NODE_ENV === 'development'
+  }
+};
+
+// Log successful configuration (hide sensitive values)
+logger.success('✅ Configuration loaded successfully');
+logger.info('Environment:', config.app.env);
+logger.info('Supabase URL:', config.supabase.url ? '✅ Set' : '❌ Missing');
+logger.info('Supabase Anon Key:', config.supabase.anonKey ? '✅ Set' : '❌ Missing');
+logger.info('OpenAI API Key:', config.openai.apiKey ? '✅ Set' : '❌ Missing');
+
+module.exports = config;
