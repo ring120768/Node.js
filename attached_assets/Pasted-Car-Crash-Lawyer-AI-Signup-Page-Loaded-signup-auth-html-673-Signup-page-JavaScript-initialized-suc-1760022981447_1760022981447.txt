@@ -1,0 +1,50 @@
+Car Crash Lawyer AI - Signup Page Loaded
+signup-auth.html:673 Signup page JavaScript initialized successfully
+signup-auth.html:482 Clearing error for field: email
+signup-auth.html:482 Clearing error for field: name
+signup-auth.html:482 Clearing error for field: surname
+signup-auth.html:431 Password strength check for: 1 characters
+signup-auth.html:444 Password strength: Object
+signup-auth.html:482 Clearing error for field: password
+signup-auth.html:431 Password strength check for: 2 characters
+signup-auth.html:444 Password strength: Object
+signup-auth.html:482 Clearing error for field: password
+signup-auth.html:431 Password strength check for: 3 characters
+signup-auth.html:444 Password strength: Object
+signup-auth.html:482 Clearing error for field: password
+signup-auth.html:431 Password strength check for: 4 characters
+signup-auth.html:444 Password strength: Object
+signup-auth.html:482 Clearing error for field: password
+signup-auth.html:431 Password strength check for: 5 characters
+signup-auth.html:444 Password strength: Object
+signup-auth.html:482 Clearing error for field: password
+signup-auth.html:431 Password strength check for: 6 characters
+signup-auth.html:444 Password strength: Object
+signup-auth.html:482 Clearing error for field: password
+signup-auth.html:431 Password strength check for: 7 characters
+signup-auth.html:444 Password strength: Object
+signup-auth.html:482 Clearing error for field: password
+signup-auth.html:431 Password strength check for: 8 characters
+signup-auth.html:444 Password strength: Object
+signup-auth.html:482 Clearing error for field: password
+signup-auth.html:431 Password strength check for: 9 characters
+signup-auth.html:444 Password strength: Object
+signup-auth.html:482 Clearing error for field: password
+signup-auth.html:431 Password strength check for: 10 characters
+signup-auth.html:444 Password strength: Object
+signup-auth.html:482 Clearing error for field: password
+signup-auth.html:449 GDPR consent changed: true
+signup-auth.html:482 Clearing error for field: gdprConsent
+signup-auth.html:571 Form submission started
+signup-auth.html:482 Clearing error for field: email
+signup-auth.html:482 Clearing error for field: password
+signup-auth.html:482 Clearing error for field: name
+signup-auth.html:482 Clearing error for field: surname
+signup-auth.html:482 Clearing error for field: gdprConsent
+signup-auth.html:582 Form data prepared: Object
+signup-auth.html:623 Client-side validation passed, submitting to server
+api/auth/signup:1  Failed to load resource: the server responded with a status of 500 ()Understand this error
+signup-auth.html:639 Signup response: Object
+signup-auth.html:650 Signup failed: Object
+(anonymous) @ signup-auth.html:650Understand this error
+signup-auth.html:504 
