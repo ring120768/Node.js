@@ -18,23 +18,33 @@ const { createClient } = require('@supabase/supabase-js');
 let authService = null;
 let supabase = null;
 
-// Debug: Log config values
-console.log('🔍 Auth Controller Config Check:', {
-  hasSupabaseUrl: !!config.supabase.url,
-  hasAnonKey: !!config.supabase.anonKey,
-  hasServiceKey: !!config.supabase.serviceKey
-});
+// Debug: Log config values (with better error handling)
+try {
+  console.log('🔍 Auth Controller Config Check:', {
+    hasSupabaseUrl: !!config?.supabase?.url,
+    hasAnonKey: !!config?.supabase?.anonKey,
+    hasServiceKey: !!config?.supabase?.serviceKey,
+    configExists: !!config
+  });
+} catch (configError) {
+  console.error('❌ Config access error:', configError.message);
+}
 
-if (config.supabase.url && config.supabase.anonKey) {
+// Initialize auth service with better error handling
+if (config?.supabase?.url && config?.supabase?.anonKey) {
   try {
     authService = new AuthService(config.supabase.url, config.supabase.anonKey);
     logger.success('✅ Auth service initialized in controller');
   } catch (error) {
     logger.error('❌ Failed to initialize auth service:', error.message);
+    authService = null;
   }
+} else {
+  logger.warn('⚠️ Auth service not initialized - missing config');
 }
 
-if (config.supabase.url && config.supabase.serviceKey) {
+// Initialize Supabase client with better error handling
+if (config?.supabase?.url && config?.supabase?.serviceKey) {
   try {
     supabase = createClient(config.supabase.url, config.supabase.serviceKey, {
       auth: {
@@ -45,7 +55,10 @@ if (config.supabase.url && config.supabase.serviceKey) {
     logger.success('✅ Supabase client initialized in controller');
   } catch (error) {
     logger.error('❌ Failed to initialize Supabase client:', error.message);
+    supabase = null;
   }
+} else {
+  logger.warn('⚠️ Supabase client not initialized - missing config');
 }
 
 /**
@@ -55,6 +68,32 @@ if (config.supabase.url && config.supabase.serviceKey) {
 async function signup(req, res) {
   // Ensure we always send JSON responses
   res.setHeader('Content-Type', 'application/json');
+  
+  // Early error catching
+  try {
+    // Quick validation that basic services are available
+    if (!req.body) {
+      logger.error('❌ No request body received');
+      return res.status(400).json({
+        success: false,
+        error: 'No request body received',
+        code: 'NO_BODY'
+      });
+    }
+
+    logger.info('🔵 Signup request received:', {
+      hasBody: !!req.body,
+      bodyKeys: Object.keys(req.body || {}),
+      contentType: req.get('content-type')
+    });
+  } catch (earlyError) {
+    logger.error('❌ Early signup validation failed:', earlyError.message);
+    return res.status(500).json({
+      success: false,
+      error: 'Server initialization error',
+      code: 'INIT_ERROR'
+    });
+  }
   
   try {
     // Log detailed debugging info at start

@@ -5,7 +5,6 @@
  */
 
 const express = require('express');
-const { optionalAuth } = require('../../lib/middleware/authMiddleware');
 const authController = require('../controllers/auth.controller');
 
 const router = express.Router();
@@ -29,9 +28,9 @@ router.post('/login', authController.login);
 router.post('/logout', authController.logout);
 
 /**
- * Session check (with optional auth middleware)
+ * Session check (without auth middleware for now)
  * GET /api/auth/session
  */
-router.get('/session', optionalAuth, authController.checkSession);
+router.get('/session', authController.checkSession);
 
 module.exports = router;
