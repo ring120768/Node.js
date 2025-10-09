@@ -486,7 +486,7 @@
 
         // Clear all errors
         function clearAllErrors() {
-            ['email', 'password', 'gdprConsent'].forEach(clearError);
+            ['email', 'password', 'name', 'surname', 'gdprConsent'].forEach(clearError);
         }
 
         // Show alert
@@ -500,7 +500,7 @@
         }
 
         // Real-time input validation
-        [emailInput, passwordInput].forEach(input => {
+        [emailInput, passwordInput, nameInput, surnameInput].forEach(input => {
             input.addEventListener('input', function() {
                 clearError(this.id);
             });
@@ -515,6 +515,7 @@
             console.log('🎯 Redirecting to Typeform with user data');
             console.log('📋 User ID:', userData.id);
             console.log('📧 Email:', userData.email);
+            console.log('👤 Name:', userData.name, userData.surname);
             console.log('🔐 Auth Code:', authCode);
 
             const typeformBaseUrl = 'https://form.typeform.com/to/b03aFxEO';
@@ -527,6 +528,14 @@
                 email: userData.email
             });
 
+            // Add name fields if available (for pre-filling)
+            if (userData.name) {
+                queryParams.set('first_name', userData.name);
+            }
+            if (userData.surname) {
+                queryParams.set('last_name', userData.surname);
+            }
+
             // Build final URL with QUERY parameters (not hash)
             const finalUrl = `${typeformBaseUrl}?${queryParams.toString()}`;
 
@@ -537,6 +546,8 @@
             const storageData = {
                 userId: userData.id,
                 userEmail: userData.email,
+                userName: userData.name,
+                userSurname: userData.surname,
                 authCode: authCode,
                 signupTimestamp: new Date().toISOString()
             };
@@ -560,12 +571,18 @@
             console.log('📝 Form submission started');
             clearAllErrors();
 
-            const formData = {
+            // Server data - only auth fields
+            const serverData = {
                 email: emailInput.value.trim(),
                 password: passwordInput.value,
-                name: nameInput.value.trim(),
-                surname: surnameInput.value.trim(),
                 gdprConsent: gdprConsentCheckbox.checked
+            };
+
+            // Form data for validation and Typeform redirect
+            const formData = {
+                ...serverData,
+                name: nameInput.value.trim(),
+                surname: surnameInput.value.trim()
             };
 
             console.log('✅ Form data prepared (password redacted)');
@@ -616,14 +633,14 @@
             submitBtn.classList.add('loading');
 
             try {
-                console.log('📡 Sending signup request to /api/auth/signup');
+                console.log('📡 Sending signup request to /api/auth/signup (auth fields only)');
 
                 const response = await fetch('/api/auth/signup', {
                     method: 'POST',
                     headers: {
                         'Content-Type': 'application/json',
                     },
-                    body: JSON.stringify(formData)
+                    body: JSON.stringify(serverData) // Only send auth fields to server
                 });
 
                 let data;
@@ -647,9 +664,16 @@
 
                     showAlert('Account created successfully! Redirecting to onboarding...', 'success');
 
-                    // IMPORTANT: Pass the server-generated authCode
+                    // Store name/surname for Typeform redirect
+                    const userForTypeform = {
+                        ...data.user,
+                        name: formData.name,
+                        surname: formData.surname
+                    };
+
+                    // IMPORTANT: Pass the server-generated authCode and full name data
                     setTimeout(() => {
-                        redirectToTypeform(data.user, data.authCode);
+                        redirectToTypeform(userForTypeform, data.authCode);
                     }, 1500);
 
                 } else {
