@@ -69,31 +69,43 @@ async function signup(req, res) {
   // Ensure we always send JSON responses
   res.setHeader('Content-Type', 'application/json');
   
-  // Early error catching
   try {
-    // Quick validation that basic services are available
-    if (!req.body) {
-      logger.error('❌ No request body received');
+    logger.info('🔵 Signup endpoint hit:', {
+      method: req.method,
+      url: req.url,
+      contentType: req.get('content-type'),
+      hasBody: !!req.body,
+      bodyType: typeof req.body,
+      bodyString: JSON.stringify(req.body),
+      headers: {
+        'content-type': req.get('content-type'),
+        'content-length': req.get('content-length')
+      }
+    });
+
+    // Check if request body exists and is valid
+    if (!req.body || typeof req.body !== 'object') {
+      logger.error('❌ Invalid or missing request body:', {
+        hasBody: !!req.body,
+        bodyType: typeof req.body,
+        bodyValue: req.body
+      });
       return res.status(400).json({
         success: false,
-        error: 'No request body received',
-        code: 'NO_BODY'
+        error: 'Request body is required and must be valid JSON',
+        code: 'INVALID_BODY'
       });
     }
 
-    logger.info('🔵 Signup request received:', {
-      hasBody: !!req.body,
-      bodyKeys: Object.keys(req.body || {}),
-      contentType: req.get('content-type')
-    });
-  } catch (earlyError) {
-    logger.error('❌ Early signup validation failed:', earlyError.message);
-    return res.status(500).json({
-      success: false,
-      error: 'Server initialization error',
-      code: 'INIT_ERROR'
-    });
-  }
+    // Check if request body has any keys
+    if (Object.keys(req.body).length === 0) {
+      logger.error('❌ Empty request body received');
+      return res.status(400).json({
+        success: false,
+        error: 'Request body cannot be empty',
+        code: 'EMPTY_BODY'
+      });
+    }
   
   try {
     // Log detailed debugging info at start

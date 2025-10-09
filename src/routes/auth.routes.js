@@ -9,6 +9,12 @@ const authController = require('../controllers/auth.controller');
 
 const router = express.Router();
 
+// Middleware to ensure JSON responses for all auth routes
+router.use((req, res, next) => {
+  res.setHeader('Content-Type', 'application/json');
+  next();
+});
+
 /**
  * User signup with GDPR consent capture
  * POST /api/auth/signup
@@ -32,5 +38,18 @@ router.post('/logout', authController.logout);
  * GET /api/auth/session
  */
 router.get('/session', authController.checkSession);
+
+/**
+ * Test route to verify auth endpoints are working
+ * GET /api/auth/test
+ */
+router.get('/test', (req, res) => {
+  res.json({
+    success: true,
+    message: 'Auth routes are working',
+    timestamp: new Date().toISOString(),
+    path: req.path
+  });
+});
 
 module.exports = router;
