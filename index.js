@@ -3,7 +3,7 @@
  * Environment-based configuration with validation
  */
 
-const logger = require('../utils/logger');
+const logger = require('./src/utils/logger');
 
 // Validate required environment variables
 const requiredEnvVars = [
