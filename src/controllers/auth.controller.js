@@ -83,7 +83,30 @@ async function signup(req, res) {
     // Log the entire request body for debugging
     logger.info('🔵 Raw signup request body:', JSON.stringify(req.body, null, 2));
 
+    // Add validation for request body structure
+    if (typeof req.body !== 'object') {
+      logger.error('❌ Request body is not an object:', typeof req.body);
+      return res.status(400).json({
+        success: false,
+        error: 'Invalid request format',
+        code: 'INVALID_REQUEST_FORMAT'
+      });
+    }
+
     const { email, password, name, surname, gdprConsent } = req.body;
+
+    // Log extracted values for debugging
+    logger.info('🔵 Extracted signup values:', {
+      email: typeof email,
+      password: typeof password,
+      name: typeof name,
+      surname: typeof surname,
+      gdprConsent: typeof gdprConsent,
+      emailValue: email,
+      nameValue: name,
+      surnameValue: surname,
+      gdprConsentValue: gdprConsent
+    });
 
     // Debug: Log received fields with actual values
     logger.info('🔵 Parsed signup fields:', {
@@ -142,9 +165,25 @@ async function signup(req, res) {
 
     logger.info('🟢 Starting auth signup with GDPR consent:', email);
 
+    // Debug: Check if authService is properly initialized
+    logger.info('🔵 Pre-signup checks:', {
+      hasAuthService: !!authService,
+      hasSupabase: !!supabase,
+      authServiceType: typeof authService,
+      supabaseType: typeof supabase
+    });
+
     // Create auth user
+    logger.info('🔵 Calling authService.signUp...');
     const authResult = await authService.signUp(email, password, {
       full_name: `${name} ${surname}`.trim()
+    });
+
+    logger.info('🔵 Auth signup result:', {
+      success: authResult?.success,
+      hasUserId: !!authResult?.userId,
+      hasSession: !!authResult?.session,
+      errorExists: !!authResult?.error
     });
 
     if (!authResult.success) {
@@ -227,10 +266,32 @@ async function signup(req, res) {
       source: insertData.source
     });
 
-    const { data: insertedData, error: insertError } = await supabase
-      .from('user_signup')
-      .insert(insertData)
-      .select();
+    logger.info('🔵 Full insert data object:', JSON.stringify(insertData, null, 2));
+
+    let insertedData, insertError;
+    try {
+      logger.info('🔵 Executing Supabase insert...');
+      const result = await supabase
+        .from('user_signup')
+        .insert(insertData)
+        .select();
+      
+      insertedData = result.data;
+      insertError = result.error;
+      
+      logger.info('🔵 Database insert completed:', {
+        hasError: !!insertError,
+        hasData: !!insertedData,
+        dataLength: insertedData?.length || 0
+      });
+    } catch (dbError) {
+      logger.error('❌ Database insert exception:', {
+        message: dbError.message,
+        stack: dbError.stack?.substring(0, 500),
+        name: dbError.name
+      });
+      insertError = dbError;
+    }
 
     if (insertError) {
       logger.error('❌ DATABASE INSERT FAILED - Full Error Details:', {
@@ -331,18 +392,34 @@ async function signup(req, res) {
     logger.info('📤 Sending signup response:', { success: true, userId, email });
     res.json(responseData);
   } catch (error) {
-    logger.error('❌ Unexpected signup error:', { 
-      error: error.message, 
+    logger.error('❌ Unexpected signup error - FULL DETAILS:', { 
+      message: error.message,
+      name: error.name,
       stack: error.stack,
-      timestamp: new Date().toISOString()
+      timestamp: new Date().toISOString(),
+      requestUrl: req.url,
+      requestMethod: req.method,
+      userAgent: req.get('user-agent')?.substring(0, 100),
+      contentType: req.get('content-type'),
+      bodyKeys: req.body ? Object.keys(req.body) : 'NO_BODY'
     });
+    
+    // Log the specific error type
+    if (error.name === 'ValidationError') {
+      logger.error('❌ Validation Error Details:', error.errors);
+    } else if (error.name === 'DatabaseError') {
+      logger.error('❌ Database Error Details:', error.detail);
+    } else if (error.code) {
+      logger.error('❌ Error Code:', error.code);
+    }
     
     // Ensure JSON response even in unexpected errors
     if (!res.headersSent) {
       res.status(500).json({
         success: false,
-        error: 'Internal server error. Please try again later.',
-        code: 'INTERNAL_ERROR'
+        error: 'Internal server error during signup. Please try again.',
+        code: 'INTERNAL_ERROR',
+        timestamp: new Date().toISOString()
       });
     }
   }

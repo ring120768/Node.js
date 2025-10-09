@@ -128,6 +128,24 @@ function createApp() {
   // Request logging middleware
   app.use(requestLogger);
 
+  // Signup-specific debugging middleware
+  app.use('/api/auth/signup', (req, res, next) => {
+    logger.info('🔵 SIGNUP REQUEST DEBUG:', {
+      method: req.method,
+      url: req.url,
+      contentType: req.get('content-type'),
+      contentLength: req.get('content-length'),
+      userAgent: req.get('user-agent')?.substring(0, 50),
+      origin: req.get('origin'),
+      hasBody: !!req.body,
+      bodyType: typeof req.body,
+      bodyKeys: req.body ? Object.keys(req.body) : 'NO_BODY',
+      rawBodyExists: !!req.rawBody,
+      timestamp: new Date().toISOString()
+    });
+    next();
+  });
+
   // ========================================
   // SUPABASE INITIALIZATION
   // ========================================
