@@ -1,0 +1,154 @@
+| function_name              | definition                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                      |
+| -------------------------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| getpgusername              | CREATE OR REPLACE FUNCTION pg_catalog.getpgusername()
+ RETURNS name
+ LANGUAGE internal
+ STABLE PARALLEL SAFE STRICT
+AS $function$current_user$function$
+                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                        |
+| current_user               | CREATE OR REPLACE FUNCTION pg_catalog."current_user"()
+ RETURNS name
+ LANGUAGE internal
+ STABLE PARALLEL SAFE STRICT
+AS $function$current_user$function$
+                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                       |
+| session_user               | CREATE OR REPLACE FUNCTION pg_catalog."session_user"()
+ RETURNS name
+ LANGUAGE internal
+ STABLE PARALLEL SAFE STRICT
+AS $function$session_user$function$
+                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                       |
+| system_user                | CREATE OR REPLACE FUNCTION pg_catalog."system_user"()
+ RETURNS text
+ LANGUAGE internal
+ STABLE PARALLEL SAFE STRICT
+AS $function$system_user$function$
+                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                         |
+| pg_get_userbyid            | CREATE OR REPLACE FUNCTION pg_catalog.pg_get_userbyid(oid)
+ RETURNS name
+ LANGUAGE internal
+ STABLE PARALLEL SAFE STRICT
+AS $function$pg_get_userbyid$function$
+                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                |
+| pg_stat_get_backend_userid | CREATE OR REPLACE FUNCTION pg_catalog.pg_stat_get_backend_userid(integer)
+ RETURNS oid
+ LANGUAGE internal
+ STABLE PARALLEL RESTRICTED STRICT
+AS $function$pg_stat_get_backend_userid$function$
+                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                 |
+| get_user_storage_stats     | CREATE OR REPLACE FUNCTION public.get_user_storage_stats(p_user_id text)
+ RETURNS json
+ LANGUAGE plpgsql
+ SECURITY DEFINER
+AS $function$
+DECLARE
+    result JSON;
+BEGIN
+    -- Verify the requesting user matches the user_id
+    IF auth.uid()::text != p_user_id THEN
+        RAISE EXCEPTION 'Unauthorized access to user data';
+    END IF;
+    
+    SELECT json_build_object(
+        'total_files', COUNT(*),
+        'total_bytes', COALESCE(SUM(bytes), 0),
+        'video_files', COUNT(*) FILTER (WHERE kind = 'video'),
+        'video_bytes', COALESCE(SUM(bytes) FILTER (WHERE kind = 'video'), 0),
+        'average_file_size', COALESCE(AVG(bytes), 0),
+        'oldest_upload', MIN(uploaded_at),
+        'newest_upload', MAX(uploaded_at)
+    ) INTO result
+    FROM incident_evidence
+    WHERE user_id = p_user_id;
+    
+    RETURN result;
+END;
+$function$
+                                                                                                                                                                                                                                                                                                                                                                                                                                                                                |
+| get_user_dashcam_videos    | CREATE OR REPLACE FUNCTION public.get_user_dashcam_videos(user_uuid uuid, incident_uuid uuid DEFAULT NULL::uuid)
+ RETURNS TABLE(storage_path text, file_name text, file_size bigint, created_at timestamp with time zone, updated_at timestamp with time zone)
+ LANGUAGE plpgsql
+ SECURITY DEFINER
+AS $function$
+BEGIN
+    RETURN QUERY
+    SELECT 
+        o.name as storage_path,
+        (string_to_array(o.name, '/'))[array_upper(string_to_array(o.name, '/'), 1)] as file_name,
+        o.metadata->>'size' as file_size,
+        o.created_at,
+        o.updated_at
+    FROM storage.objects o
+    WHERE o.bucket_id = 'dash-cam-upload'
+    AND (storage.foldername(o.name))[1] = user_uuid::text
+    AND (incident_uuid IS NULL OR (storage.foldername(o.name))[2] = incident_uuid::text)
+    ORDER BY o.created_at DESC;
+END;
+$function$
+                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                            |
+| get_user_storage_usage     | CREATE OR REPLACE FUNCTION public.get_user_storage_usage(user_uuid uuid)
+ RETURNS TABLE(total_files integer, total_size_bytes bigint, dashcam_files integer, dashcam_size_bytes bigint, evidence_files integer, evidence_size_bytes bigint)
+ LANGUAGE plpgsql
+ SECURITY DEFINER
+AS $function$
+BEGIN
+    RETURN QUERY
+    WITH storage_stats AS (
+        SELECT 
+            bucket_id,
+            COUNT(*) as file_count,
+            SUM((metadata->>'size')::BIGINT) as total_size
+        FROM storage.objects 
+        WHERE (storage.foldername(name))[1] = user_uuid::text
+        AND bucket_id IN ('dash-cam-upload', 'incident-evidence')
+        GROUP BY bucket_id
+    )
+    SELECT 
+        COALESCE(SUM(file_count), 0)::INTEGER as total_files,
+        COALESCE(SUM(total_size), 0) as total_size_bytes,
+        COALESCE(MAX(CASE WHEN bucket_id = 'dash-cam-upload' THEN file_count ELSE 0 END), 0)::INTEGER as dashcam_files,
+        COALESCE(MAX(CASE WHEN bucket_id = 'dash-cam-upload' THEN total_size ELSE 0 END), 0) as dashcam_size_bytes,
+        COALESCE(MAX(CASE WHEN bucket_id = 'incident-evidence' THEN file_count ELSE 0 END), 0)::INTEGER as evidence_files,
+        COALESCE(MAX(CASE WHEN bucket_id = 'incident-evidence' THEN total_size ELSE 0 END), 0) as evidence_size_bytes
+    FROM storage_stats;
+END;
+$function$
+ |
+| update_user_consent        | CREATE OR REPLACE FUNCTION public.update_user_consent(p_user_id text, p_consent boolean, p_ip_address text DEFAULT NULL::text)
+ RETURNS json
+ LANGUAGE plpgsql
+AS $function$
+DECLARE
+    result JSON;
+BEGIN
+    -- Update or insert consent
+    INSERT INTO gdpr_consent (create_user_id, gdpr_consent, gdpr_consent_date)
+    VALUES (p_user_id, p_consent, NOW())
+    ON CONFLICT (create_user_id) DO UPDATE 
+    SET gdpr_consent = EXCLUDED.gdpr_consent,
+        gdpr_consent_date = EXCLUDED.gdpr_consent_date;
+    
+    -- Log to audit
+    INSERT INTO gdpr_audit_log (
+        create_user_id, 
+        activity_type, 
+        details,
+        ip_address
+    ) VALUES (
+        p_user_id,
+        CASE WHEN p_consent THEN 'CONSENT_GRANTED' ELSE 'CONSENT_WITHDRAWN' END,
+        jsonb_build_object('consent', p_consent, 'timestamp', NOW()),
+        p_ip_address
+    );
+    
+    result := json_build_object(
+        'success', true,
+        'user_id', p_user_id,
+        'consent', p_consent,
+        'timestamp', NOW()
+    );
+    
+    RETURN result;
+END;
+$function$
+                                                                                                                                                                                                                                                                 |
