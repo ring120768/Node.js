@@ -380,17 +380,7 @@
                 </div>
             </div>
 
-            <div class="form-group">
-                <label for="phone">Phone Number</label>
-                <input 
-                    type="tel" 
-                    id="phone" 
-                    name="phone" 
-                    placeholder="+44 1234 567890"
-                    autocomplete="tel"
-                >
-                <div class="helper-text">Optional - for important updates about your case</div>
-            </div>
+            
 
             <!-- GDPR Consent Checkbox -->
             <div class="gdpr-consent" id="gdprConsentBox">
@@ -429,7 +419,7 @@
         const passwordInput = document.getElementById('password');
         const nameInput = document.getElementById('name');
         const surnameInput = document.getElementById('surname');
-        const phoneInput = document.getElementById('phone');
+        
         const gdprConsentCheckbox = document.getElementById('gdprConsent');
         const gdprConsentBox = document.getElementById('gdprConsentBox');
 
@@ -520,7 +510,7 @@
         }
 
         // Real-time input validation
-        [emailInput, passwordInput, nameInput, surnameInput, phoneInput].forEach(input => {
+        [emailInput, passwordInput, nameInput, surnameInput].forEach(input => {
             input.addEventListener('input', function() {
                 clearError(this.id);
             });
@@ -586,7 +576,6 @@
                 password: passwordInput.value,
                 name: nameInput.value.trim(),
                 surname: surnameInput.value.trim(),
-                phone: phoneInput.value.trim() || null,
                 gdprConsent: gdprConsentCheckbox.checked
             };
 

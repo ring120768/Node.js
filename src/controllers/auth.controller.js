@@ -41,7 +41,7 @@ async function signup(req, res) {
     // Log the entire request body for debugging
     logger.info('Raw signup request body:', JSON.stringify(req.body, null, 2));
 
-    const { email, password, name, surname, phone, gdprConsent } = req.body;
+    const { email, password, name, surname, gdprConsent } = req.body;
 
     // Debug: Log received fields with actual values
     logger.info('Parsed signup fields:', {
@@ -52,8 +52,6 @@ async function signup(req, res) {
       nameType: typeof name,
       surname: surname || 'MISSING',
       surnameType: typeof surname,
-      phone: phone || 'null/empty',
-      phoneType: typeof phone,
       gdprConsent: gdprConsent,
       gdprConsentType: typeof gdprConsent,
       allFields: Object.keys(req.body)
@@ -91,8 +89,7 @@ async function signup(req, res) {
     logger.info('Auth signup with GDPR consent:', email);
 
     const authResult = await authService.signUp(email, password, {
-      full_name: `${name} ${surname}`.trim(),
-      phone: phone || null
+      full_name: `${name} ${surname}`.trim()
     });
 
     if (!authResult.success) {
@@ -100,7 +97,7 @@ async function signup(req, res) {
       logger.error('AuthService signUp failed:', {
         error: authResult.error,
         email: email,
-        providedData: { name, surname, phone }
+        providedData: { name, surname }
       });
 
       // Check if user already exists
@@ -134,7 +131,6 @@ async function signup(req, res) {
       username: username,
       name: firstName || '',
       surname: lastName || '',
-      phone: phone || null,
       created_at: new Date().toISOString(),
       source: 'auth_signup',
       verified: true,
@@ -155,8 +151,7 @@ async function signup(req, res) {
           email: email,
           username: username,
           name: firstName,
-          surname: lastName,
-          phone: phone
+          surname: lastName
         }
       });
       // Clean up auth user if database insert fails
