@@ -1,6 +1,8 @@
 /**
- * Authentication Controller for Car Crash Lawyer AI
- * Contains all authentication-related logic moved from index.js
+ * Authentication Controller - Car Crash Lawyer AI
+ * ✅ Pure Auth architecture - NO user_signup table writes
+ * ✅ All data in Auth metadata
+ * ✅ GDPR consent in Auth metadata
  */
 
 const crypto = require('crypto');
@@ -10,54 +12,41 @@ const logger = require('../utils/logger');
 const config = require('../config');
 const gdprService = require('../services/gdprService');
 
-// Import AuthService and Supabase client
+// Import AuthService
 const AuthService = require('../../lib/services/authService');
-const { createClient } = require('@supabase/supabase-js');
 
-// Initialize auth service and supabase
+// Initialize auth service
 let authService = null;
-let supabase = null;
 
 if (config.supabase.anonKey) {
   authService = new AuthService(config.supabase.url, config.supabase.anonKey);
-  logger.success('✅ Auth service initialized in controller');
-}
-
-if (config.supabase.url && config.supabase.serviceKey) {
-  supabase = createClient(config.supabase.url, config.supabase.serviceKey, {
-    auth: {
-      autoRefreshToken: false,
-      persistSession: false
-    }
-  });
+  logger.success('✅ Auth service initialized (ANON key only)');
 }
 
 /**
- * User Signup with GDPR consent capture
+ * User Signup with Auth Metadata Only
  * POST /api/auth/signup
+ * 
+ * Flow:
+ * 1. Create user in Supabase Auth with all metadata
+ * 2. Log GDPR consent to storage
+ * 3. Redirect to Typeform for detailed profile
+ * 4. Typeform webhook populates user_signup table
  */
 async function signup(req, res) {
   try {
-    // Log the entire request body for debugging
-    logger.info('Raw signup request body:', JSON.stringify(req.body, null, 2));
-
     const { email, password, name, surname, gdprConsent } = req.body;
 
-    // Debug: Log received fields with actual values
-    logger.info('Parsed signup fields:', {
-      email: email || 'MISSING',
-      emailType: typeof email,
-      password: password ? `[${password.length} chars]` : 'MISSING',
-      name: name || 'MISSING',
-      nameType: typeof name,
-      surname: surname || 'MISSING',
-      surnameType: typeof surname,
-      gdprConsent: gdprConsent,
-      gdprConsentType: typeof gdprConsent,
-      allFields: Object.keys(req.body)
+    logger.info('📝 Signup request received', {
+      email,
+      hasName: !!name,
+      hasSurname: !!surname,
+      gdprConsent
     });
 
-    // Validation with specific field checking
+    // ========================================
+    // VALIDATION
+    // ========================================
     const missingFields = [];
     if (!email || email.trim() === '') missingFields.push('email');
     if (!password || password.trim() === '') missingFields.push('password');
@@ -65,7 +54,7 @@ async function signup(req, res) {
     if (!surname || surname.trim() === '') missingFields.push('surname');
 
     if (missingFields.length > 0) {
-      logger.error('Missing required fields:', { missing: missingFields });
+      logger.error('❌ Missing required fields:', missingFields);
       return sendError(res, 400, `Missing required fields: ${missingFields.join(', ')}`, 'MISSING_FIELDS');
     }
 
@@ -77,28 +66,56 @@ async function signup(req, res) {
     // GDPR CONSENT VALIDATION (CRITICAL)
     // ========================================
     if (gdprConsent !== true) {
-      logger.warn('Signup attempt without GDPR consent', { email, ip: req.clientIp });
-      return sendError(res, 400, 'GDPR consent is required to create an account', 'GDPR_CONSENT_REQUIRED',
-        'You must accept our Privacy Policy and Terms of Service to proceed');
+      logger.warn('⚠️ Signup attempt without GDPR consent', { email, ip: req.clientIp });
+      return sendError(
+        res, 
+        400, 
+        'GDPR consent is required to create an account', 
+        'GDPR_CONSENT_REQUIRED',
+        'You must accept our Privacy Policy to proceed'
+      );
     }
 
     if (!authService) {
       return sendError(res, 503, 'Auth service not configured', 'AUTH_UNAVAILABLE');
     }
 
-    logger.info('Auth signup with GDPR consent:', email);
+    logger.info('🔐 Creating Auth user with metadata...');
 
+    // ========================================
+    // CREATE USER IN AUTH WITH ALL METADATA
+    // ========================================
     const authResult = await authService.signUp(email, password, {
-      full_name: `${name} ${surname}`.trim()
+      // User profile
+      full_name: `${name} ${surname}`.trim(),
+      first_name: name,
+      last_name: surname,
+
+      // GDPR consent metadata
+      gdpr_consent: true,
+      gdpr_consent_date: new Date().toISOString(),
+      gdpr_consent_ip: req.clientIp || 'unknown',
+      gdpr_consent_version: config.constants.GDPR.CURRENT_POLICY_VERSION,
+      gdpr_consent_user_agent: req.get('user-agent') || 'unknown',
+
+      // Account metadata
+      username: email.split('@')[0].replace(/[^a-zA-Z0-9]/g, '') + '_' + Math.floor(Math.random() * 1000000),
+      signup_source: 'web_signup',
+      signup_date: new Date().toISOString(),
+      account_status: 'pending_onboarding',
+
+      // Stats (to be updated over time)
+      total_incidents: 0,
+      total_transcriptions: 0,
+      last_activity: new Date().toISOString(),
+
+      // Typeform completion tracking
+      typeform_completed: false,
+      typeform_completion_date: null
     });
 
     if (!authResult.success) {
-      // Log detailed error from auth service
-      logger.error('AuthService signUp failed:', {
-        error: authResult.error,
-        email: email,
-        providedData: { name, surname }
-      });
+      logger.error('❌ Auth signup failed:', authResult.error);
 
       // Check if user already exists
       if (authResult.error && (
@@ -107,69 +124,31 @@ async function signup(req, res) {
         authResult.error.includes('already exists') ||
         authResult.error.toLowerCase().includes('duplicate')
       )) {
-        logger.info('Signup attempt with existing email:', { email });
-        return sendError(res, 409, 'User already exists. Please log in to your account.', 'USER_EXISTS');
+        logger.info('ℹ️ User already exists:', email);
+        return sendError(
+          res, 
+          409, 
+          'An account with this email already exists. Please log in instead.', 
+          'USER_EXISTS'
+        );
       }
 
       return sendError(res, 400, authResult.error, 'SIGNUP_FAILED');
     }
 
     const userId = authResult.userId;
-    const username = email.split('@')[0].replace(/[^a-zA-Z0-9]/g, '') + '_' + Math.floor(Math.random() * 1000000);
 
-    // Use provided name and surname fields
-    const firstName = name || '';
-    const lastName = surname || '';
-
-    // ========================================
-    // GDPR CONSENT CAPTURE IN DATABASE
-    // ========================================
-    const { error: insertError } = await supabase.from('user_signup').insert({
-      uid: userId,
-      create_user_id: userId,
-      email: email,
-      username: username,
-      name: firstName || '',
-      surname: lastName || '',
-      created_at: new Date().toISOString(),
-      source: 'auth_signup',
-      verified: true,
-
-      // ✅ GDPR CONSENT FIELDS
-      gdpr_consent: true,
-      gdpr_consent_date: new Date().toISOString(),
-      gdpr_consent_ip: req.clientIp || 'unknown',
-      gdpr_consent_version: config.constants.GDPR.CURRENT_POLICY_VERSION
+    logger.success('✅ Auth user created successfully', {
+      userId,
+      email
     });
 
-    if (insertError) {
-      logger.error('Error inserting user with GDPR consent:', {
-        error: insertError.message, // Log specific error message
-        details: insertError,
-        userData: {
-          uid: userId,
-          email: email,
-          username: username,
-          name: firstName,
-          surname: lastName
-        }
-      });
-      // Clean up auth user if database insert fails
-      try {
-        await authService.deleteUser(userId);
-        logger.info('Cleaned up auth user due to database insert failure', { userId });
-      } catch (cleanupError) {
-        logger.error('Failed to cleanup auth user after database insert failure:', { userId, cleanupError });
-      }
-      return sendError(res, 500, 'Failed to create user account', 'USER_CREATION_FAILED');
-    }
-
     // ========================================
-    // LOG GDPR CONSENT IN AUDIT TRAIL
+    // LOG GDPR CONSENT TO STORAGE
     // ========================================
     try {
       await gdprService.logActivity(userId, 'CONSENT_GIVEN', {
-        consent_type: config.constants.GDPR.CONSENT_TYPES.SIGNUP,
+        consent_type: 'signup',
         consent_method: 'checkbox',
         consent_version: config.constants.GDPR.CURRENT_POLICY_VERSION,
         ip_address: req.clientIp || 'unknown',
@@ -177,52 +156,45 @@ async function signup(req, res) {
         timestamp: new Date().toISOString()
       }, req);
 
-      logger.success('GDPR consent logged successfully', { userId });
+      logger.success('✅ GDPR consent logged to storage', { userId });
     } catch (auditError) {
       // Non-critical error - don't fail signup if audit log fails
-      logger.warn('GDPR audit log error (non-critical):', { userId, auditError });
+      logger.warn('⚠️ GDPR audit log error (non-critical):', auditError.message);
     }
 
-    // Generate auth_code for Typeform integration
-    const secret = process.env.TYPEFORM_SECRET || 'car-crash-lawyer-ai-secret-2024';
-    const authCodeInput = `${authResult.userId}${email}${secret}`;
-    const authCode = crypto
-      .createHash('sha256')
-      .update(authCodeInput)
-      .digest('hex')
-      .substring(0, 32);
-
-    console.log('Generated auth_code:', authCode);
-
-    // Note: user_signup record creation is handled above with GDPR consent
-
-    // Set authentication cookie
+    // ========================================
+    // SET AUTHENTICATION COOKIE
+    // ========================================
     res.cookie('access_token', authResult.session.access_token, {
       httpOnly: true,
       secure: process.env.NODE_ENV === 'production',
       sameSite: 'lax',
-      maxAge: 7 * 24 * 60 * 60 * 1000
+      maxAge: 7 * 24 * 60 * 60 * 1000 // 7 days
     });
 
-    logger.success('User signup complete with GDPR consent', {
+    logger.success('🎉 Signup complete (Auth-only)', {
       userId,
       email,
       consentVersion: config.constants.GDPR.CURRENT_POLICY_VERSION
     });
 
-    const responseData = {
+    // ========================================
+    // RETURN SUCCESS - FRONTEND REDIRECTS TO TYPEFORM
+    // ========================================
+    res.json({
       success: true,
       user: {
         id: userId,
         email: email
       },
-      authCode: authCode
-    };
+      message: 'Account created successfully. Complete your profile to continue.'
+    });
 
-    logger.info('Sending signup response:', { success: true, userId, email });
-    res.json(responseData);
   } catch (error) {
-    logger.error('Unexpected signup error:', { error: error.message, stack: error.stack });
+    logger.error('💥 Unexpected signup error:', {
+      error: error.message,
+      stack: error.stack
+    });
     sendError(res, 500, 'Server error', 'INTERNAL_ERROR');
   }
 }
@@ -243,24 +215,21 @@ async function login(req, res) {
       return sendError(res, 503, 'Auth service not configured', 'AUTH_UNAVAILABLE');
     }
 
+    logger.info('🔐 Login attempt', { email });
+
     const authResult = await authService.signIn(email, password);
 
     if (!authResult.success) {
-      // Log failed login attempt
-      logger.warn('Failed login attempt:', { email, error: authResult.error });
-      return sendError(res, 401, 'Invalid credentials', 'INVALID_CREDENTIALS');
+      logger.warn('❌ Login failed', { email, error: authResult.error });
+      return sendError(res, 401, 'Invalid email or password', 'INVALID_CREDENTIALS');
     }
 
-    const { data: userData } = await supabase
-      .from('user_signup')
-      .select('*')
-      .eq('uid', authResult.userId)
-      .single();
+    logger.success('✅ Login successful', {
+      userId: authResult.userId,
+      email
+    });
 
-    // Log successful login
-    logger.info('User login successful', { userId: authResult.userId, email: email });
-
-    const cookieMaxAge = rememberMe ? 7 * 24 * 60 * 60 * 1000 : 24 * 60 * 60 * 1000;
+    const cookieMaxAge = rememberMe ? 30 * 24 * 60 * 60 * 1000 : 7 * 24 * 60 * 60 * 1000;
 
     res.cookie('access_token', authResult.session.access_token, {
       httpOnly: true,
@@ -269,20 +238,28 @@ async function login(req, res) {
       maxAge: cookieMaxAge
     });
 
+    // Get user metadata from auth
+    const metadata = authResult.user.user_metadata || {};
+
     res.json({
       success: true,
       user: {
         id: authResult.userId,
         email: authResult.user.email,
-        username: userData?.username,
-        fullName: `${userData?.name || ''} ${userData?.surname || ''}`.trim()
+        username: metadata.username,
+        fullName: metadata.full_name || `${metadata.first_name || ''} ${metadata.last_name || ''}`.trim(),
+        typeformCompleted: metadata.typeform_completed || false
       },
       session: {
         access_token: authResult.session.access_token
       }
     });
+
   } catch (error) {
-    logger.error('Login error:', { error: error.message, stack: error.stack });
+    logger.error('💥 Login error:', {
+      error: error.message,
+      stack: error.stack
+    });
     sendError(res, 500, 'Server error', 'INTERNAL_ERROR');
   }
 }
@@ -293,17 +270,26 @@ async function login(req, res) {
  */
 async function logout(req, res) {
   try {
-    // Clear the session from Supabase Auth if authService is available
-    if (authService) {
-      await authService.signOut();
-      logger.info('User signed out from Auth service');
-    }
     // Clear the authentication cookie
     res.clearCookie('access_token');
-    logger.info('Access token cookie cleared');
-    res.json({ success: true });
+
+    // Sign out from auth service if available
+    if (authService) {
+      await authService.signOut();
+    }
+
+    logger.info('✅ User logged out');
+
+    res.json({ 
+      success: true,
+      message: 'Logged out successfully'
+    });
+
   } catch (error) {
-    logger.error('Logout error:', { error: error.message, stack: error.stack });
+    logger.error('💥 Logout error:', {
+      error: error.message,
+      stack: error.stack
+    });
     sendError(res, 500, 'Logout failed', 'LOGOUT_FAILED');
   }
 }
@@ -315,44 +301,37 @@ async function logout(req, res) {
 async function checkSession(req, res) {
   try {
     if (!req.user) {
-      // No user object attached to request, session is invalid or expired
-      return res.json({ authenticated: false, user: null });
+      return res.json({ 
+        authenticated: false, 
+        user: null 
+      });
     }
 
-    // Fetch user details from our user_signup table to ensure consistency
-    const { data: userData, error: userError } = await supabase
-      .from('user_signup')
-      .select('*')
-      .eq('uid', req.userId)
-      .single();
+    const metadata = req.user.user_metadata || {};
 
-    if (userError) {
-      logger.error('Error fetching user data during session check:', { userId: req.userId, error: userError.message });
-      // If user data is not found in our table, consider session invalid
-      return res.json({ authenticated: false, user: null });
-    }
-
-    // If user data is found, session is considered valid
     res.json({
       authenticated: true,
       user: {
         id: req.userId,
         email: req.user.email,
-        username: userData?.username,
-        fullName: `${userData?.name || ''} ${userData?.surname || ''}`.trim()
+        username: metadata.username,
+        fullName: metadata.full_name || `${metadata.first_name || ''} ${metadata.last_name || ''}`.trim(),
+        typeformCompleted: metadata.typeform_completed || false,
+        accountStatus: metadata.account_status || 'active'
       }
     });
+
   } catch (error) {
-    logger.error('Session check error:', { error: error.message, stack: error.stack });
-    // In case of unexpected errors, assume not authenticated
-    res.json({ authenticated: false, user: null });
+    logger.error('💥 Session check error:', {
+      error: error.message,
+      stack: error.stack
+    });
+    res.json({ 
+      authenticated: false, 
+      user: null 
+    });
   }
 }
-
-// The following line is a placeholder for potential JavaScript redirects in the frontend.
-// In a real-world scenario, this would be handled within your frontend JavaScript files,
-// not in the backend controller. If such redirects existed, they would be updated as follows:
-// window.location.href = '/signup-auth.html';
 
 module.exports = {
   signup,
