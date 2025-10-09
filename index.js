@@ -23,9 +23,9 @@ const config = {
   // Application settings
   app: {
     name: 'Car Crash Lawyer AI',
-    port: process.env.PORT || 3000,
+    port: process.env.PORT || 5000,
     env: process.env.NODE_ENV || 'development',
-    baseUrl: process.env.BASE_URL || 'http://localhost:3000'
+    baseUrl: process.env.BASE_URL || 'http://localhost:5000'
   },
 
   // Supabase configuration - ANON KEY ONLY
