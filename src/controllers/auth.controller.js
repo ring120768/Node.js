@@ -18,18 +18,34 @@ const { createClient } = require('@supabase/supabase-js');
 let authService = null;
 let supabase = null;
 
-if (config.supabase.anonKey) {
-  authService = new AuthService(config.supabase.url, config.supabase.anonKey);
-  logger.success('✅ Auth service initialized in controller');
+// Debug: Log config values
+console.log('🔍 Auth Controller Config Check:', {
+  hasSupabaseUrl: !!config.supabase.url,
+  hasAnonKey: !!config.supabase.anonKey,
+  hasServiceKey: !!config.supabase.serviceKey
+});
+
+if (config.supabase.url && config.supabase.anonKey) {
+  try {
+    authService = new AuthService(config.supabase.url, config.supabase.anonKey);
+    logger.success('✅ Auth service initialized in controller');
+  } catch (error) {
+    logger.error('❌ Failed to initialize auth service:', error.message);
+  }
 }
 
 if (config.supabase.url && config.supabase.serviceKey) {
-  supabase = createClient(config.supabase.url, config.supabase.serviceKey, {
-    auth: {
-      autoRefreshToken: false,
-      persistSession: false
-    }
-  });
+  try {
+    supabase = createClient(config.supabase.url, config.supabase.serviceKey, {
+      auth: {
+        autoRefreshToken: false,
+        persistSession: false
+      }
+    });
+    logger.success('✅ Supabase client initialized in controller');
+  } catch (error) {
+    logger.error('❌ Failed to initialize Supabase client:', error.message);
+  }
 }
 
 /**
@@ -38,6 +54,16 @@ if (config.supabase.url && config.supabase.serviceKey) {
  */
 async function signup(req, res) {
   try {
+    // Log detailed debugging info at start
+    logger.info('🔵 Signup attempt started:', {
+      timestamp: new Date().toISOString(),
+      ip: req.clientIp || req.ip,
+      userAgent: req.get('user-agent')?.substring(0, 100),
+      hasAuthService: !!authService,
+      hasSupabaseClient: !!supabase,
+      bodyKeys: Object.keys(req.body || {})
+    });
+
     // Log the entire request body for debugging
     logger.info('🔵 Raw signup request body:', JSON.stringify(req.body, null, 2));
 
@@ -79,7 +105,23 @@ async function signup(req, res) {
     }
 
     if (!authService) {
-      return sendError(res, 503, 'Auth service not configured', 'AUTH_UNAVAILABLE');
+      logger.error('❌ Auth service not available during signup attempt:', {
+        email,
+        hasConfig: !!config,
+        hasSupabaseUrl: !!config?.supabase?.url,
+        hasAnonKey: !!config?.supabase?.anonKey
+      });
+      return sendError(res, 503, 'Authentication service unavailable. Please try again later.', 'AUTH_UNAVAILABLE');
+    }
+
+    if (!supabase) {
+      logger.error('❌ Supabase client not available during signup attempt:', {
+        email,
+        hasConfig: !!config,
+        hasSupabaseUrl: !!config?.supabase?.url,
+        hasServiceKey: !!config?.supabase?.serviceKey
+      });
+      return sendError(res, 503, 'Database service unavailable. Please try again later.', 'DATABASE_UNAVAILABLE');
     }
 
     logger.info('🟢 Starting auth signup with GDPR consent:', email);
@@ -181,7 +223,10 @@ async function signup(req, res) {
         errorDetails: insertError.details,
         errorHint: insertError.hint,
         fullError: JSON.stringify(insertError, null, 2),
-        attemptedFields: Object.keys(insertData)
+        attemptedFields: Object.keys(insertData),
+        userId: userId,
+        email: email,
+        timestamp: new Date().toISOString()
       });
 
       // Clean up auth user if database insert fails
