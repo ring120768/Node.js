@@ -23,7 +23,7 @@ localPort = 5000
 externalPort = 80
 
 [workflows]
-runButton = "Start Server"
+runButton = "Clean Server Start"
 
 [[workflows.workflow]]
 name = "Run Main Server"
@@ -84,6 +84,15 @@ args = "node run-tests.js"
 
 [[workflows.workflow]]
 name = "Start Server"
+author = 43588325
+mode = "sequential"
+
+[[workflows.workflow.tasks]]
+task = "shell.exec"
+args = "node index.js"
+
+[[workflows.workflow]]
+name = "Clean Server Start"
 author = 43588325
 mode = "sequential"
 
