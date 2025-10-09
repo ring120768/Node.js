@@ -351,32 +351,17 @@
                 <div class="error-message" id="passwordError"></div>
             </div>
 
-            <div class="name-row">
-                <div class="form-group">
-                    <label for="name">Name *</label>
-                    <input 
-                        type="text" 
-                        id="name" 
-                        name="name" 
-                        required
-                        placeholder="John"
-                        autocomplete="given-name"
-                    >
-                    <div class="error-message" id="nameError"></div>
-                </div>
-
-                <div class="form-group">
-                    <label for="surname">Surname *</label>
-                    <input 
-                        type="text" 
-                        id="surname" 
-                        name="surname" 
-                        required
-                        placeholder="Doe"
-                        autocomplete="family-name"
-                    >
-                    <div class="error-message" id="surnameError"></div>
-                </div>
+            <div class="form-group">
+                <label for="fullName">Full Name *</label>
+                <input 
+                    type="text" 
+                    id="fullName" 
+                    name="fullName" 
+                    required
+                    placeholder="John Doe"
+                    autocomplete="name"
+                >
+                <div class="error-message" id="fullNameError"></div>
             </div>
 
             <!-- GDPR Consent Checkbox -->
@@ -414,8 +399,7 @@
         const alertBox = document.getElementById('alertBox');
         const emailInput = document.getElementById('email');
         const passwordInput = document.getElementById('password');
-        const nameInput = document.getElementById('name');
-        const surnameInput = document.getElementById('surname');
+        const fullNameInput = document.getElementById('fullName'); // Changed from nameInput and surnameInput
         const gdprConsentCheckbox = document.getElementById('gdprConsent');
         const gdprConsentBox = document.getElementById('gdprConsentBox');
 
@@ -486,7 +470,7 @@
 
         // Clear all errors
         function clearAllErrors() {
-            ['email', 'password', 'name', 'surname', 'gdprConsent'].forEach(clearError);
+            ['email', 'password', 'fullName', 'gdprConsent'].forEach(clearError);
         }
 
         // Show alert
@@ -500,7 +484,7 @@
         }
 
         // Real-time input validation
-        [emailInput, passwordInput, nameInput, surnameInput].forEach(input => {
+        [emailInput, passwordInput, fullNameInput].forEach(input => {
             input.addEventListener('input', function() {
                 clearError(this.id);
             });
@@ -515,7 +499,7 @@
             console.log('🎯 Redirecting to Typeform with user data');
             console.log('📋 User ID:', userData.id);
             console.log('📧 Email:', userData.email);
-            console.log('👤 Name:', userData.name, userData.surname);
+            console.log('👤 Full Name:', userData.name); // Now directly using 'name' for full name
             console.log('🔐 Auth Code:', authCode);
 
             const typeformBaseUrl = 'https://form.typeform.com/to/b03aFxEO';
@@ -528,12 +512,9 @@
                 email: userData.email
             });
 
-            // Add name fields if available (for pre-filling)
+            // Add full name if available (for pre-filling)
             if (userData.name) {
-                queryParams.set('first_name', userData.name);
-            }
-            if (userData.surname) {
-                queryParams.set('last_name', userData.surname);
+                queryParams.set('name', userData.name); // Using 'name' for full name
             }
 
             // Build final URL with QUERY parameters (not hash)
@@ -546,8 +527,7 @@
             const storageData = {
                 userId: userData.id,
                 userEmail: userData.email,
-                userName: userData.name,
-                userSurname: userData.surname,
+                userName: userData.name, // Storing the full name
                 authCode: authCode,
                 signupTimestamp: new Date().toISOString()
             };
@@ -581,8 +561,7 @@
             // Form data for validation and Typeform redirect
             const formData = {
                 ...serverData,
-                name: nameInput.value.trim(),
-                surname: surnameInput.value.trim()
+                fullName: fullNameInput.value.trim() // Use fullName from the single input
             };
 
             console.log('✅ Form data prepared (password redacted)');
@@ -606,13 +585,8 @@
                 hasErrors = true;
             }
 
-            if (!formData.name) {
-                showError('name', 'First name is required');
-                hasErrors = true;
-            }
-
-            if (!formData.surname) {
-                showError('surname', 'Last name is required');
+            if (!formData.fullName) { // Validate the single fullName field
+                showError('fullName', 'Full name is required');
                 hasErrors = true;
             }
 
@@ -664,11 +638,10 @@
 
                     showAlert('Account created successfully! Redirecting to onboarding...', 'success');
 
-                    // Store name/surname for Typeform redirect
+                    // Store full name for Typeform redirect
                     const userForTypeform = {
                         ...data.user,
-                        name: formData.name,
-                        surname: formData.surname
+                        name: formData.fullName // Use the fullName for the 'name' field in user object
                     };
 
                     // IMPORTANT: Pass the server-generated authCode and full name data
