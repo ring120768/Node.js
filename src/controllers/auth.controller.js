@@ -357,12 +357,6 @@ async function login(req, res) {
       return sendError(res, 401, 'Invalid credentials', 'INVALID_CREDENTIALS');
     }
 
-    const { data: userData } = await supabase
-      .from('user_signup')
-      .select('*')
-      .eq('user_id', authResult.userId)
-      .single();
-
     logger.info('User login successful', { userId: authResult.userId, email: email });
 
     const cookieMaxAge = rememberMe ? 7 * 24 * 60 * 60 * 1000 : 24 * 60 * 60 * 1000;
@@ -379,8 +373,8 @@ async function login(req, res) {
       user: {
         id: authResult.userId,
         email: authResult.user.email,
-        fullName: `${userData?.name || ''} ${userData?.surname || ''}`.trim(),
-        currentStep: userData?.current_step || 1
+        fullName: '', // Will be populated from Typeform data
+        currentStep: 1
       },
       session: {
         access_token: authResult.session.access_token
@@ -421,27 +415,13 @@ async function checkSession(req, res) {
       return res.json({ authenticated: false, user: null });
     }
 
-    const { data: userData, error: userError } = await supabase
-      .from('user_signup')
-      .select('*')
-      .eq('user_id', req.userId)
-      .single();
-
-    if (userError) {
-      logger.error('Error fetching user data during session check:', { 
-        userId: req.userId, 
-        error: userError.message 
-      });
-      return res.json({ authenticated: false, user: null });
-    }
-
     res.json({
       authenticated: true,
       user: {
         id: req.userId,
         email: req.user.email,
-        fullName: `${userData?.name || ''} ${userData?.surname || ''}`.trim(),
-        currentStep: userData?.current_step || 1
+        fullName: '', // Will be populated from Typeform data
+        currentStep: 1
       }
     });
   } catch (error) {
