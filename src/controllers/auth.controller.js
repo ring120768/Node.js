@@ -125,18 +125,14 @@ async function signup(req, res) {
     // Log the entire request body for debugging
     logger.info('🔵 Raw signup request body:', JSON.stringify(req.body, null, 2));
 
-    const { email, password, name, surname, gdprConsent } = req.body;
+    const { email, password, gdprConsent } = req.body;
 
     // Log extracted values for debugging
     logger.info('🔵 Extracted signup values:', {
       email: typeof email,
       password: typeof password,
-      name: typeof name,
-      surname: typeof surname,
       gdprConsent: typeof gdprConsent,
       emailValue: email,
-      nameValue: name,
-      surnameValue: surname,
       gdprConsentValue: gdprConsent
     });
 
@@ -144,8 +140,6 @@ async function signup(req, res) {
     logger.info('🔵 Parsed signup fields:', {
       email: email || 'MISSING',
       password: password ? `[${password.length} chars]` : 'MISSING',
-      name: name || 'MISSING',
-      surname: surname || 'MISSING',
       gdprConsent: gdprConsent,
       allFields: Object.keys(req.body)
     });
@@ -154,8 +148,6 @@ async function signup(req, res) {
     const missingFields = [];
     if (!email || email.trim() === '') missingFields.push('email');
     if (!password || password.trim() === '') missingFields.push('password');
-    if (!name || name.trim() === '') missingFields.push('name');
-    if (!surname || surname.trim() === '') missingFields.push('surname');
 
     if (missingFields.length > 0) {
       logger.error('❌ Missing required fields:', { missing: missingFields });
@@ -205,11 +197,9 @@ async function signup(req, res) {
       supabaseType: typeof supabase
     });
 
-    // Create auth user
+    // Create auth user (name will be added later via Typeform)
     logger.info('🔵 Calling authService.signUp...');
-    const authResult = await authService.signUp(email, password, {
-      full_name: `${name} ${surname}`.trim()
-    });
+    const authResult = await authService.signUp(email, password);
 
     logger.info('🔵 Auth signup result:', {
       success: authResult?.success,
@@ -242,151 +232,25 @@ async function signup(req, res) {
     logger.success('✅ Auth user created successfully:', { userId, email });
 
     // ========================================
-    // DATABASE INSERT WITH SCHEMA-ACCURATE FIELDS
+    // SIMPLIFIED SIGNUP FLOW
+    // User data will be collected and stored via Typeform webhook
+    // We only need to create the auth user here
     // ========================================
 
-    const insertData = {
-      // PRIMARY KEY: Supabase Auth UUID (NOT NULL)
-      user_id: userId,
-
-      // LEGACY FIELD: Redundant text field (for backwards compatibility)
-      create_user_id: userId,
-
-      // BASIC USER INFO (from signup form)
-      email: email,
-      name: name || '',
-      surname: surname || '',
-      mobile: null,  // Not collected during signup, Typeform will fill this later
-
-      // ONBOARDING PROGRESS TRACKING
-      // Step 1: Account created (Supabase Auth)
-      // Step 2: Typeform in progress
-      // Step 3: Fully onboarded (Typeform completed)
-      current_step: 1,
-
-      // TIMESTAMPS
-      created_at: new Date().toISOString(),
-      updated_at: new Date().toISOString(),
-
-      // GDPR CONSENT FIELDS (CRITICAL FOR COMPLIANCE)
-      gdpr_consent: true,
-      gdpr_consent_date: new Date().toISOString(),
-      gdpr_consent_ip: req.clientIp || 'unknown',
-      gdpr_consent_version: 'v1.0',  // Matches schema default
-
-      // ACCOUNT STATUS
-      account_status: 'active',  // Matches schema default
-
-      // DATA SOURCE TRACKING
-      source: 'auth_signup',
-
-      // CONSENT TRACKING (duplicate fields for legacy compatibility)
-      consent_given: true,
-      consent_date: new Date().toISOString(),
-      consent_source: 'signup_form',
-
-      // FEATURE FLAGS
-      voice_transcription: true,  // Default enabled
-      legal_support: false,       // Default disabled
-      legal_case_active: false,   // Default disabled
-
-      // PROVIDER TYPE
-      provider_type: 'email'  // Matches schema default
-    };
-
-    logger.info('🔵 Attempting database insert with schema-accurate data:', {
-      user_id: insertData.user_id,
-      email: insertData.email,
-      name: insertData.name,
-      surname: insertData.surname,
-      mobile: insertData.mobile,
-      current_step: insertData.current_step,
-      gdpr_consent: insertData.gdpr_consent,
-      source: insertData.source
-    });
-
-    logger.info('🔵 Full insert data object:', JSON.stringify(insertData, null, 2));
-
-    let insertedData, insertError;
-    try {
-      logger.info('🔵 Executing Supabase insert...');
-      const result = await supabase
-        .from('user_signup')
-        .insert(insertData)
-        .select();
-
-      insertedData = result.data;
-      insertError = result.error;
-
-      logger.info('🔵 Database insert completed:', {
-        hasError: !!insertError,
-        hasData: !!insertedData,
-        dataLength: insertedData?.length || 0
-      });
-    } catch (dbError) {
-      logger.error('❌ Database insert exception:', {
-        message: dbError.message,
-        stack: dbError.stack?.substring(0, 500),
-        name: dbError.name
-      });
-      insertError = dbError;
-    }
-
-    if (insertError) {
-      logger.error('❌ DATABASE INSERT FAILED - Full Error Details:', {
-        errorMessage: insertError.message,
-        errorCode: insertError.code,
-        errorDetails: insertError.details,
-        errorHint: insertError.hint,
-        fullError: JSON.stringify(insertError, null, 2),
-        attemptedFields: Object.keys(insertData),
-        userId: userId,
-        email: email,
-        timestamp: new Date().toISOString()
-      });
-
-      // Clean up auth user if database insert fails
-      try {
-        await authService.deleteUser(userId);
-        logger.info('🧹 Cleaned up auth user due to database insert failure', { userId });
-      } catch (cleanupError) {
-        logger.error('❌ Failed to cleanup auth user after database insert failure:', { 
-          userId, 
-          cleanupError: cleanupError.message 
-        });
-      }
-
-      // Return detailed error to help debug
-      return sendError(
-        res, 
-        500, 
-        `Failed to create user account: ${insertError.message}`, 
-        'USER_CREATION_FAILED',
-        insertError.hint || 'Please check server logs for details'
-      );
-    }
-
-    logger.success('✅ User record inserted into database successfully:', { 
-      userId, 
-      recordId: insertedData?.[0]?.id,
-      insertedRecordCount: insertedData?.length,
-      currentStep: insertedData?.[0]?.current_step
-    });
-
     // ========================================
-    // LOG GDPR CONSENT IN AUDIT TRAIL
+    // LOG GDPR CONSENT IN AUDIT TRAIL (SIMPLIFIED)
+    // Detailed user data will be handled by Typeform webhook
     // ========================================
     try {
-      await gdprService.logActivity(userId, 'CONSENT_GIVEN', {
-        consent_type: config.constants.GDPR.CONSENT_TYPES.SIGNUP,
-        consent_method: 'checkbox',
-        consent_version: 'v1.0',
+      await gdprService.logActivity(userId, 'AUTH_SIGNUP', {
+        consent_given: true,
         ip_address: req.clientIp || 'unknown',
         user_agent: req.get('user-agent') || 'unknown',
-        timestamp: new Date().toISOString()
+        timestamp: new Date().toISOString(),
+        note: 'Auth user created, full profile via Typeform'
       }, req);
 
-      logger.success('✅ GDPR consent logged successfully', { userId });
+      logger.success('✅ GDPR consent logged for auth signup', { userId });
     } catch (auditError) {
       // Non-critical error - don't fail signup if audit log fails
       logger.warn('⚠️ GDPR audit log error (non-critical):', { 
@@ -414,11 +278,10 @@ async function signup(req, res) {
       maxAge: 7 * 24 * 60 * 60 * 1000
     });
 
-    logger.success('✅ User signup complete with GDPR consent', {
+    logger.success('✅ Simplified signup complete - auth user created', {
       userId,
       email,
-      consentVersion: 'v1.0',
-      currentStep: 1
+      note: 'Full profile will be created by Typeform webhook'
     });
 
     const responseData = {

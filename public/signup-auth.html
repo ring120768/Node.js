@@ -486,7 +486,7 @@
 
         // Clear all errors
         function clearAllErrors() {
-            ['email', 'password', 'name', 'surname', 'gdprConsent'].forEach(clearError);
+            ['email', 'password', 'gdprConsent'].forEach(clearError);
         }
 
         // Show alert
@@ -500,7 +500,7 @@
         }
 
         // Real-time input validation
-        [emailInput, passwordInput, nameInput, surnameInput].forEach(input => {
+        [emailInput, passwordInput].forEach(input => {
             input.addEventListener('input', function() {
                 clearError(this.id);
             });
@@ -677,14 +677,14 @@
                     message: error.message,
                     stack: error.stack
                 });
-                
+
                 let errorMessage = 'Network error. Please check your connection and try again.';
                 if (error.message.includes('Invalid server response')) {
                     errorMessage = 'Server returned invalid response. Please try again.';
                 } else if (error.message.includes('Failed to fetch')) {
                     errorMessage = 'Cannot connect to server. Please check your connection.';
                 }
-                
+
                 showAlert(errorMessage, 'error');
                 submitBtn.disabled = false;
                 submitBtn.classList.remove('loading');
