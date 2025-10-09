@@ -1,6 +1,8 @@
 /**
  * Authentication Controller for Car Crash Lawyer AI
  * Contains all authentication-related logic moved from index.js
+ * 
+ * UPDATED: Now includes current_step column for signup flow tracking
  */
 
 const crypto = require('crypto');
@@ -68,7 +70,7 @@ if (config?.supabase?.url && config?.supabase?.serviceKey) {
 async function signup(req, res) {
   // Ensure we always send JSON responses
   res.setHeader('Content-Type', 'application/json');
-  
+
   try {
     logger.info('🔵 Signup endpoint hit:', {
       method: req.method,
@@ -106,8 +108,7 @@ async function signup(req, res) {
         code: 'EMPTY_BODY'
       });
     }
-  
-  try {
+
     // Log detailed debugging info at start
     logger.info('🔵 Signup attempt started:', {
       timestamp: new Date().toISOString(),
@@ -121,28 +122,8 @@ async function signup(req, res) {
       url: req.url
     });
 
-    // Check if request body exists
-    if (!req.body || Object.keys(req.body).length === 0) {
-      logger.error('❌ Empty request body received');
-      return res.status(400).json({
-        success: false,
-        error: 'Request body is empty or malformed',
-        code: 'EMPTY_BODY'
-      });
-    }
-
     // Log the entire request body for debugging
     logger.info('🔵 Raw signup request body:', JSON.stringify(req.body, null, 2));
-
-    // Add validation for request body structure
-    if (typeof req.body !== 'object') {
-      logger.error('❌ Request body is not an object:', typeof req.body);
-      return res.status(400).json({
-        success: false,
-        error: 'Invalid request format',
-        code: 'INVALID_REQUEST_FORMAT'
-      });
-    }
 
     const { email, password, name, surname, gdprConsent } = req.body;
 
@@ -277,6 +258,12 @@ async function signup(req, res) {
       surname: surname || '',
       mobile: null,  // Not collected during signup, Typeform will fill this later
 
+      // ONBOARDING PROGRESS TRACKING
+      // Step 1: Account created (Supabase Auth)
+      // Step 2: Typeform in progress
+      // Step 3: Fully onboarded (Typeform completed)
+      current_step: 1,
+
       // TIMESTAMPS
       created_at: new Date().toISOString(),
       updated_at: new Date().toISOString(),
@@ -313,6 +300,7 @@ async function signup(req, res) {
       name: insertData.name,
       surname: insertData.surname,
       mobile: insertData.mobile,
+      current_step: insertData.current_step,
       gdpr_consent: insertData.gdpr_consent,
       source: insertData.source
     });
@@ -326,10 +314,10 @@ async function signup(req, res) {
         .from('user_signup')
         .insert(insertData)
         .select();
-      
+
       insertedData = result.data;
       insertError = result.error;
-      
+
       logger.info('🔵 Database insert completed:', {
         hasError: !!insertError,
         hasData: !!insertedData,
@@ -381,7 +369,8 @@ async function signup(req, res) {
     logger.success('✅ User record inserted into database successfully:', { 
       userId, 
       recordId: insertedData?.[0]?.id,
-      insertedRecordCount: insertedData?.length 
+      insertedRecordCount: insertedData?.length,
+      currentStep: insertedData?.[0]?.current_step
     });
 
     // ========================================
@@ -428,7 +417,8 @@ async function signup(req, res) {
     logger.success('✅ User signup complete with GDPR consent', {
       userId,
       email,
-      consentVersion: 'v1.0'
+      consentVersion: 'v1.0',
+      currentStep: 1
     });
 
     const responseData = {
@@ -441,20 +431,26 @@ async function signup(req, res) {
     };
 
     logger.info('📤 Sending signup response:', { success: true, userId, email });
-    res.json(responseData);
+    
+    // Ensure proper JSON response with status code
+    res.status(200).json(responseData);
   } catch (error) {
     logger.error('❌ Unexpected signup error:', { 
       error: error.message, 
-      stack: error.stack?.substring(0, 200),
-      timestamp: new Date().toISOString()
+      stack: error.stack?.substring(0, 500),
+      timestamp: new Date().toISOString(),
+      url: req.url,
+      method: req.method,
+      body: JSON.stringify(req.body)
     });
-    
+
     // Ensure JSON response even in unexpected errors
     if (!res.headersSent) {
-      return res.status(500).json({
+      res.status(500).json({
         success: false,
         error: 'Internal server error. Please try again later.',
-        code: 'INTERNAL_ERROR'
+        code: 'INTERNAL_ERROR',
+        timestamp: new Date().toISOString()
       });
     }
   }
@@ -505,7 +501,8 @@ async function login(req, res) {
       user: {
         id: authResult.userId,
         email: authResult.user.email,
-        fullName: `${userData?.name || ''} ${userData?.surname || ''}`.trim()
+        fullName: `${userData?.name || ''} ${userData?.surname || ''}`.trim(),
+        currentStep: userData?.current_step || 1
       },
       session: {
         access_token: authResult.session.access_token
@@ -565,7 +562,8 @@ async function checkSession(req, res) {
       user: {
         id: req.userId,
         email: req.user.email,
-        fullName: `${userData?.name || ''} ${userData?.surname || ''}`.trim()
+        fullName: `${userData?.name || ''} ${userData?.surname || ''}`.trim(),
+        currentStep: userData?.current_step || 1
       }
     });
   } catch (error) {

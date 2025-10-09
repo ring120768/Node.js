@@ -626,12 +626,21 @@
                     body: JSON.stringify(formData)
                 });
 
-                const data = await response.json();
+                let data;
+                try {
+                    data = await response.json();
+                } catch (parseError) {
+                    console.error('❌ Failed to parse response as JSON:', parseError);
+                    console.log('Raw response text:', await response.text());
+                    throw new Error('Invalid server response format');
+                }
+
                 console.log('📥 Signup response received');
                 console.log('Status:', response.status);
-                console.log('Success:', data.success);
+                console.log('Success:', data?.success);
+                console.log('Full response:', data);
 
-                if (response.ok && data.success) {
+                if (response.ok && data?.success) {
                     console.log('✅ Signup successful!');
                     console.log('👤 User ID:', data.user?.id);
                     console.log('🔐 Auth Code received:', data.authCode ? 'YES' : 'NO');
@@ -663,7 +672,20 @@
                 }
             } catch (error) {
                 console.error('❌ Network error during signup:', error);
-                showAlert('Network error. Please check your connection and try again.', 'error');
+                console.error('Error details:', {
+                    name: error.name,
+                    message: error.message,
+                    stack: error.stack
+                });
+                
+                let errorMessage = 'Network error. Please check your connection and try again.';
+                if (error.message.includes('Invalid server response')) {
+                    errorMessage = 'Server returned invalid response. Please try again.';
+                } else if (error.message.includes('Failed to fetch')) {
+                    errorMessage = 'Cannot connect to server. Please check your connection.';
+                }
+                
+                showAlert(errorMessage, 'error');
                 submitBtn.disabled = false;
                 submitBtn.classList.remove('loading');
             }
