@@ -49,7 +49,7 @@ server.listen(PORT, '0.0.0.0', () => {
   logger.info(`   Zapier Webhooks: ${webhookStatus ? '✅ Configured' : '❌ Not configured'}`);
   
   // DVLA API
-  const dvlaStatus = process.env.DVLA_API_KEY;
+  const dvlaStatus = config.dvla.enabled;
   logger.info(`   DVLA API: ${dvlaStatus ? '✅ Configured' : '❌ Not configured'}`);
   
   // Stripe

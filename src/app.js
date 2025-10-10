@@ -233,7 +233,7 @@ function createApp() {
     }
 
     // Test DVLA if configured
-    if (process.env.DVLA_API_KEY) {
+    if (config.dvla.apiKey) {
       try {
         const axios = require('axios');
         // Test with a dummy request to check API key validity
@@ -241,7 +241,7 @@ function createApp() {
           { registrationNumber: 'TEST123' },
           {
             headers: {
-              'x-api-key': process.env.DVLA_API_KEY,
+              'x-api-key': config.dvla.apiKey,
               'Content-Type': 'application/json'
             },
             timeout: 5000

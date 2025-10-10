@@ -86,6 +86,14 @@ const config = {
   },
 
   /**
+   * DVLA API configuration
+   */
+  dvla: {
+    apiKey: process.env.DVLA_API_KEY || process.env.DVLA_API_KEY_LIVE,
+    enabled: !!(process.env.DVLA_API_KEY || process.env.DVLA_API_KEY_LIVE)
+  },
+
+  /**
    * Application constants
    */
   constants: constants

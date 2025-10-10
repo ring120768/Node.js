@@ -232,7 +232,7 @@ async function getHealth(req, res) {
     services.zapier = !!config.webhook.apiKey;
 
     // Check DVLA API key
-    services.dvla = !!process.env.DVLA_API_KEY;
+    services.dvla = !!config.dvla.apiKey;
 
     // Check Stripe keys
     services.stripe = !!(process.env.STRIPE_SECRET_KEY || process.env.STRIPE_PUBLISHABLE_KEY);
