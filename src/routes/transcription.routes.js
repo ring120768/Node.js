@@ -13,12 +13,9 @@ const CONSTANTS = config.constants;
 
 // Import controller functions
 const {
-  transcribe,
-  getStatus,
-  updateTranscription,
-  saveTranscription,
-  getLatestTranscription,
-  getAllTranscriptions
+  transcribeAudio,
+  getTranscriptionHistory,
+  getTranscription
 } = require('../controllers/transcription.controller');
 
 const router = express.Router();
@@ -49,50 +46,22 @@ router.use(strictLimiter);
 /**
  * POST /api/transcription/transcribe
  * Upload audio file for transcription via Whisper API
- * Requires: audio file, create_user_id
- * Optional: incident_report_id
+ * Requires: audio file, authenticated user
  */
-router.post('/transcribe', upload.single('audio'), transcribe);
+router.post('/transcribe', upload.single('audio'), transcribeAudio);
 
 /**
- * GET /api/transcription/status/:queueId
- * Check transcription processing status
- * Returns: status, transcription text, error (if any)
+ * GET /api/transcription/history
+ * Get transcription history for authenticated user
+ * Returns: list of transcriptions from storage
  */
-router.get('/status/:queueId', getStatus);
+router.get('/history', getTranscriptionHistory);
 
 /**
- * POST /api/transcription/update
- * Update/edit transcription text manually
- * Requires: userId, transcription text
- * Optional: queueId for WebSocket updates
- * GDPR: Requires consent check
+ * GET /api/transcription/:transcriptionId
+ * Get specific transcription by ID for authenticated user
+ * Returns: transcription data
  */
-router.post('/update', checkGDPRConsent, updateTranscription);
-
-/**
- * POST /api/transcription/save
- * Save transcription data to database
- * Requires: userId, transcription text
- * Optional: incidentId, audioUrl, duration
- * GDPR: Requires consent check
- */
-router.post('/save', checkGDPRConsent, saveTranscription);
-
-/**
- * GET /api/transcription/user/:userId/latest
- * Get latest transcription for a user
- * Returns: transcription data with AI summary
- * GDPR: Logs data access
- */
-router.get('/user/:userId/latest', getLatestTranscription);
-
-/**
- * GET /api/transcription/user/:userId/all
- * Get all transcriptions for a user with pagination
- * Query params: limit, offset, includeSummary
- * GDPR: Logs data access
- */
-router.get('/user/:userId/all', getAllTranscriptions);
+router.get('/:transcriptionId', getTranscription);
 
 module.exports = router;
