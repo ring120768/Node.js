@@ -61,7 +61,8 @@ const config = {
    * Webhook and external API configuration
    */
   webhook: {
-    apiKey: process.env.ZAPIER_SHARED_KEY || process.env.WEBHOOK_API_KEY
+    apiKey: process.env.WEBHOOK_API_KEY || process.env.TYPEFORM_X_API_KEY || process.env.ZAPIER_SHARED_KEY,
+    enabled: !!(process.env.WEBHOOK_API_KEY || process.env.TYPEFORM_X_API_KEY || process.env.ZAPIER_SHARED_KEY)
   },
 
   /**
