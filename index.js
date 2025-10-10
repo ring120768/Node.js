@@ -19,7 +19,7 @@ server.listen(PORT, '0.0.0.0', () => {
   logger.success('🚗 Car Crash Lawyer AI - GDPR Compliant System');
   logger.info('========================================');
   logger.success(`🚀 Server running on port ${PORT}`);
-  
+
   // Check for Replit environment
   if (process.env.REPL_SLUG && process.env.REPL_OWNER) {
     logger.info(`🌐 Public URL: https://${process.env.REPL_SLUG}.${process.env.REPL_OWNER}.repl.co`);
@@ -30,28 +30,28 @@ server.listen(PORT, '0.0.0.0', () => {
 
   // Service Integration Status
   logger.info('\n📊 Service Integration Status:');
-  
+
   // Supabase
   const supabaseStatus = config.supabase.url && config.supabase.serviceKey && config.supabase.anonKey;
   logger.info(`   Supabase Database: ${supabaseStatus ? '✅ Connected' : '❌ Not configured'}`);
-  
+
   // OpenAI
   const openaiStatus = config.openai.enabled && config.openai.apiKey;
   logger.info(`   OpenAI API: ${openaiStatus ? '✅ Configured' : '❌ Not configured'}`);
-  
+
   // what3words
   const what3wordsStatus = config.what3words.enabled && config.what3words.apiKey;
   logger.info(`   what3words API: ${what3wordsStatus ? '✅ Configured' : '❌ Not configured'}`);
-  
+
   // Typeform/Zapier (shared webhook key)
   const webhookStatus = config.webhook.apiKey;
   logger.info(`   Typeform Integration: ${webhookStatus ? '✅ Configured' : '❌ Not configured'}`);
   logger.info(`   Zapier Webhooks: ${webhookStatus ? '✅ Configured' : '❌ Not configured'}`);
-  
+
   // DVLA API
   const dvlaStatus = config.dvla.enabled;
   logger.info(`   DVLA API: ${dvlaStatus ? '✅ Configured' : '❌ Not configured'}`);
-  
+
   // Stripe
   const stripeStatus = process.env.STRIPE_SECRET_KEY || process.env.STRIPE_PUBLISHABLE_KEY;
   logger.info(`   Stripe Payments: ${stripeStatus ? '✅ Configured' : '❌ Not configured'}`);
@@ -67,6 +67,25 @@ server.listen(PORT, '0.0.0.0', () => {
 
   logger.info('\n⚡ System Ready - All services initialized!');
   logger.info('========================================\n');
+
+  // Check for integrations that failed to connect or are not configured
+  if (!supabaseStatus || !openaiStatus || !what3wordsStatus || !dvlaStatus || !stripeStatus) {
+    logger.warn('Some integrations failed to connect during startup: ');
+    if (!supabaseStatus) logger.warn('- Supabase Database: ❌ Not configured');
+    if (!openaiStatus) logger.warn('- OpenAI API: ❌ Not configured');
+    if (!what3wordsStatus) logger.warn('- what3words API: ❌ Not configured');
+    if (!dvlaStatus) logger.warn('- DVLA API: ❌ Not configured');
+    if (!stripeStatus) logger.warn('- Stripe Payments: ⚠️ Not configured or tested ');
+  }
+
+  // Typeform and Zapier specific check
+  if (!webhookStatus) {
+    logger.warn('- TYPEFORM: ⚠️ Not configured or tested ');
+    logger.warn('- ZAPIER: ⚠️ Not configured or tested ');
+  } else {
+    logger.info('- TYPEFORM: ✅ Webhook key configured ');
+    logger.info('- ZAPIER: ✅ Webhook key configured ');
+  }
 });
 
 // Error handling
