@@ -1,0 +1,93 @@
+Car Crash Lawyer AI — Supabase Policy (Short)
+
+Follow this exactly for any code you write.
+
+Keys & clients
+
+Browser: SUPABASE_URL + SUPABASE_ANON_KEY.
+
+Server (Node/Express): SUPABASE_URL + SUPABASE_SERVICE_ROLE_KEY.
+
+Never expose/log the service role key.
+
+// server/lib/supabaseAdmin.js
+const { createClient } = require('@supabase/supabase-js');
+exports.supabaseAdmin = createClient(process.env.SUPABASE_URL, process.env.SUPABASE_SERVICE_ROLE_KEY, {
+  auth: { persistSession:false, autoRefreshToken:false, detectSessionInUrl:false }
+});
+
+Tables & RLS (owner-only)
+
+Every client-touchable table must have: auth_user_id uuid references auth.users(id).
+
+Enable RLS and add exactly these three policies:
+
+alter table public.<table> enable row level security;
+create policy "<table>_owners_select" on public.<table> for select using (auth.uid() = auth_user_id);
+create policy "<table>_owners_insert" on public.<table> for insert  with check (auth.uid() = auth_user_id);
+create policy "<table>_owners_update" on public.<table> for update using (auth.uid() = auth_user_id);
+
+
+Index auth_user_id.
+
+Storage (files)
+
+Buckets are private.
+
+Users upload to ${user.id}/...; RLS checks split_part(name,'/',1) = auth.uid()::text.
+
+Share via server-created signed URLs only.
+
+Identity propagation to Typeform (your actual fields)
+
+Pass these URL params when opening the form:
+
+user_id = supabase.auth.getUser().data.user.id
+
+create_user_id = same as user_id (legacy binder for your PDF only; never use for auth)
+
+email = user email
+
+product_id = selected plan
+
+auth_code = server-minted short-lived nonce (not a JWT); used only for webhook validation
+
+Browser example:
+
+const { data:{ user } } = await supabase.auth.getUser();
+const nonce = await (await fetch('/api/nonce')).text(); // short-lived server nonce
+const url = new URL('https://form.typeform.com/to/XXXX');
+url.searchParams.set('user_id', user.id);
+url.searchParams.set('create_user_id', user.id); // legacy binder
+url.searchParams.set('email', user.email ?? '');
+url.searchParams.set('product_id', currentPlanId);
+url.searchParams.set('auth_code', nonce);
+location.href = url.toString();
+
+
+Server webhook (Typeform → us):
+
+Verify auth_code (lookup & consume).
+
+Require user_id to be a valid UUID; set auth_user_id = user_id.
+
+Store create_user_id verbatim for PDF compatibility, but never authorize by it.
+
+const { user_id, create_user_id, email, product_id } = payload.hidden;
+await supabaseAdmin.from('incident_reports').insert({
+  auth_user_id: user_id,
+  create_user_id, email, product_id,
+  /* …other mapped fields… */
+});
+
+Do / Don’t
+
+✅ Service role only on server; client uses anon key.
+
+✅ Owner-only RLS on all client tables; uploads in ${user.id}/....
+
+✅ Webhooks must validate auth_code and write auth_user_id from user_id.
+
+❌ Don’t trust create_user_id for auth; it’s legacy, PDF-only.
+
+❌ Don’t disable RLS or alter storage.objects.

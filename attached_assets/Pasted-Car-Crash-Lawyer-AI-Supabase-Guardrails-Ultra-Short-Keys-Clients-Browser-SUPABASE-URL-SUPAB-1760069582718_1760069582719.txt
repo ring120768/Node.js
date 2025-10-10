@@ -1,0 +1,73 @@
+Car Crash Lawyer AI — Supabase Guardrails (Ultra-Short)
+
+Keys/Clients
+
+Browser: SUPABASE_URL + SUPABASE_ANON_KEY.
+
+Server: SUPABASE_URL + SUPABASE_SERVICE_ROLE_KEY (server-only; never logged/exposed).
+
+// server/lib/supabaseAdmin.js
+const { createClient } = require('@supabase/supabase-js');
+exports.supabaseAdmin = createClient(process.env.SUPABASE_URL, process.env.SUPABASE_SERVICE_ROLE_KEY,{auth:{persistSession:false}});
+
+
+Tables & RLS
+
+Every client table has: auth_user_id uuid references auth.users(id) + index.
+
+Policies (owner-only):
+
+alter table public.<t> enable row level security;
+create policy "<t>_sel" on public.<t> for select using (auth.uid()=auth_user_id);
+create policy "<t>_ins" on public.<t> for insert with check (auth.uid()=auth_user_id);
+create policy "<t>_upd" on public.<t> for update using (auth.uid()=auth_user_id);
+
+
+Storage
+
+Buckets private. Upload path must start with UID: ${user.id}/....
+
+RLS uses split_part(name,'/',1)=auth.uid()::text.
+
+Share via server signed URLs only.
+
+Typeform identity (hidden fields)
+
+user_id = Supabase user.id
+
+create_user_id = same as user_id (legacy binder for PDF only; not for auth)
+
+email = user email
+
+product_id = selected plan
+
+auth_code = short-lived server nonce (webhook validation)
+
+const { data:{ user } } = await supabase.auth.getUser();
+const nonce = await (await fetch('/api/nonce')).text();
+const u = new URL('https://form.typeform.com/to/XXXX');
+u.searchParams.set('user_id', user.id);
+u.searchParams.set('create_user_id', user.id);
+u.searchParams.set('email', user.email??'');
+u.searchParams.set('product_id', planId);
+u.searchParams.set('auth_code', nonce);
+location.href = u.toString();
+
+
+Webhook (Typeform → server)
+
+Verify auth_code; require user_id UUID.
+
+Insert with auth_user_id = user_id; also store create_user_id (PDF only).
+
+All server DB/file ops use service role.
+
+Do / Don’t
+
+✅ Anon key in browser; service role on server.
+
+✅ Owner-only RLS; uploads under ${user.id}/....
+
+❌ Don’t trust create_user_id for auth.
+
+❌ Don’t alter storage.objects or disable RLS.
