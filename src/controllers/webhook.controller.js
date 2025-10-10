@@ -213,3 +213,53 @@ async function handleSignup(req, res) {
     sendError(res, 500, error.message, 'WEBHOOK_ERROR');
   }
 }
+
+/**
+ * Handle incident report webhook (placeholder)
+ */
+async function handleIncidentReport(req, res) {
+  const logger = require('../utils/logger');
+  const { sendError } = require('../utils/response');
+  
+  try {
+    logger.info('📥 Incident report webhook received');
+    
+    // Placeholder implementation
+    res.status(200).json({
+      success: true,
+      message: 'Incident report webhook received'
+    });
+    
+  } catch (error) {
+    logger.error('💥 Incident report webhook error:', error);
+    sendError(res, 500, error.message, 'WEBHOOK_ERROR');
+  }
+}
+
+/**
+ * Handle PDF generation webhook (placeholder)
+ */
+async function handleGeneratePdf(req, res) {
+  const logger = require('../utils/logger');
+  const { sendError } = require('../utils/response');
+  
+  try {
+    logger.info('📥 PDF generation webhook received');
+    
+    // Placeholder implementation
+    res.status(200).json({
+      success: true,
+      message: 'PDF generation webhook received'
+    });
+    
+  } catch (error) {
+    logger.error('💥 PDF generation webhook error:', error);
+    sendError(res, 500, error.message, 'WEBHOOK_ERROR');
+  }
+}
+
+module.exports = {
+  handleSignup,
+  handleIncidentReport,
+  handleGeneratePdf
+};
