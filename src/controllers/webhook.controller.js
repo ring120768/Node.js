@@ -6,7 +6,8 @@
  * Auth user already exists from signup-auth.html
  */
 async function handleSignup(req, res) {
-  const { createClient } = require('@supabase/supabase-js');
+  // Use centralized admin client for privileged operations
+  const { supabaseAdmin } = require('../../lib/supabaseAdmin');
 
   try {
     logger.info('📥 Typeform signup webhook received');
@@ -55,13 +56,6 @@ async function handleSignup(req, res) {
       return sendError(res, 400, 'Missing authentication data', 'MISSING_AUTH');
     }
 
-    // Initialize Supabase with ANON key (will need SERVICE_ROLE for this specific operation)
-    // OR set up proper RLS policies that allow insert with user's own JWT
-    const supabase = createClient(
-      config.supabase.url, 
-      config.supabase.serviceKey || config.supabase.anonKey
-    );
-
     // TODO: VERIFY auth_code here (implement verification logic)
     logger.info('🔍 Auth code verification', { user_id });
 
@@ -101,7 +95,7 @@ async function handleSignup(req, res) {
 
     logger.info('💾 Creating user_signup record', { user_id });
 
-    const { data: insertedUser, error: insertError } = await supabase
+    const { data: insertedUser, error: insertError } = await supabaseAdmin
       .from('user_signup')
       .insert(userData)
       .select()
@@ -122,7 +116,7 @@ async function handleSignup(req, res) {
     // UPDATE Auth metadata to mark Typeform as complete
     // ========================================
     try {
-      const { error: metadataError } = await supabase.auth.admin.updateUserById(user_id, {
+      const { error: metadataError } = await supabaseAdmin.auth.admin.updateUserById(user_id, {
         user_metadata: {
           typeform_completed: true,
           typeform_completion_date: new Date().toISOString(),

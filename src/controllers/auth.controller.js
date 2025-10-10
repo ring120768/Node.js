@@ -12,7 +12,7 @@ const logger = require('../utils/logger');
 const config = require('../config');
 const gdprService = require('../services/gdprService');
 
-// Import AuthService
+// Import AuthService (uses ANON key for client operations)
 const AuthService = require('../../lib/services/authService');
 
 // Initialize auth service
