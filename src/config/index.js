@@ -91,7 +91,9 @@ const config = {
    */
   dvla: {
     apiKey: process.env.DVLA_API_KEY || process.env.DVLA_API_KEY_LIVE,
-    enabled: !!(process.env.DVLA_API_KEY || process.env.DVLA_API_KEY_LIVE)
+    enabled: !!(process.env.DVLA_API_KEY || process.env.DVLA_API_KEY_LIVE),
+    baseUrl: 'https://driver-vehicle-licensing.api.gov.uk/vehicle-enquiry/v1',
+    testEndpoint: '/vehicles'
   },
 
   /**

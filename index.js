@@ -68,23 +68,23 @@ server.listen(PORT, '0.0.0.0', () => {
   logger.info('\n⚡ System Ready - All services initialized!');
   logger.info('========================================\n');
 
-  // Check for integrations that failed to connect or are not configured
-  if (!supabaseStatus || !openaiStatus || !what3wordsStatus || !dvlaStatus || !stripeStatus) {
-    logger.warn('Some integrations failed to connect during startup: ');
-    if (!supabaseStatus) logger.warn('- Supabase Database: ❌ Not configured');
-    if (!openaiStatus) logger.warn('- OpenAI API: ❌ Not configured');
-    if (!what3wordsStatus) logger.warn('- what3words API: ❌ Not configured');
-    if (!dvlaStatus) logger.warn('- DVLA API: ❌ Not configured');
-    if (!stripeStatus) logger.warn('- Stripe Payments: ⚠️ Not configured or tested ');
-  }
+  // Only show warnings for services that are actually not configured
+  // (The API connection tests will run separately and show their own results)
+  const unconfiguredServices = [];
+  
+  if (!supabaseStatus) unconfiguredServices.push('Supabase Database');
+  if (!openaiStatus) unconfiguredServices.push('OpenAI API');
+  if (!what3wordsStatus) unconfiguredServices.push('what3words API');
+  if (!dvlaStatus) unconfiguredServices.push('DVLA API');
+  if (!stripeStatus) unconfiguredServices.push('Stripe Payments');
+  if (!webhookStatus) unconfiguredServices.push('Typeform/Zapier Webhooks');
 
-  // Typeform and Zapier specific check
-  if (!webhookStatus) {
-    logger.warn('- TYPEFORM: ⚠️ Not configured or tested ');
-    logger.warn('- ZAPIER: ⚠️ Not configured or tested ');
+  if (unconfiguredServices.length > 0) {
+    logger.warn(`⚠️ Unconfigured services: ${unconfiguredServices.join(', ')}`);
+    logger.info('ℹ️ API connection tests will run separately...');
   } else {
-    logger.info('- TYPEFORM: ✅ Webhook key configured ');
-    logger.info('- ZAPIER: ✅ Webhook key configured ');
+    logger.success('✅ All services have configuration keys available');
+    logger.info('ℹ️ Running API connection tests...');
   }
 });
 
