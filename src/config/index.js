@@ -1,4 +1,3 @@
-
 /**
  * @fileoverview Centralized configuration for Car Crash Lawyer AI
  * @description Consolidates all environment variables and configuration settings
@@ -51,8 +50,10 @@ const config = {
    */
   supabase: {
     url: process.env.SUPABASE_URL,
-    serviceKey: process.env.SUPABASE_SERVICE_ROLE_KEY || process.env.SUPABASE_SERVICE_KEY,
-    anonKey: process.env.SUPABASE_ANON_KEY
+    anonKey: process.env.SUPABASE_ANON_KEY,
+    serviceRoleKey: process.env.SUPABASE_SERVICE_ROLE_KEY,
+    publishableKey: process.env.SUPABASE_PUBLISHABLE_KEY,
+    apiKey: process.env.SUPABASE_API_KEY
   },
 
   /**

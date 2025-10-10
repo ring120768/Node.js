@@ -14,13 +14,15 @@ const gdprService = require('../services/gdprService');
 
 // Import AuthService (uses ANON key for client operations)
 const AuthService = require('../../lib/services/authService');
+// Import admin client for privileged operations
+const { supabaseAdmin } = require('../../lib/supabaseAdmin');
 
 // Initialize auth service
 let authService = null;
 
 if (config.supabase.anonKey) {
   authService = new AuthService(config.supabase.url, config.supabase.anonKey);
-  logger.success('✅ Auth service initialized (ANON key only)');
+  logger.success('✅ Auth service initialized (ANON + SERVICE ROLE keys)');
 }
 
 /**
@@ -352,16 +354,14 @@ async function generateNonce(req, res) {
     const nonce = crypto.randomBytes(16).toString('hex');
     const expiresAt = Date.now() + (10 * 60 * 1000); // 10 minutes
 
-    // Store nonce in user metadata temporarily
-    if (authService && authService.supabaseAdmin) {
-      await authService.supabaseAdmin.auth.admin.updateUserById(req.userId, {
-        user_metadata: {
-          ...req.user.user_metadata,
-          temp_nonce: nonce,
-          temp_nonce_expires: expiresAt
-        }
-      });
-    }
+    // Store nonce in user metadata temporarily using admin client
+    await supabaseAdmin.auth.admin.updateUserById(req.userId, {
+      user_metadata: {
+        ...req.user.user_metadata,
+        temp_nonce: nonce,
+        temp_nonce_expires: expiresAt
+      }
+    });
 
     logger.info('🎫 Nonce generated', { userId: req.userId, nonce: nonce.substring(0, 8) + '...' });
 

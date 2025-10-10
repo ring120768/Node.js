@@ -150,7 +150,24 @@ function createApp() {
         }
       });
 
-      logger.success('Supabase initialized successfully');
+      // Test Supabase connection
+      if (config.supabase.anonKey && config.supabase.url) {
+        const testClient = createClient(config.supabase.url, config.supabase.anonKey);
+
+        testSupabaseConnection(testClient)
+          .then(connected => {
+            if (connected) {
+              const hasServiceRole = !!config.supabase.serviceRoleKey;
+              logger.success(`Supabase initialized successfully (ANON${hasServiceRole ? ' + SERVICE_ROLE' : ''} keys)`);
+            } else {
+              logger.warn('Supabase connection test failed');
+            }
+          })
+          .catch(err => {
+            logger.error('Supabase connection error:', err.message);
+          });
+      }
+
       initializeGDPRTables();
       initializeSupabaseRealtime();
       return true;
@@ -159,6 +176,25 @@ function createApp() {
       return false;
     }
   };
+
+  // Helper function to test Supabase connection
+  async function testSupabaseConnection(client) {
+    try {
+      const { data, error } = await client.from('users').select('id').limit(1);
+      if (error && error.code === '42P01') { // Table not found
+        logger.info('Supabase "users" table not found, skipping connection test.');
+        return true; // Assume connection is okay if table doesn't exist
+      }
+      if (error) {
+        logger.error('Supabase connection test failed:', error.message);
+        return false;
+      }
+      return true;
+    } catch (err) {
+      logger.error('Supabase connection test error:', err.message);
+      return false;
+    }
+  }
 
   // Initialize Supabase Realtime
   function initializeSupabaseRealtime() {
