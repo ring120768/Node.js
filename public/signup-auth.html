@@ -496,7 +496,7 @@
                 
                 // Create Typeform URL with exact hidden field pattern
                 const typeformUrl = new URL('https://form.typeform.com/to/b03aFxEO');
-                typeformUrl.searchParams.set('user_id', userData.id);
+                typeformUrl.searchParams.set('auth_user_id', userData.id); // ✅ Updated field name
                 typeformUrl.searchParams.set('create_user_id', userData.id); // Legacy binder for PDF only
                 typeformUrl.searchParams.set('email', userData.email || '');
                 typeformUrl.searchParams.set('product_id', 'car_crash_lawyer_ai');

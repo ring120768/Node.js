@@ -269,7 +269,8 @@
         function extractTypeformParams() {
             const urlParams = new URLSearchParams(window.location.search);
 
-            const user_id = urlParams.get('user_id') || 
+            const user_id = urlParams.get('auth_user_id') || 
+                           urlParams.get('user_id') || 
                            urlParams.get('userId') || 
                            urlParams.get('create_user_id');
 

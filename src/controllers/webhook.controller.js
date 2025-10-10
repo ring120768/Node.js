@@ -16,7 +16,7 @@ async function handleSignup(req, res) {
 
     // Extract exact hidden fields from Typeform
     const { 
-      user_id,
+      auth_user_id,
       create_user_id,
       email,
       product_id,
@@ -43,15 +43,15 @@ async function handleSignup(req, res) {
     } = webhookData;
 
     logger.info('📋 Typeform data extracted', {
-      user_id,
+      auth_user_id,
       create_user_id,
       email,
       hasAuthCode: !!auth_code,
       product_id
     });
 
-    if (!user_id) {
-      return sendError(res, 400, 'Missing user_id', 'MISSING_USER_ID');
+    if (!auth_user_id) {
+      return sendError(res, 400, 'Missing auth_user_id', 'MISSING_AUTH_USER_ID');
     }
 
     if (!email || !auth_code) {
@@ -60,7 +60,7 @@ async function handleSignup(req, res) {
 
     // Validate nonce (auth_code)
     try {
-      const { data: user, error: userError } = await supabaseAdmin.auth.admin.getUserById(user_id);
+      const { data: user, error: userError } = await supabaseAdmin.auth.admin.getUserById(auth_user_id);
       
       if (userError || !user) {
         return sendError(res, 404, 'User not found', 'USER_NOT_FOUND');
@@ -71,19 +71,19 @@ async function handleSignup(req, res) {
       const nonceExpires = metadata.temp_nonce_expires;
 
       if (!storedNonce || storedNonce !== auth_code) {
-        logger.warn('❌ Invalid auth code', { user_id });
+        logger.warn('❌ Invalid auth code', { auth_user_id });
         return sendError(res, 401, 'Invalid auth code', 'INVALID_AUTH_CODE');
       }
 
       if (!nonceExpires || Date.now() > nonceExpires) {
-        logger.warn('❌ Expired auth code', { user_id });
+        logger.warn('❌ Expired auth code', { auth_user_id });
         return sendError(res, 401, 'Expired auth code', 'EXPIRED_AUTH_CODE');
       }
 
-      logger.success('✅ Auth code validated', { user_id });
+      logger.success('✅ Auth code validated', { auth_user_id });
 
       // Clear the nonce after successful validation
-      await supabaseAdmin.auth.admin.updateUserById(user_id, {
+      await supabaseAdmin.auth.admin.updateUserById(auth_user_id, {
         user_metadata: {
           ...metadata,
           temp_nonce: null,
@@ -97,7 +97,7 @@ async function handleSignup(req, res) {
     }
 
     // Log GDPR activity
-    await gdprService.logActivity(user_id, 'TYPEFORM_PROFILE_COMPLETION', {
+    await gdprService.logActivity(auth_user_id, 'TYPEFORM_PROFILE_COMPLETION', {
       source: 'typeform_webhook',
       has_images: !!(driving_license_picture || vehicle_picture_front)
     }, req);
@@ -106,9 +106,9 @@ async function handleSignup(req, res) {
     // CREATE user_signup record (not update!)
     // ========================================
     const userData = {
-      uid: user_id,
-      create_user_id: create_user_id || user_id, // Legacy binder for PDF only
-      auth_user_id: user_id, // ✅ Required for RLS policy
+      uid: auth_user_id,
+      create_user_id: create_user_id || auth_user_id, // Legacy binder for PDF only
+      auth_user_id: auth_user_id, // ✅ Required for RLS policy
       email: email,
       first_name: first_name || null,
       last_name: last_name || null,
@@ -131,7 +131,7 @@ async function handleSignup(req, res) {
       updated_at: new Date().toISOString()
     };
 
-    logger.info('💾 Creating user_signup record', { user_id });
+    logger.info('💾 Creating user_signup record', { auth_user_id });
 
     const { data: insertedUser, error: insertError } = await supabaseAdmin
       .from('user_signup')
@@ -143,18 +143,18 @@ async function handleSignup(req, res) {
       logger.error('❌ Failed to create user_signup record:', {
         error: insertError.message,
         code: insertError.code,
-        user_id
+        auth_user_id
       });
       return sendError(res, 500, 'Failed to save profile data', 'DB_ERROR');
     }
 
-    logger.success('✅ user_signup record created', { user_id });
+    logger.success('✅ user_signup record created', { auth_user_id });
 
     // ========================================
     // UPDATE Auth metadata to mark Typeform as complete
     // ========================================
     try {
-      const { error: metadataError } = await supabaseAdmin.auth.admin.updateUserById(user_id, {
+      const { error: metadataError } = await supabaseAdmin.auth.admin.updateUserById(auth_user_id, {
         user_metadata: {
           typeform_completed: true,
           typeform_completion_date: new Date().toISOString(),
@@ -181,13 +181,13 @@ async function handleSignup(req, res) {
       try {
         const imageProcessingData = {
           ...webhookData,
-          create_user_id: user_id
+          create_user_id: auth_user_id
         };
 
         const result = await this.imageProcessor.processSignupImages(imageProcessingData);
 
         logger.success('✅ Images processed', {
-          user_id,
+          auth_user_id,
           processedCount: result?.processedImages?.length || 0
         });
       } catch (imageError) {
@@ -201,7 +201,7 @@ async function handleSignup(req, res) {
     res.status(200).json({
       success: true,
       message: 'Profile completed successfully',
-      user_id: user_id,
+      user_id: auth_user_id,
       profile_id: insertedUser.id
     });
 
