@@ -12,10 +12,20 @@ const constants = require('./constants');
  */
 const config = {
   /**
+   * Application settings
+   */
+  app: {
+    name: 'Car Crash Lawyer AI',
+    port: process.env.PORT || 5000,
+    env: process.env.NODE_ENV || 'development',
+    baseUrl: process.env.BASE_URL || 'http://localhost:5000'
+  },
+
+  /**
    * Server configuration
    */
   server: {
-    port: process.env.PORT || 3000,
+    port: process.env.PORT || 5000,
     host: '0.0.0.0',
     env: process.env.NODE_ENV || 'development'
   },

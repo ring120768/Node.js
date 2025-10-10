@@ -4,6 +4,11 @@
  */
 
 module.exports = {
+  // Data Retention Configuration
+  DATA_RETENTION: {
+    DEFAULT_DAYS: 2555 // 7 years in days
+  },
+
   // GDPR Configuration
   GDPR: {
     CURRENT_POLICY_VERSION: '2024-01-01',
@@ -38,6 +43,13 @@ module.exports = {
       AUTH_CODE: 'auth_code'
     },
     NONCE_EXPIRY_MINUTES: 10
+  },
+
+  // File Size Limits
+  FILE_SIZE_LIMITS: {
+    AUDIO: 10 * 1024 * 1024, // 10MB
+    IMAGE: 5 * 1024 * 1024,  // 5MB
+    DOCUMENT: 10 * 1024 * 1024 // 10MB
   },
 
   // Response codes
