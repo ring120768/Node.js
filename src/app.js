@@ -124,7 +124,7 @@ function createApp() {
 
   const initSupabase = () => {
     if (!config.supabase.url || !config.supabase.serviceKey) {
-      logger.error('SUPABASE_URL or SUPABASE_SERVICE_KEY not found');
+      logger.error('SUPABASE_URL or SUPABASE_SERVICE_ROLE_KEY not found');
       return false;
     }
 
@@ -303,11 +303,12 @@ function createApp() {
   if (config.supabase.anonKey && supabaseEnabled) {
     authService = new AuthService(
       config.supabase.url,
-      config.supabase.anonKey
+      config.supabase.anonKey,
+      config.supabase.serviceRoleKey
     );
-    logger.success('✅ Supabase Auth service initialized');
+    logger.success('✅ Supabase Auth service initialized (with service role)');
   } else {
-    logger.warn('⚠️ Auth service not initialized - missing SUPABASE_ANON_KEY');
+    logger.warn('⚠️ Auth service not initialized - missing SUPABASE_ANON_KEY or Supabase disabled');
   }
 
   // ========================================
