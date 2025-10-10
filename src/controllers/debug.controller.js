@@ -185,9 +185,14 @@ async function getHealth(req, res) {
     const services = {
       supabase: false,
       openai: false,
-      what3words: false
+      what3words: false,
+      typeform: false,
+      zapier: false,
+      dvla: false,
+      stripe: false
     };
 
+    // Test Supabase
     if (supabase) {
       try {
         await supabase.from('user_signup').select('*').limit(1);
@@ -197,6 +202,7 @@ async function getHealth(req, res) {
       }
     }
 
+    // Test OpenAI
     if (config.openai.apiKey) {
       try {
         await axios.get('https://api.openai.com/v1/models', {
@@ -209,14 +215,65 @@ async function getHealth(req, res) {
       }
     }
 
+    // Test what3words
     if (config.what3words.apiKey) {
-      services.what3words = true;
+      try {
+        await axios.get(`https://api.what3words.com/v3/convert-to-coordinates?words=filled.count.soap&key=${config.what3words.apiKey}`, {
+          timeout: 5000
+        });
+        services.what3words = true;
+      } catch (error) {
+        logger.error('what3words health check failed', error);
+      }
     }
+
+    // Check Typeform/Zapier webhook key
+    services.typeform = !!config.webhook.apiKey;
+    services.zapier = !!config.webhook.apiKey;
+
+    // Check DVLA API key
+    services.dvla = !!process.env.DVLA_API_KEY;
+
+    // Check Stripe keys
+    services.stripe = !!(process.env.STRIPE_SECRET_KEY || process.env.STRIPE_PUBLISHABLE_KEY);
 
     res.json({
       status: 'healthy',
       timestamp: new Date().toISOString(),
       services: services,
+      integrations: {
+        supabase: {
+          configured: !!config.supabase.url,
+          connected: services.supabase,
+          features: ['Database', 'Auth', 'Storage', 'Realtime']
+        },
+        openai: {
+          configured: !!config.openai.apiKey,
+          connected: services.openai,
+          features: ['Transcription', 'AI Summaries', 'Chat']
+        },
+        what3words: {
+          configured: !!config.what3words.apiKey,
+          connected: services.what3words,
+          features: ['Location Services', 'Address Conversion']
+        },
+        typeform: {
+          configured: services.typeform,
+          features: ['Form Processing', 'Incident Reports']
+        },
+        zapier: {
+          configured: services.zapier,
+          features: ['Webhook Automation', 'PDF Generation']
+        },
+        dvla: {
+          configured: services.dvla,
+          features: ['Vehicle Lookups', 'License Verification']
+        },
+        stripe: {
+          configured: services.stripe,
+          features: ['Payments', 'Subscriptions']
+        }
+      },
       requestId: req.requestId
     });
   } catch (error) {

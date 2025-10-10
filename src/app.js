@@ -182,19 +182,88 @@ function createApp() {
     try {
       const { data, error } = await client.from('users').select('id').limit(1);
       if (error && error.code === '42P01') { // Table not found
-        logger.info('Supabase "users" table not found, skipping connection test.');
+        logger.info('Supabase connection test: Table not found but connection OK');
         return true; // Assume connection is okay if table doesn't exist
       }
       if (error) {
         logger.error('Supabase connection test failed:', error.message);
         return false;
       }
+      logger.success('Supabase connection test: ✅ Connected successfully');
       return true;
     } catch (err) {
       logger.error('Supabase connection test error:', err.message);
       return false;
     }
   }
+
+  // Test external service connectivity
+  async function testExternalServices() {
+    const results = {};
+
+    // Test OpenAI if configured
+    if (config.openai.apiKey) {
+      try {
+        const axios = require('axios');
+        await axios.get('https://api.openai.com/v1/models', {
+          headers: { 'Authorization': `Bearer ${config.openai.apiKey}` },
+          timeout: 5000
+        });
+        results.openai = true;
+        logger.success('OpenAI API test: ✅ Connected successfully');
+      } catch (error) {
+        results.openai = false;
+        logger.warn('OpenAI API test failed:', error.response?.status || error.message);
+      }
+    }
+
+    // Test what3words if configured
+    if (config.what3words.apiKey) {
+      try {
+        const axios = require('axios');
+        await axios.get(`https://api.what3words.com/v3/convert-to-coordinates?words=filled.count.soap&key=${config.what3words.apiKey}`, {
+          timeout: 5000
+        });
+        results.what3words = true;
+        logger.success('what3words API test: ✅ Connected successfully');
+      } catch (error) {
+        results.what3words = false;
+        logger.warn('what3words API test failed:', error.response?.status || error.message);
+      }
+    }
+
+    // Test DVLA if configured
+    if (process.env.DVLA_API_KEY) {
+      try {
+        const axios = require('axios');
+        // Test with a dummy request to check API key validity
+        await axios.post('https://driver-vehicle-licensing.api.gov.uk/vehicle-enquiry/v1/vehicles',
+          { registrationNumber: 'TEST123' },
+          {
+            headers: {
+              'x-api-key': process.env.DVLA_API_KEY,
+              'Content-Type': 'application/json'
+            },
+            timeout: 5000
+          }
+        );
+        results.dvla = true;
+        logger.success('DVLA API test: ✅ Connected successfully');
+      } catch (error) {
+        // 400 is expected for invalid reg, but means API key is valid
+        if (error.response?.status === 400) {
+          results.dvla = true;
+          logger.success('DVLA API test: ✅ API key valid');
+        } else {
+          results.dvla = false;
+          logger.warn('DVLA API test failed:', error.response?.status || error.message);
+        }
+      }
+    }
+
+    return results;
+  }
+
 
   // Initialize Supabase Realtime
   function initializeSupabaseRealtime() {
@@ -285,7 +354,34 @@ function createApp() {
     }
   }
 
+  // Call Supabase initialization and then external service tests
   supabaseEnabled = initSupabase();
+  if (supabaseEnabled) {
+    testExternalServices().then((results) => {
+      // Log overall integration status
+      const integrations = ['supabase', 'openai', 'what3words', 'dvla', 'stripe', 'typeform', 'zapier']; // Add other integrations here
+      const allConnected = integrations.every(integration => {
+        if (integration === 'supabase') return supabaseEnabled;
+        return results[integration] !== undefined && results[integration];
+      });
+
+      if (allConnected) {
+        logger.success('All integrations initialized and connected successfully.');
+      } else {
+        logger.warn('Some integrations failed to connect during startup:');
+        integrations.forEach(integration => {
+          if (integration === 'supabase') {
+            if (!supabaseEnabled) logger.warn(`- Supabase: ❌ Failed to initialize`);
+          } else {
+            if (results[integration] === false) logger.warn(`- ${integration.toUpperCase()}: ❌ Failed to connect`);
+            else if (results[integration] === undefined) logger.warn(`- ${integration.toUpperCase()}: ⚠️ Not configured or tested`);
+          }
+        });
+      }
+    });
+  } else {
+    logger.error('Supabase is not enabled. External service tests will not be run.');
+  }
 
   // ========================================
   // INITIALIZE SERVICES

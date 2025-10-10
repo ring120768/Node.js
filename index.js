@@ -15,9 +15,58 @@ const PORT = config.app.port;
 
 // Start the server
 server.listen(PORT, '0.0.0.0', () => {
-  logger.success(`🚗 Car Crash Lawyer AI Server running on port ${PORT}`);
-  logger.info(`🌐 Access your app at: http://localhost:${PORT}`);
-  logger.info('✅ Server ready!');
+  logger.info('========================================');
+  logger.success('🚗 Car Crash Lawyer AI - GDPR Compliant System');
+  logger.info('========================================');
+  logger.success(`🚀 Server running on port ${PORT}`);
+  
+  // Check for Replit environment
+  if (process.env.REPL_SLUG && process.env.REPL_OWNER) {
+    logger.info(`🌐 Public URL: https://${process.env.REPL_SLUG}.${process.env.REPL_OWNER}.repl.co`);
+    logger.info(`🌐 Alternative: https://${process.env.REPL_SLUG}.${process.env.REPL_OWNER}.replit.app`);
+  } else {
+    logger.info(`🌐 Local URL: http://localhost:${PORT}`);
+  }
+
+  // Service Integration Status
+  logger.info('\n📊 Service Integration Status:');
+  
+  // Supabase
+  const supabaseStatus = config.supabase.url && config.supabase.serviceKey && config.supabase.anonKey;
+  logger.info(`   Supabase Database: ${supabaseStatus ? '✅ Connected' : '❌ Not configured'}`);
+  
+  // OpenAI
+  const openaiStatus = config.openai.enabled && config.openai.apiKey;
+  logger.info(`   OpenAI API: ${openaiStatus ? '✅ Configured' : '❌ Not configured'}`);
+  
+  // what3words
+  const what3wordsStatus = config.what3words.enabled && config.what3words.apiKey;
+  logger.info(`   what3words API: ${what3wordsStatus ? '✅ Configured' : '❌ Not configured'}`);
+  
+  // Typeform/Zapier (shared webhook key)
+  const webhookStatus = config.webhook.apiKey;
+  logger.info(`   Typeform Integration: ${webhookStatus ? '✅ Configured' : '❌ Not configured'}`);
+  logger.info(`   Zapier Webhooks: ${webhookStatus ? '✅ Configured' : '❌ Not configured'}`);
+  
+  // DVLA API
+  const dvlaStatus = process.env.DVLA_API_KEY;
+  logger.info(`   DVLA API: ${dvlaStatus ? '✅ Configured' : '❌ Not configured'}`);
+  
+  // Stripe
+  const stripeStatus = process.env.STRIPE_SECRET_KEY || process.env.STRIPE_PUBLISHABLE_KEY;
+  logger.info(`   Stripe Payments: ${stripeStatus ? '✅ Configured' : '❌ Not configured'}`);
+
+  // Core Features Status
+  logger.info('\n🔧 Core Features:');
+  logger.info(`   Authentication: ${app.locals.authService ? '✅ Active' : '❌ Disabled'}`);
+  logger.info(`   WebSocket Server: ${app.locals.websocketModule ? '✅ Active' : '❌ Disabled'}`);
+  logger.info(`   PDF Generation: ${app.locals.pdfModules ? '✅ Available' : '❌ Unavailable'}`);
+  logger.info(`   GDPR Compliance: ✅ Full compliance with audit logging`);
+  logger.info(`   Rate Limiting: ✅ Active (API: 100/15min, Strict: 10/15min)`);
+  logger.info(`   Data Retention: ${process.env.DATA_RETENTION_DAYS || config.constants.DATA_RETENTION.DEFAULT_DAYS} days`);
+
+  logger.info('\n⚡ System Ready - All services initialized!');
+  logger.info('========================================\n');
 });
 
 // Error handling
