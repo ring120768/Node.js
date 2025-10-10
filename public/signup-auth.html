@@ -476,53 +476,60 @@
             });
         });
 
-        // Generate auth code for Typeform
-        function generateAuthCode(userId, email) {
-            const timestamp = Date.now().toString();
-            const random = Math.random().toString(36).substring(2, 15);
-            const authCode = btoa(`${userId}_${email}_${timestamp}_${random}`).substring(0, 32);
-            console.log('✅ Generated auth code:', authCode);
-            return authCode;
-        }
-
-        // Redirect to Typeform with user data
-        function redirectToTypeform(userData) {
+        // Redirect to Typeform with proper hidden fields
+        async function redirectToTypeform(userData) {
             console.log('🎯 Redirecting to Typeform onboarding...');
 
-            const typeformBaseUrl = 'https://form.typeform.com/to/b03aFxEO';
-            const authCode = generateAuthCode(userData.id, userData.email);
-
-            // Create hash parameters for Typeform
-            const hashParams = new URLSearchParams({
-                user_id: userData.id,
-                email: userData.email,
-                product_id: 'car_crash_lawyer_ai',
-                auth_code: authCode
-            });
-
-            const finalUrl = `${typeformBaseUrl}#${hashParams.toString()}`;
-
-            console.log('📋 Typeform URL created with hidden fields');
-
-            // Store user data in session storage for tracking
-            const storageData = {
-                userId: userData.id,
-                userEmail: userData.email,
-                authCode: authCode,
-                signupTimestamp: new Date().toISOString()
-            };
-
             try {
-                sessionStorage.setItem('carCrashLawyerUser', JSON.stringify(storageData));
-                localStorage.setItem('carCrashLawyerUser', JSON.stringify(storageData));
-                console.log('💾 User data stored in browser storage');
-            } catch (storageError) {
-                console.error('⚠️ Storage error:', storageError);
-            }
+                // Get server-minted nonce
+                const nonceResponse = await fetch('/api/auth/nonce', {
+                    headers: {
+                        'Authorization': `Bearer ${userData.session?.access_token || ''}`
+                    }
+                });
+                
+                if (!nonceResponse.ok) {
+                    throw new Error('Failed to get nonce');
+                }
+                
+                const { nonce } = await nonceResponse.json();
+                
+                // Create Typeform URL with exact hidden field pattern
+                const typeformUrl = new URL('https://form.typeform.com/to/b03aFxEO');
+                typeformUrl.searchParams.set('user_id', userData.id);
+                typeformUrl.searchParams.set('create_user_id', userData.id); // Legacy binder for PDF only
+                typeformUrl.searchParams.set('email', userData.email || '');
+                typeformUrl.searchParams.set('product_id', 'car_crash_lawyer_ai');
+                typeformUrl.searchParams.set('auth_code', nonce);
 
-            // Redirect to Typeform
-            console.log('🚀 Redirecting now...');
-            window.location.href = finalUrl;
+                console.log('📋 Typeform URL created with hidden fields');
+
+                // Store user data in session storage for tracking
+                const storageData = {
+                    userId: userData.id,
+                    userEmail: userData.email,
+                    authCode: nonce,
+                    signupTimestamp: new Date().toISOString()
+                };
+
+                try {
+                    sessionStorage.setItem('carCrashLawyerUser', JSON.stringify(storageData));
+                    localStorage.setItem('carCrashLawyerUser', JSON.stringify(storageData));
+                    console.log('💾 User data stored in browser storage');
+                } catch (storageError) {
+                    console.error('⚠️ Storage error:', storageError);
+                }
+
+                // Redirect to Typeform
+                console.log('🚀 Redirecting now...');
+                window.location.href = typeformUrl.toString();
+                
+            } catch (error) {
+                console.error('💥 Failed to get nonce for Typeform:', error);
+                showAlert('Failed to redirect to onboarding. Please try again.', 'error');
+                submitBtn.disabled = false;
+                submitBtn.classList.remove('loading');
+            }
         }
 
         // Handle form submission

@@ -1,4 +1,3 @@
-
 /**
  * Authentication Routes for Car Crash Lawyer AI
  * Defines all authentication endpoints and connects them to controller functions
@@ -33,5 +32,11 @@ router.post('/logout', authController.logout);
  * GET /api/auth/session
  */
 router.get('/session', optionalAuth, authController.checkSession);
+
+/**
+ * Generate a nonce for Typeform authentication
+ * GET /api/auth/nonce
+ */
+router.get('/nonce', optionalAuth, authController.generateNonce);
 
 module.exports = router;

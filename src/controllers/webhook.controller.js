@@ -14,12 +14,13 @@ async function handleSignup(req, res) {
 
     const webhookData = req.body;
 
-    // Extract fields from Typeform
+    // Extract exact hidden fields from Typeform
     const { 
       user_id,
+      create_user_id,
       email,
-      auth_code,
       product_id,
+      auth_code,
       first_name,
       last_name,
       phone,
@@ -43,6 +44,7 @@ async function handleSignup(req, res) {
 
     logger.info('📋 Typeform data extracted', {
       user_id,
+      create_user_id,
       email,
       hasAuthCode: !!auth_code,
       product_id
@@ -56,8 +58,43 @@ async function handleSignup(req, res) {
       return sendError(res, 400, 'Missing authentication data', 'MISSING_AUTH');
     }
 
-    // TODO: VERIFY auth_code here (implement verification logic)
-    logger.info('🔍 Auth code verification', { user_id });
+    // Validate nonce (auth_code)
+    try {
+      const { data: user, error: userError } = await supabaseAdmin.auth.admin.getUserById(user_id);
+      
+      if (userError || !user) {
+        return sendError(res, 404, 'User not found', 'USER_NOT_FOUND');
+      }
+
+      const metadata = user.user_metadata || {};
+      const storedNonce = metadata.temp_nonce;
+      const nonceExpires = metadata.temp_nonce_expires;
+
+      if (!storedNonce || storedNonce !== auth_code) {
+        logger.warn('❌ Invalid auth code', { user_id });
+        return sendError(res, 401, 'Invalid auth code', 'INVALID_AUTH_CODE');
+      }
+
+      if (!nonceExpires || Date.now() > nonceExpires) {
+        logger.warn('❌ Expired auth code', { user_id });
+        return sendError(res, 401, 'Expired auth code', 'EXPIRED_AUTH_CODE');
+      }
+
+      logger.success('✅ Auth code validated', { user_id });
+
+      // Clear the nonce after successful validation
+      await supabaseAdmin.auth.admin.updateUserById(user_id, {
+        user_metadata: {
+          ...metadata,
+          temp_nonce: null,
+          temp_nonce_expires: null
+        }
+      });
+
+    } catch (nonceError) {
+      logger.error('💥 Nonce validation error:', nonceError);
+      return sendError(res, 500, 'Auth validation failed', 'NONCE_VALIDATION_ERROR');
+    }
 
     // Log GDPR activity
     await gdprService.logActivity(user_id, 'TYPEFORM_PROFILE_COMPLETION', {
@@ -70,7 +107,7 @@ async function handleSignup(req, res) {
     // ========================================
     const userData = {
       uid: user_id,
-      create_user_id: user_id,
+      create_user_id: create_user_id || user_id, // Legacy binder for PDF only
       auth_user_id: user_id, // ✅ Required for RLS policy
       email: email,
       first_name: first_name || null,

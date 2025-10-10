@@ -333,5 +333,45 @@ module.exports = {
   signup,
   login,
   logout,
-  checkSession
+  checkSession,
+  generateNonce
 };
+
+
+/**
+ * Generate Auth Nonce for Typeform
+ * GET /api/auth/nonce
+ */
+async function generateNonce(req, res) {
+  try {
+    if (!req.user || !req.userId) {
+      return sendError(res, 401, 'Authentication required', 'AUTH_REQUIRED');
+    }
+
+    // Generate short-lived nonce (valid for 10 minutes)
+    const nonce = crypto.randomBytes(16).toString('hex');
+    const expiresAt = Date.now() + (10 * 60 * 1000); // 10 minutes
+
+    // Store nonce in user metadata temporarily
+    if (authService && authService.supabaseAdmin) {
+      await authService.supabaseAdmin.auth.admin.updateUserById(req.userId, {
+        user_metadata: {
+          ...req.user.user_metadata,
+          temp_nonce: nonce,
+          temp_nonce_expires: expiresAt
+        }
+      });
+    }
+
+    logger.info('🎫 Nonce generated', { userId: req.userId, nonce: nonce.substring(0, 8) + '...' });
+
+    res.json({
+      success: true,
+      nonce: nonce
+    });
+
+  } catch (error) {
+    logger.error('💥 Nonce generation error:', error);
+    sendError(res, 500, 'Failed to generate nonce', 'NONCE_ERROR');
+  }
+}
