@@ -71,6 +71,7 @@ async function handleSignup(req, res) {
     const userData = {
       uid: user_id,
       create_user_id: user_id,
+      auth_user_id: user_id, // ✅ Required for RLS policy
       email: email,
       first_name: first_name || null,
       last_name: last_name || null,
