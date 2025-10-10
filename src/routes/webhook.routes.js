@@ -56,4 +56,11 @@ router.post('/incident-report', checkSharedKey, webhookController.handleIncident
  */
 router.post('/generate-pdf', checkSharedKey, webhookController.handleGeneratePdf);
 
+/**
+ * Test webhook endpoint (for debugging)
+ * POST /api/webhooks/test
+ * Returns received headers and body for debugging
+ */
+router.post('/test', checkSharedKey, webhookController.handleWebhookTest);
+
 module.exports = router;

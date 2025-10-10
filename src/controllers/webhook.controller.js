@@ -8,11 +8,27 @@
 async function handleSignup(req, res) {
   // Use centralized admin client for privileged operations
   const { supabaseAdmin } = require('../../lib/supabaseAdmin');
+  const { sendError, sendSuccess } = require('../utils/response');
+  const logger = require('../utils/logger');
 
   try {
     logger.info('📥 Typeform signup webhook received');
+    logger.info('🔍 Request headers:', {
+      'x-api-key': req.get('X-Api-Key') ? '***PRESENT***' : 'MISSING',
+      'authorization': req.get('Authorization') ? '***PRESENT***' : 'MISSING',
+      'content-type': req.get('Content-Type'),
+      'user-agent': req.get('User-Agent')
+    });
+    logger.info('📋 Request body keys:', Object.keys(req.body || {}));
+    logger.info('📋 Full request body:', JSON.stringify(req.body, null, 2));
 
     const webhookData = req.body;
+
+    // Validate that we have data
+    if (!webhookData || Object.keys(webhookData).length === 0) {
+      logger.error('❌ Empty webhook payload received');
+      return sendError(res, 400, 'Empty webhook payload', 'EMPTY_PAYLOAD');
+    }
 
     // Extract exact hidden fields from Typeform
     const { 
@@ -47,24 +63,52 @@ async function handleSignup(req, res) {
       create_user_id,
       email,
       hasAuthCode: !!auth_code,
-      product_id
+      product_id,
+      hasName: !!(first_name || last_name),
+      hasPhone: !!phone
     });
 
-    if (!auth_user_id) {
-      return sendError(res, 400, 'Missing auth_user_id', 'MISSING_AUTH_USER_ID');
+    // Validate required fields
+    const missingFields = [];
+    if (!auth_user_id) missingFields.push('auth_user_id');
+    if (!email) missingFields.push('email');
+    if (!auth_code) missingFields.push('auth_code');
+
+    if (missingFields.length > 0) {
+      logger.error('❌ Missing required fields:', missingFields);
+      return sendError(res, 400, `Missing required fields: ${missingFields.join(', ')}`, 'MISSING_REQUIRED_FIELDS');
     }
 
-    if (!email || !auth_code) {
-      return sendError(res, 400, 'Missing authentication data', 'MISSING_AUTH');
+    // Check Supabase connection first
+    if (!supabaseAdmin) {
+      logger.error('❌ Supabase admin client not available');
+      return sendError(res, 503, 'Database service unavailable', 'DB_UNAVAILABLE');
     }
 
     // Validate nonce (auth_code)
     try {
+      logger.info('🔍 Looking up user:', auth_user_id);
       const { data: user, error: userError } = await supabaseAdmin.auth.admin.getUserById(auth_user_id);
       
-      if (userError || !user) {
+      if (userError) {
+        logger.error('❌ User lookup error:', {
+          error: userError.message,
+          code: userError.code,
+          auth_user_id
+        });
+        return sendError(res, 404, `User lookup failed: ${userError.message}`, 'USER_LOOKUP_ERROR');
+      }
+
+      if (!user) {
+        logger.error('❌ User not found in Auth:', auth_user_id);
         return sendError(res, 404, 'User not found', 'USER_NOT_FOUND');
       }
+
+      logger.info('✅ User found:', {
+        id: user.id,
+        email: user.email,
+        created_at: user.created_at
+      });
 
       const metadata = user.user_metadata || {};
       const storedNonce = metadata.temp_nonce;
@@ -198,19 +242,46 @@ async function handleSignup(req, res) {
     // ========================================
     // SUCCESS RESPONSE
     // ========================================
-    res.status(200).json({
-      success: true,
+    logger.success('🎉 Typeform webhook completed successfully', {
+      auth_user_id,
+      profile_id: insertedUser.id,
+      email
+    });
+
+    return sendSuccess(res, {
       message: 'Profile completed successfully',
       user_id: auth_user_id,
-      profile_id: insertedUser.id
+      profile_id: insertedUser.id,
+      email: email
     });
 
   } catch (error) {
     logger.error('💥 Typeform webhook error:', {
       error: error.message,
-      stack: error.stack
+      stack: error.stack,
+      body: req.body,
+      headers: {
+        'x-api-key': req.get('X-Api-Key') ? 'PRESENT' : 'MISSING',
+        'content-type': req.get('Content-Type')
+      }
     });
-    sendError(res, 500, error.message, 'WEBHOOK_ERROR');
+    
+    // Provide more specific error messages
+    let errorMessage = 'Webhook processing failed';
+    let errorCode = 'WEBHOOK_ERROR';
+
+    if (error.message.includes('auth')) {
+      errorMessage = 'Authentication validation failed';
+      errorCode = 'AUTH_ERROR';
+    } else if (error.message.includes('database') || error.message.includes('supabase')) {
+      errorMessage = 'Database operation failed';
+      errorCode = 'DB_ERROR';
+    } else if (error.message.includes('validation')) {
+      errorMessage = 'Data validation failed';
+      errorCode = 'VALIDATION_ERROR';
+    }
+
+    return sendError(res, 500, errorMessage, errorCode);
   }
 }
 
@@ -258,8 +329,35 @@ async function handleGeneratePdf(req, res) {
   }
 }
 
+/**
+ * Test webhook endpoint for debugging
+ * POST /api/webhooks/test
+ */
+async function handleWebhookTest(req, res) {
+  const logger = require('../utils/logger');
+  const { sendSuccess } = require('../utils/response');
+  
+  try {
+    logger.info('🧪 Webhook test endpoint called');
+    logger.info('📋 Headers received:', req.headers);
+    logger.info('📋 Body received:', req.body);
+    
+    return sendSuccess(res, {
+      message: 'Webhook test successful',
+      receivedHeaders: Object.keys(req.headers),
+      receivedBody: req.body,
+      timestamp: new Date().toISOString()
+    });
+    
+  } catch (error) {
+    logger.error('💥 Webhook test error:', error);
+    return sendError(res, 500, error.message, 'TEST_ERROR');
+  }
+}
+
 module.exports = {
   handleSignup,
   handleIncidentReport,
-  handleGeneratePdf
+  handleGeneratePdf,
+  handleWebhookTest
 };
