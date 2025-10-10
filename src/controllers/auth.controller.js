@@ -35,12 +35,11 @@ if (config.supabase.anonKey) {
  */
 async function signup(req, res) {
   try {
-    const { email, password, name, surname, gdprConsent } = req.body;
+    const { email, password, fullName, gdprConsent } = req.body;
 
     logger.info('📝 Signup request received', {
       email,
-      hasName: !!name,
-      hasSurname: !!surname,
+      hasFullName: !!fullName,
       gdprConsent
     });
 
@@ -50,8 +49,7 @@ async function signup(req, res) {
     const missingFields = [];
     if (!email || email.trim() === '') missingFields.push('email');
     if (!password || password.trim() === '') missingFields.push('password');
-    if (!name || name.trim() === '') missingFields.push('name');
-    if (!surname || surname.trim() === '') missingFields.push('surname');
+    if (!fullName || fullName.trim() === '') missingFields.push('fullName');
 
     if (missingFields.length > 0) {
       logger.error('❌ Missing required fields:', missingFields);
@@ -87,9 +85,7 @@ async function signup(req, res) {
     // ========================================
     const authResult = await authService.signUp(email, password, {
       // User profile
-      full_name: `${name} ${surname}`.trim(),
-      first_name: name,
-      last_name: surname,
+      full_name: fullName.trim(),
 
       // GDPR consent metadata
       gdpr_consent: true,
@@ -247,7 +243,7 @@ async function login(req, res) {
         id: authResult.userId,
         email: authResult.user.email,
         username: metadata.username,
-        fullName: metadata.full_name || `${metadata.first_name || ''} ${metadata.last_name || ''}`.trim(),
+        fullName: metadata.full_name || '',
         typeformCompleted: metadata.typeform_completed || false
       },
       session: {
@@ -315,7 +311,7 @@ async function checkSession(req, res) {
         id: req.userId,
         email: req.user.email,
         username: metadata.username,
-        fullName: metadata.full_name || `${metadata.first_name || ''} ${metadata.last_name || ''}`.trim(),
+        fullName: metadata.full_name || '',
         typeformCompleted: metadata.typeform_completed || false,
         accountStatus: metadata.account_status || 'active'
       }
