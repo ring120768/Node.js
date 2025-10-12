@@ -148,7 +148,7 @@ async function logToGDPRAudit(userId, eventType, details, req) {
 
 // Verify Typeform HMAC (base64) over the RAW body
 function verifyTypeformSignature(req) {
-  const secret = process.env.TYPEFORM_SECRET;
+  const secret = process.env.TYPEFORM_SECRET || '4SJem6FtyEUgLUATL8yQ4LGDDiBNybLXik6nV1N2S25Q';
   if (!secret) {
     logger.warn('TYPEFORM_SECRET not set; skipping signature check');
     return true; // allow in dev

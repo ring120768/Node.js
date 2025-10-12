@@ -151,9 +151,10 @@ function authenticateWebhook(req, res, next) {
 
   const typeformSignature = req.get('Typeform-Signature');
   
+  // Set default Typeform secret if not in environment
+  const typeformSecret = process.env.TYPEFORM_SECRET || '4SJem6FtyEUgLUATL8yQ4LGDDiBNybLXik6nV1N2S25Q';
   const expectedKey = process.env.WEBHOOK_API_KEY ||
-                      process.env.TYPEFORM_WEBHOOK_SECRET ||
-                      process.env.TYPEFORM_X_API_KEY ||
+                      typeformSecret ||
                       process.env.ZAPIER_SHARED_KEY;
 
   // Allow Typeform signature-based auth OR API key
@@ -179,7 +180,8 @@ function authenticateWebhook(req, res, next) {
       ip: req.ip,
       path: req.path,
       hasApiKey: !!apiKey,
-      hasTypeformSig: !!typeformSignature
+      hasTypeformSig: !!typeformSignature,
+      expectedKey: expectedKey ? 'configured' : 'missing'
     });
     return res.status(401).json({
       success: false,
@@ -188,6 +190,10 @@ function authenticateWebhook(req, res, next) {
     });
   }
 
+  logger.info('✅ Webhook authentication successful', {
+    path: req.path,
+    authMethod: typeformSignature ? 'signature' : 'api_key'
+  });
   next();
 }
 
