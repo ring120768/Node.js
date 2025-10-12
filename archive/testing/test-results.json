@@ -1,0 +1,149 @@
+{
+  "timestamp": "2025-10-11T19:24:11.017Z",
+  "summary": {
+    "total": 21,
+    "passed": 8,
+    "failed": 13,
+    "successRate": "38.1%"
+  },
+  "details": {
+    "Health Check Endpoint": {
+      "passed": false,
+      "details": "Request failed with status code 500"
+    },
+    "Config Endpoint": {
+      "passed": false,
+      "details": "Request failed with status code 500"
+    },
+    "User Signup": {
+      "passed": true,
+      "details": null
+    },
+    "Signup GDPR Consent": {
+      "passed": false,
+      "details": "GDPR consent not captured"
+    },
+    "User Login": {
+      "passed": true,
+      "details": null
+    },
+    "Session Check": {
+      "passed": true,
+      "details": null
+    },
+    "User Logout": {
+      "passed": true,
+      "details": null
+    },
+    "Transcription Service": {
+      "passed": false,
+      "details": "Request failed with status code 401"
+    },
+    "GDPR Consent Retrieval": {
+      "passed": false,
+      "details": "Should return 404 for non-existent user"
+    },
+    "GDPR Consent Update": {
+      "passed": false,
+      "details": "Request failed with status code 503"
+    },
+    "GDPR Audit Log": {
+      "passed": false,
+      "details": "Request failed with status code 401"
+    },
+    "Get Emergency Contact": {
+      "passed": false,
+      "details": "Request failed with status code 400"
+    },
+    "Update Emergency Contact": {
+      "passed": false,
+      "details": "Request failed with status code 400"
+    },
+    "Log Emergency Call": {
+      "passed": true,
+      "details": null
+    },
+    "PDF Generation Request": {
+      "passed": false,
+      "details": "Request failed with status code 401"
+    },
+    "PDF Status Check": {
+      "passed": true,
+      "details": null
+    },
+    "Signup Webhook": {
+      "passed": false,
+      "details": "Request failed with status code 400"
+    },
+    "Incident Report Webhook": {
+      "passed": true,
+      "details": null
+    },
+    "Webhook Authentication Failure": {
+      "passed": false,
+      "details": "Should return 401 for unauthorized request"
+    },
+    "WebSocket Connection": {
+      "passed": true,
+      "details": null
+    },
+    "WebSocket Messaging": {
+      "passed": false,
+      "details": "No response to ping"
+    }
+  },
+  "errors": [
+    {
+      "test": "Health Check Endpoint",
+      "error": "Request failed with status code 500"
+    },
+    {
+      "test": "Config Endpoint",
+      "error": "Request failed with status code 500"
+    },
+    {
+      "test": "Signup GDPR Consent",
+      "error": "GDPR consent not captured"
+    },
+    {
+      "test": "Transcription Service",
+      "error": "Request failed with status code 401"
+    },
+    {
+      "test": "GDPR Consent Retrieval",
+      "error": "Should return 404 for non-existent user"
+    },
+    {
+      "test": "GDPR Consent Update",
+      "error": "Request failed with status code 503"
+    },
+    {
+      "test": "GDPR Audit Log",
+      "error": "Request failed with status code 401"
+    },
+    {
+      "test": "Get Emergency Contact",
+      "error": "Request failed with status code 400"
+    },
+    {
+      "test": "Update Emergency Contact",
+      "error": "Request failed with status code 400"
+    },
+    {
+      "test": "PDF Generation Request",
+      "error": "Request failed with status code 401"
+    },
+    {
+      "test": "Signup Webhook",
+      "error": "Request failed with status code 400"
+    },
+    {
+      "test": "Webhook Authentication Failure",
+      "error": "Should return 401 for unauthorized request"
+    },
+    {
+      "test": "WebSocket Messaging",
+      "error": "No response to ping"
+    }
+  ]
+}

@@ -1,0 +1,143 @@
+
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <title>Find My Location - Car Crash Lawyer AI</title>
+  <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
+  <style>
+    body { background: #eceffc; font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; }
+    .container { max-width: 500px; margin: 60px auto; padding: 24px; background: #fff; border-radius: 10px; box-shadow: 0 6px 24px rgba(0,0,0,0.08);}
+    #map { height: 250px; border-radius: 6px; margin: 12px 0; }
+    .w3w { font-size: 1.2rem; font-weight: bold; color: #e74c3c; }
+    .info-row { margin: 8px 0; }
+    .location-accuracy { font-size: 0.98rem; color: #fff; background: #27ae60; border-radius: 4px; padding: 4px 8px; display: inline-block; }
+    label { font-size: 0.95rem; color: #333; }
+    input { width: 100%; margin-top: 2px; padding: 4px 6px; border: 1px solid #ddd; border-radius: 4px; font-size: 1rem; background: #f8fafc; }
+    #findBtn { background: #3498db; color: white; padding: 12px 24px; border: none; border-radius: 6px; font-size: 1rem; cursor: pointer; }
+    #findBtn:hover { background: #2980b9; }
+  </style>
+</head>
+<body>
+  <div class="container">
+    <h1>Find My Location</h1>
+    <button id="findBtn">📍 Find Me!</button>
+    <div id="result" style="display:none;">
+      <div class="w3w" id="w3w">///loading.location.words</div>
+      <div id="map"></div>
+      <div class="location-accuracy" id="accuracyInfo">
+        <strong>Location Accuracy:</strong> <span id="accuracyValue">Unknown</span>
+      </div>
+      <div class="info-row">
+        <label>Latitude:</label>
+        <input id="latInput" type="text" readonly>
+      </div>
+      <div class="info-row">
+        <label>Longitude:</label>
+        <input id="lngInput" type="text" readonly>
+      </div>
+      <div class="info-row">
+        <label>Full Address:</label>
+        <input id="fullAddress" type="text" readonly>
+      </div>
+    </div>
+  </div>
+  <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+  <script>
+    let map, marker, accuracyCircle;
+
+    document.getElementById('findBtn').onclick = async () => {
+      const w3wElement = document.getElementById('w3w');
+      const latInput = document.getElementById('latInput');
+      const lngInput = document.getElementById('lngInput');
+      const fullAddressInput = document.getElementById('fullAddress');
+      const resultDiv = document.getElementById('result');
+      const accuracyValue = document.getElementById('accuracyValue');
+      const accuracyInfo = document.getElementById('accuracyInfo');
+
+      // Set initial loading state
+      if (w3wElement) w3wElement.textContent = '///loading.location.words';
+      if (resultDiv) resultDiv.style.display = 'block';
+
+      navigator.geolocation.getCurrentPosition(async (pos) => {
+        const lat = pos.coords.latitude;
+        const lng = pos.coords.longitude;
+        const accuracy = pos.coords.accuracy;
+
+        // Update input fields safely
+        if (latInput) latInput.value = lat.toFixed(6);
+        if (lngInput) lngInput.value = lng.toFixed(6);
+
+        // Accuracy indicator
+        let accText = `±${Math.round(accuracy)}m`;
+        let accColor = '#27ae60';
+        if (accuracy > 50) accColor = '#e67e22';
+        if (accuracy > 100) accColor = '#e74c3c';
+
+        if (accuracyValue) accuracyValue.textContent = accText;
+        if (accuracyInfo) accuracyInfo.style.background = accColor;
+
+        // Map logic
+        if (!map) {
+          map = L.map('map').setView([lat, lng], 17);
+          L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png').addTo(map);
+        } else {
+          map.setView([lat, lng], 17);
+        }
+
+        if (marker) marker.remove();
+        marker = L.marker([lat, lng]).addTo(map).bindPopup('You are here').openPopup();
+
+        if (accuracyCircle) accuracyCircle.remove();
+        accuracyCircle = L.circle([lat, lng], {
+          radius: accuracy,
+          fillColor: accColor,
+          color: accColor,
+          fillOpacity: 0.18,
+          weight: 1
+        }).addTo(map);
+
+        // What3Words API call
+        try {
+          console.log('Calling What3Words API...');
+          const resp = await fetch(`/api/what3words?lat=${lat}&lng=${lng}`);
+          console.log('What3Words response status:', resp.status);
+
+          if (!resp.ok) {
+            throw new Error(`HTTP ${resp.status}`);
+          }
+
+          const data = await resp.json();
+          console.log('What3Words data:', data);
+
+          if (data.words && w3wElement) {
+            w3wElement.textContent = `///${data.words}`;
+          } else if (w3wElement) {
+            w3wElement.textContent = '///error.getting.words';
+          }
+        } catch (error) {
+          console.error('What3Words error:', error);
+          if (w3wElement) w3wElement.textContent = '///api.error.occurred';
+        }
+
+        // Reverse Geocode for address
+        try {
+          const response = await fetch(`https://nominatim.openstreetmap.org/reverse?format=json&lat=${lat}&lon=${lng}&zoom=18&addressdetails=1`);
+          const result = await response.json();
+          if (fullAddressInput) {
+            fullAddressInput.value = result.display_name || 'Address not found';
+          }
+        } catch (error) {
+          console.error('Geocoding error:', error);
+          if (fullAddressInput) {
+            fullAddressInput.value = 'Unable to fetch address';
+          }
+        }
+      }, (err) => {
+        console.error('Geolocation error:', err);
+        alert('Unable to find location! Please check your location permissions.');
+      });
+    };
+  </script>
+</body>
+</html>

@@ -1,0 +1,49 @@
+{
+  "name": "car-crash-lawyer-ai-system",
+  "version": "2.0.0",
+  "description": "Image processor and PDF generator for Car Crash Lawyer AI",
+  "main": "index.js",
+  "scripts": {
+    "start": "node index.js",
+    "start:prod": "NODE_ENV=production node index.js",
+    "dev": "nodemon index.js",
+    "lint": "eslint src/ --ext .js --fix",
+    "format": "prettier --write 'src/**/*.js' '*.js' '*.md' '*.json'",
+    "audit": "npm audit --audit-level moderate",
+    "depcheck": "depcheck --ignores='eslint,prettier,nodemon,npm-check-updates'",
+    "health": "node scripts/health-check.js",
+    "clean": "rm -rf node_modules/.cache tmp/ *.log uploads/temp*",
+    "deps:update": "ncu -u --target minor"
+  },
+  "dependencies": {
+    "@supabase/supabase-js": "^2.57.4",
+    "axios": "^1.11.0",
+    "body-parser": "^2.2.0",
+    "compression": "^1.8.1",
+    "cookie-parser": "^1.4.7",
+    "cors": "^2.8.5",
+    "dotenv": "^16.6.1",
+    "express": "^4.21.2",
+    "express-rate-limit": "^8.1.0",
+    "form-data": "^4.0.4",
+    "handlebars": "^4.7.8",
+    "helmet": "^8.1.0",
+    "morgan": "^1.10.1",
+    "multer": "^2.0.2",
+    "node-fetch": "^2.7.0",
+    "nodemailer": "^6.10.1",
+    "openai": "^5.22.0",
+    "path": "^0.12.7",
+    "pdf-lib": "^1.17.1",
+    "puppeteer": "^24.21.0",
+    "uuid": "^13.0.0",
+    "ws": "^8.18.3"
+  },
+  "devDependencies": {
+    "depcheck": "^1.4.7",
+    "eslint": "^9.37.0",
+    "nodemon": "^3.1.10",
+    "npm-check-updates": "^19.0.0",
+    "prettier": "^3.6.2"
+  }
+}

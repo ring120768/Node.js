@@ -1,0 +1,647 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Sign Up - Car Crash Lawyer AI</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif;
+            background: linear-gradient(135deg, #0B7AB0 0%, #1EA1D4 100%);
+            min-height: 100vh;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            padding: 20px;
+        }
+
+        .signup-container {
+            background: white;
+            border-radius: 20px;
+            box-shadow: 0 20px 60px rgba(0, 0, 0, 0.3);
+            max-width: 450px;
+            width: 100%;
+            padding: 40px;
+            position: relative;
+            overflow: hidden;
+        }
+
+        .signup-container::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: 0;
+            right: 0;
+            height: 5px;
+            background: linear-gradient(90deg, #0B7AB0, #1EA1D4, #0B7AB0);
+            background-size: 200% 100%;
+            animation: shimmer 3s infinite;
+        }
+
+        @keyframes shimmer {
+            0% { background-position: 0% 0%; }
+            50% { background-position: 100% 0%; }
+            100% { background-position: 0% 0%; }
+        }
+
+        .logo-section {
+            text-align: center;
+            margin-bottom: 30px;
+        }
+
+        .logo-section img {
+            width: 120px;
+            height: auto;
+            margin-bottom: 15px;
+            filter: drop-shadow(0 4px 8px rgba(11, 122, 176, 0.2));
+        }
+
+        .logo-section h1 {
+            color: #0B7AB0;
+            font-size: 28px;
+            font-weight: 700;
+            margin-bottom: 8px;
+        }
+
+        .logo-section p {
+            color: #666;
+            font-size: 14px;
+        }
+
+        .form-group {
+            margin-bottom: 20px;
+        }
+
+        .form-group label {
+            display: block;
+            color: #333;
+            font-weight: 600;
+            margin-bottom: 8px;
+            font-size: 14px;
+        }
+
+        .form-group input {
+            width: 100%;
+            padding: 12px 15px;
+            border: 2px solid #e0e0e0;
+            border-radius: 8px;
+            font-size: 16px;
+            transition: all 0.3s ease;
+        }
+
+        .form-group input:focus {
+            outline: none;
+            border-color: #0B7AB0;
+            box-shadow: 0 0 0 3px rgba(11, 122, 176, 0.1);
+        }
+
+        .form-group input.error {
+            border-color: #e74c3c;
+        }
+
+        .error-message {
+            color: #e74c3c;
+            font-size: 12px;
+            margin-top: 5px;
+            display: none;
+        }
+
+        .error-message.show {
+            display: block;
+        }
+
+        .password-strength {
+            margin-top: 5px;
+            height: 4px;
+            background: #e0e0e0;
+            border-radius: 2px;
+            overflow: hidden;
+        }
+
+        .password-strength-bar {
+            height: 100%;
+            width: 0%;
+            transition: all 0.3s ease;
+        }
+
+        .password-strength-bar.weak {
+            width: 33%;
+            background: #e74c3c;
+        }
+
+        .password-strength-bar.medium {
+            width: 66%;
+            background: #f39c12;
+        }
+
+        .password-strength-bar.strong {
+            width: 100%;
+            background: #27ae60;
+        }
+
+        
+
+        .gdpr-consent {
+            margin: 25px 0;
+            padding: 15px;
+            background: #f8f9fa;
+            border: 2px solid #e0e0e0;
+            border-radius: 8px;
+        }
+
+        .gdpr-consent.error {
+            border-color: #e74c3c;
+            background: #fff5f5;
+        }
+
+        .checkbox-wrapper {
+            display: flex;
+            align-items: flex-start;
+            gap: 12px;
+        }
+
+        .checkbox-wrapper input[type="checkbox"] {
+            width: 20px;
+            height: 20px;
+            margin-top: 2px;
+            cursor: pointer;
+            flex-shrink: 0;
+            accent-color: #0B7AB0;
+        }
+
+        .checkbox-label {
+            font-size: 14px;
+            color: #555;
+            line-height: 1.5;
+            cursor: pointer;
+        }
+
+        .checkbox-label a {
+            color: #0B7AB0;
+            text-decoration: none;
+            font-weight: 600;
+        }
+
+        .checkbox-label a:hover {
+            text-decoration: underline;
+        }
+
+        .submit-btn {
+            width: 100%;
+            padding: 14px;
+            background: linear-gradient(135deg, #0B7AB0 0%, #1EA1D4 100%);
+            color: white;
+            border: none;
+            border-radius: 8px;
+            font-size: 16px;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            margin-top: 10px;
+        }
+
+        .submit-btn:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 8px 20px rgba(11, 122, 176, 0.3);
+        }
+
+        .submit-btn:disabled {
+            background: #ccc;
+            cursor: not-allowed;
+            transform: none;
+        }
+
+        .submit-btn .spinner {
+            display: none;
+            border: 2px solid #ffffff;
+            border-top-color: transparent;
+            border-radius: 50%;
+            width: 16px;
+            height: 16px;
+            animation: spin 0.6s linear infinite;
+            margin: 0 auto;
+        }
+
+        .submit-btn.loading .spinner {
+            display: block;
+        }
+
+        .submit-btn.loading .btn-text {
+            display: none;
+        }
+
+        @keyframes spin {
+            to { transform: rotate(360deg); }
+        }
+
+        .alert {
+            padding: 12px 15px;
+            border-radius: 8px;
+            margin-bottom: 20px;
+            font-size: 14px;
+            display: none;
+        }
+
+        .alert.show {
+            display: block;
+        }
+
+        .alert.error {
+            background: #fee;
+            color: #c33;
+            border: 1px solid #fcc;
+        }
+
+        .alert.success {
+            background: #efe;
+            color: #3c3;
+            border: 1px solid #cfc;
+        }
+
+        .login-link {
+            text-align: center;
+            margin-top: 20px;
+            color: #666;
+            font-size: 14px;
+        }
+
+        .login-link a {
+            color: #0B7AB0;
+            text-decoration: none;
+            font-weight: 600;
+        }
+
+        .login-link a:hover {
+            text-decoration: underline;
+        }
+
+        .helper-text {
+            font-size: 12px;
+            color: #888;
+            margin-top: 5px;
+        }
+
+        @media (max-width: 480px) {
+            .signup-container {
+                padding: 30px 20px;
+            }
+
+            .logo-section h1 {
+                font-size: 24px;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="signup-container">
+        <div class="logo-section">
+            <img src="/images/mascot.png" alt="Car Crash Lawyer AI Mascot" onerror="this.style.display='none'">
+            <h1>Create Your Account</h1>
+            <p>Your Legal First Responder</p>
+        </div>
+
+        <div id="alertBox" class="alert"></div>
+
+        <form id="signupForm">
+            <div class="form-group">
+                <label for="email">Email Address *</label>
+                <input 
+                    type="email" 
+                    id="email" 
+                    name="email" 
+                    required
+                    placeholder="your.email@example.com"
+                    autocomplete="email"
+                >
+                <div class="error-message" id="emailError"></div>
+            </div>
+
+            <div class="form-group">
+                <label for="password">Password *</label>
+                <input 
+                    type="password" 
+                    id="password" 
+                    name="password" 
+                    required
+                    placeholder="Minimum 8 characters"
+                    autocomplete="new-password"
+                >
+                <div class="password-strength">
+                    <div class="password-strength-bar" id="passwordStrengthBar"></div>
+                </div>
+                <div class="helper-text">Use 8+ characters with a mix of letters and numbers</div>
+                <div class="error-message" id="passwordError"></div>
+            </div>
+
+            <div class="form-group">
+                <label for="fullName">Full Name *</label>
+                <input 
+                    type="text" 
+                    id="fullName" 
+                    name="fullName" 
+                    required
+                    placeholder="John Doe"
+                    autocomplete="name"
+                >
+                <div class="error-message" id="fullNameError"></div>
+            </div>
+
+            <!-- GDPR Consent Checkbox -->
+            <div class="gdpr-consent" id="gdprConsentBox">
+                <div class="checkbox-wrapper">
+                    <input 
+                        type="checkbox" 
+                        id="gdprConsent" 
+                        name="gdprConsent" 
+                        required
+                    >
+                    <label for="gdprConsent" class="checkbox-label">
+                        I agree to the <a href="/privacy-policy.html" target="_blank">Privacy Policy</a> and consent to my data being processed as described, including AI transcription services and secure storage.
+                    </label>
+                </div>
+                <div class="error-message" id="gdprConsentError"></div>
+            </div>
+
+            <button type="submit" class="submit-btn" id="submitBtn">
+                <span class="btn-text">Create Account</span>
+                <div class="spinner"></div>
+            </button>
+        </form>
+
+        <div class="login-link">
+            Already have an account? <a href="/login.html">Log in</a>
+        </div>
+    </div>
+
+    <script>
+        console.log('🚗 Car Crash Lawyer AI - Signup Page (Auth-Only Architecture)');
+
+        const form = document.getElementById('signupForm');
+        const submitBtn = document.getElementById('submitBtn');
+        const alertBox = document.getElementById('alertBox');
+        const emailInput = document.getElementById('email');
+        const passwordInput = document.getElementById('password');
+        const fullNameInput = document.getElementById('fullName');
+        const gdprConsentCheckbox = document.getElementById('gdprConsent');
+        const gdprConsentBox = document.getElementById('gdprConsentBox');
+
+        // Password strength checker
+        passwordInput.addEventListener('input', function() {
+            const password = this.value;
+            const strengthBar = document.getElementById('passwordStrengthBar');
+
+            let strength = 0;
+            if (password.length >= 8) strength++;
+            if (password.match(/[a-z]/) && password.match(/[A-Z]/)) strength++;
+            if (password.match(/[0-9]/)) strength++;
+            if (password.match(/[^a-zA-Z0-9]/)) strength++;
+
+            strengthBar.className = 'password-strength-bar';
+            if (strength === 1) strengthBar.classList.add('weak');
+            else if (strength === 2 || strength === 3) strengthBar.classList.add('medium');
+            else if (strength >= 4) strengthBar.classList.add('strong');
+        });
+
+        // Clear GDPR error when checkbox is clicked
+        gdprConsentCheckbox.addEventListener('change', function() {
+            if (this.checked) {
+                gdprConsentBox.classList.remove('error');
+                clearError('gdprConsent');
+            }
+        });
+
+        // Email validation
+        function validateEmail(email) {
+            const re = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+            return re.test(email);
+        }
+
+        // Show error
+        function showError(field, message) {
+            const input = document.getElementById(field);
+            const error = document.getElementById(field + 'Error');
+
+            if (field === 'gdprConsent') {
+                gdprConsentBox.classList.add('error');
+            } else if (input) {
+                input.classList.add('error');
+            }
+
+            if (error) {
+                error.textContent = message;
+                error.classList.add('show');
+            }
+        }
+
+        // Clear error
+        function clearError(field) {
+            const input = document.getElementById(field);
+            const error = document.getElementById(field + 'Error');
+
+            if (field === 'gdprConsent') {
+                gdprConsentBox.classList.remove('error');
+            } else if (input) {
+                input.classList.remove('error');
+            }
+
+            if (error) {
+                error.classList.remove('show');
+            }
+        }
+
+        // Clear all errors
+        function clearAllErrors() {
+            ['email', 'password', 'fullName', 'gdprConsent'].forEach(clearError);
+        }
+
+        // Show alert
+        function showAlert(message, type) {
+            alertBox.textContent = message;
+            alertBox.className = 'alert ' + type + ' show';
+            setTimeout(() => {
+                alertBox.classList.remove('show');
+            }, 5000);
+        }
+
+        // Real-time input validation
+        [emailInput, passwordInput, fullNameInput].forEach(input => {
+            input.addEventListener('input', function() {
+                clearError(this.id);
+            });
+        });
+
+        // Redirect to Typeform with proper hidden fields
+        async function redirectToTypeform(userData) {
+            console.log('🎯 Redirecting to Typeform onboarding...');
+
+            try {
+                // Get server-minted nonce
+                const nonceResponse = await fetch('/api/auth/nonce', {
+                    headers: {
+                        'Authorization': `Bearer ${userData.session?.access_token || ''}`
+                    }
+                });
+                
+                if (!nonceResponse.ok) {
+                    throw new Error('Failed to get nonce');
+                }
+                
+                const { nonce } = await nonceResponse.json();
+                
+                // Create Typeform URL with exact hidden field pattern
+                const typeformUrl = new URL('https://form.typeform.com/to/b03aFxEO');
+                typeformUrl.searchParams.set('auth_user_id', userData.id); // ✅ Updated field name
+                typeformUrl.searchParams.set('create_user_id', userData.id); // Legacy binder for PDF only
+                typeformUrl.searchParams.set('email', userData.email || '');
+                typeformUrl.searchParams.set('product_id', 'car_crash_lawyer_ai');
+                typeformUrl.searchParams.set('auth_code', nonce);
+
+                console.log('📋 Typeform URL created with hidden fields');
+
+                // Store user data in session storage for tracking
+                const storageData = {
+                    userId: userData.id,
+                    userEmail: userData.email,
+                    authCode: nonce,
+                    signupTimestamp: new Date().toISOString()
+                };
+
+                try {
+                    sessionStorage.setItem('carCrashLawyerUser', JSON.stringify(storageData));
+                    localStorage.setItem('carCrashLawyerUser', JSON.stringify(storageData));
+                    console.log('💾 User data stored in browser storage');
+                } catch (storageError) {
+                    console.error('⚠️ Storage error:', storageError);
+                }
+
+                // Redirect to Typeform
+                console.log('🚀 Redirecting now...');
+                window.location.href = typeformUrl.toString();
+                
+            } catch (error) {
+                console.error('💥 Failed to get nonce for Typeform:', error);
+                showAlert('Failed to redirect to onboarding. Please try again.', 'error');
+                submitBtn.disabled = false;
+                submitBtn.classList.remove('loading');
+            }
+        }
+
+        // Handle form submission
+        form.addEventListener('submit', async function(e) {
+            e.preventDefault();
+            console.log('📝 Form submission started');
+            clearAllErrors();
+
+            const formData = {
+                email: emailInput.value.trim(),
+                password: passwordInput.value,
+                fullName: fullNameInput.value.trim(),
+                gdprConsent: gdprConsentCheckbox.checked
+            };
+
+            console.log('📊 Form data:', { ...formData, password: '[REDACTED]' });
+
+            // Client-side validation
+            let hasErrors = false;
+
+            if (!formData.email) {
+                showError('email', 'Email is required');
+                hasErrors = true;
+            } else if (!validateEmail(formData.email)) {
+                showError('email', 'Please enter a valid email address');
+                hasErrors = true;
+            }
+
+            if (!formData.password) {
+                showError('password', 'Password is required');
+                hasErrors = true;
+            } else if (formData.password.length < 8) {
+                showError('password', 'Password must be at least 8 characters');
+                hasErrors = true;
+            }
+
+            if (!formData.fullName) {
+                showError('fullName', 'Full name is required');
+                hasErrors = true;
+            }
+
+            if (!formData.gdprConsent) {
+                showError('gdprConsent', 'You must accept the privacy policy to continue');
+                hasErrors = true;
+            }
+
+            if (hasErrors) {
+                console.log('❌ Client-side validation failed');
+                return;
+            }
+
+            console.log('✅ Client-side validation passed');
+
+            // Show loading state
+            submitBtn.disabled = true;
+            submitBtn.classList.add('loading');
+
+            try {
+                console.log('🌐 Sending signup request to server...');
+
+                const response = await fetch('/api/auth/signup', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                    },
+                    body: JSON.stringify(formData)
+                });
+
+                const data = await response.json();
+                console.log('📨 Server response:', { 
+                    status: response.status, 
+                    ok: response.ok,
+                    success: data.success 
+                });
+
+                if (response.ok && data.success) {
+                    console.log('🎉 Signup successful!');
+                    showAlert('Account created successfully! Redirecting to onboarding...', 'success');
+
+                    // Wait a moment to show success message
+                    setTimeout(() => {
+                        redirectToTypeform(data.user);
+                    }, 1500);
+
+                } else {
+                    console.error('❌ Signup failed:', data);
+                    let errorMessage = 'Signup failed. Please try again.';
+
+                    if (data.error) {
+                        errorMessage = data.error;
+                    } else if (data.message) {
+                        errorMessage = data.message;
+                    }
+
+                    // Check for specific error codes
+                    if (data.code === 'USER_EXISTS' || errorMessage.includes('already exists')) {
+                        errorMessage = 'This email is already registered. Please log in instead.';
+                    }
+
+                    showAlert(errorMessage, 'error');
+                    submitBtn.disabled = false;
+                    submitBtn.classList.remove('loading');
+                }
+            } catch (error) {
+                console.error('💥 Network error during signup:', error);
+                showAlert('Network error. Please check your connection and try again.', 'error');
+                submitBtn.disabled = false;
+                submitBtn.classList.remove('loading');
+            }
+        });
+
+        console.log('✅ Signup page JavaScript initialized');
+    </script>
+</body>
+</html>

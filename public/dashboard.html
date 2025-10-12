@@ -1,0 +1,688 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Dashboard - Car Crash Lawyer AI</title>
+  <style>
+    * {
+      margin: 0;
+      padding: 0;
+      box-sizing: border-box;
+    }
+
+    body {
+      font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, sans-serif;
+      background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+      min-height: 100vh;
+    }
+
+    .nav {
+      background: rgba(255, 255, 255, 0.95);
+      backdrop-filter: blur(10px);
+      box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+      padding: 15px 20px;
+      position: sticky;
+      top: 0;
+      z-index: 100;
+    }
+
+    .nav-container {
+      max-width: 1200px;
+      margin: 0 auto;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+    }
+
+    .nav-left {
+      display: flex;
+      align-items: center;
+      gap: 20px;
+    }
+
+    .nav-logo {
+      font-size: 20px;
+      font-weight: bold;
+      color: #667eea;
+      text-decoration: none;
+      display: flex;
+      align-items: center;
+      gap: 8px;
+    }
+
+    .nav-links {
+      display: flex;
+      gap: 15px;
+    }
+
+    .nav-links a {
+      color: #555;
+      text-decoration: none;
+      padding: 8px 12px;
+      border-radius: 6px;
+      transition: all 0.3s;
+      font-weight: 500;
+    }
+
+    .nav-links a:hover {
+      background: #f0f0f0;
+      color: #667eea;
+    }
+
+    .nav-links a.active {
+      background: #667eea;
+      color: white;
+    }
+
+    .nav-right {
+      display: flex;
+      align-items: center;
+      gap: 15px;
+    }
+
+    .user-info {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      padding: 8px 12px;
+      background: #f8f9fa;
+      border-radius: 20px;
+    }
+
+    .user-avatar {
+      width: 32px;
+      height: 32px;
+      border-radius: 50%;
+      background: linear-gradient(135deg, #667eea, #764ba2);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      color: white;
+      font-weight: bold;
+    }
+
+    .logout-btn {
+      background: #dc2626;
+      color: white;
+      border: none;
+      padding: 8px 16px;
+      border-radius: 6px;
+      cursor: pointer;
+      font-weight: 500;
+      transition: all 0.3s;
+    }
+
+    .logout-btn:hover {
+      background: #b91c1c;
+      transform: translateY(-1px);
+    }
+
+    .container {
+      max-width: 1200px;
+      margin: 0 auto;
+      padding: 30px 20px;
+    }
+
+    .welcome-section {
+      background: white;
+      border-radius: 15px;
+      padding: 30px;
+      margin-bottom: 30px;
+      box-shadow: 0 10px 30px rgba(0,0,0,0.1);
+    }
+
+    .welcome-header {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      margin-bottom: 20px;
+    }
+
+    .welcome-header h1 {
+      color: #333;
+      font-size: 28px;
+    }
+
+    .emergency-badge {
+      background: #dc2626;
+      color: white;
+      padding: 10px 20px;
+      border-radius: 30px;
+      font-weight: bold;
+      display: flex;
+      align-items: center;
+      gap: 8px;
+    }
+
+    .quick-actions {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+      gap: 20px;
+      margin-top: 30px;
+    }
+
+    .action-card {
+      background: white;
+      border-radius: 12px;
+      padding: 25px;
+      box-shadow: 0 5px 15px rgba(0,0,0,0.08);
+      transition: all 0.3s;
+      cursor: pointer;
+      text-decoration: none;
+      color: inherit;
+      border: 2px solid transparent;
+    }
+
+    .action-card:hover {
+      transform: translateY(-5px);
+      box-shadow: 0 10px 30px rgba(0,0,0,0.15);
+      border-color: #667eea;
+    }
+
+    .action-card.emergency {
+      background: linear-gradient(135deg, #dc2626, #ef4444);
+      color: white;
+    }
+
+    .action-card.emergency:hover {
+      transform: scale(1.05);
+      border-color: #dc2626;
+    }
+
+    .action-icon {
+      font-size: 36px;
+      margin-bottom: 15px;
+    }
+
+    .action-title {
+      font-size: 18px;
+      font-weight: bold;
+      margin-bottom: 8px;
+    }
+
+    .action-description {
+      font-size: 14px;
+      opacity: 0.8;
+      line-height: 1.5;
+    }
+
+    .reports-section {
+      margin-top: 40px;
+    }
+
+    .section-header {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      margin-bottom: 20px;
+    }
+
+    .section-title {
+      color: white;
+      font-size: 24px;
+      font-weight: bold;
+    }
+
+    .filter-tabs {
+      display: flex;
+      gap: 10px;
+      background: rgba(255,255,255,0.2);
+      padding: 5px;
+      border-radius: 8px;
+    }
+
+    .filter-tab {
+      padding: 8px 16px;
+      background: transparent;
+      color: white;
+      border: none;
+      border-radius: 6px;
+      cursor: pointer;
+      font-weight: 500;
+      transition: all 0.3s;
+    }
+
+    .filter-tab.active {
+      background: white;
+      color: #667eea;
+    }
+
+    .reports-grid {
+      display: grid;
+      gap: 20px;
+    }
+
+    .report-card {
+      background: white;
+      border-radius: 12px;
+      padding: 20px;
+      box-shadow: 0 5px 15px rgba(0,0,0,0.08);
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      transition: all 0.3s;
+    }
+
+    .report-card:hover {
+      transform: translateX(5px);
+      box-shadow: 0 8px 20px rgba(0,0,0,0.12);
+    }
+
+    .report-info {
+      flex: 1;
+    }
+
+    .report-date {
+      color: #666;
+      font-size: 14px;
+      margin-bottom: 5px;
+    }
+
+    .report-location {
+      font-size: 18px;
+      font-weight: bold;
+      color: #333;
+      margin-bottom: 8px;
+    }
+
+    .report-status-badge {
+      display: inline-block;
+      padding: 5px 12px;
+      border-radius: 20px;
+      font-size: 12px;
+      font-weight: bold;
+      text-transform: uppercase;
+    }
+
+    .status-pending {
+      background: #fef3c7;
+      color: #92400e;
+    }
+
+    .status-processing {
+      background: #dbeafe;
+      color: #1e3a8a;
+    }
+
+    .status-complete {
+      background: #d1fae5;
+      color: #065f46;
+    }
+
+    .report-actions {
+      display: flex;
+      gap: 10px;
+    }
+
+    .report-btn {
+      padding: 8px 16px;
+      border: none;
+      border-radius: 6px;
+      cursor: pointer;
+      font-weight: 500;
+      transition: all 0.3s;
+    }
+
+    .view-btn {
+      background: #667eea;
+      color: white;
+    }
+
+    .view-btn:hover {
+      background: #5a67d8;
+    }
+
+    .empty-state {
+      background: white;
+      border-radius: 12px;
+      padding: 60px 30px;
+      text-align: center;
+      box-shadow: 0 5px 15px rgba(0,0,0,0.08);
+    }
+
+    .empty-icon {
+      font-size: 64px;
+      margin-bottom: 20px;
+      opacity: 0.5;
+    }
+
+    .empty-title {
+      font-size: 24px;
+      color: #333;
+      margin-bottom: 10px;
+    }
+
+    .empty-description {
+      color: #666;
+      margin-bottom: 30px;
+    }
+
+    .cta-btn {
+      display: inline-block;
+      background: linear-gradient(135deg, #667eea, #764ba2);
+      color: white;
+      padding: 12px 30px;
+      border-radius: 8px;
+      text-decoration: none;
+      font-weight: bold;
+      transition: all 0.3s;
+    }
+
+    .cta-btn:hover {
+      transform: translateY(-2px);
+      box-shadow: 0 10px 20px rgba(102, 126, 234, 0.3);
+    }
+
+    .loading {
+      text-align: center;
+      padding: 60px;
+      color: white;
+    }
+
+    .loading-spinner {
+      width: 50px;
+      height: 50px;
+      border: 4px solid rgba(255,255,255,0.3);
+      border-top-color: white;
+      border-radius: 50%;
+      animation: spin 1s linear infinite;
+      margin: 0 auto 20px;
+    }
+
+    @keyframes spin {
+      to { transform: rotate(360deg); }
+    }
+
+    @media (max-width: 768px) {
+      .nav-links {
+        display: none;
+      }
+
+      .quick-actions {
+        grid-template-columns: 1fr;
+      }
+
+      .section-header {
+        flex-direction: column;
+        gap: 15px;
+        align-items: flex-start;
+      }
+    }
+  </style>
+</head>
+<body>
+  <!-- Navigation -->
+  <nav class="nav">
+    <div class="nav-container">
+      <div class="nav-left">
+        <a href="index.html" class="nav-logo">
+          <span>🚗⚖️</span>
+          <span>Car Crash Lawyer AI</span>
+        </a>
+        <div class="nav-links">
+          <a href="index.html">Home</a>
+          <a href="dashboard.html" class="active">Dashboard</a>
+          <a href="incident.html">New Report</a>
+        </div>
+      </div>
+      <div class="nav-right">
+        <div class="user-info">
+          <div class="user-avatar" id="userAvatar">?</div>
+          <span id="userName">Loading...</span>
+        </div>
+        <button class="logout-btn" onclick="handleLogout()">Logout</button>
+      </div>
+    </div>
+  </nav>
+
+  <!-- Main Content -->
+  <div class="container">
+    <!-- Loading State -->
+    <div id="loadingState" class="loading">
+      <div class="loading-spinner"></div>
+      <p>Loading your dashboard...</p>
+    </div>
+
+    <!-- Dashboard Content -->
+    <div id="dashboardContent" style="display: none;">
+      <!-- Welcome Section -->
+      <div class="welcome-section">
+        <div class="welcome-header">
+          <div>
+            <h1>Welcome back, <span id="userFullName">User</span>!</h1>
+            <p style="color: #666; margin-top: 5px;">Here's your dashboard overview</p>
+          </div>
+          <div class="emergency-badge">
+            <span>🚨</span>
+            <span>Emergency: 999</span>
+          </div>
+        </div>
+
+        <!-- Quick Actions -->
+        <div class="quick-actions">
+          <a href="incident.html" class="action-card emergency">
+            <div class="action-icon">🚨</div>
+            <div class="action-title">Report New Incident</div>
+            <div class="action-description">Had an accident? Start your report here with emergency support</div>
+          </a>
+
+          <a href="#reports" class="action-card">
+            <div class="action-icon">📋</div>
+            <div class="action-title">View Reports</div>
+            <div class="action-description">Check the status of your submitted incident reports</div>
+          </a>
+
+          <a href="profile.html" class="action-card">
+            <div class="action-icon">👤</div>
+            <div class="action-title">Profile Settings</div>
+            <div class="action-description">Update emergency contacts and personal information</div>
+          </a>
+
+          <a href="#" class="action-card">
+            <div class="action-icon">📚</div>
+            <div class="action-title">Legal Resources</div>
+            <div class="action-description">Access guides about accident claims and legal rights</div>
+          </a>
+        </div>
+      </div>
+
+      <!-- Reports Section -->
+      <div class="reports-section" id="reports">
+        <div class="section-header">
+          <h2 class="section-title">Your Incident Reports</h2>
+          <div class="filter-tabs">
+            <button class="filter-tab active" onclick="filterReports('all')">All</button>
+            <button class="filter-tab" onclick="filterReports('pending')">Pending</button>
+            <button class="filter-tab" onclick="filterReports('complete')">Complete</button>
+          </div>
+        </div>
+
+        <div id="reportsContainer" class="reports-grid">
+          <!-- Reports will be loaded here -->
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <script>
+    let currentUser = null;
+    let allReports = [];
+
+    // Initialize dashboard
+    document.addEventListener('DOMContentLoaded', async () => {
+      await checkAuthentication();
+    });
+
+    // Check authentication
+    async function checkAuthentication() {
+      try {
+        const response = await fetch('/api/auth/status');
+        const data = await response.json();
+
+        if (!data.authenticated) {
+          window.location.href = 'login.html';
+          return;
+        }
+
+        currentUser = data.user;
+        initializeDashboard();
+      } catch (error) {
+        console.error('Auth check failed:', error);
+        // Try to get user from sessionStorage as fallback
+        const storedUser = sessionStorage.getItem('currentUser');
+        if (storedUser) {
+          currentUser = JSON.parse(storedUser);
+          initializeDashboard();
+        } else {
+          window.location.href = 'login.html';
+        }
+      }
+    }
+
+    // Initialize dashboard
+    function initializeDashboard() {
+      // Hide loading, show content
+      document.getElementById('loadingState').style.display = 'none';
+      document.getElementById('dashboardContent').style.display = 'block';
+
+      // Set user info
+      const firstName = currentUser.fullName ? currentUser.fullName.split(' ')[0] : 
+                       currentUser.email.split('@')[0];
+
+      document.getElementById('userFullName').textContent = firstName;
+      document.getElementById('userName').textContent = currentUser.email;
+      document.getElementById('userAvatar').textContent = firstName.charAt(0).toUpperCase();
+
+      // Load reports
+      loadIncidentReports();
+    }
+
+    // Load incident reports
+    async function loadIncidentReports() {
+      const container = document.getElementById('reportsContainer');
+
+      try {
+        // First check sessionStorage for recent reports
+        const cachedReports = sessionStorage.getItem('userReports');
+        if (cachedReports) {
+          allReports = JSON.parse(cachedReports);
+          displayReports(allReports);
+        }
+
+        // Then fetch from server
+        const response = await fetch(`/api/user/${currentUser.uid}/reports`);
+        if (response.ok) {
+          const data = await response.json();
+          allReports = data.reports || [];
+          sessionStorage.setItem('userReports', JSON.stringify(allReports));
+          displayReports(allReports);
+        }
+      } catch (error) {
+        console.error('Failed to load reports:', error);
+
+        // Show empty state if no reports
+        if (allReports.length === 0) {
+          container.innerHTML = `
+            <div class="empty-state">
+              <div class="empty-icon">📋</div>
+              <h3 class="empty-title">No incident reports yet</h3>
+              <p class="empty-description">
+                When you report an incident, it will appear here for you to track its progress.
+              </p>
+              <a href="incident.html" class="cta-btn">Report Your First Incident</a>
+            </div>
+          `;
+        }
+      }
+    }
+
+    // Display reports
+    function displayReports(reports) {
+      const container = document.getElementById('reportsContainer');
+
+      if (reports.length === 0) {
+        container.innerHTML = `
+          <div class="empty-state">
+            <div class="empty-icon">📋</div>
+            <h3 class="empty-title">No incident reports yet</h3>
+            <p class="empty-description">
+              When you report an incident, it will appear here for you to track its progress.
+            </p>
+            <a href="incident.html" class="cta-btn">Report Your First Incident</a>
+          </div>
+        `;
+        return;
+      }
+
+      container.innerHTML = reports.map(report => {
+        const date = new Date(report.submitted_at || report.created_at);
+        const formattedDate = date.toLocaleDateString('en-GB', {
+          day: 'numeric',
+          month: 'short',
+          year: 'numeric',
+          hour: '2-digit',
+          minute: '2-digit'
+        });
+
+        const status = report.status || 'pending';
+        const location = report.accident_location || report.what3words || 'Location pending';
+
+        return `
+          <div class="report-card">
+            <div class="report-info">
+              <div class="report-date">${formattedDate}</div>
+              <div class="report-location">📍 ${location}</div>
+              <span class="report-status-badge status-${status}">${status}</span>
+            </div>
+            <div class="report-actions">
+              <button class="report-btn view-btn" onclick="viewReport('${report.id}')">
+                View Details
+              </button>
+            </div>
+          </div>
+        `;
+      }).join('');
+    }
+
+    // Filter reports
+    function filterReports(filter) {
+      // Update active tab
+      document.querySelectorAll('.filter-tab').forEach(tab => {
+        tab.classList.remove('active');
+      });
+      event.target.classList.add('active');
+
+      // Filter reports
+      let filtered = allReports;
+      if (filter === 'pending') {
+        filtered = allReports.filter(r => r.status === 'pending' || !r.status);
+      } else if (filter === 'complete') {
+        filtered = allReports.filter(r => r.status === 'complete');
+      }
+
+      displayReports(filtered);
+    }
+
+    // View report details
+    function viewReport(reportId) {
+      // Store report ID and navigate to details page
+      sessionStorage.setItem('currentReportId', reportId);
+      window.location.href = `report-details.html?id=${reportId}`;
+    }
+
+    // Handle logout
+    async function handleLogout() {
+      try {
+        await fetch('/api/auth/logout', { method: 'POST' });
+        sessionStorage.clear();
+        window.location.href = 'index.html';
+      } catch (error) {
+        console.error('Logout failed:', error);
+        sessionStorage.clear();
+        window.location.href = 'index.html';
+      }
+    }
+  </script>
+</body>
+</html>

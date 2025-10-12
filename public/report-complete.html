@@ -1,0 +1,586 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Report Submitted - Car Crash Lawyer AI</title>
+
+    <!-- Supabase Client -->
+    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+
+    <style>
+        /* Keep all existing styles from document 4 */
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, sans-serif;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+            padding: 20px;
+        }
+
+        /* ... keep all other styles from document 4 ... */
+
+        /* Add profile completion banner */
+        .profile-complete-banner {
+            background: linear-gradient(135deg, #10b981, #059669);
+            color: white;
+            padding: 20px;
+            border-radius: 12px;
+            margin-bottom: 20px;
+            text-align: center;
+            animation: slideDown 0.5s ease-out;
+            box-shadow: 0 10px 30px rgba(16, 185, 129, 0.3);
+        }
+
+        @keyframes slideDown {
+            from {
+                opacity: 0;
+                transform: translateY(-20px);
+            }
+            to {
+                opacity: 1;
+                transform: translateY(0);
+            }
+        }
+
+        .profile-complete-banner h2 {
+            font-size: 22px;
+            margin-bottom: 10px;
+        }
+
+        .profile-complete-banner p {
+            opacity: 0.95;
+            font-size: 14px;
+        }
+
+        .user-info {
+            background: rgba(255, 255, 255, 0.2);
+            padding: 10px 15px;
+            border-radius: 8px;
+            margin-top: 10px;
+            font-size: 13px;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="header">
+            <h1>🚗 Car Crash Lawyer AI</h1>
+            <p>Your Legal First Responder</p>
+        </div>
+
+        <!-- Profile Complete Banner (shown when from Typeform) -->
+        <div class="profile-complete-banner" id="profileBanner" style="display: none;">
+            <h2>✅ Profile Setup Complete!</h2>
+            <p>Your account is ready. You can now report incidents anytime.</p>
+            <div class="user-info" id="userInfo"></div>
+        </div>
+
+        <!-- Success Notification -->
+        <div class="success-banner" id="successBanner" style="display: none;">
+            ✅ Your report has been successfully submitted
+        </div>
+
+        <!-- Emergency Actions Panel -->
+        <div class="card emergency-panel">
+            <div class="emergency-header">
+                <h3>🚨 Emergency Actions</h3>
+                <p>Tap to call emergency services</p>
+            </div>
+
+            <div class="emergency-buttons">
+                <button class="emergency-btn critical" onclick="makeEmergencyCall()">
+                    <span class="btn-icon">📞</span>
+                    <span>Call 999 - Emergency Services</span>
+                </button>
+
+                <button class="emergency-btn recovery" onclick="makeRecoveryCall()">
+                    <span class="btn-icon">🚗</span>
+                    <span>Call Recovery Service</span>
+                </button>
+
+                <button class="emergency-btn contact" onclick="makeEmergencyContactCall()">
+                    <span class="btn-icon">👤</span>
+                    <span>Call Emergency Contact</span>
+                </button>
+            </div>
+        </div>
+
+        <!-- Additional Reports Section -->
+        <div class="card">
+            <button class="find-me-btn" onclick="startNewReport()">
+                📝 Report an Incident
+            </button>
+
+            <div class="additional-controls">
+                <button class="additional-btn witness-btn" onclick="openWitnessModal()">
+                    👥 Add Witnesses
+                </button>
+                <button class="additional-btn vehicle-btn" onclick="openVehicleModal()">
+                    🚙 Add Vehicles
+                </button>
+            </div>
+        </div>
+
+        <!-- Go to Dashboard Button -->
+        <button class="website-btn" onclick="goToDashboard()">
+            📊 View Dashboard
+        </button>
+
+        <p class="helper-text" id="helperText">
+            Need help? Contact us anytime at <strong>support@carcrashlawyerai.co.uk</strong>
+        </p>
+    </div>
+
+    <!-- Keep all modals from document 4 -->
+    <!-- Witness Modal -->
+    <div id="witnessModal" class="modal">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h2>👥 Add Witness Information</h2>
+                <p>Please provide details of any witnesses to the incident</p>
+            </div>
+
+            <div class="error-message" id="witnessError"></div>
+
+            <form id="witnessForm">
+                <div class="form-group">
+                    <label for="witnessName">Full Name *</label>
+                    <input type="text" id="witnessName" name="witnessName" required>
+                </div>
+
+                <div class="form-group">
+                    <label for="witnessAddress">Address *</label>
+                    <input type="text" id="witnessAddress" name="witnessAddress" required>
+                </div>
+
+                <div class="form-group">
+                    <label for="witnessMobile">Mobile Number *</label>
+                    <input type="tel" id="witnessMobile" name="witnessMobile" required>
+                </div>
+
+                <div class="form-group">
+                    <label for="witnessEmail">Email Address</label>
+                    <input type="email" id="witnessEmail" name="witnessEmail">
+                </div>
+
+                <div class="form-group">
+                    <label for="witnessStatement">Witness Statement *</label>
+                    <textarea id="witnessStatement" name="witnessStatement" required 
+                              placeholder="Please describe what the witness observed..."></textarea>
+                </div>
+
+                <div class="modal-buttons">
+                    <button type="button" class="modal-btn secondary" onclick="closeModal('witnessModal')">
+                        Cancel
+                    </button>
+                    <button type="submit" class="modal-btn primary">
+                        Save Witness
+                    </button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <!-- Vehicle Modal -->
+    <div id="vehicleModal" class="modal">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h2>🚙 Add Vehicle Information</h2>
+                <p>Please provide details of other vehicles involved</p>
+            </div>
+
+            <div class="error-message" id="vehicleError"></div>
+
+            <form id="vehicleForm">
+                <div class="form-group">
+                    <label for="driverName">Driver's Full Name *</label>
+                    <input type="text" id="driverName" name="driverName" required>
+                </div>
+
+                <div class="form-group">
+                    <label for="driverAddress">Driver's Address *</label>
+                    <input type="text" id="driverAddress" name="driverAddress" required>
+                </div>
+
+                <div class="form-group">
+                    <label for="driverMobile">Driver's Mobile Number *</label>
+                    <input type="tel" id="driverMobile" name="driverMobile" required>
+                </div>
+
+                <div class="form-group">
+                    <label for="driverEmail">Driver's Email</label>
+                    <input type="email" id="driverEmail" name="driverEmail">
+                </div>
+
+                <div class="form-group">
+                    <label for="vehicleReg">Vehicle Registration *</label>
+                    <input type="text" id="vehicleReg" name="vehicleReg" required 
+                           placeholder="e.g., AB12 CDE">
+                </div>
+
+                <div class="form-group">
+                    <label for="vehicleMake">Vehicle Make *</label>
+                    <input type="text" id="vehicleMake" name="vehicleMake" required 
+                           placeholder="e.g., Ford">
+                </div>
+
+                <div class="form-group">
+                    <label for="vehicleModel">Vehicle Model *</label>
+                    <input type="text" id="vehicleModel" name="vehicleModel" required 
+                           placeholder="e.g., Focus">
+                </div>
+
+                <div class="form-group">
+                    <label for="vehicleColor">Vehicle Color</label>
+                    <input type="text" id="vehicleColor" name="vehicleColor" 
+                           placeholder="e.g., Blue">
+                </div>
+
+                <div class="form-group">
+                    <label for="insuranceCompany">Insurance Company</label>
+                    <input type="text" id="insuranceCompany" name="insuranceCompany">
+                </div>
+
+                <div class="form-group">
+                    <label for="insurancePolicy">Policy Number</label>
+                    <input type="text" id="insurancePolicy" name="insurancePolicy">
+                </div>
+
+                <div class="modal-buttons">
+                    <button type="button" class="modal-btn secondary" onclick="closeModal('vehicleModal')">
+                        Cancel
+                    </button>
+                    <button type="submit" class="modal-btn primary">
+                        Save Vehicle
+                    </button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <script>
+        // ===== TYPEFORM REDIRECT HANDLER =====
+        function extractTypeformParams() {
+            const urlParams = new URLSearchParams(window.location.search);
+
+            const user_id = urlParams.get('auth_user_id') || 
+                           urlParams.get('user_id') || 
+                           urlParams.get('userId') || 
+                           urlParams.get('create_user_id');
+
+            const product_id = urlParams.get('product_id');
+            const auth_code = urlParams.get('auth_code');
+            const email = urlParams.get('email');
+            const incident_id = urlParams.get('incident_id');
+
+            console.log('📥 Typeform redirect parameters:', {
+                user_id,
+                product_id,
+                auth_code,
+                email,
+                incident_id,
+                fullUrl: window.location.href
+            });
+
+            // Store user session data
+            if (user_id) {
+                localStorage.setItem('create_user_id', user_id);
+                sessionStorage.setItem('userId', user_id);
+
+                if (auth_code) sessionStorage.setItem('auth_code', auth_code);
+                if (email) sessionStorage.setItem('userEmail', email);
+                if (product_id) sessionStorage.setItem('product_id', product_id);
+                if (incident_id) sessionStorage.setItem('incident_id', incident_id);
+
+                // Show profile banner
+                const profileBanner = document.getElementById('profileBanner');
+                profileBanner.style.display = 'block';
+
+                // Update user info display
+                const userInfo = document.getElementById('userInfo');
+                userInfo.innerHTML = `
+                    <strong>Email:</strong> ${email || 'Not provided'}<br>
+                    <strong>User ID:</strong> ${user_id.substring(0, 8)}...
+                `;
+
+                console.log('✅ User authenticated from Typeform:', user_id);
+                return true;
+            }
+
+            return false;
+        }
+
+        // Check if this is from an incident submission
+        function checkIncidentSubmission() {
+            const incidentId = sessionStorage.getItem('incident_id') || 
+                              new URLSearchParams(window.location.search).get('incident_id');
+
+            if (incidentId) {
+                document.getElementById('successBanner').style.display = 'block';
+                document.getElementById('helperText').innerHTML = `
+                    Reference: <strong id="incident-ref">${incidentId}</strong><br>
+                    We'll be in touch within 24 hours
+                `;
+            }
+        }
+
+        // ===== SUPABASE INITIALIZATION =====
+        // Get Supabase config from your environment or config endpoint
+        let supabase = null;
+
+        async function initSupabase() {
+            try {
+                // Fetch config from your backend
+                const response = await fetch('/api/config');
+                const config = await response.json();
+
+                if (config.supabaseUrl && config.supabaseKey) {
+                    supabase = window.supabase.createClient(
+                        config.supabaseUrl,
+                        config.supabaseKey
+                    );
+                    console.log('✅ Supabase initialized');
+                } else {
+                    console.warn('⚠️ Supabase config not available');
+                }
+            } catch (error) {
+                console.error('❌ Failed to initialize Supabase:', error);
+            }
+        }
+
+        // Get current user data
+        const userId = localStorage.getItem('create_user_id') || 
+                      sessionStorage.getItem('userId');
+        const userEmail = sessionStorage.getItem('userEmail');
+
+        // ===== EMERGENCY FUNCTIONS =====
+        async function makeEmergencyCall() {
+            window.location.href = 'tel:999';
+        }
+
+        async function makeRecoveryCall() {
+            if (!supabase || !userId) {
+                alert('Unable to fetch recovery number. Please ensure you are logged in.');
+                return;
+            }
+
+            try {
+                const { data, error } = await supabase
+                    .from('user_signup')
+                    .select('recovery_service_number')
+                    .eq('id', userId)
+                    .single();
+
+                if (error) throw error;
+
+                if (data && data.recovery_service_number) {
+                    window.location.href = `tel:${data.recovery_service_number}`;
+                } else {
+                    alert('Recovery service number not found. Please update your profile.');
+                }
+            } catch (error) {
+                console.error('Error fetching recovery number:', error);
+                alert('Unable to fetch recovery number. Please try again.');
+            }
+        }
+
+        async function makeEmergencyContactCall() {
+            if (!supabase || !userId) {
+                alert('Unable to fetch emergency contact. Please ensure you are logged in.');
+                return;
+            }
+
+            try {
+                const { data, error } = await supabase
+                    .from('user_signup')
+                    .select('emergency_contact_number')
+                    .eq('id', userId)
+                    .single();
+
+                if (error) throw error;
+
+                if (data && data.emergency_contact_number) {
+                    window.location.href = `tel:${data.emergency_contact_number}`;
+                } else {
+                    alert('Emergency contact number not found. Please update your profile.');
+                }
+            } catch (error) {
+                console.error('Error fetching emergency contact:', error);
+                alert('Unable to fetch emergency contact. Please try again.');
+            }
+        }
+
+        // ===== NAVIGATION FUNCTIONS =====
+        function startNewReport() {
+            // Redirect to incident reporting page with user context
+            if (userId) {
+                window.location.href = `/incident.html?user_id=${userId}`;
+            } else {
+                window.location.href = '/incident.html';
+            }
+        }
+
+        function goToDashboard() {
+            if (userId) {
+                window.location.href = `/dashboard.html?user_id=${userId}`;
+            } else {
+                window.location.href = '/dashboard.html';
+            }
+        }
+
+        // ===== MODAL FUNCTIONS =====
+        function openWitnessModal() {
+            document.getElementById('witnessModal').classList.add('active');
+        }
+
+        function openVehicleModal() {
+            document.getElementById('vehicleModal').classList.add('active');
+        }
+
+        function closeModal(modalId) {
+            document.getElementById(modalId).classList.remove('active');
+            document.querySelector(`#${modalId} form`).reset();
+            document.querySelector(`#${modalId} .error-message`).classList.remove('show');
+        }
+
+        // ===== FORM SUBMISSIONS =====
+        document.getElementById('witnessForm').addEventListener('submit', async (e) => {
+            e.preventDefault();
+
+            if (!supabase) {
+                alert('Database connection not available. Please try again later.');
+                return;
+            }
+
+            const form = e.target;
+            const errorDiv = document.getElementById('witnessError');
+            form.classList.add('loading');
+
+            try {
+                const incidentId = sessionStorage.getItem('incident_id');
+
+                const witnessData = {
+                    incident_id: incidentId,
+                    create_user_id: userId,
+                    witness_name: form.witnessName.value,
+                    witness_address: form.witnessAddress.value,
+                    witness_mobile: form.witnessMobile.value,
+                    witness_email: form.witnessEmail.value || null,
+                    witness_statement: form.witnessStatement.value,
+                    created_at: new Date().toISOString()
+                };
+
+                const { error } = await supabase
+                    .from('witness_reports')
+                    .insert([witnessData]);
+
+                if (error) throw error;
+
+                closeModal('witnessModal');
+                alert('✅ Witness information saved successfully!');
+
+            } catch (error) {
+                console.error('Error saving witness:', error);
+                errorDiv.textContent = 'Failed to save witness information. Please try again.';
+                errorDiv.classList.add('show');
+            } finally {
+                form.classList.remove('loading');
+            }
+        });
+
+        document.getElementById('vehicleForm').addEventListener('submit', async (e) => {
+            e.preventDefault();
+
+            if (!supabase) {
+                alert('Database connection not available. Please try again later.');
+                return;
+            }
+
+            const form = e.target;
+            const errorDiv = document.getElementById('vehicleError');
+            form.classList.add('loading');
+
+            try {
+                const incidentId = sessionStorage.getItem('incident_id');
+
+                const vehicleData = {
+                    incident_report_id: incidentId ? parseInt(incidentId) : null,
+                    create_user_id: userId,
+                    additional_driver_name: form.driverName.value,
+                    additional_driver_address: form.driverAddress.value,
+                    additional_driver_mobile: form.driverMobile.value,
+                    additional_driver_email: form.driverEmail.value || null,
+                    additional_registration_number: form.vehicleReg.value,
+                    additional_make_of_vehicle: form.vehicleMake.value,
+                    additional_model_of_vehicle: form.vehicleModel.value,
+                    additional_vehicle_colour: form.vehicleColor.value || null,
+                    additional_insurance_company: form.insuranceCompany.value || null,
+                    additional_policy_number: form.insurancePolicy.value || null,
+                    submit_date: new Date().toISOString()
+                };
+
+                const { error } = await supabase
+                    .from('additional_vehicles')
+                    .insert([vehicleData]);
+
+                if (error) throw error;
+
+                closeModal('vehicleModal');
+                alert('✅ Vehicle information saved successfully!');
+
+            } catch (error) {
+                console.error('Error saving vehicle:', error);
+                errorDiv.textContent = 'Failed to save vehicle information. Please try again.';
+                errorDiv.classList.add('show');
+            } finally {
+                form.classList.remove('loading');
+            }
+        });
+
+        // Close modal when clicking outside
+        window.onclick = function(event) {
+            if (event.target.classList.contains('modal')) {
+                event.target.classList.remove('active');
+            }
+        }
+
+        // ===== INITIALIZATION =====
+        document.addEventListener('DOMContentLoaded', async () => {
+            console.log('🚀 Initializing report-complete page');
+
+            // Initialize Supabase
+            await initSupabase();
+
+            // Check for Typeform redirect
+            const fromTypeform = extractTypeformParams();
+
+            // Check for incident submission
+            checkIncidentSubmission();
+
+            console.log('📍 Page Context:', {
+                userId,
+                userEmail,
+                fromTypeform,
+                url: window.location.href
+            });
+
+            console.log('✅ Page initialization complete');
+        });
+
+        // Global error handling
+        window.addEventListener('error', (event) => {
+            console.error('Global error:', event.error);
+        });
+
+        window.addEventListener('unhandledrejection', (event) => {
+            console.error('Unhandled promise rejection:', event.reason);
+        });
+    </script>
+</body>
+</html>

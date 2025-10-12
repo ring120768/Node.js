@@ -1,0 +1,105 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Declaration - Car Crash Lawyer AI</title>
+    <style>
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            padding: 20px;
+        }
+        .container {
+            background: white;
+            border-radius: 20px;
+            padding: 40px;
+            max-width: 600px;
+            text-align: center;
+            box-shadow: 0 20px 60px rgba(0,0,0,0.3);
+        }
+        h1 {
+            color: #333;
+            margin-bottom: 20px;
+        }
+        .success {
+            background: #4CAF50;
+            color: white;
+            padding: 20px;
+            border-radius: 10px;
+            margin: 20px 0;
+        }
+        .btn {
+            background: #667eea;
+            color: white;
+            padding: 12px 30px;
+            border: none;
+            border-radius: 8px;
+            font-size: 16px;
+            cursor: pointer;
+            text-decoration: none;
+            display: inline-block;
+            margin: 10px;
+        }
+        .btn:hover {
+            background: #5569d8;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>✅ Recording Submitted Successfully!</h1>
+        <div class="success">
+            <h2>Your statement has been recorded and is being processed</h2>
+            <p>The AI is transcribing and analyzing your statement. This usually takes 10-30 seconds.</p>
+        </div>
+        <p>What happens next:</p>
+        <ul style="text-align: left; max-width: 400px; margin: 20px auto;">
+            <li>✅ Audio uploaded to secure storage</li>
+            <li>⏳ AI transcription in progress</li>
+            <li>⏳ Legal summary being generated</li>
+            <li>⏳ PDF report will be created</li>
+        </ul>
+        <div style="margin-top: 30px;">
+            <a href="/transcribe.html" class="btn">Record Another Statement</a>
+            <a href="/" class="btn">Back to Home</a>
+        </div>
+
+        <div style="margin-top: 30px; padding: 20px; background: #f0f0f0; border-radius: 10px;">
+            <h3>Debug Info:</h3>
+            <p>User ID: <span id="userId">Loading...</span></p>
+            <p>Check Supabase tables:</p>
+            <ul style="text-align: left; font-size: 14px;">
+                <li><code>ai_transcription</code> - Should have your audio and text</li>
+                <li><code>ai_summary</code> - Should have the AI analysis</li>
+            </ul>
+        </div>
+    </div>
+
+    <script>
+        // Get user ID from URL
+        const urlParams = new URLSearchParams(window.location.search);
+        const userId = urlParams.get('create_user_id') || localStorage.getItem('create_user_id') || 'Unknown';
+        document.getElementById('userId').textContent = userId;
+
+        // Check transcription status after 5 seconds
+        setTimeout(async () => {
+            try {
+                const response = await fetch(`/api/transcription-status/${userId}`);
+                const data = await response.json();
+
+                if (data.exists && data.transcription) {
+                    console.log('Transcription found:', data.transcription);
+                    // You could display the transcription here if you want
+                }
+            } catch (error) {
+                console.error('Error checking transcription:', error);
+            }
+        }, 5000);
+    </script>
+</body>
+</html>

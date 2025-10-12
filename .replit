@@ -1,0 +1,65 @@
+entrypoint = "index.js"
+modules = ["nodejs-22"]
+hidden = [".config", "package-lock.json"]
+
+[gitHubImport]
+requiredFiles = [".replit", "replit.nix", "package.json", "package-lock.json"]
+
+[nix]
+channel = "stable-24_11"
+packages = ["u-root-cmds", "nano", "psmisc"]
+
+[deployment]
+run = ["node", "index.js"]
+deploymentTarget = "autoscale"
+ignorePorts = false
+
+[[ports]]
+localPort = 5000
+externalPort = 80
+
+[workflows]
+runButton = "Main Server"
+
+[[workflows.workflow]]
+name = "Main Server"
+author = 43588325
+mode = "sequential"
+
+[[workflows.workflow.tasks]]
+task = "shell.exec"
+args = "node index.js"
+waitForPort = 5000
+
+[workflows.workflow.metadata]
+outputType = "webview"
+
+[[workflows.workflow]]
+name = "Debug Server"
+author = 43588325
+mode = "sequential"
+
+[[workflows.workflow.tasks]]
+task = "shell.exec"
+args = "node src/controllers/debug.controller.js"
+
+[[workflows.workflow]]
+name = "Run Tests"
+author = 43588325
+mode = "sequential"
+
+[[workflows.workflow.tasks]]
+task = "shell.exec"
+args = "node archive/testing/run-tests.js"
+
+[[workflows.workflow]]
+name = "Debug Health Check"
+author = 43588325
+mode = "sequential"
+
+[[workflows.workflow.tasks]]
+task = "shell.exec"
+args = "curl -s http://localhost:5000/healthz || echo \"Server not responding\""
+
+[agent]
+expertMode = true

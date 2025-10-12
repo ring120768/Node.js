@@ -1,0 +1,571 @@
+
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Demo - Car Crash Lawyer AI</title>
+    <link href="https://cdn.jsdelivr.net/npm/tailwindcss@2.2.19/dist/tailwind.min.css" rel="stylesheet">
+    <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
+    <style>
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+        }
+        .glass-effect { 
+            background: rgba(255,255,255,0.25); 
+            backdrop-filter: blur(10px); 
+            border-radius: 16px; 
+            border: 1px solid rgba(255,255,255,0.18);
+        }
+        .location-container { 
+            background: rgba(255,255,255,0.95); 
+            border-radius: 12px; 
+            padding: 20px; 
+            margin: 20px 0; 
+            box-shadow: 0 8px 32px rgba(0,0,0,0.1);
+        }
+        #map { 
+            height: 300px; 
+            width: 100%; 
+            border-radius: 8px; 
+            margin: 15px 0; 
+        }
+        .what3words-display { 
+            background: #e74c3c; 
+            color: white; 
+            padding: 15px; 
+            border-radius: 8px; 
+            text-align: center; 
+            font-size: 24px; 
+            font-weight: bold; 
+            margin: 15px 0; 
+            box-shadow: 0 4px 15px rgba(231, 76, 60, 0.3);
+        }
+        .location-accuracy { 
+            background: #27ae60; 
+            color: white; 
+            padding: 10px; 
+            border-radius: 6px; 
+            font-size: 14px; 
+            margin: 10px 0; 
+        }
+        .btn-findme { 
+            background: #3498db; 
+            color: white; 
+            padding: 16px 40px; 
+            border: none; 
+            border-radius: 12px; 
+            font-size: 1.4rem; 
+            font-weight: bold; 
+            cursor: pointer; 
+            box-shadow: 0 4px 15px rgba(52,152,219,0.3);
+            transition: all 0.3s ease;
+            min-width: 200px;
+        }
+        .btn-findme:hover { 
+            background: #2980b9; 
+            transform: translateY(-2px);
+            box-shadow: 0 6px 20px rgba(52,152,219,0.4);
+        }
+        .loading-spinner { 
+            display: none; 
+            width: 20px; 
+            height: 20px; 
+            border: 2px solid #f3f3f3; 
+            border-top: 2px solid #3498db; 
+            border-radius: 50%; 
+            animation: spin 1s linear infinite; 
+            margin: 0 auto;
+        }
+        @keyframes spin { 
+            0% { transform: rotate(0deg);} 
+            100% { transform: rotate(360deg);} 
+        }
+
+        /* Whisper Button Styles */
+        .btn-whisper {
+            padding: 14px 28px;
+            border: none;
+            border-radius: 12px;
+            font-size: 1.1rem;
+            font-weight: bold;
+            cursor: pointer;
+            box-shadow: 0 4px 15px rgba(0, 0, 0, 0.2);
+            transition: all 0.3s ease;
+            min-width: 180px;
+            display: inline-block;
+        }
+
+        #activateWhisperBtn {
+            background: #27ae60; /* Green */
+            color: white;
+        }
+
+        #activateWhisperBtn:hover {
+            background: #229954;
+            transform: translateY(-2px);
+            box-shadow: 0 6px 20px rgba(39, 174, 96, 0.4);
+        }
+
+        #dontRecordBtn {
+            background: #e74c3c; /* Red */
+            color: white;
+        }
+
+        #dontRecordBtn:hover {
+            background: #c0392b;
+            transform: translateY(-2px);
+            box-shadow: 0 6px 20px rgba(231, 76, 60, 0.4);
+        }
+
+        /* Voice Status Indicator */
+        #voiceStatus {
+            display: none;
+            color: #fff;
+            text-align: center;
+            margin-top: 15px;
+            font-size: 1.1rem;
+            background: rgba(255, 255, 255, 0.2);
+            padding: 10px 20px;
+            border-radius: 25px;
+        }
+
+        /* Navigation Bar */
+        .nav {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            padding: 16px;
+            background-color: rgba(255, 255, 255, 0.1);
+            backdrop-filter: blur(10px);
+            position: relative;
+            z-index: 10;
+        }
+
+        .nav button,
+        .nav a {
+            background-color: #007acc;
+            color: white;
+            padding: 6px 12px;
+            border-radius: 6px;
+            font-weight: bold;
+            font-size: 0.85rem;
+            cursor: pointer;
+            border: none;
+            text-decoration: none;
+            transition: background-color 0.3s ease, transform 0.2s ease;
+        }
+
+        .nav button:hover,
+        .nav a:hover {
+            background-color: #005f9e;
+            transform: translateY(-1px);
+        }
+
+        /* Demo notice */
+        .demo-notice {
+            background: rgba(255, 193, 7, 0.9);
+            color: #856404;
+            padding: 15px;
+            text-align: center;
+            font-weight: bold;
+            border-radius: 8px;
+            margin-bottom: 20px;
+        }
+
+        /* Typeform container */
+        .typeform-container {
+            background: rgba(255,255,255,0.95);
+            border-radius: 12px;
+            padding: 20px;
+            margin: 20px 0;
+            box-shadow: 0 8px 32px rgba(0,0,0,0.1);
+        }
+
+        .typeform-container iframe {
+            width: 100%;
+            height: 600px;
+            border: none;
+            border-radius: 8px;
+        }
+
+        .hide { display: none; }
+    </style>
+</head>
+<body class="min-h-screen">
+    <!-- Navigation Bar -->
+    <div class="nav">
+        <button onclick="window.history.back()">← Back</button>
+        <a href="index.html">🏠 Home</a>
+    </div>
+
+    <div class="container mx-auto max-w-4xl p-4">
+        <!-- Header -->
+        <div class="glass-effect p-6 mb-6">
+            <h1 class="text-3xl font-bold text-white text-center mb-2">🚗 Demo: Report Road Traffic Incident</h1>
+            <p class="text-white text-center opacity-90">Experience our AI-powered incident documentation system</p>
+        </div>
+
+        <!-- Demo Notice -->
+        <div class="demo-notice">
+            ⚠️ This is a demonstration. No actual reports will be filed.
+        </div>
+
+        <!-- Action Buttons Section -->
+        <div id="actionSection" class="glass-effect p-6 mb-6">
+            <div class="text-center space-y-4">
+                <!-- Find Me Button -->
+                <div>
+                    <button id="findMeBtn" class="btn-findme">
+                        📍 Find Me!
+                    </button>
+                </div>
+
+                <!-- Whisper Voice Buttons -->
+                <div class="flex justify-center space-x-4">
+                    <button id="activateWhisperBtn" class="btn-whisper">🎤 Activate Whisper Voice</button>
+                    <button id="dontRecordBtn" class="btn-whisper">🚫 Don't Record</button>
+                </div>
+
+                <div id="voiceStatus" class="text-white font-semibold">Recording...</div>
+            </div>
+        </div>
+
+        <!-- Location Section -->
+        <div id="locationContainer" class="location-container" style="display:none;">
+            <h2 class="text-2xl font-bold text-gray-800 mb-4">📍 Demo Location</h2>
+            <div class="loading-spinner" id="loadingSpinner"></div>
+            <div id="locationInfo" style="display: none;">
+                <!-- Address Display - Moved above map header -->
+                <div class="mt-4 mb-4" style="background: #f8f9fa; padding: 15px; border-radius: 8px; border-left: 4px solid #3498db;">
+                    <label class="block text-lg font-bold text-gray-800 mb-2">📍 Full Address:</label>
+                    <input type="text" id="fullAddress" class="w-full px-3 py-3 border border-gray-300 rounded-md text-lg font-medium" readonly>
+                </div>
+
+                <div id="what3wordsDisplay" class="what3words-display">
+                    <div class="text-sm opacity-75 mb-2">what3words location:</div>
+                    <div id="what3wordsText">///loading.location.words</div>
+                </div>
+                <div id="map"></div>
+                <div class="location-accuracy" id="accuracyInfo">
+                    <strong>Location Accuracy:</strong> <span id="accuracyValue">Unknown</span>
+                </div>
+                <div class="grid grid-cols-1 md:grid-cols-2 gap-4 mt-4">
+                    <div>
+                        <label class="block text-sm font-medium text-gray-700 mb-1">Latitude:</label>
+                        <input type="text" id="latitude" class="w-full px-3 py-2 border border-gray-300 rounded-md" readonly>
+                    </div>
+                    <div>
+                        <label class="block text-sm font-medium text-gray-700 mb-1">Longitude:</label>
+                        <input type="text" id="longitude" class="w-full px-3 py-2 border border-gray-300 rounded-md" readonly>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Typeform Section -->
+        <div id="typeformSection" class="typeform-container" style="display:none;">
+            <h2 class="text-2xl font-bold text-gray-800 mb-4">📝 Demo Incident Report Form</h2>
+            <p class="text-gray-600 mb-4">Complete the demo form below to experience our incident reporting process:</p>
+            <div id="typeformEmbed"></div>
+        </div>
+    </div>
+
+    <!-- Scripts -->
+    <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+    <script>
+        let map, marker, accuracyCircle, userLocation = null;
+        let recognition, isRecording = false;
+        let transcriptionText = '';
+
+        document.getElementById('findMeBtn').onclick = function() {
+            const loading = document.getElementById('loadingSpinner');
+            const locationContainer = document.getElementById('locationContainer');
+            const locationInfo = document.getElementById('locationInfo');
+            locationContainer.style.display = 'block';
+            loading.style.display = 'block';
+            locationInfo.style.display = 'none';
+
+            navigator.geolocation.getCurrentPosition(async (pos) => {
+                const lat = pos.coords.latitude, lng = pos.coords.longitude, accuracy = pos.coords.accuracy;
+                userLocation = { lat, lng, accuracy };
+
+                // Update lat/lng fields safely
+                const latField = document.getElementById('latitude');
+                const lngField = document.getElementById('longitude');
+                if (latField) latField.value = lat.toFixed(6);
+                if (lngField) lngField.value = lng.toFixed(6);
+
+                // Update accuracy indicator
+                let accText = `±${Math.round(accuracy)}m`;
+                let accColor = '#27ae60';
+                if (accuracy > 50) accColor = '#e67e22';
+                if (accuracy > 100) accColor = '#e74c3c';
+
+                const accuracyValue = document.getElementById('accuracyValue');
+                const accuracyInfo = document.getElementById('accuracyInfo');
+                if (accuracyValue) accuracyValue.textContent = accText;
+                if (accuracyInfo) accuracyInfo.style.background = accColor;
+
+                // Map logic
+                if (!map) {
+                    map = L.map('map').setView([lat, lng], 16);
+                    L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png').addTo(map);
+                }
+                if (marker) marker.remove();
+                marker = L.marker([lat, lng]).addTo(map).bindPopup('Demo Location').openPopup();
+                if (accuracyCircle) accuracyCircle.remove();
+                accuracyCircle = L.circle([lat, lng], {
+                    radius: accuracy,
+                    fillColor: accColor,
+                    color: accColor,
+                    fillOpacity: 0.18,
+                    weight: 1
+                }).addTo(map);
+
+                // Show info section, hide spinner
+                locationInfo.style.display = 'block';
+                loading.style.display = 'none';
+
+                // What3Words API call (demo version - may not work without API key)
+                try {
+                    const resp = await fetch(`/api/what3words?lat=${lat}&lng=${lng}`);
+                    const data = await resp.json();
+                    const what3wordsText = document.getElementById('what3wordsText');
+                    if (what3wordsText) {
+                        what3wordsText.textContent = data.words ? `///${data.words}` : '///demo.location.example';
+                    }
+                } catch {
+                    const what3wordsText = document.getElementById('what3wordsText');
+                    if (what3wordsText) {
+                        what3wordsText.textContent = '///demo.location.example';
+                    }
+                }
+
+                // Reverse Geocode for address
+                try {
+                    const response = await fetch(`https://nominatim.openstreetmap.org/reverse?format=json&lat=${lat}&lon=${lng}&zoom=18&addressdetails=1`);
+                    const result = await response.json();
+                    const address = result.display_name || '';
+                    const fullAddressField = document.getElementById('fullAddress');
+                    if (fullAddressField) {
+                        fullAddressField.value = address;
+                    }
+                } catch {
+                    const fullAddressField = document.getElementById('fullAddress');
+                    if (fullAddressField) {
+                        fullAddressField.value = 'Demo address location';
+                    }
+                }
+            }, (err) => {
+                loading.style.display = 'none';
+                alert('Unable to get your location. Please enable location access to try the demo.');
+            }, { enableHighAccuracy: true, timeout: 10000, maximumAge: 300000 });
+        };
+
+        // Voice Recording Functionality
+        async function requestMicrophonePermission() {
+            try {
+                if (!navigator.mediaDevices || !navigator.mediaDevices.getUserMedia) {
+                    console.error('getUserMedia not supported');
+                    return false;
+                }
+
+                const stream = await navigator.mediaDevices.getUserMedia({ 
+                    audio: true,
+                    video: false 
+                });
+
+                stream.getTracks().forEach(track => track.stop());
+                console.log('Microphone permission granted');
+                return true;
+
+            } catch (error) {
+                console.error('Microphone permission denied or error:', error.name, error.message);
+                return false;
+            }
+        }
+
+        function initializeVoiceRecognition() {
+            if ('webkitSpeechRecognition' in window || 'SpeechRecognition' in window) {
+                const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
+                recognition = new SpeechRecognition();
+                recognition.continuous = true;
+                recognition.interimResults = true;
+                recognition.lang = 'en-US';
+
+                recognition.onstart = () => {
+                    isRecording = true;
+                    document.getElementById('voiceStatus').style.display = 'block';
+                    document.getElementById('activateWhisperBtn').textContent = '🎤 Stop Recording';
+                    document.getElementById('activateWhisperBtn').style.background = '#e67e22';
+                };
+
+                recognition.onresult = (event) => {
+                    let finalTranscript = '';
+                    for (let i = event.resultIndex; i < event.results.length; i++) {
+                        const transcript = event.results[i][0].transcript;
+                        if (event.results[i].isFinal) {
+                            finalTranscript += transcript + ' ';
+                        }
+                    }
+                    transcriptionText = finalTranscript;
+                };
+
+                recognition.onerror = (event) => {
+                    console.error('Speech recognition error:', event.error);
+                    document.getElementById('voiceStatus').textContent = 'Demo recording complete!';
+                    setTimeout(() => {
+                        document.getElementById('voiceStatus').style.display = 'none';
+                        showTypeform();
+                    }, 2000);
+                    stopRecording();
+                };
+
+                recognition.onend = () => {
+                    if (isRecording) {
+                        recognition.start();
+                    }
+                };
+            } else {
+                alert('Speech recognition not supported in this browser.');
+                return false;
+            }
+            return true;
+        }
+
+        function startRecording() {
+            if (recognition && !isRecording) {
+                recognition.start();
+            }
+        }
+
+        function stopRecording() {
+            if (recognition && isRecording) {
+                isRecording = false;
+                recognition.stop();
+                document.getElementById('voiceStatus').style.display = 'none';
+                document.getElementById('activateWhisperBtn').textContent = '🎤 Activate Whisper Voice';
+                document.getElementById('activateWhisperBtn').style.background = '#27ae60';
+            }
+        }
+
+        function showTypeform() {
+            // Get location data if available
+            const lat = document.getElementById('latitude')?.value || '';
+            const lng = document.getElementById('longitude')?.value || '';
+            const address = document.getElementById('fullAddress')?.value || '';
+            const what3words = document.getElementById('what3wordsText')?.textContent || '';
+
+            // Build typeform URL with demo parameters
+            let typeformUrl = 'https://form.typeform.com/to/WvM2ejru';
+            const params = new URLSearchParams();
+
+            // Add demo identifier
+            params.append('demo', 'true');
+
+            if (lat && lng) {
+                params.append('latitude', lat);
+                params.append('longitude', lng);
+            }
+            if (address && address !== 'Demo address location') {
+                params.append('address', encodeURIComponent(address));
+            }
+            if (what3words && what3words !== '///loading.location.words' && what3words !== '///demo.location.example') {
+                params.append('what3words', encodeURIComponent(what3words));
+            }
+            if (transcriptionText.trim()) {
+                params.append('transcription', encodeURIComponent(transcriptionText.trim()));
+            }
+
+            if (params.toString()) {
+                typeformUrl += '?' + params.toString();
+            }
+
+            // Open typeform in new window
+            window.open(typeformUrl, '_blank');
+        }
+
+        // Button Event Handlers
+        document.getElementById('activateWhisperBtn').onclick = async function() {
+            if (!isRecording) {
+                try {
+                    document.getElementById('voiceStatus').textContent = 'Demo: Requesting microphone permission...';
+                    document.getElementById('voiceStatus').style.display = 'block';
+
+                    const speechSupported = initializeVoiceRecognition();
+                    if (!speechSupported) {
+                        document.getElementById('voiceStatus').textContent = 'Demo: Speech recognition not supported. Continuing...';
+                        setTimeout(() => {
+                            document.getElementById('voiceStatus').style.display = 'none';
+                            showTypeform();
+                        }, 2000);
+                        return;
+                    }
+
+                    const hasPermission = await requestMicrophonePermission();
+
+                    if (!hasPermission) {
+                        document.getElementById('voiceStatus').textContent = 'Demo: Microphone permission denied. That\'s okay for demo!';
+                        setTimeout(() => {
+                            document.getElementById('voiceStatus').style.display = 'none';
+                            showTypeform();
+                        }, 2000);
+                        return;
+                    }
+
+                    document.getElementById('voiceStatus').textContent = 'Demo: Recording for 5 seconds...';
+
+                    setTimeout(() => {
+                        try {
+                            startRecording();
+                            setTimeout(() => {
+                                stopRecording();
+                                document.getElementById('voiceStatus').textContent = 'Demo recording complete!';
+                                setTimeout(() => {
+                                    document.getElementById('voiceStatus').style.display = 'none';
+                                    showTypeform();
+                                }, 2000);
+                            }, 5000);
+                        } catch (speechError) {
+                            console.error('Speech recognition start error:', speechError);
+                            document.getElementById('voiceStatus').textContent = 'Demo: Unable to start recording. Continuing...';
+                            setTimeout(() => {
+                                document.getElementById('voiceStatus').style.display = 'none';
+                                showTypeform();
+                            }, 2000);
+                        }
+                    }, 500);
+
+                } catch (error) {
+                    console.error('Error handling microphone permission:', error);
+                    document.getElementById('voiceStatus').textContent = 'Demo: Error accessing microphone. Continuing...';
+                    setTimeout(() => {
+                        document.getElementById('voiceStatus').style.display = 'none';
+                        showTypeform();
+                    }, 2000);
+                }
+            } else {
+                stopRecording();
+                showTypeform();
+            }
+        };
+
+        document.getElementById('dontRecordBtn').onclick = function() {
+            if (isRecording) {
+                stopRecording();
+            }
+            showTypeform();
+        };
+
+        // Stop recording when user navigates away
+        window.addEventListener('beforeunload', () => {
+            if (isRecording) {
+                stopRecording();
+            }
+        });
+    </script>
+</body>
+</html>

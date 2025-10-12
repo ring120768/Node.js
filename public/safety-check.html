@@ -1,0 +1,345 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Safety Check - Car Crash Lawyer AI</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, sans-serif;
+            background: linear-gradient(135deg, #dc2626 0%, #991b1b 100%);
+            min-height: 100vh;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            padding: 20px;
+        }
+
+        .container {
+            max-width: 500px;
+            width: 100%;
+            background: white;
+            border-radius: 20px;
+            padding: 30px;
+            box-shadow: 0 20px 60px rgba(0,0,0,0.3);
+        }
+
+        h1 {
+            font-size: 28px;
+            margin-bottom: 10px;
+            text-align: center;
+        }
+
+        .subtitle {
+            text-align: center;
+            color: #6b7280;
+            margin-bottom: 30px;
+        }
+
+        .safety-option {
+            display: block;
+            width: 100%;
+            padding: 20px;
+            margin-bottom: 15px;
+            border: 2px solid #e5e7eb;
+            border-radius: 12px;
+            background: white;
+            cursor: pointer;
+            transition: all 0.3s;
+            font-size: 16px;
+            text-align: left;
+        }
+
+        .safety-option:hover {
+            border-color: #9ca3af;
+            transform: translateY(-2px);
+            box-shadow: 0 4px 12px rgba(0,0,0,0.1);
+        }
+
+        .safety-option.safe {
+            border-color: #10b981;
+        }
+
+        .safety-option.safe:hover {
+            background: #f0fdf4;
+            border-color: #059669;
+        }
+
+        .safety-option.emergency {
+            border-color: #6b7280;
+        }
+
+        .safety-option.contact {
+            border-color: #3b82f6;
+        }
+
+        .safety-option.injured {
+            border-color: #dc2626;
+            background: #fef2f2;
+        }
+
+        .safety-option.danger {
+            border-color: #f59e0b;
+            background: #fffbeb;
+        }
+
+        .safety-option.unsure {
+            border-color: #f59e0b;
+        }
+
+        .icon {
+            font-size: 24px;
+            margin-right: 10px;
+            vertical-align: middle;
+        }
+
+        .emergency-button {
+            width: 100%;
+            padding: 20px;
+            background: #dc2626;
+            color: white;
+            border: none;
+            border-radius: 12px;
+            font-size: 18px;
+            font-weight: bold;
+            cursor: pointer;
+            margin-top: 20px;
+            transition: background 0.3s;
+        }
+
+        .emergency-button:hover {
+            background: #b91c1c;
+        }
+
+        .loading {
+            display: none;
+            text-align: center;
+            padding: 20px;
+        }
+
+        .loading.active {
+            display: block;
+        }
+
+        .spinner {
+            display: inline-block;
+            width: 40px;
+            height: 40px;
+            border: 4px solid #f3f4f6;
+            border-top-color: #3b82f6;
+            border-radius: 50%;
+            animation: spin 1s linear infinite;
+        }
+
+        @keyframes spin {
+            to { transform: rotate(360deg); }
+        }
+
+        .description {
+            color: #6b7280;
+            font-size: 14px;
+            margin-top: 5px;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>First, are you safe right now?</h1>
+        <p class="subtitle">Be honest with yourself!</p>
+
+        <div id="safetyOptions">
+            <button class="safety-option safe" data-status="Yes, I'm safe and can complete this form">
+                <span class="icon">✅</span>
+                <strong>Yes, I'm safe and can complete this form</strong>
+                <div class="description">Continue to incident report</div>
+            </button>
+
+            <button class="safety-option emergency" data-status="The Emergency services have been called">
+                <span class="icon">📞</span>
+                <strong>The Emergency services have been called</strong>
+                <div class="description">I'm fit to continue completing this report</div>
+            </button>
+
+            <button class="safety-option contact" data-status="Call Emergency contact">
+                <span class="icon">👤</span>
+                <strong>Call Emergency contact</strong>
+                <div class="description">You provided previously</div>
+            </button>
+
+            <button class="safety-option injured" data-status="I'm injured and need medical attention">
+                <span class="icon">🏥</span>
+                <strong>I'm injured and need medical attention</strong>
+                <div class="description">Call 999 immediately</div>
+            </button>
+
+            <button class="safety-option danger" data-status="I'm in danger and need immediate help">
+                <span class="icon">⚠️</span>
+                <strong>I'm in danger and need immediate help</strong>
+                <div class="description">Call 999 now</div>
+            </button>
+
+            <button class="safety-option unsure" data-status="I'm not sure about my safety">
+                <span class="icon">😟</span>
+                <strong>I'm not sure about my safety</strong>
+                <div class="description">Get guidance</div>
+            </button>
+        </div>
+
+        <button class="emergency-button" onclick="window.location.href='tel:999'">
+            📞 Call 999 Emergency Services Now
+        </button>
+
+        <div class="loading" id="loadingIndicator">
+            <div class="spinner"></div>
+            <p style="margin-top: 15px;">Processing your response...</p>
+        </div>
+    </div>
+
+    <script>
+        // Get incident data from previous page
+        const incidentData = JSON.parse(sessionStorage.getItem('incidentData') || '{}');
+        console.log('Incident data received:', incidentData);
+
+        // Safety option handlers
+        document.querySelectorAll('.safety-option').forEach(button => {
+            button.addEventListener('click', async function() {
+                const safetyStatus = this.dataset.status;
+                console.log('Safety status selected:', safetyStatus);
+
+                // Handle emergency situations
+                if (safetyStatus.includes('injured') || safetyStatus.includes('danger')) {
+                    if (confirm('This is an emergency. Call 999 immediately. Press OK to call now.')) {
+                        window.location.href = 'tel:999';
+                    }
+                    return;
+                }
+
+                // Handle emergency contact
+                if (safetyStatus === 'Call Emergency contact') {
+                    // Try to get emergency contact from session or make API call
+                    if (incidentData.userId) {
+                        try {
+                            const response = await fetch(`/api/user/${incidentData.userId}/emergency-contacts`);
+                            if (response.ok) {
+                                const contacts = await response.json();
+                                if (contacts.emergency_contact) {
+                                    window.location.href = `tel:${contacts.emergency_contact}`;
+                                    return;
+                                }
+                            }
+                        } catch (error) {
+                            console.error('Failed to fetch emergency contact:', error);
+                        }
+                    }
+                    alert('Emergency contact not found. Please call 999 if you need immediate help.');
+                    return;
+                }
+
+                // Handle unsure situation
+                if (safetyStatus.includes('not sure')) {
+                    if (confirm('If you\'re unsure about your safety, it\'s best to seek help. Would you like to call 999?')) {
+                        window.location.href = 'tel:999';
+                    }
+                    return;
+                }
+
+                // For safe or emergency services called - proceed with report
+                document.getElementById('safetyOptions').style.display = 'none';
+                document.getElementById('loadingIndicator').classList.add('active');
+
+                // Save safety status to Supabase
+                await saveSafetyStatus(safetyStatus);
+
+                // Prepare Typeform URL with parameters
+                proceedToTypeform(safetyStatus);
+            });
+        });
+
+        async function saveSafetyStatus(status) {
+            try {
+                // Save to Supabase if we have necessary data
+                if (incidentData.userId || incidentData.what3wordsStoragePath) {
+                    const response = await fetch('/api/update-safety-status', {
+                        method: 'POST',
+                        headers: {
+                            'Content-Type': 'application/json'
+                        },
+                        body: JSON.stringify({
+                            userId: incidentData.userId,
+                            safetyStatus: status,
+                            timestamp: new Date().toISOString(),
+                            location: incidentData.location,
+                            what3words: incidentData.what3words,
+                            what3wordsStoragePath: incidentData.what3wordsStoragePath,
+                            address: incidentData.address
+                        })
+                    });
+
+                    if (!response.ok) {
+                        console.error('Failed to save safety status');
+                    } else {
+                        console.log('Safety status saved successfully');
+                    }
+                }
+            } catch (error) {
+                console.error('Error saving safety status:', error);
+                // Don't block the user from continuing
+            }
+        }
+
+        function proceedToTypeform(safetyStatus) {
+            // Build Typeform URL with pre-filled data
+            const typeformBaseUrl = 'https://form.typeform.com/to/WvM2ejru';
+            const hiddenFields = {};
+
+            // Add safety status
+            hiddenFields.are_you_safe = safetyStatus;
+
+            // Add what3words storage path if available
+            if (incidentData.what3wordsStoragePath) {
+                hiddenFields.what3words_path = incidentData.what3wordsStoragePath;
+            }
+
+            // Add location data
+            if (incidentData.location) {
+                hiddenFields.latitude = incidentData.location.lat.toString();
+                hiddenFields.longitude = incidentData.location.lng.toString();
+                hiddenFields.accuracy = incidentData.location.accuracy ? incidentData.location.accuracy.toString() : '';
+            }
+
+            // Add what3words
+            if (incidentData.what3words) {
+                hiddenFields.what3words = incidentData.what3words;
+            }
+
+            // Add address
+            if (incidentData.address) {
+                hiddenFields.incident_address = incidentData.address;
+            }
+
+            // Add timestamp
+            hiddenFields.incident_timestamp = incidentData.timestamp || new Date().toISOString();
+
+            // Add voice transcription if available
+            if (incidentData.voiceTranscription) {
+                hiddenFields.voice_notes = incidentData.voiceTranscription;
+            }
+
+            // Build URL with hidden fields as hash parameters
+            const params = new URLSearchParams(hiddenFields);
+            const finalUrl = `${typeformBaseUrl}#${params.toString()}`;
+
+            console.log('Redirecting to Typeform with data:', hiddenFields);
+
+            // Redirect to Typeform
+            window.location.href = finalUrl;
+        }
+    </script>
+</body>
+</html>

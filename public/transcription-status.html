@@ -1,0 +1,551 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="apple-mobile-web-app-capable" content="yes">
+    <meta name="mobile-web-app-capable" content="yes">
+    <title>Record Your Statement - Car Crash Lawyer AI</title>
+    <style>
+        /* Keep all existing styles from document 3 - no changes needed */
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            padding: 20px;
+            overflow-x: hidden;
+        }
+
+        /* ... (keep all other styles from document 3) ... */
+
+        /* Add welcome banner style */
+        .welcome-banner {
+            background: linear-gradient(135deg, #10b981, #059669);
+            color: white;
+            padding: 20px;
+            border-radius: 12px;
+            margin-bottom: 20px;
+            text-align: center;
+            animation: slideDown 0.5s ease-out;
+            box-shadow: 0 4px 15px rgba(16, 185, 129, 0.3);
+        }
+
+        @keyframes slideDown {
+            from {
+                opacity: 0;
+                transform: translateY(-20px);
+            }
+            to {
+                opacity: 1;
+                transform: translateY(0);
+            }
+        }
+
+        .welcome-banner h2 {
+            margin-bottom: 8px;
+            font-size: 20px;
+        }
+
+        .welcome-banner p {
+            opacity: 0.95;
+            font-size: 14px;
+        }
+    </style>
+</head>
+<body>
+    <!-- Network Status Indicator -->
+    <div class="network-status online" id="networkStatus">
+        <span class="dot"></span>
+        <span>Connected</span>
+    </div>
+
+    <div class="container">
+        <!-- Welcome Banner (shown when returning from Typeform) -->
+        <div class="welcome-banner" id="welcomeBanner" style="display: none;">
+            <h2>✅ Welcome Back!</h2>
+            <p>Your profile is complete. Let's record your incident statement.</p>
+        </div>
+
+        <h1>🎤 Record Your Statement</h1>
+
+        <!-- Progress Indicator with Animation -->
+        <div class="progress-steps">
+            <div class="progress-line" id="progressLine" style="width: 0%"></div>
+            <div class="progress-step active" id="step-record">
+                <div class="circle">1</div>
+                <span>Record</span>
+            </div>
+            <div class="progress-step" id="step-upload">
+                <div class="circle">2</div>
+                <span>Upload</span>
+            </div>
+            <div class="progress-step" id="step-transcribe">
+                <div class="circle">3</div>
+                <span>Transcribe</span>
+            </div>
+            <div class="progress-step" id="step-summary">
+                <div class="circle">4</div>
+                <span>AI Summary</span>
+            </div>
+        </div>
+
+        <!-- Keep all existing content from document 3 -->
+        <!-- Instructions -->
+        <div class="info-box">
+            <h3>📋 Recording Guidelines</h3>
+            <ul>
+                <li>Find a quiet location for better accuracy</li>
+                <li>Speak clearly about what happened</li>
+                <li>Include details about time, location, and events</li>
+                <li>Mention any injuries or vehicle damage</li>
+                <li>Recording limit: 5 minutes maximum</li>
+            </ul>
+        </div>
+
+        <!-- What to Include Tips -->
+        <div class="info-box" style="background: #fef3c7; border-left-color: #f59e0b;">
+            <h3>💡 What to Include</h3>
+            <ul>
+                <li>Exact time and date of the accident</li>
+                <li>Weather and road conditions</li>
+                <li>What you saw, heard, and felt</li>
+                <li>Actions taken after the accident</li>
+                <li>Any unusual circumstances</li>
+            </ul>
+        </div>
+
+        <!-- Audio Visualizer -->
+        <div class="audio-visualizer" id="visualizer">
+            <div class="visualizer-bars" id="visualizerBars">
+                <!-- Bars will be generated dynamically -->
+            </div>
+        </div>
+
+        <!-- Status Message -->
+        <div id="statusMessage">
+            <span class="status-indicator"></span>
+            <span id="statusText">Ready to record</span>
+        </div>
+
+        <!-- Recording Status -->
+        <div id="recordingStatus">
+            <div style="display: flex; align-items: center; justify-content: center;">
+                <span class="recording-indicator"></span>
+                <span style="font-weight: 600; color: #dc2626;">Recording in progress</span>
+            </div>
+            <p style="margin-top: 10px;">Duration: <span id="duration">0:00</span> / 5:00</p>
+        </div>
+
+        <!-- Recording Controls -->
+        <div class="recording-controls">
+            <button id="recordButton" class="btn btn-primary">
+                🎤 Start Recording
+            </button>
+            <button id="stopButton" class="btn btn-danger" style="display: none;">
+                ⏹ Stop Recording
+            </button>
+            <button id="retryButton" class="btn">
+                🔄 Record Again
+            </button>
+        </div>
+
+        <!-- Audio Playback -->
+        <audio id="audioPlayback" controls></audio>
+
+        <!-- Transcription Result -->
+        <div id="transcriptionResult">
+            <h3>📝 Your Transcription</h3>
+            <div class="transcription-box" contenteditable="true" id="transcriptionText" placeholder="Your transcription will appear here...">
+            </div>
+            <button class="btn btn-primary" onclick="confirmTranscription()" style="margin-top: 20px;">
+                ✅ Confirm & Continue
+            </button>
+            <p style="text-align: center; color: #666; margin-top: 10px; font-size: 14px;">
+                You can edit the transcription above if needed
+            </p>
+        </div>
+
+        <!-- AI Summary Section -->
+        <div id="summarySection">
+            <h3>🤖 AI Summary</h3>
+            <div class="summary-content">
+                <h4>Summary</h4>
+                <p id="summaryText" style="color: #555; line-height: 1.6;"></p>
+            </div>
+            <div class="summary-content">
+                <h4>Key Points</h4>
+                <ul class="key-points" id="keyPointsList">
+                </ul>
+            </div>
+            <div class="summary-content">
+                <h4>Fault Analysis</h4>
+                <p id="faultAnalysis" style="color: #555; line-height: 1.6;"></p>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // ===== TYPEFORM REDIRECT HANDLER =====
+        // Extract URL parameters from Typeform redirect
+        function extractTypeformParams() {
+            const urlParams = new URLSearchParams(window.location.search);
+
+            // Get all possible user ID parameters
+            const user_id = urlParams.get('auth_user_id') || 
+                           urlParams.get('user_id') || 
+                           urlParams.get('userId') || 
+                           urlParams.get('create_user_id');
+
+            const product_id = urlParams.get('product_id');
+            const auth_code = urlParams.get('auth_code');
+            const email = urlParams.get('email');
+
+            console.log('📥 Typeform redirect parameters:', {
+                user_id,
+                product_id,
+                auth_code,
+                email,
+                fullUrl: window.location.href
+            });
+
+            // If we have user_id from Typeform, store it
+            if (user_id) {
+                localStorage.setItem('create_user_id', user_id);
+                sessionStorage.setItem('userId', user_id);
+
+                // Show welcome banner
+                document.getElementById('welcomeBanner').style.display = 'block';
+
+                console.log('✅ User authenticated from Typeform:', user_id);
+
+                // Store other params for verification if needed
+                if (auth_code) {
+                    sessionStorage.setItem('auth_code', auth_code);
+                }
+                if (email) {
+                    sessionStorage.setItem('userEmail', email);
+                }
+                if (product_id) {
+                    sessionStorage.setItem('product_id', product_id);
+                }
+
+                return true;
+            }
+
+            return false;
+        }
+
+        // ===== EXISTING CODE - KEEP AS IS =====
+        // Global Variables
+        let mediaRecorder = null;
+        let audioChunks = [];
+        let recordingStartTime;
+        let durationInterval;
+        let userId = localStorage.getItem('create_user_id') || 'user_' + Date.now();
+        let currentQueueId = null;
+        let ws = null;
+        let reconnectAttempts = 0;
+        let maxReconnectAttempts = 5;
+        let audioContext = null;
+        let analyser = null;
+        let microphone = null;
+        let animationId = null;
+
+        // Store user ID for future use
+        localStorage.setItem('create_user_id', userId);
+
+        // Network Status Monitoring
+        function updateNetworkStatus() {
+            const statusElement = document.getElementById('networkStatus');
+            const statusText = statusElement.querySelector('span:last-child');
+
+            if (navigator.onLine) {
+                statusElement.className = 'network-status online';
+                statusText.textContent = 'Connected';
+            } else {
+                statusElement.className = 'network-status offline';
+                statusText.textContent = 'Offline';
+            }
+        }
+
+        window.addEventListener('online', updateNetworkStatus);
+        window.addEventListener('offline', () => {
+            updateNetworkStatus();
+            showStatus('Network connection lost. Recording will be saved locally.', 'error');
+        });
+
+        // Initialize WebSocket Connection
+        function initWebSocket() {
+            const protocol = window.location.protocol === 'https:' ? 'wss:' : 'ws:';
+            const wsUrl = `${protocol}//${window.location.host}`;
+
+            console.log('Connecting to WebSocket:', wsUrl);
+
+            try {
+                ws = new WebSocket(wsUrl);
+            } catch (error) {
+                console.error('❌ WebSocket creation failed:', error);
+                showStatus('Connection setup failed. Some features may be limited.', 'warning');
+                return;
+            }
+
+            ws.onopen = () => {
+                console.log('WebSocket connected successfully');
+                reconnectAttempts = 0;
+
+                // Subscribe to user updates
+                ws.send(JSON.stringify({
+                    type: 'subscribe',
+                    userId: userId
+                }));
+            };
+
+            ws.onmessage = (event) => {
+                try {
+                    const data = JSON.parse(event.data);
+                    console.log('WebSocket message:', data);
+                    handleRealtimeUpdate(data);
+                } catch (error) {
+                    console.error('Error parsing WebSocket message:', error);
+                }
+            };
+
+            ws.onerror = (error) => {
+                console.error('WebSocket error:', error);
+                showStatus('Connection error. Some features may be limited.', 'warning');
+            };
+
+            ws.onclose = () => {
+                console.log('WebSocket disconnected');
+
+                // Attempt to reconnect with exponential backoff
+                if (reconnectAttempts < maxReconnectAttempts) {
+                    reconnectAttempts++;
+                    const delay = Math.min(1000 * Math.pow(2, reconnectAttempts), 30000);
+                    console.log(`Reconnecting in ${delay}ms (attempt ${reconnectAttempts})`);
+                    setTimeout(initWebSocket, delay);
+                }
+            };
+
+            // Heartbeat to keep connection alive
+            setInterval(() => {
+                if (ws && ws.readyState === WebSocket.OPEN) {
+                    ws.send(JSON.stringify({ type: 'ping' }));
+                }
+            }, 30000);
+        }
+
+        // Keep ALL other existing functions from document 3...
+        // (handleRealtimeUpdate, updateProgress, initializeVisualizer, etc.)
+        // I'll include the key ones but assume you keep the rest:
+
+        function handleRealtimeUpdate(data) {
+            console.log('Processing realtime update:', data);
+            const statusDiv = document.getElementById('statusMessage');
+            const statusText = document.getElementById('statusText');
+            const statusIndicator = statusDiv.querySelector('.status-indicator');
+            statusDiv.style.display = 'block';
+
+            switch(data.status || data.type) {
+                case 'processing':
+                case 'PROCESSING':
+                    updateProgress('step-upload', 'complete');
+                    updateProgress('step-transcribe', 'active');
+                    statusIndicator.className = 'status-indicator processing';
+                    statusText.textContent = data.message || 'Processing your recording...';
+                    statusDiv.style.background = '#fff3e0';
+                    break;
+                case 'transcribed':
+                case 'TRANSCRIBED':
+                    updateProgress('step-transcribe', 'complete');
+                    updateProgress('step-summary', 'active');
+                    statusIndicator.className = 'status-indicator processing';
+                    statusText.textContent = 'Generating AI summary...';
+                    statusDiv.style.background = '#e3f2fd';
+                    if (data.transcription) {
+                        showTranscription(data.transcription);
+                    }
+                    break;
+                case 'completed':
+                case 'COMPLETED':
+                    updateProgress('step-summary', 'complete');
+                    statusIndicator.className = 'status-indicator complete';
+                    statusText.textContent = 'Processing complete! ✅';
+                    statusDiv.style.background = '#e8f5e9';
+                    if (data.transcription) {
+                        showTranscription(data.transcription);
+                    }
+                    if (data.summary) {
+                        showSummary(data.summary);
+                    }
+                    break;
+                case 'failed':
+                case 'FAILED':
+                case 'error':
+                    statusIndicator.className = 'status-indicator recording';
+                    statusText.textContent = `Error: ${data.error || data.message || 'Processing failed'}`;
+                    statusDiv.style.background = '#ffebee';
+                    document.getElementById('retryButton').style.display = 'inline-block';
+                    break;
+            }
+        }
+
+        function updateProgress(stepId, status) {
+            const step = document.getElementById(stepId);
+            const allSteps = document.querySelectorAll('.progress-step');
+            const stepIndex = Array.from(allSteps).indexOf(step);
+
+            if (status === 'active') {
+                step.classList.add('active');
+                step.classList.remove('complete');
+                const progressLine = document.getElementById('progressLine');
+                progressLine.style.width = `${(stepIndex / 3) * 100}%`;
+            } else if (status === 'complete') {
+                step.classList.remove('active');
+                step.classList.add('complete');
+                const progressLine = document.getElementById('progressLine');
+                progressLine.style.width = `${((stepIndex + 1) / 4) * 100}%`;
+            }
+        }
+
+        // ... KEEP ALL OTHER FUNCTIONS FROM DOCUMENT 3 ...
+        // (initializeVisualizer, animateVisualizer, startRecording, stopRecording, etc.)
+
+        // Show Status Message
+        function showStatus(message, type = 'info') {
+            const statusDiv = document.getElementById('statusMessage');
+            const statusText = document.getElementById('statusText');
+            const statusIndicator = statusDiv.querySelector('.status-indicator');
+
+            statusDiv.style.display = 'block';
+            statusText.textContent = message;
+
+            switch(type) {
+                case 'error':
+                    statusDiv.style.background = '#fee2e2';
+                    statusIndicator.className = 'status-indicator recording';
+                    break;
+                case 'success':
+                    statusDiv.style.background = '#d4edda';
+                    statusIndicator.className = 'status-indicator complete';
+                    break;
+                case 'warning':
+                    statusDiv.style.background = '#fff3cd';
+                    statusIndicator.className = 'status-indicator processing';
+                    break;
+                default:
+                    statusDiv.style.background = '#d1ecf1';
+                    statusIndicator.className = 'status-indicator processing';
+            }
+
+            if (type === 'info' || type === 'success') {
+                setTimeout(() => {
+                    if (statusText.textContent === message) {
+                        statusDiv.style.display = 'none';
+                    }
+                }, 5000);
+            }
+        }
+
+        // ===== MODIFIED INITIALIZATION =====
+        // Initialize on Page Load
+        document.addEventListener('DOMContentLoaded', () => {
+            console.log('🚀 Initializing transcription page');
+
+            // FIRST: Check for Typeform redirect parameters
+            const hasTypeformParams = extractTypeformParams();
+
+            // Update userId if we got it from Typeform
+            userId = localStorage.getItem('create_user_id') || userId;
+
+            console.log('👤 Active User ID:', userId);
+            console.log('📍 Current URL:', window.location.href);
+            console.log('🔗 Referrer:', document.referrer);
+
+            if (hasTypeformParams) {
+                showStatus('Welcome back! Profile loaded successfully.', 'success');
+            }
+
+            // Initialize components with error handling
+            try {
+                initializeVisualizer();
+                console.log('✅ Visualizer initialized');
+            } catch (error) {
+                console.error('❌ Visualizer initialization failed:', error);
+                showStatus('Warning: Audio visualizer unavailable', 'warning');
+            }
+
+            try {
+                initWebSocket();
+                console.log('✅ WebSocket initialization started');
+            } catch (error) {
+                console.error('❌ WebSocket initialization failed:', error);
+                showStatus('Warning: Real-time updates unavailable', 'warning');
+            }
+
+            try {
+                updateNetworkStatus();
+                console.log('✅ Network status updated');
+            } catch (error) {
+                console.error('❌ Network status update failed:', error);
+            }
+
+            // Set up event listeners
+            try {
+                document.getElementById('recordButton').addEventListener('click', startRecording);
+                document.getElementById('stopButton').addEventListener('click', stopRecording);
+                document.getElementById('retryButton').addEventListener('click', () => {
+                    location.reload();
+                });
+                console.log('✅ Event listeners attached');
+            } catch (error) {
+                console.error('❌ Event listeners setup failed:', error);
+            }
+
+            // Handle visibility change (mobile browsers)
+            document.addEventListener('visibilitychange', () => {
+                if (document.hidden && mediaRecorder && mediaRecorder.state === 'recording') {
+                    console.log('Page hidden while recording - stopping');
+                    stopRecording();
+                }
+            });
+
+            // Prevent accidental navigation during recording
+            window.addEventListener('beforeunload', (e) => {
+                if (mediaRecorder && mediaRecorder.state === 'recording') {
+                    e.preventDefault();
+                    e.returnValue = 'Recording in progress. Are you sure you want to leave?';
+                }
+            });
+
+            // Show initial status
+            showStatus('Ready to record your statement', 'info');
+            console.log('✅ Transcription page initialized successfully');
+        });
+
+        // Handle errors globally
+        window.addEventListener('error', (event) => {
+            console.error('Global error:', event.error);
+            showStatus(`Error: ${event.message}. Check console for details.`, 'error');
+        });
+
+        window.addEventListener('unhandledrejection', (event) => {
+            console.error('Unhandled promise rejection:', event.reason);
+            showStatus(`Promise rejection: ${event.reason}`, 'error');
+        });
+
+        // KEEP ALL OTHER FUNCTIONS FROM DOCUMENT 3 EXACTLY AS THEY ARE
+        // Including: initializeVisualizer, animateVisualizer, startRecording, 
+        // stopRecording, handleRecordingComplete, uploadAndProcess, etc.
+    </script>
+</body>
+</html>

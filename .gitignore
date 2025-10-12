@@ -1,0 +1,6 @@
+attached_assets/
+.env
+.env.*
+src/websocket-test/typeform-signature.js
+src/websocket/test-typeform-signature.js
+node_modules/
