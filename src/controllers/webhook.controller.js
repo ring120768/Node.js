@@ -416,19 +416,33 @@ async function handleSignup(req, res) {
       fields_saved: Object.keys(row).length
     });
   } catch (e) {
-    logger.error(`[${requestId}] Unexpected error: ${e.message}`, {
+    // Enhanced logging for DNS resolution issues
+    const errorDetails = {
       stack: e.stack,
       name: e.name,
       code: e.code,
+      errno: e.errno,
+      syscall: e.syscall,
+      hostname: e.hostname,
       path: req.path,
       method: req.method,
       headers: req.headers,
       body: req.body ? Object.keys(req.body) : 'no body'
-    });
+    };
+
+    // Check for DNS resolution errors
+    if (e.code === 'ENOTFOUND' || e.code === 'EAI_AGAIN' || e.message.includes('could not resolve host')) {
+      logger.error(`[${requestId}] DNS Resolution Error: ${e.message}`, errorDetails);
+      logger.warn(`[${requestId}] This may be a DNS configuration issue. Consider using public DNS servers.`);
+    } else {
+      logger.error(`[${requestId}] Unexpected error: ${e.message}`, errorDetails);
+    }
+
     await logToGDPRAudit('system', 'WEBHOOK_ERROR', {
       message: e.message,
       path: req.path,
       error_name: e.name,
+      error_code: e.code,
       stack: e.stack
     }, req);
     return safeOk(res, { accepted: false, reason: 'unexpected_error', error: e.message });
