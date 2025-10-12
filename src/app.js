@@ -366,6 +366,15 @@ function createApp() {
   app.locals.checkSharedKey = checkSharedKey;
   app.locals.agentService = agentService;
 
+  // ==================== WEBHOOK BODY PARSING ====================
+  
+  // Special body parsing for webhooks - capture raw body for signature verification
+  app.use('/webhooks', express.raw({ type: 'application/json', limit: '1mb' }), (req, res, next) => {
+    req.rawBody = req.body;
+    req.body = JSON.parse(req.body.toString());
+    next();
+  });
+
   // ==================== ROUTES ====================
 
   /**
