@@ -304,6 +304,14 @@ function health(req, res) {
 async function handleSignup(req, res) {
   const requestId = `signup_${Date.now()}`;
   try {
+    logger.info(`[${requestId}] User signup webhook called`, {
+      method: req.method,
+      hasBody: !!req.body,
+      bodySize: req.body ? JSON.stringify(req.body).length : 0,
+      contentType: req.get('content-type'),
+      userAgent: req.get('user-agent')
+    });
+
     // Check if Supabase is available
     if (!supabase) {
       logger.error(`[${requestId}] Supabase not initialized`);
@@ -320,7 +328,8 @@ async function handleSignup(req, res) {
     logger.info(`[${requestId}] Payload received`, {
       hasPayload: !!payload,
       payloadKeys: payload ? Object.keys(payload) : [],
-      hasFormResponse: !!(payload?.form_response)
+      hasFormResponse: !!(payload?.form_response),
+      rawPayload: process.env.NODE_ENV === 'development' ? payload : 'hidden'
     });
 
     if (!payload?.form_response) {
@@ -504,34 +513,55 @@ async function handleDebug(req, res) {
       request_id: requestId,
       services: {
         supabase: !!supabase,
+        supabase_url: !!process.env.SUPABASE_URL,
+        supabase_service_key: !!process.env.SUPABASE_SERVICE_ROLE_KEY,
         gdpr: !!gdprService
       },
       environment: {
         node_env: process.env.NODE_ENV,
         has_supabase_url: !!process.env.SUPABASE_URL,
         has_supabase_key: !!process.env.SUPABASE_SERVICE_ROLE_KEY,
-        has_typeform_secret: !!process.env.TYPEFORM_SECRET
+        has_typeform_secret: !!process.env.TYPEFORM_SECRET,
+        supabase_url_preview: process.env.SUPABASE_URL ? process.env.SUPABASE_URL.substring(0, 30) + '...' : 'missing'
       },
       request: {
         method: req.method,
         path: req.path,
         headers: Object.keys(req.headers || {}),
         hasBody: !!req.body,
-        bodyKeys: req.body ? Object.keys(req.body) : []
+        bodyKeys: req.body ? Object.keys(req.body) : [],
+        contentType: req.get('content-type'),
+        userAgent: req.get('user-agent')
       }
     };
 
     await logToGDPRAudit('system', 'DEBUG_ENDPOINT', debugInfo, req);
     return safeOk(res, debugInfo);
   } catch (e) {
-    logger.error(`[${requestId}] Debug error: ${e.message}`);
+    logger.error(`[${requestId}] Debug error: ${e.message}`, { stack: e.stack });
     return safeOk(res, { 
       accepted: false, 
       reason: 'debug_error',
       error: e.message,
+      stack: process.env.NODE_ENV === 'development' ? e.stack : 'hidden',
       request_id: requestId
     });
   }
+}
+
+// POST /webhooks/simple-test
+async function handleSimpleTest(req, res) {
+  const requestId = `simple_${Date.now()}`;
+  logger.info(`[${requestId}] Simple test called`);
+  
+  return safeOk(res, {
+    success: true,
+    message: 'Simple test endpoint working',
+    timestamp: new Date().toISOString(),
+    request_id: requestId,
+    method: req.method,
+    hasBody: !!req.body
+  });
 }
 
 module.exports = {
@@ -541,5 +571,6 @@ module.exports = {
   handleDemo,
   handleWebhookTest,
   handleTypeformSimulation,
-  handleDebug
+  handleDebug,
+  handleSimpleTest
 };

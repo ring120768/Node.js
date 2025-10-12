@@ -88,6 +88,13 @@ router.post('/test', webhookController.handleWebhookTest);
 router.post('/debug', webhookController.handleDebug);
 
 /**
+ * Simple Test Endpoint  
+ * POST /webhooks/simple-test
+ * No authentication required - minimal test
+ */
+router.post('/simple-test', webhookController.handleSimpleTest);
+
+/**
  * GET version of test endpoint for browser testing
  * GET /webhooks/test
  */
