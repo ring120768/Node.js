@@ -53,7 +53,7 @@ try {
     logger.error('Missing Supabase environment variables');
     throw new Error('Supabase configuration missing');
   }
-  
+
   supabase = createClient(
     process.env.SUPABASE_URL,
     process.env.SUPABASE_SERVICE_ROLE_KEY,
@@ -162,7 +162,7 @@ function verifyTypeformSignature(req) {
   try {
     const sent = Buffer.from(header.slice(7), 'base64');
     const hmac = crypto.createHmac('sha256', secret);
-    
+
     // Handle missing rawBody gracefully
     let bodyBuffer = req.rawBody;
     if (!bodyBuffer) {
@@ -175,7 +175,7 @@ function verifyTypeformSignature(req) {
       }
       logger.debug('Used fallback body buffer for signature verification');
     }
-    
+
     const digest = Buffer.from(hmac.update(bodyBuffer).digest('base64'));
     return crypto.timingSafeEqual(sent, digest);
   } catch (error) {
@@ -317,8 +317,16 @@ async function handleSignup(req, res) {
     }
 
     const payload = req.body;
+    logger.info(`[${requestId}] Payload received`, {
+      hasPayload: !!payload,
+      payloadKeys: payload ? Object.keys(payload) : [],
+      hasFormResponse: !!(payload?.form_response)
+    });
+
     if (!payload?.form_response) {
-      logger.error(`[${requestId}] Invalid payload: missing form_response`);
+      logger.error(`[${requestId}] Invalid payload: missing form_response`, {
+        receivedPayload: payload
+      });
       return safeOk(res, { accepted: false, reason: 'invalid_payload' });
     }
 
@@ -327,7 +335,14 @@ async function handleSignup(req, res) {
     const answers = form.answers || [];
     const { auth_user_id, email, auth_code, product_id } = hidden;
 
-    logger.info(`[${requestId}] Signup webhook; user=${auth_user_id || 'n/a'} email=${email || 'n/a'}`);
+    logger.info(`[${requestId}] Form data parsed`, {
+      hasHidden: !!form.hidden,
+      hiddenKeys: Object.keys(hidden),
+      answersCount: answers.length,
+      auth_user_id: auth_user_id ? 'present' : 'missing',
+      email: email ? 'present' : 'missing',
+      auth_code: auth_code ? 'present' : 'missing'
+    });
 
     // Required hidden fields
     if (!auth_user_id || !email || !auth_code) {
@@ -401,8 +416,8 @@ async function handleSignup(req, res) {
       headers: req.headers,
       body: req.body ? Object.keys(req.body) : 'no body'
     });
-    await logToGDPRAudit('system', 'WEBHOOK_ERROR', { 
-      message: e.message, 
+    await logToGDPRAudit('system', 'WEBHOOK_ERROR', {
+      message: e.message,
       path: req.path,
       error_name: e.name,
       stack: e.stack

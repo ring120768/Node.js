@@ -81,6 +81,13 @@ router.get('/', (req, res) => {
 router.post('/test', webhookController.handleWebhookTest);
 
 /**
+ * Debug Endpoint  
+ * POST /webhooks/debug
+ * No authentication required - for debugging issues
+ */
+router.post('/debug', webhookController.handleDebug);
+
+/**
  * GET version of test endpoint for browser testing
  * GET /webhooks/test
  */
