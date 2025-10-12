@@ -366,26 +366,32 @@ function createApp() {
   app.locals.checkSharedKey = checkSharedKey;
   app.locals.agentService = agentService;
 
-  // ==================== WEBHOOK BODY PARSING ====================
-  
-  // Special body parsing for webhooks - capture raw body for signature verification
-  app.use('/webhooks', express.raw({ type: 'application/json', limit: '1mb' }), (req, res, next) => {
-    req.rawBody = req.body;
-    req.body = JSON.parse(req.body.toString());
-    next();
-  });
-
   // ==================== ROUTES ====================
 
   /**
    * CRITICAL: Webhooks MUST be mounted BEFORE central router
+   * 
+   * Special body parsing for webhooks - capture raw body for signature verification
+   * This needs to be applied directly to the webhook routes
    * 
    * Typeform webhooks:
    * - POST /webhooks/user_signup
    * - POST /webhooks/incident_reports
    * - POST /webhooks/demo
    */
-  app.use('/webhooks', webhookRouter);
+  app.use('/webhooks', 
+    express.raw({ type: 'application/json', limit: '1mb' }), 
+    (req, res, next) => {
+      req.rawBody = req.body;
+      try {
+        req.body = req.body.length > 0 ? JSON.parse(req.body.toString()) : {};
+      } catch (e) {
+        req.body = {};
+      }
+      next();
+    },
+    webhookRouter
+  );
 
   // GitHub webhook verification middleware
   function verifyGitHubWebhook(req, res, next) {
