@@ -492,11 +492,54 @@ async function handleTypeformSimulation(req, res) {
   return handleSignup(req, res);
 }
 
+// POST /webhooks/debug
+async function handleDebug(req, res) {
+  const requestId = `debug_${Date.now()}`;
+  try {
+    logger.info(`[${requestId}] Debug webhook called`);
+    
+    const debugInfo = {
+      message: 'Debug endpoint working',
+      timestamp: new Date().toISOString(),
+      request_id: requestId,
+      services: {
+        supabase: !!supabase,
+        gdpr: !!gdprService
+      },
+      environment: {
+        node_env: process.env.NODE_ENV,
+        has_supabase_url: !!process.env.SUPABASE_URL,
+        has_supabase_key: !!process.env.SUPABASE_SERVICE_ROLE_KEY,
+        has_typeform_secret: !!process.env.TYPEFORM_SECRET
+      },
+      request: {
+        method: req.method,
+        path: req.path,
+        headers: Object.keys(req.headers || {}),
+        hasBody: !!req.body,
+        bodyKeys: req.body ? Object.keys(req.body) : []
+      }
+    };
+
+    await logToGDPRAudit('system', 'DEBUG_ENDPOINT', debugInfo, req);
+    return safeOk(res, debugInfo);
+  } catch (e) {
+    logger.error(`[${requestId}] Debug error: ${e.message}`);
+    return safeOk(res, { 
+      accepted: false, 
+      reason: 'debug_error',
+      error: e.message,
+      request_id: requestId
+    });
+  }
+}
+
 module.exports = {
   health,
   handleSignup,
   handleIncidentReport,
   handleDemo,
   handleWebhookTest,
-  handleTypeformSimulation
+  handleTypeformSimulation,
+  handleDebug
 };
