@@ -304,7 +304,11 @@ router.use('/api', transcriptionRoutes);
 router.use('/api/gdpr', gdprRoutes);
 router.use('/api', emergencyRoutes);
 router.use('/', pdfRoutes);
-router.use('/webhooks', webhookRoutes);
+// Mount webhook routes with proper logging
+router.use('/webhooks', (req, res, next) => {
+  logger.info(`🎣 Webhook request: ${req.method} ${req.originalUrl}`);
+  next();
+}, webhookRoutes);
 router.use('/webhooks/github', githubWebhookRoutes);
 router.use('/api', locationRoutes);
 router.use('/api/debug', debugRoutes);

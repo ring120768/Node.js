@@ -17,7 +17,13 @@ const logger = require('../utils/logger');
  * GET /webhooks/health
  * No authentication required
  */
-router.get('/health', (req, res) => {
+router.get('/health', webhookController.health);
+
+/**
+ * Alternative health check
+ * GET /health (for direct access)
+ */
+router.get('/', (req, res) => {
   const baseUrl = `${req.protocol}://${req.get('host')}`;
 
   res.json({
@@ -68,24 +74,53 @@ router.get('/health', (req, res) => {
 });
 
 /**
- * Simple Test Endpoint
+ * Simple Test Endpoint  
  * POST /webhooks/test
  * No authentication required - for testing connectivity
  */
-router.post('/test', (req, res) => {
-  logger.info('🧪 Test webhook called');
+router.post('/test', webhookController.handleWebhookTest);
 
+/**
+ * GET version of test endpoint for browser testing
+ * GET /webhooks/test
+ */
+router.get('/test', (req, res) => {
+  logger.info('🧪 GET Test webhook called');
+  
   res.json({
     success: true,
-    message: 'Test webhook received successfully',
+    message: 'Webhook endpoint is accessible via GET',
     timestamp: new Date().toISOString(),
-    received: {
-      body: req.body,
-      headers: {
-        'content-type': req.get('content-type'),
-        'user-agent': req.get('user-agent')
-      }
+    path: req.path,
+    baseUrl: req.baseUrl,
+    originalUrl: req.originalUrl,
+    method: req.method
+  });
+});
+
+/**
+ * Debug endpoint - shows all available routes
+ * GET /webhooks/debug
+ */
+router.get('/debug', (req, res) => {
+  const routes = [];
+  router.stack.forEach(layer => {
+    if (layer.route) {
+      const methods = Object.keys(layer.route.methods);
+      routes.push({
+        path: layer.route.path,
+        methods: methods,
+        fullPath: `/webhooks${layer.route.path}`
+      });
     }
+  });
+
+  res.json({
+    message: 'Webhook debug info',
+    availableRoutes: routes,
+    currentPath: req.path,
+    baseUrl: req.baseUrl,
+    timestamp: new Date().toISOString()
   });
 });
 
@@ -93,18 +128,31 @@ router.post('/test', (req, res) => {
 
 /**
  * Authentication Middleware
- * Checks for valid API key in headers
+ * Checks for valid API key in headers OR Typeform signature
  */
 function authenticateWebhook(req, res, next) {
-  const apiKey = req.get('X-Api-Key') ||
-                 req.get('Authorization')?.replace('Bearer ', '');
+  const apiKey = req.get('X-Api-Key') || 
+                 req.get('Authorization')?.replace('Bearer ', '') ||
+                 req.get('x-api-key');
 
+  const typeformSignature = req.get('Typeform-Signature');
+  
   const expectedKey = process.env.WEBHOOK_API_KEY ||
+                      process.env.TYPEFORM_WEBHOOK_SECRET ||
                       process.env.TYPEFORM_X_API_KEY ||
                       process.env.ZAPIER_SHARED_KEY;
 
+  // Allow Typeform signature-based auth OR API key
+  if (typeformSignature) {
+    logger.info('🔐 Typeform signature detected, delegating to controller verification');
+    return next();
+  }
+
   if (!expectedKey) {
-    logger.error('❌ WEBHOOK_API_KEY not configured');
+    logger.warn('⚠️ No webhook authentication configured - allowing in development mode');
+    if (process.env.NODE_ENV === 'development') {
+      return next();
+    }
     return res.status(503).json({
       success: false,
       error: 'Webhook authentication not configured',
@@ -115,7 +163,9 @@ function authenticateWebhook(req, res, next) {
   if (!apiKey || apiKey !== expectedKey) {
     logger.warn('⚠️ Invalid webhook API key attempt', {
       ip: req.ip,
-      path: req.path
+      path: req.path,
+      hasApiKey: !!apiKey,
+      hasTypeformSig: !!typeformSignature
     });
     return res.status(401).json({
       success: false,
