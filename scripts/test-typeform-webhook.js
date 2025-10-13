@@ -84,20 +84,20 @@ const signupPayload = {
 async function testWebhook() {
   const payload = JSON.stringify(signupPayload);
 
-  // FIXED: Generate signature with HEX encoding (not base64)
-  // This matches what Typeform actually sends
+  // CORRECTED: Generate signature with BASE64 encoding 
+  // This matches what Typeform actually sends (contains /, +, = characters)
   const signature = 'sha256=' + crypto
     .createHmac('sha256', WEBHOOK_SECRET)
     .update(payload)
-    .digest('hex');  // ✅ FIXED: Changed from 'base64' to 'hex'
+    .digest('base64');  // ✅ CORRECTED: BASE64 is correct for Typeform
 
-  console.log('🧪 Testing Typeform Webhook (FIXED VERSION)');
+  console.log('🧪 Testing Typeform Webhook (BASE64 VERSION)');
   console.log('═'.repeat(60));
   console.log('URL:', WEBHOOK_URL);
   console.log('Form:', signupPayload.form_response.definition.title);
   console.log('Event ID:', signupPayload.event_id);
   console.log('User ID:', signupPayload.form_response.hidden.auth_user_id);
-  console.log('Signature (hex):', signature.substring(0, 40) + '...');
+  console.log('Signature (base64):', signature.substring(0, 40) + '...');
   console.log('Payload size:', payload.length, 'bytes');
   console.log('═'.repeat(60));
 
