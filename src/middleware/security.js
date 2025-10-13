@@ -1,4 +1,3 @@
-
 /**
  * Security middleware configuration for Car Crash Lawyer AI
  * Implements security headers, CORS, compression, and request ID generation
@@ -15,40 +14,49 @@ const logger = require('../utils/logger');
  * CORS configuration
  */
 const corsOptions = {
-  origin: function (origin, callback) {
-    // Allow requests with no origin (like mobile apps, Postman, etc.)
-    if (!origin) return callback(null, true);
-    
-    // Allow all origins in development
-    if (process.env.NODE_ENV === 'development') {
-      return callback(null, true);
-    }
-    
-    // Production whitelist
+  origin: (origin, callback) => {
     const allowedOrigins = [
       'https://workspace.ring120768.repl.co',
       'https://workspace.ring120768.replit.app',
-      /\.repl\.co$/,
-      /\.replit\.app$/
+      'https://workspace.ring120768.replit.dev',
+      'http://localhost:3000',
+      'http://localhost:5000',
+      'https://form.typeform.com',
+      'https://typeform.com',
+      'https://api.typeform.com',
+      /\.typeform\.com$/,
+      /\.zapier\.com$/,
+      /\.replit\.co$/,
+      /\.replit\.app$/,
+      /\.replit\.dev$/
     ];
-    
-    const isAllowed = allowedOrigins.some(allowedOrigin => {
-      if (typeof allowedOrigin === 'string') {
-        return origin === allowedOrigin;
-      }
-      return allowedOrigin.test(origin);
+
+    if (!origin) return callback(null, true);
+
+    const isAllowed = allowedOrigins.some(allowed => {
+      if (typeof allowed === 'string') return allowed === origin;
+      return allowed.test(origin);
     });
-    
-    if (isAllowed) {
-      callback(null, true);
-    } else {
-      logger.warn('CORS blocked origin:', origin);
-      callback(new Error('Not allowed by CORS'));
-    }
+
+    callback(null, isAllowed);
   },
   credentials: true,
-  methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS'],
-  allowedHeaders: ['Content-Type', 'Authorization', 'X-Requested-With', 'X-Request-Id']
+  methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS', 'PATCH'],
+  allowedHeaders: [
+    'Origin',
+    'X-Requested-With',
+    'Content-Type',
+    'Accept',
+    'Authorization',
+    'X-Api-Key',
+    'X-Request-Id',
+    'Typeform-Signature',
+    'X-Zapier-Secret',
+    'X-Hub-Signature-256',
+    'X-GitHub-Delivery',
+    'X-GitHub-Event'
+  ],
+  exposedHeaders: ['X-Request-Id']
 };
 
 /**
@@ -82,7 +90,7 @@ const compressionOptions = {
     if (req.headers['cache-control'] && req.headers['cache-control'].includes('no-transform')) {
       return false;
     }
-    
+
     // Use the default compression filter for everything else
     return compression.filter(req, res);
   },
@@ -151,6 +159,44 @@ function verifyTypeform(req, secret) {
   }
 }
 
+/**
+ * HTTPS redirect middleware with webhook bypass
+ */
+function httpsRedirect(req, res, next) {
+  // Skip HTTPS redirect for webhook endpoints to prevent 301/302 issues
+  if (req.path.startsWith('/webhooks/') || req.path.startsWith('/webhook/')) {
+    return next();
+  }
+
+  // Skip if already HTTPS or in development
+  if (req.secure || req.get('x-forwarded-proto') === 'https' || process.env.NODE_ENV === 'development') {
+    return next();
+  }
+
+  // Force HTTPS redirect for non-webhook requests
+  const httpsUrl = `https://${req.get('host')}${req.originalUrl}`;
+  return res.redirect(301, httpsUrl);
+}
+
+/**
+ * WWW redirect middleware with webhook bypass
+ */
+function wwwRedirect(req, res, next) {
+  // Skip WWW redirect for webhook endpoints
+  if (req.path.startsWith('/webhooks/') || req.path.startsWith('/webhook/')) {
+    return next();
+  }
+
+  const host = req.get('host');
+  if (host && !host.startsWith('www.') && process.env.FORCE_WWW === 'true') {
+    const protocol = req.secure || req.get('x-forwarded-proto') === 'https' ? 'https' : 'http';
+    const wwwUrl = `${protocol}://www.${host}${req.originalUrl}`;
+    return res.redirect(301, wwwUrl);
+  }
+
+  next();
+}
+
 module.exports = {
   helmet: helmet(helmetOptions),
   cors: cors(corsOptions),
@@ -158,6 +204,8 @@ module.exports = {
   requestId: requestIdMiddleware,
   requestTimeout: requestTimeoutMiddleware,
   verifyTypeform,
+  httpsRedirect,
+  wwwRedirect,
   corsOptions,
   helmetOptions,
   compressionOptions

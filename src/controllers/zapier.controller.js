@@ -14,6 +14,12 @@ module.exports = function zapierController(req, res) {
   }
   const id = req.get('X-Request-Id') || req.body?.id || req.body?.event_id || '';
   if (isDuplicate(id)) return res.sendStatus(204);
-  queueWebhook(req.body).catch(e => logger.error('zapier enqueue error', e));
-  return res.sendStatus(204);
+  
+  // Fast 204 response - process asynchronously
+  res.sendStatus(204);
+  
+  // Process webhook asynchronously after response
+  setImmediate(() => {
+    queueWebhook(req.body).catch(e => logger.error('zapier enqueue error', e));
+  });
 };

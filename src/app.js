@@ -75,6 +75,7 @@ function createApp() {
   // ==================== RAW BODY CAPTURE ====================
   
   // Raw body capture (must be first, before any body consumers)
+  // Increased limits for webhook endpoints (minimum 1MB as recommended)
   app.use(express.json({
     limit: '50mb',
     verify: (req, res, buf) => { req.rawBody = buf; }
@@ -93,6 +94,11 @@ function createApp() {
   app.use(compression);
   app.use(requestId);
   app.use(requestTimeout(parseInt(process.env.REQUEST_TIMEOUT) || 30000));
+
+  // HTTPS/WWW redirect middleware (bypasses webhook endpoints)
+  const { httpsRedirect, wwwRedirect } = require('./middleware/security');
+  app.use(httpsRedirect);
+  app.use(wwwRedirect);
 
   // HTTP request logging
   app.use(morgan('combined', {

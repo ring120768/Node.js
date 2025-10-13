@@ -19,6 +19,12 @@ module.exports = function typeformController(req, res) {
   }
   const eventId = req.body?.event_id || req.body?.form_response?.token || '';
   if (isDuplicate(eventId)) return res.sendStatus(204);
-  queueWebhook(req.body).catch(e => logger.error('typeform enqueue error', e));
-  return res.sendStatus(204);
+  
+  // Fast 204 response - process asynchronously
+  res.sendStatus(204);
+  
+  // Process webhook asynchronously after response
+  setImmediate(() => {
+    queueWebhook(req.body).catch(e => logger.error('typeform enqueue error', e));
+  });
 };
