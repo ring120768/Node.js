@@ -1,6 +1,4 @@
 
-#!/usr/bin/env node
-
 /**
  * Server Startup Script
  * Ensures proper server initialization with error handling
