@@ -278,10 +278,9 @@ app.get('/readyz', async (req, res) => {
   // Quick Supabase select 1 (no writes)
   if (process.env.SUPABASE_URL && process.env.SUPABASE_ANON_KEY) {
     try {
-      // This requires a Supabase client setup. For simplicity, this is a placeholder.
-      // In a real app, you'd initialize and use a Supabase client here.
-      // const supabase = createClient(process.env.SUPABASE_URL, process.env.SUPABASE_ANON_KEY);
-      // await supabase.from('some_table').select('1').limit(1);
+      const { createClient } = require('@supabase/supabase-js');
+      const supabase = createClient(process.env.SUPABASE_URL, process.env.SUPABASE_ANON_KEY);
+      await supabase.from('user_signup').select('create_user_id').limit(1);
       checks.push({ service: 'Supabase', status: 'ok', message: 'Quick check successful.' });
     } catch (error) {
       checks.push({ service: 'Supabase', status: 'error', message: `Check failed: ${error.message}` });
