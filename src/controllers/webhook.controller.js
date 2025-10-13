@@ -43,7 +43,7 @@ function getAnswerByRef(answers, ref) {
 
   // Handle different answer types
   if (answer.type === 'text' || answer.type === 'email' || answer.type === 'phone_number') {
-    return answer.text;
+    return answer.text || answer.email || answer.phone_number;
   } else if (answer.type === 'number') {
     return answer.number;
   } else if (answer.type === 'boolean') {
@@ -70,12 +70,13 @@ async function handleTypeformWebhook(req, res) {
   try {
     logger.info(`[${requestId}] Typeform webhook received`);
 
-    // Get raw body for signature verification
-    const rawBody = req.rawBody || JSON.stringify(req.body);
+    // CRITICAL FIX: Use raw body from Express verify function
+    // req.body is already parsed JSON, req.rawBody is the raw string
+    const rawBody = req.rawBody;
     const signature = req.headers['typeform-signature'];
 
     // Verify signature if configured
-    if (process.env.TYPEFORM_WEBHOOK_SECRET) {
+    if (process.env.TYPEFORM_WEBHOOK_SECRET && signature) {
       const isValid = verifyTypeformSignature(
         signature,
         rawBody,
@@ -90,9 +91,13 @@ async function handleTypeformWebhook(req, res) {
         });
       }
       logger.info(`[${requestId}] Signature verified successfully`);
+    } else if (process.env.TYPEFORM_WEBHOOK_SECRET && !signature) {
+      logger.warn(`[${requestId}] TYPEFORM_WEBHOOK_SECRET set but no signature provided`);
+    } else {
+      logger.info(`[${requestId}] Signature verification skipped (TYPEFORM_WEBHOOK_SECRET not set)`);
     }
 
-    // Extract webhook data
+    // Extract webhook data - req.body is already parsed
     const { event_id, event_type, form_response } = req.body;
 
     if (!event_id || !event_type) {
@@ -111,6 +116,14 @@ async function handleTypeformWebhook(req, res) {
       });
     }
 
+    if (!form_response) {
+      logger.warn(`[${requestId}] Missing form_response data`);
+      return res.status(400).json({
+        success: false,
+        error: 'Missing form_response data'
+      });
+    }
+
     logger.info(`[${requestId}] Processing form: ${form_response.form_id}`);
 
     // Route to appropriate handler based on form
@@ -126,12 +139,16 @@ async function handleTypeformWebhook(req, res) {
       logger.warn(`[${requestId}] Unknown form: ${formTitle} (${formId})`);
       return res.status(200).json({
         success: true,
-        message: 'Form not recognized, webhook ignored'
+        message: 'Form not recognized, webhook ignored',
+        form_id: formId,
+        form_title: formTitle
       });
     }
 
     // Store raw webhook for audit trail
     await storeWebhookAudit(event_id, event_type, form_response, requestId);
+
+    logger.info(`[${requestId}] Webhook processed successfully`);
 
     return res.status(200).json({
       success: true,
@@ -141,7 +158,10 @@ async function handleTypeformWebhook(req, res) {
     });
 
   } catch (error) {
-    logger.error(`[${requestId}] Typeform webhook error:`, error);
+    logger.error(`[${requestId}] Typeform webhook error:`, {
+      message: error.message,
+      stack: error.stack
+    });
 
     // Always return 200 to prevent Typeform retry storms
     return res.status(200).json({
@@ -166,7 +186,7 @@ async function processUserSignup(formResponse, requestId) {
     const userEmail = hidden?.email;
     const productId = hidden?.product_id;
 
-    logger.info(`[${requestId}] Processing signup for user: ${authUserId}`);
+    logger.info(`[${requestId}] Processing signup for user: ${authUserId || token}`);
 
     // Map Typeform answers to user_signup table fields
     const userData = {
@@ -210,17 +230,21 @@ async function processUserSignup(formResponse, requestId) {
       }
     });
 
-    // Upsert to user_signup table
+    logger.info(`[${requestId}] Inserting user data with ${Object.keys(userData).length} fields`);
+
+    // Insert to user_signup table
     const { data, error } = await supabase
       .from('user_signup')
-      .upsert(userData, {
-        onConflict: 'create_user_id',
-        ignoreDuplicates: false
-      })
+      .insert([userData])
       .select();
 
     if (error) {
-      logger.error(`[${requestId}] Error upserting user_signup:`, error);
+      logger.error(`[${requestId}] Error upserting user_signup:`, {
+        code: error.code,
+        message: error.message,
+        details: error.details,
+        hint: error.hint
+      });
       throw error;
     }
 
@@ -233,7 +257,7 @@ async function processUserSignup(formResponse, requestId) {
 
     return {
       table: 'user_signup',
-      user_id: authUserId,
+      user_id: authUserId || token,
       token: token,
       status: 'success'
     };
@@ -253,7 +277,7 @@ async function processIncidentReport(formResponse, requestId) {
 
     const userId = hidden?.user_id || hidden?.auth_user_id;
 
-    logger.info(`[${requestId}] Processing incident report for user: ${userId}`);
+    logger.info(`[${requestId}] Processing incident report for user: ${userId || token}`);
 
     // Map to incident_reports table
     const incidentData = {
@@ -388,6 +412,8 @@ async function processIncidentReport(formResponse, requestId) {
       }
     });
 
+    logger.info(`[${requestId}] Inserting incident data with ${Object.keys(incidentData).length} fields`);
+
     // Insert into incident_reports table
     const { data, error } = await supabase
       .from('incident_reports')
@@ -395,7 +421,12 @@ async function processIncidentReport(formResponse, requestId) {
       .select();
 
     if (error) {
-      logger.error(`[${requestId}] Error inserting incident_reports:`, error);
+      logger.error(`[${requestId}] Error inserting incident_reports:`, {
+        code: error.code,
+        message: error.message,
+        details: error.details,
+        hint: error.hint
+      });
       throw error;
     }
 
@@ -403,7 +434,7 @@ async function processIncidentReport(formResponse, requestId) {
 
     return {
       table: 'incident_reports',
-      user_id: userId,
+      user_id: userId || token,
       report_id: data[0]?.id,
       status: 'success'
     };
@@ -419,10 +450,8 @@ async function processIncidentReport(formResponse, requestId) {
  */
 async function updateAccountStatus(userId, status, requestId) {
   try {
-    // Assuming you have a users or accounts table
-    // Update the unnamed table with account_status field
     const { error } = await supabase
-      .from('user_signup') // Or your main user table
+      .from('user_signup')
       .update({
         account_status: status,
         updated_at: new Date().toISOString()
@@ -444,7 +473,7 @@ async function updateAccountStatus(userId, status, requestId) {
  */
 async function storeWebhookAudit(eventId, eventType, formResponse, requestId) {
   try {
-    // Store in audit_logs table for compliance
+    // Store in audit_logs table for GDPR compliance
     const { error } = await supabase
       .from('audit_logs')
       .insert([{
@@ -462,10 +491,13 @@ async function storeWebhookAudit(eventId, eventType, formResponse, requestId) {
       }]);
 
     if (error) {
-      logger.warn(`[${requestId}] Could not store audit log:`, error);
+      // Don't fail webhook if audit log fails
+      logger.warn(`[${requestId}] Could not store audit log:`, error.message);
+    } else {
+      logger.info(`[${requestId}] Audit log stored successfully`);
     }
   } catch (error) {
-    logger.warn(`[${requestId}] Error storing audit:`, error);
+    logger.warn(`[${requestId}] Error storing audit:`, error.message);
   }
 }
 
@@ -481,7 +513,8 @@ async function testWebhook(req, res) {
     message: 'Webhook endpoint is working',
     timestamp: new Date().toISOString(),
     requestId,
-    supabase_url: process.env.SUPABASE_URL
+    supabase_url: process.env.SUPABASE_URL,
+    webhook_secret_configured: !!process.env.TYPEFORM_WEBHOOK_SECRET
   });
 }
 
