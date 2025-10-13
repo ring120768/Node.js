@@ -19,7 +19,7 @@ const transcriptionRoutes = require('./transcription.routes');
 const gdprRoutes = require('./gdpr.routes');
 const emergencyRoutes = require('./emergency.routes');
 const pdfRoutes = require('./pdf.routes');
-const webhookRoutes = require('./webhook.routes');
+
 const githubWebhookRoutes = require('./githubWebhook.routes');
 const locationRoutes = require('./location.routes');
 const debugRoutes = require('./debug.routes');
@@ -304,11 +304,7 @@ router.use('/api', transcriptionRoutes);
 router.use('/api/gdpr', gdprRoutes);
 router.use('/api', emergencyRoutes);
 router.use('/', pdfRoutes);
-// Mount webhook routes with proper logging
-router.use('/webhooks', (req, res, next) => {
-  logger.info(`🎣 Webhook request: ${req.method} ${req.originalUrl}`);
-  next();
-}, webhookRoutes);
+// Note: Webhook routes are mounted directly in app.js for raw body handling
 router.use('/webhooks/github', githubWebhookRoutes);
 router.use('/api', locationRoutes);
 router.use('/api/debug', debugRoutes);
