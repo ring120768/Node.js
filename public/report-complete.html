@@ -373,14 +373,14 @@
             try {
                 const { data, error } = await supabase
                     .from('user_signup')
-                    .select('recovery_service_number')
-                    .eq('id', userId)
+                    .select('recovery_breakdown_number')
+                    .or(`user_id.eq.${userId},create_user_id.eq.${userId}`)
                     .single();
 
                 if (error) throw error;
 
-                if (data && data.recovery_service_number) {
-                    window.location.href = `tel:${data.recovery_service_number}`;
+                if (data && data.recovery_breakdown_number) {
+                    window.location.href = `tel:${data.recovery_breakdown_number}`;
                 } else {
                     alert('Recovery service number not found. Please update your profile.');
                 }
@@ -399,14 +399,14 @@
             try {
                 const { data, error } = await supabase
                     .from('user_signup')
-                    .select('emergency_contact_number')
-                    .eq('id', userId)
+                    .select('emergency_contact')
+                    .or(`user_id.eq.${userId},create_user_id.eq.${userId}`)
                     .single();
 
                 if (error) throw error;
 
-                if (data && data.emergency_contact_number) {
-                    window.location.href = `tel:${data.emergency_contact_number}`;
+                if (data && data.emergency_contact) {
+                    window.location.href = `tel:${data.emergency_contact}`;
                 } else {
                     alert('Emergency contact number not found. Please update your profile.');
                 }
