@@ -1,4 +1,4 @@
-// src/controllers/webhook.controller.js - FIXED VERSION
+// src/controllers/webhook.controller.js - CORRECTED FINAL VERSION
 const crypto = require('crypto');
 const logger = require('../utils/logger');
 const { createClient } = require('@supabase/supabase-js');
@@ -10,7 +10,8 @@ const supabase = createClient(
 
 /**
  * Verify Typeform webhook signature
- * FIXED: Typeform uses HEX encoding, not BASE64!
+ * CORRECTED: Typeform uses BASE64 encoding (confirmed from actual webhook)
+ * Signature format: sha256=FUyeXJ5hpZffQ/LDl1lnGhjilrAL7bzFs+BI7x8GOKU=
  */
 function verifyTypeformSignature(signature, payload, secret) {
   if (!signature || !secret) {
@@ -19,12 +20,12 @@ function verifyTypeformSignature(signature, payload, secret) {
   }
 
   try {
-    // CRITICAL FIX: Use 'hex' instead of 'base64'
-    // Typeform signature format: sha256=<hex_digest>
+    // ✅ CORRECT: Typeform uses BASE64 encoding
+    // Evidence: Signature contains '/', '+', and '=' padding characters
     const expectedSignature = crypto
       .createHmac('sha256', secret)
       .update(payload)
-      .digest('hex');  // ✅ FIXED: Changed from 'base64' to 'hex'
+      .digest('base64');  // ✅ BASE64 is correct!
 
     const cleanSignature = signature.replace('sha256=', '');
 
@@ -32,17 +33,23 @@ function verifyTypeformSignature(signature, payload, secret) {
     if (cleanSignature.length !== expectedSignature.length) {
       logger.warn('Signature length mismatch', {
         expected: expectedSignature.length,
-        received: cleanSignature.length
+        received: cleanSignature.length,
+        expectedSig: expectedSignature.substring(0, 20) + '...',
+        receivedSig: cleanSignature.substring(0, 20) + '...'
       });
       return false;
     }
 
+    // Use timingSafeEqual for constant-time comparison (prevents timing attacks)
     return crypto.timingSafeEqual(
-      Buffer.from(cleanSignature, 'hex'),
-      Buffer.from(expectedSignature, 'hex')
+      Buffer.from(cleanSignature, 'base64'),
+      Buffer.from(expectedSignature, 'base64')
     );
   } catch (error) {
-    logger.error('Error verifying Typeform signature:', error);
+    logger.error('Error verifying Typeform signature:', {
+      error: error.message,
+      signatureFormat: signature ? signature.substring(0, 30) + '...' : 'none'
+    });
     return false;
   }
 }
@@ -126,7 +133,7 @@ async function handleTypeformWebhook(req, res) {
     // 3. Verify signature if secret is configured
     if (process.env.TYPEFORM_WEBHOOK_SECRET) {
       console.log('🔐 Signature verification required');
-      
+
       if (!signature) {
         console.log('❌ Signature missing (required)');
         logger.warn(`[${requestId}] TYPEFORM_WEBHOOK_SECRET set but no signature provided`);
@@ -137,6 +144,8 @@ async function handleTypeformWebhook(req, res) {
         });
       }
 
+      console.log(`🔑 Signature received: ${signature.substring(0, 30)}...`);
+
       const isValid = verifyTypeformSignature(
         signature,
         rawBody,
@@ -144,9 +153,12 @@ async function handleTypeformWebhook(req, res) {
       );
 
       if (!isValid) {
-        console.log('❌ Signature verification failed');
+        console.log('❌ Signature verification FAILED');
+        console.log(`   Expected encoding: BASE64`);
+        console.log(`   Signature format: sha256=<base64_digest>`);
         logger.warn(`[${requestId}] Invalid Typeform signature`, {
           signatureLength: signature.length,
+          signaturePreview: signature.substring(0, 30) + '...',
           bodyChecksum: crypto.createHash('sha256').update(rawBody).digest('hex').substring(0, 8)
         });
         return res.status(403).json({
@@ -156,7 +168,7 @@ async function handleTypeformWebhook(req, res) {
         });
       }
 
-      console.log('✅ Signature verified');
+      console.log('✅ Signature verified successfully');
       logger.info(`[${requestId}] Signature verified successfully`);
     } else {
       console.log('⚠️  Signature verification skipped (no secret configured)');
@@ -224,7 +236,7 @@ async function handleTypeformWebhook(req, res) {
 
     // Log processing time up to this point
     const verificationTime = Date.now() - startTime;
-    
+
     console.log('\n⚡ PROCESSING');
     console.log('-'.repeat(40));
     console.log(`🕐 Validation completed in: ${verificationTime}ms`);
@@ -259,7 +271,7 @@ async function handleTypeformWebhook(req, res) {
         console.log('!'.repeat(80));
         console.log(`Error: ${error.message}`);
         console.log('!'.repeat(80) + '\n');
-        
+
         logger.error(`[${requestId}] Async webhook processing failed`, {
           error: error.message,
           stack: error.stack,
@@ -273,6 +285,7 @@ async function handleTypeformWebhook(req, res) {
     console.log(`❌ WEBHOOK ERROR [${requestId.slice(-8)}]`);
     console.log('!'.repeat(80));
     console.log(`Error: ${error.message}`);
+    console.log(`Stack: ${error.stack ? error.stack.split('\n')[0] : 'N/A'}`);
     console.log('!'.repeat(80) + '\n');
 
     logger.error(`[${requestId}] Typeform webhook handler error`, {
@@ -305,7 +318,7 @@ async function processWebhookAsync(eventId, eventType, formResponse, requestId) 
   try {
     const formId = formResponse.form_id;
     const formTitle = formResponse.definition?.title;
-    
+
     console.log(`📝 Processing: ${formTitle}`);
     console.log(`🆔 Event ID: ${eventId}`);
     console.log(`📋 Form ID: ${formId}`);
@@ -332,7 +345,7 @@ async function processWebhookAsync(eventId, eventType, formResponse, requestId) 
       console.log(`\n⚠️  ${processingType} - Skipping processing`);
       console.log(`Form Title: ${formTitle}`);
       console.log(`Form ID: ${formId}`);
-      
+
       logger.warn(`[${requestId}] Unknown form`, {
         formTitle,
         formId
@@ -352,7 +365,7 @@ async function processWebhookAsync(eventId, eventType, formResponse, requestId) 
     await storeWebhookAudit(eventId, eventType, formResponse, requestId);
 
     const processingTime = Date.now() - startTime;
-    
+
     console.log(`\n🎉 ASYNC PROCESSING COMPLETE`);
     console.log('-'.repeat(40));
     console.log(`⏱️  Total time: ${processingTime}ms`);
@@ -370,7 +383,7 @@ async function processWebhookAsync(eventId, eventType, formResponse, requestId) 
 
   } catch (error) {
     const processingTime = Date.now() - startTime;
-    
+
     console.log('\n' + '💥'.repeat(80));
     console.log(`❌ ASYNC PROCESSING ERROR [${requestId.slice(-8)}]`);
     console.log('💥'.repeat(80));
@@ -478,7 +491,7 @@ async function processUserSignup(formResponse, requestId) {
       console.log(`   Message: ${error.message}`);
       console.log(`   Details: ${error.details || 'None'}`);
       console.log(`   Hint: ${error.hint || 'None'}`);
-      
+
       logger.error(`[${requestId}] Error inserting user_signup`, {
         code: error.code,
         message: error.message,
@@ -513,7 +526,7 @@ async function processUserSignup(formResponse, requestId) {
     console.log(`❌ User signup processing failed:`);
     console.log(`   Error: ${error.message}`);
     if (error.code) console.log(`   Code: ${error.code}`);
-    
+
     logger.error(`[${requestId}] Error processing user signup`, {
       error: error.message,
       stack: error.stack
@@ -530,6 +543,8 @@ async function processIncidentReport(formResponse, requestId) {
     const { token, hidden, answers, submitted_at } = formResponse;
 
     const userId = hidden?.user_id || hidden?.auth_user_id;
+
+    console.log(`👤 Processing incident for user: ${userId || token}`);
 
     logger.info(`[${requestId}] Processing incident report for user: ${userId || token}`);
 
@@ -560,13 +575,103 @@ async function processIncidentReport(formResponse, requestId) {
       medical_loss_of_consciousness: getAnswerByRef(answers, 'medical_loss_of_consciousness'),
       medical_none_of_these: getAnswerByRef(answers, 'medical_none_of_these'),
 
-      // ... (keeping all your existing field mappings) ...
       // Accident Details
       when_did_the_accident_happen: getAnswerByRef(answers, 'when_did_the_accident_happen'),
       what_time_did_the_accident_happen: getAnswerByRef(answers, 'what_time_did_the_accident_happen'),
       where_exactly_did_this_happen: getAnswerByRef(answers, 'where_exactly_did_this_happen'),
 
-      // (Include all other fields from your original code)
+      // Weather Conditions
+      weather_conditions: getAnswerByRef(answers, 'weather_conditions'),
+      weather_overcast: getAnswerByRef(answers, 'weather_overcast'),
+      weather_street_lights: getAnswerByRef(answers, 'weather_street_lights'),
+      weather_heavy_rain: getAnswerByRef(answers, 'weather_heavy_rain'),
+      weather_wet_road: getAnswerByRef(answers, 'weather_wet_road'),
+      weather_fog: getAnswerByRef(answers, 'weather_fog'),
+      weather_snow_on_road: getAnswerByRef(answers, 'weather_snow_on_road'),
+      weather_bright_daylight: getAnswerByRef(answers, 'weather_bright_daylight'),
+      weather_light_rain: getAnswerByRef(answers, 'weather_light_rain'),
+      weather_clear_and_dry: getAnswerByRef(answers, 'weather_clear_and_dry'),
+      weather_dusk: getAnswerByRef(answers, 'weather_dusk'),
+      weather_snow: getAnswerByRef(answers, 'weather_snow'),
+
+      // Vehicle Information
+      wearing_seatbelts: getAnswerByRef(answers, 'wearing_seatbelts'),
+      reason_no_seatbelts: getAnswerByRef(answers, 'reason_no_seatbelts'),
+      airbags_deployed: getAnswerByRef(answers, 'airbags_deployed'),
+      damage_to_your_vehicle: getAnswerByRef(answers, 'damage_to_your_vehicle'),
+
+      // Road Information
+      road_type: getAnswerByRef(answers, 'road_type'),
+      speed_limit: getAnswerByRef(answers, 'speed_limit'),
+      junction_information: getAnswerByRef(answers, 'junction_information'),
+      junction_information_roundabout: getAnswerByRef(answers, 'junction_information_roundabout'),
+      junction_information_t_junction: getAnswerByRef(answers, 'junction_information_t_junction'),
+      junction_information_traffic_lights: getAnswerByRef(answers, 'junction_information_traffic_lights'),
+      junction_information_crossroads: getAnswerByRef(answers, 'junction_information_crossroads'),
+
+      // Special Conditions
+      special_conditions: getAnswerByRef(answers, 'special_conditions'),
+      special_conditions_roadworks: getAnswerByRef(answers, 'special_conditions_roadworks'),
+      special_conditions_defective_road: getAnswerByRef(answers, 'special_conditions_defective_road'),
+      special_conditions_oil_spills: getAnswerByRef(answers, 'special_conditions_oil_spills'),
+      special_conditions_workman: getAnswerByRef(answers, 'special_conditions_workman'),
+
+      // Detailed Account
+      detailed_account_of_what_happened: getAnswerByRef(answers, 'detailed_account_of_what_happened'),
+
+      // Your Vehicle Details
+      make_of_car: getAnswerByRef(answers, 'make_of_car'),
+      model_of_car: getAnswerByRef(answers, 'model_of_car'),
+      license_plate_number: getAnswerByRef(answers, 'license_plate_number'),
+      direction_and_speed: getAnswerByRef(answers, 'direction_and_speed'),
+      impact: getAnswerByRef(answers, 'impact'),
+      damage_caused_by_accident: getAnswerByRef(answers, 'damage_caused_by_accident'),
+      any_damage_prior: getAnswerByRef(answers, 'any_damage_prior'),
+
+      // Other Driver Information
+      other_drivers_name: getAnswerByRef(answers, 'other_drivers_name'),
+      other_drivers_number: getAnswerByRef(answers, 'other_drivers_number'),
+      other_drivers_address: getAnswerByRef(answers, 'other_drivers_address'),
+      other_make_of_vehicle: getAnswerByRef(answers, 'other_make_of_vehicle'),
+      other_model_of_vehicle: getAnswerByRef(answers, 'other_model_of_vehicle'),
+      vehicle_license_plate: getAnswerByRef(answers, 'vehicle_license_plate'),
+      other_policy_number: getAnswerByRef(answers, 'other_policy_number'),
+      other_insurance_company: getAnswerByRef(answers, 'other_insurance_company'),
+      other_policy_cover: getAnswerByRef(answers, 'other_policy_cover'),
+      other_policy_holder: getAnswerByRef(answers, 'other_policy_holder'),
+      other_damage_accident: getAnswerByRef(answers, 'other_damage_accident'),
+      other_damage_prior: getAnswerByRef(answers, 'other_damage_prior'),
+
+      // Police Information
+      did_police_attend: getAnswerByRef(answers, 'did_police_attend'),
+      accident_reference_number: getAnswerByRef(answers, 'accident_reference_number'),
+      police_officer_badge_number: getAnswerByRef(answers, 'police_officer_badge_number'),
+      police_officers_name: getAnswerByRef(answers, 'police_officers_name'),
+      police_force_details: getAnswerByRef(answers, 'police_force_details'),
+      breath_test: getAnswerByRef(answers, 'breath_test'),
+      other_breath_test: getAnswerByRef(answers, 'other_breath_test'),
+
+      // Witness Information
+      any_witness: getAnswerByRef(answers, 'any_witness'),
+      witness_contact_information: getAnswerByRef(answers, 'witness_contact_information'),
+
+      // Additional Information
+      anything_else: getAnswerByRef(answers, 'anything_else'),
+      call_recovery: getAnswerByRef(answers, 'call_recovery'),
+      upgrade_to_premium: getAnswerByRef(answers, 'upgrade_to_premium'),
+
+      // File URLs
+      file_url_documents: getAnswerByRef(answers, 'file_url_documents'),
+      file_url_documents_1: getAnswerByRef(answers, 'file_url_documents_1'),
+      file_url_record_detailed_account_of_what_happened: getAnswerByRef(answers, 'file_url_record_detailed_account_of_what_happened'),
+      file_url_what3words: getAnswerByRef(answers, 'file_url_what3words'),
+      file_url_scene_overview: getAnswerByRef(answers, 'file_url_scene_overview'),
+      file_url_scene_overview_1: getAnswerByRef(answers, 'file_url_scene_overview_1'),
+      file_url_other_vehicle: getAnswerByRef(answers, 'file_url_other_vehicle'),
+      file_url_other_vehicle_1: getAnswerByRef(answers, 'file_url_other_vehicle_1'),
+      file_url_vehicle_damage: getAnswerByRef(answers, 'file_url_vehicle_damage'),
+      file_url_vehicle_damage_1: getAnswerByRef(answers, 'file_url_vehicle_damage_1'),
+      file_url_vehicle_damage_2: getAnswerByRef(answers, 'file_url_vehicle_damage_2')
     };
 
     // Remove null/undefined values
@@ -576,7 +681,11 @@ async function processIncidentReport(formResponse, requestId) {
       }
     });
 
+    console.log(`\n📊 Incident data: ${Object.keys(incidentData).length} fields`);
+
     logger.info(`[${requestId}] Inserting incident data with ${Object.keys(incidentData).length} fields`);
+
+    console.log(`💾 Inserting into Supabase incident_reports table...`);
 
     // Insert into incident_reports table
     const { data, error } = await supabase
@@ -585,6 +694,10 @@ async function processIncidentReport(formResponse, requestId) {
       .select();
 
     if (error) {
+      console.log(`❌ Database insertion failed:`);
+      console.log(`   Code: ${error.code}`);
+      console.log(`   Message: ${error.message}`);
+
       logger.error(`[${requestId}] Error inserting incident_reports`, {
         code: error.code,
         message: error.message,
@@ -592,6 +705,11 @@ async function processIncidentReport(formResponse, requestId) {
         hint: error.hint
       });
       throw error;
+    }
+
+    console.log(`✅ Incident report inserted successfully`);
+    if (data && data[0]) {
+      console.log(`   🆔 Report ID: ${data[0].id || 'N/A'}`);
     }
 
     logger.info(`[${requestId}] Incident report processed successfully`);
@@ -604,6 +722,9 @@ async function processIncidentReport(formResponse, requestId) {
     };
 
   } catch (error) {
+    console.log(`❌ Incident report processing failed:`);
+    console.log(`   Error: ${error.message}`);
+
     logger.error(`[${requestId}] Error processing incident report`, {
       error: error.message,
       stack: error.stack
@@ -619,7 +740,7 @@ async function processIncidentReport(formResponse, requestId) {
 async function updateAccountStatus(userId, status, requestId) {
   try {
     console.log(`   Setting status to: ${status}`);
-    
+
     const { error } = await supabase
       .from('user_signup')
       .update({
@@ -629,14 +750,14 @@ async function updateAccountStatus(userId, status, requestId) {
       .eq('create_user_id', userId);
 
     if (error) {
-      console.log(`   ❌ Status update failed: ${error.message}`);
-      
-      // Check if it's a column missing error
+      console.log(`   ⚠️  Status update failed: ${error.message}`);
+
+      // Check if it's a column missing error (non-critical)
       if (error.message.includes('account_status')) {
-        console.log(`   💡 Note: account_status column may not exist in user_signup table`);
+        console.log(`   💡 Note: account_status column may not exist (non-critical)`);
       }
-      
-      logger.error(`[${requestId}] Error updating account status`, {
+
+      logger.warn(`[${requestId}] Error updating account status (non-critical)`, {
         error: error.message
       });
     } else {
@@ -644,8 +765,8 @@ async function updateAccountStatus(userId, status, requestId) {
       logger.info(`[${requestId}] Account status updated to: ${status}`);
     }
   } catch (error) {
-    console.log(`   ❌ Status update exception: ${error.message}`);
-    logger.error(`[${requestId}] Error in updateAccountStatus`, {
+    console.log(`   ⚠️  Status update exception: ${error.message}`);
+    logger.warn(`[${requestId}] Error in updateAccountStatus (non-critical)`, {
       error: error.message
     });
   }
@@ -673,22 +794,22 @@ async function storeWebhookAudit(eventId, eventType, formResponse, requestId) {
 
     console.log(`   Event: ${eventId}`);
     console.log(`   User: ${auditData.user_id}`);
-    
+
     // Store in audit_logs table for GDPR compliance
     const { error } = await supabase
       .from('audit_logs')
       .insert([auditData]);
 
     if (error) {
-      // Don't fail webhook if audit log fails
+      // Don't fail webhook if audit log fails (non-critical)
       console.log(`   ⚠️  Audit log failed: ${error.message}`);
-      
+
       // Check if it's a table missing error
       if (error.message.includes('audit_logs')) {
-        console.log(`   💡 Note: audit_logs table may not exist in database`);
+        console.log(`   💡 Note: audit_logs table may not exist (non-critical)`);
       }
-      
-      logger.warn(`[${requestId}] Could not store audit log`, {
+
+      logger.warn(`[${requestId}] Could not store audit log (non-critical)`, {
         error: error.message
       });
     } else {
@@ -696,8 +817,8 @@ async function storeWebhookAudit(eventId, eventType, formResponse, requestId) {
       logger.info(`[${requestId}] Audit log stored successfully`);
     }
   } catch (error) {
-    console.log(`   ❌ Audit storage exception: ${error.message}`);
-    logger.warn(`[${requestId}] Error storing audit`, {
+    console.log(`   ⚠️  Audit storage exception: ${error.message}`);
+    logger.warn(`[${requestId}] Error storing audit (non-critical)`, {
       error: error.message
     });
   }
@@ -708,6 +829,8 @@ async function storeWebhookAudit(eventId, eventType, formResponse, requestId) {
  */
 async function testWebhook(req, res) {
   const requestId = req.id || crypto.randomBytes(8).toString('hex');
+
+  console.log('\n🧪 Test webhook endpoint called');
   logger.info(`[${requestId}] Test webhook called`);
 
   return res.status(200).json({
@@ -716,6 +839,7 @@ async function testWebhook(req, res) {
     timestamp: new Date().toISOString(),
     requestId,
     raw_body_capture: !!req.rawBody,
+    signature_encoding: 'base64',
     configuration: {
       supabase_configured: !!(process.env.SUPABASE_URL && process.env.SUPABASE_SERVICE_ROLE_KEY),
       webhook_secret_configured: !!process.env.TYPEFORM_WEBHOOK_SECRET
