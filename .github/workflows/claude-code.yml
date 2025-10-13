@@ -1,0 +1,28 @@
+
+name: Claude Code (Mentions & Automation)
+on:
+  issue_comment: { types: [created] }
+  pull_request_review_comment: { types: [created] }
+permissions:
+  contents: write
+  pull-requests: write
+  issues: write
+jobs:
+  run-claude:
+    if: >
+      (github.event_name == 'issue_comment' && contains(github.event.comment.body, '@claude'))
+      || (github.event_name == 'pull_request_review_comment' && contains(github.event.comment.body, '@claude'))
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with: { fetch-depth: 0 }
+      - name: Claude Code Action
+        uses: anthropics/claude-code-action@v1
+        env:
+          ANTHROPIC_API_KEY: ${{ secrets.CLAUDE_API_KEY }}
+        with:
+          prompt: |
+            You are assisting on a Node.js/Express codebase.
+            Keep changes small, safe, and well-commented. Never leak secrets.
+          claude_args: |
+            { "apply_code_changes": true, "open_pull_request": true, "max_tokens": 40000 }
