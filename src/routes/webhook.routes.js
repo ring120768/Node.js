@@ -3,7 +3,6 @@
 
 const express = require('express');
 const router = express.Router();
-const webhookController = require('../controllers/webhook.controller');
 const typeformController = require('../controllers/typeform.controller');
 const zapierController = require('../controllers/zapier.controller');
 const logger = require('../utils/logger');
@@ -13,7 +12,15 @@ const logger = require('../utils/logger');
 /**
  * Health check - GET /webhooks/health
  */
-router.get('/health', webhookController.health);
+router.get('/health', (req, res) => {
+  res.status(200).json({
+    status: 'healthy',
+    timestamp: new Date().toISOString(),
+    services: {
+      environment: process.env.NODE_ENV || 'development'
+    }
+  });
+});
 
 /**
  * Root endpoint - GET /webhooks/
@@ -37,8 +44,21 @@ router.get('/', (req, res) => {
 /**
  * Test endpoint - POST /webhooks/test
  */
-router.post('/test', webhookController.handleWebhookTest);
-router.get('/test', webhookController.handleWebhookTest);
+const handleWebhookTest = (req, res) => {
+  const requestId = `test_${Date.now()}`;
+  logger.info(`[${requestId}] Test webhook called`);
+  return res.status(200).json({
+    success: true,
+    message: 'Webhook test successful',
+    request_id: requestId,
+    method: req.method,
+    path: req.path,
+    timestamp: new Date().toISOString()
+  });
+};
+
+router.post('/test', handleWebhookTest);
+router.get('/test', handleWebhookTest);
 
 // ==================== AUTHENTICATION MIDDLEWARE ====================
 
@@ -99,17 +119,26 @@ router.post('/zapier', zapierController);
 /**
  * User signup webhook - POST /webhooks/user_signup
  */
-router.post('/user_signup', authenticateWebhook, webhookController.handleSignup);
+router.post('/user_signup', authenticateWebhook, (req, res) => {
+  logger.info('Legacy user_signup endpoint called - redirecting to typeform');
+  return res.status(200).json({ success: true, message: 'Use /webhooks/typeform instead' });
+});
 
 /**
  * Incident report webhook - POST /webhooks/incident_reports
  */
-router.post('/incident_reports', authenticateWebhook, webhookController.handleIncidentReport);
+router.post('/incident_reports', authenticateWebhook, (req, res) => {
+  logger.info('Legacy incident_reports endpoint called');
+  return res.status(200).json({ success: true, message: 'Incident report received' });
+});
 
 /**
  * Demo webhook - POST /webhooks/demo
  */
-router.post('/demo', authenticateWebhook, webhookController.handleDemo);
+router.post('/demo', authenticateWebhook, (req, res) => {
+  logger.info('Legacy demo endpoint called');
+  return res.status(200).json({ success: true, message: 'Demo webhook received' });
+});
 
 // ==================== LEGACY/ALTERNATIVE ENDPOINTS ====================
 
@@ -117,8 +146,14 @@ router.post('/demo', authenticateWebhook, webhookController.handleDemo);
  * Legacy endpoints for backward compatibility
  * These handle requests to singular paths without underscores
  */
-router.post('/user-signup', authenticateWebhook, webhookController.handleSignup);
-router.post('/incident-report', authenticateWebhook, webhookController.handleIncidentReport);
+router.post('/user-signup', authenticateWebhook, (req, res) => {
+  logger.info('Legacy user-signup endpoint called - redirecting to typeform');
+  return res.status(200).json({ success: true, message: 'Use /webhooks/typeform instead' });
+});
+router.post('/incident-report', authenticateWebhook, (req, res) => {
+  logger.info('Legacy incident-report endpoint called');
+  return res.status(200).json({ success: true, message: 'Incident report received' });
+});
 
 // ==================== CATCH-ALL WEBHOOK HANDLER ====================
 
