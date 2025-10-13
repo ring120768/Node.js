@@ -453,7 +453,29 @@ function createApp() {
     });
   });
 
-  // ==================== ERROR HANDLERS ====================
+  // ==================== ENHANCED ERROR HANDLERS ====================
+
+  // ✅ FIX: JSON parsing errors should return 400, not 500
+  app.use((err, req, res, next) => {
+    // Handle JSON parsing errors (SyntaxError from body-parser)
+    if (err instanceof SyntaxError && err.status === 400 && 'body' in err) {
+      logger.warn('JSON parsing error:', {
+        error: err.message,
+        path: req.path,
+        contentType: req.get('content-type')
+      });
+      
+      return res.status(400).json({
+        success: false,
+        error: 'Invalid JSON in request body',
+        code: 'JSON_PARSE_ERROR',
+        details: process.env.NODE_ENV === 'development' ? err.message : undefined
+      });
+    }
+    
+    // Pass to next error handler
+    next(err);
+  });
 
   // Multer errors
   app.use((err, req, res, next) => {
