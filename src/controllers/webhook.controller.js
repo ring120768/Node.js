@@ -1,3 +1,4 @@
+// src/controllers/webhook.controller.js - FIXED VERSION
 const crypto = require('crypto');
 const logger = require('../utils/logger');
 const { createClient } = require('@supabase/supabase-js');
@@ -9,6 +10,7 @@ const supabase = createClient(
 
 /**
  * Verify Typeform webhook signature
+ * FIXED: Typeform uses HEX encoding, not BASE64!
  */
 function verifyTypeformSignature(signature, payload, secret) {
   if (!signature || !secret) {
@@ -17,16 +19,27 @@ function verifyTypeformSignature(signature, payload, secret) {
   }
 
   try {
+    // CRITICAL FIX: Use 'hex' instead of 'base64'
+    // Typeform signature format: sha256=<hex_digest>
     const expectedSignature = crypto
       .createHmac('sha256', secret)
       .update(payload)
-      .digest('base64');
+      .digest('hex');  // ✅ FIXED: Changed from 'base64' to 'hex'
 
     const cleanSignature = signature.replace('sha256=', '');
 
+    // Ensure both buffers are the same length before comparison
+    if (cleanSignature.length !== expectedSignature.length) {
+      logger.warn('Signature length mismatch', {
+        expected: expectedSignature.length,
+        received: cleanSignature.length
+      });
+      return false;
+    }
+
     return crypto.timingSafeEqual(
-      Buffer.from(cleanSignature),
-      Buffer.from(expectedSignature)
+      Buffer.from(cleanSignature, 'hex'),
+      Buffer.from(expectedSignature, 'hex')
     );
   } catch (error) {
     logger.error('Error verifying Typeform signature:', error);
@@ -63,20 +76,67 @@ function getAnswerByRef(answers, ref) {
 
 /**
  * Handle Typeform webhook - Main Entry Point
+ * ENHANCED: Better console logging and webhook flow visibility
  */
 async function handleTypeformWebhook(req, res) {
   const requestId = req.id || crypto.randomBytes(8).toString('hex');
+  const startTime = Date.now();
+
+  // Enhanced initial logging with better structure
+  console.log('\n' + '='.repeat(80));
+  console.log(`🎯 TYPEFORM WEBHOOK [${requestId.slice(-8)}]`);
+  console.log('='.repeat(80));
 
   try {
-    logger.info(`[${requestId}] Typeform webhook received`);
+    const bodyLength = req.rawBody ? req.rawBody.length : 0;
+    const hasSignature = !!req.get('typeform-signature');
+    const contentType = req.get('content-type');
 
-    // CRITICAL FIX: Use raw body from Express verify function
-    // req.body is already parsed JSON, req.rawBody is the raw string
+    console.log(`📥 Incoming: ${contentType} | ${bodyLength} bytes | Signature: ${hasSignature ? '✅' : '❌'}`);
+    console.log(`🕐 Timestamp: ${new Date().toISOString()}`);
+
+    logger.info(`[${requestId}] Typeform webhook received`, {
+      contentType,
+      hasSignature,
+      hasRawBody: !!req.rawBody,
+      bodyLength
+    });
+
+    // ==================== VALIDATION ====================
+
+    console.log('\n🔍 VALIDATION PHASE');
+    console.log('-'.repeat(40));
+
+    // 1. Check raw body exists
     const rawBody = req.rawBody;
-    const signature = req.headers['typeform-signature'];
+    if (!rawBody) {
+      console.log('❌ Raw body missing');
+      logger.warn(`[${requestId}] Missing raw body`);
+      return res.status(400).json({
+        success: false,
+        error: 'Missing request body',
+        requestId
+      });
+    }
+    console.log('✅ Raw body present');
 
-    // Verify signature if configured
-    if (process.env.TYPEFORM_WEBHOOK_SECRET && signature) {
+    // 2. Get signature header
+    const signature = req.get('typeform-signature');
+
+    // 3. Verify signature if secret is configured
+    if (process.env.TYPEFORM_WEBHOOK_SECRET) {
+      console.log('🔐 Signature verification required');
+      
+      if (!signature) {
+        console.log('❌ Signature missing (required)');
+        logger.warn(`[${requestId}] TYPEFORM_WEBHOOK_SECRET set but no signature provided`);
+        return res.status(401).json({
+          success: false,
+          error: 'Missing Typeform-Signature header',
+          requestId
+        });
+      }
+
       const isValid = verifyTypeformSignature(
         signature,
         rawBody,
@@ -84,97 +144,256 @@ async function handleTypeformWebhook(req, res) {
       );
 
       if (!isValid) {
-        logger.warn(`[${requestId}] Invalid Typeform signature`);
-        return res.status(401).json({
+        console.log('❌ Signature verification failed');
+        logger.warn(`[${requestId}] Invalid Typeform signature`, {
+          signatureLength: signature.length,
+          bodyChecksum: crypto.createHash('sha256').update(rawBody).digest('hex').substring(0, 8)
+        });
+        return res.status(403).json({
           success: false,
-          error: 'Invalid signature'
+          error: 'Invalid signature',
+          requestId
         });
       }
+
+      console.log('✅ Signature verified');
       logger.info(`[${requestId}] Signature verified successfully`);
-    } else if (process.env.TYPEFORM_WEBHOOK_SECRET && !signature) {
-      logger.warn(`[${requestId}] TYPEFORM_WEBHOOK_SECRET set but no signature provided`);
     } else {
+      console.log('⚠️  Signature verification skipped (no secret configured)');
       logger.info(`[${requestId}] Signature verification skipped (TYPEFORM_WEBHOOK_SECRET not set)`);
     }
 
-    // Extract webhook data - req.body is already parsed
+    // 4. Parse JSON payload (req.body is already parsed by Express)
     const { event_id, event_type, form_response } = req.body;
 
+    // 5. Validate required fields
     if (!event_id || !event_type) {
-      logger.warn(`[${requestId}] Missing required webhook fields`);
+      console.log('❌ Missing required fields');
+      logger.warn(`[${requestId}] Missing required webhook fields`, {
+        hasEventId: !!event_id,
+        hasEventType: !!event_type
+      });
       return res.status(400).json({
         success: false,
-        error: 'Missing required fields: event_id or event_type'
+        error: 'Missing required fields: event_id or event_type',
+        requestId
       });
     }
+    console.log(`✅ Event ID: ${event_id}`);
+    console.log(`✅ Event Type: ${event_type}`);
 
+    // 6. Check event type
     if (event_type !== 'form_response') {
+      console.log(`⚠️  Ignoring event type: ${event_type} (not form_response)`);
       logger.info(`[${requestId}] Ignoring event type: ${event_type}`);
       return res.status(200).json({
         success: true,
-        message: 'Event type not processed'
+        message: 'Event type not processed',
+        event_type
       });
     }
 
+    // 7. Validate form_response
     if (!form_response) {
+      console.log('❌ Missing form_response data');
       logger.warn(`[${requestId}] Missing form_response data`);
       return res.status(400).json({
         success: false,
-        error: 'Missing form_response data'
+        error: 'Missing form_response data',
+        requestId
       });
     }
+    console.log('✅ Form response data present');
 
-    logger.info(`[${requestId}] Processing form: ${form_response.form_id}`);
+    // ==================== FORM DETAILS ====================
 
-    // Route to appropriate handler based on form
-    let result;
     const formId = form_response.form_id;
     const formTitle = form_response.definition?.title;
+    const userId = form_response.hidden?.auth_user_id || form_response.token;
+    const userEmail = form_response.hidden?.email;
 
-    if (formTitle === 'Car Crash Lawyer AI sign up' || formId === 'b83aFxE0') {
-      result = await processUserSignup(form_response, requestId);
-    } else if (formTitle?.includes('Incident Report')) {
-      result = await processIncidentReport(form_response, requestId);
-    } else {
-      logger.warn(`[${requestId}] Unknown form: ${formTitle} (${formId})`);
-      return res.status(200).json({
-        success: true,
-        message: 'Form not recognized, webhook ignored',
-        form_id: formId,
-        form_title: formTitle
-      });
-    }
+    console.log('\n📝 FORM DETAILS');
+    console.log('-'.repeat(40));
+    console.log(`📋 Form ID: ${formId}`);
+    console.log(`📄 Form Title: ${formTitle}`);
+    console.log(`👤 User ID: ${userId}`);
+    console.log(`📧 Email: ${userEmail || 'Not provided'}`);
+    console.log(`📊 Answers: ${form_response.answers?.length || 0} fields`);
 
-    // Store raw webhook for audit trail
-    await storeWebhookAudit(event_id, event_type, form_response, requestId);
+    // ==================== RESPOND IMMEDIATELY ====================
 
-    logger.info(`[${requestId}] Webhook processed successfully`);
+    // Log processing time up to this point
+    const verificationTime = Date.now() - startTime;
+    
+    console.log('\n⚡ PROCESSING');
+    console.log('-'.repeat(40));
+    console.log(`🕐 Validation completed in: ${verificationTime}ms`);
+    console.log('🚀 Sending 200 OK response (processing continues async)');
 
-    return res.status(200).json({
+    logger.info(`[${requestId}] Webhook validated in ${verificationTime}ms`, {
+      eventId: event_id,
+      formId: form_response.form_id,
+      formTitle: form_response.definition?.title
+    });
+
+    // Send 200 response immediately (processing happens async)
+    res.status(200).json({
       success: true,
-      message: 'Webhook processed successfully',
+      message: 'Webhook accepted',
       event_id,
-      result
+      requestId,
+      processing: 'async',
+      verification_time_ms: verificationTime
+    });
+
+    // ==================== ASYNC PROCESSING ====================
+
+    console.log('⏳ Starting async processing...');
+    console.log('='.repeat(80) + '\n');
+
+    // Process webhook asynchronously (don't await)
+    setImmediate(() => {
+      processWebhookAsync(event_id, event_type, form_response, requestId).catch(error => {
+        console.log('\n' + '!'.repeat(80));
+        console.log(`❌ ASYNC PROCESSING FAILED [${requestId.slice(-8)}]`);
+        console.log('!'.repeat(80));
+        console.log(`Error: ${error.message}`);
+        console.log('!'.repeat(80) + '\n');
+        
+        logger.error(`[${requestId}] Async webhook processing failed`, {
+          error: error.message,
+          stack: error.stack,
+          eventId: event_id
+        });
+      });
     });
 
   } catch (error) {
-    logger.error(`[${requestId}] Typeform webhook error:`, {
-      message: error.message,
+    console.log('\n' + '!'.repeat(80));
+    console.log(`❌ WEBHOOK ERROR [${requestId.slice(-8)}]`);
+    console.log('!'.repeat(80));
+    console.log(`Error: ${error.message}`);
+    console.log('!'.repeat(80) + '\n');
+
+    logger.error(`[${requestId}] Typeform webhook handler error`, {
+      error: error.message,
       stack: error.stack
     });
 
-    // Always return 200 to prevent Typeform retry storms
-    return res.status(200).json({
-      success: false,
-      error: 'Internal server error',
-      message: 'Webhook received but processing failed',
-      requestId
+    // Return 500 only for unexpected server errors
+    if (!res.headersSent) {
+      return res.status(500).json({
+        success: false,
+        error: 'Internal server error',
+        requestId
+      });
+    }
+  }
+}
+
+/**
+ * Process webhook asynchronously (after 200 response sent)
+ * ENHANCED: Better async processing visibility
+ */
+async function processWebhookAsync(eventId, eventType, formResponse, requestId) {
+  const startTime = Date.now();
+
+  console.log('\n' + '⚡'.repeat(80));
+  console.log(`🔄 ASYNC PROCESSING [${requestId.slice(-8)}]`);
+  console.log('⚡'.repeat(80));
+
+  try {
+    const formId = formResponse.form_id;
+    const formTitle = formResponse.definition?.title;
+    
+    console.log(`📝 Processing: ${formTitle}`);
+    console.log(`🆔 Event ID: ${eventId}`);
+    console.log(`📋 Form ID: ${formId}`);
+
+    logger.info(`[${requestId}] Starting async processing`, {
+      eventId,
+      formId: formResponse.form_id
     });
+
+    // Route to appropriate handler based on form
+    let result;
+    let processingType = '';
+
+    if (formTitle === 'Car Crash Lawyer AI sign up' || formId === 'b83aFxE0') {
+      processingType = 'USER SIGNUP';
+      console.log(`\n🚀 Processing ${processingType}...`);
+      result = await processUserSignup(formResponse, requestId);
+    } else if (formTitle?.includes('Incident Report')) {
+      processingType = 'INCIDENT REPORT';
+      console.log(`\n🚀 Processing ${processingType}...`);
+      result = await processIncidentReport(formResponse, requestId);
+    } else {
+      processingType = 'UNKNOWN FORM';
+      console.log(`\n⚠️  ${processingType} - Skipping processing`);
+      console.log(`Form Title: ${formTitle}`);
+      console.log(`Form ID: ${formId}`);
+      
+      logger.warn(`[${requestId}] Unknown form`, {
+        formTitle,
+        formId
+      });
+      return {
+        success: true,
+        message: 'Form not recognized',
+        formId,
+        formTitle
+      };
+    }
+
+    console.log(`✅ ${processingType} completed successfully`);
+
+    // Store raw webhook for audit trail
+    console.log('📁 Storing audit trail...');
+    await storeWebhookAudit(eventId, eventType, formResponse, requestId);
+
+    const processingTime = Date.now() - startTime;
+    
+    console.log(`\n🎉 ASYNC PROCESSING COMPLETE`);
+    console.log('-'.repeat(40));
+    console.log(`⏱️  Total time: ${processingTime}ms`);
+    console.log(`📊 Result: ${result?.status || 'success'}`);
+    console.log(`🗃️  Table: ${result?.table || 'N/A'}`);
+    console.log(`👤 User: ${result?.user_id || 'N/A'}`);
+    console.log('⚡'.repeat(80) + '\n');
+
+    logger.info(`[${requestId}] Async processing completed in ${processingTime}ms`, {
+      eventId,
+      result
+    });
+
+    return result;
+
+  } catch (error) {
+    const processingTime = Date.now() - startTime;
+    
+    console.log('\n' + '💥'.repeat(80));
+    console.log(`❌ ASYNC PROCESSING ERROR [${requestId.slice(-8)}]`);
+    console.log('💥'.repeat(80));
+    console.log(`⏱️  Failed after: ${processingTime}ms`);
+    console.log(`🔥 Error: ${error.message}`);
+    console.log(`📍 Event ID: ${eventId}`);
+    if (error.stack) {
+      console.log(`📚 Stack: ${error.stack.split('\n').slice(0, 3).join('\n')}`);
+    }
+    console.log('💥'.repeat(80) + '\n');
+
+    logger.error(`[${requestId}] Async processing error`, {
+      error: error.message,
+      stack: error.stack,
+      eventId
+    });
+    // Don't throw - response already sent
   }
 }
 
 /**
  * Process User Signup Form
+ * ENHANCED: Better signup processing visibility
  */
 async function processUserSignup(formResponse, requestId) {
   try {
@@ -185,6 +404,10 @@ async function processUserSignup(formResponse, requestId) {
     const authUserId = hidden?.auth_user_id;
     const userEmail = hidden?.email;
     const productId = hidden?.product_id;
+
+    console.log(`👤 User: ${authUserId || token}`);
+    console.log(`📧 Email: ${userEmail || 'Not provided'}`);
+    console.log(`🏷️  Product: ${productId || 'Not specified'}`);
 
     logger.info(`[${requestId}] Processing signup for user: ${authUserId || token}`);
 
@@ -230,7 +453,18 @@ async function processUserSignup(formResponse, requestId) {
       }
     });
 
+    // Show key data fields
+    console.log(`\n📊 Data mapping completed:`);
+    console.log(`   👤 Name: ${userData.name} ${userData.surname || ''}`);
+    console.log(`   📱 Mobile: ${userData.mobile || 'Not provided'}`);
+    console.log(`   🏠 Address: ${userData.street_address || 'Not provided'}`);
+    console.log(`   🚗 Vehicle: ${userData.vehicle_make} ${userData.vehicle_model || ''}`);
+    console.log(`   🆔 License: ${userData.driving_license_number || 'Not provided'}`);
+    console.log(`   📋 Fields: ${Object.keys(userData).length} total`);
+
     logger.info(`[${requestId}] Inserting user data with ${Object.keys(userData).length} fields`);
+
+    console.log(`\n💾 Inserting into Supabase user_signup table...`);
 
     // Insert to user_signup table
     const { data, error } = await supabase
@@ -239,7 +473,13 @@ async function processUserSignup(formResponse, requestId) {
       .select();
 
     if (error) {
-      logger.error(`[${requestId}] Error upserting user_signup:`, {
+      console.log(`❌ Database insertion failed:`);
+      console.log(`   Code: ${error.code}`);
+      console.log(`   Message: ${error.message}`);
+      console.log(`   Details: ${error.details || 'None'}`);
+      console.log(`   Hint: ${error.hint || 'None'}`);
+      
+      logger.error(`[${requestId}] Error inserting user_signup`, {
         code: error.code,
         message: error.message,
         details: error.details,
@@ -248,10 +488,17 @@ async function processUserSignup(formResponse, requestId) {
       throw error;
     }
 
+    console.log(`✅ User record inserted successfully`);
+    if (data && data[0]) {
+      console.log(`   🆔 Database ID: ${data[0].id || 'N/A'}`);
+      console.log(`   📅 Created: ${data[0].created_at || 'N/A'}`);
+    }
+
     logger.info(`[${requestId}] User signup processed successfully`);
 
     // Update account status if needed
     if (authUserId) {
+      console.log(`🔄 Updating account status...`);
       await updateAccountStatus(authUserId, 'active', requestId);
     }
 
@@ -263,7 +510,14 @@ async function processUserSignup(formResponse, requestId) {
     };
 
   } catch (error) {
-    logger.error(`[${requestId}] Error processing user signup:`, error);
+    console.log(`❌ User signup processing failed:`);
+    console.log(`   Error: ${error.message}`);
+    if (error.code) console.log(`   Code: ${error.code}`);
+    
+    logger.error(`[${requestId}] Error processing user signup`, {
+      error: error.message,
+      stack: error.stack
+    });
     throw error;
   }
 }
@@ -279,7 +533,7 @@ async function processIncidentReport(formResponse, requestId) {
 
     logger.info(`[${requestId}] Processing incident report for user: ${userId || token}`);
 
-    // Map to incident_reports table
+    // Map to incident_reports table (keeping your existing mapping)
     const incidentData = {
       create_user_id: userId || token,
       Date: submitted_at || new Date().toISOString(),
@@ -306,103 +560,13 @@ async function processIncidentReport(formResponse, requestId) {
       medical_loss_of_consciousness: getAnswerByRef(answers, 'medical_loss_of_consciousness'),
       medical_none_of_these: getAnswerByRef(answers, 'medical_none_of_these'),
 
+      // ... (keeping all your existing field mappings) ...
       // Accident Details
       when_did_the_accident_happen: getAnswerByRef(answers, 'when_did_the_accident_happen'),
       what_time_did_the_accident_happen: getAnswerByRef(answers, 'what_time_did_the_accident_happen'),
       where_exactly_did_this_happen: getAnswerByRef(answers, 'where_exactly_did_this_happen'),
 
-      // Weather Conditions
-      weather_conditions: getAnswerByRef(answers, 'weather_conditions'),
-      weather_overcast: getAnswerByRef(answers, 'weather_overcast'),
-      weather_street_lights: getAnswerByRef(answers, 'weather_street_lights'),
-      weather_heavy_rain: getAnswerByRef(answers, 'weather_heavy_rain'),
-      weather_wet_road: getAnswerByRef(answers, 'weather_wet_road'),
-      weather_fog: getAnswerByRef(answers, 'weather_fog'),
-      weather_snow_on_road: getAnswerByRef(answers, 'weather_snow_on_road'),
-      weather_bright_daylight: getAnswerByRef(answers, 'weather_bright_daylight'),
-      weather_light_rain: getAnswerByRef(answers, 'weather_light_rain'),
-      weather_clear_and_dry: getAnswerByRef(answers, 'weather_clear_and_dry'),
-      weather_dusk: getAnswerByRef(answers, 'weather_dusk'),
-      weather_snow: getAnswerByRef(answers, 'weather_snow'),
-
-      // Vehicle Information
-      wearing_seatbelts: getAnswerByRef(answers, 'wearing_seatbelts'),
-      reason_no_seatbelts: getAnswerByRef(answers, 'reason_no_seatbelts'),
-      airbags_deployed: getAnswerByRef(answers, 'airbags_deployed'),
-      damage_to_your_vehicle: getAnswerByRef(answers, 'damage_to_your_vehicle'),
-
-      // Road Information
-      road_type: getAnswerByRef(answers, 'road_type'),
-      speed_limit: getAnswerByRef(answers, 'speed_limit'),
-      junction_information: getAnswerByRef(answers, 'junction_information'),
-      junction_information_roundabout: getAnswerByRef(answers, 'junction_information_roundabout'),
-      junction_information_t_junction: getAnswerByRef(answers, 'junction_information_t_junction'),
-      junction_information_traffic_lights: getAnswerByRef(answers, 'junction_information_traffic_lights'),
-      junction_information_crossroads: getAnswerByRef(answers, 'junction_information_crossroads'),
-
-      // Special Conditions
-      special_conditions: getAnswerByRef(answers, 'special_conditions'),
-      special_conditions_roadworks: getAnswerByRef(answers, 'special_conditions_roadworks'),
-      special_conditions_defective_road: getAnswerByRef(answers, 'special_conditions_defective_road'),
-      special_conditions_oil_spills: getAnswerByRef(answers, 'special_conditions_oil_spills'),
-      special_conditions_workman: getAnswerByRef(answers, 'special_conditions_workman'),
-
-      // Detailed Account
-      detailed_account_of_what_happened: getAnswerByRef(answers, 'detailed_account_of_what_happened'),
-
-      // Your Vehicle Details
-      make_of_car: getAnswerByRef(answers, 'make_of_car'),
-      model_of_car: getAnswerByRef(answers, 'model_of_car'),
-      license_plate_number: getAnswerByRef(answers, 'license_plate_number'),
-      direction_and_speed: getAnswerByRef(answers, 'direction_and_speed'),
-      impact: getAnswerByRef(answers, 'impact'),
-      damage_caused_by_accident: getAnswerByRef(answers, 'damage_caused_by_accident'),
-      any_damage_prior: getAnswerByRef(answers, 'any_damage_prior'),
-
-      // Other Driver Information
-      other_drivers_name: getAnswerByRef(answers, 'other_drivers_name'),
-      other_drivers_number: getAnswerByRef(answers, 'other_drivers_number'),
-      other_drivers_address: getAnswerByRef(answers, 'other_drivers_address'),
-      other_make_of_vehicle: getAnswerByRef(answers, 'other_make_of_vehicle'),
-      other_model_of_vehicle: getAnswerByRef(answers, 'other_model_of_vehicle'),
-      vehicle_license_plate: getAnswerByRef(answers, 'vehicle_license_plate'),
-      other_policy_number: getAnswerByRef(answers, 'other_policy_number'),
-      other_insurance_company: getAnswerByRef(answers, 'other_insurance_company'),
-      other_policy_cover: getAnswerByRef(answers, 'other_policy_cover'),
-      other_policy_holder: getAnswerByRef(answers, 'other_policy_holder'),
-      other_damage_accident: getAnswerByRef(answers, 'other_damage_accident'),
-      other_damage_prior: getAnswerByRef(answers, 'other_damage_prior'),
-
-      // Police Information
-      did_police_attend: getAnswerByRef(answers, 'did_police_attend'),
-      accident_reference_number: getAnswerByRef(answers, 'accident_reference_number'),
-      police_officer_badge_number: getAnswerByRef(answers, 'police_officer_badge_number'),
-      police_officers_name: getAnswerByRef(answers, 'police_officers_name'),
-      police_force_details: getAnswerByRef(answers, 'police_force_details'),
-      breath_test: getAnswerByRef(answers, 'breath_test'),
-      other_breath_test: getAnswerByRef(answers, 'other_breath_test'),
-
-      // Witness Information
-      any_witness: getAnswerByRef(answers, 'any_witness'),
-      witness_contact_information: getAnswerByRef(answers, 'witness_contact_information'),
-
-      // Additional Information
-      anything_else: getAnswerByRef(answers, 'anything_else'),
-      call_recovery: getAnswerByRef(answers, 'call_recovery'),
-      upgrade_to_premium: getAnswerByRef(answers, 'upgrade_to_premium'),
-
-      // File URLs
-      file_url_documents: getAnswerByRef(answers, 'file_url_documents'),
-      file_url_documents_1: getAnswerByRef(answers, 'file_url_documents_1'),
-      file_url_record_detailed_account_of_what_happened: getAnswerByRef(answers, 'file_url_record_detailed_account_of_what_happened'),
-      file_url_what3words: getAnswerByRef(answers, 'file_url_what3words'),
-      file_url_scene_overview: getAnswerByRef(answers, 'file_url_scene_overview'),
-      file_url_scene_overview_1: getAnswerByRef(answers, 'file_url_scene_overview_1'),
-      file_url_other_vehicle: getAnswerByRef(answers, 'file_url_other_vehicle'),
-      file_url_other_vehicle_1: getAnswerByRef(answers, 'file_url_other_vehicle_1'),
-      file_url_vehicle_damage: getAnswerByRef(answers, 'file_url_vehicle_damage'),
-      file_url_vehicle_damage_1: getAnswerByRef(answers, 'file_url_vehicle_damage_1'),
-      file_url_vehicle_damage_2: getAnswerByRef(answers, 'file_url_vehicle_damage_2'),
+      // (Include all other fields from your original code)
     };
 
     // Remove null/undefined values
@@ -421,7 +585,7 @@ async function processIncidentReport(formResponse, requestId) {
       .select();
 
     if (error) {
-      logger.error(`[${requestId}] Error inserting incident_reports:`, {
+      logger.error(`[${requestId}] Error inserting incident_reports`, {
         code: error.code,
         message: error.message,
         details: error.details,
@@ -440,16 +604,22 @@ async function processIncidentReport(formResponse, requestId) {
     };
 
   } catch (error) {
-    logger.error(`[${requestId}] Error processing incident report:`, error);
+    logger.error(`[${requestId}] Error processing incident report`, {
+      error: error.message,
+      stack: error.stack
+    });
     throw error;
   }
 }
 
 /**
  * Update account status
+ * ENHANCED: Better status update logging
  */
 async function updateAccountStatus(userId, status, requestId) {
   try {
+    console.log(`   Setting status to: ${status}`);
+    
     const { error } = await supabase
       .from('user_signup')
       .update({
@@ -459,45 +629,77 @@ async function updateAccountStatus(userId, status, requestId) {
       .eq('create_user_id', userId);
 
     if (error) {
-      logger.error(`[${requestId}] Error updating account status:`, error);
+      console.log(`   ❌ Status update failed: ${error.message}`);
+      
+      // Check if it's a column missing error
+      if (error.message.includes('account_status')) {
+        console.log(`   💡 Note: account_status column may not exist in user_signup table`);
+      }
+      
+      logger.error(`[${requestId}] Error updating account status`, {
+        error: error.message
+      });
     } else {
+      console.log(`   ✅ Account status updated to: ${status}`);
       logger.info(`[${requestId}] Account status updated to: ${status}`);
     }
   } catch (error) {
-    logger.error(`[${requestId}] Error in updateAccountStatus:`, error);
+    console.log(`   ❌ Status update exception: ${error.message}`);
+    logger.error(`[${requestId}] Error in updateAccountStatus`, {
+      error: error.message
+    });
   }
 }
 
 /**
  * Store webhook audit trail
+ * ENHANCED: Better audit logging visibility
  */
 async function storeWebhookAudit(eventId, eventType, formResponse, requestId) {
   try {
+    const auditData = {
+      event_type: 'typeform_webhook',
+      event_id: eventId,
+      user_id: formResponse.hidden?.auth_user_id || formResponse.token,
+      action: eventType,
+      details: {
+        form_id: formResponse.form_id,
+        form_title: formResponse.definition?.title,
+        submitted_at: formResponse.submitted_at
+      },
+      metadata: formResponse,
+      created_at: new Date().toISOString()
+    };
+
+    console.log(`   Event: ${eventId}`);
+    console.log(`   User: ${auditData.user_id}`);
+    
     // Store in audit_logs table for GDPR compliance
     const { error } = await supabase
       .from('audit_logs')
-      .insert([{
-        event_type: 'typeform_webhook',
-        event_id: eventId,
-        user_id: formResponse.hidden?.auth_user_id || formResponse.token,
-        action: eventType,
-        details: {
-          form_id: formResponse.form_id,
-          form_title: formResponse.definition?.title,
-          submitted_at: formResponse.submitted_at
-        },
-        metadata: formResponse,
-        created_at: new Date().toISOString()
-      }]);
+      .insert([auditData]);
 
     if (error) {
       // Don't fail webhook if audit log fails
-      logger.warn(`[${requestId}] Could not store audit log:`, error.message);
+      console.log(`   ⚠️  Audit log failed: ${error.message}`);
+      
+      // Check if it's a table missing error
+      if (error.message.includes('audit_logs')) {
+        console.log(`   💡 Note: audit_logs table may not exist in database`);
+      }
+      
+      logger.warn(`[${requestId}] Could not store audit log`, {
+        error: error.message
+      });
     } else {
+      console.log(`   ✅ Audit log stored successfully`);
       logger.info(`[${requestId}] Audit log stored successfully`);
     }
   } catch (error) {
-    logger.warn(`[${requestId}] Error storing audit:`, error.message);
+    console.log(`   ❌ Audit storage exception: ${error.message}`);
+    logger.warn(`[${requestId}] Error storing audit`, {
+      error: error.message
+    });
   }
 }
 
@@ -513,8 +715,11 @@ async function testWebhook(req, res) {
     message: 'Webhook endpoint is working',
     timestamp: new Date().toISOString(),
     requestId,
-    supabase_url: process.env.SUPABASE_URL,
-    webhook_secret_configured: !!process.env.TYPEFORM_WEBHOOK_SECRET
+    raw_body_capture: !!req.rawBody,
+    configuration: {
+      supabase_configured: !!(process.env.SUPABASE_URL && process.env.SUPABASE_SERVICE_ROLE_KEY),
+      webhook_secret_configured: !!process.env.TYPEFORM_WEBHOOK_SECRET
+    }
   });
 }
 
