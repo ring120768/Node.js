@@ -1,5 +1,5 @@
-const crypto = require('crypto');
 const { createClient } = require('@supabase/supabase-js');
+const { verifyTypeform } = require('../middleware/security');
 const logger = require('../utils/logger');
 
 // Initialize Supabase client
@@ -33,29 +33,21 @@ function webhookResponse(res, data = {}) {
   });
 }
 
-// Verify Typeform signature
+// Verify Typeform signature using centralized security middleware
 function verifyTypeformSignature(req) {
   const secret = process.env.TYPEFORM_SECRET || '4SJem6FtyEUgLUATL8yQ4LGDDiBNybLXik6nV1N2S25Q';
-  const header = req.get('Typeform-Signature');
-
-  if (!header || !header.startsWith('sha256=')) {
-    logger.debug('No valid Typeform signature header');
+  
+  if (!req.get('Typeform-Signature')) {
+    logger.debug('No Typeform signature header');
     return process.env.NODE_ENV === 'development'; // Allow in dev
   }
 
-  try {
-    const sent = Buffer.from(header.slice(7), 'base64');
-    const hmac = crypto.createHmac('sha256', secret);
-
-    // Use rawBody captured by global middleware
-    const bodyBuffer = req.rawBody || Buffer.from(JSON.stringify(req.body || {}));
-
-    const digest = Buffer.from(hmac.update(bodyBuffer).digest('base64'));
-    return crypto.timingSafeEqual(sent, digest);
-  } catch (error) {
-    logger.error('Signature verification failed:', error.message);
-    return false;
+  const isValid = verifyTypeform(req, secret);
+  if (!isValid) {
+    logger.error('Typeform signature verification failed');
   }
+  
+  return isValid;
 }
 
 // Health check endpoint
