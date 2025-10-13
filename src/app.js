@@ -72,9 +72,22 @@ function createApp() {
 
 
 
+  // ==================== RAW BODY CAPTURE ====================
+  
+  // Raw body capture (must be first, before any body consumers)
+  app.use(express.json({
+    limit: '50mb',
+    verify: (req, res, buf) => { req.rawBody = buf; }
+  }));
+  app.use(express.urlencoded({
+    extended: true,
+    limit: '50mb',
+    verify: (req, res, buf) => { req.rawBody = buf; }
+  }));
+
   // ==================== MIDDLEWARE SETUP ====================
 
-  // Security middleware (must be first)
+  // Security middleware
   app.use(helmet);
   app.use(cors);
   app.use(compression);
@@ -94,9 +107,7 @@ function createApp() {
   // Request logging and tracking
   app.use(requestLogger);
 
-  // Body parsing
-  app.use(bodyParser.json({ limit: '50mb' }));
-  app.use(bodyParser.urlencoded({ extended: true, limit: '50mb' }));
+  // Cookie parsing
   app.use(cookieParser());
 
   // Static files
@@ -370,28 +381,9 @@ function createApp() {
 
   /**
    * CRITICAL: Webhooks MUST be mounted BEFORE central router
-   * 
-   * Special body parsing for webhooks - capture raw body for signature verification
-   * This needs to be applied directly to the webhook routes
-   * 
-   * Typeform webhooks:
-   * - POST /webhooks/user_signup
-   * - POST /webhooks/incident_reports
-   * - POST /webhooks/demo
+   * Raw body is now captured globally with verify functions above
    */
-  app.use('/webhooks', 
-    express.raw({ type: 'application/json', limit: '1mb' }), 
-    (req, res, next) => {
-      req.rawBody = req.body;
-      try {
-        req.body = req.body.length > 0 ? JSON.parse(req.body.toString()) : {};
-      } catch (e) {
-        req.body = {};
-      }
-      next();
-    },
-    webhookRouter
-  );
+  app.use('/webhooks', webhookRouter);
 
   // GitHub webhook verification middleware
   function verifyGitHubWebhook(req, res, next) {

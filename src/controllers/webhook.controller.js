@@ -47,10 +47,8 @@ function verifyTypeformSignature(req) {
     const sent = Buffer.from(header.slice(7), 'base64');
     const hmac = crypto.createHmac('sha256', secret);
 
-    let bodyBuffer = req.rawBody;
-    if (!bodyBuffer) {
-      bodyBuffer = Buffer.from(JSON.stringify(req.body || {}));
-    }
+    // Use rawBody captured by global middleware
+    const bodyBuffer = req.rawBody || Buffer.from(JSON.stringify(req.body || {}));
 
     const digest = Buffer.from(hmac.update(bodyBuffer).digest('base64'));
     return crypto.timingSafeEqual(sent, digest);
