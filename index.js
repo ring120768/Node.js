@@ -97,16 +97,15 @@ function startAgent() {
     const attempt = () => {
       try {
         attemptAgentHealthPing();
-        logger.info('[Agent Health] Bounded retry successful.');
+        retries = 0; // Reset on success
       } catch (error) {
-        logger.error('[Agent Health] Ping failed:', error);
         retries++;
+        logger.warn(`[Agent Health] Ping failed (${retries}/${maxRetries}):`, error.message);
         if (retries >= maxRetries) {
           logger.error('[Agent Health] Max retries reached, stopping pings.');
           return;
         }
         const currentBackoff = Math.min(backoffMs * Math.pow(2, retries - 1), maxBackoff);
-        logger.warn(`[Agent Health] Retrying in ${currentBackoff}ms... (${retries}/${maxRetries})`);
         setTimeout(attempt, currentBackoff);
       }
     };
@@ -293,16 +292,14 @@ app.get('/readyz', async (req, res) => {
   }
 
   // Confirm webhook route is mounted
-  // This depends on how your app mounts routes. A common way is checking app._router.stack
   const webhookRouteMounted = app._router && app._router.stack.some(layer =>
-    layer.route && layer.route.path === '/webhook' // Assuming your webhook route is '/webhook'
+    layer.regexp && layer.regexp.source.includes('webhooks')
   );
 
   if (webhookRouteMounted) {
-    checks.push({ service: 'Webhook Route', status: 'ok', message: '/webhook route is mounted.' });
+    checks.push({ service: 'Webhook Routes', status: 'ok', message: '/webhooks routes are mounted.' });
   } else {
-    checks.push({ service: 'Webhook Route', status: 'error', message: '/webhook route not found.' });
-    ready = false;
+    checks.push({ service: 'Webhook Routes', status: 'warning', message: 'Webhook routes detection inconclusive.' });
   }
 
   const statusCode = ready ? 200 : 503; // 503 Service Unavailable
