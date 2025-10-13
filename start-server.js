@@ -36,8 +36,9 @@ console.log(`📍 Port: ${process.env.PORT}`);
 console.log(`🌍 Environment: ${process.env.NODE_ENV || 'development'}`);
 
 try {
-  require('./index.new.js');
-} catch (e) {
-  console.warn('Falling back to legacy index.js (modular entry not found).');
+  // Try the main index.js file
   require('./index.js');
+} catch (error) {
+  console.error('❌ Failed to start server:', error.message);
+  process.exit(1);
 }
