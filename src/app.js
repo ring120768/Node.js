@@ -66,11 +66,11 @@ function createApp() {
   app.set('trust proxy', true);
 
   // ==================== GITHUB WEBHOOK VERIFICATION ====================
-  
+
   // Raw body capture for webhook verification - must come before JSON parsing
   app.use('/webhooks/github', express.raw({ type: 'application/json', limit: '1mb' }));
-      
-      
+
+
 
   // ==================== MIDDLEWARE SETUP ====================
 
@@ -397,25 +397,25 @@ function createApp() {
   function verifyGitHubWebhook(req, res, next) {
     const signature = req.get('X-Hub-Signature-256');
     const deliveryId = req.get('X-GitHub-Delivery');
-    
+
     if (!signature || !deliveryId) {
       return res.status(400).json({ error: 'Missing GitHub webhook headers' });
     }
-    
+
     if (!process.env.GITHUB_WEBHOOK_SECRET) {
       logger.warn('GitHub webhook received but GITHUB_WEBHOOK_SECRET not configured');
       return res.status(500).json({ error: 'Webhook secret not configured' });
     }
-    
+
     const hmac = crypto.createHmac('sha256', process.env.GITHUB_WEBHOOK_SECRET);
     hmac.update(req.body);
     const computedSignature = `sha256=${hmac.digest('hex')}`;
-    
+
     if (!crypto.timingSafeEqual(Buffer.from(signature), Buffer.from(computedSignature))) {
       logger.warn('GitHub webhook signature verification failed');
       return res.status(401).json({ error: 'Invalid signature' });
     }
-    
+
     // Parse body and add delivery ID
     req.body = JSON.parse(req.body);
     req.githubDeliveryId = deliveryId;
@@ -426,7 +426,7 @@ function createApp() {
   app.post('/webhooks/github', verifyGitHubWebhook, (req, res) => {
     const event = req.get('X-GitHub-Event');
     const deliveryId = req.githubDeliveryId;
-    
+
     // Fast 200 acknowledgment
     res.status(200).json({ 
       received: true, 
@@ -434,7 +434,7 @@ function createApp() {
       event: event,
       timestamp: new Date().toISOString()
     });
-    
+
     // Process webhook asynchronously
     setImmediate(() => {
       logger.info('GitHub webhook processed', { 
@@ -468,15 +468,15 @@ function createApp() {
       uptime: process.uptime()
     });
   });
-  
+
   app.get('/readyz', (req, res) => {
     const checks = {
       supabase: supabaseEnabled,
       env_vars: !!(process.env.SUPABASE_URL && process.env.OPENAI_API_KEY)
     };
-    
+
     const ready = Object.values(checks).every(Boolean);
-    
+
     res.status(ready ? 200 : 503).json({
       status: ready ? 'ready' : 'not ready',
       checks,
