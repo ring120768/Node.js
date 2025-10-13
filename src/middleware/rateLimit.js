@@ -18,7 +18,7 @@ const apiLimiter = rateLimit({
   legacyHeaders: false,
   trustProxy: true,
   validate: { trustProxy: false },
-  skip: (req) => req.path === '/health'
+  skip: (req) => req.path === '/health' || req.path.startsWith('/webhooks/')
 });
 
 /**
@@ -32,7 +32,8 @@ const strictLimiter = rateLimit({
   standardHeaders: true,
   legacyHeaders: false,
   trustProxy: true,
-  validate: { trustProxy: false }
+  validate: { trustProxy: false },
+  skip: (req) => req.path.startsWith('/webhooks/')
 });
 
 module.exports = {
