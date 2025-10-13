@@ -247,10 +247,26 @@ async function handleDemo(req, res) {
   });
 }
 
+// Typeform-specific handler (alias to handleSignup)
+async function typeform(req, res) {
+  const requestId = `typeform_${Date.now()}`;
+  logger.info(`[${requestId}] Typeform webhook received`);
+  return handleSignup(req, res);
+}
+
+// Zapier-specific handler (alias to handleSignup) 
+async function zapier(req, res) {
+  const requestId = `zapier_${Date.now()}`;
+  logger.info(`[${requestId}] Zapier webhook received`);
+  return handleSignup(req, res);
+}
+
 module.exports = {
   health,
   handleSignup,
   handleIncidentReport,
   handleDemo,
-  handleWebhookTest
+  handleWebhookTest,
+  typeform,
+  zapier
 };
