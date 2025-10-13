@@ -89,12 +89,26 @@ async function handleSignup(req, res) {
   const requestId = `signup_${Date.now()}`;
 
   try {
-    logger.info(`[${requestId}] User signup webhook received`);
+    logger.info(`[${requestId}] User signup webhook received`, {
+      method: req.method,
+      path: req.path,
+      headers: {
+        'content-type': req.get('content-type'),
+        'typeform-signature': req.get('typeform-signature') ? 'present' : 'missing'
+      },
+      bodySize: JSON.stringify(req.body || {}).length
+    });
 
     // Check Supabase availability
     if (!supabase) {
       logger.error(`[${requestId}] Supabase not available`);
       return webhookResponse(res, { accepted: false, reason: 'service_unavailable' });
+    }
+
+    // Basic payload validation
+    if (!req.body || typeof req.body !== 'object') {
+      logger.error(`[${requestId}] Invalid or missing request body`);
+      return webhookResponse(res, { accepted: false, reason: 'invalid_payload' });
     }
 
     // Verify signature
@@ -107,15 +121,24 @@ async function handleSignup(req, res) {
     const formResponse = payload?.form_response;
     const hidden = formResponse?.hidden || {};
 
-    logger.info(`[${requestId}] Processing signup for user: ${hidden.auth_user_id}`);
+    logger.info(`[${requestId}] Processing signup for user: ${hidden.auth_user_id}`, {
+      hasFormResponse: !!formResponse,
+      hiddenFields: Object.keys(hidden)
+    });
 
     // Basic validation
     if (!hidden.auth_user_id || !hidden.email || !hidden.auth_code) {
-      logger.warn(`[${requestId}] Missing required fields`);
+      logger.warn(`[${requestId}] Missing required fields`, {
+        hasUserId: !!hidden.auth_user_id,
+        hasEmail: !!hidden.email,
+        hasAuthCode: !!hidden.auth_code,
+        receivedFields: Object.keys(hidden)
+      });
       return webhookResponse(res, {
         accepted: false,
         reason: 'missing_fields',
-        required: ['auth_user_id', 'email', 'auth_code']
+        required: ['auth_user_id', 'email', 'auth_code'],
+        received: Object.keys(hidden)
       });
     }
 

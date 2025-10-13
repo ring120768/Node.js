@@ -96,6 +96,52 @@ router.post('/incident_reports', authenticateWebhook, webhookController.handleIn
  */
 router.post('/demo', authenticateWebhook, webhookController.handleDemo);
 
+// ==================== LEGACY/ALTERNATIVE ENDPOINTS ====================
+
+/**
+ * Legacy endpoints for backward compatibility
+ * These handle requests to singular paths without underscores
+ */
+router.post('/user-signup', authenticateWebhook, webhookController.handleSignup);
+router.post('/incident-report', authenticateWebhook, webhookController.handleIncidentReport);
+
+// ==================== CATCH-ALL WEBHOOK HANDLER ====================
+
+/**
+ * Catch-all for unmatched webhook paths
+ */
+router.all('*', (req, res) => {
+  const requestId = `catchall_${Date.now()}`;
+  
+  logger.warn(`[${requestId}] Unmatched webhook endpoint`, {
+    method: req.method,
+    path: req.path,
+    originalUrl: req.originalUrl,
+    headers: {
+      'user-agent': req.get('user-agent'),
+      'content-type': req.get('content-type'),
+      'typeform-signature': req.get('typeform-signature') ? 'present' : 'missing'
+    }
+  });
+
+  // Return successful response to prevent retries
+  return res.status(200).json({
+    success: true,
+    message: 'Webhook endpoint not found',
+    request_id: requestId,
+    available_endpoints: [
+      '/webhooks/health',
+      '/webhooks/test',
+      '/webhooks/user_signup',
+      '/webhooks/incident_reports', 
+      '/webhooks/demo',
+      '/webhooks/user-signup',
+      '/webhooks/incident-report'
+    ],
+    timestamp: new Date().toISOString()
+  });
+});
+
 // ==================== ERROR HANDLER ====================
 
 router.use((err, req, res, next) => {
