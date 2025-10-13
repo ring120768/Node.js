@@ -1,4 +1,4 @@
-// src/controllers/webhook.controller.js - CORRECTED FINAL VERSION
+// src/controllers/webhook.controller.js - FIXED COMPLETE VERSION
 const crypto = require('crypto');
 const logger = require('../utils/logger');
 const { createClient } = require('@supabase/supabase-js');
@@ -10,8 +10,7 @@ const supabase = createClient(
 
 /**
  * Verify Typeform webhook signature
- * CORRECTED: Typeform uses BASE64 encoding (confirmed from actual webhook)
- * Signature format: sha256=FUyeXJ5hpZffQ/LDl1lnGhjilrAL7bzFs+BI7x8GOKU=
+ * FIXED: Proper base64 comparison using timingSafeEqual
  */
 function verifyTypeformSignature(signature, payload, secret) {
   if (!signature || !secret) {
@@ -20,35 +19,33 @@ function verifyTypeformSignature(signature, payload, secret) {
   }
 
   try {
-    // ✅ CORRECT: Typeform uses BASE64 encoding
-    // Evidence: Signature contains '/', '+', and '=' padding characters
-    const expectedSignature = crypto
+    // ✅ FIX: Generate HMAC digest as Buffer (not base64 string)
+    const expectedBuffer = crypto
       .createHmac('sha256', secret)
-      .update(payload)
-      .digest('base64');  // ✅ BASE64 is correct!
+      .update(payload, 'utf8')
+      .digest();  // Returns Buffer, not string
 
-    const cleanSignature = signature.replace('sha256=', '');
+    const cleanSignature = signature.replace(/^sha256=/, '');
 
-    // Ensure both buffers are the same length before comparison
-    if (cleanSignature.length !== expectedSignature.length) {
+    // Decode received signature from base64 to Buffer
+    const receivedBuffer = Buffer.from(cleanSignature, 'base64');
+
+    // Length check for security
+    if (receivedBuffer.length !== expectedBuffer.length) {
       logger.warn('Signature length mismatch', {
-        expected: expectedSignature.length,
-        received: cleanSignature.length,
-        expectedSig: expectedSignature.substring(0, 20) + '...',
-        receivedSig: cleanSignature.substring(0, 20) + '...'
+        expected: expectedBuffer.length,
+        received: receivedBuffer.length
       });
       return false;
     }
 
-    // Use timingSafeEqual for constant-time comparison (prevents timing attacks)
-    return crypto.timingSafeEqual(
-      Buffer.from(cleanSignature, 'base64'),
-      Buffer.from(expectedSignature, 'base64')
-    );
+    // ✅ FIX: Compare buffers directly (no double encoding)
+    return crypto.timingSafeEqual(receivedBuffer, expectedBuffer);
+
   } catch (error) {
     logger.error('Error verifying Typeform signature:', {
       error: error.message,
-      signatureFormat: signature ? signature.substring(0, 30) + '...' : 'none'
+      stack: error.stack
     });
     return false;
   }
@@ -83,7 +80,7 @@ function getAnswerByRef(answers, ref) {
 
 /**
  * Handle Typeform webhook - Main Entry Point
- * ENHANCED: Better console logging and webhook flow visibility
+ * ✅ ENHANCED: Better error handling and validation
  */
 async function handleTypeformWebhook(req, res) {
   const requestId = req.id || crypto.randomBytes(8).toString('hex');
@@ -122,10 +119,27 @@ async function handleTypeformWebhook(req, res) {
       return res.status(400).json({
         success: false,
         error: 'Missing request body',
+        code: 'MISSING_BODY',
         requestId
       });
     }
     console.log('✅ Raw body present');
+
+    // ✅ FIX #1: Validate req.body is an object before destructuring
+    if (!req.body || typeof req.body !== 'object') {
+      console.log('❌ Invalid body format - expected JSON object');
+      logger.warn(`[${requestId}] Invalid body format`, { 
+        bodyType: typeof req.body,
+        contentType: req.get('content-type')
+      });
+      return res.status(400).json({
+        success: false,
+        error: 'Invalid request body format - expected JSON',
+        code: 'INVALID_BODY_FORMAT',
+        requestId
+      });
+    }
+    console.log('✅ Body is valid JSON object');
 
     // 2. Get signature header
     const signature = req.get('typeform-signature');
@@ -140,6 +154,7 @@ async function handleTypeformWebhook(req, res) {
         return res.status(401).json({
           success: false,
           error: 'Missing Typeform-Signature header',
+          code: 'MISSING_SIGNATURE',
           requestId
         });
       }
@@ -164,6 +179,7 @@ async function handleTypeformWebhook(req, res) {
         return res.status(403).json({
           success: false,
           error: 'Invalid signature',
+          code: 'INVALID_SIGNATURE',
           requestId
         });
       }
@@ -188,6 +204,7 @@ async function handleTypeformWebhook(req, res) {
       return res.status(400).json({
         success: false,
         error: 'Missing required fields: event_id or event_type',
+        code: 'MISSING_REQUIRED_FIELDS',
         requestId
       });
     }
@@ -212,6 +229,7 @@ async function handleTypeformWebhook(req, res) {
       return res.status(400).json({
         success: false,
         error: 'Missing form_response data',
+        code: 'MISSING_FORM_RESPONSE',
         requestId
       });
     }
@@ -298,6 +316,7 @@ async function handleTypeformWebhook(req, res) {
       return res.status(500).json({
         success: false,
         error: 'Internal server error',
+        code: 'INTERNAL_ERROR',
         requestId
       });
     }
