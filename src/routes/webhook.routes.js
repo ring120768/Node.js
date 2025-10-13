@@ -63,21 +63,13 @@ router.get('/test', handleWebhookTest);
 // ==================== AUTHENTICATION MIDDLEWARE ====================
 
 /**
- * Simple webhook authentication
+ * Simple webhook authentication - deprecated, individual controllers handle auth
+ * @deprecated Use controller-specific authentication instead
  */
 function authenticateWebhook(req, res, next) {
-  // Check for API key or Typeform signature
+  logger.warn('Using deprecated authenticateWebhook middleware');
   const apiKey = req.get('X-Api-Key') || req.get('x-api-key');
-  const typeformSignature = req.get('Typeform-Signature');
-  const expectedKey = process.env.WEBHOOK_API_KEY ||
-                      process.env.TYPEFORM_SECRET ||
-                      '4SJem6FtyEUgLUATL8yQ4LGDDiBNybLXik6nV1N2S25Q';
-
-  // Allow Typeform signature OR API key OR development mode
-  if (typeformSignature) {
-    logger.debug('Typeform signature detected, delegating to controller');
-    return next();
-  }
+  const expectedKey = process.env.WEBHOOK_API_KEY;
 
   if (process.env.NODE_ENV === 'development') {
     logger.debug('Development mode - allowing webhook without auth');
@@ -89,17 +81,8 @@ function authenticateWebhook(req, res, next) {
     return next();
   }
 
-  logger.warn('Webhook authentication failed', {
-    hasApiKey: !!apiKey,
-    hasTypeformSig: !!typeformSignature,
-    ip: req.ip
-  });
-
-  return res.status(401).json({
-    success: false,
-    error: 'Unauthorized',
-    timestamp: new Date().toISOString()
-  });
+  logger.warn('Webhook authentication failed', { hasApiKey: !!apiKey, ip: req.ip });
+  return res.status(401).json({ error: 'Unauthorized' });
 }
 
 // ==================== PROVIDER-SPECIFIC ENDPOINTS ====================
@@ -120,16 +103,16 @@ router.post('/zapier', zapierController);
  * User signup webhook - POST /webhooks/user_signup
  */
 router.post('/user_signup', authenticateWebhook, (req, res) => {
-  logger.info('Legacy user_signup endpoint called - redirecting to typeform');
-  return res.status(200).json({ success: true, message: 'Use /webhooks/typeform instead' });
+  logger.info('Legacy user_signup endpoint called - use /webhooks/typeform instead');
+  res.sendStatus(204);
 });
 
 /**
- * Incident report webhook - POST /webhooks/incident_reports
+ * Incident report webhook - POST /webhooks/incident_reports  
  */
 router.post('/incident_reports', authenticateWebhook, (req, res) => {
   logger.info('Legacy incident_reports endpoint called');
-  return res.status(200).json({ success: true, message: 'Incident report received' });
+  res.sendStatus(204);
 });
 
 /**
@@ -137,7 +120,7 @@ router.post('/incident_reports', authenticateWebhook, (req, res) => {
  */
 router.post('/demo', authenticateWebhook, (req, res) => {
   logger.info('Legacy demo endpoint called');
-  return res.status(200).json({ success: true, message: 'Demo webhook received' });
+  res.sendStatus(204);
 });
 
 // ==================== LEGACY/ALTERNATIVE ENDPOINTS ====================
@@ -147,12 +130,12 @@ router.post('/demo', authenticateWebhook, (req, res) => {
  * These handle requests to singular paths without underscores
  */
 router.post('/user-signup', authenticateWebhook, (req, res) => {
-  logger.info('Legacy user-signup endpoint called - redirecting to typeform');
-  return res.status(200).json({ success: true, message: 'Use /webhooks/typeform instead' });
+  logger.info('Legacy user-signup endpoint called - use /webhooks/typeform instead');
+  res.sendStatus(204);
 });
 router.post('/incident-report', authenticateWebhook, (req, res) => {
   logger.info('Legacy incident-report endpoint called');
-  return res.status(200).json({ success: true, message: 'Incident report received' });
+  res.sendStatus(204);
 });
 
 // ==================== CATCH-ALL WEBHOOK HANDLER ====================
@@ -174,22 +157,8 @@ router.all('*', (req, res) => {
     }
   });
 
-  // Return successful response to prevent retries
-  return res.status(200).json({
-    success: true,
-    message: 'Webhook endpoint not found',
-    request_id: requestId,
-    available_endpoints: [
-      '/webhooks/health',
-      '/webhooks/test',
-      '/webhooks/user_signup',
-      '/webhooks/incident_reports', 
-      '/webhooks/demo',
-      '/webhooks/user-signup',
-      '/webhooks/incident-report'
-    ],
-    timestamp: new Date().toISOString()
-  });
+  // Return 204 to prevent retries from webhook providers
+  res.sendStatus(204);
 });
 
 // ==================== ERROR HANDLER ====================

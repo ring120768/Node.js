@@ -1,12 +1,16 @@
 {
   "name": "car-crash-lawyer-ai-system",
-  "version": "2.0.0",
+  "version": "2.0.1",
   "description": "Image processor and PDF generator for Car Crash Lawyer AI",
-  "main": "index.js",
+  "private": true,
+  "main": "index.new.js",
+  "engines": {
+    "node": ">=18.18"
+  },
   "scripts": {
-    "start": "node index.js",
-    "start:prod": "NODE_ENV=production node index.js",
-    "dev": "nodemon index.js",
+    "start": "node start-server.js",
+    "start:prod": "NODE_ENV=production node start-server.js",
+    "dev": "nodemon start-server.js",
     "lint": "eslint src/ --ext .js --fix",
     "format": "prettier --write 'src/**/*.js' '*.js' '*.md' '*.json'",
     "audit": "npm audit --audit-level moderate",
