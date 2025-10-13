@@ -9,7 +9,6 @@
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 
     <style>
-        /* Keep all existing styles from document 4 */
         * {
             margin: 0;
             padding: 0;
@@ -23,9 +22,35 @@
             padding: 20px;
         }
 
-        /* ... keep all other styles from document 4 ... */
+        .container {
+            max-width: 600px;
+            margin: 0 auto;
+        }
 
-        /* Add profile completion banner */
+        .header {
+            text-align: center;
+            color: white;
+            margin-bottom: 30px;
+        }
+
+        .header h1 {
+            font-size: 32px;
+            margin-bottom: 10px;
+        }
+
+        .header p {
+            font-size: 16px;
+            opacity: 0.9;
+        }
+
+        .card {
+            background: white;
+            border-radius: 16px;
+            padding: 24px;
+            margin-bottom: 20px;
+            box-shadow: 0 10px 30px rgba(0, 0, 0, 0.2);
+        }
+
         .profile-complete-banner {
             background: linear-gradient(135deg, #10b981, #059669);
             color: white;
@@ -65,6 +90,273 @@
             margin-top: 10px;
             font-size: 13px;
         }
+
+        .success-banner {
+            background: #10b981;
+            color: white;
+            padding: 15px;
+            border-radius: 12px;
+            text-align: center;
+            margin-bottom: 20px;
+            font-weight: 600;
+            box-shadow: 0 4px 12px rgba(16, 185, 129, 0.3);
+        }
+
+        .emergency-panel {
+            background: linear-gradient(135deg, #ef4444, #dc2626);
+            color: white;
+        }
+
+        .emergency-header {
+            text-align: center;
+            margin-bottom: 20px;
+        }
+
+        .emergency-header h3 {
+            font-size: 22px;
+            margin-bottom: 5px;
+        }
+
+        .emergency-header p {
+            font-size: 14px;
+            opacity: 0.9;
+        }
+
+        .emergency-buttons {
+            display: flex;
+            flex-direction: column;
+            gap: 12px;
+        }
+
+        .emergency-btn {
+            background: rgba(255, 255, 255, 0.2);
+            border: 2px solid rgba(255, 255, 255, 0.3);
+            color: white;
+            padding: 16px;
+            border-radius: 12px;
+            font-size: 16px;
+            font-weight: 600;
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            transition: all 0.3s ease;
+        }
+
+        .emergency-btn:hover {
+            background: rgba(255, 255, 255, 0.3);
+            transform: translateY(-2px);
+            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.2);
+        }
+
+        .emergency-btn:active {
+            transform: translateY(0);
+        }
+
+        .btn-icon {
+            font-size: 24px;
+        }
+
+        .find-me-btn, .website-btn {
+            width: 100%;
+            padding: 16px;
+            background: linear-gradient(135deg, #667eea, #764ba2);
+            color: white;
+            border: none;
+            border-radius: 12px;
+            font-size: 16px;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            margin-bottom: 12px;
+        }
+
+        .find-me-btn:hover, .website-btn:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 8px 20px rgba(102, 126, 234, 0.4);
+        }
+
+        .additional-controls {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 12px;
+            margin-top: 12px;
+        }
+
+        .additional-btn {
+            padding: 12px;
+            background: #f3f4f6;
+            border: 2px solid #e5e7eb;
+            border-radius: 8px;
+            font-size: 14px;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            color: #374151;
+        }
+
+        .additional-btn:hover {
+            background: #e5e7eb;
+            transform: translateY(-2px);
+            border-color: #d1d5db;
+        }
+
+        .helper-text {
+            text-align: center;
+            color: white;
+            font-size: 14px;
+            margin-top: 20px;
+            line-height: 1.6;
+        }
+
+        .modal {
+            display: none;
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(0, 0, 0, 0.7);
+            z-index: 1000;
+            align-items: center;
+            justify-content: center;
+            padding: 20px;
+        }
+
+        .modal.active {
+            display: flex;
+        }
+
+        .modal-content {
+            background: white;
+            border-radius: 16px;
+            padding: 30px;
+            max-width: 500px;
+            width: 100%;
+            max-height: 80vh;
+            overflow-y: auto;
+        }
+
+        .modal-header {
+            margin-bottom: 20px;
+        }
+
+        .modal-header h2 {
+            font-size: 24px;
+            color: #1f2937;
+            margin-bottom: 8px;
+        }
+
+        .modal-header p {
+            color: #6b7280;
+            font-size: 14px;
+        }
+
+        .form-group {
+            margin-bottom: 16px;
+        }
+
+        .form-group label {
+            display: block;
+            color: #374151;
+            font-weight: 600;
+            margin-bottom: 6px;
+            font-size: 14px;
+        }
+
+        .form-group input,
+        .form-group textarea {
+            width: 100%;
+            padding: 10px;
+            border: 2px solid #e5e7eb;
+            border-radius: 8px;
+            font-size: 14px;
+            font-family: inherit;
+            transition: border-color 0.3s ease;
+        }
+
+        .form-group input:focus,
+        .form-group textarea:focus {
+            outline: none;
+            border-color: #667eea;
+        }
+
+        .form-group textarea {
+            min-height: 100px;
+            resize: vertical;
+        }
+
+        .modal-buttons {
+            display: flex;
+            gap: 12px;
+            margin-top: 20px;
+        }
+
+        .modal-btn {
+            flex: 1;
+            padding: 12px;
+            border: none;
+            border-radius: 8px;
+            font-size: 14px;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.3s ease;
+        }
+
+        .modal-btn.primary {
+            background: linear-gradient(135deg, #667eea, #764ba2);
+            color: white;
+        }
+
+        .modal-btn.primary:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 4px 12px rgba(102, 126, 234, 0.4);
+        }
+
+        .modal-btn.secondary {
+            background: #f3f4f6;
+            color: #374151;
+        }
+
+        .modal-btn.secondary:hover {
+            background: #e5e7eb;
+        }
+
+        .error-message {
+            color: #ef4444;
+            font-size: 13px;
+            margin-top: 10px;
+            padding: 10px;
+            background: #fee;
+            border-radius: 6px;
+            display: none;
+        }
+
+        .error-message.show {
+            display: block;
+        }
+
+        @media (max-width: 640px) {
+            .container {
+                padding: 0 10px;
+            }
+
+            .header h1 {
+                font-size: 28px;
+            }
+
+            .card {
+                padding: 20px;
+            }
+
+            .additional-controls {
+                grid-template-columns: 1fr;
+            }
+
+            .modal-content {
+                padding: 20px;
+            }
+        }
     </style>
 </head>
 <body>
@@ -74,7 +366,7 @@
             <p>Your Legal First Responder</p>
         </div>
 
-        <!-- Profile Complete Banner (shown when from Typeform) -->
+        <!-- Profile Complete Banner -->
         <div class="profile-complete-banner" id="profileBanner" style="display: none;">
             <h2>✅ Profile Setup Complete!</h2>
             <p>Your account is ready. You can now report incidents anytime.</p>
@@ -137,7 +429,6 @@
         </p>
     </div>
 
-    <!-- Keep all modals from document 4 -->
     <!-- Witness Modal -->
     <div id="witnessModal" class="modal">
         <div class="modal-content">
@@ -279,7 +570,7 @@
             const email = urlParams.get('email');
             const incident_id = urlParams.get('incident_id');
 
-            console.log('📥 Typeform redirect parameters:', {
+            console.log('🔥 Typeform redirect parameters:', {
                 user_id,
                 product_id,
                 auth_code,
@@ -331,12 +622,10 @@
         }
 
         // ===== SUPABASE INITIALIZATION =====
-        // Get Supabase config from your environment or config endpoint
         let supabase = null;
 
         async function initSupabase() {
             try {
-                // Fetch config from your backend
                 const response = await fetch('/api/config');
                 const config = await response.json();
 
@@ -371,6 +660,7 @@
             }
 
             try {
+                // Query using exact field name from database: recovery_breakdown_number
                 const { data, error } = await supabase
                     .from('user_signup')
                     .select('recovery_breakdown_number')
@@ -397,16 +687,20 @@
             }
 
             try {
+                // Query BOTH emergency contact fields for maximum compatibility
                 const { data, error } = await supabase
                     .from('user_signup')
-                    .select('emergency_contact')
+                    .select('emergency_contact, emergency_contact_number')
                     .or(`user_id.eq.${userId},create_user_id.eq.${userId}`)
                     .single();
 
                 if (error) throw error;
 
-                if (data && data.emergency_contact) {
-                    window.location.href = `tel:${data.emergency_contact}`;
+                // Try emergency_contact_number first (more specific), fall back to emergency_contact
+                const phoneNumber = data?.emergency_contact_number || data?.emergency_contact;
+
+                if (phoneNumber) {
+                    window.location.href = `tel:${phoneNumber}`;
                 } else {
                     alert('Emergency contact number not found. Please update your profile.');
                 }
@@ -418,7 +712,6 @@
 
         // ===== NAVIGATION FUNCTIONS =====
         function startNewReport() {
-            // Redirect to incident reporting page with user context
             if (userId) {
                 window.location.href = `/incident.html?user_id=${userId}`;
             } else {
@@ -554,16 +847,11 @@
         document.addEventListener('DOMContentLoaded', async () => {
             console.log('🚀 Initializing report-complete page');
 
-            // Initialize Supabase
             await initSupabase();
-
-            // Check for Typeform redirect
             const fromTypeform = extractTypeformParams();
-
-            // Check for incident submission
             checkIncidentSubmission();
 
-            console.log('📍 Page Context:', {
+            console.log('📋 Page Context:', {
                 userId,
                 userEmail,
                 fromTypeform,

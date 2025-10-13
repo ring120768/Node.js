@@ -1,0 +1,540 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Welcome - Car Crash Lawyer AI</title>
+
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, sans-serif;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+            padding: 20px;
+        }
+
+        .container {
+            max-width: 600px;
+            margin: 0 auto;
+        }
+
+        .header {
+            text-align: center;
+            color: white;
+            margin-bottom: 30px;
+        }
+
+        .header h1 {
+            font-size: 32px;
+            margin-bottom: 10px;
+        }
+
+        .header p {
+            font-size: 16px;
+            opacity: 0.9;
+        }
+
+        .card {
+            background: white;
+            border-radius: 16px;
+            padding: 24px;
+            margin-bottom: 20px;
+            box-shadow: 0 10px 30px rgba(0, 0, 0, 0.2);
+        }
+
+        .welcome-banner {
+            background: linear-gradient(135deg, #10b981, #059669);
+            color: white;
+            padding: 30px;
+            border-radius: 16px;
+            margin-bottom: 20px;
+            text-align: center;
+            animation: slideDown 0.5s ease-out;
+            box-shadow: 0 10px 30px rgba(16, 185, 129, 0.3);
+        }
+
+        @keyframes slideDown {
+            from {
+                opacity: 0;
+                transform: translateY(-20px);
+            }
+            to {
+                opacity: 1;
+                transform: translateY(0);
+            }
+        }
+
+        .welcome-banner .icon {
+            font-size: 64px;
+            margin-bottom: 15px;
+            animation: bounce 1s ease-out;
+        }
+
+        @keyframes bounce {
+            0%, 20%, 50%, 80%, 100% {
+                transform: translateY(0);
+            }
+            40% {
+                transform: translateY(-20px);
+            }
+            60% {
+                transform: translateY(-10px);
+            }
+        }
+
+        .welcome-banner h2 {
+            font-size: 28px;
+            margin-bottom: 12px;
+        }
+
+        .welcome-banner h3 {
+            font-weight: 600;
+            margin-bottom: 16px;
+            line-height: 1.4;
+        }
+
+        .welcome-banner p {
+            opacity: 0.95;
+            font-size: 16px;
+            line-height: 1.6;
+        }
+
+        .reassurance-line {
+            background: rgba(255, 255, 255, 0.15);
+            padding: 12px 16px;
+            border-radius: 8px;
+            margin-top: 16px;
+            font-size: 15px;
+            font-weight: 500;
+            border-left: 4px solid rgba(255, 255, 255, 0.5);
+        }
+
+        .user-info {
+            background: rgba(255, 255, 255, 0.2);
+            padding: 15px;
+            border-radius: 10px;
+            margin-top: 15px;
+            font-size: 14px;
+        }
+
+        .user-info strong {
+            display: block;
+            margin-bottom: 5px;
+        }
+
+        .checklist-card {
+            background: linear-gradient(135deg, #fef3c7, #fde68a);
+            border: 2px solid #fbbf24;
+        }
+
+        .checklist-items {
+            display: flex;
+            flex-direction: column;
+            gap: 12px;
+            margin-bottom: 16px;
+        }
+
+        .checklist-item {
+            display: flex;
+            align-items: flex-start;
+            gap: 12px;
+            padding: 12px;
+            background: white;
+            border-radius: 8px;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            box-shadow: 0 2px 4px rgba(0, 0, 0, 0.05);
+        }
+
+        .checklist-item:hover {
+            transform: translateX(4px);
+            box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
+        }
+
+        .checklist-checkbox {
+            width: 20px;
+            height: 20px;
+            margin-top: 2px;
+            cursor: pointer;
+            flex-shrink: 0;
+            accent-color: #10b981;
+        }
+
+        .checklist-text {
+            font-size: 14px;
+            color: #374151;
+            font-weight: 500;
+            line-height: 1.5;
+        }
+
+        .premium-badge {
+            display: inline-block;
+            background: linear-gradient(135deg, #fbbf24, #f59e0b);
+            color: white;
+            padding: 2px 8px;
+            border-radius: 4px;
+            font-size: 11px;
+            font-weight: 700;
+            text-transform: uppercase;
+            margin-right: 6px;
+        }
+
+        .checklist-footer {
+            text-align: center;
+            font-size: 13px;
+            color: #92400e;
+            font-weight: 600;
+            padding: 12px;
+            background: rgba(255, 255, 255, 0.6);
+            border-radius: 8px;
+        }
+
+        .features-card {
+            background: linear-gradient(135deg, #f3f4f6, #e5e7eb);
+        }
+
+        .features-card h3 {
+            color: #1f2937;
+            font-size: 20px;
+            margin-bottom: 16px;
+            text-align: center;
+        }
+
+        .feature-list {
+            display: flex;
+            flex-direction: column;
+            gap: 12px;
+        }
+
+        .feature-item {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            padding: 12px;
+            background: white;
+            border-radius: 10px;
+            box-shadow: 0 2px 6px rgba(0, 0, 0, 0.05);
+        }
+
+        .feature-icon {
+            font-size: 24px;
+            flex-shrink: 0;
+        }
+
+        .feature-text {
+            font-size: 14px;
+            color: #374151;
+            font-weight: 500;
+        }
+
+        .emergency-panel {
+            background: white;
+        }
+
+        .emergency-header {
+            text-align: center;
+            margin-bottom: 20px;
+        }
+
+        .emergency-header h3 {
+            font-size: 22px;
+            margin-bottom: 5px;
+            color: #1f2937;
+        }
+
+        .emergency-header p {
+            font-size: 14px;
+            color: #6b7280;
+        }
+
+        .emergency-buttons {
+            display: flex;
+            flex-direction: column;
+            gap: 12px;
+        }
+
+        .emergency-btn {
+            background: rgba(255, 255, 255, 0.1);
+            border: 3px solid rgba(255, 255, 255, 0.3);
+            color: white;
+            padding: 16px;
+            border-radius: 12px;
+            font-size: 16px;
+            font-weight: 600;
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            transition: all 0.3s ease;
+        }
+
+        .emergency-btn.red {
+            background: linear-gradient(135deg, #dc2626, #991b1b);
+            border-color: #b91c1c;
+            box-shadow: 0 4px 12px rgba(220, 38, 38, 0.3);
+        }
+
+        .emergency-btn.red:hover {
+            background: linear-gradient(135deg, #b91c1c, #7f1d1d);
+            transform: translateY(-2px);
+            box-shadow: 0 6px 16px rgba(220, 38, 38, 0.4);
+        }
+
+        .emergency-btn.amber {
+            background: linear-gradient(135deg, #f59e0b, #d97706);
+            border-color: #f59e0b;
+            box-shadow: 0 4px 12px rgba(245, 158, 11, 0.3);
+        }
+
+        .emergency-btn.amber:hover {
+            background: linear-gradient(135deg, #d97706, #b45309);
+            transform: translateY(-2px);
+            box-shadow: 0 6px 16px rgba(245, 158, 11, 0.4);
+        }
+
+        .emergency-btn.green {
+            background: linear-gradient(135deg, #10b981, #059669);
+            border-color: #10b981;
+            box-shadow: 0 4px 12px rgba(16, 185, 129, 0.3);
+        }
+
+        .emergency-btn.green:hover {
+            background: linear-gradient(135deg, #059669, #047857);
+            transform: translateY(-2px);
+            box-shadow: 0 6px 16px rgba(16, 185, 129, 0.4);
+        }
+
+        .emergency-btn:active {
+            transform: translateY(0);
+        }
+
+        .btn-icon {
+            font-size: 24px;
+        }
+
+        .primary-action-btn {
+            width: 100%;
+            padding: 18px;
+            background: linear-gradient(135deg, #667eea, #764ba2);
+            color: white;
+            border: none;
+            border-radius: 12px;
+            font-size: 18px;
+            font-weight: 700;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            margin-bottom: 12px;
+            box-shadow: 0 4px 12px rgba(102, 126, 234, 0.3);
+        }
+
+        .primary-action-btn:hover {
+            transform: translateY(-3px);
+            box-shadow: 0 8px 20px rgba(102, 126, 234, 0.5);
+        }
+
+        .secondary-action-btn {
+            width: 100%;
+            padding: 14px;
+            background: white;
+            color: #667eea;
+            border: 2px solid #667eea;
+            border-radius: 12px;
+            font-size: 16px;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.3s ease;
+        }
+
+        .secondary-action-btn:hover {
+            background: #f3f4f6;
+            transform: translateY(-2px);
+        }
+
+        .helper-text {
+            text-align: center;
+            color: white;
+            font-size: 14px;
+            margin-top: 20px;
+            line-height: 1.6;
+        }
+
+        @media (max-width: 640px) {
+            .container {
+                padding: 0 10px;
+            }
+
+            .header h1 {
+                font-size: 28px;
+            }
+
+            .welcome-banner {
+                padding: 20px;
+            }
+
+            .welcome-banner h2 {
+                font-size: 24px;
+            }
+
+            .welcome-banner .icon {
+                font-size: 48px;
+            }
+
+            .card {
+                padding: 20px;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="header">
+            <h1>🚗 Car Crash Lawyer AI</h1>
+            <p>Your Legal First Responder</p>
+        </div>
+
+        <!-- Welcome Banner -->
+        <div class="welcome-banner">
+            <div class="icon">🎉</div>
+            <h2>Congratulations — You're in.</h2>
+            <h3 style="font-size: 20px; font-weight: 600; margin-bottom: 16px; line-height: 1.4; opacity: 0.95;">Welcome to the club that doesn't panic — it prepares.</h3>
+            <p style="margin-bottom: 12px; font-size: 15px; line-height: 1.6;">Welcome to the <strong>Car Crash Lawyer AI Club</strong> — a private toolkit for drivers who don't leave outcomes to chance. From today, you've got <strong>AL</strong> (your legal sidekick) watching your back: instant location capture with What3Words, rapid evidence logging, DVLA checks, and AI transcription that turns your account into insurer-ready clarity.</p>
+            <div class="reassurance-line">
+                You're now on the fast lane: collect the right evidence, in the right order, the first time, make sure you maximise your insurance payout value.
+            </div>
+            <div class="user-info">
+                <strong>👤 John Smith</strong>
+                <div style="margin-top: 8px;">
+                    📧 john.smith@example.com<br>
+                    📱 07700 900123<br>
+                    📍 SW1A 1AA
+                </div>
+            </div>
+        </div>
+
+        <!-- Member Checklist -->
+        <div class="card checklist-card">
+            <h3 style="font-size: 18px; color: #1f2937; margin-bottom: 12px; display: flex; align-items: center; gap: 8px;">
+                <span style="font-size: 24px;">📋</span>
+                <span>Quick Setup — Member Checklist</span>
+            </h3>
+            <div class="checklist-items">
+                <label class="checklist-item">
+                    <input type="checkbox" class="checklist-checkbox">
+                    <span class="checklist-text">Save your What3Words location shortcut</span>
+                </label>
+                <label class="checklist-item">
+                    <input type="checkbox" class="checklist-checkbox">
+                    <span class="checklist-text">Add your vehicle & policy details once (auto-fill later)</span>
+                </label>
+                <label class="checklist-item">
+                    <input type="checkbox" class="checklist-checkbox">
+                    <span class="checklist-text">Enable one-tap voice statements (Whisper transcription)</span>
+                </label>
+                <label class="checklist-item">
+                    <input type="checkbox" class="checklist-checkbox">
+                    <span class="checklist-text">Turn on DVLA checks for other vehicles</span>
+                </label>
+                <label class="checklist-item">
+                    <input type="checkbox" class="checklist-checkbox">
+                    <span class="checklist-text"><span class="premium-badge">Premium</span> Export insurer-ready PDF</span>
+                </label>
+            </div>
+            <p class="checklist-footer">
+                ⏱️ It takes ~2 minutes now and saves hours when it counts.
+            </p>
+        </div>
+
+        <!-- What You Can Do Now -->
+        <div class="card features-card">
+            <h3>✨ What You Can Do Now</h3>
+            <div class="feature-list">
+                <div class="feature-item">
+                    <span class="feature-icon">📝</span>
+                    <span class="feature-text">Report incidents instantly with AI-powered assistance</span>
+                </div>
+                <div class="feature-item">
+                    <span class="feature-icon">🎙️</span>
+                    <span class="feature-text">Use voice recording for hands-free documentation</span>
+                </div>
+                <div class="feature-item">
+                    <span class="feature-icon">📄</span>
+                    <span class="feature-text">Generate professional incident reports automatically</span>
+                </div>
+                <div class="feature-item">
+                    <span class="feature-icon">🚨</span>
+                    <span class="feature-text">Quick access to emergency services</span>
+                </div>
+                <div class="feature-item">
+                    <span class="feature-icon">📊</span>
+                    <span class="feature-text">Track all your incidents in one dashboard</span>
+                </div>
+            </div>
+        </div>
+
+        <!-- Primary Action -->
+        <div class="card">
+            <button class="primary-action-btn" onclick="alert('Redirecting to incident report form...')">
+                📝 Report Your First Incident
+            </button>
+            <button class="secondary-action-btn" onclick="alert('Redirecting to dashboard...')">
+                📊 Go to Dashboard
+            </button>
+        </div>
+
+        <!-- Emergency Actions Panel -->
+        <div class="card emergency-panel">
+            <div class="emergency-header">
+                <h3>🚨 Emergency Actions</h3>
+                <p>Available 24/7 when you need help</p>
+            </div>
+
+            <div class="emergency-buttons">
+                <button class="emergency-btn red" onclick="alert('Calling 999...')">
+                    <span class="btn-icon">📞</span>
+                    <span>Call 999 - Emergency Services</span>
+                </button>
+
+                <button class="emergency-btn amber" onclick="alert('Calling recovery service...')">
+                    <span class="btn-icon">🚗</span>
+                    <span>Call Recovery Service</span>
+                </button>
+
+                <button class="emergency-btn green" onclick="alert('Calling emergency contact...')">
+                    <span class="btn-icon">👤</span>
+                    <span>Call Emergency Contact</span>
+                </button>
+            </div>
+        </div>
+
+        <p class="helper-text">
+            Questions? Contact us anytime at <strong>support@carcrashlawyerai.co.uk</strong>
+        </p>
+    </div>
+
+    <script>
+        // Handle checklist checkboxes with localStorage persistence
+        document.addEventListener('DOMContentLoaded', function() {
+            const checkboxes = document.querySelectorAll('.checklist-checkbox');
+
+            // Load saved checkbox states
+            checkboxes.forEach((checkbox, index) => {
+                const savedState = localStorage.getItem(`checklist_item_${index}`);
+                if (savedState === 'true') {
+                    checkbox.checked = true;
+                }
+
+                // Save state on change
+                checkbox.addEventListener('change', function() {
+                    localStorage.setItem(`checklist_item_${index}`, this.checked);
+                });
+            });
+        });
+    </script>
+</body>
+</html>
