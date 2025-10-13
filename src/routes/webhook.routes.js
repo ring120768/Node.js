@@ -1,19 +1,12 @@
+
 const express = require('express');
 const router = express.Router();
 const webhookController = require('../controllers/webhook.controller');
 
-// Middleware for raw body capture (needed for signature verification)
-router.post('/typeform', 
-  express.raw({ type: 'application/json' }),
-  (req, res, next) => {
-    req.rawBody = req.body.toString();
-    req.body = JSON.parse(req.rawBody);
-    next();
-  },
-  webhookController.handleTypeformWebhook
-);
+// Typeform webhook - raw body is captured by app.js verify function
+router.post('/typeform', webhookController.handleTypeformWebhook);
 
-// Test endpoint
+// Test endpoints
 router.get('/test', webhookController.testWebhook);
 router.post('/test', webhookController.testWebhook);
 
