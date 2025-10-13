@@ -1,9 +1,11 @@
+
 // src/routes/webhook.routes.js - COMPLETE FIXED VERSION
 
 const express = require('express');
 const router = express.Router();
 const webhookController = require('../controllers/webhook.controller');
-const ctrl = require('../controllers/webhook.controller');
+const typeformController = require('../controllers/typeform.controller');
+const zapierController = require('../controllers/zapier.controller');
 const logger = require('../utils/logger');
 
 // ==================== HEALTH & TEST ENDPOINTS ====================
@@ -85,12 +87,12 @@ function authenticateWebhook(req, res, next) {
 /**
  * Typeform webhook endpoint - POST /webhooks/typeform
  */
-router.post('/typeform', authenticateWebhook, ctrl.handleSignup);
+router.post('/typeform', typeformController);
 
 /**
  * Zapier webhook endpoint - POST /webhooks/zapier
  */
-router.post('/zapier', authenticateWebhook, ctrl.handleSignup);
+router.post('/zapier', zapierController);
 
 // ==================== WEBHOOK ENDPOINTS ====================
 
