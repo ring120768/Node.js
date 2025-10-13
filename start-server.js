@@ -38,16 +38,8 @@ console.log(`📍 Port: ${process.env.PORT}`);
 console.log(`🌍 Environment: ${process.env.NODE_ENV || 'development'}`);
 
 try {
-  // Start the new modular server
   require('./index.new.js');
-} catch (error) {
-  console.error('❌ Server startup failed:', error.message);
-  console.error('💡 Trying fallback to original server...');
-  
-  try {
-    require('./index.js');
-  } catch (fallbackError) {
-    console.error('❌ Fallback server also failed:', fallbackError.message);
-    process.exit(1);
-  }
+} catch (e) {
+  console.warn('Falling back to legacy index.js (modular entry not found).');
+  require('./index.js');
 }
