@@ -50,6 +50,17 @@ if (!PORT || isNaN(PORT)) {
 const HOST = '0.0.0.0'; // Required for Replit
 console.log(`🔌 [PID:${process.pid}] Using PORT: ${PORT}, HOST: ${HOST}`);
 
+// Ensure PORT is available and not in use
+const net = require('net');
+const server_test = net.createServer();
+server_test.listen(PORT, (err) => {
+  if (err) {
+    console.error(`❌ [PID:${process.pid}] Port ${PORT} is not available:`, err.message);
+    process.exit(1);
+  }
+  server_test.close();
+});
+
 // Validate required environment variables
 const requiredEnvVars = [
   'SUPABASE_URL',
@@ -352,7 +363,25 @@ process.on('unhandledRejection', (reason, promise) => {
 // ==================== START SERVER ====================
 
 // Single listener - this is the ONLY place server.listen is called
-server.listen(PORT, HOST, () => {
+server.listen(PORT, HOST, (err) => {
+  if (err) {
+    logger.error(`❌ [PID:${process.pid}] Failed to start server:`, err);
+    process.exit(1);
+  }
+  
   logger.success(`✅ [PID:${process.pid}] Server listening on ${HOST}:${PORT}`);
+  logger.info(`🌐 Server accessible at: http://${HOST}:${PORT}`);
+  
+  // Verify server is actually accessible
+  const testUrl = `http://localhost:${PORT}/healthz`;
+  setTimeout(async () => {
+    try {
+      const response = await require('axios').get(testUrl, { timeout: 5000 });
+      logger.success(`✅ Health check passed: ${response.status}`);
+    } catch (error) {
+      logger.warn(`⚠️ Health check failed: ${error.message}`);
+    }
+  }, 1000);
+  
   displayStartupBanner();
 });
