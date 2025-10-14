@@ -13,7 +13,7 @@ const gdprService = require('../services/gdprService');
  * Convert coordinates to what3words
  * GET /api/location/convert
  */
-async function convertToWords(req, res) {
+async function convertToWhat3Words(req, res) {
   try {
     const { lat, lng } = req.query;
 
@@ -239,7 +239,7 @@ async function uploadWhat3wordsImage(req, res) {
 }
 
 module.exports = {
-  convertToWords,
+  convertToWhat3Words,
   getAutosuggest,
   getLegacyWhat3words,
   uploadWhat3wordsImage
