@@ -33,6 +33,7 @@ const { apiLimiter, strictLimiter } = require('./middleware/rateLimit');
 const { initGDPR } = require('./middleware/gdpr');
 const requestLogger = require('./middleware/requestLogger');
 const { helmet, cors, compression, requestId, requestTimeout } = require('./middleware/security');
+const { errorHandler, notFoundHandler } = require('./middleware/errorHandler');
 
 // Services
 const AuthService = require('../lib/services/authService');

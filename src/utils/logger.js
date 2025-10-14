@@ -62,19 +62,46 @@ class Logger {
   sanitizeLogData(data) {
     if (!data || typeof data !== 'object') return data;
     
-    const sanitized = { ...data };
-    const sensitiveKeys = ['password', 'token', 'key', 'secret', 'auth', 'cookie'];
+    const sanitized = Array.isArray(data) ? [] : {};
+    const sensitiveKeys = ['password', 'token', 'apiKey', 'secret', 'authorization', 'cookie'];
     
-    for (const key of Object.keys(sanitized)) {
-      if (sensitiveKeys.some(sensitive => key.toLowerCase().includes(sensitive))) {
+    // PII regex patterns for GDPR compliance
+    const piiPatterns = {
+      email: /[A-Za-z0-9._%+-]+@[A-Za-z0-9.-]+.[A-Z|a-z]{2,}/g,
+      phone: /(+44|0)[0-9]{9,10}/g,
+      postcode: /[A-Z]{1,2}[0-9]{1,2}[A-Z]?s?[0-9][A-Z]{2}/gi,
+      nin: /[A-Z]{2}[0-9]{6}[A-Z]/g,
+      card: /[0-9]{4}[s-]?[0-9]{4}[s-]?[0-9]{4}[s-]?[0-9]{4}/g
+    };
+
+    for (const [key, value] of Object.entries(data)) {
+      // Redact sensitive keys
+      if (sensitiveKeys.some(k => key.toLowerCase().includes(k))) {
         sanitized[key] = '[REDACTED]';
+        continue;
       }
-      // Sanitize URLs to remove potential sensitive data
-      if (typeof sanitized[key] === 'string' && sanitized[key].includes('user/')) {
-        sanitized[key] = sanitized[key].replace(/\/user\/[^/]+/g, '/user/[REDACTED]');
+
+      // Recurse for nested objects
+      if (value && typeof value === 'object' && !(value instanceof Error)) {
+        sanitized[key] = this.sanitizeLogData(value);
+        continue;
+      }
+
+      // Sanitize PII in strings
+      if (typeof value === 'string') {
+        let clean = value;
+        if (piiPatterns.email.test(clean)) clean = clean.replace(piiPatterns.email, '[REDACTED-EMAIL]');
+        if (piiPatterns.phone.test(clean)) clean = clean.replace(piiPatterns.phone, '[REDACTED-PHONE]');
+        if (piiPatterns.postcode.test(clean)) clean = clean.replace(piiPatterns.postcode, '[REDACTED-POSTCODE]');
+        if (piiPatterns.nin.test(clean)) clean = clean.replace(piiPatterns.nin, '[REDACTED-NIN]');
+        if (piiPatterns.card.test(clean)) clean = clean.replace(piiPatterns.card, '[REDACTED-CARD]');
+        if (clean.includes('/user/')) clean = clean.replace(//user/[^/]+/g, '/user/[REDACTED]');
+        sanitized[key] = clean;
+      } else {
+        sanitized[key] = value;
       }
     }
-    
+
     return sanitized;
   }
 
