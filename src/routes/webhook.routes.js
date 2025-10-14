@@ -2,6 +2,7 @@ const express = require('express');
 const router = express.Router();
 const webhookController = require('../controllers/webhook.controller');
 const { validateWebhookSignature } = require('../middleware/webhookAuth');
+const { validateWebhookPayload } = require('../middleware/validation');
 
 /**
  * Typeform webhook endpoint
@@ -11,6 +12,7 @@ const { validateWebhookSignature } = require('../middleware/webhookAuth');
 router.post(
   '/typeform',
   validateWebhookSignature('typeform'),
+  validateWebhookPayload,
   webhookController.handleTypeformWebhook
 );
 
