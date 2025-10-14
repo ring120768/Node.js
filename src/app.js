@@ -77,7 +77,8 @@ function createApp() {
   app.use(express.json({
     limit: '50mb',
     verify: (req, res, buf, encoding) => {
-      // Store raw body as both Buffer and string for signature verification
+      // Store raw body as Buffer for HMAC verification, string for compatibility
+      req.rawBodyBuffer = buf;
       req.rawBody = buf.toString('utf8');
     }
   }));
@@ -86,6 +87,7 @@ function createApp() {
     extended: true,
     limit: '50mb',
     verify: (req, res, buf, encoding) => {
+      req.rawBodyBuffer = buf;
       req.rawBody = buf.toString('utf8');
     }
   }));

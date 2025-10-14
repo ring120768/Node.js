@@ -90,14 +90,17 @@ function verifyTypeformSignature(req, secret) {
     return false;
   }
 
-  if (!req.rawBody || typeof req.rawBody !== 'string') {
-    logger.warn('Raw body missing or invalid type for signature verification');
+  if (!req.rawBodyBuffer && !req.rawBody) {
+    logger.warn('Raw body missing for signature verification');
     return false;
   }
+  
+  // Prefer Buffer, fallback to string for backward compatibility
+  const bodyData = req.rawBodyBuffer || req.rawBody;
 
   const expected = 'sha256=' + crypto
     .createHmac('sha256', secret)
-    .update(req.rawBody, 'utf8')
+    .update(bodyData)
     .digest('base64');
 
   try {
@@ -132,13 +135,15 @@ function verifyGitHubSignature(req, secret) {
     return false;
   }
 
-  if (!req.rawBody) {
+  if (!req.rawBodyBuffer && !req.rawBody) {
     return false;
   }
-
+  
+  const bodyData = req.rawBodyBuffer || req.rawBody;
+  
   const expected = 'sha256=' + crypto
     .createHmac('sha256', secret)
-    .update(req.rawBody, 'utf8')
+    .update(bodyData)
     .digest('hex');
 
   try {
