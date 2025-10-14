@@ -1,42 +1,17 @@
-
 /**
  * Location Routes for Car Crash Lawyer AI
- * Handles what3words API integration and location services
+ * Handles what3words integration and location services
  */
 
 const express = require('express');
-const multer = require('multer');
-const config = require('../config');
-const CONSTANTS = config.constants;
 const locationController = require('../controllers/location.controller');
-
 const router = express.Router();
-
-// Configure multer for image uploads
-const upload = multer({
-  storage: multer.memoryStorage(),
-  limits: {
-    fileSize: CONSTANTS.FILE_SIZE_LIMITS.IMAGE,
-    files: 1
-  },
-  fileFilter: (req, file, cb) => {
-    const allowedMimeTypes = [
-      'image/jpeg', 'image/png', 'image/webp', 'image/heic', 'image/heif'
-    ];
-    if (allowedMimeTypes.includes(file.mimetype)) {
-      cb(null, true);
-    } else {
-      cb(new Error(`Invalid file type: ${file.mimetype}. Allowed types: ${allowedMimeTypes.join(', ')}`));
-    }
-  }
-});
 
 /**
  * Convert coordinates to what3words
- * GET /api/location/convert
- * Query params: lat, lng
+ * GET /api/location/convert?lat=...&lng=...
  */
-router.get('/convert', locationController.convertToWords);
+router.get('/convert', locationController.convertToWhat3Words);
 
 /**
  * Get what3words autosuggest
@@ -57,6 +32,6 @@ router.get('/legacy', locationController.getLegacyWhat3words);
  * POST /api/location/upload-image
  * Body: { imageData: base64 | file upload, what3words, latitude, longitude, userId }
  */
-router.post('/upload-image', upload.single('image'), locationController.uploadWhat3wordsImage);
+router.post('/upload-image', locationController.uploadWhat3wordsImage);
 
 module.exports = router;

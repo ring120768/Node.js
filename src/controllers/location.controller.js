@@ -1,7 +1,6 @@
-
 /**
  * Location Controller for Car Crash Lawyer AI
- * Handles what3words API integration and location services
+ * Handles what3words integration and location services
  */
 
 const axios = require('axios');
@@ -170,7 +169,7 @@ async function uploadWhat3wordsImage(req, res) {
   try {
     // Get imageProcessor from app locals
     const imageProcessor = req.app.locals.imageProcessor;
-    
+
     if (!imageProcessor) {
       return sendError(res, 503, 'Service not configured', 'SERVICE_UNAVAILABLE');
     }
