@@ -23,12 +23,13 @@ const corsOptions = {
       'http://localhost:5000',
       'https://form.typeform.com',
       'https://typeform.com',
-      'https://api.typeform.com',
-      /\.typeform\.com$/,
-      /\.zapier\.com$/,
-      /\.replit\.co$/,
-      /\.replit\.app$/,
-      /\.replit\.dev$/
+      'https://api.typeform.com'
+      // Removed wildcard patterns for security: /.typeform.com$/, /.zapier.com$/, /.replit.co$/,
+      
+      
+      
+      
+      
     ];
 
     if (!origin) return callback(null, true);
