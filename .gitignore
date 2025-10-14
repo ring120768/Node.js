@@ -4,3 +4,5 @@ attached_assets/
 src/websocket-test/typeform-signature.js
 src/websocket/test-typeform-signature.js
 node_modules/
+.env.backup.local
+.env.backup.local
