@@ -67,12 +67,11 @@ class Logger {
     
     // PII regex patterns for GDPR compliance
     const piiPatterns = {
-      email: /[A-Za-z0-9._%+-]+@[A-Za-z0-9.-]+.[A-Z|a-z]{2,}/g,
-      phone: /(+44|0)[0-9]{9,10}/g,
-      postcode: /[A-Z]{1,2}[0-9]{1,2}[A-Z]?s?[0-9][A-Z]{2}/gi,
-      nin: /[A-Z]{2}[0-9]{6}[A-Z]/g,
-      card: /[0-9]{4}[s-]?[0-9]{4}[s-]?[0-9]{4}[s-]?[0-9]{4}/g
-    };
+      email: /\b[A-Za-z0-9._%+-]+@[A-Za-z0-9.-]+\.[A-Z|a-z]{2,}\b/g,
+      phone: /\b(\+44|0)[0-9]{9,10}\b/g,
+      postcode: /\b[A-Z]{1,2}[0-9]{1,2}[A-Z]?\s?[0-9][A-Z]{2}\b/gi,
+      nin: /\b[A-Z]{2}[0-9]{6}[A-Z]\b/g,
+      card: /\b[0-9]{4}[\s-]?[0-9]{4}[\s-]?[0-9]{4}[\s-]?[0-9]{4}\b/g             };
 
     for (const [key, value] of Object.entries(data)) {
       // Redact sensitive keys
@@ -95,7 +94,7 @@ class Logger {
         if (piiPatterns.postcode.test(clean)) clean = clean.replace(piiPatterns.postcode, '[REDACTED-POSTCODE]');
         if (piiPatterns.nin.test(clean)) clean = clean.replace(piiPatterns.nin, '[REDACTED-NIN]');
         if (piiPatterns.card.test(clean)) clean = clean.replace(piiPatterns.card, '[REDACTED-CARD]');
-        if (clean.includes('/user/')) clean = clean.replace(//user/[^/]+/g, '/user/[REDACTED]');
+        if (clean.includes('/user/')) clean = clean.replace(/\/user\/[^/]+/g, '/user/[REDACTED]');
         sanitized[key] = clean;
       } else {
         sanitized[key] = value;
