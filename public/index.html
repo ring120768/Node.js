@@ -582,7 +582,7 @@
         // Convert coordinates to what3words
         async function convertToWhat3Words(lat, lng) {
             try {
-                const response = await fetch(`/api/what3words/convert?lat=${lat}&lng=${lng}`);
+                const response = await fetch(`/api/location/convert?lat=${lat}&lng=${lng}`);
                 const data = await response.json();
 
                 if (response.ok && data.words) {
@@ -683,7 +683,7 @@
         // Navigate to incident report
         async function navigateToIncident() {
             try {
-                const response = await fetch('/api/auth/session', {
+                const response = await fetch('/api/auth/status', {
                     credentials: 'include'
                 });
                 const data = await response.json();
@@ -702,7 +702,7 @@
         // Navigate to dashboard
         async function navigateToDashboard() {
             try {
-                const response = await fetch('/api/auth/session', {
+                const response = await fetch('/api/auth/status', {
                     credentials: 'include'
                 });
                 const data = await response.json();
