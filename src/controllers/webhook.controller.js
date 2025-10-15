@@ -351,11 +351,14 @@ async function processWebhookAsync(eventId, eventType, formResponse, requestId) 
     let result;
     let processingType = '';
 
-    if (formTitle === 'Car Crash Lawyer AI sign up' || formId === 'b83aFxE0') {
+    // Normalize title (trim spaces)
+    const normalizedTitle = formTitle?.trim() || '';
+
+    if (normalizedTitle === 'Car Crash Lawyer AI sign up' || formId === 'b03aFxEO') {
       processingType = 'USER SIGNUP';
       console.log(`\n🚀 Processing ${processingType}...`);
       result = await processUserSignup(formResponse, requestId);
-    } else if (formTitle?.includes('Incident Report')) {
+    } else if (normalizedTitle?.includes('Incident Report') || formId === 'WvM2ejru') {
       processingType = 'INCIDENT REPORT';
       console.log(`\n🚀 Processing ${processingType}...`);
       result = await processIncidentReport(formResponse, requestId);
@@ -570,7 +573,7 @@ async function processIncidentReport(formResponse, requestId) {
     // Map to incident_reports table (keeping your existing mapping)
     const incidentData = {
       create_user_id: userId || token,
-      Date: submitted_at || new Date().toISOString(),
+      date: submitted_at || new Date().toISOString(),
       form_id: formResponse.form_id,
 
       // Medical Information

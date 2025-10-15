@@ -39,7 +39,7 @@ require('dotenv').config();
 
 // ==================== PORT DISCIPLINE ====================
 
-const PORT = Number(process.env.PORT);
+const PORT = Number(process.env.PORT) || 5000;
 
 if (!PORT || isNaN(PORT)) {
   console.error(`❌ [PID:${process.pid}] Replit requires process.env.PORT to be a valid number`);
@@ -49,17 +49,6 @@ if (!PORT || isNaN(PORT)) {
 
 const HOST = '0.0.0.0'; // Required for Replit
 console.log(`🔌 [PID:${process.pid}] Using PORT: ${PORT}, HOST: ${HOST}`);
-
-// Ensure PORT is available and not in use
-const net = require('net');
-const server_test = net.createServer();
-server_test.listen(PORT, (err) => {
-  if (err) {
-    console.error(`❌ [PID:${process.pid}] Port ${PORT} is not available:`, err.message);
-    process.exit(1);
-  }
-  server_test.close();
-});
 
 // Validate required environment variables
 const requiredEnvVars = [
