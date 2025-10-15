@@ -446,6 +446,23 @@ async function processUserSignup(formResponse, requestId) {
 
     logger.info(`[${requestId}] Processing signup for user: ${authUserId || token}`);
 
+    // 🔍 DEBUG: Show what Typeform is actually sending
+    console.log(`\n🔍 DEBUG: Typeform Answers Received (${answers?.length || 0} total)`);
+    console.log('-'.repeat(60));
+    if (answers && answers.length > 0) {
+      answers.forEach((answer, index) => {
+        const ref = answer.field?.ref || 'NO_REF';
+        const title = answer.field?.title || 'NO_TITLE';
+        const type = answer.type;
+        let value = answer.text || answer.email || answer.phone_number || answer.number || answer.boolean || answer.date || 'NO_VALUE';
+
+        console.log(`[${index}] Type: ${type}, Ref: ${ref}`);
+        console.log(`    Title: ${title}`);
+        console.log(`    Value: ${JSON.stringify(value).substring(0, 80)}`);
+      });
+    }
+    console.log('-'.repeat(60));
+
     // Map Typeform answers to user_signup table fields
     const userData = {
       create_user_id: authUserId || token,
@@ -481,12 +498,20 @@ async function processUserSignup(formResponse, requestId) {
       time_stamp: submitted_at || new Date().toISOString()
     };
 
+    // 🔍 DEBUG: Show userData BEFORE null cleanup
+    console.log(`\n🔍 DEBUG: userData object BEFORE null cleanup (${Object.keys(userData).length} keys):`);
+    console.log(JSON.stringify(userData, null, 2));
+
     // Remove null/undefined values
     Object.keys(userData).forEach(key => {
       if (userData[key] === null || userData[key] === undefined) {
         delete userData[key];
       }
     });
+
+    // 🔍 DEBUG: Show userData AFTER null cleanup
+    console.log(`\n🔍 DEBUG: userData object AFTER null cleanup (${Object.keys(userData).length} keys):`);
+    console.log(JSON.stringify(userData, null, 2));
 
     // Show key data fields
     console.log(`\n📊 Data mapping completed:`);
