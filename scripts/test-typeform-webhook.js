@@ -16,7 +16,7 @@ const signupPayload = {
   event_id: "test-signup-" + Date.now(),
   event_type: "form_response",
   form_response: {
-    form_id: "b83aFxE0",
+    form_id: "b03aFxEO",
     token: "test-token-" + Date.now(),
     landed_at: "2025-10-13T12:00:00Z",
     submitted_at: new Date().toISOString(),
@@ -27,7 +27,7 @@ const signupPayload = {
       product_id: "premium"
     },
     definition: {
-      id: "b83aFxE0",
+      id: "b03aFxEO",
       title: "Car Crash Lawyer AI sign up",
       fields: []
     },

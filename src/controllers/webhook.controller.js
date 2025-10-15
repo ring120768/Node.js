@@ -351,7 +351,7 @@ async function processWebhookAsync(eventId, eventType, formResponse, requestId) 
     let result;
     let processingType = '';
 
-    if (formTitle === 'Car Crash Lawyer AI sign up' || formId === 'b83aFxE0') {
+    if (formTitle === 'Car Crash Lawyer AI sign up' || formId === 'b03aFxEO') {
       processingType = 'USER SIGNUP';
       console.log(`\n🚀 Processing ${processingType}...`);
       result = await processUserSignup(formResponse, requestId);
