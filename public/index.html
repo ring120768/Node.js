@@ -717,64 +717,6 @@
                 window.location.href = '/login.html?redirect=dashboard.html';
             }
         }
-
-        // ==================== CORS ERROR DETECTION ====================
-
-        /**
-         * Global fetch interceptor for CORS debugging and user-friendly error handling
-         * Wraps native fetch to detect and handle CORS errors gracefully
-         */
-        (function() {
-            const originalFetch = window.fetch;
-
-            window.fetch = function(...args) {
-                const url = typeof args[0] === 'string' ? args[0] : args[0].url;
-
-                return originalFetch.apply(this, args)
-                    .then(response => {
-                        // Log successful CORS responses in development
-                        if (window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1') {
-                            console.debug('[CORS] Success:', url, response.status);
-                        }
-                        return response;
-                    })
-                    .catch(error => {
-                        // Detect CORS-related errors
-                        const isCorsError =
-                            error.message.toLowerCase().includes('cors') ||
-                            error.message.toLowerCase().includes('cross-origin') ||
-                            (error.name === 'TypeError' && error.message.includes('fetch'));
-
-                        if (isCorsError) {
-                            console.error('[CORS ERROR] Request blocked:', {
-                                url: url,
-                                origin: window.location.origin,
-                                error: error.message,
-                                timestamp: new Date().toISOString()
-                            });
-
-                            // Show user-friendly error (only in development)
-                            if (window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1') {
-                                console.warn(
-                                    '%c⚠️ CORS ERROR DETECTED',
-                                    'color: red; font-size: 16px; font-weight: bold',
-                                    '\nURL:', url,
-                                    '\nOrigin:', window.location.origin,
-                                    '\nCheck console for details or contact support.'
-                                );
-                            } else {
-                                // Production: Silent logging, generic error
-                                console.error('Connection error. Please try again or contact support.');
-                            }
-                        }
-
-                        // Re-throw the error for original error handlers
-                        throw error;
-                    });
-            };
-
-            console.info('[CORS Monitor] Initialized - Fetch requests will be monitored for CORS issues');
-        })();
     </script>
 </body>
 </html>

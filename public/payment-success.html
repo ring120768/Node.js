@@ -534,21 +534,6 @@
                     localStorage.setItem(`checklist_item_${index}`, this.checked);
                 });
             });
-
-            // Update user info with email from URL parameters
-            const urlParams = new URLSearchParams(window.location.search);
-            const userEmail = urlParams.get('email');
-            const userInfoDiv = document.querySelector('.user-info');
-
-            if (userEmail && userInfoDiv) {
-                userInfoDiv.innerHTML = `
-                    <strong>👤 Welcome!</strong>
-                    <div style="margin-top: 8px;">
-                        📧 ${userEmail}<br>
-                        <small style="opacity: 0.8;">View full details in your dashboard</small>
-                    </div>
-                `;
-            }
         });
     </script>
 </body>
