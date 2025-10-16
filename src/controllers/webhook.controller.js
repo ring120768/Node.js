@@ -59,11 +59,13 @@ function buildFieldTitleMap(definition) {
   if (definition && definition.fields) {
     definition.fields.forEach(field => {
       if (field.ref && field.title) {
-        // Normalize title: lowercase, remove colons/punctuation, trim
+        // Normalize title: lowercase, remove punctuation, convert spaces to underscores
         const normalizedTitle = field.title.toLowerCase()
-          .replace(/:/g, '')
-          .replace(/\(optional\)/g, '_optional')
-          .replace(/\s+/g, '_')
+          .replace(/\(optional\)/gi, '_optional')  // Handle (optional) first
+          .replace(/[:.;?!]/g, '')                  // Remove common punctuation
+          .replace(/\s+/g, '_')                     // Replace spaces with underscore
+          .replace(/_+/g, '_')                      // Replace multiple underscores with single
+          .replace(/^_|_$/g, '')                    // Remove leading/trailing underscores
           .trim();
         map.set(field.ref, normalizedTitle);
       }
