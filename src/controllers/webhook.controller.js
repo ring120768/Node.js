@@ -599,13 +599,22 @@ async function processUserSignup(formResponse, requestId, imageProcessor = null)
         console.log(`   User ID: ${authUserId || token}`);
 
         try {
-          const processedImages = await imageProcessor.processMultipleImages(
+          // Use V2 processor if available, fallback to V1
+          const processor = req.app?.locals?.imageProcessorV2 || imageProcessor;
+          
+          const processedImages = await processor.processMultipleImages(
             validImageUrls,
-            authUserId || token
+            authUserId || token,
+            {
+              documentCategory: 'user_signup',
+              sourceId: formResponse.form_id,
+              sourceField: 'typeform_webhook'
+            }
           );
 
           // Replace Typeform URLs with Supabase Storage paths
-          Object.entries(processedImages).forEach(([key, storagePath]) => {
+          Object.entries(processedImages).forEach(([key, result]) => {
+            const storagePath = result.storagePath || result; // V2 returns object, V1 returns string
             console.log(`   ✅ ${key}: ${storagePath.substring(0, 60)}...`);
             userData[key] = storagePath;
           });
@@ -879,13 +888,22 @@ async function processIncidentReport(formResponse, requestId, imageProcessor = n
         console.log(`   User ID: ${userId || token}`);
 
         try {
-          const processedImages = await imageProcessor.processMultipleImages(
+          // Use V2 processor if available, fallback to V1
+          const processor = req.app?.locals?.imageProcessorV2 || imageProcessor;
+          
+          const processedImages = await processor.processMultipleImages(
             validImageUrls,
-            userId || token
+            userId || token,
+            {
+              documentCategory: 'incident_report',
+              sourceId: formResponse.form_id,
+              sourceField: 'typeform_webhook'
+            }
           );
 
           // Replace Typeform URLs with Supabase Storage paths
-          Object.entries(processedImages).forEach(([key, storagePath]) => {
+          Object.entries(processedImages).forEach(([key, result]) => {
+            const storagePath = result.storagePath || result; // V2 returns object, V1 returns string
             console.log(`   ✅ ${key}: ${storagePath.substring(0, 60)}...`);
             incidentData[key] = storagePath;
           });
