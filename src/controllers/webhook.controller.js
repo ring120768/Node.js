@@ -329,7 +329,9 @@ async function handleTypeformWebhook(req, res) {
 
     // Process webhook asynchronously (don't await)
     setImmediate(() => {
-      processWebhookAsync(event_id, event_type, form_response, requestId, req.app.locals.imageProcessor).catch(error => {
+      // Use V2 if available, fallback to V1
+      const imageProcessor = req.app.locals.imageProcessorV2 || req.app.locals.imageProcessor;
+      processWebhookAsync(event_id, event_type, form_response, requestId, imageProcessor).catch(error => {
         console.log('\n' + '!'.repeat(80));
         console.log(`❌ ASYNC PROCESSING FAILED [${requestId.slice(-8)}]`);
         console.log('!'.repeat(80));
@@ -601,11 +603,18 @@ async function processUserSignup(formResponse, requestId, imageProcessor = null)
         try {
           const processedImages = await imageProcessor.processMultipleImages(
             validImageUrls,
-            authUserId || token
+            authUserId || token,
+            {
+              documentCategory: 'user_signup',
+              sourceId: formResponse.form_id,
+              sourceField: 'user_signup_images'
+            }
           );
 
           // Replace Typeform URLs with Supabase Storage paths
-          Object.entries(processedImages).forEach(([key, storagePath]) => {
+          Object.entries(processedImages).forEach(([key, result]) => {
+            // V2 returns {storagePath, documentId, status}, V1 returns just storagePath string
+            const storagePath = typeof result === 'string' ? result : result.storagePath;
             console.log(`   ✅ ${key}: ${storagePath.substring(0, 60)}...`);
             userData[key] = storagePath;
           });
@@ -881,11 +890,18 @@ async function processIncidentReport(formResponse, requestId, imageProcessor = n
         try {
           const processedImages = await imageProcessor.processMultipleImages(
             validImageUrls,
-            userId || token
+            userId || token,
+            {
+              documentCategory: 'incident_report',
+              sourceId: formResponse.form_id,
+              sourceField: 'incident_images'
+            }
           );
 
           // Replace Typeform URLs with Supabase Storage paths
-          Object.entries(processedImages).forEach(([key, storagePath]) => {
+          Object.entries(processedImages).forEach(([key, result]) => {
+            // V2 returns {storagePath, documentId, status}, V1 returns just storagePath string
+            const storagePath = typeof result === 'string' ? result : result.storagePath;
             console.log(`   ✅ ${key}: ${storagePath.substring(0, 60)}...`);
             incidentData[key] = storagePath;
           });

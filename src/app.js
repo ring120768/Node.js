@@ -41,6 +41,7 @@ const gdprService = require('./services/gdprService');
 const websocketModule = require('./websocket');
 const agentService = require('./services/agentService');
 const ImageProcessor = require('./services/imageProcessor');
+const ImageProcessorV2 = require('./services/imageProcessorV2');
 
 // Routes
 const centralRouter = require('./routes/index');
@@ -279,12 +280,21 @@ function createApp() {
 
   // Image Processor Service
   let imageProcessor = null;
+  let imageProcessorV2 = null;
   if (supabaseEnabled) {
     try {
       imageProcessor = new ImageProcessor(supabase);
       logger.success('✅ Image processor initialized');
     } catch (error) {
       logger.warn('⚠️ Image processor init failed (non-critical)', error.message);
+    }
+
+    // Initialize V2 with enhanced status tracking
+    try {
+      imageProcessorV2 = new ImageProcessorV2(supabase);
+      logger.success('✅ Image processor V2 initialized (with status tracking)');
+    } catch (error) {
+      logger.warn('⚠️ Image processor V2 init failed (non-critical)', error.message);
     }
   }
 
@@ -396,6 +406,7 @@ function createApp() {
   app.locals.supabaseEnabled = supabaseEnabled;
   app.locals.authService = authService;
   app.locals.imageProcessor = imageProcessor;
+  app.locals.imageProcessorV2 = imageProcessorV2;
   app.locals.websocketModule = websocketModule;
   app.locals.pdfModules = pdfModules;
   app.locals.realtimeChannels = realtimeChannels;
