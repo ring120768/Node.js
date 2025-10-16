@@ -283,8 +283,14 @@ function createApp() {
   let imageProcessorV2 = null;
   if (supabaseEnabled) {
     try {
+      const ImageProcessor = require('./services/imageProcessor');
+      const ImageProcessorV2 = require('./services/imageProcessorV2');
+      
       imageProcessor = new ImageProcessor(supabase);
-      logger.success('✅ Image processor initialized');
+      imageProcessorV2 = new ImageProcessorV2(supabase);
+      
+      logger.success('✅ Image processor V1 initialized');
+      logger.success('✅ Image processor V2 initialized');
     } catch (error) {
       logger.warn('⚠️ Image processor init failed (non-critical)', error.message);
     }

@@ -601,7 +601,10 @@ async function processUserSignup(formResponse, requestId, imageProcessor = null)
         console.log(`   User ID: ${authUserId || token}`);
 
         try {
-          const processedImages = await imageProcessor.processMultipleImages(
+          // Use V2 processor if available, fallback to V1
+          const processor = req.app?.locals?.imageProcessorV2 || imageProcessor;
+          
+          const processedImages = await processor.processMultipleImages(
             validImageUrls,
             authUserId || token,
             {
@@ -888,7 +891,10 @@ async function processIncidentReport(formResponse, requestId, imageProcessor = n
         console.log(`   User ID: ${userId || token}`);
 
         try {
-          const processedImages = await imageProcessor.processMultipleImages(
+          // Use V2 processor if available, fallback to V1
+          const processor = req.app?.locals?.imageProcessorV2 || imageProcessor;
+          
+          const processedImages = await processor.processMultipleImages(
             validImageUrls,
             userId || token,
             {
