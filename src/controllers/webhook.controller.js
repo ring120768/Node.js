@@ -52,10 +52,30 @@ function verifyTypeformSignature(signature, payload, secret) {
 }
 
 /**
- * Extract answer by field reference
+ * Build a mapping of field ref -> field title from form definition
  */
-function getAnswerByRef(answers, ref) {
-  const answer = answers.find(a => a.field?.ref === ref);
+function buildFieldTitleMap(definition) {
+  const map = new Map();
+  if (definition && definition.fields) {
+    definition.fields.forEach(field => {
+      if (field.ref && field.title) {
+        // Normalize title: lowercase, remove colons/punctuation, trim
+        const normalizedTitle = field.title.toLowerCase()
+          .replace(/:/g, '')
+          .replace(/\(optional\)/g, '_optional')
+          .replace(/\s+/g, '_')
+          .trim();
+        map.set(field.ref, normalizedTitle);
+      }
+    });
+  }
+  return map;
+}
+
+/**
+ * Extract answer value from answer object
+ */
+function extractAnswerValue(answer) {
   if (!answer) return null;
 
   // Handle different answer types
@@ -76,6 +96,30 @@ function getAnswerByRef(answers, ref) {
   }
 
   return null;
+}
+
+/**
+ * Extract answer by field reference (legacy function - now enhanced)
+ */
+function getAnswerByRef(answers, ref) {
+  const answer = answers.find(a => a.field?.ref === ref);
+  return extractAnswerValue(answer);
+}
+
+/**
+ * Get answer by field title using the title map
+ * Matches normalized titles against expected field names
+ */
+function getAnswerByTitle(answers, titleMap, expectedFieldName) {
+  // Find answer where the normalized title matches expectedFieldName
+  const answer = answers.find(a => {
+    const ref = a.field?.ref;
+    if (!ref) return false;
+    const normalizedTitle = titleMap.get(ref);
+    return normalizedTitle === expectedFieldName;
+  });
+
+  return extractAnswerValue(answer);
 }
 
 /**
@@ -446,6 +490,9 @@ async function processUserSignup(formResponse, requestId) {
 
     logger.info(`[${requestId}] Processing signup for user: ${authUserId || token}`);
 
+    // Build field title map from form definition
+    const titleMap = buildFieldTitleMap(formResponse.definition);
+
     // 🔍 DEBUG: Show what Typeform is actually sending
     console.log(`\n🔍 DEBUG: Typeform Answers Received (${answers?.length || 0} total)`);
     console.log('-'.repeat(60));
@@ -453,48 +500,69 @@ async function processUserSignup(formResponse, requestId) {
       answers.forEach((answer, index) => {
         const ref = answer.field?.ref || 'NO_REF';
         const title = answer.field?.title || 'NO_TITLE';
+        const normalizedTitle = titleMap.get(ref) || 'NO_NORMALIZED_TITLE';
         const type = answer.type;
         let value = answer.text || answer.email || answer.phone_number || answer.number || answer.boolean || answer.date || 'NO_VALUE';
 
         console.log(`[${index}] Type: ${type}, Ref: ${ref}`);
         console.log(`    Title: ${title}`);
+        console.log(`    Normalized: ${normalizedTitle}`);
         console.log(`    Value: ${JSON.stringify(value).substring(0, 80)}`);
       });
     }
     console.log('-'.repeat(60));
 
-    // Map Typeform answers to user_signup table fields
+    // Build emergency contact string from separate fields
+    const emergencyFirstName = getAnswerByTitle(answers, titleMap, 'first_name');
+    const emergencyLastName = getAnswerByTitle(answers, titleMap, 'last_name');
+    const emergencyPhone = getAnswerByTitle(answers, titleMap, 'phone_number');
+    const emergencyEmail = getAnswerByTitle(answers, titleMap, 'email');
+    const emergencyCompany = getAnswerByTitle(answers, titleMap, 'company');
+
+    let emergencyContactString = null;
+    if (emergencyFirstName || emergencyLastName || emergencyPhone) {
+      const parts = [];
+      if (emergencyFirstName || emergencyLastName) {
+        parts.push(`${emergencyFirstName || ''} ${emergencyLastName || ''}`.trim());
+      }
+      if (emergencyPhone) parts.push(emergencyPhone);
+      if (emergencyEmail) parts.push(emergencyEmail);
+      if (emergencyCompany) parts.push(emergencyCompany);
+      emergencyContactString = parts.join(' | ');
+    }
+
+    // Map Typeform answers to user_signup table fields using normalized titles
     const userData = {
       create_user_id: authUserId || token,
       email: userEmail,
-      name: getAnswerByRef(answers, 'name') || getAnswerByRef(answers, 'first_name'),
-      surname: getAnswerByRef(answers, 'surname') || getAnswerByRef(answers, 'last_name'),
-      mobile: getAnswerByRef(answers, 'mobile') || getAnswerByRef(answers, 'phone'),
-      street_address: getAnswerByRef(answers, 'street_address') || getAnswerByRef(answers, 'address_line_1'),
-      town: getAnswerByRef(answers, 'town') || getAnswerByRef(answers, 'city'),
-      street_address_optional: getAnswerByRef(answers, 'street_address_optional') || getAnswerByRef(answers, 'address_line_2'),
-      postcode: getAnswerByRef(answers, 'postcode') || getAnswerByRef(answers, 'postal_code'),
-      country: getAnswerByRef(answers, 'country'),
-      driving_license_number: getAnswerByRef(answers, 'driving_license_number') || getAnswerByRef(answers, 'license_number'),
-      car_registration_number: getAnswerByRef(answers, 'car_registration_number') || getAnswerByRef(answers, 'license_plate'),
-      vehicle_make: getAnswerByRef(answers, 'vehicle_make'),
-      vehicle_model: getAnswerByRef(answers, 'vehicle_model'),
-      vehicle_colour: getAnswerByRef(answers, 'vehicle_colour') || getAnswerByRef(answers, 'vehicle_color'),
-      vehicle_condition: getAnswerByRef(answers, 'vehicle_condition'),
-      recovery_company: getAnswerByRef(answers, 'recovery_company'),
-      recovery_breakdown_number: getAnswerByRef(answers, 'recovery_breakdown_number'),
-      recovery_breakdown_email: getAnswerByRef(answers, 'recovery_breakdown_email'),
-      emergency_contact: getAnswerByRef(answers, 'emergency_contact'),
-      insurance_company: getAnswerByRef(answers, 'insurance_company'),
-      policy_number: getAnswerByRef(answers, 'policy_number'),
-      policy_holder: getAnswerByRef(answers, 'policy_holder'),
-      cover_type: getAnswerByRef(answers, 'cover_type'),
-      gdpr_consent: getAnswerByRef(answers, 'gdpr_consent') || getAnswerByRef(answers, 'i_agree_to_share_my_data'),
-      driving_license_picture: getAnswerByRef(answers, 'driving_license_picture'),
-      vehicle_picture_front: getAnswerByRef(answers, 'vehicle_picture_front'),
-      vehicle_picture_driver_side: getAnswerByRef(answers, 'vehicle_picture_driver_side'),
-      vehicle_picture_passenger_side: getAnswerByRef(answers, 'vehicle_picture_passenger_side'),
-      vehicle_picture_back: getAnswerByRef(answers, 'vehicle_picture_back'),
+      name: getAnswerByTitle(answers, titleMap, 'name'),
+      surname: getAnswerByTitle(answers, titleMap, 'surname'),
+      mobile: getAnswerByTitle(answers, titleMap, 'mobile'),
+      street_address: getAnswerByTitle(answers, titleMap, 'street_address'),
+      town: getAnswerByTitle(answers, titleMap, 'town'),
+      street_address_optional: getAnswerByTitle(answers, titleMap, 'street_address_optional'),
+      postcode: getAnswerByTitle(answers, titleMap, 'postcode'),
+      country: getAnswerByTitle(answers, titleMap, 'country'),
+      driving_license_number: getAnswerByTitle(answers, titleMap, 'driving_license_number'),
+      car_registration_number: getAnswerByTitle(answers, titleMap, 'car_registration_number'),
+      vehicle_make: getAnswerByTitle(answers, titleMap, 'vehicle_make'),
+      vehicle_model: getAnswerByTitle(answers, titleMap, 'vehicle_model'),
+      vehicle_colour: getAnswerByTitle(answers, titleMap, 'vehicle_colour'),
+      vehicle_condition: getAnswerByTitle(answers, titleMap, 'vehicle_condition'),
+      recovery_company: getAnswerByTitle(answers, titleMap, 'recovery_company'),
+      recovery_breakdown_number: getAnswerByTitle(answers, titleMap, 'recovery_breakdown_number'),
+      recovery_breakdown_email: getAnswerByTitle(answers, titleMap, 'recovery_breakdown_email'),
+      emergency_contact: emergencyContactString,
+      insurance_company: getAnswerByTitle(answers, titleMap, 'insurance_company'),
+      policy_number: getAnswerByTitle(answers, titleMap, 'policy_number'),
+      policy_holder: getAnswerByTitle(answers, titleMap, 'policy_holder'),
+      cover_type: getAnswerByTitle(answers, titleMap, 'cover_type'),
+      gdpr_consent: getAnswerByTitle(answers, titleMap, 'do_you_agree_to_share_this_data_for_legal_support'),
+      driving_license_picture: getAnswerByTitle(answers, titleMap, 'please_upload_a_picture_of_your_driving_license'),
+      vehicle_picture_front: getAnswerByTitle(answers, titleMap, 'front_image_of_your_vehicle'),
+      vehicle_picture_driver_side: getAnswerByTitle(answers, titleMap, 'driver_side_image_of_your_vehicle'),
+      vehicle_picture_passenger_side: getAnswerByTitle(answers, titleMap, 'passenger_side_image_of_your_vehicle'),
+      vehicle_picture_back: getAnswerByTitle(answers, titleMap, 'back_image_of_your_vehicle'),
       time_stamp: submitted_at || new Date().toISOString()
     };
 
