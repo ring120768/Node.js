@@ -601,10 +601,8 @@ async function processUserSignup(formResponse, requestId, imageProcessor = null)
         console.log(`   User ID: ${authUserId || token}`);
 
         try {
-          // Use V2 processor if available, fallback to V1
-          const processor = req.app?.locals?.imageProcessorV2 || imageProcessor;
-          
-          const processedImages = await processor.processMultipleImages(
+          // imageProcessor parameter is already V2 with fallback to V1 (set in line 333)
+          const processedImages = await imageProcessor.processMultipleImages(
             validImageUrls,
             authUserId || token,
             {
@@ -891,10 +889,8 @@ async function processIncidentReport(formResponse, requestId, imageProcessor = n
         console.log(`   User ID: ${userId || token}`);
 
         try {
-          // Use V2 processor if available, fallback to V1
-          const processor = req.app?.locals?.imageProcessorV2 || imageProcessor;
-          
-          const processedImages = await processor.processMultipleImages(
+          // imageProcessor parameter is already V2 with fallback to V1 (set in line 333)
+          const processedImages = await imageProcessor.processMultipleImages(
             validImageUrls,
             userId || token,
             {
