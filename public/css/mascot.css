@@ -1,0 +1,55 @@
+/* Fixed Mascot - Top Left Corner */
+.mascot-fixed {
+    position: fixed;
+    top: 10px;
+    left: 10px;
+    z-index: 9999;
+    cursor: pointer;
+    transition: transform 0.3s ease, opacity 0.3s ease;
+    opacity: 0.95;
+}
+
+.mascot-fixed:hover {
+    transform: scale(1.05);
+    opacity: 1;
+}
+
+.mascot-fixed img {
+    width: 80px;
+    height: auto;
+    display: block;
+    filter: drop-shadow(0 4px 8px rgba(0, 0, 0, 0.2));
+}
+
+/* Responsive sizing for mobile */
+@media (max-width: 768px) {
+    .mascot-fixed {
+        top: 8px;
+        left: 8px;
+    }
+
+    .mascot-fixed img {
+        width: 60px;
+    }
+}
+
+@media (max-width: 480px) {
+    .mascot-fixed {
+        top: 5px;
+        left: 5px;
+    }
+
+    .mascot-fixed img {
+        width: 50px;
+    }
+}
+
+/* Optional: Pulse animation on page load */
+@keyframes mascotPulse {
+    0%, 100% { transform: scale(1); }
+    50% { transform: scale(1.05); }
+}
+
+.mascot-fixed.animate-pulse {
+    animation: mascotPulse 2s ease-in-out;
+}
