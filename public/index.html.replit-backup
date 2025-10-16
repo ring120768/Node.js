@@ -471,7 +471,7 @@
     </button>
 
     <div class="logo-section">
-        <img src="car-crash-lawyer-ai-450.webp" alt="Car Crash Lawyer AI logo" class="site-branding" width="450" height="450" style="display:block;margin:0 auto 20px;max-width:100%;height:auto;image-rendering:crisp-edges;image-rendering:-webkit-optimize-contrast;">
+        <img src="car-crash-lawyer-ai-450.png" alt="Car Crash Lawyer AI logo" class="site-branding" width="450" height="450" style="display:block;margin:0 auto 20px;max-width:100%;height:auto;image-rendering:crisp-edges;image-rendering:-webkit-optimize-contrast;">
         <h1>Car Crash Lawyer AI</h1>
         <p>Legal support at the scene – fast, smart, AI-powered.</p>
         <p style="font-size: 16px; margin-top: 10px;">Get help. Record evidence. Protect your rights.</p>
