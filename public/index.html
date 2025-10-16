@@ -682,6 +682,7 @@
 
         // Navigate to incident report
         async function navigateToIncident() {
+            console.log('📝 Incident button clicked');
             try {
                 const response = await fetch('/api/auth/status', {
                     credentials: 'include'
@@ -701,6 +702,7 @@
 
         // Navigate to dashboard
         async function navigateToDashboard() {
+            console.log('📋 Dashboard button clicked');
             try {
                 const response = await fetch('/api/auth/status', {
                     credentials: 'include'
@@ -717,6 +719,105 @@
                 window.location.href = '/login.html?redirect=dashboard.html';
             }
         }
+
+        // Add event listeners when page loads
+        document.addEventListener('DOMContentLoaded', function() {
+            console.log('🚗 Car Crash Lawyer AI - Landing Page Initialized');
+            
+            // Main navigation buttons
+            const incidentBtn = document.querySelector('.secondary-btn[onclick="navigateToIncident()"]');
+            const dashboardBtn = document.querySelector('.secondary-btn[onclick="navigateToDashboard()"]');
+            const demoBtn = document.querySelector('.secondary-btn[onclick*="demo.html"]');
+            const loginBtn = document.querySelector('.auth-btn.login');
+            const signupBtn = document.querySelector('.auth-btn.signup');
+
+            if (incidentBtn) {
+                incidentBtn.addEventListener('click', function(e) {
+                    e.preventDefault();
+                    navigateToIncident();
+                });
+                console.log('✅ Incident button event listener added');
+            }
+
+            if (dashboardBtn) {
+                dashboardBtn.addEventListener('click', function(e) {
+                    e.preventDefault();
+                    navigateToDashboard();
+                });
+                console.log('✅ Dashboard button event listener added');
+            }
+
+            if (demoBtn) {
+                demoBtn.addEventListener('click', function(e) {
+                    e.preventDefault();
+                    console.log('🎬 Demo button clicked');
+                    window.location.href = '/demo.html';
+                });
+                console.log('✅ Demo button event listener added');
+            }
+
+            if (loginBtn) {
+                loginBtn.addEventListener('click', function(e) {
+                    e.preventDefault();
+                    console.log('🔑 Login button clicked');
+                    window.location.href = '/login.html';
+                });
+                console.log('✅ Login button event listener added');
+            }
+
+            if (signupBtn) {
+                signupBtn.addEventListener('click', function(e) {
+                    e.preventDefault();
+                    console.log('✨ Signup button clicked');
+                    window.location.href = '/signup-auth.html';
+                });
+                console.log('✅ Signup button event listener added');
+            }
+
+            console.log('✅ Page fully loaded');
+            
+            // Debug: Check if buttons are clickable
+            setTimeout(() => {
+                console.log('🔍 Checking if buttons are clickable...');
+                const allButtons = document.querySelectorAll('button, .auth-btn, .secondary-btn');
+                console.log(`✅ Found ${allButtons.length} total buttons`);
+                
+                allButtons.forEach((btn, index) => {
+                    const text = btn.textContent.trim();
+                    const hasClick = btn.onclick || btn.getAttribute('onclick') || btn.hasAttribute('onclick');
+                    console.log(`[${index}] "${text}" - Has click handler: ${!!hasClick}`);
+                });
+                
+                console.log('✅ All buttons found and ready');
+            }, 100);
+
+            // Fallback click handlers (in case inline onclick doesn't work)
+            document.body.addEventListener('click', function(e) {
+                const target = e.target;
+                const text = target.textContent.trim();
+                
+                if (target.matches('.secondary-btn')) {
+                    if (text.includes('Report an Incident')) {
+                        e.preventDefault();
+                        navigateToIncident();
+                    } else if (text.includes('View My Reports')) {
+                        e.preventDefault();
+                        navigateToDashboard();
+                    } else if (text.includes('Try Demo')) {
+                        e.preventDefault();
+                        window.location.href = '/demo.html';
+                    }
+                } else if (target.matches('.auth-btn.login')) {
+                    e.preventDefault();
+                    window.location.href = '/login.html';
+                } else if (target.matches('.auth-btn.signup')) {
+                    e.preventDefault();
+                    window.location.href = '/signup-auth.html';
+                }
+            });
+            
+            console.log('✅ Fallback event listeners added');
+        });
 
         // ==================== CORS ERROR DETECTION ====================
 
