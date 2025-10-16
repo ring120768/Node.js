@@ -612,12 +612,23 @@ async function processUserSignup(formResponse, requestId, imageProcessor = null)
             }
           );
 
-          // Replace Typeform URLs with Supabase Storage paths
+          // Base URL for API (use env var or default to Replit URL)
+          const baseUrl = process.env.APP_URL || process.env.BASE_URL || 'https://nodejs-1-ring120768.replit.app';
+
+          // Replace Typeform URLs with permanent API download URLs
           Object.entries(processedImages).forEach(([key, result]) => {
-            // V2 returns {storagePath, documentId, status}, V1 returns just storagePath string
-            const storagePath = typeof result === 'string' ? result : result.storagePath;
-            console.log(`   ✅ ${key}: ${storagePath.substring(0, 60)}...`);
-            userData[key] = storagePath;
+            if (typeof result === 'string') {
+              // V1 format - just use storage path (legacy compatibility)
+              userData[key] = result;
+            } else if (result.documentId) {
+              // V2 format - construct permanent API URL
+              const apiUrl = `${baseUrl}/api/user-documents/${result.documentId}/download`;
+              console.log(`   ✅ ${key}: ${apiUrl}`);
+              userData[key] = apiUrl;
+            } else {
+              // Fallback to storage path if no documentId
+              userData[key] = result.storagePath;
+            }
           });
 
           console.log(`   ✅ All images processed successfully`);
@@ -900,12 +911,23 @@ async function processIncidentReport(formResponse, requestId, imageProcessor = n
             }
           );
 
-          // Replace Typeform URLs with Supabase Storage paths
+          // Base URL for API (use env var or default to Replit URL)
+          const baseUrl = process.env.APP_URL || process.env.BASE_URL || 'https://nodejs-1-ring120768.replit.app';
+
+          // Replace Typeform URLs with permanent API download URLs
           Object.entries(processedImages).forEach(([key, result]) => {
-            // V2 returns {storagePath, documentId, status}, V1 returns just storagePath string
-            const storagePath = typeof result === 'string' ? result : result.storagePath;
-            console.log(`   ✅ ${key}: ${storagePath.substring(0, 60)}...`);
-            incidentData[key] = storagePath;
+            if (typeof result === 'string') {
+              // V1 format - just use storage path (legacy compatibility)
+              incidentData[key] = result;
+            } else if (result.documentId) {
+              // V2 format - construct permanent API URL
+              const apiUrl = `${baseUrl}/api/user-documents/${result.documentId}/download`;
+              console.log(`   ✅ ${key}: ${apiUrl}`);
+              incidentData[key] = apiUrl;
+            } else {
+              // Fallback to storage path if no documentId
+              incidentData[key] = result.storagePath;
+            }
           });
 
           console.log(`   ✅ All images processed successfully`);

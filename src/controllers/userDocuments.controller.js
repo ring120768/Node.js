@@ -11,6 +11,7 @@
  * - Soft delete documents (GDPR)
  */
 
+const crypto = require('crypto');
 const logger = require('../utils/logger');
 const { createClient } = require('@supabase/supabase-js');
 const ImageProcessorV2 = require('../services/imageProcessorV2');
@@ -462,6 +463,9 @@ async function deleteDocument(req, res) {
 /**
  * GET /api/user-documents/:id/download
  * Download document (redirects to signed URL)
+ *
+ * Security: UUID is unguessable, user_id optional for shareable links
+ * If user_id provided, it's verified. If not, anyone with UUID can download.
  */
 async function downloadDocument(req, res) {
   const requestId = req.id || crypto.randomBytes(8).toString('hex');
@@ -470,37 +474,34 @@ async function downloadDocument(req, res) {
     const userId = req.user?.id || req.query.user_id;
     const documentId = req.params.id;
 
-    if (!userId) {
-      logger.warn(`[${requestId}] Missing user ID`);
-      return res.status(401).json({
-        success: false,
-        error: 'Authentication required',
-        code: 'AUTH_REQUIRED'
-      });
-    }
-
     logger.info(`[${requestId}] Downloading document`, {
-      userId,
+      userId: userId || 'anonymous',
       documentId
     });
 
-    // Get document
-    const { data: document, error } = await supabase
+    // Build query - if userId provided, verify it matches
+    let query = supabase
       .from('user_documents')
       .select('*')
       .eq('id', documentId)
-      .eq('create_user_id', userId)
-      .is('deleted_at', null)
-      .single();
+      .is('deleted_at', null);
+
+    // Optional: verify user_id if provided (for extra security)
+    if (userId) {
+      query = query.eq('create_user_id', userId);
+    }
+
+    const { data: document, error } = await query.single();
 
     if (error || !document) {
       logger.warn(`[${requestId}] Document not found`, {
         documentId,
-        userId
+        userId: userId || 'anonymous',
+        error: error?.message
       });
       return res.status(404).json({
         success: false,
-        error: 'Document not found',
+        error: 'Document not found or access denied',
         code: 'NOT_FOUND'
       });
     }
