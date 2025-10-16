@@ -47,7 +47,10 @@ module.exports = {
       IMAGES: ['.jpg', '.jpeg', '.png', '.heic', '.webp'],
       AUDIO: ['.mp3', '.wav', '.m4a', '.webm', '.ogg'],
       DOCUMENTS: ['.pdf', '.doc', '.docx', '.txt']
-    }
+    },
+    // Image download retry settings (critical for legal evidence)
+    IMAGE_DOWNLOAD_RETRIES: 3,       // Number of retry attempts
+    IMAGE_DOWNLOAD_RETRY_DELAY: 2000 // Initial delay in ms (exponential backoff: 2s, 4s, 8s)
   },
 
   // ==================== FILE SIZE LIMITS ====================

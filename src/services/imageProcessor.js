@@ -26,46 +26,94 @@ class ImageProcessor {
   }
 
   /**
-   * Download image from URL (e.g., Typeform file_url)
+   * Download image from URL with retry logic (e.g., Typeform file_url)
    * @param {string} url - Image URL to download
+   * @param {number} maxRetries - Maximum retry attempts (default from config)
+   * @param {number} retryDelay - Initial delay between retries in ms (default from config)
    * @returns {Promise<{buffer: Buffer, contentType: string, fileName: string}>}
    */
-  async downloadFromUrl(url) {
-    try {
-      logger.info('Downloading image from URL', { url: url.substring(0, 50) + '...' });
+  async downloadFromUrl(
+    url,
+    maxRetries = config.constants.STORAGE.IMAGE_DOWNLOAD_RETRIES,
+    retryDelay = config.constants.STORAGE.IMAGE_DOWNLOAD_RETRY_DELAY
+  ) {
+    let lastError = null;
 
-      const response = await axios.get(url, {
-        responseType: 'arraybuffer',
-        timeout: 30000, // 30 seconds
-        maxContentLength: config.constants.STORAGE.MAX_FILE_SIZE,
-        maxBodyLength: config.constants.STORAGE.MAX_FILE_SIZE
-      });
+    for (let attempt = 1; attempt <= maxRetries; attempt++) {
+      try {
+        logger.info('Downloading image from URL', {
+          url: url.substring(0, 50) + '...',
+          attempt,
+          maxRetries
+        });
 
-      const buffer = Buffer.from(response.data);
-      const contentType = response.headers['content-type'] || 'image/jpeg';
+        const response = await axios.get(url, {
+          responseType: 'arraybuffer',
+          timeout: 30000, // 30 seconds
+          maxContentLength: config.constants.STORAGE.MAX_FILE_SIZE,
+          maxBodyLength: config.constants.STORAGE.MAX_FILE_SIZE
+        });
 
-      // Extract filename from URL or generate one
-      const urlParts = url.split('/');
-      const fileName = urlParts[urlParts.length - 1] || `image_${Date.now()}.jpg`;
+        const buffer = Buffer.from(response.data);
+        const contentType = response.headers['content-type'] || 'image/jpeg';
 
-      logger.info('Image downloaded successfully', {
-        size: buffer.length,
-        contentType,
-        fileName
-      });
+        // Extract filename from URL or generate one
+        const urlParts = url.split('/');
+        const fileName = urlParts[urlParts.length - 1] || `image_${Date.now()}.jpg`;
 
-      return {
-        buffer,
-        contentType,
-        fileName
-      };
-    } catch (error) {
-      logger.error('Error downloading image from URL', {
-        url: url.substring(0, 50) + '...',
-        error: error.message
-      });
-      throw new Error(`Failed to download image: ${error.message}`);
+        logger.info('Image downloaded successfully', {
+          size: buffer.length,
+          contentType,
+          fileName,
+          attempt
+        });
+
+        return {
+          buffer,
+          contentType,
+          fileName
+        };
+      } catch (error) {
+        lastError = error;
+        const isLastAttempt = attempt === maxRetries;
+
+        logger.warn('Error downloading image from URL', {
+          url: url.substring(0, 50) + '...',
+          error: error.message,
+          statusCode: error.response?.status,
+          attempt,
+          maxRetries,
+          willRetry: !isLastAttempt
+        });
+
+        // Don't retry on certain errors
+        if (error.response?.status === 403 || error.response?.status === 401) {
+          logger.error('Authentication error - not retrying', {
+            statusCode: error.response.status
+          });
+          break; // Exit retry loop for auth errors
+        }
+
+        // If not the last attempt, wait before retrying with exponential backoff
+        if (!isLastAttempt) {
+          const delay = retryDelay * Math.pow(2, attempt - 1); // Exponential backoff: 2s, 4s, 8s
+          logger.info(`Retrying download after ${delay}ms`, {
+            nextAttempt: attempt + 1,
+            delay
+          });
+          await new Promise(resolve => setTimeout(resolve, delay));
+        }
+      }
     }
+
+    // All retries failed
+    logger.error('Failed to download image after all retries', {
+      url: url.substring(0, 50) + '...',
+      maxRetries,
+      finalError: lastError?.message,
+      statusCode: lastError?.response?.status
+    });
+    throw new Error(`Failed to download image after ${maxRetries} attempts: ${lastError?.message}`);
   }
 
   /**
