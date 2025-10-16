@@ -436,11 +436,12 @@
                 You're now on the fast lane: collect the right evidence, in the right order, the first time, make sure you maximise your insurance payout value.
             </div>
             <div class="user-info">
-                <strong>👤 John Smith</strong>
-                <div style="margin-top: 8px;">
-                    📧 john.smith@example.com<br>
-                    📱 07700 900123<br>
-                    📍 SW1A 1AA
+                <strong>⚠️ Unable to Load Your Profile</strong>
+                <div style="margin-top: 8px; opacity: 0.85; line-height: 1.5;">
+                    <small>We couldn't retrieve your details from our secure storage. This usually happens when accessing this page directly without completing the signup form.</small>
+                    <div style="margin-top: 8px;">
+                        <small><strong>What to do:</strong> Please check your email for your personalized welcome link, or contact support at <strong>support@carcrashlawyerai.co.uk</strong></small>
+                    </div>
                 </div>
             </div>
         </div>
@@ -550,9 +551,133 @@
         </p>
     </div>
 
+    <!-- Supabase Client -->
+    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+
     <script>
+        let supabase = null;
+
+        // Initialize Supabase
+        async function initSupabase() {
+            try {
+                const response = await fetch('/api/config');
+                const config = await response.json();
+
+                if (config.supabaseUrl && config.supabaseKey) {
+                    supabase = window.supabase.createClient(
+                        config.supabaseUrl,
+                        config.supabaseKey
+                    );
+                    console.log('✅ Supabase initialized');
+                } else {
+                    console.warn('⚠️ Supabase config not available');
+                }
+            } catch (error) {
+                console.error('❌ Failed to initialize Supabase:', error);
+            }
+        }
+
+        // Extract user data from URL parameters (from Typeform redirect)
+        function extractUserParams() {
+            const urlParams = new URLSearchParams(window.location.search);
+
+            const user_id = urlParams.get('auth_user_id') ||
+                           urlParams.get('user_id') ||
+                           urlParams.get('userId') ||
+                           urlParams.get('create_user_id');
+
+            const email = urlParams.get('email');
+            const auth_code = urlParams.get('auth_code');
+            const product_id = urlParams.get('product_id');
+
+            console.log('🔥 Typeform redirect parameters:', {
+                user_id,
+                email,
+                auth_code,
+                product_id,
+                fullUrl: window.location.href
+            });
+
+            // Store in session/localStorage
+            if (user_id) {
+                localStorage.setItem('create_user_id', user_id);
+                sessionStorage.setItem('userId', user_id);
+                if (email) sessionStorage.setItem('userEmail', email);
+                if (auth_code) sessionStorage.setItem('auth_code', auth_code);
+                if (product_id) sessionStorage.setItem('product_id', product_id);
+            }
+
+            return { user_id, email, auth_code, product_id };
+        }
+
+        // Fetch and display full user profile from Supabase
+        async function loadUserProfile(userId) {
+            if (!supabase || !userId) {
+                console.warn('⚠️ Cannot load profile: missing Supabase or userId');
+                return;
+            }
+
+            try {
+                const { data, error } = await supabase
+                    .from('user_signup')
+                    .select('full_name, email, mobile_number, postcode, driving_license_number')
+                    .or(`user_id.eq.${userId},create_user_id.eq.${userId}`)
+                    .single();
+
+                if (error) {
+                    console.error('Error fetching user profile:', error);
+                    return;
+                }
+
+                if (data) {
+                    // Update user info display with real data
+                    const userInfoDiv = document.querySelector('.user-info');
+                    if (userInfoDiv) {
+                        userInfoDiv.innerHTML = `
+                            <strong>👤 ${data.full_name || 'Welcome!'}</strong>
+                            <div style="margin-top: 8px;">
+                                ${data.email ? `📧 ${data.email}<br>` : ''}
+                                ${data.mobile_number ? `📱 ${data.mobile_number}<br>` : ''}
+                                ${data.postcode ? `📍 ${data.postcode}` : ''}
+                            </div>
+                        `;
+                    }
+
+                    console.log('✅ User profile loaded successfully');
+                }
+            } catch (error) {
+                console.error('Error loading user profile:', error);
+            }
+        }
+
         // Handle checklist checkboxes with localStorage persistence
-        document.addEventListener('DOMContentLoaded', function() {
+        document.addEventListener('DOMContentLoaded', async function() {
+            console.log('🚀 Initializing payment-success page');
+
+            // Initialize Supabase first
+            await initSupabase();
+
+            // Extract user parameters from URL
+            const { user_id, email } = extractUserParams();
+
+            // Load full user profile from database
+            if (user_id) {
+                await loadUserProfile(user_id);
+            } else if (email) {
+                // Fallback: if we only have email but no user_id, just show email
+                const userInfoDiv = document.querySelector('.user-info');
+                if (userInfoDiv) {
+                    userInfoDiv.innerHTML = `
+                        <strong>👤 Welcome!</strong>
+                        <div style="margin-top: 8px;">
+                            📧 ${email}<br>
+                            <small style="opacity: 0.8;">View full details in your dashboard</small>
+                        </div>
+                    `;
+                }
+            }
+
+            // Handle checklist checkboxes
             const checkboxes = document.querySelectorAll('.checklist-checkbox');
 
             // Load saved checkbox states
@@ -568,20 +693,7 @@
                 });
             });
 
-            // Update user info with email from URL parameters
-            const urlParams = new URLSearchParams(window.location.search);
-            const userEmail = urlParams.get('email');
-            const userInfoDiv = document.querySelector('.user-info');
-
-            if (userEmail && userInfoDiv) {
-                userInfoDiv.innerHTML = `
-                    <strong>👤 Welcome!</strong>
-                    <div style="margin-top: 8px;">
-                        📧 ${userEmail}<br>
-                        <small style="opacity: 0.8;">View full details in your dashboard</small>
-                    </div>
-                `;
-            }
+            console.log('✅ Page initialization complete');
         });
     </script>
 </body>

@@ -312,6 +312,37 @@ router.use('/api/debug', debugRoutes);
 // ==================== LEGACY REDIRECTS ====================
 
 /**
+ * Payment Success Redirect (Typeform)
+ * Short URL redirect to payment-success.html with full parameter names
+ * Works around Typeform's character limit for redirect URLs
+ *
+ * Usage in Typeform: /s?u={{hidden:auth_user_id}}&e={{hidden:email}}
+ * Redirects to: /payment-success.html?auth_user_id=xxx&email=xxx
+ */
+router.get('/s', (req, res) => {
+  try {
+    // Accept short parameter names
+    const userId = req.query.u || req.query.uid || req.query.auth_user_id || req.query.user_id;
+    const email = req.query.e || req.query.em || req.query.email;
+
+    // Build redirect URL with full parameter names
+    const params = new URLSearchParams();
+    if (userId) params.append('auth_user_id', userId);
+    if (email) params.append('email', email);
+
+    const redirectUrl = `/payment-success.html${params.toString() ? '?' + params.toString() : ''}`;
+
+    logger.info('Payment success redirect', { userId, email, redirectUrl });
+
+    res.redirect(redirectUrl);
+  } catch (error) {
+    logger.error('Payment success redirect error:', error);
+    // Fallback to payment success page without parameters
+    res.redirect('/payment-success.html');
+  }
+});
+
+/**
  * Legacy Transcription Endpoints
  */
 router.post('/api/whisper/transcribe', (req, res) => {
