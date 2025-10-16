@@ -40,6 +40,7 @@ const AuthService = require('../lib/services/authService');
 const gdprService = require('./services/gdprService');
 const websocketModule = require('./websocket');
 const agentService = require('./services/agentService');
+const ImageProcessor = require('./services/imageProcessor');
 
 // Routes
 const centralRouter = require('./routes/index');
@@ -276,6 +277,17 @@ function createApp() {
     logger.success('✅ GDPR service initialized');
   }
 
+  // Image Processor Service
+  let imageProcessor = null;
+  if (supabaseEnabled) {
+    try {
+      imageProcessor = new ImageProcessor(supabase);
+      logger.success('✅ Image processor initialized');
+    } catch (error) {
+      logger.warn('⚠️ Image processor init failed (non-critical)', error.message);
+    }
+  }
+
   // Auth Service
   let authService = null;
   if (config.supabase.anonKey && supabaseEnabled) {
@@ -383,6 +395,7 @@ function createApp() {
   app.locals.supabase = supabase;
   app.locals.supabaseEnabled = supabaseEnabled;
   app.locals.authService = authService;
+  app.locals.imageProcessor = imageProcessor;
   app.locals.websocketModule = websocketModule;
   app.locals.pdfModules = pdfModules;
   app.locals.realtimeChannels = realtimeChannels;

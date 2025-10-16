@@ -329,7 +329,7 @@ async function handleTypeformWebhook(req, res) {
 
     // Process webhook asynchronously (don't await)
     setImmediate(() => {
-      processWebhookAsync(event_id, event_type, form_response, requestId).catch(error => {
+      processWebhookAsync(event_id, event_type, form_response, requestId, req.app.locals.imageProcessor).catch(error => {
         console.log('\n' + '!'.repeat(80));
         console.log(`❌ ASYNC PROCESSING FAILED [${requestId.slice(-8)}]`);
         console.log('!'.repeat(80));
@@ -373,7 +373,7 @@ async function handleTypeformWebhook(req, res) {
  * Process webhook asynchronously (after 200 response sent)
  * ENHANCED: Better async processing visibility
  */
-async function processWebhookAsync(eventId, eventType, formResponse, requestId) {
+async function processWebhookAsync(eventId, eventType, formResponse, requestId, imageProcessor = null) {
   const startTime = Date.now();
 
   console.log('\n' + '⚡'.repeat(80));
@@ -403,11 +403,11 @@ async function processWebhookAsync(eventId, eventType, formResponse, requestId) 
     if (normalizedTitle === 'Car Crash Lawyer AI sign up' || formId === 'b03aFxEO') {
       processingType = 'USER SIGNUP';
       console.log(`\n🚀 Processing ${processingType}...`);
-      result = await processUserSignup(formResponse, requestId);
+      result = await processUserSignup(formResponse, requestId, imageProcessor);
     } else if (normalizedTitle?.includes('Incident Report') || formId === 'WvM2ejru') {
       processingType = 'INCIDENT REPORT';
       console.log(`\n🚀 Processing ${processingType}...`);
-      result = await processIncidentReport(formResponse, requestId);
+      result = await processIncidentReport(formResponse, requestId, imageProcessor);
     } else {
       processingType = 'UNKNOWN FORM';
       console.log(`\n⚠️  ${processingType} - Skipping processing`);
@@ -474,9 +474,9 @@ async function processWebhookAsync(eventId, eventType, formResponse, requestId) 
 
 /**
  * Process User Signup Form
- * ENHANCED: Better signup processing visibility
+ * ENHANCED: Better signup processing visibility + image processing
  */
-async function processUserSignup(formResponse, requestId) {
+async function processUserSignup(formResponse, requestId, imageProcessor = null) {
   try {
     const { token, hidden, answers, submitted_at } = formResponse;
 
@@ -572,6 +572,61 @@ async function processUserSignup(formResponse, requestId) {
     console.log(`\n🔍 DEBUG: userData object BEFORE null cleanup (${Object.keys(userData).length} keys):`);
     console.log(JSON.stringify(userData, null, 2));
 
+    // ==================== IMAGE PROCESSING ====================
+    // Process images: download from Typeform and upload to Supabase Storage
+    if (imageProcessor) {
+      console.log(`\n📸 IMAGE PROCESSING`);
+      console.log('-'.repeat(60));
+
+      const imageFields = {
+        driving_license_picture: userData.driving_license_picture,
+        vehicle_picture_front: userData.vehicle_picture_front,
+        vehicle_picture_driver_side: userData.vehicle_picture_driver_side,
+        vehicle_picture_passenger_side: userData.vehicle_picture_passenger_side,
+        vehicle_picture_back: userData.vehicle_picture_back
+      };
+
+      // Filter out null/undefined URLs
+      const validImageUrls = {};
+      Object.entries(imageFields).forEach(([key, url]) => {
+        if (url && url.startsWith('http')) {
+          validImageUrls[key] = url;
+        }
+      });
+
+      if (Object.keys(validImageUrls).length > 0) {
+        console.log(`   Found ${Object.keys(validImageUrls).length} images to process`);
+        console.log(`   User ID: ${authUserId || token}`);
+
+        try {
+          const processedImages = await imageProcessor.processMultipleImages(
+            validImageUrls,
+            authUserId || token
+          );
+
+          // Replace Typeform URLs with Supabase Storage paths
+          Object.entries(processedImages).forEach(([key, storagePath]) => {
+            console.log(`   ✅ ${key}: ${storagePath.substring(0, 60)}...`);
+            userData[key] = storagePath;
+          });
+
+          console.log(`   ✅ All images processed successfully`);
+        } catch (error) {
+          console.log(`   ⚠️  Image processing error (non-critical): ${error.message}`);
+          logger.warn(`[${requestId}] Image processing failed (keeping original URLs)`, {
+            error: error.message
+          });
+          // Keep original Typeform URLs as fallback
+        }
+      } else {
+        console.log(`   No images to process`);
+      }
+
+      console.log('-'.repeat(60));
+    } else {
+      console.log(`\n⚠️  Image processor not available - storing Typeform URLs directly`);
+    }
+
     // Remove null/undefined values
     Object.keys(userData).forEach(key => {
       if (userData[key] === null || userData[key] === undefined) {
@@ -653,9 +708,9 @@ async function processUserSignup(formResponse, requestId) {
 }
 
 /**
- * Process Incident Report Form
+ * Process Incident Report Form + image processing
  */
-async function processIncidentReport(formResponse, requestId) {
+async function processIncidentReport(formResponse, requestId, imageProcessor = null) {
   try {
     const { token, hidden, answers, submitted_at } = formResponse;
 
@@ -790,6 +845,67 @@ async function processIncidentReport(formResponse, requestId) {
       file_url_vehicle_damage_1: getAnswerByRef(answers, 'file_url_vehicle_damage_1'),
       file_url_vehicle_damage_2: getAnswerByRef(answers, 'file_url_vehicle_damage_2')
     };
+
+    // ==================== IMAGE PROCESSING ====================
+    // Process incident images: download from Typeform and upload to Supabase Storage
+    if (imageProcessor) {
+      console.log(`\n📸 IMAGE PROCESSING`);
+      console.log('-'.repeat(60));
+
+      const imageFields = {
+        file_url_documents: incidentData.file_url_documents,
+        file_url_documents_1: incidentData.file_url_documents_1,
+        file_url_record_detailed_account_of_what_happened: incidentData.file_url_record_detailed_account_of_what_happened,
+        file_url_what3words: incidentData.file_url_what3words,
+        file_url_scene_overview: incidentData.file_url_scene_overview,
+        file_url_scene_overview_1: incidentData.file_url_scene_overview_1,
+        file_url_other_vehicle: incidentData.file_url_other_vehicle,
+        file_url_other_vehicle_1: incidentData.file_url_other_vehicle_1,
+        file_url_vehicle_damage: incidentData.file_url_vehicle_damage,
+        file_url_vehicle_damage_1: incidentData.file_url_vehicle_damage_1,
+        file_url_vehicle_damage_2: incidentData.file_url_vehicle_damage_2
+      };
+
+      // Filter out null/undefined URLs
+      const validImageUrls = {};
+      Object.entries(imageFields).forEach(([key, url]) => {
+        if (url && url.startsWith('http')) {
+          validImageUrls[key] = url;
+        }
+      });
+
+      if (Object.keys(validImageUrls).length > 0) {
+        console.log(`   Found ${Object.keys(validImageUrls).length} images to process`);
+        console.log(`   User ID: ${userId || token}`);
+
+        try {
+          const processedImages = await imageProcessor.processMultipleImages(
+            validImageUrls,
+            userId || token
+          );
+
+          // Replace Typeform URLs with Supabase Storage paths
+          Object.entries(processedImages).forEach(([key, storagePath]) => {
+            console.log(`   ✅ ${key}: ${storagePath.substring(0, 60)}...`);
+            incidentData[key] = storagePath;
+          });
+
+          console.log(`   ✅ All images processed successfully`);
+        } catch (error) {
+          console.log(`   ⚠️  Image processing error (non-critical): ${error.message}`);
+          logger.warn(`[${requestId}] Image processing failed (keeping original URLs)`, {
+            error: error.message
+          });
+          // Keep original Typeform URLs as fallback
+        }
+      } else {
+        console.log(`   No images to process`);
+      }
+
+      console.log('-'.repeat(60));
+    } else {
+      console.log(`\n⚠️  Image processor not available - storing Typeform URLs directly`);
+    }
 
     // Remove null/undefined values
     Object.keys(incidentData).forEach(key => {
