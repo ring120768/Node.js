@@ -370,22 +370,22 @@ router.get('/download-pdf/:userId', (req, res) => {
 
 /**
  * Legacy Webhook Endpoints
- * Redirect to new /webhooks/* location (not /api/webhooks/*)
+ * Redirect to new /webhooks/typeform endpoint
  */
 router.post('/api/webhooks/signup', (req, res) => {
-  res.redirect(307, '/webhooks/user_signup');
+  res.redirect(307, '/webhooks/typeform');
 });
 
 router.post('/api/webhooks/incident-report', (req, res) => {
-  res.redirect(307, '/webhooks/incident_reports');
+  res.redirect(307, '/webhooks/typeform');
 });
 
 router.post('/webhook/signup', (req, res) => {
-  res.redirect(307, '/webhooks/user_signup');
+  res.redirect(307, '/webhooks/typeform');
 });
 
 router.post('/webhook/incident-report', (req, res) => {
-  res.redirect(307, '/webhooks/incident_reports');
+  res.redirect(307, '/webhooks/typeform');
 });
 
 /**

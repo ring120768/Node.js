@@ -351,11 +351,14 @@ async function processWebhookAsync(eventId, eventType, formResponse, requestId) 
     let result;
     let processingType = '';
 
-    if (formTitle === 'Car Crash Lawyer AI sign up' || formId === 'b03aFxEO') {
+    // Normalize title (trim spaces)
+    const normalizedTitle = formTitle?.trim() || '';
+
+    if (normalizedTitle === 'Car Crash Lawyer AI sign up' || formId === 'b03aFxEO') {
       processingType = 'USER SIGNUP';
       console.log(`\n🚀 Processing ${processingType}...`);
       result = await processUserSignup(formResponse, requestId);
-    } else if (formTitle?.includes('Incident Report')) {
+    } else if (normalizedTitle?.includes('Incident Report') || formId === 'WvM2ejru') {
       processingType = 'INCIDENT REPORT';
       console.log(`\n🚀 Processing ${processingType}...`);
       result = await processIncidentReport(formResponse, requestId);
@@ -443,6 +446,23 @@ async function processUserSignup(formResponse, requestId) {
 
     logger.info(`[${requestId}] Processing signup for user: ${authUserId || token}`);
 
+    // 🔍 DEBUG: Show what Typeform is actually sending
+    console.log(`\n🔍 DEBUG: Typeform Answers Received (${answers?.length || 0} total)`);
+    console.log('-'.repeat(60));
+    if (answers && answers.length > 0) {
+      answers.forEach((answer, index) => {
+        const ref = answer.field?.ref || 'NO_REF';
+        const title = answer.field?.title || 'NO_TITLE';
+        const type = answer.type;
+        let value = answer.text || answer.email || answer.phone_number || answer.number || answer.boolean || answer.date || 'NO_VALUE';
+
+        console.log(`[${index}] Type: ${type}, Ref: ${ref}`);
+        console.log(`    Title: ${title}`);
+        console.log(`    Value: ${JSON.stringify(value).substring(0, 80)}`);
+      });
+    }
+    console.log('-'.repeat(60));
+
     // Map Typeform answers to user_signup table fields
     const userData = {
       create_user_id: authUserId || token,
@@ -478,12 +498,20 @@ async function processUserSignup(formResponse, requestId) {
       time_stamp: submitted_at || new Date().toISOString()
     };
 
+    // 🔍 DEBUG: Show userData BEFORE null cleanup
+    console.log(`\n🔍 DEBUG: userData object BEFORE null cleanup (${Object.keys(userData).length} keys):`);
+    console.log(JSON.stringify(userData, null, 2));
+
     // Remove null/undefined values
     Object.keys(userData).forEach(key => {
       if (userData[key] === null || userData[key] === undefined) {
         delete userData[key];
       }
     });
+
+    // 🔍 DEBUG: Show userData AFTER null cleanup
+    console.log(`\n🔍 DEBUG: userData object AFTER null cleanup (${Object.keys(userData).length} keys):`);
+    console.log(JSON.stringify(userData, null, 2));
 
     // Show key data fields
     console.log(`\n📊 Data mapping completed:`);
@@ -570,7 +598,7 @@ async function processIncidentReport(formResponse, requestId) {
     // Map to incident_reports table (keeping your existing mapping)
     const incidentData = {
       create_user_id: userId || token,
-      Date: submitted_at || new Date().toISOString(),
+      date: submitted_at || new Date().toISOString(),
       form_id: formResponse.form_id,
 
       // Medical Information

@@ -16,10 +16,14 @@ router.post(
   webhookController.handleTypeformWebhook
 );
 
-// Test endpoints - only available in development
-if (process.env.NODE_ENV !== 'production') {
-  router.get('/test', webhookController.testWebhook);
-  router.post('/test', webhookController.testWebhook);
-}
+// Test endpoints - available in all environments for webhook testing
+router.get('/test', webhookController.testWebhook);
+router.post('/test', webhookController.testWebhook);
+
+// Typeform test endpoint - no signature or payload validation (for initial testing only)
+router.post(
+  '/typeform-test',
+  webhookController.handleTypeformWebhook
+);
 
 module.exports = router;
