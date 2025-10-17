@@ -70,12 +70,19 @@
         }
 
         .voice-btn {
-            background: #10b981;
+            background: #6b7280;
             color: white;
+            transition: background 0.3s ease;
         }
 
-        .voice-btn.recording {
-            background: #ef4444;
+        .voice-btn.listening {
+            background: #10b981;
+            animation: pulse 2s infinite;
+        }
+
+        @keyframes pulse {
+            0%, 100% { opacity: 1; }
+            50% { opacity: 0.7; }
         }
 
         .record-btn {
@@ -374,11 +381,12 @@
 
             <div class="voice-controls">
                 <button class="voice-btn" id="voiceBtn">
-                    🎤 Activate Whisper Voice
+                    🎤 AI Listening
                 </button>
-                <button class="record-btn" id="dontRecordBtn">
-                    ⛔ Don't Record
-                </button>
+                <label for="dashCamInput" class="record-btn" style="margin: 0; display: flex; align-items: center; justify-content: center;">
+                    📹 Dash Cam Evidence
+                </label>
+                <input type="file" id="dashCamInput" accept="video/*,image/*" style="display: none;" multiple>
             </div>
 
             <div class="voice-status" id="voiceStatus">
@@ -423,15 +431,10 @@
             Continue to Safety Check
         </button>
 
-        <!-- Additional Action Buttons -->
-        <div style="display: flex; gap: 10px; margin-top: 10px;">
-            <button class="continue-btn" id="saveDraftBtn" style="background: #6b7280; flex: 1;">
-                💾 Save Draft
-            </button>
-            <button class="continue-btn" id="backToDashboardBtn" style="background: #3b82f6; flex: 1;">
-                🏠 Back to Dashboard
-            </button>
-        </div>
+        <!-- Back to Home Button -->
+        <button class="continue-btn" id="backToHomeBtn" style="background: #3b82f6; max-width: 450px; margin: 10px auto 0;">
+            🏠 Back to Home
+        </button>
 
         <p class="helper-text">
             Complete the detailed report when safe to do so
@@ -538,10 +541,17 @@
 
         // Update emergency buttons with real phone numbers
         function updateEmergencyButtons() {
-            // 999 Emergency Services
+            // 999 Emergency Services with what3words location
             document.getElementById('emergency999Btn').onclick = function() {
                 const emergencyNumber = emergencyContacts?.emergency_services_number || '999';
-                if (confirm(`This will call ${emergencyNumber} Emergency Services. Continue?`)) {
+                let message = `This will call ${emergencyNumber} Emergency Services.`;
+
+                if (what3wordsData) {
+                    message += `\n\nYour what3words location: ///${what3wordsData}`;
+                    message += '\n\nPlease provide this location to the operator.';
+                }
+
+                if (confirm(message)) {
                     window.location.href = `tel:${emergencyNumber}`;
                 }
             };
@@ -575,9 +585,16 @@
 
         // Setup emergency buttons with default behavior
         function setupEmergencyButtons() {
-            // Default 999 button
+            // Default 999 button with what3words
             document.getElementById('emergency999Btn').onclick = function() {
-                if (confirm('This will call 999 Emergency Services. Continue?')) {
+                let message = 'This will call 999 Emergency Services.';
+
+                if (what3wordsData) {
+                    message += `\n\nYour what3words location: ///${what3wordsData}`;
+                    message += '\n\nPlease provide this location to the operator.';
+                }
+
+                if (confirm(message)) {
                     window.location.href = 'tel:999';
                 }
             };
@@ -776,7 +793,7 @@
         // Setup voice recording
         function setupVoiceRecording() {
             const voiceBtn = document.getElementById('voiceBtn');
-            const dontRecordBtn = document.getElementById('dontRecordBtn');
+            const dashCamInput = document.getElementById('dashCamInput');
             const voiceStatus = document.getElementById('voiceStatus');
 
             voiceBtn.addEventListener('click', async function() {
@@ -802,9 +819,9 @@
 
                         mediaRecorder.start();
                         isRecording = true;
-                        this.textContent = '⏹️ Stop Recording';
-                        this.classList.add('recording');
-                        voiceStatus.textContent = 'Recording in progress... Speak clearly about the incident.';
+                        this.textContent = '⏹️ Stop Listening';
+                        this.classList.add('listening');
+                        voiceStatus.textContent = 'AI Listening... Speak clearly about the incident.';
                         voiceStatus.classList.add('active');
 
                         // Auto-stop after 2 minutes
@@ -816,30 +833,28 @@
 
                     } catch (error) {
                         console.error('Microphone access error:', error);
-                        alert('Microphone access is required for voice recording. Please check your browser permissions.');
+                        alert('Microphone access is required for AI listening. Please check your browser permissions.');
                     }
                 } else {
                     stopRecording();
                 }
             });
 
-            dontRecordBtn.addEventListener('click', function() {
-                if (isRecording) {
-                    // Stop recording without saving
-                    isRecording = false;
-                    mediaRecorder.stop();
-                    audioChunks = [];
-                    voiceTranscription = null;
+            // Dash Cam Evidence upload handler
+            dashCamInput.addEventListener('change', function(event) {
+                const files = event.target.files;
+                if (files.length > 0) {
+                    console.log(`Dash cam files selected: ${files.length}`);
+                    voiceStatus.textContent = `✅ ${files.length} file(s) selected for upload`;
+                    voiceStatus.classList.add('active');
 
-                    const voiceBtn = document.getElementById('voiceBtn');
-                    voiceBtn.textContent = '🎤 Activate Whisper Voice';
-                    voiceBtn.classList.remove('recording');
+                    setTimeout(() => {
+                        voiceStatus.classList.remove('active');
+                    }, 3000);
 
-                    document.getElementById('voiceStatus').classList.remove('active');
+                    // Store files for later upload
+                    window.dashCamFiles = Array.from(files);
                 }
-
-                // Proceed without recording
-                console.log('User chose not to record audio');
             });
         }
 
@@ -849,11 +864,11 @@
                 isRecording = false;
 
                 const voiceBtn = document.getElementById('voiceBtn');
-                voiceBtn.textContent = '🎤 Activate Whisper Voice';
-                voiceBtn.classList.remove('recording');
+                voiceBtn.textContent = '🎤 AI Listening';
+                voiceBtn.classList.remove('listening');
 
                 const voiceStatus = document.getElementById('voiceStatus');
-                voiceStatus.textContent = 'Processing audio...';
+                voiceStatus.textContent = 'Processing audio with AI...';
 
                 setTimeout(() => {
                     voiceStatus.classList.remove('active');
@@ -923,33 +938,14 @@
                 window.location.href = 'safety-check.html';
             });
 
-            // Setup Save Draft button
-            document.getElementById('saveDraftBtn').addEventListener('click', function() {
-                // Save current incident data as draft
-                const draftData = {
-                    userId: userData?.uid || userData?.id || null,
-                    location: userLocation,
-                    what3words: what3wordsData,
-                    voiceTranscription: voiceTranscription,
-                    timestamp: new Date().toISOString(),
-                    address: document.getElementById('addressText')?.textContent || '',
-                    status: 'draft'
-                };
-
-                sessionStorage.setItem('incidentDraft', JSON.stringify(draftData));
-                console.log('Draft saved:', draftData);
-
-                alert('✅ Draft saved!\n\nYour incident report has been saved. You can return to complete it later from your dashboard.');
-            });
-
-            // Setup Back to Dashboard button
-            document.getElementById('backToDashboardBtn').addEventListener('click', function() {
-                if (userLocation || voiceTranscription) {
+            // Setup Back to Home button
+            document.getElementById('backToHomeBtn').addEventListener('click', function() {
+                if (userLocation || voiceTranscription || window.dashCamFiles) {
                     if (confirm('You have unsaved changes. Do you want to leave without saving?')) {
-                        window.location.href = '/dashboard.html';
+                        window.location.href = '/index.html';
                     }
                 } else {
-                    window.location.href = '/dashboard.html';
+                    window.location.href = '/index.html';
                 }
             });
         }
