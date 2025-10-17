@@ -191,7 +191,7 @@
             </button>
         </div>
 
-        <button class="emergency-button" onclick="window.location.href='tel:999'">
+        <button class="emergency-button" id="emergency999Button">
             📞 Call 999 Emergency Services Now
         </button>
 
@@ -206,17 +206,32 @@
         const incidentData = JSON.parse(sessionStorage.getItem('incidentData') || '{}');
         console.log('Incident data received:', incidentData);
 
+        // Function to call 999 with what3words integration
+        function call999WithWhat3Words() {
+            let message = 'This will call 999 Emergency Services.';
+
+            if (incidentData.what3words) {
+                message += `\n\nYour what3words location: ///${incidentData.what3words}`;
+                message += '\n\nPlease provide this location to the operator.';
+            } else if (incidentData.location) {
+                message += `\n\nYour GPS coordinates: ${incidentData.location.lat.toFixed(6)}, ${incidentData.location.lng.toFixed(6)}`;
+                message += '\n\nPlease provide these coordinates to the operator.';
+            }
+
+            if (confirm(message)) {
+                window.location.href = 'tel:999';
+            }
+        }
+
         // Safety option handlers
         document.querySelectorAll('.safety-option').forEach(button => {
             button.addEventListener('click', async function() {
                 const safetyStatus = this.dataset.status;
                 console.log('Safety status selected:', safetyStatus);
 
-                // Handle emergency situations
+                // Handle emergency situations (injured or danger)
                 if (safetyStatus.includes('injured') || safetyStatus.includes('danger')) {
-                    if (confirm('This is an emergency. Call 999 immediately. Press OK to call now.')) {
-                        window.location.href = 'tel:999';
-                    }
+                    call999WithWhat3Words();
                     return;
                 }
 
@@ -229,7 +244,9 @@
                             if (response.ok) {
                                 const contacts = await response.json();
                                 if (contacts.emergency_contact) {
-                                    window.location.href = `tel:${contacts.emergency_contact}`;
+                                    if (confirm(`Call your emergency contact: ${contacts.emergency_contact}?`)) {
+                                        window.location.href = `tel:${contacts.emergency_contact}`;
+                                    }
                                     return;
                                 }
                             }
@@ -243,9 +260,7 @@
 
                 // Handle unsure situation
                 if (safetyStatus.includes('not sure')) {
-                    if (confirm('If you\'re unsure about your safety, it\'s best to seek help. Would you like to call 999?')) {
-                        window.location.href = 'tel:999';
-                    }
+                    call999WithWhat3Words();
                     return;
                 }
 
@@ -340,6 +355,11 @@
             // Redirect to Typeform
             window.location.href = finalUrl;
         }
+
+        // Setup emergency 999 button with what3words integration
+        document.getElementById('emergency999Button').addEventListener('click', function() {
+            call999WithWhat3Words();
+        });
     </script>
     <script src="/js/mascot.js"></script></body>
 </html>
