@@ -422,6 +422,17 @@
         <button class="continue-btn" id="continueBtn">
             Continue to Safety Check
         </button>
+
+        <!-- Additional Action Buttons -->
+        <div style="display: flex; gap: 10px; margin-top: 10px;">
+            <button class="continue-btn" id="saveDraftBtn" style="background: #6b7280; flex: 1;">
+                💾 Save Draft
+            </button>
+            <button class="continue-btn" id="backToDashboardBtn" style="background: #3b82f6; flex: 1;">
+                🏠 Back to Dashboard
+            </button>
+        </div>
+
         <p class="helper-text">
             Complete the detailed report when safe to do so
         </p>
@@ -910,6 +921,36 @@
 
                 // Redirect to safety check page
                 window.location.href = 'safety-check.html';
+            });
+
+            // Setup Save Draft button
+            document.getElementById('saveDraftBtn').addEventListener('click', function() {
+                // Save current incident data as draft
+                const draftData = {
+                    userId: userData?.uid || userData?.id || null,
+                    location: userLocation,
+                    what3words: what3wordsData,
+                    voiceTranscription: voiceTranscription,
+                    timestamp: new Date().toISOString(),
+                    address: document.getElementById('addressText')?.textContent || '',
+                    status: 'draft'
+                };
+
+                sessionStorage.setItem('incidentDraft', JSON.stringify(draftData));
+                console.log('Draft saved:', draftData);
+
+                alert('✅ Draft saved!\n\nYour incident report has been saved. You can return to complete it later from your dashboard.');
+            });
+
+            // Setup Back to Dashboard button
+            document.getElementById('backToDashboardBtn').addEventListener('click', function() {
+                if (userLocation || voiceTranscription) {
+                    if (confirm('You have unsaved changes. Do you want to leave without saving?')) {
+                        window.location.href = '/dashboard.html';
+                    }
+                } else {
+                    window.location.href = '/dashboard.html';
+                }
             });
         }
     </script>

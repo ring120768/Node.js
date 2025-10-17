@@ -84,54 +84,6 @@
             100% { transform: rotate(360deg);} 
         }
 
-        /* Whisper Button Styles */
-        .btn-whisper {
-            padding: 14px 28px;
-            border: none;
-            border-radius: 12px;
-            font-size: 1.1rem;
-            font-weight: bold;
-            cursor: pointer;
-            box-shadow: 0 4px 15px rgba(0, 0, 0, 0.2);
-            transition: all 0.3s ease;
-            min-width: 180px;
-            display: inline-block;
-        }
-
-        #activateWhisperBtn {
-            background: #27ae60; /* Green */
-            color: white;
-        }
-
-        #activateWhisperBtn:hover {
-            background: #229954;
-            transform: translateY(-2px);
-            box-shadow: 0 6px 20px rgba(39, 174, 96, 0.4);
-        }
-
-        #dontRecordBtn {
-            background: #e74c3c; /* Red */
-            color: white;
-        }
-
-        #dontRecordBtn:hover {
-            background: #c0392b;
-            transform: translateY(-2px);
-            box-shadow: 0 6px 20px rgba(231, 76, 60, 0.4);
-        }
-
-        /* Voice Status Indicator */
-        #voiceStatus {
-            display: none;
-            color: #fff;
-            text-align: center;
-            margin-top: 15px;
-            font-size: 1.1rem;
-            background: rgba(255, 255, 255, 0.2);
-            padding: 10px 20px;
-            border-radius: 25px;
-        }
-
         /* Navigation Bar */
         .nav {
             display: flex;
@@ -223,13 +175,12 @@
                     </button>
                 </div>
 
-                <!-- Whisper Voice Buttons -->
-                <div class="flex justify-center space-x-4">
-                    <button id="activateWhisperBtn" class="btn-whisper">🎤 Activate Whisper Voice</button>
-                    <button id="dontRecordBtn" class="btn-whisper">🚫 Don't Record</button>
+                <!-- Continue to Demo Form Button -->
+                <div>
+                    <button id="continueToFormBtn" class="btn-findme" style="background: #27ae60;" onmouseover="this.style.background='#229954'" onmouseout="this.style.background='#27ae60'">
+                        📝 Continue to Demo Form
+                    </button>
                 </div>
-
-                <div id="voiceStatus" class="text-white font-semibold">Recording...</div>
             </div>
         </div>
 
@@ -277,8 +228,6 @@
     <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
     <script>
         let map, marker, accuracyCircle, userLocation = null;
-        let recognition, isRecording = false;
-        let transcriptionText = '';
 
         document.getElementById('findMeBtn').onclick = function() {
             const loading = document.getElementById('loadingSpinner');
@@ -365,93 +314,7 @@
             }, { enableHighAccuracy: true, timeout: 10000, maximumAge: 300000 });
         };
 
-        // Voice Recording Functionality
-        async function requestMicrophonePermission() {
-            try {
-                if (!navigator.mediaDevices || !navigator.mediaDevices.getUserMedia) {
-                    console.error('getUserMedia not supported');
-                    return false;
-                }
-
-                const stream = await navigator.mediaDevices.getUserMedia({ 
-                    audio: true,
-                    video: false 
-                });
-
-                stream.getTracks().forEach(track => track.stop());
-                console.log('Microphone permission granted');
-                return true;
-
-            } catch (error) {
-                console.error('Microphone permission denied or error:', error.name, error.message);
-                return false;
-            }
-        }
-
-        function initializeVoiceRecognition() {
-            if ('webkitSpeechRecognition' in window || 'SpeechRecognition' in window) {
-                const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
-                recognition = new SpeechRecognition();
-                recognition.continuous = true;
-                recognition.interimResults = true;
-                recognition.lang = 'en-US';
-
-                recognition.onstart = () => {
-                    isRecording = true;
-                    document.getElementById('voiceStatus').style.display = 'block';
-                    document.getElementById('activateWhisperBtn').textContent = '🎤 Stop Recording';
-                    document.getElementById('activateWhisperBtn').style.background = '#e67e22';
-                };
-
-                recognition.onresult = (event) => {
-                    let finalTranscript = '';
-                    for (let i = event.resultIndex; i < event.results.length; i++) {
-                        const transcript = event.results[i][0].transcript;
-                        if (event.results[i].isFinal) {
-                            finalTranscript += transcript + ' ';
-                        }
-                    }
-                    transcriptionText = finalTranscript;
-                };
-
-                recognition.onerror = (event) => {
-                    console.error('Speech recognition error:', event.error);
-                    document.getElementById('voiceStatus').textContent = 'Demo recording complete!';
-                    setTimeout(() => {
-                        document.getElementById('voiceStatus').style.display = 'none';
-                        showTypeform();
-                    }, 2000);
-                    stopRecording();
-                };
-
-                recognition.onend = () => {
-                    if (isRecording) {
-                        recognition.start();
-                    }
-                };
-            } else {
-                alert('Speech recognition not supported in this browser.');
-                return false;
-            }
-            return true;
-        }
-
-        function startRecording() {
-            if (recognition && !isRecording) {
-                recognition.start();
-            }
-        }
-
-        function stopRecording() {
-            if (recognition && isRecording) {
-                isRecording = false;
-                recognition.stop();
-                document.getElementById('voiceStatus').style.display = 'none';
-                document.getElementById('activateWhisperBtn').textContent = '🎤 Activate Whisper Voice';
-                document.getElementById('activateWhisperBtn').style.background = '#27ae60';
-            }
-        }
-
+        // Open Typeform with location data
         function showTypeform() {
             // Get location data if available
             const lat = document.getElementById('latitude')?.value || '';
@@ -459,8 +322,8 @@
             const address = document.getElementById('fullAddress')?.value || '';
             const what3words = document.getElementById('what3wordsText')?.textContent || '';
 
-            // Build typeform URL with demo parameters
-            let typeformUrl = 'https://form.typeform.com/to/WvM2ejru';
+            // Build typeform URL with demo parameters - CHANGED TO NEW FORM
+            let typeformUrl = 'https://form.typeform.com/to/XMBB3Xhq';
             const params = new URLSearchParams();
 
             // Add demo identifier
@@ -476,96 +339,21 @@
             if (what3words && what3words !== '///loading.location.words' && what3words !== '///demo.location.example') {
                 params.append('what3words', encodeURIComponent(what3words));
             }
-            if (transcriptionText.trim()) {
-                params.append('transcription', encodeURIComponent(transcriptionText.trim()));
-            }
 
             if (params.toString()) {
                 typeformUrl += '?' + params.toString();
             }
 
             // Open typeform in new window
+            console.log('Opening demo Typeform:', typeformUrl);
             window.open(typeformUrl, '_blank');
         }
 
-        // Button Event Handlers
-        document.getElementById('activateWhisperBtn').onclick = async function() {
-            if (!isRecording) {
-                try {
-                    document.getElementById('voiceStatus').textContent = 'Demo: Requesting microphone permission...';
-                    document.getElementById('voiceStatus').style.display = 'block';
-
-                    const speechSupported = initializeVoiceRecognition();
-                    if (!speechSupported) {
-                        document.getElementById('voiceStatus').textContent = 'Demo: Speech recognition not supported. Continuing...';
-                        setTimeout(() => {
-                            document.getElementById('voiceStatus').style.display = 'none';
-                            showTypeform();
-                        }, 2000);
-                        return;
-                    }
-
-                    const hasPermission = await requestMicrophonePermission();
-
-                    if (!hasPermission) {
-                        document.getElementById('voiceStatus').textContent = 'Demo: Microphone permission denied. That\'s okay for demo!';
-                        setTimeout(() => {
-                            document.getElementById('voiceStatus').style.display = 'none';
-                            showTypeform();
-                        }, 2000);
-                        return;
-                    }
-
-                    document.getElementById('voiceStatus').textContent = 'Demo: Recording for 5 seconds...';
-
-                    setTimeout(() => {
-                        try {
-                            startRecording();
-                            setTimeout(() => {
-                                stopRecording();
-                                document.getElementById('voiceStatus').textContent = 'Demo recording complete!';
-                                setTimeout(() => {
-                                    document.getElementById('voiceStatus').style.display = 'none';
-                                    showTypeform();
-                                }, 2000);
-                            }, 5000);
-                        } catch (speechError) {
-                            console.error('Speech recognition start error:', speechError);
-                            document.getElementById('voiceStatus').textContent = 'Demo: Unable to start recording. Continuing...';
-                            setTimeout(() => {
-                                document.getElementById('voiceStatus').style.display = 'none';
-                                showTypeform();
-                            }, 2000);
-                        }
-                    }, 500);
-
-                } catch (error) {
-                    console.error('Error handling microphone permission:', error);
-                    document.getElementById('voiceStatus').textContent = 'Demo: Error accessing microphone. Continuing...';
-                    setTimeout(() => {
-                        document.getElementById('voiceStatus').style.display = 'none';
-                        showTypeform();
-                    }, 2000);
-                }
-            } else {
-                stopRecording();
-                showTypeform();
-            }
-        };
-
-        document.getElementById('dontRecordBtn').onclick = function() {
-            if (isRecording) {
-                stopRecording();
-            }
+        // Continue to Demo Form button handler
+        document.getElementById('continueToFormBtn').onclick = function() {
+            console.log('Continue to Demo Form clicked');
             showTypeform();
         };
-
-        // Stop recording when user navigates away
-        window.addEventListener('beforeunload', () => {
-            if (isRecording) {
-                stopRecording();
-            }
-        });
     </script>
     <script src="/js/mascot.js"></script></body>
 </html>

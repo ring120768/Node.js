@@ -215,6 +215,13 @@
     const gdprConsentError = document.getElementById('gdprConsentError');
     const loginBtn = document.getElementById('loginBtn');
 
+    // Get redirect parameter from URL
+    function getRedirectUrl() {
+      const urlParams = new URLSearchParams(window.location.search);
+      const redirect = urlParams.get('redirect');
+      return redirect ? `/${redirect}` : '/index.html';
+    }
+
     // Clear GDPR error when checkbox is clicked
     gdprConsentCheckbox.addEventListener('change', function() {
       if (this.checked) {
@@ -248,8 +255,8 @@
           headers: {
             'Content-Type': 'application/json'
           },
-          body: JSON.stringify({ 
-            email, 
+          body: JSON.stringify({
+            email,
             password,
             gdprConsent: gdprConsentCheckbox.checked,
             consentTimestamp: new Date().toISOString()
@@ -259,8 +266,10 @@
         const data = await response.json();
 
         if (data.success) {
-          // Redirect to dashboard or home page
-          window.location.href = 'index.html';
+          // Redirect to target page (from URL param) or default to index.html
+          const redirectUrl = getRedirectUrl();
+          console.log('Login successful, redirecting to:', redirectUrl);
+          window.location.href = redirectUrl;
         } else {
           errorElement.textContent = data.error || 'Login failed';
           errorElement.style.display = 'block';

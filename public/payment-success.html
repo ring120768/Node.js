@@ -513,10 +513,10 @@
 
         <!-- Primary Action -->
         <div class="card">
-            <button class="primary-action-btn" onclick="alert('Redirecting to incident report form...')">
+            <button class="primary-action-btn" onclick="navigateToIncident()">
                 📝 Report Your First Incident
             </button>
-            <button class="secondary-action-btn" onclick="alert('Redirecting to dashboard...')">
+            <button class="secondary-action-btn" onclick="navigateToDashboard()">
                 📊 Go to Dashboard
             </button>
         </div>
@@ -529,17 +529,17 @@
             </div>
 
             <div class="emergency-buttons">
-                <button class="emergency-btn red" onclick="alert('Calling 999...')">
+                <button class="emergency-btn red" onclick="window.location.href='tel:999'">
                     <span class="btn-icon">📞</span>
                     <span>Call 999 - Emergency Services</span>
                 </button>
 
-                <button class="emergency-btn amber" onclick="alert('Calling recovery service...')">
+                <button class="emergency-btn amber" onclick="callRecoveryService()">
                     <span class="btn-icon">🚗</span>
                     <span>Call Recovery Service</span>
                 </button>
 
-                <button class="emergency-btn green" onclick="alert('Calling emergency contact...')">
+                <button class="emergency-btn green" onclick="callEmergencyContact()">
                     <span class="btn-icon">👤</span>
                     <span>Call Emergency Contact</span>
                 </button>
@@ -695,6 +695,60 @@
 
             console.log('✅ Page initialization complete');
         });
+
+        // Navigate to incident report with auth check
+        async function navigateToIncident() {
+            console.log('📝 Navigating to incident report...');
+            try {
+                const response = await fetch('/api/auth/status', {
+                    credentials: 'include'
+                });
+                const data = await response.json();
+
+                if (data.authenticated) {
+                    window.location.href = '/incident.html';
+                } else {
+                    window.location.href = '/login.html?redirect=incident.html';
+                }
+            } catch (error) {
+                console.error('Auth check failed:', error);
+                // Allow navigation even if auth check fails
+                window.location.href = '/incident.html';
+            }
+        }
+
+        // Navigate to dashboard with auth check
+        async function navigateToDashboard() {
+            console.log('📊 Navigating to dashboard...');
+            try {
+                const response = await fetch('/api/auth/status', {
+                    credentials: 'include'
+                });
+                const data = await response.json();
+
+                if (data.authenticated) {
+                    window.location.href = '/dashboard.html';
+                } else {
+                    window.location.href = '/login.html?redirect=dashboard.html';
+                }
+            } catch (error) {
+                console.error('Auth check failed:', error);
+                // Allow navigation even if auth check fails
+                window.location.href = '/dashboard.html';
+            }
+        }
+
+        // Call recovery service (placeholder for now)
+        function callRecoveryService() {
+            // In production, this would fetch the user's recovery service number from their profile
+            alert('Recovery Service\n\nThis feature will call your configured recovery service. Please set up your recovery service number in your profile settings first.\n\nFor now, you can call your recovery service directly.');
+        }
+
+        // Call emergency contact (placeholder for now)
+        function callEmergencyContact() {
+            // In production, this would fetch the user's emergency contact number from their profile
+            alert('Emergency Contact\n\nThis feature will call your configured emergency contact. Please set up your emergency contact in your profile settings first.\n\nFor now, you can call your emergency contact directly.');
+        }
     </script>
     <script src="/js/mascot.js"></script></body>
 </html>
