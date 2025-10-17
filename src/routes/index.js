@@ -21,7 +21,7 @@ const emergencyRoutes = require('./emergency.routes');
 const pdfRoutes = require('./pdf.routes');
 const exportRoutes = require('./export.routes'); // NEW: Export functionality for dual retention
 
-const githubWebhookRoutes = require('./githubWebhook.routes');
+// GitHub webhooks are mounted in app.js via webhook.routes.js (not imported here)
 const locationRoutes = require('./location.routes');
 const debugRoutes = require('./debug.routes');
 const healthRoutes = require('./health.routes');
@@ -307,7 +307,7 @@ router.use('/api', emergencyRoutes);
 router.use('/', pdfRoutes);
 router.use('/api', exportRoutes); // NEW: Export routes for incident downloads
 // Note: Webhook routes are mounted directly in app.js for raw body handling
-router.use('/webhooks/github', githubWebhookRoutes);
+// GitHub webhooks are mounted in app.js via webhook.routes.js (not here)
 router.use('/api/location', locationRoutes);
 router.use('/api/debug', debugRoutes);
 
