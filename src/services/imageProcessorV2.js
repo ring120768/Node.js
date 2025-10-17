@@ -28,6 +28,15 @@ class ImageProcessorV2 {
   }
 
   /**
+   * Calculate SHA-256 checksum of a buffer
+   * @param {Buffer} buffer - File buffer
+   * @returns {string} - SHA-256 hash in hex format
+   */
+  calculateChecksum(buffer) {
+    return crypto.createHash('sha256').update(buffer).digest('hex');
+  }
+
+  /**
    * Create a document record in user_documents table
    * @param {Object} data - Document metadata
    * @returns {Promise<Object>} - Database record
@@ -49,7 +58,12 @@ class ImageProcessorV2 {
         mime_type = null,
         file_extension = null,
         status = 'pending',
-        metadata = {}
+        metadata = {},
+        // NEW: Dual retention model fields
+        associated_with = null,
+        associated_id = null,
+        original_checksum_sha256 = null,
+        current_checksum_sha256 = null
       } = data;
 
       // Validate required fields
@@ -74,10 +88,17 @@ class ImageProcessorV2 {
         status,
         retry_count: 0,
         max_retries: config.constants.STORAGE.IMAGE_DOWNLOAD_RETRIES,
+        // NEW: Dual retention model fields
+        associated_with,
+        associated_id,
+        original_checksum_sha256,
+        current_checksum_sha256,
+        checksum_algorithm: original_checksum_sha256 ? 'sha256' : null,
         metadata: {
           ...metadata,
-          processor_version: '2.0.0',
-          created_by: 'imageProcessorV2'
+          processor_version: '2.1.0', // Updated for dual retention support
+          created_by: 'imageProcessorV2',
+          has_checksum: !!original_checksum_sha256
         }
       };
 
@@ -463,18 +484,21 @@ class ImageProcessorV2 {
 
   /**
    * Process Typeform image: download from URL and upload to Supabase
-   * Enhanced version with user_documents table integration
+   * Enhanced version with user_documents table integration + checksums
    * @param {string} typeformUrl - Typeform file_url
    * @param {string} userId - User ID for path isolation
    * @param {string} imageType - Type of image (e.g., 'driving_license', 'vehicle_front')
    * @param {Object} options - Additional options
-   * @returns {Promise<{storagePath: string, documentId: string, status: string}>}
+   * @returns {Promise<{storagePath: string, documentId: string, status: string, checksum: string}>}
    */
   async processTypeformImage(typeformUrl, userId, imageType, options = {}) {
     const {
       documentCategory = 'user_signup',
       sourceId = null,
-      sourceField = null
+      sourceField = null,
+      // NEW: Dual retention model fields
+      associatedWith = null,
+      associatedId = null
     } = options;
 
     let documentId = null;
@@ -488,7 +512,9 @@ class ImageProcessorV2 {
         userId,
         imageType,
         urlPreview: typeformUrl.substring(0, 50) + '...',
-        documentCategory
+        documentCategory,
+        associatedWith,
+        associatedId
       });
 
       // Step 1: Create document record in pending state
@@ -501,6 +527,9 @@ class ImageProcessorV2 {
         source_field: sourceField,
         original_url: typeformUrl,
         status: 'pending',
+        // NEW: Association tracking for dual retention
+        associated_with: associatedWith,
+        associated_id: associatedId,
         metadata: {
           source: 'typeform',
           url_preview: typeformUrl.substring(0, 100)
@@ -512,7 +541,8 @@ class ImageProcessorV2 {
       logger.info('Document record created in pending state', {
         documentId,
         userId,
-        imageType
+        imageType,
+        associatedWith
       });
 
       // Step 2: Download image from Typeform
@@ -521,13 +551,25 @@ class ImageProcessorV2 {
         documentId
       );
 
-      // Update document record with file metadata
+      // Step 2.5: Calculate SHA-256 checksum (NEW for data integrity)
+      const checksum = this.calculateChecksum(buffer);
+      logger.info('Checksum calculated', {
+        documentId,
+        checksum: checksum.substring(0, 16) + '...',
+        fileSize
+      });
+
+      // Update document record with file metadata + checksum
       const ext = fileName.split('.').pop() || 'jpg';
       await this.updateDocumentRecord(documentId, {
         original_filename: fileName,
         file_size: fileSize,
         mime_type: contentType,
-        file_extension: `.${ext}`
+        file_extension: `.${ext}`,
+        // NEW: Store checksum for integrity verification
+        original_checksum_sha256: checksum,
+        current_checksum_sha256: checksum,
+        checksum_verified_at: new Date().toISOString()
       });
 
       // Step 3: Generate storage path
@@ -563,14 +605,16 @@ class ImageProcessorV2 {
         userId,
         imageType,
         storagePath: fullStoragePath,
-        processingDuration: `${processingDuration}ms`
+        processingDuration: `${processingDuration}ms`,
+        checksum: checksum.substring(0, 16) + '...'
       });
 
       return {
         storagePath: fullStoragePath,
         documentId,
         status: 'completed',
-        publicUrl: signedUrl
+        publicUrl: signedUrl,
+        checksum  // NEW: Return checksum for verification
       };
 
     } catch (error) {

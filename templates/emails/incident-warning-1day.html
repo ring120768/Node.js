@@ -1,0 +1,147 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>FINAL NOTICE: 24 Hours Until Deletion</title>
+</head>
+<body style="margin: 0; padding: 0; font-family: Arial, sans-serif; background-color: #f4f4f4;">
+    <table width="100%" cellpadding="0" cellspacing="0" style="background-color: #f4f4f4; padding: 20px 0;">
+        <tr>
+            <td align="center">
+                <table width="600" cellpadding="0" cellspacing="0" style="background-color: #ffffff; border-radius: 10px; overflow: hidden; box-shadow: 0 4px 6px rgba(0,0,0,0.1); border: 5px solid #d32f2f;">
+
+                    <!-- Header -->
+                    <tr>
+                        <td style="background: linear-gradient(135deg, #b71c1c 0%, #d32f2f 100%); padding: 40px 30px; text-align: center;">
+                            <h1 style="margin: 0; color: #ffffff; font-size: 32px; font-weight: 700;">
+                                🚨 FINAL NOTICE
+                            </h1>
+                            <p style="margin: 10px 0 0 0; color: rgba(255,255,255,0.95); font-size: 20px; font-weight: 600;">
+                                24 HOURS UNTIL PERMANENT DELETION
+                            </p>
+                        </td>
+                    </tr>
+
+                    <!-- Content -->
+                    <tr>
+                        <td style="padding: 40px 30px;">
+                            <p style="margin: 0 0 20px 0; color: #333; font-size: 16px; line-height: 1.6;">
+                                Hello <strong>{{userName}}</strong>,
+                            </p>
+
+                            <p style="margin: 0 0 30px 0; color: #b71c1c; font-size: 20px; font-weight: 700; line-height: 1.5; text-align: center;">
+                                ⚠️ THIS IS YOUR ABSOLUTE FINAL WARNING ⚠️
+                            </p>
+
+                            <!-- Urgent Countdown Box -->
+                            <table width="100%" cellpadding="0" cellspacing="0" style="background: linear-gradient(135deg, #ffebee 0%, #ffcdd2 100%); border: 5px solid #b71c1c; border-radius: 8px; margin: 30px 0;">
+                                <tr>
+                                    <td style="padding: 35px; text-align: center;">
+                                        <h2 style="margin: 0 0 20px 0; color: #b71c1c; font-size: 26px; font-weight: 700;">
+                                            ⏰ 24 HOURS REMAINING
+                                        </h2>
+                                        <p style="margin: 0 0 10px 0; color: #d32f2f; font-size: 16px; font-weight: 600;">
+                                            Your incident data will be deleted at:
+                                        </p>
+                                        <p style="margin: 0 0 20px 0; color: #b71c1c; font-size: 36px; font-weight: 700;">
+                                            {{deletionDate}}
+                                        </p>
+                                        <p style="margin: 0 0 15px 0; color: #d32f2f; font-size: 18px; font-weight: 600;">
+                                            {{deletionTime}}
+                                        </p>
+                                        <p style="margin: 0; color: #b71c1c; font-size: 14px; font-weight: 600; text-transform: uppercase;">
+                                            This is irreversible - Export now or lose everything
+                                        </p>
+                                    </td>
+                                </tr>
+                            </table>
+
+                            <!-- Critical Warning -->
+                            <table width="100%" cellpadding="0" cellspacing="0" style="background-color: #fff3cd; border: 3px solid #ff9800; border-radius: 5px; margin: 25px 0;">
+                                <tr>
+                                    <td style="padding: 25px;">
+                                        <h3 style="margin: 0 0 15px 0; color: #d32f2f; font-size: 18px; text-align: center;">
+                                            🔥 LAST CHANCE TO EXPORT 🔥
+                                        </h3>
+                                        <p style="margin: 0 0 15px 0; color: #856404; font-size: 15px; line-height: 1.6; text-align: center;">
+                                            After <strong>{{deletionTime}}</strong> tomorrow, your incident data will be <strong>PERMANENTLY AND IRREVERSIBLY DELETED</strong> from our systems.
+                                        </p>
+                                        <p style="margin: 0; color: #d32f2f; font-size: 15px; line-height: 1.6; text-align: center; font-weight: 600;">
+                                            This is required by GDPR. We cannot recover your data after deletion.
+                                        </p>
+                                    </td>
+                                </tr>
+                            </table>
+
+                            <p style="margin: 25px 0 15px 0; color: #333; font-size: 16px; font-weight: 600; text-align: center;">
+                                What will be PERMANENTLY DELETED:
+                            </p>
+
+                            <ul style="margin: 0 0 25px 0; padding-left: 20px; color: #d32f2f; font-size: 15px; line-height: 2; font-weight: 600;">
+                                <li>ALL incident photos (cannot be recovered)</li>
+                                <li>Complete incident report data</li>
+                                <li>PDF report for insurance/legal use</li>
+                                <li>SHA-256 checksums and verification data</li>
+                                <li>ALL evidence related to this incident</li>
+                            </ul>
+
+                            <!-- Incident Info -->
+                            <table width="100%" cellpadding="0" cellspacing="0" style="background-color: #f8f9fa; border-radius: 5px; margin: 25px 0;">
+                                <tr>
+                                    <td style="padding: 20px;">
+                                        <p style="margin: 0 0 10px 0; color: #666; font-size: 14px;">
+                                            <strong>Incident ID:</strong> {{incidentId}}
+                                        </p>
+                                        <p style="margin: 0 0 10px 0; color: #666; font-size: 14px;">
+                                            <strong>Submitted:</strong> {{submittedDate}}
+                                        </p>
+                                        <p style="margin: 0 0 10px 0; color: #d32f2f; font-size: 16px; font-weight: 700;">
+                                            <strong>WILL BE DELETED:</strong> {{deletionDate}} at {{deletionTime}}
+                                        </p>
+                                        <p style="margin: 0; color: #d32f2f; font-size: 14px; font-weight: 600;">
+                                            <strong>Time remaining:</strong> Less than 24 hours
+                                        </p>
+                                    </td>
+                                </tr>
+                            </table>
+
+                            <!-- Emergency CTA Button -->
+                            <table width="100%" cellpadding="0" cellspacing="0" style="margin: 35px 0;">
+                                <tr>
+                                    <td align="center">
+                                        <a href="{{exportUrl}}" style="display: inline-block; background: linear-gradient(135deg, #d32f2f 0%, #b71c1c 100%); color: #ffffff; text-decoration: none; padding: 20px 60px; border-radius: 8px; font-size: 20px; font-weight: 700; box-shadow: 0 6px 20px rgba(183, 28, 28, 0.5); animation: pulse 2s infinite;">
+                                            🚨 EXPORT NOW - FINAL CHANCE
+                                        </a>
+                                    </td>
+                                </tr>
+                            </table>
+
+                            <p style="margin: 25px 0 0 0; color: #b71c1c; font-size: 16px; line-height: 1.6; text-align: center; font-weight: 700;">
+                                THIS IS YOUR LAST EMAIL.<br>
+                                Export within 24 hours or lose your data forever.
+                            </p>
+                        </td>
+                    </tr>
+
+                    <!-- Footer -->
+                    <tr>
+                        <td style="background-color: #333; padding: 25px 30px; text-align: center;">
+                            <p style="margin: 0 0 5px 0; color: #999; font-size: 12px;">
+                                Car Crash Lawyer AI
+                            </p>
+                            <p style="margin: 5px 0; color: #999; font-size: 12px;">
+                                © {{currentYear}} All Rights Reserved
+                            </p>
+                            <p style="margin: 10px 0 0 0; color: #999; font-size: 11px;">
+                                GDPR-compliant data retention - 90 days for incident reports
+                            </p>
+                        </td>
+                    </tr>
+
+                </table>
+            </td>
+        </tr>
+    </table>
+</body>
+</html>

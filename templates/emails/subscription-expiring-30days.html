@@ -1,0 +1,181 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Your Subscription Expires in 30 Days</title>
+</head>
+<body style="margin: 0; padding: 0; font-family: Arial, sans-serif; background-color: #f4f4f4;">
+    <table width="100%" cellpadding="0" cellspacing="0" style="background-color: #f4f4f4; padding: 20px 0;">
+        <tr>
+            <td align="center">
+                <table width="600" cellpadding="0" cellspacing="0" style="background-color: #ffffff; border-radius: 10px; overflow: hidden; box-shadow: 0 4px 6px rgba(0,0,0,0.1);">
+
+                    <!-- Header -->
+                    <tr>
+                        <td style="background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); padding: 40px 30px; text-align: center;">
+                            <h1 style="margin: 0; color: #ffffff; font-size: 28px; font-weight: 600;">
+                                📅 Subscription Renewal Notice
+                            </h1>
+                            <p style="margin: 10px 0 0 0; color: rgba(255,255,255,0.9); font-size: 16px;">
+                                Your Protection Continues Soon
+                            </p>
+                        </td>
+                    </tr>
+
+                    <!-- Content -->
+                    <tr>
+                        <td style="padding: 40px 30px;">
+                            <p style="margin: 0 0 20px 0; color: #333; font-size: 16px; line-height: 1.6;">
+                                Hello <strong>{{userName}}</strong>,
+                            </p>
+
+                            <p style="margin: 0 0 20px 0; color: #333; font-size: 16px; line-height: 1.6;">
+                                Your Car Crash Lawyer AI subscription will renew in <strong>30 days</strong>. Your protection continues automatically.
+                            </p>
+
+                            <!-- Renewal Info Box -->
+                            <table width="100%" cellpadding="0" cellspacing="0" style="background-color: #e3f2fd; border-radius: 8px; margin: 30px 0;">
+                                <tr>
+                                    <td style="padding: 30px; text-align: center;">
+                                        <p style="margin: 0 0 10px 0; color: #1565c0; font-size: 16px;">
+                                            Auto-Renewal Date
+                                        </p>
+                                        <p style="margin: 0 0 20px 0; color: #0d47a1; font-size: 32px; font-weight: 700;">
+                                            {{renewalDate}}
+                                        </p>
+                                        <p style="margin: 0; color: #1976D2; font-size: 18px; font-weight: 600;">
+                                            30 days until renewal
+                                        </p>
+                                    </td>
+                                </tr>
+                            </table>
+
+                            <!-- Subscription Details -->
+                            <h3 style="margin: 30px 0 15px 0; color: #333; font-size: 18px;">
+                                📋 Your Subscription
+                            </h3>
+                            <table width="100%" cellpadding="5" cellspacing="0" style="background-color: #f8f9fa; border-radius: 5px; padding: 15px;">
+                                <tr>
+                                    <td style="color: #666; font-size: 14px; padding: 5px 10px;">
+                                        <strong>Current Period:</strong>
+                                    </td>
+                                    <td style="color: #333; font-size: 14px; text-align: right; padding: 5px 10px;">
+                                        {{subscriptionStartDate}} - {{subscriptionEndDate}}
+                                    </td>
+                                </tr>
+                                <tr>
+                                    <td style="color: #666; font-size: 14px; padding: 5px 10px;">
+                                        <strong>Next Renewal:</strong>
+                                    </td>
+                                    <td style="color: #333; font-size: 14px; text-align: right; padding: 5px 10px;">
+                                        {{renewalDate}}
+                                    </td>
+                                </tr>
+                                <tr>
+                                    <td style="color: #666; font-size: 14px; padding: 5px 10px;">
+                                        <strong>Auto-Renewal:</strong>
+                                    </td>
+                                    <td style="color: #4CAF50; font-size: 14px; text-align: right; padding: 5px 10px;">
+                                        ✅ Enabled
+                                    </td>
+                                </tr>
+                                <tr>
+                                    <td style="color: #666; font-size: 14px; padding: 5px 10px;">
+                                        <strong>Renewal Amount:</strong>
+                                    </td>
+                                    <td style="color: #333; font-size: 14px; font-weight: 600; text-align: right; padding: 5px 10px;">
+                                        {{renewalAmount}}
+                                    </td>
+                                </tr>
+                            </table>
+
+                            <!-- What Happens Next -->
+                            <h3 style="margin: 30px 0 15px 0; color: #333; font-size: 18px;">
+                                🔄 What Happens Next
+                            </h3>
+                            <ul style="margin: 0 0 20px 0; padding-left: 20px; color: #666; font-size: 14px; line-height: 1.8;">
+                                <li>Your subscription will automatically renew on <strong>{{renewalDate}}</strong></li>
+                                <li>You'll continue to have full access to all features</li>
+                                <li>Your account data will be retained for another 12 months</li>
+                                <li>You can submit new incident reports anytime</li>
+                                <li>No action required - everything continues seamlessly</li>
+                            </ul>
+
+                            <!-- Important Reminder -->
+                            <table width="100%" cellpadding="0" cellspacing="0" style="background-color: #fff3cd; border-left: 4px solid #ffc107; border-radius: 5px; margin: 25px 0;">
+                                <tr>
+                                    <td style="padding: 20px;">
+                                        <h4 style="margin: 0 0 10px 0; color: #856404; font-size: 16px;">
+                                            ⚠️ Important Reminder: Incident Data
+                                        </h4>
+                                        <p style="margin: 0; color: #856404; font-size: 14px; line-height: 1.5;">
+                                            While your <strong>account data is retained for 12 months</strong>, remember that <strong>incident reports are stored for 90 days only</strong>. Always export incidents before they expire!
+                                        </p>
+                                    </td>
+                                </tr>
+                            </table>
+
+                            <!-- Want to Cancel? -->
+                            <table width="100%" cellpadding="0" cellspacing="0" style="background-color: #f5f5f5; border-radius: 5px; margin: 25px 0;">
+                                <tr>
+                                    <td style="padding: 20px;">
+                                        <h4 style="margin: 0 0 10px 0; color: #666; font-size: 16px;">
+                                            Don't Want to Renew?
+                                        </h4>
+                                        <p style="margin: 0; color: #666; font-size: 14px; line-height: 1.5;">
+                                            You can cancel auto-renewal at any time before <strong>{{renewalDate}}</strong>. Simply visit your account settings in the dashboard. If you cancel, your access will end on {{subscriptionEndDate}}.
+                                        </p>
+                                    </td>
+                                </tr>
+                            </table>
+
+                            <!-- CTA Buttons -->
+                            <table width="100%" cellpadding="0" cellspacing="0" style="margin: 30px 0;">
+                                <tr>
+                                    <td align="center">
+                                        <table cellpadding="0" cellspacing="0">
+                                            <tr>
+                                                <td style="padding: 0 10px;">
+                                                    <a href="{{dashboardUrl}}" style="display: inline-block; background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); color: #ffffff; text-decoration: none; padding: 15px 30px; border-radius: 8px; font-size: 16px; font-weight: 600;">
+                                                        Go to Dashboard
+                                                    </a>
+                                                </td>
+                                                <td style="padding: 0 10px;">
+                                                    <a href="{{billingUrl}}" style="display: inline-block; background: #f5f5f5; color: #667eea; text-decoration: none; padding: 15px 30px; border-radius: 8px; font-size: 16px; font-weight: 600; border: 2px solid #667eea;">
+                                                        Manage Billing
+                                                    </a>
+                                                </td>
+                                            </tr>
+                                        </table>
+                                    </td>
+                                </tr>
+                            </table>
+
+                            <p style="margin: 20px 0 0 0; color: #666; font-size: 14px; line-height: 1.6; text-align: center;">
+                                Questions about your subscription? Contact support via your dashboard.
+                            </p>
+                        </td>
+                    </tr>
+
+                    <!-- Footer -->
+                    <tr>
+                        <td style="background-color: #333; padding: 25px 30px; text-align: center;">
+                            <p style="margin: 0 0 5px 0; color: #999; font-size: 12px;">
+                                Car Crash Lawyer AI - AI Legal First Responder System
+                            </p>
+                            <p style="margin: 5px 0; color: #999; font-size: 12px;">
+                                © {{currentYear}} All Rights Reserved
+                            </p>
+                            <p style="margin: 10px 0 0 0; color: #999; font-size: 11px;">
+                                This email contains important information about your subscription.
+                            </p>
+                        </td>
+                    </tr>
+
+                </table>
+            </td>
+        </tr>
+    </table>
+</body>
+</html>

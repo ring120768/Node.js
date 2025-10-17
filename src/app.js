@@ -324,6 +324,17 @@ function createApp() {
     logger.success('✅ Agent service initialized');
   }
 
+  // Cron Manager (dual retention automation)
+  const cronManager = require('./services/cronManager');
+  if (supabaseEnabled && process.env.CRON_ENABLED !== 'false') {
+    cronManager.start();
+    logger.success('✅ Cron manager initialized');
+  } else if (!supabaseEnabled) {
+    logger.warn('⚠️ Cron manager disabled (Supabase not available)');
+  } else {
+    logger.info('ℹ️ Cron manager disabled (CRON_ENABLED=false)');
+  }
+
   // Test external services
   if (supabaseEnabled) {
     testExternalServices();
@@ -419,6 +430,7 @@ function createApp() {
   app.locals.upload = upload;
   app.locals.checkSharedKey = checkSharedKey;
   app.locals.agentService = agentService;
+  app.locals.cronManager = require('./services/cronManager');
 
   // ==================== WEBHOOK ROUTES ====================
 

@@ -1,0 +1,162 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Incident Data Has Been Deleted</title>
+</head>
+<body style="margin: 0; padding: 0; font-family: Arial, sans-serif; background-color: #f4f4f4;">
+    <table width="100%" cellpadding="0" cellspacing="0" style="background-color: #f4f4f4; padding: 20px 0;">
+        <tr>
+            <td align="center">
+                <table width="600" cellpadding="0" cellspacing="0" style="background-color: #ffffff; border-radius: 10px; overflow: hidden; box-shadow: 0 4px 6px rgba(0,0,0,0.1);">
+
+                    <!-- Header -->
+                    <tr>
+                        <td style="background: linear-gradient(135deg, #616161 0%, #424242 100%); padding: 40px 30px; text-align: center;">
+                            <h1 style="margin: 0; color: #ffffff; font-size: 28px; font-weight: 600;">
+                                ✓ Incident Data Deleted
+                            </h1>
+                            <p style="margin: 10px 0 0 0; color: rgba(255,255,255,0.9); font-size: 16px;">
+                                GDPR Compliance Confirmed
+                            </p>
+                        </td>
+                    </tr>
+
+                    <!-- Content -->
+                    <tr>
+                        <td style="padding: 40px 30px;">
+                            <p style="margin: 0 0 20px 0; color: #333; font-size: 16px; line-height: 1.6;">
+                                Hello <strong>{{userName}}</strong>,
+                            </p>
+
+                            <p style="margin: 0 0 20px 0; color: #333; font-size: 16px; line-height: 1.6;">
+                                This email confirms that your incident report has been permanently deleted from our systems as scheduled.
+                            </p>
+
+                            <!-- Deletion Confirmation Box -->
+                            <table width="100%" cellpadding="0" cellspacing="0" style="background-color: #f5f5f5; border-radius: 8px; margin: 30px 0;">
+                                <tr>
+                                    <td style="padding: 30px; text-align: center;">
+                                        <div style="width: 80px; height: 80px; margin: 0 auto 20px; background-color: #616161; border-radius: 50%; display: flex; align-items: center; justify-content: center;">
+                                            <p style="margin: 0; color: #ffffff; font-size: 40px;">✓</p>
+                                        </div>
+                                        <h3 style="margin: 0 0 15px 0; color: #616161; font-size: 20px;">
+                                            Deletion Completed
+                                        </h3>
+                                        <p style="margin: 0 0 10px 0; color: #666; font-size: 14px;">
+                                            Deleted on:
+                                        </p>
+                                        <p style="margin: 0; color: #333; font-size: 18px; font-weight: 600;">
+                                            {{deletionDate}}
+                                        </p>
+                                    </td>
+                                </tr>
+                            </table>
+
+                            <!-- What Was Deleted -->
+                            <h3 style="margin: 30px 0 15px 0; color: #333; font-size: 18px;">
+                                📋 What Was Deleted
+                            </h3>
+                            <ul style="margin: 0 0 20px 0; padding-left: 20px; color: #666; font-size: 14px; line-height: 1.8;">
+                                <li>All incident photos and images</li>
+                                <li>Complete incident report data</li>
+                                <li>Generated PDF reports</li>
+                                <li>Associated metadata and checksums</li>
+                            </ul>
+
+                            <!-- Incident Info -->
+                            <table width="100%" cellpadding="0" cellspacing="0" style="background-color: #f8f9fa; border-radius: 5px; margin: 25px 0;">
+                                <tr>
+                                    <td style="padding: 20px;">
+                                        <p style="margin: 0 0 10px 0; color: #666; font-size: 14px;">
+                                            <strong>Incident ID:</strong> {{incidentId}}
+                                        </p>
+                                        <p style="margin: 0 0 10px 0; color: #666; font-size: 14px;">
+                                            <strong>Originally Submitted:</strong> {{submittedDate}}
+                                        </p>
+                                        <p style="margin: 0; color: #666; font-size: 14px;">
+                                            <strong>Retention Period:</strong> 90 days (completed)
+                                        </p>
+                                    </td>
+                                </tr>
+                            </table>
+
+                            <!-- Important Notes -->
+                            <table width="100%" cellpadding="0" cellspacing="0" style="background-color: #e3f2fd; border-left: 4px solid #2196F3; border-radius: 5px; margin: 25px 0;">
+                                <tr>
+                                    <td style="padding: 20px;">
+                                        <h4 style="margin: 0 0 10px 0; color: #1565c0; font-size: 16px;">
+                                            ℹ️ Important Information
+                                        </h4>
+                                        <p style="margin: 0 0 10px 0; color: #1565c0; font-size: 14px; line-height: 1.5;">
+                                            <strong>Your account remains active.</strong> This deletion only affected this specific incident report.
+                                        </p>
+                                        <p style="margin: 0; color: #1565c0; font-size: 14px; line-height: 1.5;">
+                                            You can still submit new incident reports, and your subscription continues until {{subscriptionEndDate}}.
+                                        </p>
+                                    </td>
+                                </tr>
+                            </table>
+
+                            <!-- GDPR Notice -->
+                            <table width="100%" cellpadding="0" cellspacing="0" style="background-color: #fff3cd; border-left: 4px solid #ffc107; border-radius: 5px; margin: 25px 0;">
+                                <tr>
+                                    <td style="padding: 20px;">
+                                        <h4 style="margin: 0 0 10px 0; color: #856404; font-size: 14px;">
+                                            🔒 GDPR Compliance Notice
+                                        </h4>
+                                        <p style="margin: 0; color: #856404; font-size: 13px; line-height: 1.5;">
+                                            This deletion was performed in accordance with GDPR Article 5(1)(e) - storage limitation principle. Incident data is retained for 90 days only, while your account data is retained for the duration of your subscription.
+                                        </p>
+                                    </td>
+                                </tr>
+                            </table>
+
+                            <!-- Exports Notice -->
+                            <p style="margin: 25px 0 0 0; color: #666; font-size: 14px; line-height: 1.6;">
+                                <strong>If you exported this incident:</strong> Your exported ZIP file contains all the original data, photos, and checksums. This local copy is yours to keep indefinitely.
+                            </p>
+
+                            <p style="margin: 15px 0 0 0; color: #666; font-size: 14px; line-height: 1.6;">
+                                <strong>If you didn't export:</strong> Unfortunately, the data cannot be recovered. Please remember to export future incidents before the 90-day retention period expires.
+                            </p>
+
+                            <!-- CTA Button -->
+                            <table width="100%" cellpadding="0" cellspacing="0" style="margin: 30px 0;">
+                                <tr>
+                                    <td align="center">
+                                        <a href="{{dashboardUrl}}" style="display: inline-block; background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); color: #ffffff; text-decoration: none; padding: 15px 40px; border-radius: 8px; font-size: 16px; font-weight: 600;">
+                                            Go to Dashboard
+                                        </a>
+                                    </td>
+                                </tr>
+                            </table>
+
+                            <p style="margin: 20px 0 0 0; color: #999; font-size: 13px; line-height: 1.6; text-align: center;">
+                                Questions about data retention? Contact support via your dashboard.
+                            </p>
+                        </td>
+                    </tr>
+
+                    <!-- Footer -->
+                    <tr>
+                        <td style="background-color: #333; padding: 25px 30px; text-align: center;">
+                            <p style="margin: 0 0 5px 0; color: #999; font-size: 12px;">
+                                Car Crash Lawyer AI
+                            </p>
+                            <p style="margin: 5px 0; color: #999; font-size: 12px;">
+                                © {{currentYear}} All Rights Reserved
+                            </p>
+                            <p style="margin: 10px 0 0 0; color: #999; font-size: 11px;">
+                                GDPR-compliant data deletion confirmed
+                            </p>
+                        </td>
+                    </tr>
+
+                </table>
+            </td>
+        </tr>
+    </table>
+</body>
+</html>

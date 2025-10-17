@@ -698,6 +698,34 @@ async function processUserSignup(formResponse, requestId, imageProcessor = null)
     if (data && data[0]) {
       console.log(`   🆔 Database ID: ${data[0].id || 'N/A'}`);
       console.log(`   📅 Created: ${data[0].created_at || 'N/A'}`);
+
+      // NEW: Update user_documents with association tracking for dual retention
+      if (imageProcessor && data[0].id) {
+        console.log(`\n🔗 DUAL RETENTION: Updating document associations...`);
+        try {
+          const { error: updateError } = await supabase
+            .from('user_documents')
+            .update({
+              associated_with: 'user_signup',
+              associated_id: data[0].id
+            })
+            .eq('create_user_id', authUserId || token)
+            .eq('document_category', 'user_signup')
+            .is('associated_with', null); // Only update records without association
+
+          if (updateError) {
+            console.log(`   ⚠️  Document association update failed: ${updateError.message}`);
+            logger.warn(`[${requestId}] Could not update document associations (non-critical)`, {
+              error: updateError.message
+            });
+          } else {
+            console.log(`   ✅ Document associations updated (linked to user_signup record)`);
+            logger.info(`[${requestId}] Document associations updated for user_signup`);
+          }
+        } catch (error) {
+          console.log(`   ⚠️  Document association error: ${error.message}`);
+        }
+      }
     }
 
     logger.info(`[${requestId}] User signup processed successfully`);
@@ -712,6 +740,7 @@ async function processUserSignup(formResponse, requestId, imageProcessor = null)
       table: 'user_signup',
       user_id: authUserId || token,
       token: token,
+      signup_id: data[0]?.id,
       status: 'success'
     };
 
@@ -983,6 +1012,34 @@ async function processIncidentReport(formResponse, requestId, imageProcessor = n
     console.log(`✅ Incident report inserted successfully`);
     if (data && data[0]) {
       console.log(`   🆔 Report ID: ${data[0].id || 'N/A'}`);
+
+      // NEW: Update user_documents with association tracking for dual retention
+      if (imageProcessor && data[0].id) {
+        console.log(`\n🔗 DUAL RETENTION: Updating document associations...`);
+        try {
+          const { error: updateError } = await supabase
+            .from('user_documents')
+            .update({
+              associated_with: 'incident_report',
+              associated_id: data[0].id
+            })
+            .eq('create_user_id', userId || token)
+            .eq('document_category', 'incident_report')
+            .is('associated_with', null); // Only update records without association
+
+          if (updateError) {
+            console.log(`   ⚠️  Document association update failed: ${updateError.message}`);
+            logger.warn(`[${requestId}] Could not update document associations (non-critical)`, {
+              error: updateError.message
+            });
+          } else {
+            console.log(`   ✅ Document associations updated (linked to incident_report)`);
+            logger.info(`[${requestId}] Document associations updated for incident_report`);
+          }
+        } catch (error) {
+          console.log(`   ⚠️  Document association error: ${error.message}`);
+        }
+      }
     }
 
     logger.info(`[${requestId}] Incident report processed successfully`);

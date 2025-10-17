@@ -196,6 +196,16 @@ function gracefulShutdown(signal) {
     logger.info(`[Agent] Agent interval cleared.`);
   }
 
+  // Stop cron jobs
+  if (app.locals.cronManager) {
+    try {
+      app.locals.cronManager.stop();
+      logger.info(`[Cron] All cron jobs stopped.`);
+    } catch (cronError) {
+      logger.error(`[Cron] Error stopping cron jobs:`, cronError);
+    }
+  }
+
   // Stop accepting new connections
   server.close((err) => {
     if (err) {

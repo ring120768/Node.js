@@ -19,6 +19,7 @@ const transcriptionRoutes = require('./transcription.routes');
 const gdprRoutes = require('./gdpr.routes');
 const emergencyRoutes = require('./emergency.routes');
 const pdfRoutes = require('./pdf.routes');
+const exportRoutes = require('./export.routes'); // NEW: Export functionality for dual retention
 
 const githubWebhookRoutes = require('./githubWebhook.routes');
 const locationRoutes = require('./location.routes');
@@ -304,6 +305,7 @@ router.use('/api', transcriptionRoutes);
 router.use('/api/gdpr', gdprRoutes);
 router.use('/api', emergencyRoutes);
 router.use('/', pdfRoutes);
+router.use('/api', exportRoutes); // NEW: Export routes for incident downloads
 // Note: Webhook routes are mounted directly in app.js for raw body handling
 router.use('/webhooks/github', githubWebhookRoutes);
 router.use('/api/location', locationRoutes);

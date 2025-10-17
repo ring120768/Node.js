@@ -1,0 +1,113 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Reminder: 60 Days Until Incident Data Deletion</title>
+</head>
+<body style="margin: 0; padding: 0; font-family: Arial, sans-serif; background-color: #f4f4f4;">
+    <table width="100%" cellpadding="0" cellspacing="0" style="background-color: #f4f4f4; padding: 20px 0;">
+        <tr>
+            <td align="center">
+                <table width="600" cellpadding="0" cellspacing="0" style="background-color: #ffffff; border-radius: 10px; overflow: hidden; box-shadow: 0 4px 6px rgba(0,0,0,0.1);">
+
+                    <!-- Header -->
+                    <tr>
+                        <td style="background: linear-gradient(135deg, #2196F3 0%, #1976D2 100%); padding: 40px 30px; text-align: center;">
+                            <h1 style="margin: 0; color: #ffffff; font-size: 28px; font-weight: 600;">
+                                📅 Reminder: 60 Days Remaining
+                            </h1>
+                            <p style="margin: 10px 0 0 0; color: rgba(255,255,255,0.9); font-size: 16px;">
+                                Export Your Incident Report Soon
+                            </p>
+                        </td>
+                    </tr>
+
+                    <!-- Content -->
+                    <tr>
+                        <td style="padding: 40px 30px;">
+                            <p style="margin: 0 0 20px 0; color: #333; font-size: 16px; line-height: 1.6;">
+                                Hello <strong>{{userName}}</strong>,
+                            </p>
+
+                            <p style="margin: 0 0 20px 0; color: #333; font-size: 16px; line-height: 1.6;">
+                                This is a friendly reminder that your incident report will be automatically deleted in <strong>60 days</strong>.
+                            </p>
+
+                            <!-- Countdown Box -->
+                            <table width="100%" cellpadding="0" cellspacing="0" style="background-color: #e3f2fd; border-radius: 8px; margin: 30px 0;">
+                                <tr>
+                                    <td style="padding: 30px; text-align: center;">
+                                        <p style="margin: 0 0 10px 0; color: #1565c0; font-size: 16px;">
+                                            Deletion Date
+                                        </p>
+                                        <p style="margin: 0 0 20px 0; color: #0d47a1; font-size: 32px; font-weight: 700;">
+                                            {{deletionDate}}
+                                        </p>
+                                        <p style="margin: 0; color: #1976D2; font-size: 20px; font-weight: 600;">
+                                            60 days remaining
+                                        </p>
+                                    </td>
+                                </tr>
+                            </table>
+
+                            <p style="margin: 20px 0; color: #666; font-size: 15px; line-height: 1.6;">
+                                We recommend exporting your data now to ensure you don't lose access to:
+                            </p>
+
+                            <ul style="margin: 0 0 20px 0; padding-left: 20px; color: #666; font-size: 14px; line-height: 1.8;">
+                                <li>All incident photos (original quality)</li>
+                                <li>Complete incident report data</li>
+                                <li>PDF report for insurance/legal use</li>
+                                <li>SHA-256 checksums for data integrity</li>
+                            </ul>
+
+                            <!-- Incident Info -->
+                            <table width="100%" cellpadding="0" cellspacing="0" style="background-color: #f8f9fa; border-radius: 5px; margin: 25px 0;">
+                                <tr>
+                                    <td style="padding: 20px;">
+                                        <p style="margin: 0 0 10px 0; color: #666; font-size: 14px;">
+                                            <strong>Incident ID:</strong> {{incidentId}}
+                                        </p>
+                                        <p style="margin: 0; color: #666; font-size: 14px;">
+                                            <strong>Submitted:</strong> {{submittedDate}}
+                                        </p>
+                                    </td>
+                                </tr>
+                            </table>
+
+                            <!-- CTA Button -->
+                            <table width="100%" cellpadding="0" cellspacing="0" style="margin: 30px 0;">
+                                <tr>
+                                    <td align="center">
+                                        <a href="{{exportUrl}}" style="display: inline-block; background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); color: #ffffff; text-decoration: none; padding: 15px 40px; border-radius: 8px; font-size: 16px; font-weight: 600;">
+                                            Export Incident Report
+                                        </a>
+                                    </td>
+                                </tr>
+                            </table>
+
+                            <p style="margin: 20px 0 0 0; color: #999; font-size: 13px; line-height: 1.6; text-align: center;">
+                                You'll receive additional reminders at 30, 7, and 1 days before deletion.
+                            </p>
+                        </td>
+                    </tr>
+
+                    <!-- Footer -->
+                    <tr>
+                        <td style="background-color: #333; padding: 25px 30px; text-align: center;">
+                            <p style="margin: 0 0 5px 0; color: #999; font-size: 12px;">
+                                Car Crash Lawyer AI
+                            </p>
+                            <p style="margin: 5px 0; color: #999; font-size: 12px;">
+                                © {{currentYear}} All Rights Reserved
+                            </p>
+                        </td>
+                    </tr>
+
+                </table>
+            </td>
+        </tr>
+    </table>
+</body>
+</html>

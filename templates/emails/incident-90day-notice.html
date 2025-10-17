@@ -1,0 +1,159 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Important: 90-Day Data Retention Notice</title>
+</head>
+<body style="margin: 0; padding: 0; font-family: Arial, sans-serif; background-color: #f4f4f4;">
+    <table width="100%" cellpadding="0" cellspacing="0" style="background-color: #f4f4f4; padding: 20px 0;">
+        <tr>
+            <td align="center">
+                <table width="600" cellpadding="0" cellspacing="0" style="background-color: #ffffff; border-radius: 10px; overflow: hidden; box-shadow: 0 4px 6px rgba(0,0,0,0.1);">
+
+                    <!-- Header -->
+                    <tr>
+                        <td style="background: linear-gradient(135deg, #ff6b6b 0%, #ee5a6f 100%); padding: 40px 30px; text-align: center;">
+                            <h1 style="margin: 0; color: #ffffff; font-size: 28px; font-weight: 600;">
+                                ⚠️ Important: 90-Day Data Policy
+                            </h1>
+                            <p style="margin: 10px 0 0 0; color: rgba(255,255,255,0.9); font-size: 16px;">
+                                Your Incident Report Has Been Submitted
+                            </p>
+                        </td>
+                    </tr>
+
+                    <!-- Content -->
+                    <tr>
+                        <td style="padding: 40px 30px;">
+                            <p style="margin: 0 0 20px 0; color: #333; font-size: 16px; line-height: 1.6;">
+                                Hello <strong>{{userName}}</strong>,
+                            </p>
+
+                            <p style="margin: 0 0 20px 0; color: #333; font-size: 16px; line-height: 1.6;">
+                                Thank you for submitting your incident report. Your data has been securely stored and is ready for export.
+                            </p>
+
+                            <!-- Critical Notice Box -->
+                            <table width="100%" cellpadding="0" cellspacing="0" style="background-color: #fff3cd; border: 3px solid #ffc107; border-radius: 8px; margin: 30px 0;">
+                                <tr>
+                                    <td style="padding: 30px;">
+                                        <h3 style="margin: 0 0 15px 0; color: #856404; font-size: 20px; text-align: center;">
+                                            🚨 CRITICAL: 90-DAY DATA RETENTION
+                                        </h3>
+                                        <p style="margin: 0 0 15px 0; color: #856404; font-size: 16px; line-height: 1.6; text-align: center;">
+                                            Your incident data will be <strong>AUTOMATICALLY DELETED</strong> on:
+                                        </p>
+                                        <p style="margin: 0 0 15px 0; color: #d32f2f; font-size: 24px; font-weight: 700; text-align: center;">
+                                            {{deletionDate}}
+                                        </p>
+                                        <p style="margin: 0; color: #856404; font-size: 14px; line-height: 1.6; text-align: center;">
+                                            ({{daysRemaining}} days from now)
+                                        </p>
+                                    </td>
+                                </tr>
+                            </table>
+
+                            <!-- What This Means -->
+                            <h3 style="margin: 30px 0 15px 0; color: #333; font-size: 18px;">
+                                📋 What This Means
+                            </h3>
+                            <ul style="margin: 0; padding-left: 20px; color: #666; font-size: 14px; line-height: 1.8;">
+                                <li><strong>Your account remains active</strong> for 12 months (subscription-based)</li>
+                                <li><strong>This specific incident</strong> will be stored for 90 days only</li>
+                                <li><strong>After 90 days:</strong> All incident data and photos will be permanently deleted</li>
+                                <li><strong>No recovery possible</strong> - this is for GDPR compliance</li>
+                                <li><strong>You MUST export</strong> your data if you need it long-term</li>
+                            </ul>
+
+                            <!-- Action Required -->
+                            <table width="100%" cellpadding="0" cellspacing="0" style="background-color: #e3f2fd; border-left: 4px solid #2196F3; border-radius: 5px; margin: 25px 0;">
+                                <tr>
+                                    <td style="padding: 20px;">
+                                        <h4 style="margin: 0 0 10px 0; color: #1565c0; font-size: 16px;">
+                                            ✅ Action Required: Export Your Data
+                                        </h4>
+                                        <p style="margin: 0; color: #1565c0; font-size: 14px; line-height: 1.5;">
+                                            We recommend exporting your incident report <strong>within the next 30 days</strong> to ensure you have plenty of time. You'll receive reminder emails at 60, 30, 7, and 1 days before deletion.
+                                        </p>
+                                    </td>
+                                </tr>
+                            </table>
+
+                            <!-- Incident Details -->
+                            <h3 style="margin: 30px 0 15px 0; color: #333; font-size: 18px;">
+                                📊 Incident Details
+                            </h3>
+                            <table width="100%" cellpadding="5" cellspacing="0" style="background-color: #f8f9fa; border-radius: 5px; padding: 15px;">
+                                <tr>
+                                    <td style="color: #666; font-size: 14px; padding: 5px 10px;">
+                                        <strong>Incident ID:</strong>
+                                    </td>
+                                    <td style="color: #333; font-size: 14px; text-align: right; padding: 5px 10px;">
+                                        {{incidentId}}
+                                    </td>
+                                </tr>
+                                <tr>
+                                    <td style="color: #666; font-size: 14px; padding: 5px 10px;">
+                                        <strong>Submitted:</strong>
+                                    </td>
+                                    <td style="color: #333; font-size: 14px; text-align: right; padding: 5px 10px;">
+                                        {{submittedDate}}
+                                    </td>
+                                </tr>
+                                <tr>
+                                    <td style="color: #666; font-size: 14px; padding: 5px 10px;">
+                                        <strong>Deletion Date:</strong>
+                                    </td>
+                                    <td style="color: #d32f2f; font-size: 14px; font-weight: 600; text-align: right; padding: 5px 10px;">
+                                        {{deletionDate}}
+                                    </td>
+                                </tr>
+                                <tr>
+                                    <td style="color: #666; font-size: 14px; padding: 5px 10px;">
+                                        <strong>Days Remaining:</strong>
+                                    </td>
+                                    <td style="color: #ff9800; font-size: 14px; font-weight: 600; text-align: right; padding: 5px 10px;">
+                                        {{daysRemaining}} days
+                                    </td>
+                                </tr>
+                            </table>
+
+                            <!-- CTA Button -->
+                            <table width="100%" cellpadding="0" cellspacing="0" style="margin: 30px 0;">
+                                <tr>
+                                    <td align="center">
+                                        <a href="{{exportUrl}}" style="display: inline-block; background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); color: #ffffff; text-decoration: none; padding: 15px 40px; border-radius: 8px; font-size: 16px; font-weight: 600;">
+                                            Export Incident Now
+                                        </a>
+                                    </td>
+                                </tr>
+                            </table>
+
+                            <p style="margin: 20px 0 0 0; color: #666; font-size: 14px; line-height: 1.6; text-align: center;">
+                                Questions? Contact support via your dashboard.
+                            </p>
+                        </td>
+                    </tr>
+
+                    <!-- Footer -->
+                    <tr>
+                        <td style="background-color: #333; padding: 25px 30px; text-align: center;">
+                            <p style="margin: 0 0 5px 0; color: #999; font-size: 12px;">
+                                Car Crash Lawyer AI - AI Legal First Responder System
+                            </p>
+                            <p style="margin: 5px 0; color: #999; font-size: 12px;">
+                                © {{currentYear}} All Rights Reserved
+                            </p>
+                            <p style="margin: 10px 0 0 0; color: #999; font-size: 11px;">
+                                This is a mandatory data retention notice required by GDPR.
+                            </p>
+                        </td>
+                    </tr>
+
+                </table>
+            </td>
+        </tr>
+    </table>
+</body>
+</html>
