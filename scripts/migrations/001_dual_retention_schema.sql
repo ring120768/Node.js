@@ -24,7 +24,25 @@ COMMENT ON COLUMN user_signup.auto_renewal IS 'Whether subscription auto-renews 
 COMMENT ON COLUMN user_signup.retention_until IS 'Calculated retention date (same as subscription_end_date)';
 
 -- ============================================================================
--- 2. ADD ASSOCIATION TRACKING TO user_documents TABLE
+-- 2. ADD SOFT DELETE SUPPORT (GDPR Compliance)
+-- ============================================================================
+-- Add deleted_at columns for soft deletes (required for legal compliance)
+
+ALTER TABLE user_signup
+ADD COLUMN IF NOT EXISTS deleted_at TIMESTAMP;
+
+ALTER TABLE incident_reports
+ADD COLUMN IF NOT EXISTS deleted_at TIMESTAMP;
+
+ALTER TABLE user_documents
+ADD COLUMN IF NOT EXISTS deleted_at TIMESTAMP;
+
+COMMENT ON COLUMN user_signup.deleted_at IS 'Soft delete timestamp (NULL = active record)';
+COMMENT ON COLUMN incident_reports.deleted_at IS 'Soft delete timestamp (NULL = active record)';
+COMMENT ON COLUMN user_documents.deleted_at IS 'Soft delete timestamp (NULL = active record)';
+
+-- ============================================================================
+-- 3. ADD ASSOCIATION TRACKING TO user_documents TABLE
 -- ============================================================================
 -- Links documents to either user accounts (12mo) or incidents (90d)
 
@@ -42,7 +60,7 @@ CREATE INDEX IF NOT EXISTS idx_user_documents_association ON user_documents(asso
 CREATE INDEX IF NOT EXISTS idx_user_documents_retention ON user_documents(retention_until) WHERE deleted_at IS NULL;
 
 -- ============================================================================
--- 3. ADD CHECKSUM FIELDS TO user_documents TABLE
+-- 4. ADD CHECKSUM FIELDS TO user_documents TABLE
 -- ============================================================================
 -- SHA-256 checksums for data integrity verification
 
@@ -58,7 +76,7 @@ COMMENT ON COLUMN user_documents.checksum_algorithm IS 'Algorithm used (always s
 COMMENT ON COLUMN user_documents.checksum_verified_at IS 'Last time checksum was verified';
 
 -- ============================================================================
--- 4. ENSURE incident_reports HAS RETENTION FIELD
+-- 5. ENSURE incident_reports HAS RETENTION FIELD
 -- ============================================================================
 -- 90-day retention for all incidents
 
@@ -71,7 +89,7 @@ COMMENT ON COLUMN incident_reports.retention_until IS '90 days from incident cre
 CREATE INDEX IF NOT EXISTS idx_incident_reports_retention ON incident_reports(retention_until) WHERE deleted_at IS NULL;
 
 -- ============================================================================
--- 5. CREATE export_log TABLE
+-- 6. CREATE export_log TABLE
 -- ============================================================================
 -- Track all incident exports for legal protection
 
@@ -104,7 +122,7 @@ CREATE INDEX IF NOT EXISTS idx_export_log_user ON export_log(user_id, exported_a
 CREATE INDEX IF NOT EXISTS idx_export_log_date ON export_log(exported_at);
 
 -- ============================================================================
--- 6. CREATE TRIGGER: Set 90-day retention for incidents
+-- 7. CREATE TRIGGER: Set 90-day retention for incidents
 -- ============================================================================
 
 CREATE OR REPLACE FUNCTION set_incident_retention_date()
@@ -127,7 +145,7 @@ FOR EACH ROW EXECUTE FUNCTION set_incident_retention_date();
 COMMENT ON FUNCTION set_incident_retention_date() IS 'Automatically sets 90-day retention period for new incidents';
 
 -- ============================================================================
--- 7. CREATE TRIGGER: Set 12-month subscription dates for user_signup
+-- 8. CREATE TRIGGER: Set 12-month subscription dates for user_signup
 -- ============================================================================
 
 CREATE OR REPLACE FUNCTION set_subscription_dates()
@@ -161,7 +179,7 @@ FOR EACH ROW EXECUTE FUNCTION set_subscription_dates();
 COMMENT ON FUNCTION set_subscription_dates() IS 'Automatically sets 12-month subscription period for new accounts';
 
 -- ============================================================================
--- 8. CREATE TRIGGER: Set retention for documents based on association
+-- 9. CREATE TRIGGER: Set retention for documents based on association
 -- ============================================================================
 
 CREATE OR REPLACE FUNCTION set_document_retention()
@@ -191,7 +209,7 @@ FOR EACH ROW EXECUTE FUNCTION set_document_retention();
 COMMENT ON FUNCTION set_document_retention() IS 'Automatically sets retention period based on document association type';
 
 -- ============================================================================
--- 9. BACKFILL EXISTING RECORDS (Optional - for existing data)
+-- 10. BACKFILL EXISTING RECORDS (Optional - for existing data)
 -- ============================================================================
 
 -- Update existing user_signup records with default subscription dates
