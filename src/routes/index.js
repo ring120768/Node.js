@@ -306,7 +306,7 @@ router.use('/api', emergencyRoutes);
 router.use('/', pdfRoutes);
 // Note: Webhook routes are mounted directly in app.js for raw body handling
 router.use('/webhooks/github', githubWebhookRoutes);
-router.use('/api', locationRoutes);
+router.use('/api/location', locationRoutes);
 router.use('/api/debug', debugRoutes);
 
 // ==================== LEGACY REDIRECTS ====================
