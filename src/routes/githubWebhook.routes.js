@@ -18,6 +18,21 @@ const deliveryCache = new LRUCache({
 });
 
 /**
+ * GitHub Webhook Status Check
+ * GET /webhooks/github
+ */
+router.get('/', (req, res) => {
+  res.status(200).json({
+    status: 'ok',
+    endpoint: 'GitHub Webhook',
+    method: 'POST',
+    webhook_secret_configured: !!process.env.GITHUB_WEBHOOK_SECRET,
+    message: 'This endpoint accepts POST requests from GitHub webhooks',
+    timestamp: new Date().toISOString()
+  });
+});
+
+/**
  * GitHub Webhook Event Handler
  * POST /webhooks/github
  */
@@ -25,22 +40,22 @@ router.post('/', (req, res) => {
   const signature = req.get('X-Hub-Signature-256');
   const deliveryId = req.get('X-GitHub-Delivery');
   const event = req.get('X-GitHub-Event');
-  
-  logger.debug('GitHub webhook received', { 
-    hasSignature: !!signature, 
-    hasDeliveryId: !!deliveryId, 
+
+  logger.debug('GitHub webhook received', {
+    hasSignature: !!signature,
+    hasDeliveryId: !!deliveryId,
     event,
     bodyLength: req.body ? req.body.length : 0
   }, req.requestId);
-  
+
   // Fast 200 acknowledgment first
-  res.status(200).json({ 
-    received: true, 
+  res.status(200).json({
+    received: true,
     delivery_id: deliveryId,
     event: event,
     timestamp: new Date().toISOString()
   });
-  
+
   // Process webhook asynchronously
   setImmediate(() => processWebhookAsync(req.body, signature, deliveryId, event, req.requestId));
 });
