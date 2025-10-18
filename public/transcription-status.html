@@ -7,7 +7,6 @@
     <meta name="mobile-web-app-capable" content="yes">
     <title>Record Your Statement - Car Crash Lawyer AI</title>
     <style>
-        /* Keep all existing styles from document 3 - no changes needed */
         * {
             margin: 0;
             padding: 0;
@@ -18,16 +17,489 @@
             font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif;
             background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
             min-height: 100vh;
-            display: flex;
-            justify-content: center;
-            align-items: center;
             padding: 20px;
-            overflow-x: hidden;
         }
 
-        /* ... (keep all other styles from document 3) ... */
+        .container {
+            max-width: 900px;
+            margin: 0 auto;
+            background: white;
+            border-radius: 12px;
+            padding: 30px;
+            box-shadow: 0 10px 40px rgba(0,0,0,0.2);
+        }
 
-        /* Add welcome banner style */
+        h1 {
+            text-align: center;
+            color: #333;
+            margin-bottom: 30px;
+            font-size: 28px;
+        }
+
+        h2 {
+            color: #444;
+            margin-top: 30px;
+            margin-bottom: 15px;
+            font-size: 22px;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+
+        h3 {
+            color: #555;
+            margin-top: 20px;
+            margin-bottom: 10px;
+            font-size: 18px;
+        }
+
+        h4 {
+            color: #666;
+            margin-top: 15px;
+            margin-bottom: 8px;
+            font-size: 16px;
+        }
+
+        /* Progress Steps */
+        .progress-steps {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 40px;
+            position: relative;
+        }
+
+        .progress-line {
+            position: absolute;
+            top: 20px;
+            left: 0;
+            height: 4px;
+            background: #4CAF50;
+            transition: width 0.5s ease;
+            z-index: 0;
+        }
+
+        .progress-step {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            z-index: 1;
+            flex: 1;
+        }
+
+        .progress-step .circle {
+            width: 40px;
+            height: 40px;
+            border-radius: 50%;
+            background: #ddd;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-weight: bold;
+            color: #999;
+            margin-bottom: 8px;
+            transition: all 0.3s ease;
+        }
+
+        .progress-step.active .circle {
+            background: #2196F3;
+            color: white;
+            box-shadow: 0 0 0 4px rgba(33, 150, 243, 0.2);
+        }
+
+        .progress-step.complete .circle {
+            background: #4CAF50;
+            color: white;
+        }
+
+        .progress-step span {
+            font-size: 12px;
+            color: #666;
+        }
+
+        /* Info boxes */
+        .info-box {
+            background: #e3f2fd;
+            border-left: 4px solid #2196F3;
+            padding: 15px 20px;
+            margin-bottom: 20px;
+            border-radius: 4px;
+        }
+
+        .info-box h3 {
+            margin-top: 0;
+            color: #1976D2;
+        }
+
+        .info-box ul {
+            margin-left: 20px;
+            margin-top: 10px;
+        }
+
+        .info-box li {
+            margin-bottom: 6px;
+            color: #555;
+        }
+
+        /* Audio Visualizer */
+        .audio-visualizer {
+            background: linear-gradient(135deg, #1a1a2e, #16213e);
+            padding: 30px;
+            border-radius: 12px;
+            margin: 20px 0;
+            display: none;
+        }
+
+        .audio-visualizer.active {
+            display: block;
+        }
+
+        .visualizer-bars {
+            display: flex;
+            align-items: flex-end;
+            justify-content: center;
+            gap: 4px;
+            height: 100px;
+        }
+
+        .visualizer-bar {
+            width: 6px;
+            background: linear-gradient(to top, #667eea, #764ba2);
+            border-radius: 3px;
+            transition: height 0.1s ease;
+        }
+
+        /* Status Message */
+        #statusMessage {
+            background: #fff3e0;
+            padding: 15px;
+            border-radius: 8px;
+            margin-bottom: 20px;
+            display: none;
+            border-left: 4px solid #ff9800;
+        }
+
+        .status-indicator {
+            display: inline-block;
+            width: 12px;
+            height: 12px;
+            border-radius: 50%;
+            margin-right: 10px;
+        }
+
+        .status-indicator.processing {
+            background: #ff9800;
+            animation: pulse 1.5s ease-in-out infinite;
+        }
+
+        .status-indicator.complete {
+            background: #4CAF50;
+        }
+
+        .status-indicator.recording {
+            background: #f44336;
+            animation: pulse 1s ease-in-out infinite;
+        }
+
+        @keyframes pulse {
+            0%, 100% { opacity: 1; }
+            50% { opacity: 0.5; }
+        }
+
+        /* Recording Status */
+        #recordingStatus {
+            background: #ffebee;
+            padding: 20px;
+            border-radius: 8px;
+            text-align: center;
+            display: none;
+            margin-bottom: 20px;
+        }
+
+        .recording-indicator {
+            display: inline-block;
+            width: 14px;
+            height: 14px;
+            background: #dc2626;
+            border-radius: 50%;
+            margin-right: 10px;
+            animation: pulse 1s ease-in-out infinite;
+        }
+
+        /* Buttons */
+        .btn {
+            padding: 12px 24px;
+            border: none;
+            border-radius: 6px;
+            font-size: 16px;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            display: inline-block;
+            text-align: center;
+        }
+
+        .btn-primary {
+            background: #2196F3;
+            color: white;
+        }
+
+        .btn-primary:hover:not(:disabled) {
+            background: #1976D2;
+            transform: translateY(-2px);
+            box-shadow: 0 4px 12px rgba(33, 150, 243, 0.4);
+        }
+
+        .btn-danger {
+            background: #f44336;
+            color: white;
+        }
+
+        .btn-danger:hover:not(:disabled) {
+            background: #d32f2f;
+        }
+
+        .btn-success {
+            background: #4CAF50;
+            color: white;
+        }
+
+        .btn-success:hover:not(:disabled) {
+            background: #388E3C;
+        }
+
+        .btn:disabled {
+            opacity: 0.6;
+            cursor: not-allowed;
+        }
+
+        .recording-controls {
+            display: flex;
+            gap: 15px;
+            justify-content: center;
+            flex-wrap: wrap;
+            margin: 20px 0;
+        }
+
+        /* Audio Playback */
+        #audioPlayback {
+            width: 100%;
+            margin: 20px 0;
+            display: none;
+        }
+
+        /* Transcription Section */
+        #transcriptionResult {
+            display: none;
+            margin-top: 30px;
+        }
+
+        .transcription-box {
+            border: 2px solid #e0e0e0;
+            border-radius: 8px;
+            padding: 20px;
+            min-height: 200px;
+            background: #f9f9f9;
+            font-size: 16px;
+            line-height: 1.8;
+            color: #333;
+            outline: none;
+            transition: border-color 0.3s ease;
+        }
+
+        .transcription-box:focus {
+            border-color: #2196F3;
+            background: white;
+        }
+
+        .transcription-box[contenteditable]:empty:before {
+            content: attr(placeholder);
+            color: #999;
+        }
+
+        .char-count {
+            text-align: right;
+            font-size: 14px;
+            color: #666;
+            margin-top: 8px;
+        }
+
+        /* AI Summary Section */
+        #summarySection {
+            display: none;
+            margin-top: 30px;
+            padding: 25px;
+            background: linear-gradient(135deg, #f5f7fa 0%, #c3cfe2 100%);
+            border-radius: 12px;
+        }
+
+        .summary-content {
+            background: white;
+            padding: 20px;
+            border-radius: 8px;
+            margin-bottom: 20px;
+            box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+        }
+
+        .key-points {
+            list-style: none;
+            padding-left: 0;
+        }
+
+        .key-points li {
+            padding: 10px 15px;
+            margin-bottom: 10px;
+            background: #e3f2fd;
+            border-left: 4px solid #2196F3;
+            border-radius: 4px;
+        }
+
+        /* AI Review Section */
+        #reviewSection {
+            display: none;
+            margin-top: 30px;
+        }
+
+        .review-box {
+            background: #fff9e6;
+            border: 2px solid #ffd54f;
+            border-radius: 8px;
+            padding: 20px;
+            margin-bottom: 20px;
+        }
+
+        .review-box h4 {
+            color: #f57c00;
+            margin-top: 0;
+        }
+
+        .missing-info {
+            color: #d32f2f;
+            font-weight: 600;
+        }
+
+        .suggestion {
+            color: #1976D2;
+            margin-top: 10px;
+            padding-left: 15px;
+            border-left: 3px solid #2196F3;
+        }
+
+        /* Combined Report Section */
+        #combinedReportSection {
+            display: none;
+            margin-top: 30px;
+        }
+
+        .report-box {
+            background: #f5f5f5;
+            border: 1px solid #ddd;
+            border-radius: 8px;
+            padding: 25px;
+            line-height: 1.8;
+        }
+
+        /* Final Review Section */
+        #finalReviewSection {
+            display: none;
+            margin-top: 30px;
+        }
+
+        .final-review-box {
+            background: linear-gradient(135deg, #e8f5e9 0%, #c8e6c9 100%);
+            border-radius: 12px;
+            padding: 25px;
+            margin-bottom: 20px;
+        }
+
+        .completeness-score {
+            font-size: 48px;
+            font-weight: bold;
+            text-align: center;
+            color: #4CAF50;
+            margin: 20px 0;
+        }
+
+        .next-steps {
+            background: white;
+            padding: 20px;
+            border-radius: 8px;
+            margin-top: 20px;
+        }
+
+        .next-steps ol {
+            margin-left: 20px;
+        }
+
+        .next-steps li {
+            margin-bottom: 12px;
+            line-height: 1.6;
+        }
+
+        .ai-disclaimer {
+            background: #fff3e0;
+            border: 2px solid #ff9800;
+            border-radius: 8px;
+            padding: 15px;
+            margin-top: 20px;
+            font-size: 14px;
+            color: #666;
+        }
+
+        .ai-disclaimer strong {
+            color: #f57c00;
+        }
+
+        /* Collapsible sections */
+        .collapsible-header {
+            cursor: pointer;
+            user-select: none;
+            padding: 15px;
+            background: #f5f5f5;
+            border-radius: 8px;
+            margin-bottom: 10px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+
+        .collapsible-header:hover {
+            background: #eeeeee;
+        }
+
+        .collapsible-content {
+            max-height: 0;
+            overflow: hidden;
+            transition: max-height 0.3s ease;
+        }
+
+        .collapsible-content.open {
+            max-height: 2000px;
+        }
+
+        /* Loading spinner */
+        .spinner {
+            border: 4px solid #f3f3f3;
+            border-top: 4px solid #2196F3;
+            border-radius: 50%;
+            width: 40px;
+            height: 40px;
+            animation: spin 1s linear infinite;
+            margin: 20px auto;
+        }
+
+        @keyframes spin {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
+        }
+
+        .loading-text {
+            text-align: center;
+            color: #666;
+            margin-top: 10px;
+        }
+
+        /* Welcome Banner */
         .welcome-banner {
             background: linear-gradient(135deg, #10b981, #059669);
             color: white;
@@ -51,16 +523,75 @@
         }
 
         .welcome-banner h2 {
-            margin-bottom: 8px;
+            margin: 0 0 8px 0;
             font-size: 20px;
+            color: white;
         }
 
         .welcome-banner p {
             opacity: 0.95;
             font-size: 14px;
+            margin: 0;
+        }
+
+        /* Network Status */
+        .network-status {
+            position: fixed;
+            top: 20px;
+            right: 20px;
+            padding: 10px 15px;
+            border-radius: 20px;
+            font-size: 13px;
+            font-weight: 600;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            z-index: 1000;
+            box-shadow: 0 2px 8px rgba(0,0,0,0.2);
+        }
+
+        .network-status.online {
+            background: #4CAF50;
+            color: white;
+        }
+
+        .network-status.offline {
+            background: #f44336;
+            color: white;
+        }
+
+        .network-status .dot {
+            width: 8px;
+            height: 8px;
+            background: white;
+            border-radius: 50%;
+        }
+
+        /* Responsive Design */
+        @media (max-width: 768px) {
+            .container {
+                padding: 20px;
+            }
+
+            h1 {
+                font-size: 24px;
+            }
+
+            .progress-steps {
+                flex-wrap: wrap;
+            }
+
+            .recording-controls {
+                flex-direction: column;
+            }
+
+            .btn {
+                width: 100%;
+            }
         }
     </style>
-    <link rel="stylesheet" href="/css/mascot.css"></head>
+    <link rel="stylesheet" href="/css/mascot.css">
+</head>
 <body>
     <!-- Network Status Indicator -->
     <div class="network-status online" id="networkStatus">
@@ -94,12 +625,11 @@
             </div>
             <div class="progress-step" id="step-summary">
                 <div class="circle">4</div>
-                <span>AI Summary</span>
+                <span>AI Analysis</span>
             </div>
         </div>
 
-        <!-- Keep all existing content from document 3 -->
-        <!-- Instructions -->
+        <!-- Recording Guidelines -->
         <div class="info-box">
             <h3>📋 Recording Guidelines</h3>
             <ul>
@@ -153,7 +683,7 @@
             <button id="stopButton" class="btn btn-danger" style="display: none;">
                 ⏹ Stop Recording
             </button>
-            <button id="retryButton" class="btn">
+            <button id="retryButton" class="btn" style="display: none;">
                 🔄 Record Again
             </button>
         </div>
@@ -163,11 +693,16 @@
 
         <!-- Transcription Result -->
         <div id="transcriptionResult">
-            <h3>📝 Your Transcription</h3>
-            <div class="transcription-box" contenteditable="true" id="transcriptionText" placeholder="Your transcription will appear here...">
+            <h2>📝 <span id="userName">Your</span> Personal Statement</h2>
+            <div class="transcription-box" contenteditable="true" id="transcriptionText" placeholder="Your transcription will appear here..."></div>
+            <div class="char-count">
+                <span id="wordCount">0 words</span> | <span id="charCount">0 characters</span>
             </div>
-            <button class="btn btn-primary" onclick="confirmTranscription()" style="margin-top: 20px;">
-                ✅ Confirm & Continue
+            <button class="btn btn-success" id="saveTranscriptionBtn" style="margin-top: 20px;">
+                💾 Save Changes
+            </button>
+            <button class="btn btn-primary" id="generateSummaryBtn" style="margin-top: 20px;">
+                🤖 Generate AI Analysis
             </button>
             <p style="text-align: center; color: #666; margin-top: 10px; font-size: 14px;">
                 You can edit the transcription above if needed
@@ -176,94 +711,132 @@
 
         <!-- AI Summary Section -->
         <div id="summarySection">
-            <h3>🤖 AI Summary</h3>
+            <h2>🤖 Personal Statement Summary</h2>
             <div class="summary-content">
                 <h4>Summary</h4>
                 <p id="summaryText" style="color: #555; line-height: 1.6;"></p>
             </div>
             <div class="summary-content">
                 <h4>Key Points</h4>
-                <ul class="key-points" id="keyPointsList">
-                </ul>
+                <ul class="key-points" id="keyPointsList"></ul>
             </div>
-            <div class="summary-content">
-                <h4>Fault Analysis</h4>
-                <p id="faultAnalysis" style="color: #555; line-height: 1.6;"></p>
+        </div>
+
+        <!-- AI Review Section -->
+        <div id="reviewSection">
+            <div class="collapsible-header" onclick="toggleSection('reviewContent')">
+                <h2 style="margin: 0;">💡 AI Review</h2>
+                <span>▼</span>
+            </div>
+            <div class="collapsible-content" id="reviewContent">
+                <div class="review-box">
+                    <h4>Quality Assessment</h4>
+                    <p id="qualityAssessment"></p>
+                </div>
+                <div class="review-box">
+                    <h4>Missing Information</h4>
+                    <div id="missingInfo"></div>
+                </div>
+                <div class="review-box">
+                    <h4>Suggestions for Improvement</h4>
+                    <div id="suggestions"></div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Combined Report Summary -->
+        <div id="combinedReportSection">
+            <div class="collapsible-header" onclick="toggleSection('combinedReportContent')">
+                <h2 style="margin: 0;">📄 Complete Incident Overview</h2>
+                <span>▼</span>
+            </div>
+            <div class="collapsible-content" id="combinedReportContent">
+                <div class="report-box" id="combinedReportText"></div>
+            </div>
+        </div>
+
+        <!-- Final AI Review with Next Steps -->
+        <div id="finalReviewSection">
+            <h2>✨ AL's Incident Report Review</h2>
+            <div class="final-review-box">
+                <h3>Documentation Completeness Score</h3>
+                <div class="completeness-score" id="completenessScore">--</div>
+
+                <div class="next-steps">
+                    <h4>Strengths of Your Report</h4>
+                    <div id="reportStrengths"></div>
+                </div>
+
+                <div class="next-steps">
+                    <h4>Recommended Next Steps</h4>
+                    <ol id="nextStepsList"></ol>
+                </div>
+
+                <div class="next-steps">
+                    <h4>Legal Considerations</h4>
+                    <div id="legalConsiderations"></div>
+                </div>
+            </div>
+
+            <div class="ai-disclaimer">
+                <strong>⚠️ AI-Generated Advice Disclaimer</strong><br>
+                This review is generated by artificial intelligence and is for informational purposes only.
+                It does not constitute legal advice. Please consult with a qualified attorney for professional
+                legal guidance specific to your situation.
             </div>
         </div>
     </div>
 
     <script>
-        // ===== TYPEFORM REDIRECT HANDLER =====
-        // Extract URL parameters from Typeform redirect
-        function extractTypeformParams() {
-            const urlParams = new URLSearchParams(window.location.search);
-
-            // Get all possible user ID parameters
-            const user_id = urlParams.get('auth_user_id') || 
-                           urlParams.get('user_id') || 
-                           urlParams.get('userId') || 
-                           urlParams.get('create_user_id');
-
-            const product_id = urlParams.get('product_id');
-            const auth_code = urlParams.get('auth_code');
-            const email = urlParams.get('email');
-
-            console.log('📥 Typeform redirect parameters:', {
-                user_id,
-                product_id,
-                auth_code,
-                email,
-                fullUrl: window.location.href
-            });
-
-            // If we have user_id from Typeform, store it
-            if (user_id) {
-                localStorage.setItem('create_user_id', user_id);
-                sessionStorage.setItem('userId', user_id);
-
-                // Show welcome banner
-                document.getElementById('welcomeBanner').style.display = 'block';
-
-                console.log('✅ User authenticated from Typeform:', user_id);
-
-                // Store other params for verification if needed
-                if (auth_code) {
-                    sessionStorage.setItem('auth_code', auth_code);
-                }
-                if (email) {
-                    sessionStorage.setItem('userEmail', email);
-                }
-                if (product_id) {
-                    sessionStorage.setItem('product_id', product_id);
-                }
-
-                return true;
-            }
-
-            return false;
-        }
-
-        // ===== EXISTING CODE - KEEP AS IS =====
-        // Global Variables
+        // ===== GLOBAL VARIABLES =====
         let mediaRecorder = null;
         let audioChunks = [];
         let recordingStartTime;
         let durationInterval;
         let userId = localStorage.getItem('create_user_id') || 'user_' + Date.now();
-        let currentQueueId = null;
-        let ws = null;
-        let reconnectAttempts = 0;
-        let maxReconnectAttempts = 5;
         let audioContext = null;
         let analyser = null;
         let microphone = null;
         let animationId = null;
+        let currentTranscriptionText = '';
+        let currentIncidentId = null;
 
-        // Store user ID for future use
+        // Store user ID
         localStorage.setItem('create_user_id', userId);
 
-        // Network Status Monitoring
+        // ===== TYPEFORM REDIRECT HANDLER =====
+        function extractTypeformParams() {
+            const urlParams = new URLSearchParams(window.location.search);
+            const user_id = urlParams.get('auth_user_id') ||
+                           urlParams.get('user_id') ||
+                           urlParams.get('userId') ||
+                           urlParams.get('create_user_id');
+
+            const incident_id = urlParams.get('incident_id');
+
+            console.log('📥 URL parameters:', {
+                user_id,
+                incident_id,
+                fullUrl: window.location.href
+            });
+
+            if (user_id) {
+                localStorage.setItem('create_user_id', user_id);
+                sessionStorage.setItem('userId', user_id);
+                userId = user_id;
+                document.getElementById('welcomeBanner').style.display = 'block';
+                return true;
+            }
+
+            if (incident_id) {
+                currentIncidentId = incident_id;
+                sessionStorage.setItem('incident_id', incident_id);
+            }
+
+            return false;
+        }
+
+        // ===== NETWORK STATUS =====
         function updateNetworkStatus() {
             const statusElement = document.getElementById('networkStatus');
             const statusText = statusElement.querySelector('span:last-child');
@@ -283,144 +856,7 @@
             showStatus('Network connection lost. Recording will be saved locally.', 'error');
         });
 
-        // Initialize WebSocket Connection
-        function initWebSocket() {
-            const protocol = window.location.protocol === 'https:' ? 'wss:' : 'ws:';
-            const wsUrl = `${protocol}//${window.location.host}`;
-
-            console.log('Connecting to WebSocket:', wsUrl);
-
-            try {
-                ws = new WebSocket(wsUrl);
-            } catch (error) {
-                console.error('❌ WebSocket creation failed:', error);
-                showStatus('Connection setup failed. Some features may be limited.', 'warning');
-                return;
-            }
-
-            ws.onopen = () => {
-                console.log('WebSocket connected successfully');
-                reconnectAttempts = 0;
-
-                // Subscribe to user updates
-                ws.send(JSON.stringify({
-                    type: 'subscribe',
-                    userId: userId
-                }));
-            };
-
-            ws.onmessage = (event) => {
-                try {
-                    const data = JSON.parse(event.data);
-                    console.log('WebSocket message:', data);
-                    handleRealtimeUpdate(data);
-                } catch (error) {
-                    console.error('Error parsing WebSocket message:', error);
-                }
-            };
-
-            ws.onerror = (error) => {
-                console.error('WebSocket error:', error);
-                showStatus('Connection error. Some features may be limited.', 'warning');
-            };
-
-            ws.onclose = () => {
-                console.log('WebSocket disconnected');
-
-                // Attempt to reconnect with exponential backoff
-                if (reconnectAttempts < maxReconnectAttempts) {
-                    reconnectAttempts++;
-                    const delay = Math.min(1000 * Math.pow(2, reconnectAttempts), 30000);
-                    console.log(`Reconnecting in ${delay}ms (attempt ${reconnectAttempts})`);
-                    setTimeout(initWebSocket, delay);
-                }
-            };
-
-            // Heartbeat to keep connection alive
-            setInterval(() => {
-                if (ws && ws.readyState === WebSocket.OPEN) {
-                    ws.send(JSON.stringify({ type: 'ping' }));
-                }
-            }, 30000);
-        }
-
-        // Keep ALL other existing functions from document 3...
-        // (handleRealtimeUpdate, updateProgress, initializeVisualizer, etc.)
-        // I'll include the key ones but assume you keep the rest:
-
-        function handleRealtimeUpdate(data) {
-            console.log('Processing realtime update:', data);
-            const statusDiv = document.getElementById('statusMessage');
-            const statusText = document.getElementById('statusText');
-            const statusIndicator = statusDiv.querySelector('.status-indicator');
-            statusDiv.style.display = 'block';
-
-            switch(data.status || data.type) {
-                case 'processing':
-                case 'PROCESSING':
-                    updateProgress('step-upload', 'complete');
-                    updateProgress('step-transcribe', 'active');
-                    statusIndicator.className = 'status-indicator processing';
-                    statusText.textContent = data.message || 'Processing your recording...';
-                    statusDiv.style.background = '#fff3e0';
-                    break;
-                case 'transcribed':
-                case 'TRANSCRIBED':
-                    updateProgress('step-transcribe', 'complete');
-                    updateProgress('step-summary', 'active');
-                    statusIndicator.className = 'status-indicator processing';
-                    statusText.textContent = 'Generating AI summary...';
-                    statusDiv.style.background = '#e3f2fd';
-                    if (data.transcription) {
-                        showTranscription(data.transcription);
-                    }
-                    break;
-                case 'completed':
-                case 'COMPLETED':
-                    updateProgress('step-summary', 'complete');
-                    statusIndicator.className = 'status-indicator complete';
-                    statusText.textContent = 'Processing complete! ✅';
-                    statusDiv.style.background = '#e8f5e9';
-                    if (data.transcription) {
-                        showTranscription(data.transcription);
-                    }
-                    if (data.summary) {
-                        showSummary(data.summary);
-                    }
-                    break;
-                case 'failed':
-                case 'FAILED':
-                case 'error':
-                    statusIndicator.className = 'status-indicator recording';
-                    statusText.textContent = `Error: ${data.error || data.message || 'Processing failed'}`;
-                    statusDiv.style.background = '#ffebee';
-                    document.getElementById('retryButton').style.display = 'inline-block';
-                    break;
-            }
-        }
-
-        function updateProgress(stepId, status) {
-            const step = document.getElementById(stepId);
-            const allSteps = document.querySelectorAll('.progress-step');
-            const stepIndex = Array.from(allSteps).indexOf(step);
-
-            if (status === 'active') {
-                step.classList.add('active');
-                step.classList.remove('complete');
-                const progressLine = document.getElementById('progressLine');
-                progressLine.style.width = `${(stepIndex / 3) * 100}%`;
-            } else if (status === 'complete') {
-                step.classList.remove('active');
-                step.classList.add('complete');
-                const progressLine = document.getElementById('progressLine');
-                progressLine.style.width = `${((stepIndex + 1) / 4) * 100}%`;
-            }
-        }
-
-        // ... KEEP ALL OTHER FUNCTIONS FROM DOCUMENT 3 ...
-        // (initializeVisualizer, animateVisualizer, startRecording, stopRecording, etc.)
-
-        // Show Status Message
+        // ===== STATUS MESSAGE =====
         function showStatus(message, type = 'info') {
             const statusDiv = document.getElementById('statusMessage');
             const statusText = document.getElementById('statusText');
@@ -456,68 +892,423 @@
             }
         }
 
-        // ===== MODIFIED INITIALIZATION =====
-        // Initialize on Page Load
+        // ===== PROGRESS TRACKING =====
+        function updateProgress(stepId, status) {
+            const step = document.getElementById(stepId);
+            const allSteps = document.querySelectorAll('.progress-step');
+            const stepIndex = Array.from(allSteps).indexOf(step);
+
+            if (status === 'active') {
+                step.classList.add('active');
+                step.classList.remove('complete');
+                const progressLine = document.getElementById('progressLine');
+                progressLine.style.width = `${(stepIndex / 3) * 100}%`;
+            } else if (status === 'complete') {
+                step.classList.remove('active');
+                step.classList.add('complete');
+                const progressLine = document.getElementById('progressLine');
+                progressLine.style.width = `${((stepIndex + 1) / 4) * 100}%`;
+            }
+        }
+
+        // ===== AUDIO VISUALIZER =====
+        function initializeVisualizer() {
+            const barsContainer = document.getElementById('visualizerBars');
+            barsContainer.innerHTML = '';
+
+            for (let i = 0; i < 32; i++) {
+                const bar = document.createElement('div');
+                bar.className = 'visualizer-bar';
+                bar.style.height = '10px';
+                barsContainer.appendChild(bar);
+            }
+        }
+
+        function animateVisualizer() {
+            if (!analyser || !audioContext) return;
+
+            const bars = document.querySelectorAll('.visualizer-bar');
+            const dataArray = new Uint8Array(analyser.frequencyBinCount);
+            analyser.getByteFrequencyData(dataArray);
+
+            bars.forEach((bar, index) => {
+                const value = dataArray[index * 4] || 0;
+                const height = Math.max(10, (value / 255) * 100);
+                bar.style.height = `${height}px`;
+            });
+
+            animationId = requestAnimationFrame(animateVisualizer);
+        }
+
+        // ===== RECORDING FUNCTIONS =====
+        async function startRecording() {
+            try {
+                const stream = await navigator.mediaDevices.getUserMedia({
+                    audio: {
+                        echoCancellation: true,
+                        noiseSuppression: true,
+                        sampleRate: 44100
+                    }
+                });
+
+                // Setup audio context for visualization
+                audioContext = new (window.AudioContext || window.webkitAudioContext)();
+                analyser = audioContext.createAnalyser();
+                microphone = audioContext.createMediaStreamSource(stream);
+                microphone.connect(analyser);
+                analyser.fftSize = 256;
+
+                // Show visualizer
+                document.getElementById('visualizer').classList.add('active');
+                animateVisualizer();
+
+                // Setup media recorder
+                mediaRecorder = new MediaRecorder(stream, {
+                    mimeType: 'audio/webm'
+                });
+
+                audioChunks = [];
+
+                mediaRecorder.ondataavailable = (event) => {
+                    if (event.data.size > 0) {
+                        audioChunks.push(event.data);
+                    }
+                };
+
+                mediaRecorder.onstop = handleRecordingComplete;
+
+                mediaRecorder.start();
+                recordingStartTime = Date.now();
+
+                // Update UI
+                document.getElementById('recordButton').style.display = 'none';
+                document.getElementById('stopButton').style.display = 'inline-block';
+                document.getElementById('recordingStatus').style.display = 'block';
+                showStatus('Recording in progress...', 'warning');
+
+                // Start duration timer
+                durationInterval = setInterval(updateDuration, 1000);
+
+                // Auto-stop after 5 minutes
+                setTimeout(() => {
+                    if (mediaRecorder && mediaRecorder.state === 'recording') {
+                        stopRecording();
+                        showStatus('Maximum recording time reached (5 minutes)', 'warning');
+                    }
+                }, 5 * 60 * 1000);
+
+            } catch (error) {
+                console.error('Error starting recording:', error);
+                showStatus('Failed to access microphone. Please check permissions.', 'error');
+            }
+        }
+
+        function stopRecording() {
+            if (mediaRecorder && mediaRecorder.state === 'recording') {
+                mediaRecorder.stop();
+                clearInterval(durationInterval);
+
+                // Stop visualizer
+                if (animationId) {
+                    cancelAnimationFrame(animationId);
+                }
+                document.getElementById('visualizer').classList.remove('active');
+
+                // Stop audio tracks
+                if (microphone) {
+                    microphone.mediaStream.getTracks().forEach(track => track.stop());
+                }
+
+                // Update UI
+                document.getElementById('stopButton').style.display = 'none';
+                document.getElementById('retryButton').style.display = 'inline-block';
+                document.getElementById('recordingStatus').style.display = 'none';
+                showStatus('Processing your recording...', 'info');
+                updateProgress('step-record', 'complete');
+                updateProgress('step-upload', 'active');
+            }
+        }
+
+        function updateDuration() {
+            const elapsed = Date.now() - recordingStartTime;
+            const seconds = Math.floor(elapsed / 1000);
+            const minutes = Math.floor(seconds / 60);
+            const remainingSeconds = seconds % 60;
+            document.getElementById('duration').textContent =
+                `${minutes}:${remainingSeconds.toString().padStart(2, '0')}`;
+        }
+
+        async function handleRecordingComplete() {
+            const audioBlob = new Blob(audioChunks, { type: 'audio/webm' });
+
+            // Show audio player
+            const audioPlayback = document.getElementById('audioPlayback');
+            audioPlayback.src = URL.createObjectURL(audioBlob);
+            audioPlayback.style.display = 'block';
+
+            // Upload and transcribe
+            await uploadAndTranscribe(audioBlob);
+        }
+
+        async function uploadAndTranscribe(audioBlob) {
+            try {
+                updateProgress('step-upload', 'complete');
+                updateProgress('step-transcribe', 'active');
+                showStatus('Uploading and transcribing your recording...', 'info');
+
+                const formData = new FormData();
+                formData.append('audio', audioBlob, 'recording.webm');
+                formData.append('userId', userId);
+
+                const response = await fetch('/api/transcription/transcribe', {
+                    method: 'POST',
+                    body: formData,
+                    credentials: 'include'
+                });
+
+                const result = await response.json();
+
+                if (result.success) {
+                    updateProgress('step-transcribe', 'complete');
+                    showTranscription(result.transcription.text);
+                    showStatus('Transcription complete!', 'success');
+                } else {
+                    throw new Error(result.error || 'Transcription failed');
+                }
+
+            } catch (error) {
+                console.error('Upload error:', error);
+                showStatus('Failed to process recording. Please try again.', 'error');
+                document.getElementById('recordButton').style.display = 'inline-block';
+                document.getElementById('retryButton').style.display = 'none';
+            }
+        }
+
+        // ===== TRANSCRIPTION DISPLAY =====
+        function showTranscription(text) {
+            currentTranscriptionText = text;
+            document.getElementById('transcriptionText').textContent = text;
+            document.getElementById('transcriptionResult').style.display = 'block';
+            updateCharCount();
+
+            // Fetch user name if available
+            fetchUserName();
+        }
+
+        async function fetchUserName() {
+            try {
+                const response = await fetch('/api/auth/session', {
+                    credentials: 'include'
+                });
+                const data = await response.json();
+                if (data.authenticated && data.user.fullName) {
+                    document.getElementById('userName').textContent = data.user.fullName + "'s";
+                }
+            } catch (error) {
+                console.log('Could not fetch user name:', error);
+            }
+        }
+
+        function updateCharCount() {
+            const text = document.getElementById('transcriptionText').textContent;
+            const words = text.trim().split(/\s+/).length;
+            const chars = text.length;
+            document.getElementById('wordCount').textContent = `${words} words`;
+            document.getElementById('charCount').textContent = `${chars} characters`;
+        }
+
+        // Listen for changes in transcription box
+        document.addEventListener('DOMContentLoaded', () => {
+            const transcriptionBox = document.getElementById('transcriptionText');
+            if (transcriptionBox) {
+                transcriptionBox.addEventListener('input', updateCharCount);
+            }
+        });
+
+        // ===== SAVE TRANSCRIPTION =====
+        async function saveTranscription() {
+            const text = document.getElementById('transcriptionText').textContent;
+
+            try {
+                showStatus('Saving changes...', 'info');
+
+                const response = await fetch('/api/incident-reports/save-statement', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json'
+                    },
+                    body: JSON.stringify({
+                        userId: userId,
+                        incidentId: currentIncidentId,
+                        personalStatement: text
+                    }),
+                    credentials: 'include'
+                });
+
+                const result = await response.json();
+
+                if (result.success) {
+                    currentTranscriptionText = text;
+                    showStatus('Statement saved successfully!', 'success');
+                } else {
+                    throw new Error(result.error || 'Save failed');
+                }
+
+            } catch (error) {
+                console.error('Save error:', error);
+                showStatus('Failed to save statement. Please try again.', 'error');
+            }
+        }
+
+        // ===== AI ANALYSIS GENERATION =====
+        async function generateAIAnalysis() {
+            const text = document.getElementById('transcriptionText').textContent;
+
+            if (!text || text.trim().length === 0) {
+                showStatus('Please record or enter a statement first.', 'warning');
+                return;
+            }
+
+            try {
+                updateProgress('step-summary', 'active');
+                showStatus('Generating AI analysis...', 'info');
+
+                // Show loading spinners
+                document.getElementById('summarySection').style.display = 'block';
+                document.getElementById('summaryText').innerHTML = '<div class="spinner"></div><div class="loading-text">Analyzing your statement...</div>';
+
+                const response = await fetch('/api/ai/analyze-statement', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json'
+                    },
+                    body: JSON.stringify({
+                        userId: userId,
+                        incidentId: currentIncidentId,
+                        transcription: text
+                    }),
+                    credentials: 'include'
+                });
+
+                const result = await response.json();
+
+                if (result.success) {
+                    displayAIAnalysis(result.analysis);
+                    updateProgress('step-summary', 'complete');
+                    showStatus('AI analysis complete!', 'success');
+                } else {
+                    throw new Error(result.error || 'Analysis failed');
+                }
+
+            } catch (error) {
+                console.error('AI analysis error:', error);
+                showStatus('Failed to generate AI analysis. Please try again.', 'error');
+                document.getElementById('summarySection').style.display = 'none';
+            }
+        }
+
+        function displayAIAnalysis(analysis) {
+            // Display Summary
+            document.getElementById('summaryText').innerHTML = analysis.summary || 'No summary available.';
+
+            // Display Key Points
+            const keyPointsList = document.getElementById('keyPointsList');
+            keyPointsList.innerHTML = '';
+            if (analysis.keyPoints && analysis.keyPoints.length > 0) {
+                analysis.keyPoints.forEach(point => {
+                    const li = document.createElement('li');
+                    li.textContent = point;
+                    keyPointsList.appendChild(li);
+                });
+            }
+
+            // Display AI Review
+            if (analysis.review) {
+                document.getElementById('reviewSection').style.display = 'block';
+                document.getElementById('qualityAssessment').textContent = analysis.review.quality || '';
+
+                const missingInfoDiv = document.getElementById('missingInfo');
+                missingInfoDiv.innerHTML = '';
+                if (analysis.review.missingInfo && analysis.review.missingInfo.length > 0) {
+                    const ul = document.createElement('ul');
+                    analysis.review.missingInfo.forEach(item => {
+                        const li = document.createElement('li');
+                        li.className = 'missing-info';
+                        li.textContent = item;
+                        ul.appendChild(li);
+                    });
+                    missingInfoDiv.appendChild(ul);
+                } else {
+                    missingInfoDiv.innerHTML = '<p style="color: #4CAF50;">✓ All key information appears to be present.</p>';
+                }
+
+                const suggestionsDiv = document.getElementById('suggestions');
+                suggestionsDiv.innerHTML = '';
+                if (analysis.review.suggestions && analysis.review.suggestions.length > 0) {
+                    analysis.review.suggestions.forEach(suggestion => {
+                        const div = document.createElement('div');
+                        div.className = 'suggestion';
+                        div.textContent = suggestion;
+                        suggestionsDiv.appendChild(div);
+                    });
+                }
+            }
+
+            // Display Combined Report (if Typeform data available)
+            if (analysis.combinedReport) {
+                document.getElementById('combinedReportSection').style.display = 'block';
+                document.getElementById('combinedReportText').innerHTML = analysis.combinedReport;
+            }
+
+            // Display Final Review
+            if (analysis.finalReview) {
+                document.getElementById('finalReviewSection').style.display = 'block';
+                document.getElementById('completenessScore').textContent =
+                    analysis.finalReview.completenessScore + '%';
+
+                document.getElementById('reportStrengths').innerHTML =
+                    analysis.finalReview.strengths || '';
+
+                const nextStepsList = document.getElementById('nextStepsList');
+                nextStepsList.innerHTML = '';
+                if (analysis.finalReview.nextSteps && analysis.finalReview.nextSteps.length > 0) {
+                    analysis.finalReview.nextSteps.forEach(step => {
+                        const li = document.createElement('li');
+                        li.textContent = step;
+                        nextStepsList.appendChild(li);
+                    });
+                }
+
+                document.getElementById('legalConsiderations').innerHTML =
+                    analysis.finalReview.legalConsiderations || '';
+            }
+        }
+
+        // ===== COLLAPSIBLE SECTIONS =====
+        function toggleSection(sectionId) {
+            const content = document.getElementById(sectionId);
+            content.classList.toggle('open');
+        }
+
+        // ===== EVENT LISTENERS =====
         document.addEventListener('DOMContentLoaded', () => {
             console.log('🚀 Initializing transcription page');
 
-            // FIRST: Check for Typeform redirect parameters
-            const hasTypeformParams = extractTypeformParams();
+            // Extract URL parameters
+            extractTypeformParams();
 
-            // Update userId if we got it from Typeform
-            userId = localStorage.getItem('create_user_id') || userId;
-
-            console.log('👤 Active User ID:', userId);
-            console.log('📍 Current URL:', window.location.href);
-            console.log('🔗 Referrer:', document.referrer);
-
-            if (hasTypeformParams) {
-                showStatus('Welcome back! Profile loaded successfully.', 'success');
-            }
-
-            // Initialize components with error handling
-            try {
-                initializeVisualizer();
-                console.log('✅ Visualizer initialized');
-            } catch (error) {
-                console.error('❌ Visualizer initialization failed:', error);
-                showStatus('Warning: Audio visualizer unavailable', 'warning');
-            }
-
-            try {
-                initWebSocket();
-                console.log('✅ WebSocket initialization started');
-            } catch (error) {
-                console.error('❌ WebSocket initialization failed:', error);
-                showStatus('Warning: Real-time updates unavailable', 'warning');
-            }
-
-            try {
-                updateNetworkStatus();
-                console.log('✅ Network status updated');
-            } catch (error) {
-                console.error('❌ Network status update failed:', error);
-            }
+            // Initialize components
+            initializeVisualizer();
+            updateNetworkStatus();
 
             // Set up event listeners
-            try {
-                document.getElementById('recordButton').addEventListener('click', startRecording);
-                document.getElementById('stopButton').addEventListener('click', stopRecording);
-                document.getElementById('retryButton').addEventListener('click', () => {
-                    location.reload();
-                });
-                console.log('✅ Event listeners attached');
-            } catch (error) {
-                console.error('❌ Event listeners setup failed:', error);
-            }
-
-            // Handle visibility change (mobile browsers)
-            document.addEventListener('visibilitychange', () => {
-                if (document.hidden && mediaRecorder && mediaRecorder.state === 'recording') {
-                    console.log('Page hidden while recording - stopping');
-                    stopRecording();
-                }
+            document.getElementById('recordButton').addEventListener('click', startRecording);
+            document.getElementById('stopButton').addEventListener('click', stopRecording);
+            document.getElementById('retryButton').addEventListener('click', () => {
+                location.reload();
             });
+            document.getElementById('saveTranscriptionBtn').addEventListener('click', saveTranscription);
+            document.getElementById('generateSummaryBtn').addEventListener('click', generateAIAnalysis);
 
             // Prevent accidental navigation during recording
             window.addEventListener('beforeunload', (e) => {
@@ -527,7 +1318,6 @@
                 }
             });
 
-            // Show initial status
             showStatus('Ready to record your statement', 'info');
             console.log('✅ Transcription page initialized successfully');
         });
@@ -535,17 +1325,14 @@
         // Handle errors globally
         window.addEventListener('error', (event) => {
             console.error('Global error:', event.error);
-            showStatus(`Error: ${event.message}. Check console for details.`, 'error');
+            showStatus(`Error: ${event.message}`, 'error');
         });
 
         window.addEventListener('unhandledrejection', (event) => {
             console.error('Unhandled promise rejection:', event.reason);
-            showStatus(`Promise rejection: ${event.reason}`, 'error');
+            showStatus(`Error: ${event.reason}`, 'error');
         });
-
-        // KEEP ALL OTHER FUNCTIONS FROM DOCUMENT 3 EXACTLY AS THEY ARE
-        // Including: initializeVisualizer, animateVisualizer, startRecording, 
-        // stopRecording, handleRecordingComplete, uploadAndProcess, etc.
     </script>
-    <script src="/js/mascot.js"></script></body>
+    <script src="/js/mascot.js"></script>
+</body>
 </html>
