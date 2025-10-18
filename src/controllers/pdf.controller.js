@@ -21,6 +21,9 @@ try {
   logger.warn('PDF generation modules not found - PDF features will be disabled', error.message);
 }
 
+// Import Adobe PDF Form Filler Service
+const adobePdfFormFillerService = require('../services/adobePdfFormFillerService');
+
 // Initialize Supabase client
 let supabase = null;
 if (config.supabase.url && config.supabase.serviceKey) {
@@ -129,7 +132,26 @@ async function generateUserPDF(create_user_id, source = 'direct') {
   if (aiTranscription) allData.aiTranscription = aiTranscription;
   if (aiSummary) allData.aiSummary = aiSummary;
 
-  const pdfBuffer = await generatePDF(allData);
+  // Try to use Adobe PDF Form Filler first (better quality, preserves legal structure)
+  let pdfBuffer;
+  if (adobePdfFormFillerService.isReady()) {
+    logger.info('📄 Using Adobe PDF Form Filler Service (high quality)');
+    try {
+      pdfBuffer = await adobePdfFormFillerService.fillPdfForm(allData);
+
+      // Optionally compress the PDF to save storage space
+      pdfBuffer = await adobePdfFormFillerService.compressPdf(pdfBuffer, 'MEDIUM');
+
+      logger.success('✅ Adobe PDF form filled and compressed successfully');
+    } catch (adobeError) {
+      logger.error('Adobe PDF filling failed, falling back to legacy method:', adobeError);
+      pdfBuffer = await generatePDF(allData);
+    }
+  } else {
+    logger.info('📄 Using legacy PDF generation method');
+    pdfBuffer = await generatePDF(allData);
+  }
+
   const storedForm = await storeCompletedForm(create_user_id, pdfBuffer, allData);
   const emailResult = await sendEmails(allData.user.driver_email, pdfBuffer, create_user_id);
 

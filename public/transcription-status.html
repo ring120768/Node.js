@@ -117,6 +117,61 @@
             color: #666;
         }
 
+        /* Tab Navigation */
+        .tab-navigation {
+            display: flex;
+            gap: 0;
+            border-bottom: 2px solid #e0e0e0;
+            margin-bottom: 30px;
+            overflow-x: auto;
+        }
+
+        .tab-button {
+            flex: 1;
+            min-width: 120px;
+            padding: 15px 20px;
+            background: #f5f5f5;
+            border: none;
+            border-bottom: 3px solid transparent;
+            cursor: pointer;
+            font-size: 16px;
+            font-weight: 600;
+            color: #666;
+            transition: all 0.3s ease;
+            white-space: nowrap;
+        }
+
+        .tab-button:hover {
+            background: #eeeeee;
+            color: #333;
+        }
+
+        .tab-button.active {
+            background: white;
+            color: #2196F3;
+            border-bottom-color: #2196F3;
+        }
+
+        .tab-panel {
+            display: none;
+            animation: fadeIn 0.3s ease;
+        }
+
+        .tab-panel.active {
+            display: block;
+        }
+
+        @keyframes fadeIn {
+            from {
+                opacity: 0;
+                transform: translateY(10px);
+            }
+            to {
+                opacity: 1;
+                transform: translateY(0);
+            }
+        }
+
         /* Info boxes */
         .info-box {
             background: #e3f2fd;
@@ -144,7 +199,7 @@
         /* Audio Visualizer */
         .audio-visualizer {
             background: linear-gradient(135deg, #1a1a2e, #16213e);
-            padding: 30px;
+            padding: 40px 30px;
             border-radius: 12px;
             margin: 20px 0;
             display: none;
@@ -154,19 +209,74 @@
             display: block;
         }
 
+        .visualizer-header {
+            text-align: center;
+            margin-bottom: 20px;
+        }
+
+        .visualizer-title {
+            color: white;
+            font-size: 18px;
+            font-weight: 600;
+            margin-bottom: 10px;
+        }
+
+        .audio-level-indicator {
+            display: inline-block;
+            padding: 8px 20px;
+            border-radius: 20px;
+            font-size: 14px;
+            font-weight: 600;
+            transition: all 0.3s ease;
+        }
+
+        .audio-level-indicator.quiet {
+            background: #f44336;
+            color: white;
+        }
+
+        .audio-level-indicator.good {
+            background: #4CAF50;
+            color: white;
+        }
+
+        .audio-level-indicator.loud {
+            background: #ff9800;
+            color: white;
+        }
+
         .visualizer-bars {
             display: flex;
             align-items: flex-end;
             justify-content: center;
-            gap: 4px;
-            height: 100px;
+            gap: 6px;
+            height: 250px;
+            margin-bottom: 15px;
         }
 
         .visualizer-bar {
-            width: 6px;
-            background: linear-gradient(to top, #667eea, #764ba2);
-            border-radius: 3px;
-            transition: height 0.1s ease;
+            width: 8px;
+            border-radius: 4px;
+            transition: all 0.1s ease;
+            box-shadow: 0 0 10px rgba(255, 255, 255, 0.2);
+        }
+
+        .visualizer-bar.level-quiet {
+            background: linear-gradient(to top, #f44336, #ef5350);
+        }
+
+        .visualizer-bar.level-good {
+            background: linear-gradient(to top, #4CAF50, #66BB6A);
+        }
+
+        .visualizer-bar.level-loud {
+            background: linear-gradient(to top, #ff9800, #ffa726);
+        }
+
+        .visualizer-footer {
+            text-align: center;
+            color: rgba(255, 255, 255, 0.7);
+            font-size: 12px;
         }
 
         /* Status Message */
@@ -854,10 +964,132 @@
             color: #f57c00;
         }
 
+        /* Microphone Check Modal */
+        .mic-check-modal {
+            display: none;
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(0, 0, 0, 0.8);
+            z-index: 10002;
+            align-items: center;
+            justify-content: center;
+        }
+
+        .mic-check-modal.active {
+            display: flex;
+        }
+
+        .mic-check-content {
+            background: white;
+            padding: 40px;
+            border-radius: 12px;
+            max-width: 500px;
+            width: 90%;
+            text-align: center;
+        }
+
+        .mic-check-title {
+            font-size: 24px;
+            font-weight: 600;
+            color: #333;
+            margin-bottom: 20px;
+        }
+
+        .mic-check-instruction {
+            color: #666;
+            margin-bottom: 30px;
+            font-size: 16px;
+        }
+
+        .mic-check-visualizer {
+            background: linear-gradient(135deg, #1a1a2e, #16213e);
+            padding: 30px;
+            border-radius: 8px;
+            margin-bottom: 20px;
+        }
+
+        .mic-check-bars {
+            display: flex;
+            align-items: flex-end;
+            justify-content: center;
+            gap: 4px;
+            height: 100px;
+        }
+
+        .mic-check-bar {
+            width: 6px;
+            border-radius: 3px;
+            background: linear-gradient(to top, #4CAF50, #66BB6A);
+            transition: height 0.1s ease;
+        }
+
+        .mic-level-text {
+            color: white;
+            margin-top: 15px;
+            font-weight: 600;
+        }
+
+        .mic-check-buttons {
+            display: flex;
+            gap: 10px;
+            justify-content: center;
+        }
+
+        /* Recording Countdown Overlay */
+        .countdown-overlay {
+            display: none;
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(0, 0, 0, 0.9);
+            z-index: 10001;
+            align-items: center;
+            justify-content: center;
+            flex-direction: column;
+        }
+
+        .countdown-overlay.active {
+            display: flex;
+        }
+
+        .countdown-number {
+            font-size: 150px;
+            font-weight: bold;
+            color: white;
+            animation: countdownPulse 1s ease-in-out;
+        }
+
+        .countdown-text {
+            font-size: 24px;
+            color: rgba(255, 255, 255, 0.8);
+            margin-top: 20px;
+        }
+
+        @keyframes countdownPulse {
+            0% {
+                transform: scale(0.5);
+                opacity: 0;
+            }
+            50% {
+                transform: scale(1.2);
+                opacity: 1;
+            }
+            100% {
+                transform: scale(1);
+                opacity: 1;
+            }
+        }
+
         /* Responsive Design */
         @media (max-width: 768px) {
             .container {
                 padding: 20px;
+                padding-bottom: 120px; /* Extra space for sticky controls */
             }
 
             h1 {
@@ -870,6 +1102,15 @@
 
             .recording-controls {
                 flex-direction: column;
+                position: fixed;
+                bottom: 0;
+                left: 0;
+                right: 0;
+                background: white;
+                padding: 15px 20px;
+                box-shadow: 0 -4px 12px rgba(0,0,0,0.15);
+                z-index: 998;
+                margin: 0;
             }
 
             .btn {
@@ -878,7 +1119,7 @@
 
             .security-badge {
                 top: auto;
-                bottom: 20px;
+                bottom: 90px;
                 right: 20px;
             }
 
@@ -886,11 +1127,43 @@
                 font-size: 12px;
                 padding: 8px 12px;
             }
+
+            .countdown-number {
+                font-size: 120px;
+            }
+
+            .countdown-text {
+                font-size: 18px;
+            }
         }
     </style>
     <link rel="stylesheet" href="/css/mascot.css">
 </head>
 <body>
+    <!-- Microphone Check Modal -->
+    <div class="mic-check-modal" id="micCheckModal">
+        <div class="mic-check-content">
+            <h2 class="mic-check-title">🎤 Microphone Check</h2>
+            <p class="mic-check-instruction">Speak into your microphone to test the audio level</p>
+            <div class="mic-check-visualizer">
+                <div class="mic-check-bars" id="micCheckBars">
+                    <!-- Bars will be generated dynamically -->
+                </div>
+                <div class="mic-level-text" id="micLevelText">Speak to test...</div>
+            </div>
+            <div class="mic-check-buttons">
+                <button class="btn" id="cancelMicCheck" onclick="cancelMicrophoneCheck()">Cancel</button>
+                <button class="btn btn-success" id="proceedWithRecording" onclick="proceedWithRecording()">Sounds Good, Let's Record!</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Recording Countdown Overlay -->
+    <div class="countdown-overlay" id="countdownOverlay">
+        <div class="countdown-number" id="countdownNumber">5</div>
+        <div class="countdown-text">Get ready to record...</div>
+    </div>
+
     <!-- Network Status Indicator -->
     <div class="network-status online" id="networkStatus">
         <span class="dot"></span>
@@ -943,6 +1216,16 @@
             </div>
         </div>
 
+        <!-- Tab Navigation -->
+        <div class="tab-navigation">
+            <button class="tab-button active" onclick="switchTab('record')">🎤 Record</button>
+            <button class="tab-button" onclick="switchTab('transcription')" id="transcriptionTab">📝 Transcription</button>
+            <button class="tab-button" onclick="switchTab('analysis')" id="analysisTab">🤖 AI Analysis</button>
+        </div>
+
+        <!-- Tab Panel: Record -->
+        <div class="tab-panel active" id="tab-record">
+
         <!-- Recording Guidelines -->
         <div class="info-box">
             <h3>📋 Recording Guidelines</h3>
@@ -969,8 +1252,17 @@
 
         <!-- Audio Visualizer -->
         <div class="audio-visualizer" id="visualizer">
+            <div class="visualizer-header">
+                <div class="visualizer-title">🎙️ Recording Active</div>
+                <div class="audio-level-indicator good" id="audioLevelIndicator">
+                    Audio Level: Good
+                </div>
+            </div>
             <div class="visualizer-bars" id="visualizerBars">
                 <!-- Bars will be generated dynamically -->
+            </div>
+            <div class="visualizer-footer">
+                Speak clearly into your microphone
             </div>
         </div>
 
@@ -1008,6 +1300,11 @@
         <!-- Audio Playback -->
         <audio id="audioPlayback" controls></audio>
 
+        </div> <!-- End Tab Panel: Record -->
+
+        <!-- Tab Panel: Transcription -->
+        <div class="tab-panel" id="tab-transcription">
+
         <!-- Transcription Result -->
         <div id="transcriptionResult">
             <h2>📝 <span id="userName">Your</span> Personal Statement</h2>
@@ -1028,6 +1325,11 @@
                 You can edit the transcription above if needed
             </p>
         </div>
+
+        </div> <!-- End Tab Panel: Transcription -->
+
+        <!-- Tab Panel: Analysis -->
+        <div class="tab-panel" id="tab-analysis">
 
         <!-- Metrics Dashboard -->
         <div class="metrics-dashboard" id="metricsDashboard">
@@ -1165,7 +1467,10 @@
                 Always consult with a qualified solicitor for professional legal guidance specific to your situation.
             </div>
         </div>
-    </div>
+
+        </div> <!-- End Tab Panel: Analysis -->
+
+    </div> <!-- End Container -->
 
     <!-- Security Details Modal -->
     <div class="security-modal" id="securityModal">
@@ -1395,18 +1700,201 @@
             const dataArray = new Uint8Array(analyser.frequencyBinCount);
             analyser.getByteFrequencyData(dataArray);
 
+            // Calculate average audio level
+            let sum = 0;
             bars.forEach((bar, index) => {
                 const value = dataArray[index * 4] || 0;
+                sum += value;
+                const height = Math.max(10, (value / 255) * 250);  // Scale to 250px max
+                bar.style.height = `${height}px`;
+
+                // Apply color class based on value
+                bar.className = 'visualizer-bar';
+                if (value < 30) {
+                    bar.classList.add('level-quiet');
+                } else if (value < 150) {
+                    bar.classList.add('level-good');
+                } else {
+                    bar.classList.add('level-loud');
+                }
+            });
+
+            // Update audio level indicator
+            const avgLevel = sum / bars.length;
+            const indicator = document.getElementById('audioLevelIndicator');
+
+            if (indicator) {
+                indicator.className = 'audio-level-indicator';
+                if (avgLevel < 30) {
+                    indicator.classList.add('quiet');
+                    indicator.textContent = 'Audio Level: Too Quiet';
+                } else if (avgLevel < 150) {
+                    indicator.classList.add('good');
+                    indicator.textContent = 'Audio Level: Good';
+                } else {
+                    indicator.classList.add('loud');
+                    indicator.textContent = 'Audio Level: Too Loud';
+                }
+            }
+
+            animationId = requestAnimationFrame(animateVisualizer);
+        }
+
+        // ===== MICROPHONE CHECK =====
+        let micCheckStream = null;
+        let micCheckContext = null;
+        let micCheckAnalyser = null;
+        let micCheckAnimationId = null;
+
+        function initializeMicCheckBars() {
+            const barsContainer = document.getElementById('micCheckBars');
+            barsContainer.innerHTML = '';
+            for (let i = 0; i < 20; i++) {
+                const bar = document.createElement('div');
+                bar.className = 'mic-check-bar';
+                bar.style.height = '10px';
+                barsContainer.appendChild(bar);
+            }
+        }
+
+        function animateMicCheckVisualizer() {
+            if (!micCheckAnalyser || !micCheckContext) return;
+
+            const bars = document.querySelectorAll('.mic-check-bar');
+            const dataArray = new Uint8Array(micCheckAnalyser.frequencyBinCount);
+            micCheckAnalyser.getByteFrequencyData(dataArray);
+
+            let sum = 0;
+            bars.forEach((bar, index) => {
+                const value = dataArray[index * 6] || 0;
+                sum += value;
                 const height = Math.max(10, (value / 255) * 100);
                 bar.style.height = `${height}px`;
             });
 
-            animationId = requestAnimationFrame(animateVisualizer);
+            const avgLevel = sum / bars.length;
+            const levelText = document.getElementById('micLevelText');
+            if (avgLevel < 20) {
+                levelText.textContent = 'Too quiet - speak louder!';
+                levelText.style.color = '#ff9800';
+            } else if (avgLevel < 150) {
+                levelText.textContent = 'Perfect! Your microphone is working great!';
+                levelText.style.color = '#4CAF50';
+            } else {
+                levelText.textContent = 'Very loud - you might want to move back a bit';
+                levelText.style.color = '#ff9800';
+            }
+
+            micCheckAnimationId = requestAnimationFrame(animateMicCheckVisualizer);
+        }
+
+        async function startMicrophoneCheck() {
+            try {
+                const modal = document.getElementById('micCheckModal');
+                modal.classList.add('active');
+
+                initializeMicCheckBars();
+
+                micCheckStream = await navigator.mediaDevices.getUserMedia({
+                    audio: {
+                        echoCancellation: true,
+                        noiseSuppression: true,
+                        sampleRate: 44100
+                    }
+                });
+
+                micCheckContext = new (window.AudioContext || window.webkitAudioContext)();
+                micCheckAnalyser = micCheckContext.createAnalyser();
+                const micCheckMicrophone = micCheckContext.createMediaStreamSource(micCheckStream);
+                micCheckMicrophone.connect(micCheckAnalyser);
+                micCheckAnalyser.fftSize = 256;
+
+                animateMicCheckVisualizer();
+
+                return new Promise((resolve, reject) => {
+                    window.micCheckResolve = resolve;
+                    window.micCheckReject = reject;
+                });
+            } catch (error) {
+                console.error('Microphone check error:', error);
+                showStatus('Failed to access microphone. Please check permissions.', 'error');
+                throw error;
+            }
+        }
+
+        function cancelMicrophoneCheck() {
+            if (micCheckAnimationId) {
+                cancelAnimationFrame(micCheckAnimationId);
+            }
+            if (micCheckStream) {
+                micCheckStream.getTracks().forEach(track => track.stop());
+            }
+            if (micCheckContext) {
+                micCheckContext.close();
+            }
+
+            document.getElementById('micCheckModal').classList.remove('active');
+
+            if (window.micCheckReject) {
+                window.micCheckReject('cancelled');
+            }
+        }
+
+        function proceedWithRecording() {
+            if (micCheckAnimationId) {
+                cancelAnimationFrame(micCheckAnimationId);
+            }
+            if (micCheckStream) {
+                micCheckStream.getTracks().forEach(track => track.stop());
+            }
+            if (micCheckContext) {
+                micCheckContext.close();
+            }
+
+            document.getElementById('micCheckModal').classList.remove('active');
+
+            if (window.micCheckResolve) {
+                window.micCheckResolve();
+            }
+        }
+
+        // ===== COUNTDOWN FUNCTION =====
+        function showCountdown() {
+            return new Promise((resolve) => {
+                const overlay = document.getElementById('countdownOverlay');
+                const numberElement = document.getElementById('countdownNumber');
+                let count = 5;
+
+                // Show overlay
+                overlay.classList.add('active');
+
+                const countdownInterval = setInterval(() => {
+                    count--;
+                    if (count > 0) {
+                        numberElement.textContent = count;
+                        // Re-trigger animation by removing and adding class
+                        numberElement.style.animation = 'none';
+                        setTimeout(() => {
+                            numberElement.style.animation = '';
+                        }, 10);
+                    } else {
+                        clearInterval(countdownInterval);
+                        overlay.classList.remove('active');
+                        resolve();
+                    }
+                }, 1000);
+            });
         }
 
         // ===== RECORDING FUNCTIONS =====
         async function startRecording() {
             try {
+                // First, check microphone
+                await startMicrophoneCheck();
+
+                // Then show countdown
+                await showCountdown();
+
                 const stream = await navigator.mediaDevices.getUserMedia({
                     audio: {
                         echoCancellation: true,
@@ -1622,6 +2110,9 @@
 
             // Fetch user name if available
             fetchUserName();
+
+            // Switch to Transcription tab
+            switchTab('transcription');
         }
 
         async function fetchUserName() {
@@ -1967,12 +2458,39 @@
                     breakdown: { timeScore, locationScore, witnessScore, injuryScore }
                 });
             }
+
+            // Switch to Analysis tab
+            switchTab('analysis');
         }
 
         // ===== COLLAPSIBLE SECTIONS =====
         function toggleSection(sectionId) {
             const content = document.getElementById(sectionId);
             content.classList.toggle('open');
+        }
+
+        // ===== TAB SWITCHING =====
+        function switchTab(tabName) {
+            // Remove active class from all tab buttons and panels
+            document.querySelectorAll('.tab-button').forEach(button => {
+                button.classList.remove('active');
+            });
+            document.querySelectorAll('.tab-panel').forEach(panel => {
+                panel.classList.remove('active');
+            });
+
+            // Add active class to selected tab button and panel
+            const tabButton = event.target.closest('.tab-button');
+            if (tabButton) {
+                tabButton.classList.add('active');
+            }
+
+            const tabPanel = document.getElementById(`tab-${tabName}`);
+            if (tabPanel) {
+                tabPanel.classList.add('active');
+            }
+
+            console.log(`Switched to ${tabName} tab`);
         }
 
         // ===== SECURITY MODAL =====

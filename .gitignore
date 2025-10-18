@@ -9,3 +9,12 @@ node_modules/
 coverage/
 *.tgz
 jest
+
+# Adobe PDF Services Credentials
+credentials/pdfservices-api-credentials.json
+credentials/*.json
+
+# Adobe PDF Test Output
+test-output/
+*.pdf
+test-filled-form.pdf

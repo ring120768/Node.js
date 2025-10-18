@@ -1,12 +1,12 @@
 # Car Crash Lawyer AI System
 
 ## Overview
-Car Crash Lawyer AI is a GDPR-compliant legal documentation system for UK traffic accidents. The system collects incident data through Typeform/Zapier webhooks, processes images and audio files using OpenAI, generates comprehensive PDF reports, and emails them to users and legal teams.
+Car Crash Lawyer AI is a GDPR-compliant legal documentation system for UK traffic accidents. The system collects incident data through Typeform webhooks, processes images and audio files using OpenAI, generates comprehensive PDF reports using Adobe PDF Services, and emails them to users and legal teams.
 
 ## Current State
 **Status:** ✅ RUNNING
-**Version:** 2.0.1
-**Last Updated:** October 14, 2025
+**Version:** 2.1.0
+**Last Updated:** October 18, 2025
 **Server URL:** https://8eb321a3-1f5e-47c6-a6fe-e5b806ca8c54-00-3pzgrnpj2hcui.riker.replit.dev
 **Port:** 5000
 
@@ -16,15 +16,15 @@ Car Crash Lawyer AI is a GDPR-compliant legal documentation system for UK traffi
 - **Backend:** Node.js + Express.js (v4.21.2)
 - **Database:** Supabase (PostgreSQL)
 - **File Storage:** Supabase Storage Buckets
-- **PDF Generation:** pdf-lib with template.pdf
+- **PDF Generation:** Adobe PDF Services (primary) with pdf-lib fallback
 - **Email Service:** Nodemailer (SMTP)
 - **AI Services:** OpenAI Whisper API (transcription)
 - **Deployment:** Replit with auto-scaling
 
 ### Key Features
-1. **User Signup Flow:** Typeform → Zapier Webhook → Image processing → Supabase storage
+1. **User Signup Flow:** Typeform → Webhook → Image processing → Supabase storage
 2. **Incident Reports:** Typeform → Webhook → Process images/audio → Store data
-3. **PDF Generation:** Fetch all data → Fill 150+ fields across 17 pages → Email delivery
+3. **PDF Generation:** Adobe PDF Services fills 17-page legal document (150+ fields) → Compress → Store → Email delivery
 4. **AI Transcription:** Audio files → OpenAI Whisper API → Store transcriptions
 5. **Real-time Updates:** WebSocket for live status updates
 6. **GDPR Compliance:** Data privacy, deletion, and export capabilities
@@ -72,8 +72,12 @@ The following secrets are required for the application to function:
 2. **OpenAI** (AI Transcription)
    - `OPENAI_API_KEY` - OpenAI API key for Whisper transcription
 
-3. **Webhooks** (Typeform/Zapier Integration)
+3. **Webhooks** (Typeform Integration)
    - `WEBHOOK_API_KEY` - Shared secret for webhook authentication
+
+4. **Adobe PDF Services** (PDF Generation)
+   - Credentials file: `/credentials/pdfservices-api-credentials.json`
+   - Optional: Falls back to pdf-lib if not configured
 
 ### Optional Environment Variables
 - `TYPEFORM_WEBHOOK_SECRET` - Typeform webhook signature verification
@@ -150,6 +154,16 @@ npm run clean      # Clean temporary files
 None specified yet.
 
 ## Recent Changes
+- **Oct 18, 2025:** Adobe PDF Services integration (v2.1.0)
+  - Integrated Adobe PDF Services for high-quality PDF generation
+  - Replaces Zapier + PDFco workflow (saves £480/year)
+  - Auto-fills 17-page legal document (150+ fields) from Supabase data
+  - Automatic PDF compression (saves storage costs)
+  - Fallback to pdf-lib if Adobe credentials not configured
+  - New services: adobePdfFormFillerService.js, adobePdfService.js
+  - Test scripts: test-adobe-pdf.js, test-form-filling.js
+  - Complete documentation: ADOBE_FORM_FILLING_GUIDE.md and related docs
+
 - **Oct 14, 2025:** Server successfully configured and running
   - All API keys configured (Supabase, OpenAI, Webhook)
   - Fixed startup script to run index.js directly
