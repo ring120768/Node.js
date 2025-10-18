@@ -614,16 +614,16 @@
                         🗺️ ${currentLocation.lat.toFixed(6)}, ${currentLocation.lng.toFixed(6)}
                     </div>
 
-                    <button class="copy-btn" onclick="copyLocation()">
+                    <button class="copy-btn" data-action="copy">
                         📋 Copy Location to Clipboard
                     </button>
                 </div>
 
-                <button class="call-999-btn" onclick="call999()">
+                <button class="call-999-btn" data-action="call999">
                     📞 Call 999 Now
                 </button>
 
-                <button class="cancel-btn" onclick="closeModal()">
+                <button class="cancel-btn" data-action="cancel">
                     Cancel
                 </button>
             `;
@@ -635,10 +635,10 @@
                 <div class="error-message">
                     ⚠️ ${message}
                 </div>
-                <button class="call-999-btn" onclick="call999()">
+                <button class="call-999-btn" data-action="call999">
                     📞 Call 999 Anyway
                 </button>
-                <button class="cancel-btn" onclick="closeModal()">
+                <button class="cancel-btn" data-action="cancel">
                     Cancel
                 </button>
             `;
@@ -677,6 +677,26 @@
         emergencyModal.addEventListener('click', function(e) {
             if (e.target === emergencyModal) {
                 closeModal();
+            }
+        });
+
+        // Event delegation for modal buttons (handles dynamically added buttons)
+        emergencyModal.addEventListener('click', function(e) {
+            const button = e.target.closest('[data-action]');
+            if (!button) return;
+
+            const action = button.getAttribute('data-action');
+
+            switch(action) {
+                case 'call999':
+                    call999();
+                    break;
+                case 'cancel':
+                    closeModal();
+                    break;
+                case 'copy':
+                    copyLocation();
+                    break;
             }
         });
 
