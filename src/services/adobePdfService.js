@@ -25,24 +25,27 @@ class AdobePdfService {
   }
 
   /**
-   * Initialize Adobe credentials
+   * Initialize Adobe credentials (v4 OAuth)
+   * Uses environment variables: PDF_SERVICES_CLIENT_ID and PDF_SERVICES_CLIENT_SECRET
    */
   initializeCredentials() {
     try {
-      const credentialsPath = path.join(__dirname, '../../credentials/pdfservices-api-credentials.json');
+      const clientId = process.env.PDF_SERVICES_CLIENT_ID;
+      const clientSecret = process.env.PDF_SERVICES_CLIENT_SECRET;
 
-      if (fs.existsSync(credentialsPath)) {
-        // For v3 SDK, use serviceAccountCredentialsBuilder
-        this.credentials = PDFServicesSdk.Credentials
-          .serviceAccountCredentialsBuilder()
-          .fromFile(credentialsPath)
-          .build();
+      if (clientId && clientSecret) {
+        // v4 SDK with OAuth Server-to-Server credentials
+        this.credentials = new PDFServicesSdk.Credentials({
+          clientId,
+          clientSecret
+        });
 
         this.initialized = true;
-        logger.info('✅ Adobe PDF Services initialized successfully');
+        logger.info('✅ Adobe PDF Services initialized successfully (v4 OAuth)');
       } else {
-        logger.warn('⚠️ Adobe PDF credentials not found. Place pdfservices-api-credentials.json in /credentials directory');
-        logger.warn('📥 Download from: https://acrobatservices.adobe.com/dc-integration-creation-app-cdn/main.html');
+        logger.warn('⚠️ Adobe PDF credentials not found in environment variables');
+        logger.warn('📥 Set PDF_SERVICES_CLIENT_ID and PDF_SERVICES_CLIENT_SECRET');
+        logger.warn('📥 Get credentials from: https://acrobatservices.adobe.com/dc-integration-creation-app-cdn/main.html');
       }
     } catch (error) {
       logger.error('Failed to initialize Adobe PDF Services:', error);
