@@ -32,9 +32,17 @@ class AdobePdfService {
       const credentialsPath = path.join(__dirname, '../../credentials/pdfservices-api-credentials.json');
 
       if (fs.existsSync(credentialsPath)) {
+        // Read credentials file
+        const credentials = JSON.parse(fs.readFileSync(credentialsPath, 'utf8'));
+
+        // Build credentials for v3 SDK
         this.credentials = PDFServicesSdk.Credentials
           .servicePrincipalCredentialsBuilder()
-          .fromFile(credentialsPath)
+          .withClientId(credentials.client_credentials.client_id)
+          .withClientSecret(credentials.client_credentials.client_secret)
+          .withOrganizationId(credentials.service_principal_credentials.organization_id)
+          .withAccountId(credentials.service_principal_credentials.account_id)
+          .withPrivateKey(credentials.service_principal_credentials.private_key_file)
           .build();
 
         this.initialized = true;
