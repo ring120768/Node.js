@@ -169,7 +169,7 @@ class AdobePdfService {
       throw new Error('Adobe PDF Services not initialized. Check credentials.');
     }
 
-    const { CompressPDFJob, CompressPDFParams, CompressionLevel, MimeType } = require('@adobe/pdfservices-node-sdk');
+    const { CompressPDFJob, CompressPDFParams, CompressPDFResult, CompressionLevel, MimeType } = require('@adobe/pdfservices-node-sdk');
 
     let tempInputPath = null;
 
@@ -204,7 +204,7 @@ class AdobePdfService {
       // Create and submit the compress job
       const job = new CompressPDFJob({ inputAsset, params });
       const pollingURL = await this.pdfServices.submit({ job });
-      const pdfServicesResponse = await this.pdfServices.getJobResult({ pollingURL, resultType: CompressPDFJob });
+      const pdfServicesResponse = await this.pdfServices.getJobResult({ pollingURL, resultType: CompressPDFResult });
 
       // Get result asset
       const resultAsset = pdfServicesResponse.result.asset;
