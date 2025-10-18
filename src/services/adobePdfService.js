@@ -158,49 +158,85 @@ class AdobePdfService {
   }
 
   /**
-   * Compress PDF
-   * @param {string} inputPath - Input PDF path
+   * Compress PDF (v4 SDK)
+   * @param {Buffer|string} input - PDF Buffer or file path
    * @param {string} compressionLevel - 'LOW', 'MEDIUM', or 'HIGH'
-   * @param {string} outputPath - Output path
+   * @param {string} outputPath - Output path (optional)
    * @returns {Promise<Buffer>} Compressed PDF buffer
    */
-  async compressPdf(inputPath, compressionLevel = 'MEDIUM', outputPath = null) {
+  async compressPdf(input, compressionLevel = 'MEDIUM', outputPath = null) {
     if (!this.isReady()) {
       throw new Error('Adobe PDF Services not initialized. Check credentials.');
     }
 
+    const { CompressPDFJob, CompressPDFParams, CompressionLevel, MimeType } = require('@adobe/pdfservices-node-sdk');
+
+    let tempInputPath = null;
+
     try {
-      const executionContext = PDFServicesSdk.ExecutionContext.create(this.credentials);
-      const compressPDFOperation = PDFServicesSdk.CompressPDF.Operation.createNew();
-
-      const input = PDFServicesSdk.FileRef.createFromLocalFile(inputPath);
-      compressPDFOperation.setInput(input);
-
-      // Set compression level
-      const compressionLevelMap = {
-        'LOW': PDFServicesSdk.CompressPDF.CompressionLevel.LOW,
-        'MEDIUM': PDFServicesSdk.CompressPDF.CompressionLevel.MEDIUM,
-        'HIGH': PDFServicesSdk.CompressPDF.CompressionLevel.HIGH
-      };
-
-      compressPDFOperation.setCompressionLevel(compressionLevelMap[compressionLevel] || compressionLevelMap.MEDIUM);
-
-      // Execute
-      const result = await compressPDFOperation.execute(executionContext);
-
-      // Save result
-      const finalOutputPath = outputPath || path.join(__dirname, '../../temp', `compressed_${Date.now()}.pdf`);
-      await result.saveAsFile(finalOutputPath);
-
-      const pdfBuffer = fs.readFileSync(finalOutputPath);
-
-      if (!outputPath) {
-        fs.unlinkSync(finalOutputPath);
+      // If input is a Buffer, write to temp file
+      if (Buffer.isBuffer(input)) {
+        tempInputPath = path.join(__dirname, '../../temp', `input_${Date.now()}.pdf`);
+        fs.mkdirSync(path.dirname(tempInputPath), { recursive: true });
+        fs.writeFileSync(tempInputPath, input);
+      } else {
+        tempInputPath = input; // It's already a file path
       }
 
-      logger.info('✅ PDF compressed successfully');
+      // Upload the PDF as an asset
+      const readStream = fs.createReadStream(tempInputPath);
+      const inputAsset = await this.pdfServices.upload({
+        readStream,
+        mimeType: MimeType.PDF
+      });
+
+      // Set compression level
+      const levelMap = {
+        'LOW': CompressionLevel.LOW,
+        'MEDIUM': CompressionLevel.MEDIUM,
+        'HIGH': CompressionLevel.HIGH
+      };
+
+      const params = new CompressPDFParams({
+        compressionLevel: levelMap[compressionLevel] || CompressionLevel.MEDIUM
+      });
+
+      // Create and submit the compress job
+      const job = new CompressPDFJob({ inputAsset, params });
+      const pollingURL = await this.pdfServices.submit({ job });
+      const pdfServicesResponse = await this.pdfServices.getJobResult({ pollingURL, resultType: CompressPDFJob });
+
+      // Get result asset
+      const resultAsset = pdfServicesResponse.result.asset;
+
+      // Download as stream
+      const streamAsset = await this.pdfServices.getContent({ asset: resultAsset });
+
+      // Convert stream to buffer
+      const chunks = [];
+      for await (const chunk of streamAsset.readStream) {
+        chunks.push(chunk);
+      }
+      const pdfBuffer = Buffer.concat(chunks);
+
+      // Save to file if outputPath specified
+      if (outputPath) {
+        fs.writeFileSync(outputPath, pdfBuffer);
+      }
+
+      // Clean up temp input file if we created one
+      if (Buffer.isBuffer(input) && fs.existsSync(tempInputPath)) {
+        fs.unlinkSync(tempInputPath);
+      }
+
+      logger.info(`✅ PDF compressed successfully (${compressionLevel}, ${(pdfBuffer.length / 1024).toFixed(2)} KB)`);
       return pdfBuffer;
+
     } catch (error) {
+      // Clean up temp file on error
+      if (tempInputPath && Buffer.isBuffer(input) && fs.existsSync(tempInputPath)) {
+        fs.unlinkSync(tempInputPath);
+      }
       logger.error('Error compressing PDF:', error);
       throw error;
     }

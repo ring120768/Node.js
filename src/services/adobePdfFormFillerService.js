@@ -7,7 +7,7 @@
  * This replaces the Zapier + PDFco workflow with direct integration.
  */
 
-const PDFServicesSdk = require('@adobe/pdfservices-node-sdk');
+const { ServicePrincipalCredentials, PDFServices } = require('@adobe/pdfservices-node-sdk');
 const fs = require('fs');
 const path = require('path');
 const logger = require('../utils/logger');
@@ -16,24 +16,32 @@ class AdobePdfFormFillerService {
   constructor() {
     this.initialized = false;
     this.credentials = null;
+    this.pdfServices = null;
     this.templatePath = path.join(__dirname, '../../pdf-templates/Car-Crash-Lawyer-AI-Incident-Report.pdf');
     this.initializeCredentials();
   }
 
   /**
-   * Initialize Adobe PDF Services credentials
+   * Initialize Adobe PDF Services credentials (v4 OAuth)
+   * Uses environment variables: PDF_SERVICES_CLIENT_ID and PDF_SERVICES_CLIENT_SECRET
    */
   initializeCredentials() {
     try {
-      const credentialsPath = path.join(__dirname, '../../credentials/pdfservices-api-credentials.json');
+      const clientId = process.env.PDF_SERVICES_CLIENT_ID;
+      const clientSecret = process.env.PDF_SERVICES_CLIENT_SECRET;
 
-      if (fs.existsSync(credentialsPath)) {
-        this.credentials = PDFServicesSdk.Credentials
-          .serviceAccountCredentialsBuilder()
-          .fromFile(credentialsPath)
-          .build();
+      if (clientId && clientSecret) {
+        // v4 SDK with OAuth Server-to-Server credentials
+        this.credentials = new ServicePrincipalCredentials({
+          clientId,
+          clientSecret
+        });
+
+        // Create PDF Services instance
+        this.pdfServices = new PDFServices({ credentials: this.credentials });
+
         this.initialized = true;
-        logger.info('✅ Adobe PDF Form Filler Service initialized successfully');
+        logger.info('✅ Adobe PDF Form Filler Service initialized successfully (v4 OAuth)');
       } else {
         logger.warn('⚠️ Adobe PDF credentials not found - form filling will use fallback method');
       }
