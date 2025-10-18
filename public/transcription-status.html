@@ -268,6 +268,15 @@
             background: #388E3C;
         }
 
+        .btn-warning {
+            background: #ff9800;
+            color: white;
+        }
+
+        .btn-warning:hover:not(:disabled) {
+            background: #f57c00;
+        }
+
         .btn:disabled {
             opacity: 0.6;
             cursor: not-allowed;
@@ -279,6 +288,124 @@
             justify-content: center;
             flex-wrap: wrap;
             margin: 20px 0;
+        }
+
+        /* Auto-save indicator */
+        .auto-save-indicator {
+            text-align: center;
+            font-size: 12px;
+            color: #666;
+            margin-top: 5px;
+            font-style: italic;
+        }
+
+        .auto-save-indicator.saving {
+            color: #ff9800;
+        }
+
+        .auto-save-indicator.saved {
+            color: #4CAF50;
+        }
+
+        /* Metrics Dashboard */
+        .metrics-dashboard {
+            display: none;
+            margin-top: 30px;
+            padding: 25px;
+            background: linear-gradient(135deg, #f5f7fa 0%, #c3cfe2 100%);
+            border-radius: 12px;
+        }
+
+        .metrics-cards {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+            gap: 20px;
+            margin-bottom: 25px;
+        }
+
+        .metric-card {
+            background: white;
+            padding: 25px;
+            border-radius: 12px;
+            text-align: center;
+            box-shadow: 0 4px 12px rgba(0,0,0,0.1);
+            transition: transform 0.3s ease, box-shadow 0.3s ease;
+        }
+
+        .metric-card:hover {
+            transform: translateY(-5px);
+            box-shadow: 0 6px 20px rgba(0,0,0,0.15);
+        }
+
+        .metric-value {
+            font-size: 48px;
+            font-weight: bold;
+            color: #2196F3;
+            margin-bottom: 10px;
+        }
+
+        .metric-value.high {
+            color: #4CAF50;
+        }
+
+        .metric-value.medium {
+            color: #ff9800;
+        }
+
+        .metric-value.low {
+            color: #f44336;
+        }
+
+        .metric-label {
+            font-size: 14px;
+            color: #666;
+            text-transform: uppercase;
+            letter-spacing: 1px;
+        }
+
+        .completeness-bars {
+            background: white;
+            padding: 25px;
+            border-radius: 12px;
+            box-shadow: 0 4px 12px rgba(0,0,0,0.1);
+        }
+
+        .completeness-item {
+            margin-bottom: 15px;
+        }
+
+        .completeness-item:last-child {
+            margin-bottom: 0;
+        }
+
+        .completeness-label {
+            display: flex;
+            justify-content: space-between;
+            margin-bottom: 5px;
+            font-size: 14px;
+            font-weight: 600;
+            color: #555;
+        }
+
+        .completeness-bar {
+            height: 24px;
+            background: #e0e0e0;
+            border-radius: 12px;
+            overflow: hidden;
+        }
+
+        .completeness-fill {
+            height: 100%;
+            background: linear-gradient(90deg, #667eea 0%, #764ba2 100%);
+            border-radius: 12px;
+            transition: width 0.5s ease;
+            display: flex;
+            align-items: center;
+            justify-content: flex-end;
+            padding-right: 10px;
+            color: white;
+            font-size: 12px;
+            font-weight: bold;
         }
 
         /* Audio Playback */
@@ -680,6 +807,9 @@
             <button id="recordButton" class="btn btn-primary">
                 🎤 Start Recording
             </button>
+            <button id="pauseButton" class="btn btn-warning" style="display: none; background: #ff9800;">
+                ⏸️ Pause
+            </button>
             <button id="stopButton" class="btn btn-danger" style="display: none;">
                 ⏹ Stop Recording
             </button>
@@ -698,6 +828,9 @@
             <div class="char-count">
                 <span id="wordCount">0 words</span> | <span id="charCount">0 characters</span>
             </div>
+            <div class="auto-save-indicator" id="autoSaveIndicator">
+                Auto-save enabled
+            </div>
             <button class="btn btn-success" id="saveTranscriptionBtn" style="margin-top: 20px;">
                 💾 Save Changes
             </button>
@@ -707,6 +840,66 @@
             <p style="text-align: center; color: #666; margin-top: 10px; font-size: 14px;">
                 You can edit the transcription above if needed
             </p>
+        </div>
+
+        <!-- Metrics Dashboard -->
+        <div class="metrics-dashboard" id="metricsDashboard">
+            <h2>📊 AI Analysis Overview</h2>
+
+            <div class="metrics-cards">
+                <div class="metric-card">
+                    <div class="metric-value" id="metricScore">--</div>
+                    <div class="metric-label">Completeness Score</div>
+                </div>
+                <div class="metric-card">
+                    <div class="metric-value" id="metricKeyPoints">--</div>
+                    <div class="metric-label">Key Points</div>
+                </div>
+                <div class="metric-card">
+                    <div class="metric-value" id="metricQuality">--</div>
+                    <div class="metric-label">Quality Rating</div>
+                </div>
+            </div>
+
+            <div class="completeness-bars">
+                <h3 style="margin-top: 0; margin-bottom: 20px;">Completeness Breakdown</h3>
+                <div class="completeness-item">
+                    <div class="completeness-label">
+                        <span>Time & Date</span>
+                        <span id="timeScore">--</span>
+                    </div>
+                    <div class="completeness-bar">
+                        <div class="completeness-fill" id="timeFill" style="width: 0%"></div>
+                    </div>
+                </div>
+                <div class="completeness-item">
+                    <div class="completeness-label">
+                        <span>Location Details</span>
+                        <span id="locationScore">--</span>
+                    </div>
+                    <div class="completeness-bar">
+                        <div class="completeness-fill" id="locationFill" style="width: 0%"></div>
+                    </div>
+                </div>
+                <div class="completeness-item">
+                    <div class="completeness-label">
+                        <span>Witness Information</span>
+                        <span id="witnessScore">--</span>
+                    </div>
+                    <div class="completeness-bar">
+                        <div class="completeness-fill" id="witnessFill" style="width: 0%"></div>
+                    </div>
+                </div>
+                <div class="completeness-item">
+                    <div class="completeness-label">
+                        <span>Injuries & Damage</span>
+                        <span id="injuryScore">--</span>
+                    </div>
+                    <div class="completeness-bar">
+                        <div class="completeness-fill" id="injuryFill" style="width: 0%"></div>
+                    </div>
+                </div>
+            </div>
         </div>
 
         <!-- AI Summary Section -->
@@ -800,6 +993,9 @@
         let animationId = null;
         let currentTranscriptionText = '';
         let currentIncidentId = null;
+        let isPaused = false;
+        let pausedTime = 0;
+        let autoSaveInterval = null;
 
         // Store user ID
         localStorage.setItem('create_user_id', userId);
@@ -982,6 +1178,7 @@
 
                 // Update UI
                 document.getElementById('recordButton').style.display = 'none';
+                document.getElementById('pauseButton').style.display = 'inline-block';
                 document.getElementById('stopButton').style.display = 'inline-block';
                 document.getElementById('recordingStatus').style.display = 'block';
                 showStatus('Recording in progress...', 'warning');
@@ -1004,7 +1201,7 @@
         }
 
         function stopRecording() {
-            if (mediaRecorder && mediaRecorder.state === 'recording') {
+            if (mediaRecorder && (mediaRecorder.state === 'recording' || mediaRecorder.state === 'paused')) {
                 mediaRecorder.stop();
                 clearInterval(durationInterval);
 
@@ -1020,12 +1217,73 @@
                 }
 
                 // Update UI
+                document.getElementById('pauseButton').style.display = 'none';
                 document.getElementById('stopButton').style.display = 'none';
                 document.getElementById('retryButton').style.display = 'inline-block';
                 document.getElementById('recordingStatus').style.display = 'none';
                 showStatus('Processing your recording...', 'info');
                 updateProgress('step-record', 'complete');
                 updateProgress('step-upload', 'active');
+
+                // Reset pause state
+                isPaused = false;
+                pausedTime = 0;
+            }
+        }
+
+        // ===== PAUSE/RESUME FUNCTIONS =====
+        function pauseRecording() {
+            if (mediaRecorder && mediaRecorder.state === 'recording') {
+                mediaRecorder.pause();
+                isPaused = true;
+                pausedTime = Date.now();
+
+                // Pause duration timer
+                clearInterval(durationInterval);
+
+                // Pause visualizer
+                if (animationId) {
+                    cancelAnimationFrame(animationId);
+                }
+
+                // Update UI
+                document.getElementById('pauseButton').innerHTML = '▶️ Resume';
+                document.getElementById('recordingStatus').querySelector('span:last-child').textContent = 'Recording paused';
+                showStatus('Recording paused', 'warning');
+
+                console.log('Recording paused');
+            }
+        }
+
+        function resumeRecording() {
+            if (mediaRecorder && mediaRecorder.state === 'paused') {
+                mediaRecorder.resume();
+                isPaused = false;
+
+                // Adjust recording start time to account for pause
+                const pauseDuration = Date.now() - pausedTime;
+                recordingStartTime += pauseDuration;
+
+                // Resume duration timer
+                durationInterval = setInterval(updateDuration, 1000);
+
+                // Resume visualizer
+                animateVisualizer();
+
+                // Update UI
+                document.getElementById('pauseButton').innerHTML = '⏸️ Pause';
+                document.getElementById('recordingStatus').querySelector('span:last-child').textContent = 'Recording in progress';
+                showStatus('Recording resumed', 'info');
+
+                console.log('Recording resumed');
+            }
+        }
+
+        function togglePause() {
+            if (isPaused) {
+                resumeRecording();
+            } else {
+                pauseRecording();
             }
         }
 
@@ -1091,6 +1349,9 @@
             document.getElementById('transcriptionResult').style.display = 'block';
             updateCharCount();
 
+            // Start auto-save
+            startAutoSave();
+
             // Fetch user name if available
             fetchUserName();
         }
@@ -1115,6 +1376,89 @@
             const chars = text.length;
             document.getElementById('wordCount').textContent = `${words} words`;
             document.getElementById('charCount').textContent = `${chars} characters`;
+        }
+
+        // ===== AUTO-SAVE FUNCTIONALITY =====
+        function startAutoSave() {
+            // Auto-save every 10 seconds
+            autoSaveInterval = setInterval(() => {
+                autoSaveDraft();
+            }, 10000);
+
+            console.log('Auto-save enabled (every 10 seconds)');
+        }
+
+        function stopAutoSave() {
+            if (autoSaveInterval) {
+                clearInterval(autoSaveInterval);
+                autoSaveInterval = null;
+                console.log('Auto-save disabled');
+            }
+        }
+
+        function autoSaveDraft() {
+            const text = document.getElementById('transcriptionText').textContent;
+
+            // Only save if text has changed
+            if (text !== currentTranscriptionText && text.trim().length > 0) {
+                const indicator = document.getElementById('autoSaveIndicator');
+                indicator.textContent = 'Saving draft...';
+                indicator.className = 'auto-save-indicator saving';
+
+                // Save to localStorage
+                localStorage.setItem('draft_transcription', text);
+                localStorage.setItem('draft_timestamp', Date.now());
+                localStorage.setItem('draft_userId', userId);
+
+                console.log('Draft auto-saved', { length: text.length });
+
+                // Update indicator
+                setTimeout(() => {
+                    indicator.textContent = `Last saved: ${new Date().toLocaleTimeString()}`;
+                    indicator.className = 'auto-save-indicator saved';
+                }, 500);
+            }
+        }
+
+        function restoreDraft() {
+            const savedDraft = localStorage.getItem('draft_transcription');
+            const savedTimestamp = localStorage.getItem('draft_timestamp');
+            const savedUserId = localStorage.getItem('draft_userId');
+
+            if (savedDraft && savedUserId === userId) {
+                const savedDate = new Date(parseInt(savedTimestamp));
+                const minutesAgo = Math.floor((Date.now() - parseInt(savedTimestamp)) / 60000);
+
+                let message = 'A draft was auto-saved';
+                if (minutesAgo < 1) {
+                    message += ' less than a minute ago.';
+                } else if (minutesAgo === 1) {
+                    message += ' 1 minute ago.';
+                } else if (minutesAgo < 60) {
+                    message += ` ${minutesAgo} minutes ago.`;
+                } else {
+                    message += ` on ${savedDate.toLocaleDateString()} at ${savedDate.toLocaleTimeString()}.`;
+                }
+
+                message += ' Would you like to restore it?';
+
+                if (confirm(message)) {
+                    document.getElementById('transcriptionText').textContent = savedDraft;
+                    document.getElementById('transcriptionResult').style.display = 'block';
+                    updateCharCount();
+                    showStatus('Draft restored successfully', 'success');
+
+                    // Start auto-save
+                    startAutoSave();
+
+                    console.log('Draft restored from localStorage');
+                } else {
+                    // Clear draft if user declines
+                    localStorage.removeItem('draft_transcription');
+                    localStorage.removeItem('draft_timestamp');
+                    localStorage.removeItem('draft_userId');
+                }
+            }
         }
 
         // Listen for changes in transcription box
@@ -1282,6 +1626,79 @@
                 document.getElementById('legalConsiderations').innerHTML =
                     analysis.finalReview.legalConsiderations || '';
             }
+
+            // ===== POPULATE METRICS DASHBOARD =====
+            if (analysis.finalReview) {
+                document.getElementById('metricsDashboard').style.display = 'block';
+
+                // Completeness Score
+                const score = analysis.finalReview.completenessScore || 0;
+                const scoreElement = document.getElementById('metricScore');
+                scoreElement.textContent = score + '%';
+                scoreElement.className = 'metric-value ' + (score >= 80 ? 'high' : score >= 60 ? 'medium' : 'low');
+
+                // Key Points Count
+                const keyPointsCount = analysis.keyPoints ? analysis.keyPoints.length : 0;
+                document.getElementById('metricKeyPoints').textContent = keyPointsCount;
+
+                // Quality Rating (derive from review quality)
+                let qualityRating = 'Good';
+                if (analysis.review && analysis.review.quality) {
+                    const quality = analysis.review.quality.toLowerCase();
+                    if (quality.includes('excellent') || quality.includes('comprehensive')) {
+                        qualityRating = 'Excellent';
+                    } else if (quality.includes('good') || quality.includes('detailed')) {
+                        qualityRating = 'Good';
+                    } else if (quality.includes('fair') || quality.includes('adequate')) {
+                        qualityRating = 'Fair';
+                    } else if (quality.includes('poor') || quality.includes('lacking')) {
+                        qualityRating = 'Poor';
+                    }
+                }
+                document.getElementById('metricQuality').textContent = qualityRating;
+
+                // Completeness Breakdown (estimate based on missing info and score)
+                const missingInfo = analysis.review && analysis.review.missingInfo ? analysis.review.missingInfo : [];
+
+                // Calculate individual scores based on missing information
+                const calculateCategoryScore = (keywords) => {
+                    const hasMissing = missingInfo.some(item =>
+                        keywords.some(keyword => item.toLowerCase().includes(keyword))
+                    );
+                    if (hasMissing) {
+                        return Math.max(30, score - 30); // If missing, reduce from overall score
+                    }
+                    return Math.min(100, score + 10); // If present, slightly above overall score
+                };
+
+                const timeScore = calculateCategoryScore(['time', 'date', 'when']);
+                const locationScore = calculateCategoryScore(['location', 'where', 'place', 'address']);
+                const witnessScore = calculateCategoryScore(['witness', 'who', 'people', 'other']);
+                const injuryScore = calculateCategoryScore(['injury', 'injuries', 'damage', 'hurt']);
+
+                // Update Time & Date
+                document.getElementById('timeScore').textContent = timeScore + '%';
+                document.getElementById('timeFill').style.width = timeScore + '%';
+
+                // Update Location Details
+                document.getElementById('locationScore').textContent = locationScore + '%';
+                document.getElementById('locationFill').style.width = locationScore + '%';
+
+                // Update Witness Information
+                document.getElementById('witnessScore').textContent = witnessScore + '%';
+                document.getElementById('witnessFill').style.width = witnessScore + '%';
+
+                // Update Injuries & Damage
+                document.getElementById('injuryScore').textContent = injuryScore + '%';
+                document.getElementById('injuryFill').style.width = injuryScore + '%';
+
+                console.log('📊 Metrics dashboard populated', {
+                    score,
+                    keyPointsCount,
+                    qualityRating,
+                    breakdown: { timeScore, locationScore, witnessScore, injuryScore }
+                });
+            }
         }
 
         // ===== COLLAPSIBLE SECTIONS =====
@@ -1301,8 +1718,12 @@
             initializeVisualizer();
             updateNetworkStatus();
 
+            // Check for saved draft
+            restoreDraft();
+
             // Set up event listeners
             document.getElementById('recordButton').addEventListener('click', startRecording);
+            document.getElementById('pauseButton').addEventListener('click', togglePause);
             document.getElementById('stopButton').addEventListener('click', stopRecording);
             document.getElementById('retryButton').addEventListener('click', () => {
                 location.reload();
