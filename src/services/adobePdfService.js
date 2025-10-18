@@ -12,7 +12,7 @@
  * - Extract PDF content
  */
 
-const PDFServicesSdk = require('@adobe/pdfservices-node-sdk');
+const { ServicePrincipalCredentials, PDFServices } = require('@adobe/pdfservices-node-sdk');
 const fs = require('fs');
 const path = require('path');
 const logger = require('../utils/logger');
@@ -21,6 +21,7 @@ class AdobePdfService {
   constructor() {
     this.initialized = false;
     this.credentials = null;
+    this.pdfServices = null;
     this.initializeCredentials();
   }
 
@@ -35,10 +36,13 @@ class AdobePdfService {
 
       if (clientId && clientSecret) {
         // v4 SDK with OAuth Server-to-Server credentials
-        this.credentials = new PDFServicesSdk.Credentials({
+        this.credentials = new ServicePrincipalCredentials({
           clientId,
           clientSecret
         });
+
+        // Create PDF Services instance
+        this.pdfServices = new PDFServices({ credentials: this.credentials });
 
         this.initialized = true;
         logger.info('✅ Adobe PDF Services initialized successfully (v4 OAuth)');
