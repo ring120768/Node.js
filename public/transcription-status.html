@@ -694,6 +694,166 @@
             border-radius: 50%;
         }
 
+        /* Security Badge */
+        .security-badge {
+            position: fixed;
+            top: 70px;
+            right: 20px;
+            background: white;
+            padding: 12px 16px;
+            border-radius: 8px;
+            box-shadow: 0 2px 8px rgba(0,0,0,0.15);
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            z-index: 999;
+            cursor: pointer;
+            transition: transform 0.2s ease, box-shadow 0.2s ease;
+        }
+
+        .security-badge:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 4px 12px rgba(0,0,0,0.2);
+        }
+
+        .security-icon {
+            font-size: 20px;
+        }
+
+        .security-content {
+            display: flex;
+            flex-direction: column;
+            gap: 2px;
+        }
+
+        .security-title {
+            font-weight: 600;
+            font-size: 12px;
+            color: #059669;
+            line-height: 1;
+        }
+
+        .security-subtitle {
+            font-size: 10px;
+            color: #666;
+            line-height: 1;
+        }
+
+        /* Security Details Modal */
+        .security-modal {
+            display: none;
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(0,0,0,0.5);
+            z-index: 10000;
+            align-items: center;
+            justify-content: center;
+        }
+
+        .security-modal.open {
+            display: flex;
+        }
+
+        .security-modal-content {
+            background: white;
+            padding: 30px;
+            border-radius: 12px;
+            max-width: 500px;
+            width: 90%;
+            max-height: 80vh;
+            overflow-y: auto;
+            box-shadow: 0 10px 40px rgba(0,0,0,0.3);
+        }
+
+        .security-modal-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 20px;
+        }
+
+        .security-modal-close {
+            background: none;
+            border: none;
+            font-size: 28px;
+            cursor: pointer;
+            color: #999;
+            padding: 0;
+            line-height: 1;
+        }
+
+        .security-modal-close:hover {
+            color: #333;
+        }
+
+        .security-feature {
+            display: flex;
+            align-items: flex-start;
+            gap: 12px;
+            margin-bottom: 15px;
+            padding: 12px;
+            background: #f9f9f9;
+            border-radius: 6px;
+        }
+
+        .security-feature-icon {
+            font-size: 20px;
+            flex-shrink: 0;
+        }
+
+        .security-feature-text {
+            flex: 1;
+        }
+
+        .security-feature-title {
+            font-weight: 600;
+            font-size: 14px;
+            color: #333;
+            margin-bottom: 4px;
+        }
+
+        .security-feature-description {
+            font-size: 13px;
+            color: #666;
+            line-height: 1.4;
+        }
+
+        /* Legal Disclaimer Box */
+        .legal-disclaimer-box {
+            background: #fff9e6;
+            border: 2px solid #ff9800;
+            border-radius: 8px;
+            padding: 20px;
+            margin: 20px 0;
+        }
+
+        .legal-disclaimer-box h3 {
+            color: #f57c00;
+            margin: 0 0 12px 0;
+            font-size: 16px;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+
+        .legal-disclaimer-box p {
+            margin: 0 0 10px 0;
+            color: #666;
+            font-size: 14px;
+            line-height: 1.5;
+        }
+
+        .legal-disclaimer-box p:last-child {
+            margin-bottom: 0;
+        }
+
+        .legal-disclaimer-box strong {
+            color: #f57c00;
+        }
+
         /* Responsive Design */
         @media (max-width: 768px) {
             .container {
@@ -715,6 +875,17 @@
             .btn {
                 width: 100%;
             }
+
+            .security-badge {
+                top: auto;
+                bottom: 20px;
+                right: 20px;
+            }
+
+            .network-status {
+                font-size: 12px;
+                padding: 8px 12px;
+            }
         }
     </style>
     <link rel="stylesheet" href="/css/mascot.css">
@@ -726,6 +897,15 @@
         <span>Connected</span>
     </div>
 
+    <!-- Security & Compliance Badge -->
+    <div class="security-badge" id="securityBadge">
+        <div class="security-icon">🔒</div>
+        <div class="security-content">
+            <div class="security-title">Secure & Private</div>
+            <div class="security-subtitle">GDPR Compliant</div>
+        </div>
+    </div>
+
     <div class="container">
         <!-- Welcome Banner (shown when returning from Typeform) -->
         <div class="welcome-banner" id="welcomeBanner" style="display: none;">
@@ -734,6 +914,13 @@
         </div>
 
         <h1>🎤 Record Your Statement</h1>
+
+        <!-- Legal Disclaimer -->
+        <div class="legal-disclaimer-box">
+            <h3>⚠️ Important Notice</h3>
+            <p><strong>This is NOT legal advice.</strong> This tool helps you record and organize information about your incident for your own personal records.</p>
+            <p>The AI analysis is provided for informational purposes only and does not constitute professional legal advice. Always consult with a qualified solicitor for legal guidance specific to your situation.</p>
+        </div>
 
         <!-- Progress Indicator with Animation -->
         <div class="progress-steps">
@@ -972,10 +1159,91 @@
             </div>
 
             <div class="ai-disclaimer">
-                <strong>⚠️ AI-Generated Advice Disclaimer</strong><br>
-                This review is generated by artificial intelligence and is for informational purposes only.
-                It does not constitute legal advice. Please consult with a qualified attorney for professional
-                legal guidance specific to your situation.
+                <strong>⚠️ AI-Generated Information Disclaimer</strong><br>
+                This analysis is generated by artificial intelligence for informational purposes only and does not constitute legal advice.
+                This tool is designed to help you organize your incident information for your personal records.
+                Always consult with a qualified solicitor for professional legal guidance specific to your situation.
+            </div>
+        </div>
+    </div>
+
+    <!-- Security Details Modal -->
+    <div class="security-modal" id="securityModal">
+        <div class="security-modal-content">
+            <div class="security-modal-header">
+                <h2 style="margin: 0; color: #059669; display: flex; align-items: center; gap: 10px;">
+                    <span>🔒</span> Security & Privacy
+                </h2>
+                <button class="security-modal-close" onclick="closeSecurityModal()">&times;</button>
+            </div>
+
+            <div class="security-feature">
+                <div class="security-feature-icon">🔐</div>
+                <div class="security-feature-text">
+                    <div class="security-feature-title">End-to-End Encryption</div>
+                    <div class="security-feature-description">
+                        All data transmission uses HTTPS/TLS encryption. Your recordings and transcriptions are encrypted in transit and at rest.
+                    </div>
+                </div>
+            </div>
+
+            <div class="security-feature">
+                <div class="security-feature-icon">🇬🇧</div>
+                <div class="security-feature-text">
+                    <div class="security-feature-title">UK Data Residency</div>
+                    <div class="security-feature-description">
+                        Your personal data is stored on servers located in the United Kingdom, complying with UK GDPR requirements.
+                    </div>
+                </div>
+            </div>
+
+            <div class="security-feature">
+                <div class="security-feature-icon">✓</div>
+                <div class="security-feature-text">
+                    <div class="security-feature-title">GDPR Compliant</div>
+                    <div class="security-feature-description">
+                        We follow all GDPR requirements including data minimization, right to access, right to erasure, and data portability.
+                    </div>
+                </div>
+            </div>
+
+            <div class="security-feature">
+                <div class="security-feature-icon">🗑️</div>
+                <div class="security-feature-text">
+                    <div class="security-feature-title">You Control Your Data</div>
+                    <div class="security-feature-description">
+                        You can request to view, download, or permanently delete all your data at any time through your account settings.
+                    </div>
+                </div>
+            </div>
+
+            <div class="security-feature">
+                <div class="security-feature-icon">🚫</div>
+                <div class="security-feature-text">
+                    <div class="security-feature-title">No Data Sharing</div>
+                    <div class="security-feature-description">
+                        We never sell, rent, or share your personal information with third parties for marketing purposes.
+                    </div>
+                </div>
+            </div>
+
+            <div class="security-feature">
+                <div class="security-feature-icon">📋</div>
+                <div class="security-feature-text">
+                    <div class="security-feature-title">Audit Logging</div>
+                    <div class="security-feature-description">
+                        All access to your data is logged for security and compliance purposes. You can review these logs in your account.
+                    </div>
+                </div>
+            </div>
+
+            <div style="margin-top: 25px; padding-top: 20px; border-top: 1px solid #e0e0e0;">
+                <p style="font-size: 13px; color: #666; margin: 0 0 15px 0;">
+                    For full details about how we handle your data, please review our privacy policy.
+                </p>
+                <a href="/privacy-policy" target="_blank" style="display: inline-block; padding: 10px 20px; background: #059669; color: white; text-decoration: none; border-radius: 6px; font-weight: 600; font-size: 14px;">
+                    View Privacy Policy
+                </a>
             </div>
         </div>
     </div>
@@ -1707,6 +1975,23 @@
             content.classList.toggle('open');
         }
 
+        // ===== SECURITY MODAL =====
+        function openSecurityModal() {
+            document.getElementById('securityModal').classList.add('open');
+        }
+
+        function closeSecurityModal() {
+            document.getElementById('securityModal').classList.remove('open');
+        }
+
+        // Close modal when clicking outside
+        document.addEventListener('click', (e) => {
+            const modal = document.getElementById('securityModal');
+            if (e.target === modal) {
+                closeSecurityModal();
+            }
+        });
+
         // ===== EVENT LISTENERS =====
         document.addEventListener('DOMContentLoaded', () => {
             console.log('🚀 Initializing transcription page');
@@ -1730,6 +2015,7 @@
             });
             document.getElementById('saveTranscriptionBtn').addEventListener('click', saveTranscription);
             document.getElementById('generateSummaryBtn').addEventListener('click', generateAIAnalysis);
+            document.getElementById('securityBadge').addEventListener('click', openSecurityModal);
 
             // Prevent accidental navigation during recording
             window.addEventListener('beforeunload', (e) => {
