@@ -29,7 +29,7 @@ class AdobePdfFormFillerService {
 
       if (fs.existsSync(credentialsPath)) {
         this.credentials = PDFServicesSdk.Credentials
-          .servicePrincipalCredentialsBuilder()
+          .serviceAccountCredentialsBuilder()
           .fromFile(credentialsPath)
           .build();
         this.initialized = true;
