@@ -219,7 +219,16 @@
     function getRedirectUrl() {
       const urlParams = new URLSearchParams(window.location.search);
       const redirect = urlParams.get('redirect');
-      return redirect ? `/${redirect}` : '/index.html';
+      const finalUrl = redirect ? `/${redirect}` : '/index.html';
+
+      console.log('🔍 Redirect Debug:', {
+        fullUrl: window.location.href,
+        searchParams: window.location.search,
+        redirectParam: redirect,
+        finalRedirectUrl: finalUrl
+      });
+
+      return finalUrl;
     }
 
     // Clear GDPR error when checkbox is clicked

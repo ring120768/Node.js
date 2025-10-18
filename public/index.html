@@ -709,13 +709,18 @@
                 });
                 const data = await response.json();
 
+                console.log('🔍 Auth status check:', data);
+
                 if (data.authenticated) {
+                    console.log('✅ User authenticated, going to incident.html');
                     window.location.href = '/incident.html';
                 } else {
+                    console.log('❌ User not authenticated, redirecting to login with redirect=incident.html');
                     window.location.href = '/login.html?redirect=incident.html';
                 }
             } catch (error) {
-                console.error('Auth check failed:', error);
+                console.error('❌ Auth check failed:', error);
+                console.log('Redirecting to login with redirect=incident.html (fallback)');
                 window.location.href = '/login.html?redirect=incident.html';
             }
         }
@@ -729,13 +734,18 @@
                 });
                 const data = await response.json();
 
+                console.log('🔍 Auth status check:', data);
+
                 if (data.authenticated) {
+                    console.log('✅ User authenticated, going to dashboard.html');
                     window.location.href = '/dashboard.html';
                 } else {
+                    console.log('❌ User not authenticated, redirecting to login with redirect=dashboard.html');
                     window.location.href = '/login.html?redirect=dashboard.html';
                 }
             } catch (error) {
-                console.error('Auth check failed:', error);
+                console.error('❌ Auth check failed:', error);
+                console.log('Redirecting to login with redirect=dashboard.html (fallback)');
                 window.location.href = '/login.html?redirect=dashboard.html';
             }
         }
