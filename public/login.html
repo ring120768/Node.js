@@ -187,10 +187,10 @@
       <!-- GDPR CONSENT CHECKBOX -->
       <div class="gdpr-consent" id="gdprConsentBox">
         <div class="checkbox-wrapper">
-          <input 
-            type="checkbox" 
-            id="gdprConsent" 
-            name="gdprConsent" 
+          <input
+            type="checkbox"
+            id="gdprConsent"
+            name="gdprConsent"
             required
           >
           <label for="gdprConsent" class="checkbox-label">
@@ -198,6 +198,21 @@
           </label>
         </div>
         <div class="error" id="gdprConsentError" style="display: none; text-align: left; margin-top: 8px; font-size: 12px;"></div>
+      </div>
+
+      <!-- REMEMBER ME CHECKBOX -->
+      <div class="form-group">
+        <div class="checkbox-wrapper">
+          <input
+            type="checkbox"
+            id="rememberMe"
+            name="rememberMe"
+            checked
+          >
+          <label for="rememberMe" class="checkbox-label" style="color: #333; font-size: 14px;">
+            Keep me logged in for 30 days
+          </label>
+        </div>
       </div>
 
       <button type="submit" class="btn" id="loginBtn">Login</button>
@@ -245,6 +260,7 @@
 
       const email = document.getElementById('email').value;
       const password = document.getElementById('password').value;
+      const rememberMe = document.getElementById('rememberMe').checked;
       const errorElement = document.getElementById('error-message');
 
       // Validate GDPR consent
@@ -257,6 +273,8 @@
 
       loginBtn.disabled = true;
 
+      console.log('🔐 Logging in with Remember Me:', rememberMe);
+
       try {
         // Send credentials to backend for authentication
         const response = await fetch('/api/auth/login', {
@@ -267,6 +285,7 @@
           body: JSON.stringify({
             email,
             password,
+            rememberMe,
             gdprConsent: gdprConsentCheckbox.checked,
             consentTimestamp: new Date().toISOString()
           })

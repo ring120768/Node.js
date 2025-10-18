@@ -228,13 +228,19 @@ async function login(req, res) {
       email
     });
 
-    const cookieMaxAge = rememberMe ? 30 * 24 * 60 * 60 * 1000 : 7 * 24 * 60 * 60 * 1000;
+    // Session duration: 30 days default, 90 days with "Keep me logged in"
+    const cookieMaxAge = rememberMe ? 90 * 24 * 60 * 60 * 1000 : 30 * 24 * 60 * 60 * 1000;
 
     res.cookie('access_token', authResult.session.access_token, {
       httpOnly: true,
       secure: process.env.NODE_ENV === 'production',
       sameSite: 'lax',
       maxAge: cookieMaxAge
+    });
+
+    logger.info('✅ Session cookie set', {
+      rememberMe,
+      durationDays: rememberMe ? 90 : 30
     });
 
     // Get user metadata from auth
