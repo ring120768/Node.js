@@ -22,7 +22,7 @@
     "test:watch": "jest --watch"
   },
   "dependencies": {
-    "@adobe/pdfservices-node-sdk": "^4.1.0",
+    "@adobe/pdfservices-node-sdk": "^3.4.2",
     "@aws-sdk/client-s3": "^3.911.0",
     "@aws-sdk/lib-storage": "^3.911.0",
     "@supabase/supabase-js": "^2.57.4",
