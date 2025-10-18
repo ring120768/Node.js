@@ -159,7 +159,7 @@ class AdobePdfService {
 
   /**
    * Compress PDF (v4 SDK)
-   * @param {Buffer|string} input - PDF Buffer or file path
+   * @param {Buffer|Uint8Array|string} input - PDF Buffer/Uint8Array or file path
    * @param {string} compressionLevel - 'LOW', 'MEDIUM', or 'HIGH'
    * @param {string} outputPath - Output path (optional)
    * @returns {Promise<Buffer>} Compressed PDF buffer
@@ -174,8 +174,8 @@ class AdobePdfService {
     let tempInputPath = null;
 
     try {
-      // If input is a Buffer, write to temp file
-      if (Buffer.isBuffer(input)) {
+      // If input is a Buffer or Uint8Array, write to temp file
+      if (Buffer.isBuffer(input) || input instanceof Uint8Array) {
         tempInputPath = path.join(__dirname, '../../temp', `input_${Date.now()}.pdf`);
         fs.mkdirSync(path.dirname(tempInputPath), { recursive: true });
         fs.writeFileSync(tempInputPath, input);
@@ -225,7 +225,7 @@ class AdobePdfService {
       }
 
       // Clean up temp input file if we created one
-      if (Buffer.isBuffer(input) && fs.existsSync(tempInputPath)) {
+      if ((Buffer.isBuffer(input) || input instanceof Uint8Array) && fs.existsSync(tempInputPath)) {
         fs.unlinkSync(tempInputPath);
       }
 
@@ -234,7 +234,7 @@ class AdobePdfService {
 
     } catch (error) {
       // Clean up temp file on error
-      if (tempInputPath && Buffer.isBuffer(input) && fs.existsSync(tempInputPath)) {
+      if (tempInputPath && (Buffer.isBuffer(input) || input instanceof Uint8Array) && fs.existsSync(tempInputPath)) {
         fs.unlinkSync(tempInputPath);
       }
       logger.error('Error compressing PDF:', error);
