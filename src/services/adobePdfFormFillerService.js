@@ -170,8 +170,9 @@ class AdobePdfFormFillerService {
     setFieldText('policy_number', user.policy_number || user.insurance_policy_number);
     setFieldText('policy_holder', user.policy_holder);
     setFieldText('cover_type', user.cover_type);
-    // Format date as DD/MM/YYYY for UK format
-    const signupDate = user.time_stamp || user.signup_date || user.created_at;
+    // Format signup date as DD/MM/YYYY for UK format
+    // Use subscription_start_date (when they signed up) or fall back to created_at
+    const signupDate = user.subscription_start_date || user.created_at;
     if (signupDate) {
       const formattedDate = new Date(signupDate).toLocaleDateString('en-GB');
       setFieldText('time_stamp', formattedDate);
