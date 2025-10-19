@@ -83,6 +83,7 @@ class AdobePdfFormFillerService {
       this.fillFormFields(form, data);
 
       // Flatten the form to make it read-only (prevents editing)
+      // Note: Flattening converts form fields to static content
       form.flatten();
 
       // Save the filled PDF
@@ -140,18 +141,18 @@ class AdobePdfFormFillerService {
     // ========================================
     // PAGE 1: Personal Information
     // ========================================
-    setFieldText('driver_name', user.driver_name);
-    setFieldText('driver_surname', user.driver_surname);
-    setFieldText('driver_email', user.driver_email);
-    setFieldText('driver_mobile', user.driver_mobile);
-    setFieldText('driver_street', user.driver_street);
-    setFieldText('driver_town', user.driver_town);
-    setFieldText('driver_postcode', user.driver_postcode);
-    setFieldText('driver_country', user.driver_country);
-    setFieldText('license_number', user.license_number);
+    setFieldText('driver_name', user.name);
+    setFieldText('driver_surname', user.surname);
+    setFieldText('driver_email', user.email);
+    setFieldText('driver_mobile', user.mobile);
+    setFieldText('driver_street', user.street_address);
+    setFieldText('driver_town', user.town);
+    setFieldText('driver_postcode', user.postcode);
+    setFieldText('driver_country', user.country);
+    setFieldText('license_number', user.driving_license_number);
 
     // PAGE 1: Vehicle Information
-    setFieldText('license_plate', user.license_plate);
+    setFieldText('license_plate', user.car_registration_number || user.vehicle_registration);
     setFieldText('vehicle_make', user.vehicle_make);
     setFieldText('vehicle_model', user.vehicle_model);
     setFieldText('vehicle_colour', user.vehicle_colour);
@@ -165,10 +166,10 @@ class AdobePdfFormFillerService {
     // ========================================
     setFieldText('emergency_contact', user.emergency_contact);
     setFieldText('insurance_company', user.insurance_company);
-    setFieldText('policy_number', user.policy_number);
+    setFieldText('policy_number', user.policy_number || user.insurance_policy_number);
     setFieldText('policy_holder', user.policy_holder);
     setFieldText('cover_type', user.cover_type);
-    setFieldText('sign_up_date', user.sign_up_date);
+    setFieldText('sign_up_date', user.signup_date || user.time_stamp);
 
     // ========================================
     // PAGE 3: Personal Documentation (Images)
