@@ -69,10 +69,7 @@ class AdobePdfFormFillerService {
         throw new Error('Adobe PDF Form Filler Service not ready - check credentials and template');
       }
 
-      logger.info('📝 Starting Adobe PDF form filling...');
-
-      // Create execution context
-      const executionContext = PDFServicesSdk.ExecutionContext.create(this.credentials);
+      logger.info('📝 Starting PDF form filling...');
 
       // Load the PDF template
       const pdfBytes = fs.readFileSync(this.templatePath);
