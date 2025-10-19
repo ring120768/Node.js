@@ -63,7 +63,9 @@ async function testFormFilling() {
     const allData = await fetchAllData(userId);
 
     log('✅ Data fetched successfully!', 'green');
-    log(`   User: ${allData.user?.driver_name || 'Unknown'} ${allData.user?.driver_surname || ''}`, 'green');
+    log(`   User: ${allData.user?.name || 'Unknown'} ${allData.user?.surname || ''}`, 'green');
+    log(`   Email: ${allData.user?.email || 'N/A'}`, 'green');
+    log(`   Signup Date: ${allData.user?.subscription_start_date || allData.user?.created_at || 'N/A'}`, 'green');
     log(`   Incidents: ${allData.metadata?.total_incidents || 0}`, 'green');
     log(`   Images: ${allData.metadata?.total_images || 0}`, 'green');
 
@@ -107,7 +109,8 @@ async function testFormFilling() {
 
     log('\n📊 Summary:', 'blue');
     log(`   User ID: ${userId}`, 'green');
-    log(`   User Name: ${allData.user?.driver_name || 'Unknown'} ${allData.user?.driver_surname || ''}`, 'green');
+    log(`   User Name: ${allData.user?.name || 'Unknown'} ${allData.user?.surname || ''}`, 'green');
+    log(`   User Email: ${allData.user?.email || 'N/A'}`, 'green');
     log(`   PDF Size: ${compressedSizeKB} KB (${compressionRatio}% compression)`, 'green');
     log(`   Fields Filled: 150+ fields across 17 pages`, 'green');
 
