@@ -1,0 +1,147 @@
+# Claude Code Rules - Car Crash Lawyer AI
+
+## Quick Reference
+
+**Project**: UK legal documentation system for car accidents
+**Stack**: Node.js, Express, Supabase, Adobe PDF Services, OpenAI
+**Flow**: Typeform → Webhooks → Image Processing → PDF (17 pages, 150+ fields) → Email
+
+## Default Behavior
+
+✅ **Just do it** - Action over asking for routine dev work
+✅ **Working > Perfect** - Solve today's problem, not hypothetical futures
+✅ **Clarity > Cleverness** - Simple code wins
+
+## Auto-Execute (No Permission Needed)
+
+- File operations (create, edit, delete)
+- Write/modify code (JS, HTML, CSS, Node.js)
+- Install packages, create configs
+- Fix bugs, implement features, refactor
+- Query dev database, create tables/schemas
+- Commit to dev/feature branches
+- Create PRs, update docs
+- Read/process PDFs (Adobe services)
+
+## Ask First
+
+- Production database changes
+- Push to main/master
+- Delete multiple files (>3)
+- Bulk operations (>10 records)
+- Security/RLS changes in production
+- Process sensitive PDFs
+- Cost-impacting changes
+
+## Context Guidelines
+
+**Always include**:
+- File names and line numbers
+- Table/column names
+- Exact error messages
+- What NOT to change
+
+**Good context**:
+```
+Need email validation on signup.
+- Form: public/index.html (lines 45-78)
+- Uses: src/controllers/auth.controller.js
+- Saves to: user_signup table
+- Need: UK email format validation
+```
+
+**Poor context**: "Add validation"
+
+## Key Patterns
+
+**Webhook Processing**:
+```javascript
+// 1. Verify signature (req.rawBody)
+// 2. Send 200 OK quickly (<5s)
+// 3. Process async (don't block)
+```
+
+**Error Handling**:
+```javascript
+try {
+  const { data, error } = await supabase.from('table').select('*');
+  if (error) throw error;
+  if (!data) throw new Error('Not found');
+} catch (error) {
+  logger.error('Error:', error);
+  throw new Error('User-friendly message');
+}
+```
+
+## Critical Tables
+
+- `user_signup` - Personal info, vehicle, insurance (PK: create_user_id)
+- `incident_reports` - Accident details (131+ columns)
+- `user_documents` - Image processing status
+- `ai_transcription` - OpenAI Whisper transcripts
+- `completed_incident_forms` - Final PDFs
+
+## Environment Variables
+
+```bash
+SUPABASE_URL=xxx
+SUPABASE_SERVICE_ROLE_KEY=xxx  # For webhooks (bypasses RLS)
+SUPABASE_ANON_KEY=xxx
+OPENAI_API_KEY=xxx
+TYPEFORM_WEBHOOK_SECRET=xxx
+PDF_SERVICES_CLIENT_ID=xxx     # Optional
+PDF_SERVICES_CLIENT_SECRET=xxx
+```
+
+## Code Standards
+
+- ES6+, 2 spaces, single quotes, semicolons
+- camelCase for variables/functions
+- Always handle errors with logger
+- Keep functions <50 lines
+- Use RLS policies on all tables
+
+## Git Workflow
+
+**Format**: `type: description`
+**Types**: feat, fix, docs, refactor, test, chore
+**Never commit**: `.env`, `credentials/`, `node_modules/`
+
+## Common Commands
+
+```bash
+npm start                              # Production server
+npm run dev                            # Development
+npm test                               # Run tests
+node test-adobe-pdf.js                 # Test Adobe
+node test-form-filling.js [uuid]       # Test PDF generation
+node scripts/test-supabase-client.js   # Test database
+```
+
+## UK Defaults
+
+- Date: DD/MM/YYYY
+- Currency: £ GBP
+- Timezone: Europe/London (GMT/BST)
+- Phone: +44
+- British English spelling
+
+## Anti-Patterns (DON'T SAY)
+
+❌ "Production-ready code"
+❌ "Enterprise-grade solution"
+❌ "Future-proof implementation"
+❌ "Scalable architecture" (unless requested)
+
+✅ "Working code that does X"
+✅ "Handles cases: A, B, C"
+✅ "Here's a test script"
+
+## Core Rule
+
+**Build working solutions for actual requirements. Keep it simple, secure, and maintainable.**
+
+---
+
+*For detailed rules, see `.claude/claude.md` (443 lines)*
+*For project documentation, see `CLAUDE.md`*
