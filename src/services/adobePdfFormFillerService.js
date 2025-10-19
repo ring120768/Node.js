@@ -141,7 +141,9 @@ class AdobePdfFormFillerService {
     // ========================================
     // PAGE 1: Personal Information
     // ========================================
+    // PDF has both old (driver_name) and new (name) field variations
     setFieldText('name', user.name);
+    setFieldText('driver_name', user.name);
     setFieldText('surname', user.surname);
     setFieldText('email', user.email);
     setFieldText('mobile', user.mobile);
@@ -175,8 +177,8 @@ class AdobePdfFormFillerService {
     const signupDate = user.subscription_start_date || user.created_at;
     if (signupDate) {
       const formattedDate = new Date(signupDate).toLocaleDateString('en-GB');
-      // PDF template field is named "time_stamp" (not subscription_start_date)
-      setFieldText('time_stamp', formattedDate);
+      // PDF template uses "Date139_af_date" for signup date (time_stamp is a signature field)
+      setFieldText('Date139_af_date', formattedDate);
     }
 
     // ========================================
