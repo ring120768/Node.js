@@ -15,7 +15,7 @@ const { createClient } = require('@supabase/supabase-js');
 let fetchAllData, generatePDF, sendEmails;
 try {
   fetchAllData = require('../../lib/data/dataFetcher').fetchAllData;
-  generatePDF = require('../../lib/generators/pdfGenerator').generatePDF;
+  generatePDF = require('../../lib/pdfGenerator').generatePDF; // Legacy fallback implementation
   sendEmails = require('../../lib/generators/emailService').sendEmails;
 } catch (error) {
   logger.warn('PDF generation modules not found - PDF features will be disabled', error.message);

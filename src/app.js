@@ -52,7 +52,7 @@ let pdfModules = null;
 try {
   pdfModules = {
     fetchAllData: require('../lib/data/dataFetcher').fetchAllData,
-    generatePDF: require('../lib/generators/pdfGenerator').generatePDF,
+    generatePDF: require('../lib/pdfGenerator').generatePDF, // Legacy fallback implementation
     sendEmails: require('../lib/generators/emailService').sendEmails
   };
   logger.info('✅ PDF modules loaded');

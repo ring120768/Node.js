@@ -175,8 +175,8 @@ class AdobePdfFormFillerService {
     const signupDate = user.subscription_start_date || user.created_at;
     if (signupDate) {
       const formattedDate = new Date(signupDate).toLocaleDateString('en-GB');
-      // PDF field is now named subscription_start_date (changed from time_stamp)
-      setFieldText('subscription_start_date', formattedDate);
+      // PDF template field is named "time_stamp" (not subscription_start_date)
+      setFieldText('time_stamp', formattedDate);
     }
 
     // ========================================
@@ -193,8 +193,8 @@ class AdobePdfFormFillerService {
     // ========================================
     // PAGE 4: Form Metadata & Safety Assessment
     // ========================================
-    // PDF field renamed from create_user_id to user_id for consistency
-    setFieldText('user_id', metadata.create_user_id);
+    // PDF template field is named "create_user_id" (not user_id)
+    setFieldText('create_user_id', metadata.create_user_id);
     setFieldText('form_id', incident.id);
     // Submit date is when the incident report was submitted (will be empty if no incident)
     setFieldText('submit_date', incident.created_at);

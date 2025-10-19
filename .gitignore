@@ -16,5 +16,18 @@ credentials/*.json
 
 # Adobe PDF Test Output
 test-output/
-*.pdf
 test-filled-form.pdf
+*.pdf
+
+# BUT track the template (exception to *.pdf)
+!pdf-templates/*.pdf
+
+# Ignore generated/filled PDFs (but keep templates)
+completed-reports/
+user-pdfs/
+*-filled.pdf
+*-compressed.pdf
+
+# Test/temp files
+test-timestamp.js
+temp/
