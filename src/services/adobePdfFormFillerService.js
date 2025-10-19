@@ -117,9 +117,18 @@ class AdobePdfFormFillerService {
         const field = form.getTextField(fieldName);
         if (field && value !== null && value !== undefined) {
           field.setText(String(value));
+          // Debug logging for time_stamp field
+          if (fieldName === 'time_stamp') {
+            logger.info(`✅ Successfully set time_stamp field to: ${value}`);
+          }
+        } else if (fieldName === 'time_stamp') {
+          logger.warn(`⚠️ time_stamp field not found or value is null/undefined. field: ${!!field}, value: ${value}`);
         }
       } catch (error) {
         // Field might not exist or might be wrong type - that's okay
+        if (fieldName === 'time_stamp') {
+          logger.error(`❌ Error setting time_stamp field: ${error.message}`);
+        }
       }
     };
 
@@ -173,9 +182,16 @@ class AdobePdfFormFillerService {
     // Format signup date as DD/MM/YYYY for UK format
     // Use subscription_start_date (when they signed up) or fall back to created_at
     const signupDate = user.subscription_start_date || user.created_at;
+    logger.info(`📅 DEBUG - subscription_start_date: ${user.subscription_start_date}`);
+    logger.info(`📅 DEBUG - created_at: ${user.created_at}`);
+    logger.info(`📅 DEBUG - signupDate selected: ${signupDate}`);
     if (signupDate) {
       const formattedDate = new Date(signupDate).toLocaleDateString('en-GB');
+      logger.info(`📅 DEBUG - formattedDate: ${formattedDate}`);
+      logger.info(`📅 DEBUG - Setting time_stamp field to: ${formattedDate}`);
       setFieldText('time_stamp', formattedDate);
+    } else {
+      logger.warn('⚠️ No signup date found!');
     }
 
     // ========================================
