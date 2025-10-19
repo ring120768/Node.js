@@ -141,15 +141,16 @@ class AdobePdfFormFillerService {
     // ========================================
     // PAGE 1: Personal Information
     // ========================================
-    setFieldText('driver_name', user.name);
-    setFieldText('driver_surname', user.surname);
-    setFieldText('driver_email', user.email);
-    setFieldText('driver_mobile', user.mobile);
-    setFieldText('driver_street', user.street_address);
-    setFieldText('driver_town', user.town);
-    setFieldText('driver_postcode', user.postcode);
-    setFieldText('driver_country', user.country);
-    setFieldText('license_number', user.driving_license_number);
+    setFieldText('name', user.name);
+    setFieldText('surname', user.surname);
+    setFieldText('email', user.email);
+    setFieldText('mobile', user.mobile);
+    setFieldText('street', user.street_address);
+    setFieldText('street_address_optional', user.street_address_optional);
+    setFieldText('town', user.town);
+    setFieldText('postcode', user.postcode);
+    setFieldText('country', user.country);
+    setFieldText('driving_license_number', user.driving_license_number);
 
     // PAGE 1: Vehicle Information
     setFieldText('license_plate', user.car_registration_number || user.vehicle_registration);
