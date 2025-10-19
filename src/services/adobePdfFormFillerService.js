@@ -170,17 +170,18 @@ class AdobePdfFormFillerService {
     setFieldText('policy_number', user.policy_number || user.insurance_policy_number);
     setFieldText('policy_holder', user.policy_holder);
     setFieldText('cover_type', user.cover_type);
-    setFieldText('sign_up_date', user.signup_date || user.time_stamp);
+    setFieldText('time_stamp', user.time_stamp || user.signup_date);
 
     // ========================================
     // PAGE 3: Personal Documentation (Images)
     // ========================================
     // Image URLs from user_signup table or incident_images table
-    setFieldText('driving_license_url', user.driving_license_picture || data.imageUrls?.driving_license || '');
-    setFieldText('vehicle_front_url', user.vehicle_picture_front || data.imageUrls?.vehicle_front || '');
-    setFieldText('vehicle_driver_side_url', user.vehicle_picture_driver_side || data.imageUrls?.vehicle_driver_side || '');
-    setFieldText('vehicle_passenger_side_url', user.vehicle_picture_passenger_side || data.imageUrls?.vehicle_passenger_side || '');
-    setFieldText('vehicle_back_url', user.vehicle_picture_back || data.imageUrls?.vehicle_back || '');
+    // NOTE: PDF field names match database column names exactly
+    setFieldText('driving_license_picture', user.driving_license_picture || data.imageUrls?.driving_license || '');
+    setFieldText('vehicle_picture_front', user.vehicle_picture_front || data.imageUrls?.vehicle_front || '');
+    setFieldText('vehicle_picture_driver_side', user.vehicle_picture_driver_side || data.imageUrls?.vehicle_driver_side || '');
+    setFieldText('vehicle_picture_passenger_side', user.vehicle_picture_passenger_side || data.imageUrls?.vehicle_passenger_side || '');
+    setFieldText('vehicle_picture_back', user.vehicle_picture_back || data.imageUrls?.vehicle_back || '');
 
     // ========================================
     // PAGE 4: Form Metadata & Safety Assessment
