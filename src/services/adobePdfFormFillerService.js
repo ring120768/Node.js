@@ -175,12 +175,12 @@ class AdobePdfFormFillerService {
     // ========================================
     // PAGE 3: Personal Documentation (Images)
     // ========================================
-    // Note: Image URLs are stored in imageUrls object
-    setFieldText('driving_license_url', data.imageUrls?.driving_license || '');
-    setFieldText('vehicle_front_url', data.imageUrls?.vehicle_front || '');
-    setFieldText('vehicle_driver_side_url', data.imageUrls?.vehicle_driver_side || '');
-    setFieldText('vehicle_passenger_side_url', data.imageUrls?.vehicle_passenger_side || '');
-    setFieldText('vehicle_back_url', data.imageUrls?.vehicle_back || '');
+    // Image URLs from user_signup table or incident_images table
+    setFieldText('driving_license_url', user.driving_license_picture || data.imageUrls?.driving_license || '');
+    setFieldText('vehicle_front_url', user.vehicle_picture_front || data.imageUrls?.vehicle_front || '');
+    setFieldText('vehicle_driver_side_url', user.vehicle_picture_driver_side || data.imageUrls?.vehicle_driver_side || '');
+    setFieldText('vehicle_passenger_side_url', user.vehicle_picture_passenger_side || data.imageUrls?.vehicle_passenger_side || '');
+    setFieldText('vehicle_back_url', user.vehicle_picture_back || data.imageUrls?.vehicle_back || '');
 
     // ========================================
     // PAGE 4: Form Metadata & Safety Assessment
