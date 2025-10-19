@@ -188,7 +188,8 @@ class AdobePdfFormFillerService {
     // ========================================
     setFieldText('user_id', metadata.create_user_id);
     setFieldText('form_id', incident.id);
-    setFieldText('submit_date', incident.created_at);
+    // Submit date is when user signed up for the app (NOT incident date)
+    setFieldText('submit_date', user.time_stamp || user.signup_date);
 
     // Immediate Safety Assessment
     checkField('safe_ready', incident.are_you_safe_and_ready_to_complete_this_form === 'Yes');
