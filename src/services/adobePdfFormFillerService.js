@@ -193,8 +193,10 @@ class AdobePdfFormFillerService {
     // ========================================
     // PAGE 4: Form Metadata & Safety Assessment
     // ========================================
-    // PDF template field is named "create_user_id" (not user_id)
+    // PDF template has user_id on some pages (page 6) and create_user_id on others
+    // Set both to ensure it shows on all pages
     setFieldText('create_user_id', metadata.create_user_id);
+    setFieldText('user_id', metadata.create_user_id);
     setFieldText('form_id', incident.id);
     // Submit date is when the incident report was submitted (will be empty if no incident)
     setFieldText('submit_date', incident.created_at);
