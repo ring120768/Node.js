@@ -170,7 +170,12 @@ class AdobePdfFormFillerService {
     setFieldText('policy_number', user.policy_number || user.insurance_policy_number);
     setFieldText('policy_holder', user.policy_holder);
     setFieldText('cover_type', user.cover_type);
-    setFieldText('time_stamp', user.time_stamp || user.signup_date);
+    // Format date as DD/MM/YYYY for UK format
+    const signupDate = user.time_stamp || user.signup_date || user.created_at;
+    if (signupDate) {
+      const formattedDate = new Date(signupDate).toLocaleDateString('en-GB');
+      setFieldText('time_stamp', formattedDate);
+    }
 
     // ========================================
     // PAGE 3: Personal Documentation (Images)
@@ -188,8 +193,8 @@ class AdobePdfFormFillerService {
     // ========================================
     setFieldText('user_id', metadata.create_user_id);
     setFieldText('form_id', incident.id);
-    // Submit date is when user signed up for the app (NOT incident date)
-    setFieldText('submit_date', user.time_stamp || user.signup_date);
+    // Submit date is when the incident report was submitted (will be empty if no incident)
+    setFieldText('submit_date', incident.created_at);
 
     // Immediate Safety Assessment
     checkField('safe_ready', incident.are_you_safe_and_ready_to_complete_this_form === 'Yes');
