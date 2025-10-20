@@ -460,10 +460,10 @@
 
                     // Fetch emergency contacts
                     try {
-                        const contactsResponse = await fetch(`/api/user/${userData.uid}/emergency-contacts`);
+                        const contactsResponse = await fetch(`/api/contacts/${userData.uid}`);
                         if (contactsResponse.ok) {
                             emergencyContacts = await contactsResponse.json();
-                            console.log('Emergency contacts loaded');
+                            console.log('Emergency contacts loaded:', emergencyContacts);
                             updateEmergencyButtons();
                         }
                     } catch (error) {

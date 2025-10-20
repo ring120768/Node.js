@@ -240,7 +240,7 @@
                     // Try to get emergency contact from session or make API call
                     if (incidentData.userId) {
                         try {
-                            const response = await fetch(`/api/user/${incidentData.userId}/emergency-contacts`);
+                            const response = await fetch(`/api/contacts/${incidentData.userId}`);
                             if (response.ok) {
                                 const contacts = await response.json();
                                 if (contacts.emergency_contact) {
