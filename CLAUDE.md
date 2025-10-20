@@ -270,7 +270,62 @@ await emailService.sendCompletedReport(userEmail, pdfUrl);
 **Testing:**
 ```bash
 node test-form-filling.js [user-uuid]
+node test-emergency-api.js [user-uuid]  # Test emergency contacts API
 ```
+
+### Emergency Contact System
+
+**Data Format Issue:**
+The `emergency_contact` field from Typeform contains pipe-delimited data:
+```
+"Emergency First name Last name | +447411005390 | email@example.com | Company Name"
+```
+
+**API Endpoint:**
+```
+GET /api/contacts/:userId
+```
+
+**Response handling:**
+```javascript
+// Controller automatically parses pipe-delimited format
+function parseEmergencyContact(emergencyContactString) {
+  if (emergencyContactString?.includes('|')) {
+    const parts = emergencyContactString.split('|').map(p => p.trim());
+    return parts[1]; // Phone number is at index 1
+  }
+  return emergencyContactString;
+}
+
+// Returns:
+{
+  emergency_contact: "+447411005390",           // Parsed from pipe-delimited string
+  recovery_breakdown_number: "07411005390",     // Direct from database
+  emergency_services_number: "999"              // Default or custom
+}
+```
+
+**Frontend Integration Pattern:**
+```javascript
+// CRITICAL: Do NOT call setupEmergencyButtons() after loadUserData()
+// It will overwrite the real handlers with placeholder "Please wait..." messages
+
+async function loadUserData() {
+  const response = await fetch(`/api/contacts/${userId}`);
+  const contacts = await response.json();
+  updateEmergencyButtons(); // Sets real handlers
+}
+
+// Initialization order matters:
+await loadUserData();        // Calls updateEmergencyButtons() internally
+// setupEmergencyButtons();  // ❌ NEVER call this here - it overwrites real handlers
+setupLocationButton();
+```
+
+**Phone Number Format:**
+Both UK local and international formats work with `tel:` links:
+- `07411005390` (UK local format)
+- `+447411005390` (International format)
 
 ## Environment Variables
 
@@ -538,5 +593,5 @@ res.status(statusCode).json({
 
 ---
 
-**Last Updated:** 2025-10-19
+**Last Updated:** 2025-10-20
 **For Questions:** Review `replit.md` for comprehensive system documentation
