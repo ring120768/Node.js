@@ -56,7 +56,18 @@ async function getEmergencyContact(req, res) {
       return sendError(res, 404, 'User not found', 'USER_NOT_FOUND');
     }
 
-    const contactNumber = data.emergency_contact_number || data.emergency_contact || null;
+    // Parse emergency_contact if it's in pipe-delimited format
+    let contactNumber = data.emergency_contact_number;
+    if (!contactNumber && data.emergency_contact) {
+      // Parse pipe-delimited format: "Name | Phone | Email | Company"
+      if (data.emergency_contact.includes('|')) {
+        const parts = data.emergency_contact.split('|').map(part => part.trim());
+        contactNumber = parts.length >= 2 && parts[1] ? parts[1] : data.emergency_contact;
+      } else {
+        contactNumber = data.emergency_contact;
+      }
+    }
+
     const userName = `${data.first_name || ''} ${data.last_name || ''}`.trim() || 'User';
 
     await gdprService.logActivity(userId, 'EMERGENCY_CONTACT_ACCESSED', {
@@ -163,6 +174,27 @@ async function updateEmergencyContact(req, res) {
 }
 
 /**
+ * Parse pipe-delimited emergency_contact field
+ * Format: "Name | Phone | Email | Company"
+ * Returns just the phone number (index 1)
+ */
+function parseEmergencyContact(emergencyContactString) {
+  if (!emergencyContactString) return null;
+
+  // Check if it's pipe-delimited format
+  if (emergencyContactString.includes('|')) {
+    const parts = emergencyContactString.split('|').map(part => part.trim());
+    // Phone number is typically the second part (index 1)
+    if (parts.length >= 2 && parts[1]) {
+      return parts[1];
+    }
+  }
+
+  // If not pipe-delimited or can't parse, return as-is
+  return emergencyContactString;
+}
+
+/**
  * Get emergency contacts (plural - for backward compatibility)
  * GET /api/emergency/contacts/:userId
  */
@@ -185,8 +217,18 @@ async function getEmergencyContacts(req, res) {
       return sendError(res, 404, 'User not found', 'USER_NOT_FOUND');
     }
 
+    // Parse emergency_contact if it's in pipe-delimited format
+    let emergencyContactNumber = data.emergency_contact_number;
+    if (!emergencyContactNumber && data.emergency_contact) {
+      emergencyContactNumber = parseEmergencyContact(data.emergency_contact);
+      logger.info('Parsed emergency contact from pipe-delimited format', {
+        original: data.emergency_contact,
+        parsed: emergencyContactNumber
+      });
+    }
+
     res.json({
-      emergency_contact: data.emergency_contact_number || data.emergency_contact || null,
+      emergency_contact: emergencyContactNumber || null,
       recovery_breakdown_number: data.recovery_breakdown_number || null,
       emergency_services_number: data.emergency_services_number || '999',
       requestId: req.requestId

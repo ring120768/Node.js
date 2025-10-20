@@ -505,7 +505,8 @@
 
             // Continue with initialization only if authenticated
             await loadUserData();
-            setupEmergencyButtons();
+            // NOTE: setupEmergencyButtons() is NOT called here because updateEmergencyButtons()
+            // is called from within loadUserData() after contacts are fetched
             setupLocationButton();
             setupVoiceRecording();
             setupContinueButton();
@@ -539,13 +540,19 @@
                                 const errorText = await contactsResponse.text();
                                 console.error('❌ API Error Response:', contactsResponse.status, errorText);
                                 console.error('API URL was:', `/api/contacts/${userData.uid}`);
+                                // Set up fallback handlers even if API fails
+                                updateEmergencyButtons();
                             }
                         } catch (error) {
                             console.error('❌ Failed to fetch emergency contacts:', error);
                             console.error('User ID:', userData.uid);
+                            // Set up fallback handlers even if fetch fails
+                            updateEmergencyButtons();
                         }
                     } else {
                         console.warn('⚠️ No user ID available to fetch emergency contacts');
+                        // Set up fallback handlers even without user ID
+                        updateEmergencyButtons();
                     }
                 }
             } catch (error) {
