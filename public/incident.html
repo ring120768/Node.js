@@ -522,17 +522,30 @@
                     // Fetch emergency contacts
                     if (userData.uid) {
                         try {
+                            console.log('Fetching emergency contacts for user:', userData.uid);
                             const contactsResponse = await fetch(`/api/contacts/${userData.uid}`, {
                                 credentials: 'include'
                             });
+                            console.log('API Response status:', contactsResponse.status, contactsResponse.statusText);
+
                             if (contactsResponse.ok) {
                                 emergencyContacts = await contactsResponse.json();
-                                console.log('Emergency contacts loaded:', emergencyContacts);
+                                console.log('✅ Emergency contacts loaded:', emergencyContacts);
+                                console.log('  - Emergency Contact:', emergencyContacts.emergency_contact || 'NOT SET');
+                                console.log('  - Recovery Number:', emergencyContacts.recovery_breakdown_number || 'NOT SET');
+                                console.log('  - Emergency Services:', emergencyContacts.emergency_services_number || '999');
                                 updateEmergencyButtons();
+                            } else {
+                                const errorText = await contactsResponse.text();
+                                console.error('❌ API Error Response:', contactsResponse.status, errorText);
+                                console.error('API URL was:', `/api/contacts/${userData.uid}`);
                             }
                         } catch (error) {
-                            console.error('Failed to fetch emergency contacts:', error);
+                            console.error('❌ Failed to fetch emergency contacts:', error);
+                            console.error('User ID:', userData.uid);
                         }
+                    } else {
+                        console.warn('⚠️ No user ID available to fetch emergency contacts');
                     }
                 }
             } catch (error) {
@@ -542,9 +555,12 @@
 
         // Update emergency buttons with real phone numbers
         function updateEmergencyButtons() {
+            console.log('🔧 Updating emergency buttons with contacts:', emergencyContacts);
+
             // 999 Emergency Services with what3words location
             document.getElementById('emergency999Btn').onclick = function() {
                 const emergencyNumber = emergencyContacts?.emergency_services_number || '999';
+                console.log('📞 Calling 999:', emergencyNumber);
                 let message = `This will call ${emergencyNumber} Emergency Services.`;
 
                 if (what3wordsData) {
@@ -559,12 +575,15 @@
 
             // Recovery Service
             if (emergencyContacts?.recovery_breakdown_number) {
+                console.log('✅ Recovery button enabled with number:', emergencyContacts.recovery_breakdown_number);
                 document.getElementById('recoveryBtn').onclick = function() {
+                    console.log('📞 Calling recovery:', emergencyContacts.recovery_breakdown_number);
                     if (confirm(`Call recovery service: ${emergencyContacts.recovery_breakdown_number}?`)) {
                         window.location.href = `tel:${emergencyContacts.recovery_breakdown_number}`;
                     }
                 };
             } else {
+                console.log('❌ Recovery button disabled - no number available');
                 document.getElementById('recoveryBtn').onclick = function() {
                     alert('No recovery service number available. Please update your profile.');
                 };
@@ -572,12 +591,15 @@
 
             // Emergency Contact
             if (emergencyContacts?.emergency_contact) {
+                console.log('✅ Emergency contact button enabled with number:', emergencyContacts.emergency_contact);
                 document.getElementById('emergencyContactBtn').onclick = function() {
+                    console.log('📞 Calling emergency contact:', emergencyContacts.emergency_contact);
                     if (confirm(`Call emergency contact: ${emergencyContacts.emergency_contact}?`)) {
                         window.location.href = `tel:${emergencyContacts.emergency_contact}`;
                     }
                 };
             } else {
+                console.log('❌ Emergency contact button disabled - no contact available');
                 document.getElementById('emergencyContactBtn').onclick = function() {
                     alert('No emergency contact available. Please update your profile.');
                 };
