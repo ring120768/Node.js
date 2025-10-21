@@ -1051,6 +1051,7 @@
     // Render images
     function renderImages() {
       const container = document.getElementById('imagesContainer');
+      console.log('renderImages called, images count:', allData.images.length);
 
       if (allData.images.length === 0) {
         container.innerHTML = `
@@ -1066,7 +1067,9 @@
 
       const html = `
         <div class="items-grid">
-          ${allData.images.map((image, index) => `
+          ${allData.images.map((image, index) => {
+            console.log('Rendering image', index, image.id, image.document_type);
+            return `
             <div class="item-card">
               <div class="item-preview">
                 ${image.public_url ?
@@ -1087,7 +1090,8 @@
                 </div>
               </div>
             </div>
-          `).join('')}
+          `;
+          }).join('')}
         </div>
       `;
 
@@ -1096,6 +1100,11 @@
 
     // View image in modal
     function viewImage(image) {
+      console.log('viewImage called with:', image);
+      if (!image) {
+        console.error('viewImage called with undefined image');
+        return;
+      }
       currentImageData = image;
       document.getElementById('modalTitle').textContent = formatDocumentType(image.document_type);
       document.getElementById('modalImage').src = image.public_url || image.signed_url || '';
@@ -1106,6 +1115,7 @@
         ${image.error_message ? `<div style="color: var(--danger-red);"><strong>Error:</strong> ${image.error_message}</div>` : ''}
       `;
       document.getElementById('imageModal').classList.add('active');
+      console.log('Modal should be visible now');
     }
 
     // Close modal
