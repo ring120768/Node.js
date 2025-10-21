@@ -637,6 +637,77 @@ git status  # Should show "up to date with origin"
 
 **Important:** This is a STANDARD PRACTICE, not optional. Every completed task should result in a git commit and push unless explicitly told otherwise by the user.
 
+### Keep It Simple - Don't Over-Engineer
+
+**IMPORTANT:** Always choose the simplest solution that solves the problem. Avoid over-engineering.
+
+**Principles:**
+1. **Start simple, add complexity only when needed**
+   - Implement the minimum viable solution first
+   - Add features/abstractions only when requirements demand it
+   - Don't anticipate future needs that may never materialize
+
+2. **Avoid premature optimization**
+   - Write clear, working code first
+   - Optimize only when performance issues are identified
+   - Measure before optimizing
+
+3. **Don't add unnecessary abstractions**
+   - Avoid creating layers, classes, or patterns "just in case"
+   - Use abstractions only when you have 3+ instances of duplication
+   - Keep functions and modules focused and simple
+
+4. **Favor readability over cleverness**
+   - Write code that's easy to understand and maintain
+   - Avoid complex one-liners or overly clever solutions
+   - Comment when necessary, but prefer self-documenting code
+
+5. **Question every addition**
+   - Ask: "Is this really needed to solve the current problem?"
+   - Ask: "Will this make the code simpler or more complex?"
+   - When in doubt, leave it out
+
+**Examples:**
+
+❌ **Over-engineered:**
+```javascript
+// Creating a factory pattern for a single use case
+class UserValidatorFactory {
+  createValidator(type) {
+    return new UserValidator(new EmailValidator(), new PhoneValidator());
+  }
+}
+```
+
+✅ **Simple and sufficient:**
+```javascript
+// Direct validation where needed
+function validateUser(user) {
+  if (!isEmail(user.email)) throw new Error('Invalid email');
+  if (!isMobilePhone(user.phone, 'en-GB')) throw new Error('Invalid phone');
+}
+```
+
+❌ **Over-engineered:**
+```javascript
+// Abstract repository pattern for simple CRUD
+class GenericRepository<T> {
+  // 200 lines of generic methods that may never be used
+}
+```
+
+✅ **Simple and sufficient:**
+```javascript
+// Direct Supabase queries where needed
+const { data, error } = await supabase
+  .from('users')
+  .select('*')
+  .eq('id', userId)
+  .single();
+```
+
+**Remember:** The best code is code that solves the problem clearly and simply. If you find yourself adding complexity, stop and ask if it's truly necessary.
+
 ## Related Documentation
 
 - `README.md` - Quick start, API endpoints, deployment
