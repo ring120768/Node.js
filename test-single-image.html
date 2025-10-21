@@ -1,0 +1,20 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Single Image Test</title>
+</head>
+<body>
+    <h1>Testing Single Image Display</h1>
+    <p>This image should display if the signed URL works:</p>
+
+    <img
+        src="https://kctlcmbjmhcfoobmkfrs.supabase.co/storage/v1/object/sign/user-documents/199d9251-b2e0-40a5-80bf-fc1529d9bf6c/driving_license_picture/1760653683931_driving_license_picture.jpeg?token=eyJraWQiOiJzdG9yYWdlLXVybC1zaWduaW5nLWtleV8yY2M2ZTFjOC1jODc2LTQ0MTEtODZjMS0xZDI4MGVlY2FjMGEiLCJhbGciOiJIUzI1NiJ9.eyJ1cmwiOiJ1c2VyLWRvY3VtZW50cy8xOTlkOTI1MS1iMmUwLTQwYTUtODBiZi1mYzE1MjlkOWJmNmMvZHJpdmluZ19saWNlbnNlX3BpY3R1cmUvMTc2MDY1MzY4MzkzMV9kcml2aW5nX2xpY2Vuc2VfcGljdHVyZS5qcGVnIiwiaWF0IjoxNzYxMDc5ODQ5LCJleHAiOjE3NjE2ODQ2NDl9.7T1kpLo9iAC1FulBAciDpz02Fvf3bdwO_6o1lkyqABw"
+        alt="Driving License"
+        style="max-width: 500px; border: 2px solid blue;"
+        onload="console.log('Image loaded successfully!')"
+        onerror="console.error('Image failed to load!')"
+    />
+
+    <p>Open this file in a browser and check if the image displays: <code>http://localhost:5001/test-single-image.html</code></p>
+</body>
+</html>
