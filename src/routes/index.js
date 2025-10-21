@@ -22,7 +22,6 @@ const pdfRoutes = require('./pdf.routes');
 const exportRoutes = require('./export.routes'); // NEW: Export functionality for dual retention
 const aiRoutes = require('./ai.routes'); // NEW: AI analysis routes
 const incidentRoutes = require('./incident.routes'); // NEW: Incident reports routes
-const dashboardRoutes = require('./dashboard.routes'); // NEW: Dashboard routes for viewing reports
 
 // GitHub webhooks are mounted in app.js via webhook.routes.js (not imported here)
 const locationRoutes = require('./location.routes');
@@ -311,7 +310,6 @@ router.use('/', pdfRoutes);
 router.use('/api', exportRoutes); // NEW: Export routes for incident downloads
 router.use('/api/ai', aiRoutes); // NEW: AI analysis routes
 router.use('/api/incident-reports', incidentRoutes); // NEW: Incident reports routes
-router.use('/api/dashboard', dashboardRoutes); // NEW: Dashboard routes for viewing reports
 // Note: Webhook routes are mounted directly in app.js for raw body handling
 // GitHub webhooks are mounted in app.js via webhook.routes.js (not here)
 router.use('/api/location', locationRoutes);
