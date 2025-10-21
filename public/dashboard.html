@@ -698,7 +698,7 @@
         <p>Manage your incident reports and files</p>
         <!-- Version marker to confirm new code is loaded -->
         <div style="background: #10B981; color: white; padding: 0.5rem; border-radius: 0.25rem; margin-top: 1rem; font-size: 0.875rem;">
-          ✅ Version 2.1.1 - Fixed Image Display (21 Oct 2025, 20:55)
+          ✅ Version 2.1.2 - Fixed API Calls & Image Loading (21 Oct 2025, 21:00)
         </div>
       </div>
 
@@ -1270,7 +1270,8 @@
     async function loadImages() {
       try {
         console.log('Loading images for user:', currentUser.id);
-        const response = await fetch(`/api/user-documents?user_id=${currentUser.id}`);
+        // Use document_type=image parameter to get all image types
+        const response = await fetch(`/api/user-documents?user_id=${currentUser.id}&document_type=image`);
         console.log('Response status:', response.status);
 
         if (response.ok) {
@@ -1278,23 +1279,16 @@
           console.log('API response:', data);
 
           // API returns { success: true, data: { documents: [...] } }
-          const docs = data.data?.documents || data.documents || [];
-          console.log('Documents found:', docs.length);
-
-          // Filter for images only (exclude videos)
-          allData.images = docs.filter(doc =>
-            !doc.document_type?.toLowerCase().includes('video') &&
-            !doc.document_type?.toLowerCase().includes('dashcam')
-          );
-
-          console.log('Images after filtering:', allData.images.length);
+          // No need to filter - API already returns only images when document_type=image
+          allData.images = data.data?.documents || data.documents || [];
+          console.log('Images found:', allData.images.length);
           if (allData.images.length > 0) {
             console.log('First image:', {
               type: allData.images[0].document_type,
-              has_signed_url: !!allData.images[0].signed_url,
+              has_signed_url: false,
               has_public_url: !!allData.images[0].public_url,
-              url_preview: allData.images[0].signed_url ?
-                allData.images[0].signed_url.substring(0, 100) + '...' :
+              url_preview: allData.images[0].public_url ?
+                allData.images[0].public_url.substring(0, 100) + '...' :
                 'No URL'
             });
           }
@@ -1310,15 +1304,12 @@
     // Load videos
     async function loadVideos() {
       try {
-        const response = await fetch(`/api/user-documents?user_id=${currentUser.id}`);
+        // Use document_type=video parameter to get all video types
+        const response = await fetch(`/api/user-documents?user_id=${currentUser.id}&document_type=video`);
         if (response.ok) {
           const data = await response.json();
-          const docs = data.data?.documents || data.documents || [];
-          // Filter for videos only
-          allData.videos = docs.filter(doc =>
-            doc.document_type?.toLowerCase().includes('video') ||
-            doc.document_type?.toLowerCase().includes('dashcam')
-          );
+          // No need to filter, API returns videos only
+          allData.videos = data.data?.documents || data.documents || [];
         }
       } catch (error) {
         console.error('Failed to load videos:', error);
@@ -1441,8 +1432,8 @@
             return `
             <div class="item-card">
               <div class="item-preview">
-                ${(image.signed_url || image.public_url) ?
-                  `<img src="${image.signed_url || image.public_url}" alt="${image.document_type}" onerror="this.parentElement.innerHTML='<span>🖼️</span>'">` :
+                ${image.public_url ?
+                  `<img src="${image.public_url}" alt="${image.document_type}" onerror="this.parentElement.innerHTML='<span>🖼️</span>'">` :
                   '<span>🖼️</span>'
                 }
               </div>
@@ -1454,7 +1445,7 @@
                 </div>
                 <div class="item-actions">
                   <button class="btn btn-primary" data-action="view" data-index="${index}">View</button>
-                  <button class="btn btn-secondary" data-action="download" data-url="${image.public_url || image.signed_url}" data-filename="${image.document_type}">Download</button>
+                  <button class="btn btn-secondary" data-action="download" data-url="${image.public_url}" data-filename="${image.document_type}">Download</button>
                   <button class="btn btn-danger" data-action="delete" data-id="${image.id}">Delete</button>
                 </div>
               </div>
@@ -1476,7 +1467,7 @@
       }
       currentImageData = image;
       document.getElementById('modalTitle').textContent = formatDocumentType(image.document_type);
-      document.getElementById('modalImage').src = image.public_url || image.signed_url || '';
+      document.getElementById('modalImage').src = image.public_url || '';
       document.getElementById('modalMeta').innerHTML = `
         <div><strong>Type:</strong> ${formatDocumentType(image.document_type)}</div>
         <div><strong>Date:</strong> ${formatDate(image.created_at)}</div>
@@ -1496,7 +1487,7 @@
     // Download current image
     function downloadCurrentImage() {
       if (currentImageData) {
-        const url = currentImageData.public_url || currentImageData.signed_url;
+        const url = currentImageData.public_url;
         if (url) {
           downloadImage(url, currentImageData.document_type);
         }
