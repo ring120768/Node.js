@@ -924,7 +924,7 @@
     // Load images
     async function loadImages() {
       try {
-        const response = await fetch(`/api/user-documents?user_id=${currentUser.uid}`);
+        const response = await fetch(`/api/user-documents?user_id=${currentUser.id}`);
         if (response.ok) {
           const data = await response.json();
           // API returns { success: true, data: { documents: [...] } }
@@ -944,7 +944,7 @@
     // Load videos
     async function loadVideos() {
       try {
-        const response = await fetch(`/api/user-documents?user_id=${currentUser.uid}`);
+        const response = await fetch(`/api/user-documents?user_id=${currentUser.id}`);
         if (response.ok) {
           const data = await response.json();
           const docs = data.data?.documents || data.documents || [];
@@ -963,7 +963,7 @@
     // Load transcriptions
     async function loadTranscriptions() {
       try {
-        const response = await fetch(`/api/transcription/history?user_id=${currentUser.uid}`);
+        const response = await fetch(`/api/transcription/history?user_id=${currentUser.id}`);
         if (response.ok) {
           const data = await response.json();
           allData.transcriptions = data.transcriptions || data.data || [];
@@ -978,7 +978,7 @@
     async function loadPDFs() {
       try {
         // Try to fetch PDFs - endpoint may not exist yet
-        const response = await fetch(`/api/pdf/status/${currentUser.uid}`);
+        const response = await fetch(`/api/pdf/status/${currentUser.id}`);
         if (response.ok) {
           const data = await response.json();
           allData.pdfs = Array.isArray(data) ? data : (data.pdfs || [data]);
