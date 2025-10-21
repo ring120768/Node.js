@@ -383,6 +383,28 @@ node scripts/test-supabase-client.js
 node scripts/test-database.js
 ```
 
+### Dashboard Tests
+```bash
+# Find test user with data for dashboard testing
+node scripts/find-test-user.js
+
+# Test dashboard API endpoints (HTTP-based)
+node scripts/test-dashboard-api.js [user-id]
+
+# Validate dashboard data (direct database queries)
+node scripts/validate-dashboard.js [user-id]
+```
+
+**Dashboard sections tested:**
+- Incident Reports (`/api/incident-reports`)
+- Images (`/api/user-documents` filtered for images)
+- Dashcam Footage (`/api/user-documents` filtered for videos)
+- Audio Transcriptions (`/api/transcription/history`)
+- Generated Reports (`/api/pdf/status/:userId`)
+
+**Quick dashboard audit:**
+See `QUICK_DASHBOARD_TEST.md` for 5-minute test procedure and `DASHBOARD_AUDIT.md` for comprehensive 130-point checklist.
+
 ### Manual UI Testing
 See `MANUAL_TESTING_GUIDE.md` for comprehensive UI test procedures.
 
@@ -716,9 +738,11 @@ const { data, error } = await supabase
 - `QUICK_START_FORM_FILLING.md` - PDF generation quick start
 - `IMPLEMENTATION_SUMMARY.md` - Latest implementation details
 - `MANUAL_TESTING_GUIDE.md` - UI testing procedures
+- `DASHBOARD_AUDIT.md` - Comprehensive dashboard testing and audit guide (130-point checklist)
+- `QUICK_DASHBOARD_TEST.md` - 5-minute dashboard test procedure
 - `.claude/claude.md` - Claude Code global rules and standards
 
 ---
 
-**Last Updated:** 2025-10-20
+**Last Updated:** 2025-10-21
 **For Questions:** Review `replit.md` for comprehensive system documentation
