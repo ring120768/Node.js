@@ -36,10 +36,10 @@ async function fixStoragePaths() {
       console.log(`\n🔧 Fixing ${doc.document_type}...`);
       console.log(`   Old path: ${doc.storage_path}`);
 
-      // Fix the path by removing "user-documents/" prefix if it exists
+      // Fix the path by ADDING "user-documents/" prefix if it's missing
       let correctedPath = doc.storage_path;
-      if (correctedPath && correctedPath.startsWith('user-documents/')) {
-        correctedPath = correctedPath.replace('user-documents/', '');
+      if (correctedPath && !correctedPath.startsWith('user-documents/')) {
+        correctedPath = `user-documents/${correctedPath}`;
       }
 
       console.log(`   New path: ${correctedPath}`);
