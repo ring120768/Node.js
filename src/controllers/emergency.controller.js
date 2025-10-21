@@ -208,7 +208,7 @@ async function getEmergencyContacts(req, res) {
 
     const { data, error } = await supabase
       .from('user_signup')
-      .select('emergency_contact, emergency_contact_number, recovery_breakdown_number, emergency_services_number')
+      .select('emergency_contact, emergency_contact_number, recovery_breakdown_number')
       .eq('create_user_id', userId)
       .single();
 
@@ -230,7 +230,7 @@ async function getEmergencyContacts(req, res) {
     res.json({
       emergency_contact: emergencyContactNumber || null,
       recovery_breakdown_number: data.recovery_breakdown_number || null,
-      emergency_services_number: data.emergency_services_number || '999',
+      emergency_services_number: '999',
       requestId: req.requestId
     });
   } catch (error) {
