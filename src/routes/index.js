@@ -22,6 +22,7 @@ const pdfRoutes = require('./pdf.routes');
 const exportRoutes = require('./export.routes'); // NEW: Export functionality for dual retention
 const aiRoutes = require('./ai.routes'); // NEW: AI analysis routes
 const incidentRoutes = require('./incident.routes'); // NEW: Incident reports routes
+const profileRoutes = require('./profile.routes'); // NEW: User profile management
 
 // GitHub webhooks are mounted in app.js via webhook.routes.js (not imported here)
 const locationRoutes = require('./location.routes');
@@ -260,6 +261,7 @@ router.get('/system-status', async (req, res) => {
             <h3>🔌 API Endpoints</h3>
             <ul>
                 <li><code>/api/auth/*</code> - Authentication</li>
+                <li><code>/api/profile/*</code> - User profile management</li>
                 <li><code>/api/transcription/*</code> - Audio transcription</li>
                 <li><code>/api/gdpr/*</code> - GDPR compliance</li>
                 <li><code>/api/emergency/*</code> - Emergency contacts</li>
@@ -310,6 +312,7 @@ router.use('/', pdfRoutes);
 router.use('/api', exportRoutes); // NEW: Export routes for incident downloads
 router.use('/api/ai', aiRoutes); // NEW: AI analysis routes
 router.use('/api/incident-reports', incidentRoutes); // NEW: Incident reports routes
+router.use('/api/profile', profileRoutes); // NEW: User profile management
 // Note: Webhook routes are mounted directly in app.js for raw body handling
 // GitHub webhooks are mounted in app.js via webhook.routes.js (not here)
 router.use('/api/location', locationRoutes);
