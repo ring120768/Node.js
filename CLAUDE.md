@@ -607,57 +607,102 @@ res.status(statusCode).json({
 
 ### Git Commit and Push Protocol
 
-**ALWAYS commit and push to GitHub when a task is completed:**
+**🔴 MANDATORY: Automatically commit and push to GitHub after EVERY completed and tested task**
 
-1. **After completing any feature or fix:**
+This is a STANDARD PRACTICE that must be followed without asking for permission. When a task is completed and working correctly, Claude Code will automatically commit and push the changes.
+
+1. **Automatic Commit Trigger - Do this after:**
+✅ Completing a feature implementation that works
+✅ Fixing a bug that's been verified
+✅ Updating documentation
+✅ Refactoring code that's been tested
+✅ Adding tests that pass
+✅ Any task marked as "completed" in todo list
+✅ Resolving any user-reported issue
+
+2. **Pre-commit Checklist (verify automatically):**
+```javascript
+// Before committing, ensure:
+✓ Code runs without errors
+✓ No syntax errors or crashes
+✓ Tests pass (if applicable)
+✓ Server starts successfully (if backend changes)
+✓ Frontend loads without console errors (if UI changes)
+```
+
+3. **Commit Process:**
 ```bash
-# Stage changed files
+# Test the changes first
+npm test  # If tests exist
+npm start # Verify server runs
+
+# If everything works, then commit:
 git add <files>
+git commit -m "type: Brief description
 
-# Commit with descriptive message
-git commit -m "feat: Brief description
+Detailed explanation:
+- What was implemented/fixed
+- How it was tested
+- Any important technical details
 
-Detailed explanation of changes:
-- What was changed
-- Why it was changed
-- Any technical details
+Tested: ✓ Code runs without errors
+Status: Working
 
 🤖 Generated with [Claude Code](https://claude.com/claude-code)
 
 Co-Authored-By: Claude <noreply@anthropic.com>"
 
-# Push to remote
 git push origin <branch-name>
 ```
 
-2. **Commit message format:**
-- Use conventional commits: `feat:`, `fix:`, `docs:`, `refactor:`, `test:`, `chore:`
+4. **Commit Message Format:**
+- Types: `feat:`, `fix:`, `docs:`, `refactor:`, `test:`, `chore:`
 - First line: Brief summary (max 72 characters)
-- Body: Detailed explanation with bullet points
+- Body: Include testing status and confirmation it works
 - Always include Claude Code attribution
 
-3. **When to commit and push:**
-✅ **Immediately after:**
-- Completing a feature implementation
-- Fixing a bug
-- Updating documentation
-- Refactoring code
-- Adding tests
-- Any task marked as "completed" in todo list
-
-❌ **Do NOT commit:**
-- Broken/incomplete code
-- Code that fails tests
+5. **❌ NEVER Commit:**
+- Code with syntax errors
+- Code that crashes on startup
+- Code with failing tests
+- Incomplete implementations
+- Code with known runtime errors
 - Sensitive data (API keys, credentials)
-- Work-in-progress without user approval
+- Untested changes
 
-4. **Verification:**
+6. **Example Commit After Task:**
 ```bash
-# Always verify push succeeded
-git status  # Should show "up to date with origin"
+# After fixing dashboard image display issue
+git add public/dashboard.html fix-image-urls.js
+git commit -m "fix: Resolve dashboard image viewing issue
+
+- Fixed dashboard to use signed_url field from API
+- Generated fresh signed URLs for expired images
+- Created diagnostic script for testing
+- Added auth bypass for testing
+
+Tested: ✓ Images now display correctly in dashboard
+Verified: ✓ API returns signed URLs, frontend renders them
+
+🤖 Generated with [Claude Code](https://claude.com/claude-code)
+
+Co-Authored-By: Claude <noreply@anthropic.com>"
+
+git push origin feat/audit-prep
 ```
 
-**Important:** This is a STANDARD PRACTICE, not optional. Every completed task should result in a git commit and push unless explicitly told otherwise by the user.
+7. **Verification After Push:**
+```bash
+git status  # Should show "Your branch is up to date"
+git log -1  # Verify commit was created
+```
+
+**🔴 IMPORTANT:** This is NOT optional. Every completed task that works correctly MUST be committed and pushed immediately. Only skip if:
+- User explicitly says "don't commit yet"
+- Code has errors or doesn't work
+- Task is incomplete
+
+**Default behavior:** Complete task → Test it works → Commit & Push automatically
 
 ### Keep It Simple - Don't Over-Engineer
 
