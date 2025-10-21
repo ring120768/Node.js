@@ -70,7 +70,33 @@ async function listUserDocuments(req, res) {
 
     // Apply filters
     if (status) query = query.eq('status', status);
-    if (document_type) query = query.eq('document_type', document_type);
+
+    // Special handling for "image" filter to get all image types
+    if (document_type === 'image') {
+      // Filter for known image document types
+      const imageTypes = [
+        'driving_license_picture',
+        'vehicle_picture_front',
+        'vehicle_picture_back',
+        'vehicle_picture_driver_side',
+        'vehicle_picture_passenger_side',
+        'vehicle_damage_picture',
+        'incident_picture',
+        'test_image'
+      ];
+      query = query.in('document_type', imageTypes);
+    } else if (document_type === 'video') {
+      // Filter for video types
+      const videoTypes = [
+        'dashcam_footage',
+        'incident_video'
+      ];
+      query = query.in('document_type', videoTypes);
+    } else if (document_type) {
+      // Exact match for specific document type
+      query = query.eq('document_type', document_type);
+    }
+
     if (document_category) query = query.eq('document_category', document_category);
 
     const { data: documents, error, count } = await query;
