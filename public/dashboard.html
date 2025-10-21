@@ -1081,8 +1081,8 @@
                   <div>📊 ${image.status || 'pending'}</div>
                 </div>
                 <div class="item-actions">
-                  <button class="btn btn-primary" onclick='viewImage(${JSON.stringify(image).replace(/'/g, "&#39;")})'>View</button>
-                  <button class="btn btn-secondary" onclick='downloadImage("${image.public_url}", "${image.document_type}")'>Download</button>
+                  <button class="btn btn-primary" onclick="viewImage(allData.images[${index}])">View</button>
+                  <button class="btn btn-secondary" onclick='downloadImage("${image.public_url || image.signed_url}", "${image.document_type}")'>Download</button>
                   <button class="btn btn-danger" onclick='confirmDeleteImage("${image.id}")'>Delete</button>
                 </div>
               </div>
@@ -1098,7 +1098,7 @@
     function viewImage(image) {
       currentImageData = image;
       document.getElementById('modalTitle').textContent = formatDocumentType(image.document_type);
-      document.getElementById('modalImage').src = image.public_url || '';
+      document.getElementById('modalImage').src = image.public_url || image.signed_url || '';
       document.getElementById('modalMeta').innerHTML = `
         <div><strong>Type:</strong> ${formatDocumentType(image.document_type)}</div>
         <div><strong>Date:</strong> ${formatDate(image.created_at)}</div>
@@ -1116,8 +1116,11 @@
 
     // Download current image
     function downloadCurrentImage() {
-      if (currentImageData && currentImageData.public_url) {
-        downloadImage(currentImageData.public_url, currentImageData.document_type);
+      if (currentImageData) {
+        const url = currentImageData.public_url || currentImageData.signed_url;
+        if (url) {
+          downloadImage(url, currentImageData.document_type);
+        }
       }
     }
 
