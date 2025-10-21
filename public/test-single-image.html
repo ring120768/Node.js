@@ -1,0 +1,176 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Single Image Test</title>
+    <style>
+        body {
+            font-family: monospace;
+            padding: 20px;
+            background: #f0f0f0;
+        }
+        .container {
+            max-width: 800px;
+            margin: 0 auto;
+            background: white;
+            padding: 20px;
+            border-radius: 8px;
+        }
+        img {
+            max-width: 100%;
+            border: 2px solid #0b7ab0;
+            border-radius: 8px;
+        }
+        .error {
+            color: red;
+            font-weight: bold;
+        }
+        .success {
+            color: green;
+            font-weight: bold;
+        }
+        #status {
+            margin: 20px 0;
+            padding: 10px;
+            background: #f8f9fa;
+            border-radius: 5px;
+        }
+        .url-display {
+            word-break: break-all;
+            background: #f0f0f0;
+            padding: 10px;
+            margin: 10px 0;
+            border-radius: 5px;
+            font-size: 11px;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>🖼️ Single Image Direct Test</h1>
+
+        <div id="status">
+            <p>Testing a single image URL directly from the API response...</p>
+        </div>
+
+        <div class="url-display">
+            <strong>Testing URL:</strong><br>
+            <span id="url-text"></span>
+        </div>
+
+        <h2>Image Display:</h2>
+        <img id="test-image"
+             src="https://kctlcmbjmhcfoobmkfrs.supabase.co/storage/v1/object/sign/user-documents/199d9251-b2e0-40a5-80bf-fc1529d9bf6c/driving_license_picture/1760653683931_driving_license_picture.jpeg?token=eyJraWQiOiJzdG9yYWdlLXVybC1zaWduaW5nLWtleV8yY2M2ZTFjOC1jODc2LTQ0MTEtODZjMS0xZDI4MGVlY2FjMGEiLCJhbGciOiJIUzI1NiJ9.eyJ1cmwiOiJ1c2VyLWRvY3VtZW50cy8xOTlkOTI1MS1iMmUwLTQwYTUtODBiZi1mYzE1MjlkOWJmNmMvZHJpdmluZ19saWNlbnNlX3BpY3R1cmUvMTc2MDY1MzY4MzkzMV9kcml2aW5nX2xpY2Vuc2VfcGljdHVyZS5qcGVnIiwiaWF0IjoxNzYxMDgzOTg3LCJleHAiOjE3NjE2ODg3ODd9.fggtA1_7jpGjLlsLTYBhYTmmbBM5GSTccfbuVO0-kxw"
+             alt="Test Image"
+             onload="imageLoaded()"
+             onerror="imageError()">
+
+        <h2>Alternative Methods:</h2>
+
+        <h3>1. Via Proxy Endpoint:</h3>
+        <img src="/api/images/0d6a2736-0413-4e03-aee7-6c685bf66956"
+             alt="Via Proxy"
+             style="max-width: 100%; border: 2px solid green;">
+
+        <h3>2. Via JavaScript Fetch:</h3>
+        <div id="js-image-container"></div>
+
+        <h3>3. Via Background CSS:</h3>
+        <div id="css-image" style="width: 100%; height: 300px; background-size: contain; background-repeat: no-repeat; background-position: center; border: 2px solid purple;"></div>
+
+        <h3>Browser Console Output:</h3>
+        <pre id="console-output" style="background: #1e1e1e; color: #0f0; padding: 10px; border-radius: 5px; max-height: 200px; overflow-y: auto;"></pre>
+    </div>
+
+    <script>
+        const consoleOutput = document.getElementById('console-output');
+        const urlText = document.getElementById('url-text');
+        const testImage = document.getElementById('test-image');
+        const statusDiv = document.getElementById('status');
+
+        // Display the URL being tested
+        urlText.textContent = testImage.src;
+
+        function log(message) {
+            const timestamp = new Date().toLocaleTimeString();
+            consoleOutput.innerHTML += `[${timestamp}] ${message}\n`;
+            console.log(message);
+        }
+
+        function imageLoaded() {
+            statusDiv.innerHTML = '<p class="success">✅ Image loaded successfully!</p>';
+            log('✅ Direct img tag: Image loaded successfully');
+            log(`  Width: ${testImage.naturalWidth}px`);
+            log(`  Height: ${testImage.naturalHeight}px`);
+        }
+
+        function imageError() {
+            statusDiv.innerHTML = '<p class="error">❌ Image failed to load</p>';
+            log('❌ Direct img tag: Image failed to load');
+        }
+
+        // Test via JavaScript
+        async function testJavaScriptLoad() {
+            log('\nTesting JavaScript fetch...');
+            try {
+                const response = await fetch(testImage.src);
+                if (response.ok) {
+                    const blob = await response.blob();
+                    const url = URL.createObjectURL(blob);
+
+                    const jsImg = document.createElement('img');
+                    jsImg.src = url;
+                    jsImg.style.maxWidth = '100%';
+                    jsImg.style.border = '2px solid blue';
+
+                    document.getElementById('js-image-container').appendChild(jsImg);
+                    log(`✅ JavaScript fetch: Success (${blob.size} bytes)`);
+                } else {
+                    log(`❌ JavaScript fetch: Failed (${response.status})`);
+                }
+            } catch (err) {
+                log(`❌ JavaScript fetch: Error - ${err.message}`);
+            }
+        }
+
+        // Test via CSS background
+        function testCSSBackground() {
+            log('\nTesting CSS background...');
+            const cssDiv = document.getElementById('css-image');
+            cssDiv.style.backgroundImage = `url("${testImage.src}")`;
+            log('CSS background image set');
+        }
+
+        // Test proxy endpoint
+        async function testProxy() {
+            log('\nTesting proxy endpoint...');
+            try {
+                const response = await fetch('/api/images/0d6a2736-0413-4e03-aee7-6c685bf66956');
+                if (response.ok) {
+                    log(`✅ Proxy endpoint: Success (${response.status})`);
+                } else {
+                    log(`❌ Proxy endpoint: Failed (${response.status})`);
+                }
+            } catch (err) {
+                log(`❌ Proxy endpoint: Error - ${err.message}`);
+            }
+        }
+
+        // Run all tests
+        window.addEventListener('DOMContentLoaded', () => {
+            log('Page loaded, starting tests...\n');
+
+            // Wait a bit then run other tests
+            setTimeout(() => {
+                testJavaScriptLoad();
+                testCSSBackground();
+                testProxy();
+            }, 1000);
+        });
+
+        // Check for any console errors
+        window.addEventListener('error', (e) => {
+            log(`❌ Browser error: ${e.message}`);
+        });
+    </script>
+</body>
+</html>
