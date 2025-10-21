@@ -581,6 +581,62 @@ res.status(statusCode).json({
 - Line length <100 characters
 - ES6+ features (async/await, destructuring, template literals)
 
+## Development Workflow Standards
+
+### Git Commit and Push Protocol
+
+**ALWAYS commit and push to GitHub when a task is completed:**
+
+1. **After completing any feature or fix:**
+```bash
+# Stage changed files
+git add <files>
+
+# Commit with descriptive message
+git commit -m "feat: Brief description
+
+Detailed explanation of changes:
+- What was changed
+- Why it was changed
+- Any technical details
+
+🤖 Generated with [Claude Code](https://claude.com/claude-code)
+
+Co-Authored-By: Claude <noreply@anthropic.com>"
+
+# Push to remote
+git push origin <branch-name>
+```
+
+2. **Commit message format:**
+- Use conventional commits: `feat:`, `fix:`, `docs:`, `refactor:`, `test:`, `chore:`
+- First line: Brief summary (max 72 characters)
+- Body: Detailed explanation with bullet points
+- Always include Claude Code attribution
+
+3. **When to commit and push:**
+✅ **Immediately after:**
+- Completing a feature implementation
+- Fixing a bug
+- Updating documentation
+- Refactoring code
+- Adding tests
+- Any task marked as "completed" in todo list
+
+❌ **Do NOT commit:**
+- Broken/incomplete code
+- Code that fails tests
+- Sensitive data (API keys, credentials)
+- Work-in-progress without user approval
+
+4. **Verification:**
+```bash
+# Always verify push succeeded
+git status  # Should show "up to date with origin"
+```
+
+**Important:** This is a STANDARD PRACTICE, not optional. Every completed task should result in a git commit and push unless explicitly told otherwise by the user.
+
 ## Related Documentation
 
 - `README.md` - Quick start, API endpoints, deployment
