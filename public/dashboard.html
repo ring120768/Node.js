@@ -1084,9 +1084,9 @@
                   <div>📊 ${image.status || 'pending'}</div>
                 </div>
                 <div class="item-actions">
-                  <button class="btn btn-primary" onclick="viewImage(allData.images[${index}])">View</button>
-                  <button class="btn btn-secondary" onclick='downloadImage("${image.public_url || image.signed_url}", "${image.document_type}")'>Download</button>
-                  <button class="btn btn-danger" onclick='confirmDeleteImage("${image.id}")'>Delete</button>
+                  <button class="btn btn-primary" data-action="view" data-index="${index}">View</button>
+                  <button class="btn btn-secondary" data-action="download" data-url="${image.public_url || image.signed_url}" data-filename="${image.document_type}">Download</button>
+                  <button class="btn btn-danger" data-action="delete" data-id="${image.id}">Delete</button>
                 </div>
               </div>
             </div>
@@ -1096,6 +1096,23 @@
       `;
 
       container.innerHTML = html;
+
+      // Add event delegation for image action buttons
+      container.addEventListener('click', (e) => {
+        const button = e.target.closest('button[data-action]');
+        if (!button) return;
+
+        const action = button.dataset.action;
+
+        if (action === 'view') {
+          const index = parseInt(button.dataset.index);
+          viewImage(allData.images[index]);
+        } else if (action === 'download') {
+          downloadImage(button.dataset.url, button.dataset.filename);
+        } else if (action === 'delete') {
+          confirmDeleteImage(button.dataset.id);
+        }
+      });
     }
 
     // View image in modal
