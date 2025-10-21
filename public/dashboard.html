@@ -861,25 +861,33 @@
     // Authentication
     async function checkAuthentication() {
       try {
-        const response = await fetch('/api/auth/status');
+        // Check session with cookie authentication
+        const response = await fetch('/api/auth/session', {
+          method: 'GET',
+          credentials: 'include', // Include cookies in request
+          headers: {
+            'Content-Type': 'application/json'
+          }
+        });
+
         const data = await response.json();
 
         if (!data.authenticated) {
-          window.location.href = 'login.html';
+          // Not authenticated - redirect to login with return URL
+          const returnUrl = encodeURIComponent('dashboard.html');
+          window.location.href = `login.html?redirect=${returnUrl}`;
           return;
         }
 
+        // Successfully authenticated via cookie
         currentUser = data.user;
+        console.log('✅ Authenticated user:', currentUser.email);
         initializeDashboard();
       } catch (error) {
         console.error('Auth check failed:', error);
-        const storedUser = sessionStorage.getItem('currentUser');
-        if (storedUser) {
-          currentUser = JSON.parse(storedUser);
-          initializeDashboard();
-        } else {
-          window.location.href = 'login.html';
-        }
+        // On error, redirect to login
+        const returnUrl = encodeURIComponent('dashboard.html');
+        window.location.href = `login.html?redirect=${returnUrl}`;
       }
     }
 
