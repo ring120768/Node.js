@@ -306,11 +306,11 @@ router.use('/', healthRoutes);
 
 // Mount all routes
 router.use('/api/auth', authRoutes);
-router.use('/api', transcriptionRoutes);
+router.use('/api/transcription', transcriptionRoutes); // FIXED: Was catching all /api/* routes with /:transcriptionId
 router.use('/api/gdpr', gdprRoutes);
-router.use('/api', emergencyRoutes);
+router.use('/api/emergency', emergencyRoutes); // FIXED: More specific path
 router.use('/', pdfRoutes);
-router.use('/api', exportRoutes); // NEW: Export routes for incident downloads
+router.use('/api/export', exportRoutes); // FIXED: More specific path
 router.use('/api/ai', aiRoutes); // NEW: AI analysis routes
 router.use('/api/incident-reports', incidentRoutes); // NEW: Incident reports routes
 router.use('/api/profile', profileRoutes); // NEW: User profile management
