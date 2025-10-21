@@ -11,6 +11,7 @@ const { sendError } = require('../utils/response');
 const logger = require('../utils/logger');
 const config = require('../config');
 const gdprService = require('../services/gdprService');
+const { normalizeEmail } = require('../utils/emailNormalizer');
 
 // Import AuthService (uses ANON key for client operations)
 const AuthService = require('../../lib/services/authService');
@@ -37,7 +38,10 @@ if (config.supabase.anonKey) {
  */
 async function signup(req, res) {
   try {
-    const { email, password, fullName, gdprConsent } = req.body;
+    let { email, password, fullName, gdprConsent } = req.body;
+
+    // NORMALIZE EMAIL (case-insensitive per RFC 5321)
+    email = normalizeEmail(email);
 
     logger.info('📝 Signup request received', {
       email,
@@ -204,7 +208,10 @@ async function signup(req, res) {
  */
 async function login(req, res) {
   try {
-    const { email, password, rememberMe } = req.body;
+    let { email, password, rememberMe } = req.body;
+
+    // NORMALIZE EMAIL (case-insensitive per RFC 5321)
+    email = normalizeEmail(email);
 
     if (!email || !password) {
       return sendError(res, 400, 'Missing credentials', 'MISSING_CREDENTIALS');

@@ -2,6 +2,7 @@
 const crypto = require('crypto');
 const logger = require('../utils/logger');
 const { createClient } = require('@supabase/supabase-js');
+const { normalizeEmailFields } = require('../utils/emailNormalizer');
 
 const supabase = createClient(
   process.env.SUPABASE_URL,
@@ -654,6 +655,11 @@ async function processUserSignup(formResponse, requestId, imageProcessor = null)
         delete userData[key];
       }
     });
+
+    // NORMALIZE ALL EMAIL FIELDS (case-insensitive per RFC 5321)
+    const emailFields = ['email', 'recovery_breakdown_email'];
+    const normalizedUserData = normalizeEmailFields(userData, emailFields);
+    Object.assign(userData, normalizedUserData);
 
     // 🔍 DEBUG: Show userData AFTER null cleanup
     console.log(`\n🔍 DEBUG: userData object AFTER null cleanup (${Object.keys(userData).length} keys):`);
