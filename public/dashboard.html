@@ -231,6 +231,98 @@
       font-weight: bold;
     }
 
+    /* Mobile Summary Card */
+    .mobile-summary-card {
+      background: linear-gradient(135deg, #0B7AB0 0%, #1EA1D4 100%);
+      border-radius: 1rem;
+      padding: 1.5rem;
+      box-shadow: 0 4px 6px rgba(11, 122, 176, 0.2);
+      color: white;
+      margin-bottom: 2rem;
+      display: none; /* Hide on desktop */
+    }
+
+    .mobile-summary-card h2 {
+      font-size: 1.5rem;
+      margin-bottom: 0.5rem;
+      font-weight: 600;
+    }
+
+    .mobile-summary-card .summary-subtitle {
+      font-size: 0.875rem;
+      opacity: 0.9;
+      margin-bottom: 1.5rem;
+    }
+
+    .summary-stats {
+      display: grid;
+      grid-template-columns: repeat(2, 1fr);
+      gap: 1rem;
+      margin-bottom: 1.5rem;
+    }
+
+    .summary-stat {
+      background: rgba(255, 255, 255, 0.15);
+      backdrop-filter: blur(10px);
+      border-radius: 0.5rem;
+      padding: 1rem;
+      text-align: center;
+    }
+
+    .summary-stat .stat-icon {
+      font-size: 1.75rem;
+      margin-bottom: 0.5rem;
+    }
+
+    .summary-stat .stat-value {
+      font-size: 1.5rem;
+      font-weight: bold;
+      display: block;
+      margin-bottom: 0.25rem;
+    }
+
+    .summary-stat .stat-label {
+      font-size: 0.75rem;
+      opacity: 0.9;
+    }
+
+    .summary-actions {
+      display: grid;
+      grid-template-columns: repeat(2, 1fr);
+      gap: 0.75rem;
+    }
+
+    .summary-action-btn {
+      background: white;
+      color: var(--primary-blue);
+      padding: 0.75rem;
+      border-radius: 0.5rem;
+      font-weight: 600;
+      font-size: 0.875rem;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: 0.5rem;
+      border: none;
+      cursor: pointer;
+      transition: all 0.2s;
+    }
+
+    .summary-action-btn:active {
+      transform: scale(0.98);
+    }
+
+    /* Show mobile summary card only on mobile/tablet */
+    @media (max-width: 768px) {
+      .mobile-summary-card {
+        display: block;
+      }
+
+      .dashboard-grid {
+        grid-template-columns: 1fr;
+      }
+    }
+
     /* Section View */
     .section-view {
       display: none;
@@ -501,6 +593,47 @@
       <div class="page-header">
         <h1>Your Dashboard</h1>
         <p>Manage your incident reports and files</p>
+      </div>
+
+      <!-- Mobile Summary Card (visible only on mobile) -->
+      <div class="mobile-summary-card">
+        <h2>Your Incident Report</h2>
+        <p class="summary-subtitle">Quick overview of your files</p>
+
+        <div class="summary-stats">
+          <div class="summary-stat">
+            <div class="stat-icon">📸</div>
+            <span class="stat-value" id="mobileImagesCount">0</span>
+            <div class="stat-label">Photos</div>
+          </div>
+
+          <div class="summary-stat">
+            <div class="stat-icon">📹</div>
+            <span class="stat-value" id="mobileVideosCount">0</span>
+            <div class="stat-label">Videos</div>
+          </div>
+
+          <div class="summary-stat">
+            <div class="stat-icon">🎙️</div>
+            <span class="stat-value" id="mobileTranscriptionsCount">0</span>
+            <div class="stat-label">Audio</div>
+          </div>
+
+          <div class="summary-stat">
+            <div class="stat-icon">📄</div>
+            <span class="stat-value" id="mobilePdfsCount">0</span>
+            <div class="stat-label">Reports</div>
+          </div>
+        </div>
+
+        <div class="summary-actions">
+          <button class="summary-action-btn" onclick="showSection('images')">
+            <span>📸</span> View Photos
+          </button>
+          <button class="summary-action-btn" onclick="showSection('videos')">
+            <span>📹</span> View Videos
+          </button>
+        </div>
       </div>
 
       <div class="dashboard-grid">
@@ -862,11 +995,18 @@
 
     // Update counts
     function updateCounts() {
+      // Desktop card counts
       document.getElementById('imagesCount').textContent = allData.images.length;
       document.getElementById('videosCount').textContent = allData.videos.length;
       document.getElementById('transcriptionsCount').textContent = allData.transcriptions.length;
       document.getElementById('reportsCount').textContent = allData.reports.length;
       document.getElementById('pdfsCount').textContent = allData.pdfs.length;
+
+      // Mobile summary card counts
+      document.getElementById('mobileImagesCount').textContent = allData.images.length;
+      document.getElementById('mobileVideosCount').textContent = allData.videos.length;
+      document.getElementById('mobileTranscriptionsCount').textContent = allData.transcriptions.length;
+      document.getElementById('mobilePdfsCount').textContent = allData.pdfs.length;
     }
 
     // Show section
