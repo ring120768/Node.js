@@ -1066,7 +1066,7 @@
 
       const html = `
         <div class="items-grid">
-          ${allData.images.map(image => `
+          ${allData.images.map((image, index) => `
             <div class="item-card">
               <div class="item-preview">
                 ${image.public_url ?
