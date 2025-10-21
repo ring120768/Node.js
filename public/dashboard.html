@@ -1265,16 +1265,37 @@
     // Load images
     async function loadImages() {
       try {
+        console.log('Loading images for user:', currentUser.id);
         const response = await fetch(`/api/user-documents?user_id=${currentUser.id}`);
+        console.log('Response status:', response.status);
+
         if (response.ok) {
           const data = await response.json();
+          console.log('API response:', data);
+
           // API returns { success: true, data: { documents: [...] } }
           const docs = data.data?.documents || data.documents || [];
+          console.log('Documents found:', docs.length);
+
           // Filter for images only (exclude videos)
           allData.images = docs.filter(doc =>
             !doc.document_type?.toLowerCase().includes('video') &&
             !doc.document_type?.toLowerCase().includes('dashcam')
           );
+
+          console.log('Images after filtering:', allData.images.length);
+          if (allData.images.length > 0) {
+            console.log('First image:', {
+              type: allData.images[0].document_type,
+              has_signed_url: !!allData.images[0].signed_url,
+              has_public_url: !!allData.images[0].public_url,
+              url_preview: allData.images[0].signed_url ?
+                allData.images[0].signed_url.substring(0, 100) + '...' :
+                'No URL'
+            });
+          }
+        } else {
+          console.error('API returned error:', response.status, response.statusText);
         }
       } catch (error) {
         console.error('Failed to load images:', error);
@@ -1416,8 +1437,8 @@
             return `
             <div class="item-card">
               <div class="item-preview">
-                ${image.public_url ?
-                  `<img src="${image.public_url}" alt="${image.document_type}" onerror="this.parentElement.innerHTML='<span>🖼️</span>'">` :
+                ${(image.signed_url || image.public_url) ?
+                  `<img src="${image.signed_url || image.public_url}" alt="${image.document_type}" onerror="this.parentElement.innerHTML='<span>🖼️</span>'">` :
                   '<span>🖼️</span>'
                 }
               </div>
