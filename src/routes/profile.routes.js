@@ -5,10 +5,10 @@
 const express = require('express');
 const router = express.Router();
 const profileController = require('../controllers/profile.controller');
-const { authMiddleware } = require('../middleware/auth.middleware');
+const { requireAuth } = require('../middleware/authMiddleware');
 
 // All profile routes require authentication
-router.use(authMiddleware);
+router.use(requireAuth);
 
 // GET /api/profile/:userId - Get user profile
 router.get('/:userId', profileController.getUserProfile);
