@@ -59,8 +59,15 @@ function isOriginAllowed(origin) {
   // Allow Replit subdomains (secure patterns only - HTTPS required)
   if (process.env.CORS_ALLOW_REPLIT_SUBDOMAINS === 'true') {
     // Match: https://[alphanumeric-hyphens].replit.app or .replit.dev
-    const replitPattern = /^https:\/\/[a-z0-9-]+\.replit\.(app|dev)$/;
-    if (replitPattern.test(origin)) {
+    // Also match: https://[id].riker.replit.dev (new Replit domain format)
+    const replitPatterns = [
+      /^https:\/\/[a-z0-9-]+\.replit\.(app|dev)$/,
+      /^https:\/\/[a-z0-9-]+\.[a-z]+\.replit\.dev$/,  // Matches subdomain.riker.replit.dev format
+      /^https:\/\/[a-z0-9-]+\.replit\.co$/  // Legacy format
+    ];
+
+    const isReplitDomain = replitPatterns.some(pattern => pattern.test(origin));
+    if (isReplitDomain) {
       logger.info(`CORS: Allowed Replit subdomain: ${origin}`);
       return true;
     }

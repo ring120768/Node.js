@@ -1,6 +1,9 @@
-entrypoint = "index.js"
+entrypoint = "server.js"
 modules = ["nodejs-22", "postgresql-16"]
 hidden = [".config", "package-lock.json"]
+
+# Run command - starts server with CORS support for Replit
+run = "bash start-replit.sh"
 
 [gitHubImport]
 requiredFiles = [".replit", "replit.nix", "package.json", "package-lock.json"]
@@ -9,14 +12,26 @@ requiredFiles = [".replit", "replit.nix", "package.json", "package-lock.json"]
 channel = "stable-24_11"
 packages = ["u-root-cmds", "nano", "psmisc"]
 
+[env]
+# Enable CORS for Replit subdomains - CRITICAL for image display
+CORS_ALLOW_REPLIT_SUBDOMAINS = "true"
+CORS_ALLOW_LOCALHOST = "true"
+NODE_ENV = "development"
+LOG_LEVEL = "info"
+REQUEST_TIMEOUT = "30000"
+
 [deployment]
-run = ["node", "index.js"]
+run = ["bash", "start-replit.sh"]
 deploymentTarget = "autoscale"
 ignorePorts = false
 
 [[ports]]
 localPort = 5000
 externalPort = 80
+
+[[ports]]
+localPort = 5001
+externalPort = 5001
 
 [[ports]]
 localPort = 33945
@@ -27,7 +42,38 @@ localPort = 43649
 externalPort = 3000
 
 [workflows]
-runButton = "Project"
+runButton = "Project with CORS"
+
+[[workflows.workflow]]
+name = "Project with CORS"
+mode = "parallel"
+author = "agent"
+
+[[workflows.workflow.tasks]]
+task = "workflow.run"
+args = "Server with CORS"
+
+[[workflows.workflow]]
+name = "Server with CORS"
+author = "agent"
+mode = "sequential"
+
+[[workflows.workflow.tasks]]
+task = "shell.exec"
+args = "bash start-replit.sh"
+waitForPort = 5000
+
+[workflows.workflow.metadata]
+outputType = "webview"
+
+[[workflows.workflow]]
+name = "Test Image Display"
+author = "agent"
+mode = "sequential"
+
+[[workflows.workflow.tasks]]
+task = "shell.exec"
+args = "echo 'Testing image display on Replit...' && curl -s http://localhost:5000/replit-test.html || echo 'Open /replit-test.html in browser'"
 
 [[workflows.workflow]]
 name = "Main Server"
@@ -36,7 +82,7 @@ mode = "sequential"
 
 [[workflows.workflow.tasks]]
 task = "shell.exec"
-args = "node index.js"
+args = "node server.js"
 waitForPort = 5000
 
 [workflows.workflow.metadata]
@@ -70,25 +116,22 @@ task = "shell.exec"
 args = "curl -s http://localhost:5000/healthz || echo \"Server not responding\""
 
 [[workflows.workflow]]
-name = "Project"
-mode = "parallel"
+name = "Test Dashboard Images"
 author = "agent"
-
-[[workflows.workflow.tasks]]
-task = "workflow.run"
-args = "Server"
-
-[[workflows.workflow]]
-name = "Server"
-author = "agent"
+mode = "sequential"
 
 [[workflows.workflow.tasks]]
 task = "shell.exec"
-args = "npm start"
-waitForPort = 5000
+args = "node test-dashboard-images.js"
 
-[workflows.workflow.metadata]
-outputType = "webview"
+[[workflows.workflow]]
+name = "Diagnose Images"
+author = "agent"
+mode = "sequential"
+
+[[workflows.workflow.tasks]]
+task = "shell.exec"
+args = "bash diagnose-images.sh"
 
 [agent]
 expertMode = true
