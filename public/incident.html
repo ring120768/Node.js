@@ -524,7 +524,7 @@
                     if (userData.uid) {
                         try {
                             console.log('Fetching emergency contacts for user:', userData.uid);
-                            const contactsResponse = await fetch(`/api/contacts/${userData.uid}`, {
+                            const contactsResponse = await fetch(`/api/emergency/contacts/${userData.uid}`, {
                                 credentials: 'include'
                             });
                             console.log('API Response status:', contactsResponse.status, contactsResponse.statusText);
@@ -539,7 +539,7 @@
                             } else {
                                 const errorText = await contactsResponse.text();
                                 console.error('❌ API Error Response:', contactsResponse.status, errorText);
-                                console.error('API URL was:', `/api/contacts/${userData.uid}`);
+                                console.error('API URL was:', `/api/emergency/contacts/${userData.uid}`);
                                 // Set up fallback handlers even if API fails
                                 updateEmergencyButtons();
                             }
