@@ -675,23 +675,25 @@
         }
 
         async function makeRecoveryCall() {
-            if (!supabase || !userId) {
+            if (!userId) {
                 alert('Unable to fetch recovery number. Please ensure you are logged in.');
                 return;
             }
 
             try {
-                // Query using exact field name from database: recovery_breakdown_number
-                const { data, error } = await supabase
-                    .from('user_signup')
-                    .select('recovery_breakdown_number')
-                    .or(`user_id.eq.${userId},create_user_id.eq.${userId}`)
-                    .single();
+                // Use the API endpoint like incident.html does
+                const response = await fetch(`/api/emergency/contacts/${userId}`);
 
-                if (error) throw error;
+                if (!response.ok) {
+                    throw new Error(`API returned status ${response.status}`);
+                }
 
-                if (data && data.recovery_breakdown_number) {
-                    window.location.href = `tel:${data.recovery_breakdown_number}`;
+                const contacts = await response.json();
+
+                if (contacts.recovery_breakdown_number) {
+                    if (confirm(`Call recovery service: ${contacts.recovery_breakdown_number}?`)) {
+                        window.location.href = `tel:${contacts.recovery_breakdown_number}`;
+                    }
                 } else {
                     alert('Recovery service number not found. Please update your profile.');
                 }
@@ -702,26 +704,28 @@
         }
 
         async function makeEmergencyContactCall() {
-            if (!supabase || !userId) {
+            if (!userId) {
                 alert('Unable to fetch emergency contact. Please ensure you are logged in.');
                 return;
             }
 
             try {
-                // Query BOTH emergency contact fields for maximum compatibility
-                const { data, error } = await supabase
-                    .from('user_signup')
-                    .select('emergency_contact, emergency_contact_number')
-                    .or(`user_id.eq.${userId},create_user_id.eq.${userId}`)
-                    .single();
+                // Use the API endpoint like incident.html does
+                const response = await fetch(`/api/emergency/contacts/${userId}`);
 
-                if (error) throw error;
+                if (!response.ok) {
+                    throw new Error(`API returned status ${response.status}`);
+                }
 
-                // Try emergency_contact_number first (more specific), fall back to emergency_contact
-                const phoneNumber = data?.emergency_contact_number || data?.emergency_contact;
+                const contacts = await response.json();
+
+                // Parse emergency contact (handles pipe-delimited format)
+                const phoneNumber = contacts.emergency_contact;
 
                 if (phoneNumber) {
-                    window.location.href = `tel:${phoneNumber}`;
+                    if (confirm(`Call your emergency contact: ${phoneNumber}?`)) {
+                        window.location.href = `tel:${phoneNumber}`;
+                    }
                 } else {
                     alert('Emergency contact number not found. Please update your profile.');
                 }
