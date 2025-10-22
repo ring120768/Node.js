@@ -777,15 +777,24 @@ const { data, error } = await supabase
 
 ## Related Documentation
 
+### Core Documentation
 - `README.md` - Quick start, API endpoints, deployment
 - `ARCHITECTURE.md` - Detailed system architecture
-- `ADOBE_FORM_FILLING_GUIDE.md` - Complete 150+ field mapping reference
-- `QUICK_START_FORM_FILLING.md` - PDF generation quick start
-- `IMPLEMENTATION_SUMMARY.md` - Latest implementation details
+- `.claude/claude.md` - Claude Code global rules and standards
+
+### Form & Data Documentation (Critical for PDF Generation)
+- `TYPEFORM_SUPABASE_FIELD_MAPPING.md` - **Complete mapping of all 160+ Typeform fields to Supabase database columns** (User Signup + Incident Report forms). Essential reference for understanding webhook processing, data structure, and field relationships. Includes pipe-delimited format documentation, image processing notes, and API endpoints.
+- `TYPEFORM_QUESTIONS_REFERENCE.md` - **Actual question text and UX flow for all Typeform forms**. Documents exact question wording, field types, validation rules, conditional logic, and hidden fields as users see them. Critical for understanding user input, form flow, and data context when generating PDF reports.
+
+### PDF Generation Documentation
+- `ADOBE_FORM_FILLING_GUIDE.md` - Complete 150+ field mapping reference for PDF form filling
+- `QUICK_START_FORM_FILLING.md` - PDF generation quick start guide
+
+### Testing & Quality Assurance
 - `MANUAL_TESTING_GUIDE.md` - UI testing procedures
 - `DASHBOARD_AUDIT.md` - Comprehensive dashboard testing and audit guide (130-point checklist)
 - `QUICK_DASHBOARD_TEST.md` - 5-minute dashboard test procedure
-- `.claude/claude.md` - Claude Code global rules and standards
+- `IMPLEMENTATION_SUMMARY.md` - Latest implementation details
 
 ---
 
