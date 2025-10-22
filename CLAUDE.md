@@ -775,6 +775,291 @@ const { data, error } = await supabase
 
 **Remember:** The best code is code that solves the problem clearly and simply. If you find yourself adding complexity, stop and ask if it's truly necessary.
 
+## Documentation & Testing Best Practices
+
+**IMPORTANT:** After completing a significant task, always consider creating documentation and test files. This ensures knowledge is captured and future changes don't break existing functionality.
+
+### When to Create Documentation Files
+
+**✅ ALWAYS create markdown documentation when:**
+
+1. **Adding New Features or APIs**
+   - Document endpoints, request/response formats
+   - Include usage examples and common patterns
+   - Example: `API_ENDPOINTS.md`, `AUTHENTICATION_GUIDE.md`
+
+2. **Implementing Complex Data Flows**
+   - Map data transformations and processing steps
+   - Document field mappings (e.g., Typeform → Supabase)
+   - Example: `TYPEFORM_SUPABASE_FIELD_MAPPING.md`
+
+3. **Fixing Complex Bugs**
+   - Document the issue, root cause, and solution
+   - Include debugging procedures for similar issues
+   - Example: `REPLIT_IMAGE_FIX.md`, `DASHBOARD_AUTH_FIX.md`
+
+4. **Creating New Data Structures**
+   - Document schema, relationships, and constraints
+   - Include example data and edge cases
+   - Example: `DATABASE_SCHEMA.md`, `USER_DOCUMENTS_STRUCTURE.md`
+
+5. **Implementing Integration Points**
+   - Document third-party API integrations
+   - Include authentication, rate limits, error handling
+   - Example: `ADOBE_PDF_INTEGRATION.md`, `OPENAI_INTEGRATION.md`
+
+6. **Establishing New Patterns or Conventions**
+   - Document coding standards, patterns, or workflows
+   - Include examples and anti-patterns to avoid
+   - Example: `ERROR_HANDLING_PATTERNS.md`, `IMAGE_PROCESSING_GUIDE.md`
+
+**Documentation File Naming Convention:**
+- Use UPPERCASE for major reference docs: `TYPEFORM_QUESTIONS_REFERENCE.md`
+- Use descriptive names: `emergency-contact-api-fix.md` (for specific fixes)
+- Group related docs in subdirectories: `docs/api/`, `docs/troubleshooting/`
+
+**Documentation Content Structure:**
+```markdown
+# Title
+
+**Purpose:** Brief description of what this document covers
+**Created:** Date
+**Last Updated:** Date
+
+## Overview
+High-level summary
+
+## Problem/Context (if applicable)
+What issue this addresses
+
+## Solution/Implementation
+Detailed explanation with code examples
+
+## Usage Examples
+Practical examples showing how to use
+
+## Testing
+How to verify it works
+
+## Related Files
+Links to relevant code files
+
+## Notes/Gotchas
+Important considerations or edge cases
+```
+
+### When to Create Test Files
+
+**✅ ALWAYS create test files when:**
+
+1. **Implementing New API Endpoints**
+   - Create test script to verify endpoint works
+   - Test success cases and error handling
+   - Example: `test-emergency-api.js`, `test-pdf-generation.js`
+
+2. **Fixing Bugs (Regression Tests)**
+   - Create test that reproduces the bug
+   - Verify fix prevents regression
+   - Example: `test-emergency-buttons.js`, `test-image-urls.js`
+
+3. **Adding Data Processing Logic**
+   - Test data transformations and mappings
+   - Verify edge cases and error handling
+   - Example: `test-typeform-webhook.js`, `test-image-processor.js`
+
+4. **Implementing UI Components**
+   - Create HTML test page for visual verification
+   - Test user interactions and state changes
+   - Example: `test-emergency-buttons.html`, `test-dashboard-view.html`
+
+5. **Adding Authentication/Authorization**
+   - Test login flows, session management
+   - Verify access controls work correctly
+   - Example: `test-session-persistence.js`, `test-auth-middleware.js`
+
+6. **Database Operations**
+   - Test CRUD operations and queries
+   - Verify RLS policies work as expected
+   - Example: `test-supabase-client.js`, `test-database-queries.js`
+
+**Test File Naming Convention:**
+- Prefix with `test-`: `test-feature-name.js`
+- Use descriptive names: `test-emergency-contact-parsing.js`
+- HTML tests: `test-component-name.html`
+- Place in root or `tests/` directory for easy discovery
+
+**Test File Structure (JavaScript):**
+```javascript
+#!/usr/bin/env node
+/**
+ * Test Script: [Feature Name]
+ * Purpose: [What this tests]
+ * Usage: node test-feature.js [args]
+ */
+
+const colors = {
+  reset: '\x1b[0m',
+  green: '\x1b[32m',
+  red: '\x1b[31m',
+  cyan: '\x1b[36m'
+};
+
+async function testFeature() {
+  console.log(colors.cyan, '\n🧪 Testing [Feature Name]\n');
+
+  try {
+    // Test setup
+    console.log('1. Setup...');
+
+    // Test execution
+    console.log('2. Executing test...');
+    const result = await yourFunction();
+
+    // Verification
+    if (result.success) {
+      console.log(colors.green, '✅ Test passed!');
+    } else {
+      console.log(colors.red, '❌ Test failed!');
+    }
+
+  } catch (error) {
+    console.log(colors.red, `❌ Error: ${error.message}`);
+  }
+}
+
+testFeature().catch(console.error);
+```
+
+**Test File Structure (HTML):**
+```html
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>Test: [Feature Name]</title>
+    <style>
+        /* Test page styling */
+        body { font-family: sans-serif; padding: 20px; }
+        .test-section { margin: 20px 0; padding: 20px; border: 1px solid #ccc; }
+        .success { color: green; }
+        .error { color: red; }
+    </style>
+</head>
+<body>
+    <h1>🧪 Test: [Feature Name]</h1>
+
+    <div class="test-section">
+        <h2>Test Configuration</h2>
+        <p>User ID: <span id="userId">test-user-id</span></p>
+    </div>
+
+    <div class="test-section">
+        <h2>Test Actions</h2>
+        <button onclick="runTest()">Run Test</button>
+        <div id="results"></div>
+    </div>
+
+    <script>
+        async function runTest() {
+            const results = document.getElementById('results');
+            results.innerHTML = '<p>Testing...</p>';
+
+            try {
+                // Test logic here
+                const response = await fetch('/api/endpoint');
+                const data = await response.json();
+
+                results.innerHTML = `<p class="success">✅ Test passed!</p>
+                                     <pre>${JSON.stringify(data, null, 2)}</pre>`;
+            } catch (error) {
+                results.innerHTML = `<p class="error">❌ Test failed: ${error.message}</p>`;
+            }
+        }
+    </script>
+</body>
+</html>
+```
+
+### Documentation After Task Completion Workflow
+
+**After successfully completing a task, follow this checklist:**
+
+1. **✅ Code is working** - Verify functionality
+2. **📝 Create/Update Documentation** - If task fits criteria above
+3. **🧪 Create Test File** - If task fits criteria above
+4. **✍️ Update Related Docs** - Add references in CLAUDE.md, README.md
+5. **📤 Git Commit & Push** - Commit everything together
+
+**Example Workflow:**
+```bash
+# 1. Complete the feature
+# ... write code, test manually ...
+
+# 2. Create documentation
+# Create FEATURE_NAME_GUIDE.md with implementation details
+
+# 3. Create test file
+# Create test-feature-name.js to verify it works
+
+# 4. Update references
+# Add entry to CLAUDE.md Related Documentation section
+
+# 5. Commit everything together
+git add feature-code.js FEATURE_NAME_GUIDE.md test-feature-name.js CLAUDE.md
+git commit -m "feat: Add feature with documentation and tests"
+git push origin branch-name
+```
+
+### Real Examples from This Project
+
+**Example 1: Emergency Contacts API Fix**
+- ✅ Fixed API endpoint mismatch
+- 📝 Documented fix in commit message (inline documentation)
+- 🧪 Created `test-emergency-buttons.js` (command-line test)
+- 🧪 Created `test-emergency-buttons.html` (browser test)
+- Result: Issue documented, tests prevent regression
+
+**Example 2: Typeform Documentation**
+- ✅ Duplicated Typeform forms via API
+- 📝 Created `TYPEFORM_SUPABASE_FIELD_MAPPING.md` (160+ fields)
+- 📝 Created `TYPEFORM_QUESTIONS_REFERENCE.md` (complete UX flow)
+- ✍️ Updated CLAUDE.md with references to both files
+- Result: Complete documentation for critical data flow
+
+**Example 3: Image Processing Pipeline**
+- ✅ Implemented ImageProcessorV2
+- 📝 Documented in CLAUDE.md (inline in Architecture section)
+- 🧪 Created `test-image-processing.js`
+- 🧪 Created `scripts/monitor-image-processing.js` (production tool)
+- 🧪 Created `scripts/retry-failed-images.js` (recovery tool)
+- Result: Well-documented, testable, maintainable system
+
+### When Documentation is NOT Needed
+
+**⚠️ Skip documentation for:**
+- Trivial changes (typo fixes, formatting)
+- Changes fully documented in commit message
+- Temporary debug code or experiments
+- Minor refactoring that doesn't change behavior
+- Simple variable renames
+
+**⚠️ Skip test files for:**
+- Changes already covered by existing tests
+- Simple configuration changes
+- Documentation-only updates
+- Obvious fixes that can't regress (e.g., fixing a typo)
+
+### Benefits of This Approach
+
+✅ **Knowledge Retention:** Solutions are documented for future reference
+✅ **Regression Prevention:** Tests catch when changes break existing features
+✅ **Faster Onboarding:** New developers can learn from documentation
+✅ **Better Debugging:** Test files demonstrate correct behavior
+✅ **Code Confidence:** Can refactor knowing tests will catch issues
+✅ **Reduced Bus Factor:** Knowledge isn't trapped in one person's head
+
+**Remember:** Good documentation and tests are investments that pay off many times over. Spend 15 minutes documenting now to save hours of confusion later.
+
 ## Related Documentation
 
 ### Core Documentation
