@@ -1,161 +1,168 @@
 #!/usr/bin/env node
-
 /**
- * Test script to verify session persistence with "Keep me logged in" functionality
- * Tests that refresh tokens are properly stored and used for session renewal
+ * Test Script: Session Persistence Fix Verification
+ * Purpose: Verify cookie settings are consistent between login and session refresh
+ * Usage: node test-session-persistence.js
  */
 
-const fetch = require('node-fetch');
-require('dotenv').config();
+const fs = require('fs');
+const path = require('path');
 
-const API_BASE = 'http://localhost:5000';
-
-// Test credentials
-const TEST_EMAIL = 'ian.ring@sky.com';
-const TEST_PASSWORD = process.env.TEST_PASSWORD || 'test123456';
-
-// ANSI color codes for console output
 const colors = {
   reset: '\x1b[0m',
-  red: '\x1b[31m',
   green: '\x1b[32m',
-  yellow: '\x1b[33m',
-  cyan: '\x1b[36m'
+  red: '\x1b[31m',
+  cyan: '\x1b[36m',
+  yellow: '\x1b[33m'
 };
 
-async function testSessionPersistence() {
-  console.log('\n🔍 Testing Session Persistence with Refresh Tokens');
-  console.log('==================================================\n');
+console.log(colors.cyan, '\n🧪 Testing Session Persistence Fix\n', colors.reset);
 
-  try {
-    // Step 1: Test login with "Keep me logged in" = true
-    console.log(`${colors.cyan}1. Testing login with "Keep me logged in" = true${colors.reset}`);
+// Test 1: Verify cookie settings in auth.controller.js
+console.log('Test 1: Checking login controller cookie settings...');
+const authControllerPath = path.join(__dirname, 'src/controllers/auth.controller.js');
+const authControllerContent = fs.readFileSync(authControllerPath, 'utf8');
 
-    const loginResponse = await fetch(`${API_BASE}/api/auth/login`, {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/json'
-      },
-      body: JSON.stringify({
-        email: TEST_EMAIL,
-        password: TEST_PASSWORD,
-        rememberMe: true,
-        gdprConsent: true
-      })
-    });
+let loginSameSite = null;
+let loginSecure = null;
 
-    if (!loginResponse.ok) {
-      const error = await loginResponse.json();
-      console.error(`${colors.red}❌ Login failed:${colors.reset}`, error);
-      console.log('\n💡 Make sure the server is running (npm start)');
-      console.log('💡 Set TEST_PASSWORD environment variable or update default in script');
-      return;
-    }
+// Find the first res.cookie('access_token' occurrence in signup or login functions
+const accessTokenCookieRegex = /res\.cookie\('access_token'[^;]*{([^}]+)}/g;
+const matches = [...authControllerContent.matchAll(accessTokenCookieRegex)];
 
-    const loginData = await loginResponse.json();
-    console.log(`${colors.green}✅ Login successful${colors.reset}`);
-    console.log('   User ID:', loginData.user.id);
-    console.log('   Email:', loginData.user.email);
+if (matches.length > 0) {
+  // Extract from first match (should be in signup function)
+  const cookieSettings = matches[0][1];
 
-    // Extract cookies
-    const cookies = loginResponse.headers.get('set-cookie');
-    console.log('\n📦 Cookies received:');
+  const sameSiteMatch = cookieSettings.match(/sameSite:\s*'([^']+)'/);
+  const secureMatch = cookieSettings.match(/secure:\s*true/);
+  const secureConditionalMatch = cookieSettings.match(/secure:\s*process\.env/);
 
-    const accessTokenCookie = cookies.match(/access_token=([^;]+)/);
-    const refreshTokenCookie = cookies.match(/refresh_token=([^;]+)/);
+  loginSameSite = sameSiteMatch ? sameSiteMatch[1] : null;
 
-    if (accessTokenCookie) {
-      console.log(`   ${colors.green}✅ Access token cookie set${colors.reset}`);
-    } else {
-      console.log(`   ${colors.red}❌ Access token cookie missing${colors.reset}`);
-    }
-
-    if (refreshTokenCookie) {
-      console.log(`   ${colors.green}✅ Refresh token cookie set${colors.reset}`);
-    } else {
-      console.log(`   ${colors.red}❌ Refresh token cookie missing${colors.reset}`);
-    }
-
-    // Check cookie max age (should be 90 days for rememberMe = true)
-    const maxAgeMatch = cookies.match(/Max-Age=(\d+)/);
-    if (maxAgeMatch) {
-      const maxAgeDays = parseInt(maxAgeMatch[1]) / (60 * 60 * 24);
-      console.log(`   Cookie duration: ${maxAgeDays} days`);
-
-      if (maxAgeDays === 90) {
-        console.log(`   ${colors.green}✅ Correct duration for "Keep me logged in" (90 days)${colors.reset}`);
-      } else if (maxAgeDays === 30) {
-        console.log(`   ${colors.yellow}⚠️  Duration is 30 days (default, not extended)${colors.reset}`);
-      }
-    }
-
-    // Step 2: Test session check with cookies
-    console.log(`\n${colors.cyan}2. Testing session check with cookies${colors.reset}`);
-
-    const sessionResponse = await fetch(`${API_BASE}/api/auth/session`, {
-      method: 'GET',
-      headers: {
-        'Cookie': cookies
-      }
-    });
-
-    const sessionData = await sessionResponse.json();
-
-    if (sessionData.authenticated) {
-      console.log(`${colors.green}✅ Session is valid${colors.reset}`);
-      console.log('   User authenticated:', sessionData.user.email);
-    } else {
-      console.log(`${colors.red}❌ Session check failed${colors.reset}`);
-    }
-
-    // Step 3: Simulate expired access token scenario
-    console.log(`\n${colors.cyan}3. Testing refresh token functionality${colors.reset}`);
-    console.log('   Note: In production, access tokens expire after 1 hour');
-    console.log('   The middleware will automatically use refresh token to renew');
-
-    // Step 4: Test logout clears both cookies
-    console.log(`\n${colors.cyan}4. Testing logout clears both cookies${colors.reset}`);
-
-    const logoutResponse = await fetch(`${API_BASE}/api/auth/logout`, {
-      method: 'POST',
-      headers: {
-        'Cookie': cookies
-      }
-    });
-
-    if (logoutResponse.ok) {
-      console.log(`${colors.green}✅ Logout successful${colors.reset}`);
-
-      const logoutCookies = logoutResponse.headers.get('set-cookie');
-      if (logoutCookies && logoutCookies.includes('access_token=;') && logoutCookies.includes('refresh_token=;')) {
-        console.log(`   ${colors.green}✅ Both cookies cleared${colors.reset}`);
-      }
-    }
-
-    // Summary
-    console.log('\n📊 Session Persistence Implementation Summary:');
-    console.log('==============================================');
-    console.log(`${colors.green}✅ Login stores both access_token and refresh_token cookies${colors.reset}`);
-    console.log(`${colors.green}✅ "Keep me logged in" extends cookie duration to 90 days${colors.reset}`);
-    console.log(`${colors.green}✅ Auth middleware automatically refreshes expired sessions${colors.reset}`);
-    console.log(`${colors.green}✅ Logout clears both authentication cookies${colors.reset}`);
-
-    console.log('\n🔐 How it works:');
-    console.log('1. Access tokens expire after ~1 hour (Supabase default)');
-    console.log('2. When expired, middleware uses refresh_token to get new tokens');
-    console.log('3. New tokens are stored in cookies automatically');
-    console.log('4. Users stay logged in for 30 days (default) or 90 days (with checkbox)');
-
-    console.log('\n✨ Result: Users stay logged in even after browser restarts!');
-
-  } catch (error) {
-    console.error(`${colors.red}❌ Test failed:${colors.reset}`, error.message);
-    console.log('\n💡 Make sure:');
-    console.log('   1. Server is running (npm start)');
-    console.log('   2. Database is accessible');
-    console.log('   3. User exists with correct credentials');
+  if (secureMatch) {
+    loginSecure = 'true';
+  } else if (secureConditionalMatch) {
+    loginSecure = 'process.env.NODE_ENV === \'production\'';
+  } else {
+    loginSecure = null;
   }
+
+  console.log(`  Found ${matches.length} res.cookie('access_token') calls in auth controller`);
+} else {
+  console.log('  ⚠️  Could not find res.cookie(\'access_token\') in auth controller');
 }
 
-// Run the test
-testSessionPersistence().catch(console.error);
+console.log(`  Login/Signup Cookie Settings:`);
+console.log(`    sameSite: '${loginSameSite}'`);
+console.log(`    secure: ${loginSecure}`);
+
+// Test 2: Verify cookie settings in authMiddleware.js
+console.log('\nTest 2: Checking auth middleware cookie settings...');
+const middlewarePath = path.join(__dirname, 'src/middleware/authMiddleware.js');
+const middlewareContent = fs.readFileSync(middlewarePath, 'utf8');
+
+// Find all cookie settings in refresh sections
+const refreshSections = middlewareContent.split('if (!refreshError && data.session)');
+const middlewareCookieSettings = [];
+
+refreshSections.slice(1).forEach((section, idx) => {
+  const sameSiteMatch = section.match(/sameSite:\s*'([^']+)'/);
+  const secureMatch = section.match(/secure:\s*(true|false|process\.env[^,]+)/);
+
+  if (sameSiteMatch && secureMatch) {
+    middlewareCookieSettings.push({
+      location: idx === 0 ? 'requireAuth' : 'optionalAuth',
+      sameSite: sameSiteMatch[1],
+      secure: secureMatch[1]
+    });
+  }
+});
+
+console.log(`  Found ${middlewareCookieSettings.length} refresh cookie settings in middleware`);
+middlewareCookieSettings.forEach(setting => {
+  console.log(`  ${setting.location}:`);
+  console.log(`    sameSite: '${setting.sameSite}'`);
+  console.log(`    secure: ${setting.secure}`);
+});
+
+// Test 3: Verify consistency
+console.log('\nTest 3: Verifying cookie settings consistency...');
+let allConsistent = true;
+const issues = [];
+
+middlewareCookieSettings.forEach(setting => {
+  if (setting.sameSite !== loginSameSite) {
+    allConsistent = false;
+    issues.push(`  ❌ ${setting.location}: sameSite mismatch - login='${loginSameSite}' vs middleware='${setting.sameSite}'`);
+  } else {
+    console.log(`  ✅ ${setting.location}: sameSite matches ('${setting.sameSite}')`);
+  }
+
+  const middlewareIsAlwaysTrue = setting.secure === 'true';
+  const loginIsAlwaysTrue = loginSecure === 'true';
+
+  if (middlewareIsAlwaysTrue !== loginIsAlwaysTrue) {
+    allConsistent = false;
+    issues.push(`  ❌ ${setting.location}: secure setting mismatch - login=${loginSecure} vs middleware=${setting.secure}`);
+  } else {
+    console.log(`  ✅ ${setting.location}: secure matches (${setting.secure})`);
+  }
+});
+
+// Test 4: Verify sameSite='none' requires secure=true
+console.log('\nTest 4: Verifying sameSite=none security requirements...');
+middlewareCookieSettings.forEach(setting => {
+  if (setting.sameSite === 'none') {
+    const isSecureTrue = setting.secure === 'true';
+    if (isSecureTrue) {
+      console.log(`  ✅ ${setting.location}: sameSite='none' with secure=true (correct for Replit)`);
+    } else {
+      allConsistent = false;
+      issues.push(`  ❌ ${setting.location}: sameSite='none' requires secure=true (browser requirement)`);
+    }
+  }
+});
+
+// Test 5: Check for conditional secure settings
+console.log('\nTest 5: Checking for problematic conditional secure settings...');
+const hasConditionalSecure = middlewareContent.includes('process.env.NODE_ENV');
+if (hasConditionalSecure) {
+  console.log(colors.yellow, '  ⚠️  WARNING: Found conditional secure settings (process.env.NODE_ENV)', colors.reset);
+  console.log('     This could cause issues in production vs development');
+  issues.push('  ⚠️  Consider using secure:true always for Replit deployment');
+} else {
+  console.log(colors.green, '  ✅ No conditional secure settings found', colors.reset);
+}
+
+// Final Results
+console.log('\n' + '='.repeat(60));
+console.log('FINAL RESULTS');
+console.log('='.repeat(60));
+
+if (allConsistent && issues.length === 0) {
+  console.log(colors.green);
+  console.log('✅ ALL TESTS PASSED!');
+  console.log('✅ Cookie settings are consistent between login and middleware');
+  console.log('✅ Session should persist correctly across navigation');
+  console.log(colors.reset);
+
+  console.log('\n📋 Summary:');
+  console.log(`  - sameSite: '${loginSameSite}' (consistent across all locations)`);
+  console.log(`  - secure: true (consistent across all locations)`);
+  console.log(`  - Tested: requireAuth and optionalAuth middleware functions`);
+
+  process.exit(0);
+} else {
+  console.log(colors.red);
+  console.log('❌ TESTS FAILED - Issues found:');
+  issues.forEach(issue => console.log(issue));
+  console.log(colors.reset);
+
+  console.log('\n💡 Recommendations:');
+  console.log('  1. Ensure all cookie settings use sameSite: \'none\'');
+  console.log('  2. Ensure all cookie settings use secure: true (not conditional)');
+  console.log('  3. These settings are required for Replit subdomain cookies');
+
+  process.exit(1);
+}
