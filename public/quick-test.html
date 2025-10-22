@@ -1,0 +1,104 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <title>Quick Cookie Test</title>
+  <style>
+    body {
+      font-family: monospace;
+      padding: 20px;
+      background: #1e1e1e;
+      color: #4ec9b0;
+    }
+    .result {
+      padding: 10px;
+      margin: 10px 0;
+      background: #252526;
+      border-left: 3px solid #007acc;
+    }
+    .error { border-left-color: #f48771; color: #f48771; }
+    .success { border-left-color: #4ec9b0; color: #4ec9b0; }
+    button {
+      background: #007acc;
+      color: white;
+      border: none;
+      padding: 10px 20px;
+      margin: 5px;
+      cursor: pointer;
+      font-size: 16px;
+    }
+  </style>
+</head>
+<body>
+  <h1>Quick Session Test</h1>
+
+  <div>
+    <button onclick="testNow()">TEST NOW</button>
+    <button onclick="location.reload()">CLEAR</button>
+  </div>
+
+  <div id="results"></div>
+
+  <script>
+    async function testNow() {
+      const results = document.getElementById('results');
+      results.innerHTML = '<div class="result">Testing...</div>';
+
+      try {
+        // Test 1: Check session
+        results.innerHTML += '<div class="result">1️⃣ Checking session...</div>';
+
+        const sessionResponse = await fetch('/api/auth/session', {
+          credentials: 'include'
+        });
+
+        const sessionData = await sessionResponse.json();
+
+        if (sessionData.authenticated) {
+          results.innerHTML += `<div class="result success">✅ SESSION VALID!<br>User: ${sessionData.user?.email}<br>ID: ${sessionData.user?.id}</div>`;
+        } else {
+          results.innerHTML += `<div class="result error">❌ NOT LOGGED IN<br><br>PROBLEM: You're not authenticated.<br><br>This means cookies are NOT being sent with the request.</div>`;
+
+          // Show what to do
+          results.innerHTML += `<div class="result error">
+            <strong>TO FIX:</strong><br>
+            1. Go to login page: <a href="/login.html" style="color:#4ec9b0">Click here to login</a><br>
+            2. Enter credentials and check "Keep me logged in"<br>
+            3. After login, come back to this page<br>
+            4. Click TEST NOW again
+          </div>`;
+          return;
+        }
+
+        // Test 2: Check if we can navigate
+        results.innerHTML += '<div class="result">2️⃣ Testing navigation to incident.html...</div>';
+
+        const incidentResponse = await fetch('/api/auth/status', {
+          credentials: 'include'
+        });
+
+        const incidentData = await incidentResponse.json();
+
+        if (incidentData.authenticated) {
+          results.innerHTML += '<div class="result success">✅ Can access incident.html<br><br>Session is WORKING CORRECTLY!</div>';
+
+          results.innerHTML += `<div class="result success">
+            <strong>✅ COOKIES ARE WORKING!</strong><br><br>
+            Your session is valid and persistent.<br><br>
+            <a href="/incident.html" style="color:#4ec9b0; font-size:18px;">→ Go to Incident Report</a>
+          </div>`;
+        } else {
+          results.innerHTML += '<div class="result error">❌ Cannot access incident.html<br>Session lost between checks!</div>';
+        }
+
+      } catch (error) {
+        results.innerHTML += `<div class="result error">❌ ERROR: ${error.message}</div>`;
+      }
+    }
+
+    // Auto-test on page load
+    window.addEventListener('load', () => {
+      setTimeout(testNow, 500);
+    });
+  </script>
+</body>
+</html>
