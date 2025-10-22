@@ -165,13 +165,22 @@ async function signup(req, res) {
     }
 
     // ========================================
-    // SET AUTHENTICATION COOKIE
+    // SET AUTHENTICATION COOKIES (both access and refresh)
     // ========================================
+    const cookieMaxAge = 30 * 24 * 60 * 60 * 1000; // 30 days for new signups
+
     res.cookie('access_token', authResult.session.access_token, {
       httpOnly: true,
       secure: process.env.NODE_ENV === 'production',
       sameSite: 'lax',
-      maxAge: 7 * 24 * 60 * 60 * 1000 // 7 days
+      maxAge: cookieMaxAge
+    });
+
+    res.cookie('refresh_token', authResult.session.refresh_token, {
+      httpOnly: true,
+      secure: process.env.NODE_ENV === 'production',
+      sameSite: 'lax',
+      maxAge: cookieMaxAge
     });
 
     logger.success('🎉 Signup complete (Auth-only)', {
@@ -238,6 +247,7 @@ async function login(req, res) {
     // Session duration: 30 days default, 90 days with "Keep me logged in"
     const cookieMaxAge = rememberMe ? 90 * 24 * 60 * 60 * 1000 : 30 * 24 * 60 * 60 * 1000;
 
+    // Store BOTH access token and refresh token
     res.cookie('access_token', authResult.session.access_token, {
       httpOnly: true,
       secure: process.env.NODE_ENV === 'production',
@@ -245,9 +255,18 @@ async function login(req, res) {
       maxAge: cookieMaxAge
     });
 
-    logger.info('✅ Session cookie set', {
+    // Store refresh token (critical for session persistence)
+    res.cookie('refresh_token', authResult.session.refresh_token, {
+      httpOnly: true,
+      secure: process.env.NODE_ENV === 'production',
+      sameSite: 'lax',
+      maxAge: cookieMaxAge // Same duration as access token cookie
+    });
+
+    logger.info('✅ Session cookies set', {
       rememberMe,
-      durationDays: rememberMe ? 90 : 30
+      durationDays: rememberMe ? 90 : 30,
+      hasRefreshToken: !!authResult.session.refresh_token
     });
 
     // Get user metadata from auth
@@ -282,8 +301,9 @@ async function login(req, res) {
  */
 async function logout(req, res) {
   try {
-    // Clear the authentication cookie
+    // Clear BOTH authentication cookies
     res.clearCookie('access_token');
+    res.clearCookie('refresh_token');
 
     // Sign out from auth service if available
     if (authService) {
@@ -292,7 +312,7 @@ async function logout(req, res) {
 
     logger.info('✅ User logged out');
 
-    res.json({ 
+    res.json({
       success: true,
       message: 'Logged out successfully'
     });
