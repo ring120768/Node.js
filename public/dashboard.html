@@ -1272,7 +1272,9 @@
       try {
         console.log('Loading images for user:', currentUser.id);
         // Use document_type=image parameter to get all image types
-        const response = await fetch(`/api/user-documents?user_id=${currentUser.id}&document_type=image`);
+        const response = await fetch(`/api/user-documents?user_id=${currentUser.id}&document_type=image`, {
+          credentials: 'include'
+        });
         console.log('Response status:', response.status);
 
         if (response.ok) {
@@ -1306,7 +1308,9 @@
     async function loadVideos() {
       try {
         // Use document_type=video parameter to get all video types
-        const response = await fetch(`/api/user-documents?user_id=${currentUser.id}&document_type=video`);
+        const response = await fetch(`/api/user-documents?user_id=${currentUser.id}&document_type=video`, {
+          credentials: 'include'
+        });
         if (response.ok) {
           const data = await response.json();
           // No need to filter, API returns videos only
@@ -1321,7 +1325,9 @@
     // Load transcriptions
     async function loadTranscriptions() {
       try {
-        const response = await fetch(`/api/transcription/history?user_id=${currentUser.id}`);
+        const response = await fetch(`/api/transcription/history?user_id=${currentUser.id}`, {
+          credentials: 'include'
+        });
         if (response.ok) {
           const data = await response.json();
           allData.transcriptions = data.transcriptions || data.data || [];
@@ -1336,7 +1342,9 @@
     async function loadPDFs() {
       try {
         // Try to fetch PDFs - endpoint may not exist yet
-        const response = await fetch(`/api/pdf/status/${currentUser.id}`);
+        const response = await fetch(`/api/pdf/status/${currentUser.id}`, {
+          credentials: 'include'
+        });
         if (response.ok) {
           const data = await response.json();
           allData.pdfs = Array.isArray(data) ? data : (data.pdfs || [data]);
@@ -1524,7 +1532,8 @@
     async function deleteImage(imageId) {
       try {
         const response = await fetch(`/api/user-documents/${imageId}`, {
-          method: 'DELETE'
+          method: 'DELETE',
+          credentials: 'include'
         });
 
         if (response.ok) {
@@ -1756,7 +1765,8 @@
     async function deleteFile(fileId, type) {
       try {
         const response = await fetch(`/api/user-documents/${fileId}`, {
-          method: 'DELETE'
+          method: 'DELETE',
+          credentials: 'include'
         });
 
         if (response.ok) {
