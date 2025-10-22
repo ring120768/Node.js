@@ -100,17 +100,18 @@ async function requireAuth(req, res, next) {
         // Successfully refreshed! Update cookies with new tokens
         const cookieMaxAge = 30 * 24 * 60 * 60 * 1000; // Default 30 days
 
+        // CRITICAL: Must match login controller settings exactly
         res.cookie('access_token', data.session.access_token, {
           httpOnly: true,
-          secure: process.env.NODE_ENV === 'production',
-          sameSite: 'lax',
+          secure: true, // Always true - matches login controller
+          sameSite: 'none', // Required for Replit subdomains - matches login controller
           maxAge: cookieMaxAge
         });
 
         res.cookie('refresh_token', data.session.refresh_token, {
           httpOnly: true,
-          secure: process.env.NODE_ENV === 'production',
-          sameSite: 'lax',
+          secure: true, // Always true - matches login controller
+          sameSite: 'none', // Required for Replit subdomains - matches login controller
           maxAge: cookieMaxAge
         });
 
@@ -210,17 +211,18 @@ async function optionalAuth(req, res, next) {
         // Successfully refreshed! Update cookies with new tokens
         const cookieMaxAge = 30 * 24 * 60 * 60 * 1000; // Default 30 days
 
+        // CRITICAL: Must match login controller settings exactly
         res.cookie('access_token', data.session.access_token, {
           httpOnly: true,
-          secure: process.env.NODE_ENV === 'production',
-          sameSite: 'lax',
+          secure: true, // Always true - matches login controller
+          sameSite: 'none', // Required for Replit subdomains - matches login controller
           maxAge: cookieMaxAge
         });
 
         res.cookie('refresh_token', data.session.refresh_token, {
           httpOnly: true,
-          secure: process.env.NODE_ENV === 'production',
-          sameSite: 'lax',
+          secure: true, // Always true - matches login controller
+          sameSite: 'none', // Required for Replit subdomains - matches login controller
           maxAge: cookieMaxAge
         });
 
