@@ -169,17 +169,18 @@ async function signup(req, res) {
     // ========================================
     const cookieMaxAge = 30 * 24 * 60 * 60 * 1000; // 30 days for new signups
 
+    // CRITICAL for Replit: sameSite must be 'none' for cross-site cookies
     res.cookie('access_token', authResult.session.access_token, {
       httpOnly: true,
-      secure: process.env.NODE_ENV === 'production',
-      sameSite: 'lax',
+      secure: true, // Always true - Replit uses HTTPS
+      sameSite: 'none', // Required for Replit subdomains
       maxAge: cookieMaxAge
     });
 
     res.cookie('refresh_token', authResult.session.refresh_token, {
       httpOnly: true,
-      secure: process.env.NODE_ENV === 'production',
-      sameSite: 'lax',
+      secure: true, // Always true - Replit uses HTTPS
+      sameSite: 'none', // Required for Replit subdomains
       maxAge: cookieMaxAge
     });
 
@@ -248,18 +249,20 @@ async function login(req, res) {
     const cookieMaxAge = rememberMe ? 90 * 24 * 60 * 60 * 1000 : 30 * 24 * 60 * 60 * 1000;
 
     // Store BOTH access token and refresh token
+    // CRITICAL for Replit: sameSite must be 'none' for cross-site cookies
+    // This requires secure: true (HTTPS), which Replit provides
     res.cookie('access_token', authResult.session.access_token, {
       httpOnly: true,
-      secure: process.env.NODE_ENV === 'production',
-      sameSite: 'lax',
+      secure: true, // Always true - Replit uses HTTPS
+      sameSite: 'none', // Required for Replit subdomains
       maxAge: cookieMaxAge
     });
 
     // Store refresh token (critical for session persistence)
     res.cookie('refresh_token', authResult.session.refresh_token, {
       httpOnly: true,
-      secure: process.env.NODE_ENV === 'production',
-      sameSite: 'lax',
+      secure: true, // Always true - Replit uses HTTPS
+      sameSite: 'none', // Required for Replit subdomains
       maxAge: cookieMaxAge // Same duration as access token cookie
     });
 
