@@ -483,6 +483,7 @@
             try {
                 // Get server-minted nonce
                 const nonceResponse = await fetch('/api/auth/nonce', {
+                    credentials: 'include', // Required to send cookies
                     headers: {
                         'Authorization': `Bearer ${userData.session?.access_token || ''}`
                     }
@@ -592,6 +593,7 @@
 
                 const response = await fetch('/api/auth/signup', {
                     method: 'POST',
+                    credentials: 'include', // CRITICAL: Required to store cookies
                     headers: {
                         'Content-Type': 'application/json',
                     },

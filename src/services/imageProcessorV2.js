@@ -442,16 +442,22 @@ class ImageProcessorV2 {
 
   /**
    * Get signed URL for secure image access
-   * @param {string} storagePath - Full storage path (bucket/path)
+   * @param {string} storagePath - Full storage path (bucket/path or just path)
    * @param {number} expirySeconds - URL expiry in seconds (default: 3600)
    * @returns {Promise<string>} - Signed URL
    */
   async getSignedUrl(storagePath, expirySeconds = 3600) {
     try {
-      // Split into bucket and path
-      const parts = storagePath.split('/');
-      const bucket = parts[0];
-      const path = parts.slice(1).join('/');
+      // The bucket is always 'user-documents'
+      const bucket = 'user-documents';
+
+      // The storage path in the database already includes the full path
+      // e.g., "199d9251-b2e0-40a5-80bf-fc1529d9bf6c/driving_license_picture/1760653683931_driving_license_picture.jpeg"
+      // Remove 'user-documents/' prefix if present
+      let path = storagePath;
+      if (path.startsWith('user-documents/')) {
+        path = path.replace('user-documents/', '');
+      }
 
       logger.info('Generating signed URL', {
         bucket,

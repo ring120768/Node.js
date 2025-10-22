@@ -1,0 +1,390 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Replit Image Test</title>
+    <style>
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+            max-width: 1200px;
+            margin: 0 auto;
+            padding: 20px;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+        }
+        .container {
+            background: white;
+            border-radius: 12px;
+            padding: 30px;
+            box-shadow: 0 20px 60px rgba(0,0,0,0.3);
+        }
+        h1 {
+            color: #333;
+            border-bottom: 3px solid #667eea;
+            padding-bottom: 10px;
+        }
+        .test-section {
+            margin: 20px 0;
+            padding: 20px;
+            background: #f8f9fa;
+            border-radius: 8px;
+            border-left: 4px solid #667eea;
+        }
+        .status {
+            padding: 8px 12px;
+            border-radius: 20px;
+            display: inline-block;
+            margin: 5px 0;
+            font-weight: 500;
+        }
+        .success { background: #d4edda; color: #155724; }
+        .error { background: #f8d7da; color: #721c24; }
+        .warning { background: #fff3cd; color: #856404; }
+        .info { background: #d1ecf1; color: #0c5460; }
+        .image-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(250px, 1fr));
+            gap: 20px;
+            margin-top: 30px;
+        }
+        .image-card {
+            background: white;
+            border-radius: 8px;
+            overflow: hidden;
+            box-shadow: 0 4px 12px rgba(0,0,0,0.1);
+            transition: transform 0.2s;
+        }
+        .image-card:hover {
+            transform: translateY(-5px);
+            box-shadow: 0 8px 20px rgba(0,0,0,0.15);
+        }
+        .image-card img {
+            width: 100%;
+            height: 200px;
+            object-fit: cover;
+        }
+        .image-info {
+            padding: 15px;
+        }
+        .image-type {
+            font-size: 14px;
+            color: #666;
+            margin-bottom: 8px;
+        }
+        .method-title {
+            font-weight: bold;
+            color: #667eea;
+            margin-bottom: 10px;
+            font-size: 18px;
+        }
+        #console-log {
+            background: #1e1e1e;
+            color: #0f0;
+            padding: 15px;
+            border-radius: 8px;
+            font-family: 'Courier New', monospace;
+            font-size: 12px;
+            max-height: 300px;
+            overflow-y: auto;
+            white-space: pre-wrap;
+        }
+        .test-result {
+            padding: 15px;
+            margin: 10px 0;
+            border-radius: 8px;
+            background: white;
+            border: 2px solid #e9ecef;
+        }
+        .loader {
+            border: 4px solid #f3f3f3;
+            border-top: 4px solid #667eea;
+            border-radius: 50%;
+            width: 40px;
+            height: 40px;
+            animation: spin 1s linear infinite;
+            margin: 20px auto;
+        }
+        @keyframes spin {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>🚀 Replit Image Display Test</h1>
+
+        <div class="test-section">
+            <div class="method-title">Environment Information</div>
+            <div id="env-info">
+                <div class="status info">Detecting environment...</div>
+            </div>
+        </div>
+
+        <div class="test-section">
+            <div class="method-title">Console Output</div>
+            <div id="console-log"></div>
+        </div>
+
+        <div class="test-section">
+            <div class="method-title">Test Results</div>
+            <div id="test-results">
+                <div class="loader"></div>
+            </div>
+        </div>
+
+        <div class="test-section">
+            <div class="method-title">Method 1: Direct API URLs</div>
+            <div id="direct-images" class="image-grid"></div>
+        </div>
+
+        <div class="test-section">
+            <div class="method-title">Method 2: Proxy Endpoint</div>
+            <div id="proxy-images" class="image-grid"></div>
+        </div>
+    </div>
+
+    <script>
+        const userId = '199d9251-b2e0-40a5-80bf-fc1529d9bf6c';
+        const consoleLog = document.getElementById('console-log');
+        const testResults = document.getElementById('test-results');
+
+        function log(message, type = 'info') {
+            const timestamp = new Date().toLocaleTimeString();
+            const symbols = {
+                'error': '❌',
+                'success': '✅',
+                'warning': '⚠️',
+                'info': 'ℹ️'
+            };
+            const symbol = symbols[type] || '';
+            consoleLog.innerHTML += `[${timestamp}] ${symbol} ${message}\n`;
+            consoleLog.scrollTop = consoleLog.scrollHeight;
+            console.log(message);
+        }
+
+        async function detectEnvironment() {
+            const envInfo = document.getElementById('env-info');
+            const hostname = window.location.hostname;
+            const protocol = window.location.protocol;
+            const port = window.location.port;
+
+            const isReplit = hostname.includes('replit.dev') || hostname.includes('replit.app');
+            const isLocalhost = hostname === 'localhost' || hostname === '127.0.0.1';
+
+            envInfo.innerHTML = `
+                <div class="test-result">
+                    <strong>Current Environment:</strong><br>
+                    <div class="status ${isReplit ? 'success' : isLocalhost ? 'warning' : 'info'}">
+                        ${isReplit ? '☁️ Running on Replit' : isLocalhost ? '💻 Running Locally' : '🌐 Unknown Environment'}
+                    </div><br>
+                    <strong>URL:</strong> ${protocol}//${hostname}${port ? ':' + port : ''}<br>
+                    <strong>User Agent:</strong> ${navigator.userAgent.substring(0, 100)}...
+                </div>
+            `;
+
+            log(`Environment: ${isReplit ? 'Replit' : isLocalhost ? 'Localhost' : 'Unknown'}`, 'info');
+            log(`URL: ${window.location.origin}`, 'info');
+        }
+
+        async function testDirectAPI() {
+            log('\nTesting Direct API Method...', 'info');
+
+            try {
+                const response = await fetch(`/api/user-documents?user_id=${userId}&document_type=image`);
+
+                if (!response.ok) {
+                    throw new Error(`API returned ${response.status}`);
+                }
+
+                const data = await response.json();
+                const images = data.data?.documents || data.documents || [];
+
+                log(`API returned ${images.length} images`, images.length > 0 ? 'success' : 'warning');
+
+                const directContainer = document.getElementById('direct-images');
+                directContainer.innerHTML = '';
+
+                let successCount = 0;
+                let failCount = 0;
+
+                for (const image of images) {
+                    const card = document.createElement('div');
+                    card.className = 'image-card';
+
+                    const url = image.public_url || image.signed_url;
+                    if (url) {
+                        const img = document.createElement('img');
+                        img.src = url;
+
+                        await new Promise(resolve => {
+                            img.onload = () => {
+                                successCount++;
+                                log(`✅ Direct: ${image.document_type} loaded`, 'success');
+                                resolve();
+                            };
+                            img.onerror = () => {
+                                failCount++;
+                                log(`❌ Direct: ${image.document_type} failed`, 'error');
+                                img.src = 'data:image/svg+xml,%3Csvg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 200 200"%3E%3Ctext x="50%25" y="50%25" text-anchor="middle" dy=".3em" fill="red"%3E❌ Failed%3C/text%3E%3C/svg%3E';
+                                resolve();
+                            };
+                            setTimeout(resolve, 5000); // Timeout after 5 seconds
+                        });
+
+                        card.innerHTML = `
+                            <img src="${img.src}" alt="${image.document_type}">
+                            <div class="image-info">
+                                <div class="image-type">${image.document_type}</div>
+                                <div class="status ${img.src.includes('data:') ? 'error' : 'success'}">
+                                    ${img.src.includes('data:') ? '❌ Failed' : '✅ Loaded'}
+                                </div>
+                            </div>
+                        `;
+                    } else {
+                        card.innerHTML = `
+                            <div style="height: 200px; display: flex; align-items: center; justify-content: center; background: #f8d7da;">
+                                <span style="font-size: 48px;">❌</span>
+                            </div>
+                            <div class="image-info">
+                                <div class="image-type">${image.document_type}</div>
+                                <div class="status error">No URL</div>
+                            </div>
+                        `;
+                        failCount++;
+                    }
+
+                    directContainer.appendChild(card);
+                }
+
+                return { method: 'Direct API', total: images.length, success: successCount, failed: failCount };
+
+            } catch (error) {
+                log(`Direct API Error: ${error.message}`, 'error');
+                return { method: 'Direct API', error: error.message };
+            }
+        }
+
+        async function testProxy() {
+            log('\nTesting Proxy Method...', 'info');
+
+            try {
+                const response = await fetch(`/api/user-documents?user_id=${userId}&document_type=image`);
+                const data = await response.json();
+                const images = data.data?.documents || data.documents || [];
+
+                const proxyContainer = document.getElementById('proxy-images');
+                proxyContainer.innerHTML = '';
+
+                let successCount = 0;
+                let failCount = 0;
+
+                for (const image of images) {
+                    const card = document.createElement('div');
+                    card.className = 'image-card';
+
+                    const proxyUrl = `/api/images/${image.id}`;
+                    const img = document.createElement('img');
+                    img.src = proxyUrl;
+
+                    await new Promise(resolve => {
+                        img.onload = () => {
+                            successCount++;
+                            log(`✅ Proxy: ${image.document_type} loaded`, 'success');
+                            resolve();
+                        };
+                        img.onerror = () => {
+                            failCount++;
+                            log(`❌ Proxy: ${image.document_type} failed`, 'error');
+                            img.src = 'data:image/svg+xml,%3Csvg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 200 200"%3E%3Ctext x="50%25" y="50%25" text-anchor="middle" dy=".3em" fill="red"%3E❌ Failed%3C/text%3E%3C/svg%3E';
+                            resolve();
+                        };
+                        setTimeout(resolve, 5000);
+                    });
+
+                    card.innerHTML = `
+                        <img src="${img.src}" alt="${image.document_type}">
+                        <div class="image-info">
+                            <div class="image-type">${image.document_type}</div>
+                            <div class="status ${img.src.includes('data:') ? 'error' : 'success'}">
+                                ${img.src.includes('data:') ? '❌ Failed' : '✅ Loaded'}
+                            </div>
+                        </div>
+                    `;
+
+                    proxyContainer.appendChild(card);
+                }
+
+                return { method: 'Proxy', total: images.length, success: successCount, failed: failCount };
+
+            } catch (error) {
+                log(`Proxy Error: ${error.message}`, 'error');
+                return { method: 'Proxy', error: error.message };
+            }
+        }
+
+        async function runAllTests() {
+            log('Starting comprehensive image tests...', 'info');
+
+            await detectEnvironment();
+
+            const results = [];
+
+            // Test direct API
+            const directResult = await testDirectAPI();
+            results.push(directResult);
+
+            // Test proxy
+            const proxyResult = await testProxy();
+            results.push(proxyResult);
+
+            // Display summary
+            testResults.innerHTML = '<h3>Test Summary:</h3>';
+
+            for (const result of results) {
+                if (result.error) {
+                    testResults.innerHTML += `
+                        <div class="test-result">
+                            <strong>${result.method}:</strong>
+                            <div class="status error">❌ Error: ${result.error}</div>
+                        </div>
+                    `;
+                } else {
+                    const allSuccess = result.success === result.total;
+                    testResults.innerHTML += `
+                        <div class="test-result">
+                            <strong>${result.method}:</strong>
+                            <div class="status ${allSuccess ? 'success' : result.failed > 0 ? 'error' : 'warning'}">
+                                ${result.success}/${result.total} images loaded successfully
+                            </div>
+                            ${result.failed > 0 ? `<div class="status error">⚠️ ${result.failed} failed</div>` : ''}
+                        </div>
+                    `;
+                }
+            }
+
+            // Recommendation
+            const proxyWorks = proxyResult.success > 0 && !proxyResult.error;
+            const directWorks = directResult.success > 0 && !directResult.error;
+
+            testResults.innerHTML += `
+                <div class="test-result" style="background: #e3f2fd; border: 2px solid #2196f3;">
+                    <strong>💡 Recommendation:</strong><br>
+                    ${proxyWorks ?
+                        '<div class="status success">✅ Use the Proxy Dashboard - it works reliably!</div>' :
+                        directWorks ?
+                        '<div class="status warning">⚠️ Direct URLs work but may have CORS issues. Consider proxy.</div>' :
+                        '<div class="status error">❌ Neither method works. Check server logs and CORS settings.</div>'
+                    }
+                </div>
+            `;
+
+            log('\nTests completed!', 'success');
+        }
+
+        // Run tests when page loads
+        window.addEventListener('DOMContentLoaded', runAllTests);
+    </script>
+</body>
+</html>

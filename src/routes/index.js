@@ -24,6 +24,7 @@ const aiRoutes = require('./ai.routes'); // NEW: AI analysis routes
 const incidentRoutes = require('./incident.routes'); // NEW: Incident reports routes
 const profileRoutes = require('./profile.routes'); // NEW: User profile management
 const userDocumentsRoutes = require('./userDocuments.routes'); // NEW: User documents/images API
+const imageProxyRoutes = require('./imageProxy.routes'); // NEW: Image proxy for authenticated access
 
 // GitHub webhooks are mounted in app.js via webhook.routes.js (not imported here)
 const locationRoutes = require('./location.routes');
@@ -315,6 +316,7 @@ router.use('/api/ai', aiRoutes); // NEW: AI analysis routes
 router.use('/api/incident-reports', incidentRoutes); // NEW: Incident reports routes
 router.use('/api/profile', profileRoutes); // NEW: User profile management
 router.use('/api/user-documents', userDocumentsRoutes); // NEW: User documents/images API
+router.use('/api', imageProxyRoutes); // NEW: Image proxy routes (/api/images/:id)
 // Note: Webhook routes are mounted directly in app.js for raw body handling
 // GitHub webhooks are mounted in app.js via webhook.routes.js (not here)
 router.use('/api/location', locationRoutes);

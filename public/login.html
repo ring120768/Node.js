@@ -279,6 +279,7 @@
         // Send credentials to backend for authentication
         const response = await fetch('/api/auth/login', {
           method: 'POST',
+          credentials: 'include', // CRITICAL: Required to store cookies
           headers: {
             'Content-Type': 'application/json'
           },

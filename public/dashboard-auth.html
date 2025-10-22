@@ -1,0 +1,715 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Dashboard - Car Crash Lawyer AI (Authenticated)</title>
+
+  <!-- Include Supabase Client Library -->
+  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+
+  <style>
+    * {
+      margin: 0;
+      padding: 0;
+      box-sizing: border-box;
+    }
+
+    body {
+      font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', 'Roboto', sans-serif;
+      background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+      min-height: 100vh;
+      color: #333;
+    }
+
+    .nav-bar {
+      background: rgba(255, 255, 255, 0.95);
+      padding: 1rem 2rem;
+      box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+    }
+
+    .nav-container {
+      max-width: 1200px;
+      margin: 0 auto;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+    }
+
+    .dashboard-container {
+      max-width: 1200px;
+      margin: 2rem auto;
+      padding: 0 1rem;
+    }
+
+    .section-tabs {
+      display: flex;
+      gap: 1rem;
+      margin-bottom: 2rem;
+      flex-wrap: wrap;
+    }
+
+    .tab-button {
+      padding: 0.75rem 1.5rem;
+      background: white;
+      border: none;
+      border-radius: 8px;
+      cursor: pointer;
+      font-size: 1rem;
+      transition: all 0.3s;
+      box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+    }
+
+    .tab-button.active {
+      background: #667eea;
+      color: white;
+      transform: translateY(-2px);
+      box-shadow: 0 4px 8px rgba(0,0,0,0.2);
+    }
+
+    .content-section {
+      display: none;
+      background: white;
+      padding: 2rem;
+      border-radius: 12px;
+      box-shadow: 0 4px 20px rgba(0,0,0,0.1);
+      animation: fadeIn 0.3s ease-in;
+    }
+
+    .content-section.active {
+      display: block;
+    }
+
+    @keyframes fadeIn {
+      from { opacity: 0; transform: translateY(10px); }
+      to { opacity: 1; transform: translateY(0); }
+    }
+
+    .image-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fill, minmax(250px, 1fr));
+      gap: 1.5rem;
+      margin-top: 1.5rem;
+    }
+
+    .image-card {
+      background: #f9fafb;
+      border-radius: 8px;
+      overflow: hidden;
+      box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+      transition: transform 0.3s;
+    }
+
+    .image-card:hover {
+      transform: translateY(-4px);
+      box-shadow: 0 4px 16px rgba(0,0,0,0.15);
+    }
+
+    .image-preview {
+      width: 100%;
+      height: 200px;
+      object-fit: cover;
+      background: #e5e7eb;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+    }
+
+    .image-preview img {
+      width: 100%;
+      height: 100%;
+      object-fit: cover;
+    }
+
+    .image-preview.loading {
+      background: linear-gradient(90deg, #f0f0f0 25%, #e0e0e0 50%, #f0f0f0 75%);
+      background-size: 200% 100%;
+      animation: loading 1.5s infinite;
+    }
+
+    @keyframes loading {
+      0% { background-position: 200% 0; }
+      100% { background-position: -200% 0; }
+    }
+
+    .image-info {
+      padding: 1rem;
+    }
+
+    .image-title {
+      font-weight: 600;
+      color: #1f2937;
+      margin-bottom: 0.5rem;
+    }
+
+    .image-meta {
+      font-size: 0.875rem;
+      color: #6b7280;
+    }
+
+    .image-actions {
+      display: flex;
+      gap: 0.5rem;
+      margin-top: 0.75rem;
+    }
+
+    .btn {
+      padding: 0.5rem 1rem;
+      border: none;
+      border-radius: 6px;
+      cursor: pointer;
+      font-size: 0.875rem;
+      transition: all 0.2s;
+    }
+
+    .btn-primary {
+      background: #667eea;
+      color: white;
+    }
+
+    .btn-primary:hover {
+      background: #5a67d8;
+    }
+
+    .btn-secondary {
+      background: #e5e7eb;
+      color: #374151;
+    }
+
+    .btn-secondary:hover {
+      background: #d1d5db;
+    }
+
+    .status-indicator {
+      display: inline-block;
+      padding: 0.25rem 0.75rem;
+      border-radius: 12px;
+      font-size: 0.75rem;
+      font-weight: 600;
+    }
+
+    .status-authenticated {
+      background: #10b981;
+      color: white;
+    }
+
+    .status-loading {
+      background: #f59e0b;
+      color: white;
+    }
+
+    .status-error {
+      background: #ef4444;
+      color: white;
+    }
+
+    .empty-state {
+      text-align: center;
+      padding: 4rem 2rem;
+      color: #6b7280;
+    }
+
+    .empty-state svg {
+      width: 100px;
+      height: 100px;
+      margin: 0 auto 1rem;
+      opacity: 0.3;
+    }
+
+    /* Image Modal */
+    .modal {
+      display: none;
+      position: fixed;
+      z-index: 1000;
+      left: 0;
+      top: 0;
+      width: 100%;
+      height: 100%;
+      background: rgba(0, 0, 0, 0.8);
+      animation: fadeIn 0.3s;
+    }
+
+    .modal.active {
+      display: flex;
+      align-items: center;
+      justify-content: center;
+    }
+
+    .modal-content {
+      background: white;
+      border-radius: 12px;
+      max-width: 90%;
+      max-height: 90%;
+      overflow: hidden;
+      position: relative;
+    }
+
+    .modal-image {
+      max-width: 100%;
+      max-height: 80vh;
+      display: block;
+    }
+
+    .modal-close {
+      position: absolute;
+      top: 1rem;
+      right: 1rem;
+      background: white;
+      border: none;
+      width: 32px;
+      height: 32px;
+      border-radius: 50%;
+      cursor: pointer;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 1.5rem;
+      box-shadow: 0 2px 8px rgba(0,0,0,0.2);
+    }
+
+    .error-message {
+      background: #fee2e2;
+      border: 1px solid #fca5a5;
+      color: #dc2626;
+      padding: 1rem;
+      border-radius: 8px;
+      margin: 1rem 0;
+    }
+
+    .success-message {
+      background: #d1fae5;
+      border: 1px solid #6ee7b7;
+      color: #065f46;
+      padding: 1rem;
+      border-radius: 8px;
+      margin: 1rem 0;
+    }
+  </style>
+</head>
+<body>
+  <!-- Navigation -->
+  <nav class="nav-bar">
+    <div class="nav-container">
+      <div>
+        <h1>Car Crash Lawyer AI Dashboard</h1>
+        <div id="authStatus" class="status-indicator status-loading" style="margin-top: 0.5rem;">
+          Initializing...
+        </div>
+      </div>
+      <div>
+        <span id="userEmail"></span>
+        <button class="btn btn-secondary" onclick="handleLogout()">Logout</button>
+      </div>
+    </div>
+  </nav>
+
+  <!-- Main Dashboard -->
+  <div class="dashboard-container">
+    <!-- Section Tabs -->
+    <div class="section-tabs">
+      <button class="tab-button active" onclick="showSection('images')">
+        📸 Images (<span id="imageCount">0</span>)
+      </button>
+      <button class="tab-button" onclick="showSection('videos')">
+        🎥 Videos (<span id="videoCount">0</span>)
+      </button>
+      <button class="tab-button" onclick="showSection('transcriptions')">
+        🎤 Transcriptions (<span id="transcriptionCount">0</span>)
+      </button>
+      <button class="tab-button" onclick="showSection('reports')">
+        📄 Reports (<span id="reportCount">0</span>)
+      </button>
+    </div>
+
+    <!-- Content Sections -->
+    <div id="imagesSection" class="content-section active">
+      <h2>📸 Your Images</h2>
+      <div id="imageGrid" class="image-grid">
+        <div class="empty-state">
+          <p>Loading images...</p>
+        </div>
+      </div>
+    </div>
+
+    <div id="videosSection" class="content-section">
+      <h2>🎥 Dashcam Footage</h2>
+      <div class="empty-state">
+        <p>No videos uploaded yet</p>
+      </div>
+    </div>
+
+    <div id="transcriptionsSection" class="content-section">
+      <h2>🎤 Audio Transcriptions</h2>
+      <div class="empty-state">
+        <p>No transcriptions available</p>
+      </div>
+    </div>
+
+    <div id="reportsSection" class="content-section">
+      <h2>📄 Generated Reports</h2>
+      <div class="empty-state">
+        <p>No reports generated yet</p>
+      </div>
+    </div>
+  </div>
+
+  <!-- Image Modal -->
+  <div id="imageModal" class="modal">
+    <div class="modal-content">
+      <button class="modal-close" onclick="closeModal()">&times;</button>
+      <img id="modalImage" class="modal-image" src="" alt="">
+    </div>
+  </div>
+
+  <script>
+    // ========================================
+    // Supabase Initialization
+    // ========================================
+    let supabase = null;
+    let currentUser = null;
+    let userImages = [];
+
+    // Initialize Supabase client
+    async function initSupabase() {
+      try {
+        console.log('🔧 Initializing Supabase client...');
+
+        // Fetch config from backend
+        const response = await fetch('/api/config');
+        const config = await response.json();
+
+        if (config.supabaseUrl && config.supabaseAnonKey) {
+          // Create Supabase client with anon key
+          supabase = window.supabase.createClient(
+            config.supabaseUrl,
+            config.supabaseAnonKey
+          );
+          console.log('✅ Supabase client initialized');
+
+          // Set up authentication
+          await setupAuth();
+        } else {
+          throw new Error('Missing Supabase configuration');
+        }
+      } catch (error) {
+        console.error('❌ Failed to initialize Supabase:', error);
+        showError('Failed to initialize. Please refresh the page.');
+      }
+    }
+
+    // ========================================
+    // Authentication
+    // ========================================
+    async function setupAuth() {
+      try {
+        // For testing, use a hardcoded user
+        // In production, this would be real authentication
+        currentUser = {
+          id: '199d9251-b2e0-40a5-80bf-fc1529d9bf6c',
+          email: 'ian.ring@sky.com',
+          name: 'Ian Ring'
+        };
+
+        console.log('✅ Using test user:', currentUser.email);
+        document.getElementById('userEmail').textContent = currentUser.email;
+        document.getElementById('authStatus').className = 'status-indicator status-authenticated';
+        document.getElementById('authStatus').textContent = 'Authenticated';
+
+        // Load user data
+        await loadUserData();
+      } catch (error) {
+        console.error('❌ Auth setup failed:', error);
+        document.getElementById('authStatus').className = 'status-indicator status-error';
+        document.getElementById('authStatus').textContent = 'Auth Failed';
+      }
+    }
+
+    // ========================================
+    // Load User Data
+    // ========================================
+    async function loadUserData() {
+      console.log('📊 Loading user data...');
+      await loadImages();
+    }
+
+    // ========================================
+    // Load Images Using Supabase Client
+    // ========================================
+    async function loadImages() {
+      try {
+        console.log('🖼️ Loading images for user:', currentUser.id);
+
+        // Step 1: Fetch image metadata from database
+        const { data: images, error } = await supabase
+          .from('user_documents')
+          .select('*')
+          .eq('create_user_id', currentUser.id)
+          .in('document_type', [
+            'driving_license_picture',
+            'vehicle_picture_front',
+            'vehicle_picture_back',
+            'vehicle_picture_driver_side',
+            'vehicle_picture_passenger_side',
+            'vehicle_damage_picture',
+            'incident_picture',
+            'test_image'
+          ])
+          .order('created_at', { ascending: false });
+
+        if (error) {
+          console.error('❌ Database error:', error);
+          showError('Failed to load images from database');
+          return;
+        }
+
+        console.log('✅ Found', images.length, 'images in database');
+        userImages = images;
+
+        // Step 2: Generate signed URLs for each image using Supabase client
+        const imagesWithUrls = await Promise.all(images.map(async (image) => {
+          try {
+            // Method 1: Try to download directly (most reliable)
+            const downloadUrl = await getImageUrl(image.storage_path);
+
+            return {
+              ...image,
+              displayUrl: downloadUrl
+            };
+          } catch (err) {
+            console.error(`Failed to get URL for ${image.document_type}:`, err);
+            return {
+              ...image,
+              displayUrl: null
+            };
+          }
+        }));
+
+        // Step 3: Display the images
+        displayImages(imagesWithUrls);
+
+      } catch (error) {
+        console.error('❌ Failed to load images:', error);
+        showError('Failed to load images');
+      }
+    }
+
+    // ========================================
+    // Get Image URL using Supabase Client
+    // ========================================
+    async function getImageUrl(storagePath) {
+      if (!storagePath) return null;
+
+      // Remove bucket prefix if present
+      let cleanPath = storagePath;
+      if (cleanPath.startsWith('user-documents/')) {
+        cleanPath = cleanPath.replace('user-documents/', '');
+      }
+
+      console.log('🔗 Getting URL for:', cleanPath);
+
+      // Method 1: Create a signed URL (works for private buckets)
+      const { data, error } = await supabase.storage
+        .from('user-documents')
+        .createSignedUrl(cleanPath, 60 * 60 * 24); // 24 hours
+
+      if (error) {
+        console.error('❌ Failed to create signed URL:', error);
+
+        // Method 2: Try public URL (if bucket becomes public)
+        const publicUrl = supabase.storage
+          .from('user-documents')
+          .getPublicUrl(cleanPath);
+
+        console.log('Trying public URL:', publicUrl.data.publicUrl);
+        return publicUrl.data.publicUrl;
+      }
+
+      console.log('✅ Signed URL created');
+      return data.signedUrl;
+    }
+
+    // ========================================
+    // Display Images
+    // ========================================
+    function displayImages(images) {
+      const imageGrid = document.getElementById('imageGrid');
+      document.getElementById('imageCount').textContent = images.length;
+
+      if (images.length === 0) {
+        imageGrid.innerHTML = `
+          <div class="empty-state">
+            <p>No images uploaded yet</p>
+          </div>
+        `;
+        return;
+      }
+
+      imageGrid.innerHTML = images.map((image, index) => {
+        const hasUrl = !!image.displayUrl;
+        const imageType = formatDocumentType(image.document_type);
+
+        return `
+          <div class="image-card">
+            <div class="image-preview ${hasUrl ? '' : 'loading'}">
+              ${hasUrl
+                ? `<img src="${image.displayUrl}" alt="${imageType}" onerror="handleImageError(this, ${index})">`
+                : '<span>🖼️ Loading...</span>'
+              }
+            </div>
+            <div class="image-info">
+              <div class="image-title">${imageType}</div>
+              <div class="image-meta">
+                <div>📅 ${formatDate(image.created_at)}</div>
+                <div>📊 ${image.status || 'completed'}</div>
+                <div>💾 ${formatFileSize(image.file_size)}</div>
+              </div>
+              <div class="image-actions">
+                <button class="btn btn-primary" onclick="viewImage(${index})">
+                  View
+                </button>
+                <button class="btn btn-secondary" onclick="downloadImage(${index})">
+                  Download
+                </button>
+              </div>
+            </div>
+          </div>
+        `;
+      }).join('');
+    }
+
+    // ========================================
+    // Helper Functions
+    // ========================================
+    function formatDocumentType(type) {
+      return type
+        .replace(/_/g, ' ')
+        .replace(/\b\w/g, l => l.toUpperCase());
+    }
+
+    function formatDate(dateString) {
+      const date = new Date(dateString);
+      return date.toLocaleDateString('en-GB', {
+        day: '2-digit',
+        month: '2-digit',
+        year: 'numeric'
+      });
+    }
+
+    function formatFileSize(bytes) {
+      if (!bytes) return 'Unknown';
+      const mb = bytes / (1024 * 1024);
+      return mb.toFixed(2) + ' MB';
+    }
+
+    function handleImageError(img, index) {
+      console.error('Image failed to load:', index);
+      img.parentElement.innerHTML = '<span>❌ Failed to load</span>';
+
+      // Try to refresh the URL
+      refreshImageUrl(index);
+    }
+
+    async function refreshImageUrl(index) {
+      const image = userImages[index];
+      if (!image) return;
+
+      console.log('🔄 Refreshing URL for image:', index);
+      const newUrl = await getImageUrl(image.storage_path);
+
+      if (newUrl) {
+        userImages[index].displayUrl = newUrl;
+        // Re-display images
+        displayImages(userImages);
+      }
+    }
+
+    function viewImage(index) {
+      const image = userImages[index];
+      if (!image || !image.displayUrl) {
+        showError('Image not available');
+        return;
+      }
+
+      const modal = document.getElementById('imageModal');
+      const modalImage = document.getElementById('modalImage');
+      modalImage.src = image.displayUrl;
+      modal.classList.add('active');
+    }
+
+    function closeModal() {
+      const modal = document.getElementById('imageModal');
+      modal.classList.remove('active');
+    }
+
+    async function downloadImage(index) {
+      const image = userImages[index];
+      if (!image || !image.displayUrl) {
+        showError('Image not available for download');
+        return;
+      }
+
+      try {
+        const response = await fetch(image.displayUrl);
+        const blob = await response.blob();
+        const url = window.URL.createObjectURL(blob);
+        const a = document.createElement('a');
+        a.href = url;
+        a.download = image.original_filename || `${image.document_type}.jpeg`;
+        document.body.appendChild(a);
+        a.click();
+        window.URL.revokeObjectURL(url);
+        document.body.removeChild(a);
+      } catch (error) {
+        console.error('Download failed:', error);
+        showError('Failed to download image');
+      }
+    }
+
+    function showSection(section) {
+      // Update tabs
+      document.querySelectorAll('.tab-button').forEach(btn => {
+        btn.classList.remove('active');
+      });
+      event.target.classList.add('active');
+
+      // Update sections
+      document.querySelectorAll('.content-section').forEach(sec => {
+        sec.classList.remove('active');
+      });
+      document.getElementById(section + 'Section').classList.add('active');
+    }
+
+    function showError(message) {
+      // Could add a toast notification here
+      console.error('Error:', message);
+    }
+
+    function handleLogout() {
+      // Clear and redirect
+      window.location.href = '/';
+    }
+
+    // ========================================
+    // Initialize on Load
+    // ========================================
+    window.addEventListener('DOMContentLoaded', () => {
+      console.log('🚀 Dashboard loading with Supabase Auth...');
+      initSupabase();
+    });
+
+    // Close modal on escape key
+    document.addEventListener('keydown', (e) => {
+      if (e.key === 'Escape') {
+        closeModal();
+      }
+    });
+
+    // Close modal on background click
+    document.getElementById('imageModal').addEventListener('click', (e) => {
+      if (e.target === e.currentTarget) {
+        closeModal();
+      }
+    });
+  </script>
+</body>
+</html>

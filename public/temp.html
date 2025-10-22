@@ -446,7 +446,9 @@
         // Check user authentication and fetch emergency contacts
         async function checkUserAuthentication() {
             try {
-                const authResponse = await fetch('/api/auth/status');
+                const authResponse = await fetch('/api/auth/status', {
+                    credentials: 'include' // CRITICAL: Required to send cookies
+                });
                 if (!authResponse.ok) {
                     console.warn('Authentication check failed');
                     return;
