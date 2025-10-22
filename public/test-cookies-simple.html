@@ -1,0 +1,208 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <title>Cookie Debug Test</title>
+  <style>
+    body {
+      font-family: Arial, sans-serif;
+      max-width: 800px;
+      margin: 40px auto;
+      padding: 20px;
+      background: #f5f5f5;
+    }
+    .test-section {
+      background: white;
+      padding: 20px;
+      margin: 20px 0;
+      border-radius: 8px;
+      box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+    }
+    button {
+      background: #007bff;
+      color: white;
+      border: none;
+      padding: 12px 24px;
+      margin: 5px;
+      border-radius: 4px;
+      cursor: pointer;
+      font-size: 14px;
+    }
+    button:hover {
+      background: #0056b3;
+    }
+    .result {
+      margin-top: 15px;
+      padding: 15px;
+      background: #f8f9fa;
+      border-left: 4px solid #007bff;
+      border-radius: 4px;
+      font-family: monospace;
+      font-size: 12px;
+      white-space: pre-wrap;
+    }
+    .success { border-left-color: #28a745; background: #d4edda; }
+    .error { border-left-color: #dc3545; background: #f8d7da; }
+    h1 { color: #333; }
+    h2 { color: #666; font-size: 18px; }
+  </style>
+</head>
+<body>
+  <h1>🍪 Cookie Mechanism Test</h1>
+  <p>This tests if basic cookie storage is working in your browser.</p>
+
+  <!-- Test 1: Simple Cookie -->
+  <div class="test-section">
+    <h2>Test 1: Simple Cookie Test</h2>
+    <p>Set a test cookie and verify it's stored.</p>
+    <button onclick="runTest1()">1. Set Test Cookie</button>
+    <button onclick="runTest1Verify()">2. Verify Test Cookie</button>
+    <div id="test1-result"></div>
+  </div>
+
+  <!-- Test 2: Auth Cookies -->
+  <div class="test-section">
+    <h2>Test 2: Auth Cookie Simulation</h2>
+    <p>Simulate setting access_token and refresh_token cookies.</p>
+    <button onclick="runTest2()">1. Set Auth Cookies</button>
+    <button onclick="runTest2Verify()">2. Verify Auth Cookies</button>
+    <div id="test2-result"></div>
+  </div>
+
+  <!-- Summary -->
+  <div class="test-section">
+    <h2>Summary</h2>
+    <div id="summary">Run the tests above to see results.</div>
+  </div>
+
+  <script>
+    async function runTest1() {
+      const resultDiv = document.getElementById('test1-result');
+      resultDiv.innerHTML = 'Setting test cookie...';
+
+      try {
+        const response = await fetch('/api/debug/test-set-cookie', {
+          credentials: 'include' // CRITICAL!
+        });
+        const data = await response.json();
+
+        resultDiv.className = 'result success';
+        resultDiv.innerHTML = `✅ ${data.message}\n\nCookie Name: ${data.cookieName}\nCookie Value: ${data.cookieValue}\n\nNext: Click "2. Verify Test Cookie"`;
+      } catch (error) {
+        resultDiv.className = 'result error';
+        resultDiv.innerHTML = `❌ Error: ${error.message}`;
+      }
+    }
+
+    async function runTest1Verify() {
+      const resultDiv = document.getElementById('test1-result');
+      resultDiv.innerHTML = 'Verifying test cookie...';
+
+      try {
+        const response = await fetch('/api/debug/test-read-cookie', {
+          credentials: 'include' // CRITICAL!
+        });
+        const data = await response.json();
+
+        if (data.testCookieFound) {
+          resultDiv.className = 'result success';
+          resultDiv.innerHTML = `${data.diagnosis}\n\nCookie Value: ${data.testCookieValue}\n\n✅ BASIC COOKIES WORK!\nThe cookie mechanism is functioning correctly.`;
+        } else {
+          resultDiv.className = 'result error';
+          resultDiv.innerHTML = `${data.diagnosis}\n\n❌ PROBLEM FOUND:\nBrowser is NOT storing/sending cookies!\n\nAll cookies received: ${JSON.stringify(data.allCookies, null, 2)}`;
+        }
+
+        updateSummary('test1', data.testCookieFound);
+      } catch (error) {
+        resultDiv.className = 'result error';
+        resultDiv.innerHTML = `❌ Error: ${error.message}`;
+      }
+    }
+
+    async function runTest2() {
+      const resultDiv = document.getElementById('test2-result');
+      resultDiv.innerHTML = 'Setting auth cookies...';
+
+      try {
+        const response = await fetch('/api/debug/test-auth-cookies', {
+          method: 'POST',
+          credentials: 'include' // CRITICAL!
+        });
+        const data = await response.json();
+
+        resultDiv.className = 'result success';
+        resultDiv.innerHTML = `✅ ${data.message}\n\nCookies Set: ${data.cookiesSet.join(', ')}\n\nNext: Click "2. Verify Auth Cookies"`;
+      } catch (error) {
+        resultDiv.className = 'result error';
+        resultDiv.innerHTML = `❌ Error: ${error.message}`;
+      }
+    }
+
+    async function runTest2Verify() {
+      const resultDiv = document.getElementById('test2-result');
+      resultDiv.innerHTML = 'Verifying auth cookies...';
+
+      try {
+        const response = await fetch('/api/debug/test-verify-auth-cookies', {
+          credentials: 'include' // CRITICAL!
+        });
+        const data = await response.json();
+
+        const bothWork = data.cookiesPresent.access_token && data.cookiesPresent.refresh_token;
+
+        if (bothWork) {
+          resultDiv.className = 'result success';
+          resultDiv.innerHTML = `${data.diagnosis}\n\naccess_token: ${data.cookiesPresent.access_token ? '✅' : '❌'}\nrefresh_token: ${data.cookiesPresent.refresh_token ? '✅' : '❌'}\n\n✅ AUTH COOKIES WORK!\nThe real login should work too.`;
+        } else {
+          resultDiv.className = 'result error';
+          resultDiv.innerHTML = `${data.diagnosis}\n\naccess_token: ${data.cookiesPresent.access_token ? '✅' : '❌'}\nrefresh_token: ${data.cookiesPresent.refresh_token ? '✅' : '❌'}\n\nPossible causes:\n${data.possibleCauses.map(c => '• ' + c).join('\n')}`;
+        }
+
+        updateSummary('test2', bothWork);
+      } catch (error) {
+        resultDiv.className = 'result error';
+        resultDiv.innerHTML = `❌ Error: ${error.message}`;
+      }
+    }
+
+    let testResults = { test1: null, test2: null };
+
+    function updateSummary(testName, passed) {
+      testResults[testName] = passed;
+
+      const summaryDiv = document.getElementById('summary');
+
+      let html = '<strong>Test Results:</strong>\n\n';
+
+      if (testResults.test1 !== null) {
+        html += `Test 1 (Simple Cookie): ${testResults.test1 ? '✅ PASS' : '❌ FAIL'}\n`;
+      }
+
+      if (testResults.test2 !== null) {
+        html += `Test 2 (Auth Cookies): ${testResults.test2 ? '✅ PASS' : '❌ FAIL'}\n`;
+      }
+
+      html += '\n';
+
+      if (testResults.test1 === true && testResults.test2 === true) {
+        html += '✅ <strong style="color: green;">ALL TESTS PASS!</strong>\n\n';
+        html += 'Cookie mechanism is working correctly.\n';
+        html += 'The problem must be elsewhere (CORS, server config, etc.)';
+        summaryDiv.className = 'result success';
+      } else if (testResults.test1 === false || testResults.test2 === false) {
+        html += '❌ <strong style="color: red;">TESTS FAILED!</strong>\n\n';
+        html += 'Browser is NOT storing or sending cookies.\n\n';
+        html += 'Possible issues:\n';
+        html += '• Browser blocking third-party cookies\n';
+        html += '• Incognito/Private mode blocking cookies\n';
+        html += '• Browser extension blocking cookies\n';
+        html += '• CORS not configured for credentials';
+        summaryDiv.className = 'result error';
+      } else {
+        summaryDiv.className = 'result';
+      }
+
+      summaryDiv.innerHTML = html;
+    }
+  </script>
+</body>
+</html>
