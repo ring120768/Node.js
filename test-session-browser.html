@@ -1,0 +1,39 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <title>Session Test</title>
+</head>
+<body>
+  <h1>Session Test Results</h1>
+  <div id="output"></div>
+  <script>
+    async function test() {
+      const output = document.getElementById('output');
+      output.innerHTML = 'Testing session...<br>';
+
+      try {
+        const response = await fetch('/api/auth/session', {
+          credentials: 'include'
+        });
+        const data = await response.json();
+
+        output.innerHTML += '<br><strong>Result:</strong><br>';
+        output.innerHTML += 'Status: ' + response.status + '<br>';
+        output.innerHTML += 'Authenticated: ' + data.authenticated + '<br>';
+
+        if (data.authenticated) {
+          output.innerHTML += '<br><strong style="color:green">✅ SESSION WORKING!</strong><br>';
+          output.innerHTML += 'Email: ' + data.user.email + '<br>';
+        } else {
+          output.innerHTML += '<br><strong style="color:red">❌ NOT LOGGED IN</strong><br>';
+          output.innerHTML += 'You need to login first.<br>';
+        }
+      } catch (error) {
+        output.innerHTML += '<br><strong style="color:red">ERROR: ' + error.message + '</strong>';
+      }
+    }
+
+    test();
+  </script>
+</body>
+</html>

@@ -295,10 +295,42 @@
         const data = await response.json();
 
         if (data.success) {
+          console.log('========================================');
+          console.log('✅ LOGIN SUCCESSFUL');
+          console.log('========================================');
+          console.log('Response data:', data);
+          console.log('Cookies after login:', document.cookie);
+          console.log('');
+
+          // TEST: Immediately check if session is valid
+          console.log('🔍 Testing session immediately after login...');
+          try {
+            const sessionTest = await fetch('/api/auth/session', {
+              credentials: 'include'
+            });
+            const sessionData = await sessionTest.json();
+            console.log('Session test result:', sessionData);
+
+            if (sessionData.authenticated) {
+              console.log('✅ Session is VALID - cookies are working!');
+            } else {
+              console.log('❌ Session is INVALID - cookies NOT working!');
+              console.log('⚠️  THIS IS THE PROBLEM!');
+            }
+          } catch (sessionError) {
+            console.log('❌ Session test failed:', sessionError);
+          }
+          console.log('');
+
           // Redirect to target page (from URL param) or default to index.html
           const redirectUrl = getRedirectUrl();
-          console.log('Login successful, redirecting to:', redirectUrl);
-          window.location.href = redirectUrl;
+          console.log('Redirecting to:', redirectUrl);
+          console.log('========================================');
+
+          // Delay redirect slightly to see console output
+          setTimeout(() => {
+            window.location.href = redirectUrl;
+          }, 1000);
         } else {
           errorElement.textContent = data.error || 'Login failed';
           errorElement.style.display = 'block';
