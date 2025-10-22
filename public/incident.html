@@ -518,13 +518,13 @@
                 // User data is already in window.currentUser from auth check
                 if (window.currentUser) {
                     userData = window.currentUser;
-                    console.log('User data loaded:', userData.uid || userData.email);
+                    console.log('User data loaded:', userData.id || userData.email);
 
                     // Fetch emergency contacts
-                    if (userData.uid) {
+                    if (userData.id) {
                         try {
-                            console.log('Fetching emergency contacts for user:', userData.uid);
-                            const contactsResponse = await fetch(`/api/emergency/contacts/${userData.uid}`, {
+                            console.log('Fetching emergency contacts for user:', userData.id);
+                            const contactsResponse = await fetch(`/api/emergency/contacts/${userData.id}`, {
                                 credentials: 'include'
                             });
                             console.log('API Response status:', contactsResponse.status, contactsResponse.statusText);
@@ -539,13 +539,13 @@
                             } else {
                                 const errorText = await contactsResponse.text();
                                 console.error('❌ API Error Response:', contactsResponse.status, errorText);
-                                console.error('API URL was:', `/api/emergency/contacts/${userData.uid}`);
+                                console.error('API URL was:', `/api/emergency/contacts/${userData.id}`);
                                 // Set up fallback handlers even if API fails
                                 updateEmergencyButtons();
                             }
                         } catch (error) {
                             console.error('❌ Failed to fetch emergency contacts:', error);
-                            console.error('User ID:', userData.uid);
+                            console.error('User ID:', userData.id);
                             // Set up fallback handlers even if fetch fails
                             updateEmergencyButtons();
                         }
