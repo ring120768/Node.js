@@ -1,0 +1,395 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Cookie Diagnostic Tool</title>
+  <style>
+    body {
+      font-family: 'Courier New', monospace;
+      max-width: 1000px;
+      margin: 40px auto;
+      padding: 20px;
+      background: #1e1e1e;
+      color: #d4d4d4;
+    }
+    h1 {
+      color: #4ec9b0;
+      border-bottom: 2px solid #4ec9b0;
+      padding-bottom: 10px;
+    }
+    .section {
+      margin: 20px 0;
+      padding: 15px;
+      background: #252526;
+      border-left: 3px solid #007acc;
+      border-radius: 4px;
+    }
+    .section h3 {
+      margin-top: 0;
+      color: #569cd6;
+    }
+    button {
+      background: #007acc;
+      color: white;
+      border: none;
+      padding: 10px 20px;
+      margin: 5px;
+      border-radius: 4px;
+      cursor: pointer;
+      font-size: 14px;
+    }
+    button:hover {
+      background: #005a9e;
+    }
+    .output {
+      background: #1e1e1e;
+      padding: 15px;
+      margin: 10px 0;
+      border-radius: 4px;
+      border: 1px solid #3e3e42;
+      white-space: pre-wrap;
+      font-size: 12px;
+    }
+    .success {
+      color: #4ec9b0;
+    }
+    .error {
+      color: #f48771;
+    }
+    .warning {
+      color: #dcdcaa;
+    }
+    .info {
+      color: #569cd6;
+    }
+    .step {
+      margin: 10px 0;
+      padding: 10px;
+      background: #2d2d30;
+      border-radius: 4px;
+    }
+    input {
+      background: #3c3c3c;
+      color: #d4d4d4;
+      border: 1px solid #3e3e42;
+      padding: 8px;
+      border-radius: 4px;
+      width: 250px;
+      font-size: 14px;
+    }
+  </style>
+</head>
+<body>
+  <h1>🍪 Session Cookie Diagnostic Tool</h1>
+
+  <div class="section">
+    <h3>Step 1: Login Test</h3>
+    <div class="step">
+      <p>Enter test credentials to test the login flow:</p>
+      <input type="email" id="email" placeholder="Email" value="test@example.com">
+      <input type="password" id="password" placeholder="Password" value="">
+      <br><br>
+      <label>
+        <input type="checkbox" id="rememberMe" checked> Keep me logged in
+      </label>
+      <br><br>
+      <button onclick="testLogin()">🔐 Test Login</button>
+      <button onclick="clearResults()">🗑️ Clear</button>
+    </div>
+    <div id="loginOutput" class="output" style="display: none;"></div>
+  </div>
+
+  <div class="section">
+    <h3>Step 2: Cookie Inspection</h3>
+    <div class="step">
+      <button onclick="inspectCookies()">🔍 Inspect Cookies</button>
+      <p class="warning">⚠️ Note: httpOnly cookies won't appear in document.cookie but will be sent with requests</p>
+    </div>
+    <div id="cookieOutput" class="output" style="display: none;"></div>
+  </div>
+
+  <div class="section">
+    <h3>Step 3: Session Validation</h3>
+    <div class="step">
+      <button onclick="testSession()">✅ Test Session Endpoint</button>
+      <button onclick="testProtectedEndpoint()">🔒 Test Protected Endpoint</button>
+    </div>
+    <div id="sessionOutput" class="output" style="display: none;"></div>
+  </div>
+
+  <div class="section">
+    <h3>Step 4: Network Analysis</h3>
+    <div class="step">
+      <button onclick="analyzeNetwork()">📊 Analyze Network Headers</button>
+      <p class="info">This will make a request and show you the headers</p>
+    </div>
+    <div id="networkOutput" class="output" style="display: none;"></div>
+  </div>
+
+  <div class="section">
+    <h3>Diagnostic Summary</h3>
+    <div id="summary" class="output" style="display: none;"></div>
+  </div>
+
+  <script>
+    let testResults = {
+      login: null,
+      cookies: null,
+      session: null,
+      network: null
+    };
+
+    function log(elementId, message, type = 'info') {
+      const output = document.getElementById(elementId);
+      output.style.display = 'block';
+
+      const timestamp = new Date().toLocaleTimeString();
+      const icon = type === 'success' ? '✅' : type === 'error' ? '❌' : type === 'warning' ? '⚠️' : 'ℹ️';
+
+      output.innerHTML += `<span class="${type}">[${timestamp}] ${icon} ${message}</span>\n`;
+      output.scrollTop = output.scrollHeight;
+    }
+
+    function clearLog(elementId) {
+      const output = document.getElementById(elementId);
+      output.innerHTML = '';
+      output.style.display = 'none';
+    }
+
+    function clearResults() {
+      ['loginOutput', 'cookieOutput', 'sessionOutput', 'networkOutput', 'summary'].forEach(clearLog);
+      testResults = { login: null, cookies: null, session: null, network: null };
+    }
+
+    async function testLogin() {
+      clearLog('loginOutput');
+      log('loginOutput', 'Starting login test...', 'info');
+
+      const email = document.getElementById('email').value;
+      const password = document.getElementById('password').value;
+      const rememberMe = document.getElementById('rememberMe').checked;
+
+      if (!email || !password) {
+        log('loginOutput', 'Please enter email and password', 'error');
+        return;
+      }
+
+      try {
+        log('loginOutput', `Sending login request for: ${email}`, 'info');
+        log('loginOutput', `Remember Me: ${rememberMe}`, 'info');
+
+        const response = await fetch('/api/auth/login', {
+          method: 'POST',
+          credentials: 'include', // CRITICAL
+          headers: {
+            'Content-Type': 'application/json'
+          },
+          body: JSON.stringify({
+            email,
+            password,
+            rememberMe,
+            gdprConsent: true,
+            consentTimestamp: new Date().toISOString()
+          })
+        });
+
+        log('loginOutput', `Response Status: ${response.status} ${response.statusText}`,
+          response.ok ? 'success' : 'error');
+
+        // Check Set-Cookie header (won't be visible due to httpOnly, but checking anyway)
+        const setCookie = response.headers.get('set-cookie');
+        if (setCookie) {
+          log('loginOutput', `Set-Cookie header: ${setCookie}`, 'info');
+        } else {
+          log('loginOutput', 'No Set-Cookie header visible (normal for httpOnly cookies)', 'warning');
+        }
+
+        const data = await response.json();
+        log('loginOutput', `Response: ${JSON.stringify(data, null, 2)}`,
+          data.success ? 'success' : 'error');
+
+        testResults.login = { success: response.ok, data };
+
+        if (response.ok) {
+          log('loginOutput', '✅ Login successful! Cookies should be set now.', 'success');
+          log('loginOutput', 'Now run "Inspect Cookies" to verify cookies are stored', 'info');
+        } else {
+          log('loginOutput', `❌ Login failed: ${data.error || 'Unknown error'}`, 'error');
+        }
+
+      } catch (error) {
+        log('loginOutput', `❌ Login error: ${error.message}`, 'error');
+        testResults.login = { success: false, error: error.message };
+      }
+    }
+
+    function inspectCookies() {
+      clearLog('cookieOutput');
+      log('cookieOutput', 'Inspecting cookies...', 'info');
+
+      // Check document.cookie (won't show httpOnly cookies)
+      const visibleCookies = document.cookie;
+      if (visibleCookies) {
+        log('cookieOutput', `Visible cookies: ${visibleCookies}`, 'info');
+      } else {
+        log('cookieOutput', 'No visible cookies in document.cookie', 'warning');
+      }
+
+      log('cookieOutput', '', 'info');
+      log('cookieOutput', '⚠️  IMPORTANT: httpOnly cookies (access_token, refresh_token)', 'warning');
+      log('cookieOutput', '   will NOT appear in document.cookie for security reasons.', 'warning');
+      log('cookieOutput', '   They will still be sent with requests automatically.', 'warning');
+      log('cookieOutput', '', 'info');
+      log('cookieOutput', '✅ To verify httpOnly cookies, check Network tab:', 'info');
+      log('cookieOutput', '   1. Open DevTools (F12)', 'info');
+      log('cookieOutput', '   2. Go to Network tab', 'info');
+      log('cookieOutput', '   3. Look at request headers for "Cookie:"', 'info');
+
+      testResults.cookies = { visible: visibleCookies || 'none' };
+    }
+
+    async function testSession() {
+      clearLog('sessionOutput');
+      log('sessionOutput', 'Testing session endpoint...', 'info');
+
+      try {
+        const response = await fetch('/api/auth/session', {
+          credentials: 'include' // CRITICAL
+        });
+
+        log('sessionOutput', `Response Status: ${response.status} ${response.statusText}`,
+          response.ok ? 'success' : 'error');
+
+        const data = await response.json();
+        log('sessionOutput', `Response: ${JSON.stringify(data, null, 2)}`,
+          data.authenticated ? 'success' : 'error');
+
+        testResults.session = { success: response.ok, data };
+
+        if (data.authenticated) {
+          log('sessionOutput', '✅ Session is valid! Cookies are working!', 'success');
+        } else {
+          log('sessionOutput', '❌ Session not authenticated. Cookies may not be sent.', 'error');
+        }
+
+      } catch (error) {
+        log('sessionOutput', `❌ Session check error: ${error.message}`, 'error');
+        testResults.session = { success: false, error: error.message };
+      }
+    }
+
+    async function testProtectedEndpoint() {
+      clearLog('sessionOutput');
+      log('sessionOutput', 'Testing protected endpoint (/api/user/profile)...', 'info');
+
+      try {
+        const response = await fetch('/api/user/profile', {
+          credentials: 'include' // CRITICAL
+        });
+
+        log('sessionOutput', `Response Status: ${response.status} ${response.statusText}`,
+          response.ok ? 'success' : 'error');
+
+        if (response.ok) {
+          const data = await response.json();
+          log('sessionOutput', `Response: ${JSON.stringify(data, null, 2)}`, 'success');
+          log('sessionOutput', '✅ Protected endpoint accessible! Auth is working!', 'success');
+        } else {
+          const data = await response.json();
+          log('sessionOutput', `Error: ${JSON.stringify(data, null, 2)}`, 'error');
+          log('sessionOutput', '❌ Protected endpoint rejected. Cookies not sent or invalid.', 'error');
+        }
+
+      } catch (error) {
+        log('sessionOutput', `❌ Protected endpoint error: ${error.message}`, 'error');
+      }
+    }
+
+    async function analyzeNetwork() {
+      clearLog('networkOutput');
+      log('networkOutput', 'Analyzing network request headers...', 'info');
+
+      try {
+        log('networkOutput', 'Making request to /api/auth/session...', 'info');
+
+        const response = await fetch('/api/auth/session', {
+          credentials: 'include'
+        });
+
+        log('networkOutput', '', 'info');
+        log('networkOutput', '📊 Response Headers:', 'info');
+        for (const [key, value] of response.headers.entries()) {
+          log('networkOutput', `   ${key}: ${value}`, 'info');
+        }
+
+        log('networkOutput', '', 'info');
+        log('networkOutput', '⚠️  Note: Request headers (including Cookie:) are not', 'warning');
+        log('networkOutput', '   accessible via JavaScript for security reasons.', 'warning');
+        log('networkOutput', '   Check Network tab in DevTools to see Cookie header.', 'warning');
+
+        testResults.network = { analyzed: true };
+
+        // Generate summary
+        updateSummary();
+
+      } catch (error) {
+        log('networkOutput', `❌ Network analysis error: ${error.message}`, 'error');
+      }
+    }
+
+    function updateSummary() {
+      const summary = document.getElementById('summary');
+      summary.style.display = 'block';
+      summary.innerHTML = '<h4>🔍 Diagnostic Summary:</h4>\n\n';
+
+      let output = '';
+
+      // Login test
+      if (testResults.login) {
+        output += '<strong>Login Test:</strong>\n';
+        if (testResults.login.success) {
+          output += '<span class="success">  ✅ Login successful</span>\n';
+        } else {
+          output += '<span class="error">  ❌ Login failed</span>\n';
+          output += `<span class="error">     Error: ${testResults.login.error || testResults.login.data?.error}</span>\n`;
+        }
+        output += '\n';
+      }
+
+      // Session test
+      if (testResults.session) {
+        output += '<strong>Session Test:</strong>\n';
+        if (testResults.session.success && testResults.session.data?.authenticated) {
+          output += '<span class="success">  ✅ Session is valid - cookies are working!</span>\n';
+        } else {
+          output += '<span class="error">  ❌ Session is NOT valid</span>\n';
+          output += '<span class="error">     Problem: Cookies are not being sent or are invalid</span>\n';
+        }
+        output += '\n';
+      }
+
+      // Overall diagnosis
+      output += '<strong>Diagnosis:</strong>\n';
+
+      if (testResults.login?.success && testResults.session?.data?.authenticated) {
+        output += '<span class="success">  ✅ Everything is working correctly!</span>\n';
+        output += '<span class="success">     Cookies are being set and sent properly.</span>\n';
+      } else if (testResults.login?.success && !testResults.session?.data?.authenticated) {
+        output += '<span class="error">  ❌ PROBLEM IDENTIFIED:</span>\n';
+        output += '<span class="error">     Login succeeds but session check fails.</span>\n';
+        output += '<span class="error">     This means cookies are NOT being stored by the browser.</span>\n';
+        output += '\n<strong>Possible causes:</strong>\n';
+        output += '<span class="warning">  1. Server not sending Set-Cookie headers</span>\n';
+        output += '<span class="warning">  2. CORS blocking cookies (credentials: true not set)</span>\n';
+        output += '<span class="warning">  3. Browser blocking third-party cookies</span>\n';
+        output += '<span class="warning">  4. httpOnly or secure flags incorrectly set</span>\n';
+      } else if (!testResults.login?.success) {
+        output += '<span class="error">  ❌ Login failed - fix login first</span>\n';
+      }
+
+      summary.innerHTML += output;
+    }
+  </script>
+</body>
+</html>
