@@ -1,0 +1,313 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <title>Replit Cookie Debug</title>
+  <style>
+    body {
+      font-family: monospace;
+      padding: 20px;
+      background: #1e1e1e;
+      color: #fff;
+      max-width: 1000px;
+      margin: 0 auto;
+    }
+    .section {
+      background: #2d2d2d;
+      padding: 20px;
+      margin: 20px 0;
+      border-radius: 8px;
+      border-left: 4px solid #007acc;
+    }
+    button {
+      background: #007acc;
+      color: white;
+      border: none;
+      padding: 12px 24px;
+      margin: 5px;
+      border-radius: 4px;
+      cursor: pointer;
+      font-size: 14px;
+    }
+    button:hover { background: #005a9e; }
+    .result {
+      background: #1e1e1e;
+      padding: 15px;
+      margin: 10px 0;
+      border-radius: 4px;
+      font-size: 12px;
+      white-space: pre-wrap;
+    }
+    .success { color: #4ec9b0; }
+    .error { color: #f48771; }
+    .warning { color: #dcdcaa; }
+    h1 { color: #4ec9b0; }
+    h3 { color: #569cd6; }
+  </style>
+</head>
+<body>
+  <h1>🔍 Replit Cookie Diagnostic</h1>
+
+  <div class="section">
+    <h3>Environment Info</h3>
+    <div id="env-info" class="result">Loading...</div>
+  </div>
+
+  <div class="section">
+    <h3>Test 1: Login with Cookie Check</h3>
+    <input type="email" id="email" placeholder="Email" style="padding: 8px; width: 250px;">
+    <input type="password" id="password" placeholder="Password" style="padding: 8px; width: 250px;">
+    <br><br>
+    <button onclick="testLogin()">Login & Check Cookies</button>
+    <div id="login-result" class="result" style="display: none;"></div>
+  </div>
+
+  <div class="section">
+    <h3>Test 2: Check Current Session</h3>
+    <button onclick="checkSession()">Check Session Now</button>
+    <div id="session-result" class="result" style="display: none;"></div>
+  </div>
+
+  <div class="section">
+    <h3>Test 3: Network Headers Analysis</h3>
+    <button onclick="analyzeHeaders()">Analyze Response Headers</button>
+    <div id="headers-result" class="result" style="display: none;"></div>
+  </div>
+
+  <div class="section">
+    <h3>Summary & Diagnosis</h3>
+    <div id="summary" class="result">Run tests above to see diagnosis</div>
+  </div>
+
+  <script>
+    // Display environment info
+    function showEnvInfo() {
+      const info = document.getElementById('env-info');
+      info.innerHTML = `
+Protocol: ${window.location.protocol}
+Host: ${window.location.host}
+Origin: ${window.location.origin}
+User Agent: ${navigator.userAgent}
+
+Is HTTPS: ${window.location.protocol === 'https:' ? '✅ YES' : '❌ NO (PROBLEM!)'}
+Is Replit: ${window.location.host.includes('replit') ? '✅ YES' : '❌ NO'}
+
+Document Cookies (visible): ${document.cookie || '(none - httpOnly cookies are hidden)'}
+      `;
+    }
+    showEnvInfo();
+
+    async function testLogin() {
+      const resultDiv = document.getElementById('login-result');
+      resultDiv.style.display = 'block';
+      resultDiv.innerHTML = '<span class="warning">Testing login...</span>';
+
+      const email = document.getElementById('email').value;
+      const password = document.getElementById('password').value;
+
+      if (!email || !password) {
+        resultDiv.innerHTML = '<span class="error">❌ Please enter email and password</span>';
+        return;
+      }
+
+      try {
+        console.log('🔐 Attempting login...');
+        console.log('Credentials: include =', 'include');
+
+        const response = await fetch('/api/auth/login', {
+          method: 'POST',
+          credentials: 'include', // CRITICAL
+          headers: {
+            'Content-Type': 'application/json'
+          },
+          body: JSON.stringify({
+            email,
+            password,
+            rememberMe: true,
+            gdprConsent: true,
+            consentTimestamp: new Date().toISOString()
+          })
+        });
+
+        console.log('Response status:', response.status);
+        console.log('Response headers:', [...response.headers.entries()]);
+
+        const data = await response.json();
+        console.log('Response data:', data);
+
+        let output = `Response Status: ${response.status}\n\n`;
+
+        // Check Set-Cookie header (browser won't show it due to security)
+        output += 'Set-Cookie headers:\n';
+        output += '  (Hidden by browser for security - this is normal)\n\n';
+
+        output += 'Response Data:\n';
+        output += JSON.stringify(data, null, 2) + '\n\n';
+
+        if (data.success) {
+          output += '<span class="success">✅ Login successful!</span>\n\n';
+
+          // Immediately check if session is valid
+          output += 'Testing session immediately...\n';
+
+          const sessionCheck = await fetch('/api/auth/session', {
+            credentials: 'include'
+          });
+          const sessionData = await sessionCheck.json();
+
+          output += 'Session check result:\n';
+          output += JSON.stringify(sessionData, null, 2) + '\n\n';
+
+          if (sessionData.authenticated) {
+            output += '<span class="success">✅ SESSION VALID - Cookies are working!</span>';
+            resultDiv.className = 'result success';
+          } else {
+            output += '<span class="error">❌ SESSION INVALID - Cookies NOT working!</span>\n';
+            output += '<span class="error">This is the problem!</span>';
+            resultDiv.className = 'result error';
+          }
+        } else {
+          output += '<span class="error">❌ Login failed: ' + data.error + '</span>';
+          resultDiv.className = 'result error';
+        }
+
+        resultDiv.innerHTML = output;
+        updateSummary();
+
+      } catch (error) {
+        resultDiv.className = 'result error';
+        resultDiv.innerHTML = `<span class="error">❌ Error: ${error.message}</span>\n\nStack: ${error.stack}`;
+      }
+    }
+
+    async function checkSession() {
+      const resultDiv = document.getElementById('session-result');
+      resultDiv.style.display = 'block';
+      resultDiv.innerHTML = '<span class="warning">Checking session...</span>';
+
+      try {
+        console.log('🔍 Checking session...');
+
+        const response = await fetch('/api/auth/session', {
+          credentials: 'include'
+        });
+
+        console.log('Session response status:', response.status);
+        console.log('Session response headers:', [...response.headers.entries()]);
+
+        const data = await response.json();
+        console.log('Session data:', data);
+
+        let output = `Response Status: ${response.status}\n\n`;
+        output += 'Session Data:\n';
+        output += JSON.stringify(data, null, 2) + '\n\n';
+
+        if (data.authenticated) {
+          output += '<span class="success">✅ Session is VALID</span>\n';
+          output += `User: ${data.user?.email}\n`;
+          output += `User ID: ${data.user?.id}\n`;
+          resultDiv.className = 'result success';
+        } else {
+          output += '<span class="error">❌ Session is INVALID</span>\n';
+          output += 'Reason: ' + (data.error || 'Not authenticated') + '\n';
+          resultDiv.className = 'result error';
+        }
+
+        resultDiv.innerHTML = output;
+        updateSummary();
+
+      } catch (error) {
+        resultDiv.className = 'result error';
+        resultDiv.innerHTML = `<span class="error">❌ Error: ${error.message}</span>`;
+      }
+    }
+
+    async function analyzeHeaders() {
+      const resultDiv = document.getElementById('headers-result');
+      resultDiv.style.display = 'block';
+      resultDiv.innerHTML = '<span class="warning">Analyzing headers...</span>';
+
+      try {
+        // Make a test request to debug endpoint
+        const response = await fetch('/api/debug/test-set-cookie', {
+          credentials: 'include'
+        });
+
+        const data = await response.json();
+
+        let output = 'Test Cookie Set Response:\n';
+        output += JSON.stringify(data, null, 2) + '\n\n';
+
+        output += 'Response Headers:\n';
+        for (const [key, value] of response.headers.entries()) {
+          output += `  ${key}: ${value}\n`;
+        }
+
+        output += '\n\nNow checking if cookie was stored...\n\n';
+
+        // Try to read it back
+        const checkResponse = await fetch('/api/debug/test-read-cookie', {
+          credentials: 'include'
+        });
+        const checkData = await checkResponse.json();
+
+        output += 'Cookie Read Response:\n';
+        output += JSON.stringify(checkData, null, 2) + '\n\n';
+
+        if (checkData.testCookieFound) {
+          output += '<span class="success">✅ Cookies are working!</span>';
+          resultDiv.className = 'result success';
+        } else {
+          output += '<span class="error">❌ Cookies NOT working!</span>\n';
+          output += '<span class="error">Browser is not storing/sending cookies</span>';
+          resultDiv.className = 'result error';
+        }
+
+        resultDiv.innerHTML = output;
+        updateSummary();
+
+      } catch (error) {
+        resultDiv.className = 'result error';
+        resultDiv.innerHTML = `<span class="error">❌ Error: ${error.message}</span>`;
+      }
+    }
+
+    function updateSummary() {
+      const summary = document.getElementById('summary');
+
+      let diagnosis = '<strong>Diagnostic Summary:</strong>\n\n';
+
+      // Check if HTTPS
+      if (window.location.protocol !== 'https:') {
+        diagnosis += '<span class="error">❌ NOT USING HTTPS!</span>\n';
+        diagnosis += 'sameSite=none requires HTTPS\n';
+        diagnosis += 'Replit should provide HTTPS automatically\n\n';
+      } else {
+        diagnosis += '<span class="success">✅ Using HTTPS</span>\n\n';
+      }
+
+      // Check if on Replit
+      if (window.location.host.includes('replit')) {
+        diagnosis += '<span class="success">✅ On Replit domain</span>\n\n';
+      } else {
+        diagnosis += '<span class="warning">⚠️ Not on Replit domain</span>\n';
+        diagnosis += 'Host: ' + window.location.host + '\n\n';
+      }
+
+      diagnosis += 'Common Issues:\n';
+      diagnosis += '1. Browser blocking third-party cookies\n';
+      diagnosis += '2. Incognito/Private mode\n';
+      diagnosis += '3. Browser extensions blocking cookies\n';
+      diagnosis += '4. CORS not configured correctly\n';
+      diagnosis += '5. Server not sending Set-Cookie headers\n\n';
+
+      diagnosis += 'Next Steps:\n';
+      diagnosis += '• Check browser console for CORS errors\n';
+      diagnosis += '• Check Network tab for Set-Cookie headers\n';
+      diagnosis += '• Try in different browser\n';
+      diagnosis += '• Check browser cookie settings\n';
+
+      summary.innerHTML = diagnosis;
+    }
+  </script>
+</body>
+</html>
