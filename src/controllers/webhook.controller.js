@@ -540,34 +540,53 @@ async function processUserSignup(formResponse, requestId, imageProcessor = null)
     const userData = {
       create_user_id: authUserId || token,
       email: userEmail,
+
+      // ✅ HIDDEN FIELDS (from URL parameters sent by signup-auth.html)
+      form_id: formResponse.form_id,          // Form ID (critical for tracking which form)
+      product_id: productId,                   // Product identifier
+      auth_code: authCode,                     // Server-minted nonce for security
+
+      // User Information
       name: getAnswerByTitle(answers, titleMap, 'name'),
       surname: getAnswerByTitle(answers, titleMap, 'surname'),
       mobile: getAnswerByTitle(answers, titleMap, 'mobile'),
+
+      // Address
       street_address: getAnswerByTitle(answers, titleMap, 'street_address'),
       town: getAnswerByTitle(answers, titleMap, 'town'),
       street_address_optional: getAnswerByTitle(answers, titleMap, 'street_address_optional'),
       postcode: getAnswerByTitle(answers, titleMap, 'postcode'),
       country: getAnswerByTitle(answers, titleMap, 'country'),
+
+      // Driving & Vehicle
       driving_license_number: getAnswerByTitle(answers, titleMap, 'driving_license_number'),
       car_registration_number: getAnswerByTitle(answers, titleMap, 'car_registration_number'),
       vehicle_make: getAnswerByTitle(answers, titleMap, 'vehicle_make'),
       vehicle_model: getAnswerByTitle(answers, titleMap, 'vehicle_model'),
       vehicle_colour: getAnswerByTitle(answers, titleMap, 'vehicle_colour'),
       vehicle_condition: getAnswerByTitle(answers, titleMap, 'vehicle_condition'),
+
+      // Recovery & Emergency
       recovery_company: getAnswerByTitle(answers, titleMap, 'recovery_company'),
       recovery_breakdown_number: getAnswerByTitle(answers, titleMap, 'recovery_breakdown_number'),
       recovery_breakdown_email: getAnswerByTitle(answers, titleMap, 'recovery_breakdown_email'),
       emergency_contact: emergencyContactString,
+
+      // Insurance
       insurance_company: getAnswerByTitle(answers, titleMap, 'insurance_company'),
       policy_number: getAnswerByTitle(answers, titleMap, 'policy_number'),
       policy_holder: getAnswerByTitle(answers, titleMap, 'policy_holder'),
       cover_type: getAnswerByTitle(answers, titleMap, 'cover_type'),
+
+      // Legal & Images
       gdpr_consent: getAnswerByTitle(answers, titleMap, 'do_you_agree_to_share_this_data_for_legal_support'),
       driving_license_picture: getAnswerByTitle(answers, titleMap, 'please_upload_a_picture_of_your_driving_license'),
       vehicle_picture_front: getAnswerByTitle(answers, titleMap, 'front_image_of_your_vehicle'),
       vehicle_picture_driver_side: getAnswerByTitle(answers, titleMap, 'driver_side_image_of_your_vehicle'),
       vehicle_picture_passenger_side: getAnswerByTitle(answers, titleMap, 'passenger_side_image_of_your_vehicle'),
       vehicle_picture_back: getAnswerByTitle(answers, titleMap, 'back_image_of_your_vehicle'),
+
+      // Metadata
       time_stamp: submitted_at || new Date().toISOString()
     };
 
