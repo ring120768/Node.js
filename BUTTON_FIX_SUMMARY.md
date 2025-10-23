@@ -2,6 +2,28 @@
 
 ## Fixed Issues:
 
+### ✅ payment-success.html - All Action Buttons (FIXED - Oct 23, 2025)
+**Issue:** None of the buttons trigger actions after signup
+**Cause:** Inline onclick handlers blocked by Replit's CSP
+**Fix:** Removed onclick, added IDs, used addEventListener in DOMContentLoaded
+
+**Fixed Buttons (5 total):**
+- ✅ "Report Your First Incident" → `reportIncidentBtn`
+- ✅ "Go to Dashboard" → `gotoDashboardBtn`
+- ✅ "Call 999 - Emergency Services" → `call999Btn`
+- ✅ "Call Recovery Service" → `callRecoveryBtn`
+- ✅ "Call Emergency Contact" → `callEmergencyBtn`
+
+**Code Pattern:**
+```javascript
+// DOMContentLoaded section
+document.getElementById('reportIncidentBtn').addEventListener('click', function(e) {
+    e.preventDefault();
+    console.log('📝 Report Incident button clicked');
+    navigateToIncident();
+});
+```
+
 ### ✅ index.html - Emergency Modal (FIXED)
 **Issue:** "Call 999 Now" and "Cancel" buttons not working
 **Cause:** Inline onclick handlers on dynamically generated buttons
