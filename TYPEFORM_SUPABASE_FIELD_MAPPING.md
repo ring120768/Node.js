@@ -1,7 +1,8 @@
 # Typeform → Supabase Field Mapping Reference
 
-**Last Updated:** 2025-10-21
+**Last Updated:** 2025-10-23
 **Generated from:** `src/controllers/webhook.controller.js`
+**Recent Changes:** Added hidden fields documentation (form_id, product_id, auth_code)
 
 This document maps all Typeform form fields to their corresponding Supabase database columns for both the User Signup and Incident Report forms.
 
@@ -41,6 +42,39 @@ This document maps all Typeform form fields to their corresponding Supabase data
 **Form Title:** "Car Crash Lawyer AI sign up"
 **Supabase Table:** `user_signup`
 **Primary Key:** `create_user_id` (from hidden field `auth_user_id` or `token`)
+
+### Hidden Fields (Metadata)
+
+**⚠️ IMPORTANT:** These fields are NOT visible in the Typeform UI. They are passed as URL parameters when redirecting from `signup-auth.html` to Typeform.
+
+| Source | Field Name | Supabase Column | Type | Purpose | Added |
+|--------|-----------|-----------------|------|---------|-------|
+| URL param | `auth_user_id` | `create_user_id` | UUID | Primary key - Auth user ID | Always |
+| URL param | `email` | `email` | TEXT | User email (backup) | Always |
+| Typeform | `form_id` | `form_id` | TEXT | Typeform form ID (b03aFxEO) | **✅ 2025-10-23** |
+| URL param | `product_id` | `product_id` | TEXT | Product identifier ("car_crash_lawyer_ai") | **✅ 2025-10-23** |
+| URL param | `auth_code` | `auth_code` | TEXT | Server-minted nonce for security | **✅ 2025-10-23** |
+
+**How it works:**
+1. User signs up on `signup-auth.html`
+2. Server mints a secure nonce via `/api/auth/nonce`
+3. Frontend constructs Typeform URL with hidden fields:
+   ```javascript
+   ?auth_user_id={userId}&email={email}&product_id=car_crash_lawyer_ai&auth_code={nonce}
+   ```
+4. Typeform embeds these as `hidden` fields in webhook payload
+5. Webhook controller extracts and saves to database
+
+**Critical for:**
+- `form_id`: Distinguishing between User Signup vs Incident Report forms
+- `product_id`: Product-specific logic and filtering
+- `auth_code`: Validating webhook authenticity and preventing replay attacks
+
+**Code Reference:**
+- Frontend: `public/signup-auth.html` (lines 499-504)
+- Backend: `src/controllers/webhook.controller.js` (lines 487-490, 545-547)
+
+---
 
 ### Personal Information
 
