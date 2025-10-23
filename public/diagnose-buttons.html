@@ -1,0 +1,296 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Button Diagnostic</title>
+    <style>
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            max-width: 1000px;
+            margin: 20px auto;
+            padding: 20px;
+            background: #f5f5f5;
+        }
+        .section {
+            background: white;
+            padding: 20px;
+            margin-bottom: 20px;
+            border-radius: 8px;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+        }
+        h1 { color: #667eea; }
+        h2 { color: #333; margin-top: 0; }
+        .result {
+            padding: 15px;
+            margin: 10px 0;
+            border-radius: 4px;
+            font-family: 'Courier New', monospace;
+            white-space: pre-wrap;
+        }
+        .success { background: #d4edda; border-left: 4px solid #28a745; }
+        .error { background: #f8d7da; border-left: 4px solid #dc3545; }
+        .warning { background: #fff3cd; border-left: 4px solid #ffc107; }
+        .info { background: #d1ecf1; border-left: 4px solid #17a2b8; }
+        button {
+            background: #667eea;
+            color: white;
+            border: none;
+            padding: 12px 24px;
+            border-radius: 4px;
+            cursor: pointer;
+            font-size: 14px;
+            margin: 5px;
+        }
+        button:hover { background: #5568d3; }
+        .step { margin: 15px 0; }
+        .step-number {
+            display: inline-block;
+            background: #667eea;
+            color: white;
+            width: 30px;
+            height: 30px;
+            line-height: 30px;
+            text-align: center;
+            border-radius: 50%;
+            margin-right: 10px;
+            font-weight: bold;
+        }
+    </style>
+</head>
+<body>
+    <h1>🔍 Emergency Button Diagnostic</h1>
+    <p>This page will diagnose why emergency buttons aren't working on payment-success.html</p>
+
+    <div class="section">
+        <h2>Step 1: Check Browser Storage</h2>
+        <button onclick="checkStorage()">🔍 Check Storage</button>
+        <div id="storage-result"></div>
+    </div>
+
+    <div class="section">
+        <h2>Step 2: Test API Endpoint</h2>
+        <button onclick="testAPI()">🧪 Test API</button>
+        <div id="api-result"></div>
+    </div>
+
+    <div class="section">
+        <h2>Step 3: Simulate Button Click</h2>
+        <button onclick="testEmergencyButton()">👤 Test Emergency Contact Button</button>
+        <button onclick="testRecoveryButton()">🚗 Test Recovery Button</button>
+        <div id="button-result"></div>
+    </div>
+
+    <div class="section">
+        <h2>Step 4: Fix & Test</h2>
+        <div class="step">
+            <span class="step-number">1</span>
+            <button onclick="storeTestData()">💾 Store Test UserId</button>
+            <span>← Click this to simulate signup-auth.html</span>
+        </div>
+        <div class="step">
+            <span class="step-number">2</span>
+            <button onclick="window.location.href='/payment-success.html'">🔗 Go to Payment Success</button>
+            <span>← Then click this to test the real page</span>
+        </div>
+    </div>
+
+    <script>
+        const testUserId = 'eac531b7-3d03-4c75-9cf8-46ba065f4cb7';
+
+        // Copy of getUserIdFromStorage from payment-success.html
+        function getUserIdFromStorage() {
+            let userId = localStorage.getItem('create_user_id') ||
+                        sessionStorage.getItem('create_user_id') ||
+                        sessionStorage.getItem('userId');
+
+            if (userId && userId.includes('{{')) {
+                console.warn('⚠️ Found invalid Typeform placeholder, clearing:', userId);
+                localStorage.removeItem('create_user_id');
+                sessionStorage.removeItem('create_user_id');
+                sessionStorage.removeItem('userId');
+                userId = null;
+            }
+
+            if (!userId) {
+                try {
+                    const userData = localStorage.getItem('carCrashLawyerUser') ||
+                                   sessionStorage.getItem('carCrashLawyerUser');
+                    if (userData) {
+                        const parsed = JSON.parse(userData);
+                        userId = parsed.userId || parsed.id || parsed.create_user_id;
+                    }
+                } catch (e) {
+                    console.error('Error parsing carCrashLawyerUser:', e);
+                }
+            }
+
+            return userId;
+        }
+
+        function checkStorage() {
+            const result = document.getElementById('storage-result');
+            const userId = getUserIdFromStorage();
+
+            let html = '<div class="result info"><strong>Storage Check:</strong>\n\n';
+
+            // Check all storage locations
+            const checks = [
+                { key: 'create_user_id', storage: localStorage, name: 'localStorage.create_user_id' },
+                { key: 'userId', storage: sessionStorage, name: 'sessionStorage.userId' },
+                { key: 'carCrashLawyerUser', storage: localStorage, name: 'localStorage.carCrashLawyerUser' },
+                { key: 'carCrashLawyerUser', storage: sessionStorage, name: 'sessionStorage.carCrashLawyerUser' }
+            ];
+
+            checks.forEach(check => {
+                const value = check.storage.getItem(check.key);
+                if (value) {
+                    html += `✅ ${check.name}: ${value.substring(0, 50)}${value.length > 50 ? '...' : ''}\n`;
+                } else {
+                    html += `❌ ${check.name}: null\n`;
+                }
+            });
+
+            html += `\n<strong>getUserIdFromStorage() result:</strong>\n`;
+            if (userId) {
+                html += `✅ ${userId}\n`;
+                html += '</div><div class="result success">✅ UserId found in storage!</div>';
+            } else {
+                html += `❌ null\n`;
+                html += '</div><div class="result error">❌ No userId found! This is why buttons don\'t work.</div>';
+            }
+
+            result.innerHTML = html;
+        }
+
+        async function testAPI() {
+            const result = document.getElementById('api-result');
+            const userId = getUserIdFromStorage() || testUserId;
+
+            result.innerHTML = '<div class="result info">Testing API...</div>';
+
+            try {
+                const response = await fetch(`/api/emergency/contacts/${userId}`);
+
+                if (!response.ok) {
+                    result.innerHTML = `<div class="result error">❌ API Error: ${response.status} ${response.statusText}\n\nThe API is returning an error. This could be:\n- 403: CORS or auth issue\n- 404: User not found in database\n- 500: Server error</div>`;
+                    return;
+                }
+
+                const data = await response.json();
+
+                let html = '<div class="result success">✅ API responded successfully!\n\n';
+                html += JSON.stringify(data, null, 2);
+                html += '</div>';
+
+                if (!data.emergency_contact && !data.recovery_breakdown_number) {
+                    html += '<div class="result warning">⚠️ API works but no phone numbers in database!\n\nThe user needs to complete Typeform with phone numbers.</div>';
+                } else {
+                    html += '<div class="result success">✅ Phone numbers found! Buttons should work.</div>';
+                }
+
+                result.innerHTML = html;
+
+            } catch (error) {
+                result.innerHTML = `<div class="result error">❌ Fetch failed:\n${error.message}\n\nThis is likely a network or CORS issue.</div>`;
+            }
+        }
+
+        async function testEmergencyButton() {
+            const result = document.getElementById('button-result');
+            const userId = getUserIdFromStorage();
+
+            result.innerHTML = '<div class="result info">Simulating emergency contact button click...</div>';
+
+            if (!userId) {
+                result.innerHTML = '<div class="result error">❌ Cannot test button - no userId in storage!\n\nClick "Store Test UserId" first.</div>';
+                return;
+            }
+
+            try {
+                const response = await fetch(`/api/emergency/contacts/${userId}`);
+
+                if (!response.ok) {
+                    result.innerHTML = `<div class="result error">❌ API call failed with status ${response.status}\n\nThe button would show an error alert.</div>`;
+                    return;
+                }
+
+                const contacts = await response.json();
+
+                if (contacts.emergency_contact) {
+                    result.innerHTML = `<div class="result success">✅ Button would work!\n\nWould dial: tel:${contacts.emergency_contact}\n\nUser would see confirmation: "Call your emergency contact: ${contacts.emergency_contact}?"</div>`;
+
+                    if (confirm(`Test the actual call?\n\nDial: ${contacts.emergency_contact}`)) {
+                        window.location.href = `tel:${contacts.emergency_contact}`;
+                    }
+                } else {
+                    result.innerHTML = '<div class="result error">❌ Button would fail!\n\nUser would see alert: "Emergency contact number not found. Please update your profile."</div>';
+                }
+
+            } catch (error) {
+                result.innerHTML = `<div class="result error">❌ Button would fail with error:\n${error.message}</div>`;
+            }
+        }
+
+        async function testRecoveryButton() {
+            const result = document.getElementById('button-result');
+            const userId = getUserIdFromStorage();
+
+            result.innerHTML = '<div class="result info">Simulating recovery button click...</div>';
+
+            if (!userId) {
+                result.innerHTML = '<div class="result error">❌ Cannot test button - no userId in storage!\n\nClick "Store Test UserId" first.</div>';
+                return;
+            }
+
+            try {
+                const response = await fetch(`/api/emergency/contacts/${userId}`);
+
+                if (!response.ok) {
+                    result.innerHTML = `<div class="result error">❌ API call failed with status ${response.status}\n\nThe button would show an error alert.</div>`;
+                    return;
+                }
+
+                const contacts = await response.json();
+
+                if (contacts.recovery_breakdown_number) {
+                    result.innerHTML = `<div class="result success">✅ Button would work!\n\nWould dial: tel:${contacts.recovery_breakdown_number}\n\nUser would see confirmation: "Call recovery service: ${contacts.recovery_breakdown_number}?"</div>`;
+
+                    if (confirm(`Test the actual call?\n\nDial: ${contacts.recovery_breakdown_number}`)) {
+                        window.location.href = `tel:${contacts.recovery_breakdown_number}`;
+                    }
+                } else {
+                    result.innerHTML = '<div class="result error">❌ Button would fail!\n\nUser would see alert: "Recovery service number not found. Please update your profile."</div>';
+                }
+
+            } catch (error) {
+                result.innerHTML = `<div class="result error">❌ Button would fail with error:\n${error.message}</div>`;
+            }
+        }
+
+        function storeTestData() {
+            const storageData = {
+                userId: testUserId,
+                userEmail: 'ian.ring@sky.com',
+                authCode: 'test-' + Date.now(),
+                signupTimestamp: new Date().toISOString()
+            };
+
+            localStorage.setItem('carCrashLawyerUser', JSON.stringify(storageData));
+            sessionStorage.setItem('carCrashLawyerUser', JSON.stringify(storageData));
+            localStorage.setItem('create_user_id', testUserId);
+            sessionStorage.setItem('userId', testUserId);
+
+            alert('✅ Test userId stored!\n\nUserId: ' + testUserId + '\n\nNow:\n1. Run "Check Storage" again to verify\n2. Then go to payment-success.html to test');
+
+            checkStorage(); // Auto-refresh
+        }
+
+        // Auto-run on page load
+        window.addEventListener('DOMContentLoaded', () => {
+            console.log('🧪 Diagnostic page loaded');
+            checkStorage(); // Auto-check storage
+        });
+    </script>
+</body>
+</html>

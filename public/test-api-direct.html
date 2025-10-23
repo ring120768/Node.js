@@ -1,0 +1,180 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Direct API Test</title>
+    <style>
+        body {
+            font-family: sans-serif;
+            max-width: 800px;
+            margin: 40px auto;
+            padding: 20px;
+        }
+        button {
+            background: #667eea;
+            color: white;
+            border: none;
+            padding: 12px 24px;
+            border-radius: 4px;
+            cursor: pointer;
+            font-size: 16px;
+            margin: 10px 5px;
+        }
+        button:hover {
+            background: #5568d3;
+        }
+        .result {
+            margin-top: 20px;
+            padding: 15px;
+            border-radius: 4px;
+            white-space: pre-wrap;
+            font-family: 'Courier New', monospace;
+        }
+        .success {
+            background: #d4edda;
+            border: 1px solid #c3e6cb;
+            color: #155724;
+        }
+        .error {
+            background: #f8d7da;
+            border: 1px solid #f5c6cb;
+            color: #721c24;
+        }
+    </style>
+</head>
+<body>
+    <h1>🧪 Direct API Test</h1>
+    <p>This tests the emergency contacts API directly without any authentication or storage logic.</p>
+
+    <div>
+        <h3>Test User ID:</h3>
+        <input type="text" id="userIdInput" value="eac531b7-3d03-4c75-9cf8-46ba065f4cb7" style="width: 400px; padding: 8px;">
+    </div>
+
+    <div style="margin-top: 20px;">
+        <button onclick="testAPI()">🔍 Test API</button>
+        <button onclick="testRecovery()">🚗 Test Recovery Call</button>
+        <button onclick="testEmergency()">👤 Test Emergency Call</button>
+    </div>
+
+    <div id="result"></div>
+
+    <script>
+        function log(message, isError = false) {
+            const resultDiv = document.getElementById('result');
+            const className = isError ? 'error' : 'success';
+            resultDiv.innerHTML = `<div class="result ${className}">${message}</div>`;
+            console.log(message);
+        }
+
+        async function testAPI() {
+            const userId = document.getElementById('userIdInput').value.trim();
+
+            if (!userId) {
+                log('Please enter a user ID', true);
+                return;
+            }
+
+            log(`Testing API: /api/emergency/contacts/${userId}\n\nPlease wait...`);
+
+            try {
+                const response = await fetch(`/api/emergency/contacts/${userId}`);
+
+                log(`Status: ${response.status} ${response.statusText}\n\n` +
+                    `Headers:\n${JSON.stringify(Object.fromEntries(response.headers), null, 2)}\n\n` +
+                    `Awaiting body...`);
+
+                if (!response.ok) {
+                    const text = await response.text();
+                    log(`❌ API Error (${response.status})\n\n${text}`, true);
+                    return;
+                }
+
+                const data = await response.json();
+                log(`✅ API Success!\n\n${JSON.stringify(data, null, 2)}\n\n` +
+                    `Emergency Contact: ${data.emergency_contact || 'null'}\n` +
+                    `Recovery Number: ${data.recovery_breakdown_number || 'null'}\n` +
+                    `Emergency Services: ${data.emergency_services_number || '999'}`);
+
+            } catch (error) {
+                log(`❌ Fetch Error:\n${error.message}\n\nStack:\n${error.stack}`, true);
+            }
+        }
+
+        async function testRecovery() {
+            const userId = document.getElementById('userIdInput').value.trim();
+
+            if (!userId) {
+                log('Please enter a user ID', true);
+                return;
+            }
+
+            try {
+                const response = await fetch(`/api/emergency/contacts/${userId}`);
+
+                if (!response.ok) {
+                    log(`❌ API returned ${response.status}`, true);
+                    return;
+                }
+
+                const contacts = await response.json();
+
+                if (contacts.recovery_breakdown_number) {
+                    log(`✅ Recovery number found: ${contacts.recovery_breakdown_number}\n\n` +
+                        `Would dial: tel:${contacts.recovery_breakdown_number}`);
+
+                    if (confirm(`Call recovery service: ${contacts.recovery_breakdown_number}?`)) {
+                        window.location.href = `tel:${contacts.recovery_breakdown_number}`;
+                    }
+                } else {
+                    log('❌ No recovery number found in database', true);
+                }
+
+            } catch (error) {
+                log(`❌ Error: ${error.message}`, true);
+            }
+        }
+
+        async function testEmergency() {
+            const userId = document.getElementById('userIdInput').value.trim();
+
+            if (!userId) {
+                log('Please enter a user ID', true);
+                return;
+            }
+
+            try {
+                const response = await fetch(`/api/emergency/contacts/${userId}`);
+
+                if (!response.ok) {
+                    log(`❌ API returned ${response.status}`, true);
+                    return;
+                }
+
+                const contacts = await response.json();
+
+                if (contacts.emergency_contact) {
+                    log(`✅ Emergency contact found: ${contacts.emergency_contact}\n\n` +
+                        `Would dial: tel:${contacts.emergency_contact}`);
+
+                    if (confirm(`Call emergency contact: ${contacts.emergency_contact}?`)) {
+                        window.location.href = `tel:${contacts.emergency_contact}`;
+                    }
+                } else {
+                    log('❌ No emergency contact found in database', true);
+                }
+
+            } catch (error) {
+                log(`❌ Error: ${error.message}`, true);
+            }
+        }
+
+        // Auto-test on load
+        window.addEventListener('DOMContentLoaded', () => {
+            console.log('🧪 Direct API Test Page Loaded');
+            console.log('Click "Test API" to test the /api/emergency/contacts endpoint');
+        });
+    </script>
+</body>
+</html>
