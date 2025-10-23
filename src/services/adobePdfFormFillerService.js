@@ -22,28 +22,39 @@ class AdobePdfFormFillerService {
   }
 
   /**
-   * Initialize Adobe PDF Services credentials (v4 OAuth)
-   * Uses environment variables: PDF_SERVICES_CLIENT_ID and PDF_SERVICES_CLIENT_SECRET
+   * Initialize Adobe PDF Services credentials
+   * Uses credentials file: /credentials/pdfservices-api-credentials.json
    */
   initializeCredentials() {
     try {
-      const clientId = process.env.PDF_SERVICES_CLIENT_ID;
-      const clientSecret = process.env.PDF_SERVICES_CLIENT_SECRET;
+      const credentialsPath = path.join(__dirname, '../../credentials/pdfservices-api-credentials.json');
+      
+      if (!fs.existsSync(credentialsPath)) {
+        logger.warn('⚠️ Adobe PDF credentials file not found - form filling will use fallback method');
+        logger.warn('📥 Add credentials to: /credentials/pdfservices-api-credentials.json');
+        return;
+      }
 
-      if (clientId && clientSecret) {
+      // Read credentials from file
+      const credentialsData = JSON.parse(fs.readFileSync(credentialsPath, 'utf8'));
+      
+      if (credentialsData.client_credentials && 
+          credentialsData.client_credentials.client_id && 
+          credentialsData.client_credentials.client_secret) {
+        
         // v4 SDK with OAuth Server-to-Server credentials
         this.credentials = new ServicePrincipalCredentials({
-          clientId,
-          clientSecret
+          clientId: credentialsData.client_credentials.client_id,
+          clientSecret: credentialsData.client_credentials.client_secret
         });
 
         // Create PDF Services instance
         this.pdfServices = new PDFServices({ credentials: this.credentials });
 
         this.initialized = true;
-        logger.info('✅ Adobe PDF Form Filler Service initialized successfully (v4 OAuth)');
+        logger.info('✅ Adobe PDF Form Filler Service initialized successfully');
       } else {
-        logger.warn('⚠️ Adobe PDF credentials not found - form filling will use fallback method');
+        logger.warn('⚠️ Invalid Adobe PDF credentials format - form filling will use fallback method');
       }
     } catch (error) {
       logger.error('Failed to initialize Adobe PDF Form Filler Service:', error);
@@ -69,7 +80,10 @@ class AdobePdfFormFillerService {
         throw new Error('Adobe PDF Form Filler Service not ready - check credentials and template');
       }
 
-      logger.info('📝 Starting PDF form filling...');
+      logger.info('📝 Starting Adobe PDF form filling...');
+
+      // Create execution context
+      const executionContext = PDFServicesSdk.ExecutionContext.create(this.credentials);
 
       // Load the PDF template
       const pdfBytes = fs.readFileSync(this.templatePath);
@@ -83,7 +97,6 @@ class AdobePdfFormFillerService {
       this.fillFormFields(form, data);
 
       // Flatten the form to make it read-only (prevents editing)
-      // Note: Flattening converts form fields to static content
       form.flatten();
 
       // Save the filled PDF
@@ -141,21 +154,18 @@ class AdobePdfFormFillerService {
     // ========================================
     // PAGE 1: Personal Information
     // ========================================
-    // PDF has both old (driver_name) and new (name) field variations
-    setFieldText('name', user.name);
-    setFieldText('driver_name', user.name);
-    setFieldText('surname', user.surname);
-    setFieldText('email', user.email);
-    setFieldText('mobile', user.mobile);
-    setFieldText('street', user.street_address);
-    setFieldText('street_address_optional', user.street_address_optional);
-    setFieldText('town', user.town);
-    setFieldText('postcode', user.postcode);
-    setFieldText('country', user.country);
-    setFieldText('driving_license_number', user.driving_license_number);
+    setFieldText('driver_name', user.driver_name);
+    setFieldText('driver_surname', user.driver_surname);
+    setFieldText('driver_email', user.driver_email);
+    setFieldText('driver_mobile', user.driver_mobile);
+    setFieldText('driver_street', user.driver_street);
+    setFieldText('driver_town', user.driver_town);
+    setFieldText('driver_postcode', user.driver_postcode);
+    setFieldText('driver_country', user.driver_country);
+    setFieldText('license_number', user.license_number);
 
     // PAGE 1: Vehicle Information
-    setFieldText('license_plate', user.car_registration_number || user.vehicle_registration);
+    setFieldText('license_plate', user.license_plate);
     setFieldText('vehicle_make', user.vehicle_make);
     setFieldText('vehicle_model', user.vehicle_model);
     setFieldText('vehicle_colour', user.vehicle_colour);
@@ -169,38 +179,26 @@ class AdobePdfFormFillerService {
     // ========================================
     setFieldText('emergency_contact', user.emergency_contact);
     setFieldText('insurance_company', user.insurance_company);
-    setFieldText('policy_number', user.policy_number || user.insurance_policy_number);
+    setFieldText('policy_number', user.policy_number);
     setFieldText('policy_holder', user.policy_holder);
     setFieldText('cover_type', user.cover_type);
-    // Format signup date as DD/MM/YYYY for UK format
-    // Use subscription_start_date (when they signed up) or fall back to created_at
-    const signupDate = user.subscription_start_date || user.created_at;
-    if (signupDate) {
-      const formattedDate = new Date(signupDate).toLocaleDateString('en-GB');
-      // PDF template uses "Date139_af_date" for signup date (time_stamp is a signature field)
-      setFieldText('Date139_af_date', formattedDate);
-    }
+    setFieldText('sign_up_date', user.sign_up_date);
 
     // ========================================
     // PAGE 3: Personal Documentation (Images)
     // ========================================
-    // Image URLs from user_signup table or incident_images table
-    // NOTE: PDF field names match database column names exactly
-    setFieldText('driving_license_picture', user.driving_license_picture || data.imageUrls?.driving_license || '');
-    setFieldText('vehicle_picture_front', user.vehicle_picture_front || data.imageUrls?.vehicle_front || '');
-    setFieldText('vehicle_picture_driver_side', user.vehicle_picture_driver_side || data.imageUrls?.vehicle_driver_side || '');
-    setFieldText('vehicle_picture_passenger_side', user.vehicle_picture_passenger_side || data.imageUrls?.vehicle_passenger_side || '');
-    setFieldText('vehicle_picture_back', user.vehicle_picture_back || data.imageUrls?.vehicle_back || '');
+    // Note: Image URLs are stored in imageUrls object
+    setFieldText('driving_license_url', data.imageUrls?.driving_license || '');
+    setFieldText('vehicle_front_url', data.imageUrls?.vehicle_front || '');
+    setFieldText('vehicle_driver_side_url', data.imageUrls?.vehicle_driver_side || '');
+    setFieldText('vehicle_passenger_side_url', data.imageUrls?.vehicle_passenger_side || '');
+    setFieldText('vehicle_back_url', data.imageUrls?.vehicle_back || '');
 
     // ========================================
     // PAGE 4: Form Metadata & Safety Assessment
     // ========================================
-    // PDF template has user_id on some pages (page 6) and create_user_id on others
-    // Set both to ensure it shows on all pages
-    setFieldText('create_user_id', metadata.create_user_id);
     setFieldText('user_id', metadata.create_user_id);
     setFieldText('form_id', incident.id);
-    // Submit date is when the incident report was submitted (will be empty if no incident)
     setFieldText('submit_date', incident.created_at);
 
     // Immediate Safety Assessment
