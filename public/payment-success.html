@@ -513,10 +513,10 @@
 
         <!-- Primary Action -->
         <div class="card">
-            <button class="primary-action-btn" onclick="navigateToIncident()">
+            <button class="primary-action-btn" id="reportIncidentBtn">
                 📝 Report Your First Incident
             </button>
-            <button class="secondary-action-btn" onclick="navigateToDashboard()">
+            <button class="secondary-action-btn" id="gotoDashboardBtn">
                 📊 Go to Dashboard
             </button>
         </div>
@@ -529,17 +529,17 @@
             </div>
 
             <div class="emergency-buttons">
-                <button class="emergency-btn red" onclick="window.location.href='tel:999'">
+                <button class="emergency-btn red" id="call999Btn">
                     <span class="btn-icon">📞</span>
                     <span>Call 999 - Emergency Services</span>
                 </button>
 
-                <button class="emergency-btn amber" onclick="callRecoveryService()">
+                <button class="emergency-btn amber" id="callRecoveryBtn">
                     <span class="btn-icon">🚗</span>
                     <span>Call Recovery Service</span>
                 </button>
 
-                <button class="emergency-btn green" onclick="callEmergencyContact()">
+                <button class="emergency-btn green" id="callEmergencyBtn">
                     <span class="btn-icon">👤</span>
                     <span>Call Emergency Contact</span>
                 </button>
@@ -676,6 +676,60 @@
                     `;
                 }
             }
+
+            // ===== SET UP BUTTON EVENT LISTENERS (CSP-compliant) =====
+            console.log('🔘 Setting up button event listeners...');
+
+            // Primary action buttons
+            const reportIncidentBtn = document.getElementById('reportIncidentBtn');
+            const gotoDashboardBtn = document.getElementById('gotoDashboardBtn');
+
+            if (reportIncidentBtn) {
+                reportIncidentBtn.addEventListener('click', function(e) {
+                    e.preventDefault();
+                    console.log('📝 Report Incident button clicked');
+                    navigateToIncident();
+                });
+            }
+
+            if (gotoDashboardBtn) {
+                gotoDashboardBtn.addEventListener('click', function(e) {
+                    e.preventDefault();
+                    console.log('📊 Dashboard button clicked');
+                    navigateToDashboard();
+                });
+            }
+
+            // Emergency buttons
+            const call999Btn = document.getElementById('call999Btn');
+            const callRecoveryBtn = document.getElementById('callRecoveryBtn');
+            const callEmergencyBtn = document.getElementById('callEmergencyBtn');
+
+            if (call999Btn) {
+                call999Btn.addEventListener('click', function(e) {
+                    e.preventDefault();
+                    console.log('📞 Call 999 button clicked');
+                    window.location.href = 'tel:999';
+                });
+            }
+
+            if (callRecoveryBtn) {
+                callRecoveryBtn.addEventListener('click', function(e) {
+                    e.preventDefault();
+                    console.log('🚗 Call Recovery button clicked');
+                    callRecoveryService();
+                });
+            }
+
+            if (callEmergencyBtn) {
+                callEmergencyBtn.addEventListener('click', function(e) {
+                    e.preventDefault();
+                    console.log('👤 Call Emergency Contact button clicked');
+                    callEmergencyContact();
+                });
+            }
+
+            console.log('✅ All button listeners attached');
 
             // Handle checklist checkboxes
             const checkboxes = document.querySelectorAll('.checklist-checkbox');
