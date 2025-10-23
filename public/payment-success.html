@@ -792,16 +792,50 @@
             }
         }
 
+        // Helper function to get valid userId from storage
+        function getUserIdFromStorage() {
+            // Try direct storage keys first
+            let userId = localStorage.getItem('create_user_id') ||
+                        sessionStorage.getItem('create_user_id') ||
+                        sessionStorage.getItem('userId');
+
+            // Check if userId is a Typeform placeholder (invalid)
+            if (userId && userId.includes('{{')) {
+                console.warn('⚠️ Found invalid Typeform placeholder in storage, clearing:', userId);
+                localStorage.removeItem('create_user_id');
+                sessionStorage.removeItem('create_user_id');
+                sessionStorage.removeItem('userId');
+                userId = null;
+            }
+
+            // Fallback: check carCrashLawyerUser object (from signup-auth.html)
+            if (!userId) {
+                try {
+                    const userData = localStorage.getItem('carCrashLawyerUser') ||
+                                   sessionStorage.getItem('carCrashLawyerUser');
+                    if (userData) {
+                        const parsed = JSON.parse(userData);
+                        userId = parsed.userId || parsed.id || parsed.create_user_id;
+                        console.log('✅ Retrieved userId from carCrashLawyerUser:', userId);
+                    }
+                } catch (e) {
+                    console.error('Error parsing carCrashLawyerUser:', e);
+                }
+            }
+
+            return userId;
+        }
+
         // Call recovery service
         async function callRecoveryService() {
-            const userId = localStorage.getItem('create_user_id') ||
-                          sessionStorage.getItem('create_user_id') ||
-                          sessionStorage.getItem('userId');
+            const userId = getUserIdFromStorage();
 
             if (!userId) {
-                alert('Unable to fetch recovery number. Please ensure you are logged in.');
+                alert('Unable to fetch recovery number. Please ensure you are logged in.\n\nTip: Complete the signup process via the Typeform link first.');
                 return;
             }
+
+            console.log('🔍 Fetching recovery contact for userId:', userId);
 
             try {
                 // Use the API endpoint like incident.html does
@@ -828,14 +862,14 @@
 
         // Call emergency contact
         async function callEmergencyContact() {
-            const userId = localStorage.getItem('create_user_id') ||
-                          sessionStorage.getItem('create_user_id') ||
-                          sessionStorage.getItem('userId');
+            const userId = getUserIdFromStorage();
 
             if (!userId) {
-                alert('Unable to fetch emergency contact. Please ensure you are logged in.');
+                alert('Unable to fetch emergency contact. Please ensure you are logged in.\n\nTip: Complete the signup process via the Typeform link first.');
                 return;
             }
+
+            console.log('🔍 Fetching emergency contact for userId:', userId);
 
             try {
                 // Use the API endpoint like incident.html does
