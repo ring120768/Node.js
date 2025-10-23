@@ -25,14 +25,14 @@
             <div class='fl pad1y space-right2'>
                 <span class="strong">0% </span>
                 <span class="quiet">Statements</span>
-                <span class='fraction'>0/10</span>
+                <span class='fraction'>0/12</span>
             </div>
         
             
             <div class='fl pad1y space-right2'>
-                <span class="strong">0% </span>
+                <span class="strong">100% </span>
                 <span class="quiet">Branches</span>
-                <span class='fraction'>0/2</span>
+                <span class='fraction'>0/0</span>
             </div>
         
             
@@ -46,7 +46,7 @@
             <div class='fl pad1y space-right2'>
                 <span class="strong">0% </span>
                 <span class="quiet">Lines</span>
-                <span class='fraction'>0/10</span>
+                <span class='fraction'>0/12</span>
             </div>
         
             
@@ -88,11 +88,24 @@
 <a name='L23'></a><a href='#L23'>23</a>
 <a name='L24'></a><a href='#L24'>24</a>
 <a name='L25'></a><a href='#L25'>25</a>
-<a name='L26'></a><a href='#L26'>26</a></td><td class="line-coverage quiet"><span class="cline-any cline-no">&nbsp;</span>
+<a name='L26'></a><a href='#L26'>26</a>
+<a name='L27'></a><a href='#L27'>27</a>
+<a name='L28'></a><a href='#L28'>28</a>
+<a name='L29'></a><a href='#L29'>29</a>
+<a name='L30'></a><a href='#L30'>30</a>
+<a name='L31'></a><a href='#L31'>31</a>
+<a name='L32'></a><a href='#L32'>32</a>
+<a name='L33'></a><a href='#L33'>33</a>
+<a name='L34'></a><a href='#L34'>34</a>
+<a name='L35'></a><a href='#L35'>35</a>
+<a name='L36'></a><a href='#L36'>36</a>
+<a name='L37'></a><a href='#L37'>37</a>
+<a name='L38'></a><a href='#L38'>38</a></td><td class="line-coverage quiet"><span class="cline-any cline-no">&nbsp;</span>
 <span class="cline-any cline-no">&nbsp;</span>
 <span class="cline-any cline-no">&nbsp;</span>
 <span class="cline-any cline-no">&nbsp;</span>
 <span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
@@ -107,9 +120,20 @@
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-no">&nbsp;</span>
 <span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-no">&nbsp;</span>
@@ -118,6 +142,7 @@ const router = <span class="cstat-no" title="statement not covered" >express.Rou
 const webhookController = <span class="cstat-no" title="statement not covered" >require('../controllers/webhook.controller');</span>
 const { validateWebhookSignature } = <span class="cstat-no" title="statement not covered" >require('../middleware/webhookAuth');</span>
 const { validateWebhookPayload } = <span class="cstat-no" title="statement not covered" >require('../middleware/validation');</span>
+const githubWebhookRouter = <span class="cstat-no" title="statement not covered" >require('./githubWebhook.routes');</span>
 &nbsp;
 /**
  * Typeform webhook endpoint
@@ -131,11 +156,22 @@ const { validateWebhookPayload } = <span class="cstat-no" title="statement not c
   webhookController.handleTypeformWebhook
 );
 &nbsp;
-// Test endpoints - only available in development
-<span class="cstat-no" title="statement not covered" >if (process.env.NODE_ENV !== 'production') {</span>
-<span class="cstat-no" title="statement not covered" >  router.get('/test', webhookController.testWebhook);</span>
-<span class="cstat-no" title="statement not covered" >  router.post('/test', webhookController.testWebhook);</span>
-}
+/**
+ * GitHub webhook endpoint
+ * Security: Validates HMAC-SHA256 signature in X-Hub-Signature-256 header
+ * Handles push, pull_request, and ping events
+ */
+<span class="cstat-no" title="statement not covered" >router.use('/github', githubWebhookRouter);</span>
+&nbsp;
+// Test endpoints - available in all environments for webhook testing
+<span class="cstat-no" title="statement not covered" >router.get('/test', webhookController.testWebhook);</span>
+<span class="cstat-no" title="statement not covered" >router.post('/test', webhookController.testWebhook);</span>
+&nbsp;
+// Typeform test endpoint - no signature or payload validation (for initial testing only)
+<span class="cstat-no" title="statement not covered" >router.post(</span>
+  '/typeform-test',
+  webhookController.handleTypeformWebhook
+);
 &nbsp;
 <span class="cstat-no" title="statement not covered" >module.exports = router;</span>
 &nbsp;</pre></td></tr></table></pre>
@@ -145,7 +181,7 @@ const { validateWebhookPayload } = <span class="cstat-no" title="statement not c
             <div class='footer quiet pad2 space-top1 center small'>
                 Code coverage generated by
                 <a href="https://istanbul.js.org/" target="_blank" rel="noopener noreferrer">istanbul</a>
-                at 2025-10-14T14:22:20.675Z
+                at 2025-10-23T21:28:13.295Z
             </div>
         <script src="../../prettify.js"></script>
         <script>
