@@ -26,30 +26,40 @@ class AdobePdfService {
   }
 
   /**
-   * Initialize Adobe credentials (v4 OAuth)
-   * Uses environment variables: PDF_SERVICES_CLIENT_ID and PDF_SERVICES_CLIENT_SECRET
+   * Initialize Adobe credentials
+   * Uses credentials file: /credentials/pdfservices-api-credentials.json
    */
   initializeCredentials() {
     try {
-      const clientId = process.env.PDF_SERVICES_CLIENT_ID;
-      const clientSecret = process.env.PDF_SERVICES_CLIENT_SECRET;
+      const credentialsPath = path.join(__dirname, '../../credentials/pdfservices-api-credentials.json');
+      
+      if (!fs.existsSync(credentialsPath)) {
+        logger.warn('⚠️ Adobe PDF credentials file not found');
+        logger.warn('📥 Add credentials to: /credentials/pdfservices-api-credentials.json');
+        logger.warn('📥 Get credentials from: https://acrobatservices.adobe.com/dc-integration-creation-app-cdn/main.html');
+        return;
+      }
 
-      if (clientId && clientSecret) {
+      // Read credentials from file
+      const credentialsData = JSON.parse(fs.readFileSync(credentialsPath, 'utf8'));
+      
+      if (credentialsData.client_credentials && 
+          credentialsData.client_credentials.client_id && 
+          credentialsData.client_credentials.client_secret) {
+        
         // v4 SDK with OAuth Server-to-Server credentials
         this.credentials = new ServicePrincipalCredentials({
-          clientId,
-          clientSecret
+          clientId: credentialsData.client_credentials.client_id,
+          clientSecret: credentialsData.client_credentials.client_secret
         });
 
         // Create PDF Services instance
         this.pdfServices = new PDFServices({ credentials: this.credentials });
 
         this.initialized = true;
-        logger.info('✅ Adobe PDF Services initialized successfully (v4 OAuth)');
+        logger.info('✅ Adobe PDF Services initialized successfully');
       } else {
-        logger.warn('⚠️ Adobe PDF credentials not found in environment variables');
-        logger.warn('📥 Set PDF_SERVICES_CLIENT_ID and PDF_SERVICES_CLIENT_SECRET');
-        logger.warn('📥 Get credentials from: https://acrobatservices.adobe.com/dc-integration-creation-app-cdn/main.html');
+        logger.warn('⚠️ Invalid Adobe PDF credentials format');
       }
     } catch (error) {
       logger.error('Failed to initialize Adobe PDF Services:', error);
