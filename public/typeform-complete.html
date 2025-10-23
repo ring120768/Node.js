@@ -1,0 +1,135 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Processing...</title>
+    <style>
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            height: 100vh;
+            margin: 0;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+        }
+        .loader {
+            text-align: center;
+        }
+        .spinner {
+            border: 4px solid rgba(255, 255, 255, 0.3);
+            border-radius: 50%;
+            border-top: 4px solid white;
+            width: 40px;
+            height: 40px;
+            animation: spin 1s linear infinite;
+            margin: 0 auto 20px;
+        }
+        @keyframes spin {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
+        }
+        h1 {
+            font-size: 24px;
+            font-weight: 600;
+            margin: 0;
+        }
+        p {
+            margin: 10px 0 0;
+            opacity: 0.9;
+        }
+    </style>
+</head>
+<body>
+    <div class="loader">
+        <div class="spinner"></div>
+        <h1>Processing your submission...</h1>
+        <p>Please wait, redirecting you now.</p>
+    </div>
+
+    <script>
+        /**
+         * Typeform Redirect Handler
+         *
+         * This page acts as an intermediary between Typeform and payment-success.html.
+         * Typeform redirects here with hidden fields as URL parameters.
+         * We extract them, store in localStorage/sessionStorage, then redirect to payment-success.html
+         *
+         * Flow:
+         * Typeform → /typeform-complete.html?auth_user_id=xxx&email=xxx&...
+         *          → Store in storage
+         *          → /payment-success.html (clean URL, no params)
+         */
+
+        console.log('🎯 Typeform completion handler started');
+
+        // Extract all URL parameters
+        const urlParams = new URLSearchParams(window.location.search);
+
+        // Extract hidden fields from URL
+        const auth_user_id = urlParams.get('auth_user_id') ||
+                            urlParams.get('user_id') ||
+                            urlParams.get('userId') ||
+                            urlParams.get('create_user_id');
+
+        const email = urlParams.get('email');
+        const auth_code = urlParams.get('auth_code');
+        const product_id = urlParams.get('product_id');
+
+        console.log('📦 Extracted parameters:', {
+            auth_user_id,
+            email,
+            auth_code,
+            product_id,
+            fullUrl: window.location.href
+        });
+
+        // Store in both localStorage and sessionStorage for maximum compatibility
+        if (auth_user_id) {
+            // Store in multiple formats for compatibility
+            localStorage.setItem('create_user_id', auth_user_id);
+            localStorage.setItem('userId', auth_user_id);
+            sessionStorage.setItem('create_user_id', auth_user_id);
+            sessionStorage.setItem('userId', auth_user_id);
+
+            // Also store in carCrashLawyerUser object format (for backward compatibility)
+            const userData = {
+                userId: auth_user_id,
+                id: auth_user_id,
+                create_user_id: auth_user_id,
+                email: email || null,
+                auth_code: auth_code || null,
+                product_id: product_id || null,
+                timestamp: new Date().toISOString()
+            };
+
+            localStorage.setItem('carCrashLawyerUser', JSON.stringify(userData));
+            sessionStorage.setItem('carCrashLawyerUser', JSON.stringify(userData));
+
+            console.log('✅ User data stored successfully');
+
+            // Store individual fields if available
+            if (email) {
+                sessionStorage.setItem('userEmail', email);
+            }
+            if (auth_code) {
+                sessionStorage.setItem('auth_code', auth_code);
+            }
+            if (product_id) {
+                sessionStorage.setItem('product_id', product_id);
+            }
+        } else {
+            console.warn('⚠️ No auth_user_id found in URL parameters');
+        }
+
+        // Redirect to payment-success.html after a short delay (for user feedback)
+        setTimeout(() => {
+            console.log('🚀 Redirecting to payment-success.html');
+            window.location.href = '/payment-success.html';
+        }, 500); // 500ms delay to show the "Processing..." message
+
+    </script>
+</body>
+</html>
