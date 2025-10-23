@@ -47,12 +47,22 @@ async function testPdfDirect() {
     console.log(colors.green, '✅ PDF generated successfully!');
     console.log(`   PDF size: ${Math.round(pdfBuffer.length / 1024)} KB`);
 
-    console.log(colors.green, '\n✅ ALL TESTS PASSED!\n');
-    console.log('The PDF was generated successfully with all available data.');
-    console.log('To verify field population, you would need to:');
-    console.log('1. Open the generated PDF');
-    console.log('2. Check each of the 150+ form fields');
-    console.log('3. Compare against the data fetched from Supabase');
+    // Save PDF to file
+    const fs = require('fs');
+    const outputPath = `./test-incident-report-${userId}.pdf`;
+    fs.writeFileSync(outputPath, pdfBuffer);
+
+    console.log(colors.green, '\n✅ PDF SAVED TO FILE!\n');
+    console.log(colors.cyan, `📁 Location: ${outputPath}`);
+    console.log(colors.cyan, `📊 File size: ${Math.round(pdfBuffer.length / 1024)} KB`);
+    console.log('\n👀 You can now open this PDF to visually inspect:');
+    console.log('   • All 168 form fields');
+    console.log('   • Personal information (page 1)');
+    console.log('   • Medical assessment (page 4)');
+    console.log('   • Accident details (pages 5-7)');
+    console.log('   • Other driver info (page 8)');
+    console.log('   • DVLA data (pages 15-16)');
+    console.log('   • Declaration (page 17)');
 
   } catch (error) {
     console.log(colors.red, `\n❌ Error: ${error.message}\n`);

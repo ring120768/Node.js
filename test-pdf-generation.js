@@ -199,13 +199,20 @@ async function generatePDF(userId) {
 
   try {
     const apiUrl = process.env.APP_URL || 'http://localhost:5000';
+    const apiKey = process.env.WEBHOOK_API_KEY || process.env.ZAPIER_SHARED_KEY;
+
+    if (!apiKey) {
+      throw new Error('Missing API key (WEBHOOK_API_KEY or ZAPIER_SHARED_KEY)');
+    }
+
     const response = await fetch(`${apiUrl}/api/pdf/generate`, {
       method: 'POST',
       headers: {
-        'Content-Type': 'application/json'
+        'Content-Type': 'application/json',
+        'X-Api-Key': apiKey
       },
       body: JSON.stringify({
-        user_id: userId
+        create_user_id: userId  // Note: correct field name is create_user_id
       })
     });
 
@@ -218,9 +225,11 @@ async function generatePDF(userId) {
 
     console.log(colors.green, '✅ PDF generated successfully!');
     console.log(colors.bright, '\n📊 PDF Generation Result:');
-    console.log(`   PDF URL: ${result.pdf_url || 'Not available'}`);
-    console.log(`   Storage Path: ${result.storage_path || 'Not available'}`);
-    console.log(`   File Size: ${result.file_size ? Math.round(result.file_size / 1024) + ' KB' : 'Unknown'}`);
+    console.log(`   Success: ${result.success}`);
+    console.log(`   Form ID: ${result.form_id || 'Not available'}`);
+    console.log(`   User ID: ${result.create_user_id || 'Not available'}`);
+    console.log(`   Email Sent: ${result.email_sent ? 'Yes' : 'No'}`);
+    console.log(`   Timestamp: ${result.timestamp || 'Not available'}`);
 
     return {
       success: true,
@@ -352,12 +361,14 @@ async function runTest() {
       console.log('Results:');
       console.log(`  User ID: ${userId}`);
       console.log(`  Data fields populated: ${verifyResult.userFieldCount + verifyResult.incidentFieldCount}`);
-      console.log(`  PDF generated: ${pdfResult.result.pdf_url ? 'Yes' : 'No'}`);
+      console.log(`  PDF generated: Yes`);
+      console.log(`  Form ID: ${pdfResult.result.form_id}`);
+      console.log(`  Email sent: ${pdfResult.result.email_sent ? 'Yes' : 'No'}`);
 
-      if (pdfResult.result.pdf_url) {
-        console.log(colors.cyan, `\n📥 Download PDF:`);
-        console.log(`  ${pdfResult.result.pdf_url}`);
-      }
+      console.log(colors.cyan, `\n📝 To view the PDF:`);
+      console.log(colors.reset, `  1. Check the completed_incident_forms table`);
+      console.log(`  2. Look for form_id: ${pdfResult.result.form_id}`);
+      console.log(`  3. Or check Supabase Storage bucket: incident-images-secure`);
 
       console.log(colors.yellow, `\n🧹 To clean up test data, run:`);
       console.log(colors.reset, `  node test-pdf-generation.js cleanup ${userId}`);
