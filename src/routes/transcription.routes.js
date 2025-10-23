@@ -8,6 +8,7 @@ const express = require('express');
 const multer = require('multer');
 const { checkGDPRConsent } = require('../middleware/gdpr');
 const { apiLimiter, strictLimiter } = require('../middleware/rateLimit');
+const { requireAuth } = require('../middleware/authMiddleware');
 const config = require('../config');
 const CONSTANTS = config.constants;
 
@@ -46,22 +47,22 @@ router.use(strictLimiter);
 /**
  * POST /api/transcription/transcribe
  * Upload audio file for transcription via Whisper API
- * Requires: audio file, authenticated user
+ * Requires: audio file, authenticated user (verified via cookie-based auth)
  */
-router.post('/transcribe', upload.single('audio'), transcribeAudio);
+router.post('/transcribe', requireAuth, upload.single('audio'), transcribeAudio);
 
 /**
  * GET /api/transcription/history
  * Get transcription history for authenticated user
  * Returns: list of transcriptions from storage
  */
-router.get('/history', getTranscriptionHistory);
+router.get('/history', requireAuth, getTranscriptionHistory);
 
 /**
  * GET /api/transcription/:transcriptionId
  * Get specific transcription by ID for authenticated user
  * Returns: transcription data
  */
-router.get('/:transcriptionId', getTranscription);
+router.get('/:transcriptionId', requireAuth, getTranscription);
 
 module.exports = router;
