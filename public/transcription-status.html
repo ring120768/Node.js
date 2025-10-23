@@ -2088,6 +2088,12 @@
                 updateProgress('step-transcribe', 'active');
                 showStatus('Uploading and transcribing your recording...', 'info');
 
+                console.log('📤 Uploading audio:', {
+                    size: Math.round(audioBlob.size / 1024) + ' KB',
+                    type: audioBlob.type,
+                    userId: userId
+                });
+
                 const formData = new FormData();
                 formData.append('audio', audioBlob, 'recording.webm');
                 formData.append('userId', userId);
@@ -2098,19 +2104,48 @@
                     credentials: 'include'
                 });
 
-                const result = await response.json();
+                console.log('📥 Server response:', {
+                    status: response.status,
+                    statusText: response.statusText,
+                    ok: response.ok
+                });
+
+                // Try to parse JSON response
+                let result;
+                try {
+                    result = await response.json();
+                    console.log('📄 Response data:', result);
+                } catch (jsonError) {
+                    console.error('❌ Failed to parse JSON:', jsonError);
+                    const textResponse = await response.text();
+                    console.error('❌ Response text:', textResponse);
+                    throw new Error(`Server returned invalid JSON (Status: ${response.status})`);
+                }
+
+                if (!response.ok) {
+                    throw new Error(result.error || result.message || `Server error: ${response.status} ${response.statusText}`);
+                }
 
                 if (result.success) {
                     updateProgress('step-transcribe', 'complete');
                     showTranscription(result.transcription.text);
                     showStatus('Transcription complete!', 'success');
                 } else {
-                    throw new Error(result.error || 'Transcription failed');
+                    throw new Error(result.error || result.message || 'Transcription failed');
                 }
 
             } catch (error) {
-                console.error('Upload error:', error);
-                showStatus('Failed to process recording. Please try again.', 'error');
+                console.error('❌ Upload error:', error);
+
+                // Show detailed error message
+                let errorMessage = 'Failed to process recording. ';
+                if (error.message) {
+                    errorMessage += error.message;
+                } else {
+                    errorMessage += 'Please try again.';
+                }
+
+                showStatus(errorMessage, 'error');
                 document.getElementById('recordButton').style.display = 'inline-block';
                 document.getElementById('retryButton').style.display = 'none';
             }
