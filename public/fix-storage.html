@@ -65,7 +65,7 @@
 
     <div class="section">
         <h2>Step 1: Check Current Storage</h2>
-        <button onclick="checkStorage()">🔍 Check Storage</button>
+        <button id="checkStorageBtn">🔍 Check Storage</button>
         <div id="storage-result"></div>
     </div>
 
@@ -74,20 +74,20 @@
         <p>Enter the correct UUID from your Typeform submission:</p>
         <input type="text" id="correctUserId" value="ec8537ef-43c8-400c-bc05-a4945881f7cb" placeholder="UUID from Typeform">
         <br><br>
-        <button onclick="fixStorage()">✅ Fix Storage</button>
+        <button id="fixStorageBtn">✅ Fix Storage</button>
         <div id="fix-result"></div>
     </div>
 
     <div class="section">
         <h2>Step 3: Clear All Storage (Nuclear Option)</h2>
         <p><strong>⚠️ Warning:</strong> This will clear ALL browser storage for this site.</p>
-        <button class="danger" onclick="clearAll()">🗑️ Clear Everything</button>
+        <button id="clearAllBtn" class="danger">🗑️ Clear Everything</button>
         <div id="clear-result"></div>
     </div>
 
     <div class="section">
         <h2>Step 4: Test Emergency Buttons</h2>
-        <button onclick="window.location.href='/payment-success.html'">🔗 Go to Payment Success Page</button>
+        <button id="goToPaymentBtn">🔗 Go to Payment Success Page</button>
     </div>
 
     <script>
@@ -255,8 +255,19 @@ Now:
             return userId;
         }
 
-        // Auto-check on load
-        window.addEventListener('DOMContentLoaded', checkStorage);
+        // Auto-check on load and setup button listeners
+        window.addEventListener('DOMContentLoaded', () => {
+            // Auto-check storage on page load
+            checkStorage();
+
+            // Setup button event listeners (CSP-compliant)
+            document.getElementById('checkStorageBtn').addEventListener('click', checkStorage);
+            document.getElementById('fixStorageBtn').addEventListener('click', fixStorage);
+            document.getElementById('clearAllBtn').addEventListener('click', clearAll);
+            document.getElementById('goToPaymentBtn').addEventListener('click', () => {
+                window.location.href = '/payment-success.html';
+            });
+        });
     </script>
 </body>
 </html>

@@ -53,9 +53,9 @@
     </div>
 
     <div style="margin-top: 20px;">
-        <button onclick="testAPI()">🔍 Test API</button>
-        <button onclick="testRecovery()">🚗 Test Recovery Call</button>
-        <button onclick="testEmergency()">👤 Test Emergency Call</button>
+        <button id="testAPIBtn">🔍 Test API</button>
+        <button id="testRecoveryBtn">🚗 Test Recovery Call</button>
+        <button id="testEmergencyBtn">👤 Test Emergency Call</button>
     </div>
 
     <div id="result"></div>
@@ -170,10 +170,15 @@
             }
         }
 
-        // Auto-test on load
+        // Auto-test on load and setup button listeners
         window.addEventListener('DOMContentLoaded', () => {
             console.log('🧪 Direct API Test Page Loaded');
             console.log('Click "Test API" to test the /api/emergency/contacts endpoint');
+
+            // Setup button event listeners (CSP-compliant)
+            document.getElementById('testAPIBtn').addEventListener('click', testAPI);
+            document.getElementById('testRecoveryBtn').addEventListener('click', testRecovery);
+            document.getElementById('testEmergencyBtn').addEventListener('click', testEmergency);
         });
     </script>
 </body>
