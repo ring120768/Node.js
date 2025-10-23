@@ -654,6 +654,102 @@
             }
         }
 
+        // Store emergency contacts (fetched once on page load)
+        let emergencyContacts = null;
+
+        // Load user data and emergency contacts (COPIED FROM incident.html)
+        async function loadUserData() {
+            const userId = getUserIdFromStorage();
+
+            if (!userId) {
+                console.warn('⚠️ No userId found in storage');
+                return;
+            }
+
+            try {
+                console.log('✅ Loading user data for userId:', userId);
+
+                // Load user profile if Supabase is available
+                await loadUserProfile(userId);
+
+                // Fetch emergency contacts (EXACT PATTERN FROM incident.html)
+                try {
+                    console.log('Fetching emergency contacts for user:', userId);
+                    const contactsResponse = await fetch(`/api/emergency/contacts/${userId}`, {
+                        credentials: 'include'
+                    });
+                    console.log('API Response status:', contactsResponse.status, contactsResponse.statusText);
+
+                    if (contactsResponse.ok) {
+                        emergencyContacts = await contactsResponse.json();
+                        console.log('✅ Emergency contacts loaded:', emergencyContacts);
+                        console.log('  - Emergency Contact:', emergencyContacts.emergency_contact || 'NOT SET');
+                        console.log('  - Recovery Number:', emergencyContacts.recovery_breakdown_number || 'NOT SET');
+                        console.log('  - Emergency Services:', emergencyContacts.emergency_services_number || '999');
+                        updateEmergencyButtons();
+                    } else {
+                        const errorText = await contactsResponse.text();
+                        console.error('❌ API Error Response:', contactsResponse.status, errorText);
+                        // Set up fallback handlers even if API fails
+                        updateEmergencyButtons();
+                    }
+                } catch (error) {
+                    console.error('❌ Failed to fetch emergency contacts:', error);
+                    console.error('User ID:', userId);
+                    // Set up fallback handlers even if fetch fails
+                    updateEmergencyButtons();
+                }
+            } catch (error) {
+                console.error('Failed to load user data:', error);
+            }
+        }
+
+        // Update emergency buttons with real phone numbers (COPIED FROM incident.html)
+        function updateEmergencyButtons() {
+            console.log('🔧 Updating emergency buttons with contacts:', emergencyContacts);
+
+            // 999 Emergency Services
+            document.getElementById('call999Btn').onclick = function() {
+                const emergencyNumber = emergencyContacts?.emergency_services_number || '999';
+                console.log('📞 Calling 999:', emergencyNumber);
+                if (confirm(`This will call ${emergencyNumber} Emergency Services.`)) {
+                    window.location.href = `tel:${emergencyNumber}`;
+                }
+            };
+
+            // Recovery Service
+            if (emergencyContacts?.recovery_breakdown_number) {
+                console.log('✅ Recovery button enabled with number:', emergencyContacts.recovery_breakdown_number);
+                document.getElementById('callRecoveryBtn').onclick = function() {
+                    console.log('📞 Calling recovery:', emergencyContacts.recovery_breakdown_number);
+                    if (confirm(`Call recovery service: ${emergencyContacts.recovery_breakdown_number}?`)) {
+                        window.location.href = `tel:${emergencyContacts.recovery_breakdown_number}`;
+                    }
+                };
+            } else {
+                console.log('❌ Recovery button disabled - no number available');
+                document.getElementById('callRecoveryBtn').onclick = function() {
+                    alert('No recovery service number available. Please update your profile.');
+                };
+            }
+
+            // Emergency Contact
+            if (emergencyContacts?.emergency_contact) {
+                console.log('✅ Emergency contact button enabled with number:', emergencyContacts.emergency_contact);
+                document.getElementById('callEmergencyBtn').onclick = function() {
+                    console.log('📞 Calling emergency contact:', emergencyContacts.emergency_contact);
+                    if (confirm(`Call emergency contact: ${emergencyContacts.emergency_contact}?`)) {
+                        window.location.href = `tel:${emergencyContacts.emergency_contact}`;
+                    }
+                };
+            } else {
+                console.log('❌ Emergency contact button disabled - no contact available');
+                document.getElementById('callEmergencyBtn').onclick = function() {
+                    alert('No emergency contact available. Please update your profile.');
+                };
+            }
+        }
+
         // Handle checklist checkboxes with localStorage persistence
         document.addEventListener('DOMContentLoaded', async function() {
             console.log('🚀 Initializing payment-success page');
@@ -661,16 +757,14 @@
             // Initialize Supabase first
             await initSupabase();
 
-            // Get userId from browser storage (set by signup-auth.html before Typeform redirect)
-            // NOTE: Typeform does NOT pass hidden fields in redirect URL - they go to webhook only
+            // Get userId and load data
             const user_id = getUserIdFromStorage();
-
             console.log('🔍 UserId from storage:', user_id || 'null');
 
-            // Load full user profile from database
             if (user_id) {
-                console.log('✅ Loading profile for userId:', user_id);
-                await loadUserProfile(user_id);
+                // Load user data and emergency contacts
+                await loadUserData();
+                // NOTE: updateEmergencyButtons() is called from within loadUserData() after contacts are fetched
             } else {
                 console.warn('⚠️ No userId found in storage. User may need to complete signup first.');
                 const userInfoDiv = document.querySelector('.user-info');
@@ -682,6 +776,8 @@
                         </div>
                     `;
                 }
+                // Set up fallback handlers even without userId
+                updateEmergencyButtons();
             }
 
             // ===== SET UP BUTTON EVENT LISTENERS (CSP-compliant) =====
@@ -707,34 +803,7 @@
                 });
             }
 
-            // Emergency buttons
-            const call999Btn = document.getElementById('call999Btn');
-            const callRecoveryBtn = document.getElementById('callRecoveryBtn');
-            const callEmergencyBtn = document.getElementById('callEmergencyBtn');
-
-            if (call999Btn) {
-                call999Btn.addEventListener('click', function(e) {
-                    e.preventDefault();
-                    console.log('📞 Call 999 button clicked');
-                    window.location.href = 'tel:999';
-                });
-            }
-
-            if (callRecoveryBtn) {
-                callRecoveryBtn.addEventListener('click', function(e) {
-                    e.preventDefault();
-                    console.log('🚗 Call Recovery button clicked');
-                    callRecoveryService();
-                });
-            }
-
-            if (callEmergencyBtn) {
-                callEmergencyBtn.addEventListener('click', function(e) {
-                    e.preventDefault();
-                    console.log('👤 Call Emergency Contact button clicked');
-                    callEmergencyContact();
-                });
-            }
+            // NOTE: Emergency buttons are set up by updateEmergencyButtons(), not here
 
             console.log('✅ All button listeners attached');
 
@@ -833,76 +902,6 @@
             return userId;
         }
 
-        // Call recovery service
-        async function callRecoveryService() {
-            const userId = getUserIdFromStorage();
-
-            if (!userId) {
-                alert('Unable to fetch recovery number. Please ensure you are logged in.\n\nTip: Complete the signup process via the Typeform link first.');
-                return;
-            }
-
-            console.log('🔍 Fetching recovery contact for userId:', userId);
-
-            try {
-                // Use the API endpoint like incident.html does
-                const response = await fetch(`/api/emergency/contacts/${userId}`);
-
-                if (!response.ok) {
-                    throw new Error(`API returned status ${response.status}`);
-                }
-
-                const contacts = await response.json();
-
-                if (contacts.recovery_breakdown_number) {
-                    if (confirm(`Call recovery service: ${contacts.recovery_breakdown_number}?`)) {
-                        window.location.href = `tel:${contacts.recovery_breakdown_number}`;
-                    }
-                } else {
-                    alert('Recovery service number not found. Please update your profile.');
-                }
-            } catch (error) {
-                console.error('Error fetching recovery number:', error);
-                alert('Unable to fetch recovery number. Please try again.');
-            }
-        }
-
-        // Call emergency contact
-        async function callEmergencyContact() {
-            const userId = getUserIdFromStorage();
-
-            if (!userId) {
-                alert('Unable to fetch emergency contact. Please ensure you are logged in.\n\nTip: Complete the signup process via the Typeform link first.');
-                return;
-            }
-
-            console.log('🔍 Fetching emergency contact for userId:', userId);
-
-            try {
-                // Use the API endpoint like incident.html does
-                const response = await fetch(`/api/emergency/contacts/${userId}`);
-
-                if (!response.ok) {
-                    throw new Error(`API returned status ${response.status}`);
-                }
-
-                const contacts = await response.json();
-
-                // Parse emergency contact (handles pipe-delimited format)
-                const phoneNumber = contacts.emergency_contact;
-
-                if (phoneNumber) {
-                    if (confirm(`Call your emergency contact: ${phoneNumber}?`)) {
-                        window.location.href = `tel:${phoneNumber}`;
-                    }
-                } else {
-                    alert('Emergency contact number not found. Please update your profile.');
-                }
-            } catch (error) {
-                console.error('Error fetching emergency contact:', error);
-                alert('Unable to fetch emergency contact. Please try again.');
-            }
-        }
     </script>
     <script src="/js/mascot.js"></script></body>
 </html>
