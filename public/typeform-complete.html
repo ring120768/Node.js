@@ -1,6 +1,22 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
+    <!--
+    ⚠️ NOTE: This intermediary page is NOT NEEDED with the correct Typeform configuration.
+
+    Typeform does NOT pass hidden fields in the redirect URL.
+    Hidden fields are passed in the WEBHOOK payload to the backend only.
+
+    The correct flow is:
+    1. signup-auth.html stores userId in localStorage/sessionStorage
+    2. User redirects to Typeform (with hidden fields in the URL TO Typeform)
+    3. Typeform sends webhook to backend (with hidden fields in webhook payload)
+    4. Typeform redirects to /payment-success.html (NO parameters in URL)
+    5. payment-success.html reads userId from storage (set by signup-auth.html)
+
+    This file was created based on incorrect understanding of Typeform.
+    Keeping it for reference only.
+    -->
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Processing...</title>

@@ -577,8 +577,12 @@
             }
         }
 
-        // Extract user data from URL parameters (from Typeform redirect)
-        function extractUserParams() {
+        // ⚠️ DEPRECATED - Kept for reference only
+        // This was the OLD approach that tried to read parameters from Typeform redirect URL
+        // This is INCORRECT because Typeform doesn't pass hidden fields in redirect URLs
+        // Hidden fields are passed in the WEBHOOK to the backend, not in redirect URLs
+        // Use getUserIdFromStorage() instead - it reads from storage set by signup-auth.html
+        function extractUserParams_DEPRECATED() {
             const urlParams = new URLSearchParams(window.location.search);
 
             const user_id = urlParams.get('auth_user_id') ||
@@ -590,15 +594,15 @@
             const auth_code = urlParams.get('auth_code');
             const product_id = urlParams.get('product_id');
 
-            console.log('🔥 Typeform redirect parameters:', {
+            console.log('⚠️ DEPRECATED: extractUserParams - Typeform does NOT pass parameters in redirect URL');
+            console.log('URL parameters (expected to be empty):', {
                 user_id,
                 email,
                 auth_code,
-                product_id,
-                fullUrl: window.location.href
+                product_id
             });
 
-            // Store in session/localStorage
+            // Store in session/localStorage if somehow parameters are present
             if (user_id) {
                 localStorage.setItem('create_user_id', user_id);
                 sessionStorage.setItem('userId', user_id);
@@ -657,21 +661,24 @@
             // Initialize Supabase first
             await initSupabase();
 
-            // Extract user parameters from URL
-            const { user_id, email } = extractUserParams();
+            // Get userId from browser storage (set by signup-auth.html before Typeform redirect)
+            // NOTE: Typeform does NOT pass hidden fields in redirect URL - they go to webhook only
+            const user_id = getUserIdFromStorage();
+
+            console.log('🔍 UserId from storage:', user_id || 'null');
 
             // Load full user profile from database
             if (user_id) {
+                console.log('✅ Loading profile for userId:', user_id);
                 await loadUserProfile(user_id);
-            } else if (email) {
-                // Fallback: if we only have email but no user_id, just show email
+            } else {
+                console.warn('⚠️ No userId found in storage. User may need to complete signup first.');
                 const userInfoDiv = document.querySelector('.user-info');
                 if (userInfoDiv) {
                     userInfoDiv.innerHTML = `
                         <strong>👤 Welcome!</strong>
                         <div style="margin-top: 8px;">
-                            📧 ${email}<br>
-                            <small style="opacity: 0.8;">View full details in your dashboard</small>
+                            <small style="opacity: 0.8;">Complete the signup process to view your details</small>
                         </div>
                     `;
                 }

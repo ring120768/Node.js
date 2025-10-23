@@ -1,0 +1,316 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Storage Debug Tool</title>
+    <style>
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            max-width: 900px;
+            margin: 40px auto;
+            padding: 20px;
+            background: #f5f5f5;
+        }
+        .debug-section {
+            background: white;
+            padding: 20px;
+            margin-bottom: 20px;
+            border-radius: 8px;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+        }
+        h1 {
+            color: #333;
+            border-bottom: 3px solid #667eea;
+            padding-bottom: 10px;
+        }
+        h2 {
+            color: #667eea;
+            margin-top: 0;
+        }
+        .storage-item {
+            padding: 10px;
+            margin: 5px 0;
+            background: #f8f9fa;
+            border-left: 4px solid #667eea;
+            font-family: 'Courier New', monospace;
+            word-break: break-all;
+        }
+        .storage-key {
+            font-weight: bold;
+            color: #667eea;
+        }
+        .storage-value {
+            color: #333;
+            margin-left: 10px;
+        }
+        .empty {
+            color: #999;
+            font-style: italic;
+        }
+        button {
+            background: #667eea;
+            color: white;
+            border: none;
+            padding: 10px 20px;
+            border-radius: 4px;
+            cursor: pointer;
+            font-size: 14px;
+            margin: 5px;
+        }
+        button:hover {
+            background: #5568d3;
+        }
+        button.danger {
+            background: #dc3545;
+        }
+        button.danger:hover {
+            background: #c82333;
+        }
+        .action-buttons {
+            margin-top: 15px;
+        }
+        .test-result {
+            padding: 15px;
+            margin-top: 10px;
+            border-radius: 4px;
+        }
+        .test-result.success {
+            background: #d4edda;
+            border: 1px solid #c3e6cb;
+            color: #155724;
+        }
+        .test-result.error {
+            background: #f8d7da;
+            border: 1px solid #f5c6cb;
+            color: #721c24;
+        }
+        .info-box {
+            background: #e7f3ff;
+            border-left: 4px solid #2196F3;
+            padding: 15px;
+            margin: 15px 0;
+        }
+    </style>
+</head>
+<body>
+    <h1>🔍 Storage Debug Tool</h1>
+
+    <div class="info-box">
+        <strong>Purpose:</strong> This page shows all browser storage related to the signup flow.
+        Use this to debug why userId might not be available on payment-success.html after Typeform redirect.
+    </div>
+
+    <div class="debug-section">
+        <h2>📦 localStorage Contents</h2>
+        <div id="localStorage-content"></div>
+        <div class="action-buttons">
+            <button onclick="refreshStorage()">🔄 Refresh</button>
+            <button class="danger" onclick="clearLocalStorage()">🗑️ Clear localStorage</button>
+        </div>
+    </div>
+
+    <div class="debug-section">
+        <h2>💾 sessionStorage Contents</h2>
+        <div id="sessionStorage-content"></div>
+        <div class="action-buttons">
+            <button onclick="refreshStorage()">🔄 Refresh</button>
+            <button class="danger" onclick="clearSessionStorage()">🗑️ Clear sessionStorage</button>
+        </div>
+    </div>
+
+    <div class="debug-section">
+        <h2>🧪 Test getUserIdFromStorage()</h2>
+        <p>This tests the same function used by payment-success.html to retrieve userId:</p>
+        <button onclick="testGetUserId()">▶️ Run Test</button>
+        <div id="test-result"></div>
+    </div>
+
+    <div class="debug-section">
+        <h2>✏️ Manually Set Test Data</h2>
+        <p>Simulate signup-auth.html storing userId:</p>
+        <input type="text" id="testUserId" placeholder="Enter test userId (UUID)" style="width: 300px; padding: 8px; margin-right: 10px;">
+        <button onclick="setTestData()">💾 Store Test Data</button>
+        <div class="info-box" style="margin-top: 10px;">
+            <strong>Note:</strong> This mimics what signup-auth.html does before redirecting to Typeform.
+            After setting test data, refresh the page to see if it persists.
+        </div>
+    </div>
+
+    <div class="debug-section">
+        <h2>🔗 Test Flow Simulation</h2>
+        <p>Test the actual signup → Typeform → payment-success flow:</p>
+        <button onclick="simulateSignupFlow()">1️⃣ Simulate Signup (Store Data)</button>
+        <button onclick="window.location.href = '/payment-success.html'">2️⃣ Go to Payment Success</button>
+        <div class="info-box" style="margin-top: 10px;">
+            <strong>Instructions:</strong>
+            <ol>
+                <li>Click "Simulate Signup" to store userId like signup-auth.html does</li>
+                <li>Click "Go to Payment Success" to navigate (simulating Typeform redirect)</li>
+                <li>Check if payment-success.html can read the userId</li>
+            </ol>
+        </div>
+    </div>
+
+    <script>
+        // Same getUserIdFromStorage function used by payment-success.html
+        function getUserIdFromStorage() {
+            // Try direct storage keys first
+            let userId = localStorage.getItem('create_user_id') ||
+                        sessionStorage.getItem('create_user_id') ||
+                        sessionStorage.getItem('userId');
+
+            // Check if userId is a Typeform placeholder (invalid)
+            if (userId && userId.includes('{{')) {
+                console.warn('⚠️ Found invalid Typeform placeholder in storage, clearing:', userId);
+                localStorage.removeItem('create_user_id');
+                sessionStorage.removeItem('create_user_id');
+                sessionStorage.removeItem('userId');
+                userId = null;
+            }
+
+            // Fallback: check carCrashLawyerUser object (from signup-auth.html)
+            if (!userId) {
+                try {
+                    const userData = localStorage.getItem('carCrashLawyerUser') ||
+                                   sessionStorage.getItem('carCrashLawyerUser');
+                    if (userData) {
+                        const parsed = JSON.parse(userData);
+                        userId = parsed.userId || parsed.id || parsed.create_user_id;
+                        console.log('✅ Retrieved userId from carCrashLawyerUser:', userId);
+                    }
+                } catch (e) {
+                    console.error('Error parsing carCrashLawyerUser:', e);
+                }
+            }
+
+            return userId;
+        }
+
+        function displayStorage(storageType, containerId) {
+            const container = document.getElementById(containerId);
+            const storage = storageType === 'local' ? localStorage : sessionStorage;
+
+            if (storage.length === 0) {
+                container.innerHTML = '<div class="empty">Storage is empty</div>';
+                return;
+            }
+
+            let html = '';
+            for (let i = 0; i < storage.length; i++) {
+                const key = storage.key(i);
+                let value = storage.getItem(key);
+
+                // Try to pretty-print JSON
+                try {
+                    const parsed = JSON.parse(value);
+                    value = JSON.stringify(parsed, null, 2);
+                } catch (e) {
+                    // Not JSON, display as-is
+                }
+
+                html += `
+                    <div class="storage-item">
+                        <div class="storage-key">${key}:</div>
+                        <div class="storage-value">${value}</div>
+                    </div>
+                `;
+            }
+
+            container.innerHTML = html;
+        }
+
+        function refreshStorage() {
+            displayStorage('local', 'localStorage-content');
+            displayStorage('session', 'sessionStorage-content');
+        }
+
+        function clearLocalStorage() {
+            if (confirm('Clear all localStorage? This will remove all stored data.')) {
+                localStorage.clear();
+                refreshStorage();
+                alert('✅ localStorage cleared');
+            }
+        }
+
+        function clearSessionStorage() {
+            if (confirm('Clear all sessionStorage? This will remove all session data.')) {
+                sessionStorage.clear();
+                refreshStorage();
+                alert('✅ sessionStorage cleared');
+            }
+        }
+
+        function testGetUserId() {
+            const resultDiv = document.getElementById('test-result');
+            const userId = getUserIdFromStorage();
+
+            if (userId) {
+                resultDiv.innerHTML = `
+                    <div class="test-result success">
+                        <strong>✅ SUCCESS!</strong><br>
+                        getUserIdFromStorage() returned:<br>
+                        <code style="background: white; padding: 5px; display: block; margin-top: 5px; border-radius: 3px;">${userId}</code>
+                    </div>
+                `;
+            } else {
+                resultDiv.innerHTML = `
+                    <div class="test-result error">
+                        <strong>❌ FAILED</strong><br>
+                        getUserIdFromStorage() returned null.<br>
+                        No userId found in storage. User needs to complete signup first.
+                    </div>
+                `;
+            }
+        }
+
+        function setTestData() {
+            const testUserId = document.getElementById('testUserId').value.trim();
+
+            if (!testUserId) {
+                alert('Please enter a test userId (e.g., eac531b7-3d03-4c75-9cf8-46ba065f4cb7)');
+                return;
+            }
+
+            // Mimic what signup-auth.html does
+            const storageData = {
+                userId: testUserId,
+                userEmail: 'test@example.com',
+                authCode: 'test-nonce-123',
+                signupTimestamp: new Date().toISOString()
+            };
+
+            localStorage.setItem('carCrashLawyerUser', JSON.stringify(storageData));
+            sessionStorage.setItem('carCrashLawyerUser', JSON.stringify(storageData));
+            localStorage.setItem('create_user_id', testUserId);
+            sessionStorage.setItem('userId', testUserId);
+
+            alert('✅ Test data stored successfully!\n\nNow try:\n1. Refreshing this page to see if data persists\n2. Going to /payment-success.html to test retrieval');
+            refreshStorage();
+        }
+
+        function simulateSignupFlow() {
+            // Use the actual user ID from the CSV the user provided
+            const actualUserId = 'eac531b7-3d03-4c75-9cf8-46ba065f4cb7';
+
+            const storageData = {
+                userId: actualUserId,
+                userEmail: 'ian.ring@sky.com',
+                authCode: 'simulated-nonce-' + Date.now(),
+                signupTimestamp: new Date().toISOString()
+            };
+
+            localStorage.setItem('carCrashLawyerUser', JSON.stringify(storageData));
+            sessionStorage.setItem('carCrashLawyerUser', JSON.stringify(storageData));
+            localStorage.setItem('create_user_id', actualUserId);
+            sessionStorage.setItem('userId', actualUserId);
+
+            alert('✅ Simulated signup complete!\n\nStored actual userId: ' + actualUserId + '\n\nNow click "Go to Payment Success" to test the redirect.');
+            refreshStorage();
+        }
+
+        // Auto-refresh on page load
+        refreshStorage();
+    </script>
+</body>
+</html>
