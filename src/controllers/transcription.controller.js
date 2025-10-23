@@ -28,10 +28,17 @@ async function transcribeAudio(req, res) {
       return sendError(res, 400, 'No audio file provided', 'MISSING_FILE');
     }
 
-    const userId = req.userId;
+    // Get userId from auth middleware OR from request body (for testing)
+    const userId = req.userId || req.body.userId;
     if (!userId) {
-      return sendError(res, 401, 'User not authenticated', 'UNAUTHORIZED');
+      return sendError(res, 401, 'User not authenticated. Please provide userId.', 'UNAUTHORIZED');
     }
+
+    logger.info('Transcription request', {
+      userId,
+      authMethod: req.userId ? 'middleware' : 'body',
+      fileName: req.file.originalname
+    });
 
     logger.info('Starting audio transcription', {
       userId,
