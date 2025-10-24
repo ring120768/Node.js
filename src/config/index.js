@@ -31,7 +31,22 @@ module.exports = {
 
   openai: {
     apiKey: process.env.OPENAI_API_KEY,
+    whisperModel: 'whisper-1',
     enabled: !!process.env.OPENAI_API_KEY
+  },
+
+  // ==================== UPLOAD ====================
+
+  upload: {
+    allowedAudioTypes: [
+      'audio/webm',
+      'audio/mpeg',
+      'audio/mp3',
+      'audio/wav',
+      'audio/ogg',
+      'audio/m4a'
+    ],
+    maxFileSize: 10 * 1024 * 1024  // 10MB
   },
 
   what3words: {
