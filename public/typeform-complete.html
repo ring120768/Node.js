@@ -1,151 +1,133 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-    <!--
-    ⚠️ NOTE: This intermediary page is NOT NEEDED with the correct Typeform configuration.
-
-    Typeform does NOT pass hidden fields in the redirect URL.
-    Hidden fields are passed in the WEBHOOK payload to the backend only.
-
-    The correct flow is:
-    1. signup-auth.html stores userId in localStorage/sessionStorage
-    2. User redirects to Typeform (with hidden fields in the URL TO Typeform)
-    3. Typeform sends webhook to backend (with hidden fields in webhook payload)
-    4. Typeform redirects to /payment-success.html (NO parameters in URL)
-    5. payment-success.html reads userId from storage (set by signup-auth.html)
-
-    This file was created based on incorrect understanding of Typeform.
-    Keeping it for reference only.
-    -->
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Processing...</title>
+    <title>Processing Your Submission...</title>
     <style>
         body {
-            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
             display: flex;
-            justify-content: center;
             align-items: center;
-            height: 100vh;
-            margin: 0;
+            justify-content: center;
+            min-height: 100vh;
             background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-            color: white;
+            margin: 0;
+            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
         }
-        .loader {
+        .processing-container {
+            background: white;
+            padding: 3rem;
+            border-radius: 16px;
+            box-shadow: 0 20px 60px rgba(0,0,0,0.3);
             text-align: center;
+            max-width: 500px;
         }
         .spinner {
-            border: 4px solid rgba(255, 255, 255, 0.3);
+            width: 60px;
+            height: 60px;
+            border: 4px solid #f3f3f3;
+            border-top: 4px solid #667eea;
             border-radius: 50%;
-            border-top: 4px solid white;
-            width: 40px;
-            height: 40px;
             animation: spin 1s linear infinite;
-            margin: 0 auto 20px;
+            margin: 0 auto 2rem;
         }
         @keyframes spin {
             0% { transform: rotate(0deg); }
             100% { transform: rotate(360deg); }
         }
-        h1 {
-            font-size: 24px;
-            font-weight: 600;
-            margin: 0;
+        h1 { color: #333; margin-bottom: 1rem; font-size: 1.8rem; }
+        p { color: #666; line-height: 1.6; margin-bottom: 1rem; }
+        .status-message {
+            background: #f0f7ff;
+            border-left: 4px solid #667eea;
+            padding: 1rem;
+            margin-top: 1.5rem;
+            border-radius: 4px;
+            text-align: left;
         }
-        p {
-            margin: 10px 0 0;
-            opacity: 0.9;
+        .error-message {
+            background: #fff0f0;
+            border-left: 4px solid #e74c3c;
+            color: #c0392b;
+            padding: 1rem;
+            margin-top: 1.5rem;
+            border-radius: 4px;
         }
+        .manual-login-btn {
+            margin-top: 1.5rem;
+            padding: 12px 32px;
+            background: #667eea;
+            color: white;
+            border: none;
+            border-radius: 8px;
+            font-size: 16px;
+            cursor: pointer;
+            text-decoration: none;
+            display: inline-block;
+        }
+        .manual-login-btn:hover { background: #5568d3; }
     </style>
 </head>
 <body>
-    <div class="loader">
+    <div class="processing-container">
         <div class="spinner"></div>
-        <h1>Processing your submission...</h1>
-        <p>Please wait, redirecting you now.</p>
+        <h1>🎉 Thank You!</h1>
+        <p>We've received your information and are processing it now...</p>
+        <div id="statusMessage" class="status-message">
+            <strong>Status:</strong> <span id="status">Checking your submission...</span>
+        </div>
+        <a href="/login.html?redirect=/transcription-status.html" id="manualLoginBtn" class="manual-login-btn" style="display: none;">
+            Continue to Login
+        </a>
     </div>
 
     <script>
-        /**
-         * Typeform Redirect Handler
-         *
-         * This page acts as an intermediary between Typeform and payment-success.html.
-         * Typeform redirects here with hidden fields as URL parameters.
-         * We extract them, store in localStorage/sessionStorage, then redirect to payment-success.html
-         *
-         * Flow:
-         * Typeform → /typeform-complete.html?auth_user_id=xxx&email=xxx&...
-         *          → Store in storage
-         *          → /payment-success.html (clean URL, no params)
-         */
-
-        console.log('🎯 Typeform completion handler started');
-
-        // Extract all URL parameters
         const urlParams = new URLSearchParams(window.location.search);
+        const email = urlParams.get('email') || urlParams.get('email_address');
+        const createUserId = urlParams.get('create_user_id');
 
-        // Extract hidden fields from URL
-        const auth_user_id = urlParams.get('auth_user_id') ||
-                            urlParams.get('user_id') ||
-                            urlParams.get('userId') ||
-                            urlParams.get('create_user_id');
+        console.log('🔍 Typeform Complete - Auto Login Attempt', { email, createUserId });
 
-        const email = urlParams.get('email');
-        const auth_code = urlParams.get('auth_code');
-        const product_id = urlParams.get('product_id');
+        const statusEl = document.getElementById('status');
+        const manualLoginBtn = document.getElementById('manualLoginBtn');
 
-        console.log('📦 Extracted parameters:', {
-            auth_user_id,
-            email,
-            auth_code,
-            product_id,
-            fullUrl: window.location.href
-        });
+        async function attemptAutoLogin() {
+            try {
+                // Wait for webhook to process
+                statusEl.textContent = 'Setting up your account...';
+                await new Promise(resolve => setTimeout(resolve, 3000));
 
-        // Store in both localStorage and sessionStorage for maximum compatibility
-        if (auth_user_id) {
-            // Store in multiple formats for compatibility
-            localStorage.setItem('create_user_id', auth_user_id);
-            localStorage.setItem('userId', auth_user_id);
-            sessionStorage.setItem('create_user_id', auth_user_id);
-            sessionStorage.setItem('userId', auth_user_id);
+                if (!email) {
+                    throw new Error('Email parameter missing from URL');
+                }
 
-            // Also store in carCrashLawyerUser object format (for backward compatibility)
-            const userData = {
-                userId: auth_user_id,
-                id: auth_user_id,
-                create_user_id: auth_user_id,
-                email: email || null,
-                auth_code: auth_code || null,
-                product_id: product_id || null,
-                timestamp: new Date().toISOString()
-            };
+                // Check if user exists and try to create session
+                statusEl.textContent = 'Logging you in...';
+                
+                const response = await fetch(`/api/auth/session-check?email=${encodeURIComponent(email)}`, {
+                    credentials: 'include'
+                });
 
-            localStorage.setItem('carCrashLawyerUser', JSON.stringify(userData));
-            sessionStorage.setItem('carCrashLawyerUser', JSON.stringify(userData));
+                if (response.ok) {
+                    statusEl.textContent = 'Success! Redirecting...';
+                    setTimeout(() => {
+                        window.location.href = '/transcription-status.html';
+                    }, 1000);
+                } else {
+                    // Fallback to manual login
+                    throw new Error('Session creation failed');
+                }
 
-            console.log('✅ User data stored successfully');
-
-            // Store individual fields if available
-            if (email) {
-                sessionStorage.setItem('userEmail', email);
+            } catch (error) {
+                console.error('Auto-login failed:', error);
+                const statusDiv = document.getElementById('statusMessage');
+                statusDiv.className = 'error-message';
+                statusDiv.innerHTML = '<strong>⚠️ Please login to continue</strong><br>Click the button below.';
+                manualLoginBtn.style.display = 'inline-block';
             }
-            if (auth_code) {
-                sessionStorage.setItem('auth_code', auth_code);
-            }
-            if (product_id) {
-                sessionStorage.setItem('product_id', product_id);
-            }
-        } else {
-            console.warn('⚠️ No auth_user_id found in URL parameters');
         }
 
-        // Redirect to payment-success.html after a short delay (for user feedback)
-        setTimeout(() => {
-            console.log('🚀 Redirecting to payment-success.html');
-            window.location.href = '/payment-success.html';
-        }, 500); // 500ms delay to show the "Processing..." message
-
+        attemptAutoLogin();
     </script>
 </body>
 </html>
