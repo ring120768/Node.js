@@ -169,32 +169,20 @@
             transform: translateY(0);
         }
 
-        /* Traffic Light System - Urgency-Based Colors */
+        /* Traffic Light System - Urgency-Based Colors (matches incident.html) */
         .emergency-btn.critical {
-            background: rgba(239, 68, 68, 0.3);    /* Red - Critical/Emergency */
-            border-color: rgba(239, 68, 68, 0.6);
-        }
-
-        .emergency-btn.critical:hover {
-            background: rgba(239, 68, 68, 0.4);
+            background: #dc2626;    /* Solid Red - Critical/Emergency */
+            color: white;
         }
 
         .emergency-btn.recovery {
-            background: rgba(251, 191, 36, 0.3);   /* Amber - Important */
-            border-color: rgba(251, 191, 36, 0.6);
-        }
-
-        .emergency-btn.recovery:hover {
-            background: rgba(251, 191, 36, 0.4);
+            background: #f59e0b;    /* Solid Amber - Important */
+            color: white;
         }
 
         .emergency-btn.contact {
-            background: rgba(16, 185, 129, 0.3);   /* Green - Non-critical */
-            border-color: rgba(16, 185, 129, 0.6);
-        }
-
-        .emergency-btn.contact:hover {
-            background: rgba(16, 185, 129, 0.4);
+            background: #3b82f6;    /* Solid Blue - Non-critical */
+            color: white;
         }
 
         .btn-icon {
@@ -699,6 +687,7 @@
 
         // ===== EMERGENCY FUNCTIONS =====
         let emergencyContacts = null;
+        let what3wordsData = null;  // For future location integration
 
         // Load emergency contacts once on page load
         async function loadUserData() {
@@ -738,8 +727,20 @@
 
             // 999 button - always available (red for critical)
             call999Btn.onclick = function() {
-                console.log('📞 Calling 999: 999');
-                window.location.href = 'tel:999';
+                const emergencyNumber = emergencyContacts?.emergency_services_number || '999';
+                console.log('📞 Calling 999:', emergencyNumber);
+
+                let message = `This will call ${emergencyNumber} Emergency Services.`;
+
+                // Include what3words location if available
+                if (what3wordsData) {
+                    message += `\n\nYour what3words location: ///${what3wordsData}`;
+                    message += '\n\nPlease provide this location to the operator.';
+                }
+
+                if (confirm(message)) {
+                    window.location.href = `tel:${emergencyNumber}`;
+                }
             };
 
             // Recovery button - conditional (amber for important)
