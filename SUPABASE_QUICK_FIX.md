@@ -90,6 +90,7 @@ The new scripts:
 ✅ Include `CREATE TABLE IF NOT EXISTS` for safety
 ✅ Remove comments that might cause parsing issues
 ✅ Cleaner formatting for Supabase SQL Editor
+✅ Fixed `create_user_id` column type to TEXT (matches user_signup table)
 
 ---
 

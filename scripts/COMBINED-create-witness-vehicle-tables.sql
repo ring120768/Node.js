@@ -10,7 +10,7 @@
 CREATE TABLE IF NOT EXISTS incident_witnesses (
     id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
     incident_id UUID NOT NULL REFERENCES incident_reports(id) ON DELETE CASCADE,
-    create_user_id UUID NOT NULL REFERENCES user_signup(create_user_id) ON DELETE CASCADE,
+    create_user_id TEXT NOT NULL REFERENCES user_signup(create_user_id) ON DELETE CASCADE,
     witness_name TEXT NOT NULL,
     witness_phone TEXT,
     witness_email TEXT,
@@ -69,7 +69,7 @@ EXECUTE FUNCTION update_incident_witnesses_updated_at();
 CREATE TABLE IF NOT EXISTS incident_other_vehicles (
     id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
     incident_id UUID NOT NULL REFERENCES incident_reports(id) ON DELETE CASCADE,
-    create_user_id UUID NOT NULL REFERENCES user_signup(create_user_id) ON DELETE CASCADE,
+    create_user_id TEXT NOT NULL REFERENCES user_signup(create_user_id) ON DELETE CASCADE,
     driver_name TEXT,
     driver_phone TEXT,
     driver_address TEXT,
