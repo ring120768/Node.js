@@ -48,7 +48,7 @@ async function testWitnessVehiclePdf() {
     console.log('1️⃣ Checking user exists...');
     const { data: user, error: userError } = await supabase
       .from('user_signup')
-      .select('email, first_name, last_name')
+      .select('email, name, surname')
       .eq('create_user_id', userId)
       .single();
 
@@ -56,7 +56,7 @@ async function testWitnessVehiclePdf() {
       console.log(colors.red, `❌ User not found: ${userError?.message || 'No data'}`);
       process.exit(1);
     }
-    console.log(colors.green, `✅ User found: ${user.first_name} ${user.last_name} (${user.email})`);
+    console.log(colors.green, `✅ User found: ${user.name} ${user.surname} (${user.email})`);
 
     // Step 2: Check for incident
     console.log('\n2️⃣ Checking for incident...');
