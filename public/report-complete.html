@@ -169,6 +169,28 @@
             transform: translateY(0);
         }
 
+        /* Traffic Light System - Button State Colors */
+        .emergency-btn.btn-available {
+            background: rgba(16, 185, 129, 0.3);
+            border-color: rgba(16, 185, 129, 0.6);
+        }
+
+        .emergency-btn.btn-available:hover {
+            background: rgba(16, 185, 129, 0.4);
+        }
+
+        .emergency-btn.btn-unavailable {
+            background: rgba(239, 68, 68, 0.2);
+            border-color: rgba(239, 68, 68, 0.4);
+            opacity: 0.7;
+            cursor: not-allowed;
+        }
+
+        .emergency-btn.btn-unavailable:hover {
+            background: rgba(239, 68, 68, 0.2);
+            transform: none;
+        }
+
         .btn-icon {
             font-size: 24px;
         }
@@ -407,19 +429,19 @@
             </div>
 
             <div class="emergency-buttons">
-                <button class="emergency-btn critical" onclick="makeEmergencyCall()">
+                <button class="emergency-btn critical" id="call999Btn">
                     <span class="btn-icon">📞</span>
                     <span>Call 999 - Emergency Services</span>
                 </button>
 
-                <button class="emergency-btn recovery" onclick="makeRecoveryCall()">
+                <button class="emergency-btn recovery" id="recoveryBtn">
                     <span class="btn-icon">🚗</span>
-                    <span>Call Recovery Service</span>
+                    <span id="recoveryBtnText">Call Recovery Service</span>
                 </button>
 
-                <button class="emergency-btn contact" onclick="makeEmergencyContactCall()">
+                <button class="emergency-btn contact" id="emergencyContactBtn">
                     <span class="btn-icon">👤</span>
-                    <span>Call Emergency Contact</span>
+                    <span id="emergencyContactBtnText">Call Emergency Contact</span>
                 </button>
             </div>
         </div>
@@ -670,68 +692,97 @@
         const userEmail = sessionStorage.getItem('userEmail');
 
         // ===== EMERGENCY FUNCTIONS =====
-        async function makeEmergencyCall() {
-            window.location.href = 'tel:999';
-        }
+        let emergencyContacts = null;
 
-        async function makeRecoveryCall() {
+        // Load emergency contacts once on page load
+        async function loadUserData() {
             if (!userId) {
-                alert('Unable to fetch recovery number. Please ensure you are logged in.');
+                console.log('⚠️ No userId available, skipping emergency contacts load');
                 return;
             }
 
             try {
-                // Use the API endpoint like incident.html does
+                console.log('📞 Loading emergency contacts for userId:', userId);
                 const response = await fetch(`/api/emergency/contacts/${userId}`);
 
+                console.log('API Response status:', response.status, response.statusText);
+
                 if (!response.ok) {
-                    throw new Error(`API returned status ${response.status}`);
+                    throw new Error(`API returned ${response.status}`);
                 }
 
-                const contacts = await response.json();
+                emergencyContacts = await response.json();
+                console.log('✅ Emergency contacts loaded:', emergencyContacts);
 
-                if (contacts.recovery_breakdown_number) {
-                    if (confirm(`Call recovery service: ${contacts.recovery_breakdown_number}?`)) {
-                        window.location.href = `tel:${contacts.recovery_breakdown_number}`;
+                // Update button handlers with loaded contacts
+                updateEmergencyButtons();
+
+            } catch (error) {
+                console.error('❌ Error loading emergency contacts:', error);
+            }
+        }
+
+        // Update button handlers and apply traffic light colors
+        function updateEmergencyButtons() {
+            const call999Btn = document.getElementById('call999Btn');
+            const recoveryBtn = document.getElementById('recoveryBtn');
+            const emergencyContactBtn = document.getElementById('emergencyContactBtn');
+            const recoveryBtnText = document.getElementById('recoveryBtnText');
+            const emergencyContactBtnText = document.getElementById('emergencyContactBtnText');
+
+            // 999 button - always available (green)
+            call999Btn.classList.add('btn-available');
+            call999Btn.onclick = function() {
+                console.log('📞 Calling 999: 999');
+                window.location.href = 'tel:999';
+            };
+
+            // Recovery button - conditional
+            if (emergencyContacts?.recovery_breakdown_number) {
+                console.log('✅ Recovery button enabled with number:', emergencyContacts.recovery_breakdown_number);
+                recoveryBtn.classList.remove('btn-unavailable');
+                recoveryBtn.classList.add('btn-available');
+                recoveryBtnText.textContent = 'Call Recovery Service';
+
+                recoveryBtn.onclick = function() {
+                    console.log('📞 Calling recovery:', emergencyContacts.recovery_breakdown_number);
+                    if (confirm(`Call recovery service: ${emergencyContacts.recovery_breakdown_number}?`)) {
+                        window.location.href = `tel:${emergencyContacts.recovery_breakdown_number}`;
                     }
-                } else {
+                };
+            } else {
+                console.log('❌ Recovery button disabled - no number available');
+                recoveryBtn.classList.remove('btn-available');
+                recoveryBtn.classList.add('btn-unavailable');
+                recoveryBtnText.textContent = 'No Recovery Number';
+
+                recoveryBtn.onclick = function() {
                     alert('Recovery service number not found. Please update your profile.');
-                }
-            } catch (error) {
-                console.error('Error fetching recovery number:', error);
-                alert('Unable to fetch recovery number. Please try again.');
-            }
-        }
-
-        async function makeEmergencyContactCall() {
-            if (!userId) {
-                alert('Unable to fetch emergency contact. Please ensure you are logged in.');
-                return;
+                };
             }
 
-            try {
-                // Use the API endpoint like incident.html does
-                const response = await fetch(`/api/emergency/contacts/${userId}`);
+            // Emergency contact button - conditional
+            if (emergencyContacts?.emergency_contact) {
+                console.log('✅ Emergency contact button enabled with number:', emergencyContacts.emergency_contact);
+                emergencyContactBtn.classList.remove('btn-unavailable');
+                emergencyContactBtn.classList.add('btn-available');
+                emergencyContactBtnText.textContent = 'Call Emergency Contact';
 
-                if (!response.ok) {
-                    throw new Error(`API returned status ${response.status}`);
-                }
-
-                const contacts = await response.json();
-
-                // Parse emergency contact (handles pipe-delimited format)
-                const phoneNumber = contacts.emergency_contact;
-
-                if (phoneNumber) {
-                    if (confirm(`Call your emergency contact: ${phoneNumber}?`)) {
-                        window.location.href = `tel:${phoneNumber}`;
+                emergencyContactBtn.onclick = function() {
+                    console.log('📞 Calling emergency contact:', emergencyContacts.emergency_contact);
+                    if (confirm(`Call your emergency contact: ${emergencyContacts.emergency_contact}?`)) {
+                        window.location.href = `tel:${emergencyContacts.emergency_contact}`;
                     }
-                } else {
+                };
+            } else {
+                console.log('❌ Emergency contact button disabled - no number available');
+                emergencyContactBtn.classList.remove('btn-available');
+                emergencyContactBtn.classList.add('btn-unavailable');
+                emergencyContactBtnText.textContent = 'No Emergency Contact';
+
+                emergencyContactBtn.onclick = function() {
                     alert('Emergency contact number not found. Please update your profile.');
-                }
-            } catch (error) {
-                console.error('Error fetching emergency contact:', error);
-                alert('Unable to fetch emergency contact. Please try again.');
+                };
             }
         }
 
@@ -875,6 +926,9 @@
             await initSupabase();
             const fromTypeform = extractTypeformParams();
             checkIncidentSubmission();
+
+            // Load emergency contacts and update button handlers
+            await loadUserData();
 
             console.log('📋 Page Context:', {
                 userId,
