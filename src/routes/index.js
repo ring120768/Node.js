@@ -25,6 +25,8 @@ const incidentRoutes = require('./incident.routes'); // NEW: Incident reports ro
 const profileRoutes = require('./profile.routes'); // NEW: User profile management
 const userDocumentsRoutes = require('./userDocuments.routes'); // NEW: User documents/images API
 const imageProxyRoutes = require('./imageProxy.routes'); // NEW: Image proxy for authenticated access
+const witnessesRoutes = require('./witnesses.routes'); // NEW: Witnesses management
+const vehiclesRoutes = require('./vehicles.routes'); // NEW: Other vehicles with DVLA integration
 
 // GitHub webhooks are mounted in app.js via webhook.routes.js (not imported here)
 const locationRoutes = require('./location.routes');
@@ -269,6 +271,8 @@ router.get('/system-status', async (req, res) => {
                 <li><code>/api/emergency/*</code> - Emergency contacts</li>
                 <li><code>/api/pdf/*</code> - PDF generation</li>
                 <li><code>/api/location/*</code> - Location services</li>
+                <li><code>/api/witnesses/*</code> - Witness management</li>
+                <li><code>/api/other-vehicles/*</code> - Other vehicles (DVLA)</li>
                 <li><code>/api/debug/*</code> - Debug tools</li>
             </ul>
         </div>
@@ -317,6 +321,8 @@ router.use('/api/incident-reports', incidentRoutes); // NEW: Incident reports ro
 router.use('/api/profile', profileRoutes); // NEW: User profile management
 router.use('/api/user-documents', userDocumentsRoutes); // NEW: User documents/images API
 router.use('/api', imageProxyRoutes); // NEW: Image proxy routes (/api/images/:id)
+router.use('/api/witnesses', witnessesRoutes); // NEW: Witnesses management
+router.use('/api/other-vehicles', vehiclesRoutes); // NEW: Other vehicles with DVLA integration
 // Note: Webhook routes are mounted directly in app.js for raw body handling
 // GitHub webhooks are mounted in app.js via webhook.routes.js (not here)
 router.use('/api/location', locationRoutes);
