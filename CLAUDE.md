@@ -1071,6 +1071,11 @@ git push origin branch-name
 - `TYPEFORM_SUPABASE_FIELD_MAPPING.md` - **Complete mapping of all 160+ Typeform fields to Supabase database columns** (User Signup + Incident Report forms). Essential reference for understanding webhook processing, data structure, and field relationships. Includes pipe-delimited format documentation, image processing notes, and API endpoints.
 - `TYPEFORM_QUESTIONS_REFERENCE.md` - **Actual question text and UX flow for all Typeform forms**. Documents exact question wording, field types, validation rules, conditional logic, and hidden fields as users see them. Critical for understanding user input, form flow, and data context when generating PDF reports.
 
+### Authentication & User Flow Documentation
+- `LOGIN_REDIRECT_FIX.md` - **Complete documentation of login redirect URL handling**. Fixes malformed redirect URLs causing DNS errors (e.g., when accessing from Replit preview URLs). Includes proper URL decoding, security protection against open redirects, and comprehensive test cases. Essential reference for understanding redirect flow from login → dashboard/transcription-status.
+- `TYPEFORM_AUTH_FIX.md` - **Seamless Typeform-to-dashboard authentication flow**. Documents two solution approaches (direct redirect vs intermediate auth check) for eliminating login screen between Typeform completion and transcription-status page. Includes cookie persistence requirements and troubleshooting guide.
+- `SIGNUP_ERROR_FIX.md` - **Troubleshooting guide for signup JSON parsing errors**. Diagnoses "Unexpected token 'I', 'Internal S'..." error on Replit deployment. Root cause analysis (plain text vs JSON response), environment variable verification, and step-by-step fixes. Must be resolved before testing Typeform auth flow.
+
 ### PDF Generation Documentation
 - `ADOBE_FORM_FILLING_GUIDE.md` - Complete 150+ field mapping reference for PDF form filling
 - `QUICK_START_FORM_FILLING.md` - PDF generation quick start guide
@@ -1081,7 +1086,76 @@ git push origin branch-name
 - `QUICK_DASHBOARD_TEST.md` - 5-minute dashboard test procedure
 - `IMPLEMENTATION_SUMMARY.md` - Latest implementation details
 
+## Redirect Handling Best Practices
+
+### Login/Logout Redirect Flow
+
+**Pattern:** When redirecting users to login, always preserve their intended destination:
+
+```javascript
+// ✅ CORRECT: Encode the destination URL
+const returnUrl = encodeURIComponent(window.location.pathname + window.location.search);
+window.location.href = `/login.html?redirect=${returnUrl}`;
+```
+
+**In login.html, properly decode and validate:**
+
+```javascript
+function getRedirectUrl() {
+  const urlParams = new URLSearchParams(window.location.search);
+  const redirect = urlParams.get('redirect');
+
+  if (!redirect) return '/index.html';
+
+  // 1. Decode URL-encoded parameter
+  let decodedRedirect = decodeURIComponent(redirect);
+
+  // 2. Security: Extract path only from full URLs
+  if (decodedRedirect.includes('://')) {
+    const url = new URL(decodedRedirect);
+    decodedRedirect = url.pathname + url.search + url.hash;
+  }
+
+  // 3. Ensure leading slash
+  return decodedRedirect.startsWith('/') ? decodedRedirect : `/${decodedRedirect}`;
+}
+```
+
+**Common mistakes to avoid:**
+
+❌ **Don't:** Blindly add `/` to redirect
+```javascript
+const finalUrl = `/${redirect}`;  // Breaks if redirect already has /
+```
+
+❌ **Don't:** Forget to decode
+```javascript
+const redirect = urlParams.get('redirect');  // May be %2Ftranscription-status.html
+window.location.href = redirect;  // Browser can't navigate to encoded URL
+```
+
+❌ **Don't:** Allow external redirects
+```javascript
+window.location.href = redirect;  // Could redirect to https://evil.com
+```
+
+✅ **Do:** Decode, validate, extract path only
+```javascript
+// See LOGIN_REDIRECT_FIX.md for complete implementation
+```
+
+### Security Considerations
+
+**Open Redirect Prevention:**
+- Always extract pathname from full URLs (ignore domain)
+- Ensure result starts with `/` (relative path)
+- Never redirect to external domains
+- Use try/catch for URL parsing
+- Provide safe fallback (`/index.html`)
+
+**See `LOGIN_REDIRECT_FIX.md` for complete documentation.**
+
 ---
 
-**Last Updated:** 2025-10-21
+**Last Updated:** 2025-10-24
 **For Questions:** Review `replit.md` for comprehensive system documentation

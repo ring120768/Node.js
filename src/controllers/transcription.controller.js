@@ -81,14 +81,39 @@ async function transcribeAudio(req, res) {
     });
 
     // Transcribe with OpenAI Whisper
-    logger.info('Sending to OpenAI Whisper...');
-
-    const transcription = await openai.audio.transcriptions.create({
-      file: req.file.buffer,
-      model: config.openai.whisperModel,
-      language: 'en',
-      response_format: 'verbose_json'
+    logger.info('Sending to OpenAI Whisper...', {
+      fileName: req.file.originalname,
+      fileSize: req.file.size,
+      mimeType: req.file.mimetype
     });
+
+    // Convert buffer to stream (required by OpenAI SDK)
+    const { Readable } = require('stream');
+    const audioStream = Readable.from(req.file.buffer);
+    audioStream.path = req.file.originalname; // OpenAI SDK needs filename
+
+    logger.info('Stream created, calling OpenAI API...');
+
+    let transcription;
+    try {
+      transcription = await openai.audio.transcriptions.create({
+        file: audioStream,
+        model: config.openai.whisperModel,
+        language: 'en',
+        response_format: 'verbose_json'
+      });
+
+      logger.success('OpenAI API call succeeded!');
+    } catch (openaiError) {
+      logger.error('OpenAI API error:', {
+        message: openaiError.message,
+        status: openaiError.status,
+        type: openaiError.type,
+        code: openaiError.code,
+        param: openaiError.param
+      });
+      throw openaiError; // Re-throw to be caught by outer catch
+    }
 
     logger.success('Transcription complete', {
       userId,
