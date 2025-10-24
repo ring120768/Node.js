@@ -483,27 +483,29 @@
             <form id="witnessForm">
                 <div class="form-group">
                     <label for="witnessName">Full Name *</label>
-                    <input type="text" id="witnessName" name="witnessName" required>
+                    <input type="text" id="witnessName" name="witness_name" required>
                 </div>
 
                 <div class="form-group">
-                    <label for="witnessAddress">Address *</label>
-                    <input type="text" id="witnessAddress" name="witnessAddress" required>
-                </div>
-
-                <div class="form-group">
-                    <label for="witnessMobile">Mobile Number *</label>
-                    <input type="tel" id="witnessMobile" name="witnessMobile" required>
+                    <label for="witnessPhone">Phone Number *</label>
+                    <input type="tel" id="witnessPhone" name="witness_phone" required
+                           placeholder="e.g., 07411005390">
                 </div>
 
                 <div class="form-group">
                     <label for="witnessEmail">Email Address</label>
-                    <input type="email" id="witnessEmail" name="witnessEmail">
+                    <input type="email" id="witnessEmail" name="witness_email">
+                </div>
+
+                <div class="form-group">
+                    <label for="witnessAddress">Address</label>
+                    <textarea id="witnessAddress" name="witness_address" rows="2"
+                              placeholder="Full address (optional)"></textarea>
                 </div>
 
                 <div class="form-group">
                     <label for="witnessStatement">Witness Statement *</label>
-                    <textarea id="witnessStatement" name="witnessStatement" required 
+                    <textarea id="witnessStatement" name="witness_statement" required rows="4"
                               placeholder="Please describe what the witness observed..."></textarea>
                 </div>
 
@@ -530,58 +532,81 @@
             <div class="error-message" id="vehicleError"></div>
 
             <form id="vehicleForm">
+                <!-- Vehicle Registration with DVLA Lookup -->
+                <div class="form-group">
+                    <label for="vehicleLicensePlate">Vehicle Registration *
+                        <span style="font-size: 12px; color: #666;">(DVLA auto-lookup)</span>
+                    </label>
+                    <div style="display: flex; gap: 10px;">
+                        <input type="text" id="vehicleLicensePlate" name="vehicle_license_plate" required
+                               placeholder="e.g., AB12CDE" style="flex: 1; text-transform: uppercase;">
+                        <button type="button" id="dvlaLookupBtn" class="modal-btn primary"
+                                style="padding: 10px 20px; white-space: nowrap;">
+                            🔍 Lookup
+                        </button>
+                    </div>
+                    <small id="dvlaStatus" style="display: block; margin-top: 5px; font-size: 12px;"></small>
+                </div>
+
+                <!-- Vehicle Details (auto-populated by DVLA) -->
+                <div id="vehicleDetailsSection" style="display: none; background: #f0f9ff; padding: 15px; border-radius: 8px; margin-bottom: 15px;">
+                    <h4 style="color: #0369a1; margin-bottom: 10px; font-size: 14px;">✅ Vehicle Details (from DVLA)</h4>
+                    <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 10px; font-size: 13px;">
+                        <div><strong>Make:</strong> <span id="dvlaMake">-</span></div>
+                        <div><strong>Model:</strong> <span id="dvlaModel">-</span></div>
+                        <div><strong>Color:</strong> <span id="dvlaColor">-</span></div>
+                        <div><strong>Year:</strong> <span id="dvlaYear">-</span></div>
+                    </div>
+                </div>
+
+                <!-- Driver Information -->
                 <div class="form-group">
                     <label for="driverName">Driver's Full Name *</label>
-                    <input type="text" id="driverName" name="driverName" required>
+                    <input type="text" id="driverName" name="driver_name" required>
                 </div>
 
                 <div class="form-group">
-                    <label for="driverAddress">Driver's Address *</label>
-                    <input type="text" id="driverAddress" name="driverAddress" required>
+                    <label for="driverPhone">Driver's Phone Number *</label>
+                    <input type="tel" id="driverPhone" name="driver_phone" required
+                           placeholder="e.g., 07411005390">
                 </div>
 
                 <div class="form-group">
-                    <label for="driverMobile">Driver's Mobile Number *</label>
-                    <input type="tel" id="driverMobile" name="driverMobile" required>
+                    <label for="driverAddress">Driver's Address</label>
+                    <textarea id="driverAddress" name="driver_address" rows="2"></textarea>
                 </div>
 
-                <div class="form-group">
-                    <label for="driverEmail">Driver's Email</label>
-                    <input type="email" id="driverEmail" name="driverEmail">
-                </div>
-
-                <div class="form-group">
-                    <label for="vehicleReg">Vehicle Registration *</label>
-                    <input type="text" id="vehicleReg" name="vehicleReg" required 
-                           placeholder="e.g., AB12 CDE">
-                </div>
-
-                <div class="form-group">
-                    <label for="vehicleMake">Vehicle Make *</label>
-                    <input type="text" id="vehicleMake" name="vehicleMake" required 
-                           placeholder="e.g., Ford">
-                </div>
-
-                <div class="form-group">
-                    <label for="vehicleModel">Vehicle Model *</label>
-                    <input type="text" id="vehicleModel" name="vehicleModel" required 
-                           placeholder="e.g., Focus">
-                </div>
-
-                <div class="form-group">
-                    <label for="vehicleColor">Vehicle Color</label>
-                    <input type="text" id="vehicleColor" name="vehicleColor" 
-                           placeholder="e.g., Blue">
-                </div>
-
+                <!-- Insurance Information -->
                 <div class="form-group">
                     <label for="insuranceCompany">Insurance Company</label>
-                    <input type="text" id="insuranceCompany" name="insuranceCompany">
+                    <input type="text" id="insuranceCompany" name="insurance_company">
                 </div>
 
                 <div class="form-group">
-                    <label for="insurancePolicy">Policy Number</label>
-                    <input type="text" id="insurancePolicy" name="insurancePolicy">
+                    <label for="policyNumber">Policy Number</label>
+                    <input type="text" id="policyNumber" name="policy_number">
+                </div>
+
+                <div class="form-group">
+                    <label for="policyCover">Policy Cover Type</label>
+                    <select id="policyCover" name="policy_cover">
+                        <option value="">Select...</option>
+                        <option value="comprehensive">Comprehensive</option>
+                        <option value="third_party_fire_theft">Third Party, Fire & Theft</option>
+                        <option value="third_party">Third Party Only</option>
+                    </select>
+                </div>
+
+                <div class="form-group">
+                    <label for="policyHolder">Policy Holder Name</label>
+                    <input type="text" id="policyHolder" name="policy_holder">
+                </div>
+
+                <!-- Damage Description -->
+                <div class="form-group">
+                    <label for="damageDescription">Damage Description</label>
+                    <textarea id="damageDescription" name="damage_description" rows="3"
+                              placeholder="Describe any visible damage to the vehicle..."></textarea>
                 </div>
 
                 <div class="modal-buttons">
@@ -820,97 +845,190 @@
             document.querySelector(`#${modalId} .error-message`).classList.remove('show');
         }
 
+        // ===== DVLA LOOKUP =====
+        document.getElementById('dvlaLookupBtn').addEventListener('click', async () => {
+            const licensePlate = document.getElementById('vehicleLicensePlate').value.trim();
+            const statusDiv = document.getElementById('dvlaStatus');
+            const detailsSection = document.getElementById('vehicleDetailsSection');
+            const lookupBtn = document.getElementById('dvlaLookupBtn');
+
+            if (!licensePlate) {
+                statusDiv.textContent = '⚠️ Please enter a vehicle registration';
+                statusDiv.style.color = '#f59e0b';
+                return;
+            }
+
+            lookupBtn.disabled = true;
+            lookupBtn.textContent = '⏳ Looking up...';
+            statusDiv.textContent = 'Contacting DVLA...';
+            statusDiv.style.color = '#3b82f6';
+
+            try {
+                const response = await fetch('/api/other-vehicles/dvla-lookup', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ vehicle_license_plate: licensePlate })
+                });
+
+                const result = await response.json();
+
+                if (result.success && result.vehicle) {
+                    // Show vehicle details
+                    document.getElementById('dvlaMake').textContent = result.vehicle.make || '-';
+                    document.getElementById('dvlaModel').textContent = result.vehicle.model || '-';
+                    document.getElementById('dvlaColor').textContent = result.vehicle.color || '-';
+                    document.getElementById('dvlaYear').textContent = result.vehicle.year_of_manufacture || '-';
+
+                    detailsSection.style.display = 'block';
+                    statusDiv.textContent = '✅ Vehicle found in DVLA database';
+                    statusDiv.style.color = '#10b981';
+                } else {
+                    detailsSection.style.display = 'none';
+                    statusDiv.textContent = `⚠️ ${result.error || 'Vehicle not found'}. You can still add manually.`;
+                    statusDiv.style.color = '#f59e0b';
+                }
+
+            } catch (error) {
+                console.error('DVLA lookup error:', error);
+                detailsSection.style.display = 'none';
+                statusDiv.textContent = '❌ DVLA lookup failed. You can still add the vehicle manually.';
+                statusDiv.style.color = '#ef4444';
+            } finally {
+                lookupBtn.disabled = false;
+                lookupBtn.textContent = '🔍 Lookup';
+            }
+        });
+
         // ===== FORM SUBMISSIONS =====
         document.getElementById('witnessForm').addEventListener('submit', async (e) => {
             e.preventDefault();
 
-            if (!supabase) {
-                alert('Database connection not available. Please try again later.');
-                return;
-            }
-
             const form = e.target;
             const errorDiv = document.getElementById('witnessError');
-            form.classList.add('loading');
+            const submitBtn = form.querySelector('button[type="submit"]');
+
+            submitBtn.disabled = true;
+            submitBtn.textContent = 'Saving...';
 
             try {
                 const incidentId = sessionStorage.getItem('incident_id');
 
+                if (!incidentId) {
+                    throw new Error('No incident ID found. Please submit an incident report first.');
+                }
+
+                const formData = new FormData(form);
                 const witnessData = {
                     incident_id: incidentId,
                     create_user_id: userId,
-                    witness_name: form.witnessName.value,
-                    witness_address: form.witnessAddress.value,
-                    witness_mobile: form.witnessMobile.value,
-                    witness_email: form.witnessEmail.value || null,
-                    witness_statement: form.witnessStatement.value,
-                    created_at: new Date().toISOString()
+                    witness_name: formData.get('witness_name'),
+                    witness_phone: formData.get('witness_phone'),
+                    witness_email: formData.get('witness_email') || null,
+                    witness_address: formData.get('witness_address') || null,
+                    witness_statement: formData.get('witness_statement')
                 };
 
-                const { error } = await supabase
-                    .from('witness_reports')
-                    .insert([witnessData]);
+                const response = await fetch('/api/witnesses', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify(witnessData)
+                });
 
-                if (error) throw error;
+                const result = await response.json();
+
+                if (!response.ok) {
+                    throw new Error(result.message || 'Failed to save witness');
+                }
 
                 closeModal('witnessModal');
                 alert('✅ Witness information saved successfully!');
 
+                // Reload witness list if it exists
+                if (typeof loadWitnesses === 'function') {
+                    loadWitnesses();
+                }
+
             } catch (error) {
                 console.error('Error saving witness:', error);
-                errorDiv.textContent = 'Failed to save witness information. Please try again.';
+                errorDiv.textContent = error.message || 'Failed to save witness information. Please try again.';
                 errorDiv.classList.add('show');
             } finally {
-                form.classList.remove('loading');
+                submitBtn.disabled = false;
+                submitBtn.textContent = 'Save Witness';
             }
         });
 
         document.getElementById('vehicleForm').addEventListener('submit', async (e) => {
             e.preventDefault();
 
-            if (!supabase) {
-                alert('Database connection not available. Please try again later.');
-                return;
-            }
-
             const form = e.target;
             const errorDiv = document.getElementById('vehicleError');
-            form.classList.add('loading');
+            const submitBtn = form.querySelector('button[type="submit"]');
+
+            submitBtn.disabled = true;
+            submitBtn.textContent = 'Saving...';
 
             try {
                 const incidentId = sessionStorage.getItem('incident_id');
 
+                if (!incidentId) {
+                    throw new Error('No incident ID found. Please submit an incident report first.');
+                }
+
+                const formData = new FormData(form);
                 const vehicleData = {
-                    incident_report_id: incidentId ? parseInt(incidentId) : null,
+                    incident_id: incidentId,
                     create_user_id: userId,
-                    additional_driver_name: form.driverName.value,
-                    additional_driver_address: form.driverAddress.value,
-                    additional_driver_mobile: form.driverMobile.value,
-                    additional_driver_email: form.driverEmail.value || null,
-                    additional_registration_number: form.vehicleReg.value,
-                    additional_make_of_vehicle: form.vehicleMake.value,
-                    additional_model_of_vehicle: form.vehicleModel.value,
-                    additional_vehicle_colour: form.vehicleColor.value || null,
-                    additional_insurance_company: form.insuranceCompany.value || null,
-                    additional_policy_number: form.insurancePolicy.value || null,
-                    submit_date: new Date().toISOString()
+                    vehicle_license_plate: formData.get('vehicle_license_plate'),
+                    driver_name: formData.get('driver_name'),
+                    driver_phone: formData.get('driver_phone'),
+                    driver_address: formData.get('driver_address') || null,
+                    insurance_company: formData.get('insurance_company') || null,
+                    policy_number: formData.get('policy_number') || null,
+                    policy_cover: formData.get('policy_cover') || null,
+                    policy_holder: formData.get('policy_holder') || null,
+                    damage_description: formData.get('damage_description') || null
                 };
 
-                const { error } = await supabase
-                    .from('additional_vehicles')
-                    .insert([vehicleData]);
+                const response = await fetch('/api/other-vehicles', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify(vehicleData)
+                });
 
-                if (error) throw error;
+                const result = await response.json();
+
+                if (!response.ok) {
+                    throw new Error(result.message || 'Failed to save vehicle');
+                }
 
                 closeModal('vehicleModal');
-                alert('✅ Vehicle information saved successfully!');
+
+                // Show success message with DVLA lookup status
+                if (result.dvla_lookup && result.dvla_lookup.successful) {
+                    alert('✅ Vehicle information saved successfully!\n✓ Vehicle details auto-populated from DVLA');
+                } else if (result.dvla_lookup && result.dvla_lookup.error) {
+                    alert('✅ Vehicle information saved successfully!\n⚠️ DVLA lookup unavailable, details saved as entered');
+                } else {
+                    alert('✅ Vehicle information saved successfully!');
+                }
+
+                // Clear DVLA lookup UI
+                document.getElementById('vehicleDetailsSection').style.display = 'none';
+                document.getElementById('dvlaStatus').textContent = '';
+
+                // Reload vehicle list if it exists
+                if (typeof loadVehicles === 'function') {
+                    loadVehicles();
+                }
 
             } catch (error) {
                 console.error('Error saving vehicle:', error);
-                errorDiv.textContent = 'Failed to save vehicle information. Please try again.';
+                errorDiv.textContent = error.message || 'Failed to save vehicle information. Please try again.';
                 errorDiv.classList.add('show');
             } finally {
-                form.classList.remove('loading');
+                submitBtn.disabled = false;
+                submitBtn.textContent = 'Save Vehicle';
             }
         });
 
