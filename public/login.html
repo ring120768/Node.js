@@ -234,12 +234,37 @@
     function getRedirectUrl() {
       const urlParams = new URLSearchParams(window.location.search);
       const redirect = urlParams.get('redirect');
-      const finalUrl = redirect ? `/${redirect}` : '/index.html';
+
+      // If no redirect parameter, go to index
+      if (!redirect) {
+        return '/index.html';
+      }
+
+      // Decode the redirect URL (it's URL-encoded)
+      let decodedRedirect = decodeURIComponent(redirect);
+
+      // Security: Only allow relative paths (no external URLs)
+      // Remove any protocol or domain if present
+      if (decodedRedirect.includes('://')) {
+        // Extract just the path from a full URL
+        try {
+          const url = new URL(decodedRedirect);
+          decodedRedirect = url.pathname + url.search + url.hash;
+        } catch (e) {
+          // If URL parsing fails, default to index
+          console.warn('Invalid redirect URL, defaulting to index');
+          return '/index.html';
+        }
+      }
+
+      // Ensure path starts with /
+      const finalUrl = decodedRedirect.startsWith('/') ? decodedRedirect : `/${decodedRedirect}`;
 
       console.log('🔍 Redirect Debug:', {
         fullUrl: window.location.href,
         searchParams: window.location.search,
         redirectParam: redirect,
+        decodedRedirect: decodedRedirect,
         finalRedirectUrl: finalUrl
       });
 
