@@ -61,7 +61,7 @@ async function transcribeAudio(req, res) {
     const fileName = `${userId}/${Date.now()}_${req.file.originalname}`;
     const { data: uploadData, error: uploadError } = await supabase
       .storage
-      .from('audio-files')
+      .from('audio-transcriptions')
       .upload(fileName, req.file.buffer, {
         contentType: req.file.mimetype,
         upsert: false
