@@ -96,6 +96,18 @@ class AdobePdfFormFillerService {
       // Map and fill all form fields
       this.fillFormFields(form, data);
 
+      // Append witness pages (if any witnesses exist)
+      if (data.witnesses && data.witnesses.length > 0) {
+        logger.info(`📋 Adding ${data.witnesses.length} witness page(s)...`);
+        await this.appendWitnessPages(pdfDoc, data.witnesses, data.metadata.create_user_id);
+      }
+
+      // Append vehicle pages (if any vehicles exist)
+      if (data.vehicles && data.vehicles.length > 0) {
+        logger.info(`🚗 Adding ${data.vehicles.length} vehicle page(s)...`);
+        await this.appendVehiclePages(pdfDoc, data.vehicles, data.metadata.create_user_id);
+      }
+
       // Flatten the form to make it read-only (prevents editing)
       form.flatten();
 
@@ -402,6 +414,119 @@ class AdobePdfFormFillerService {
     setFieldText('declaration_date', new Date().toLocaleDateString('en-GB'));
 
     logger.info('✅ All form fields mapped and filled');
+  }
+
+  /**
+   * Append witness pages to the PDF (one page per witness)
+   *
+   * @param {PDFDocument} pdfDoc - The main PDF document
+   * @param {Array} witnesses - Array of witness objects from database
+   * @param {String} userId - User ID for the PDF header
+   */
+  async appendWitnessPages(pdfDoc, witnesses, userId) {
+    try {
+      const { PDFDocument } = require('pdf-lib');
+      const witnessTemplatePath = path.join(__dirname, '../../pdf-templates/Car-Crash-Lawyer-AI-Witness-Vehicle-Template.pdf');
+
+      if (!fs.existsSync(witnessTemplatePath)) {
+        logger.warn('⚠️ Witness template not found, skipping witness pages');
+        return;
+      }
+
+      // Load the witness template
+      const templateBytes = fs.readFileSync(witnessTemplatePath);
+      const templateDoc = await PDFDocument.load(templateBytes);
+
+      // Copy page 0 (witness page) for each witness
+      for (let i = 0; i < witnesses.length; i++) {
+        const witness = witnesses[i];
+        logger.info(`📋 Adding witness page ${i + 1}/${witnesses.length}: ${witness.witness_name}`);
+
+        // Copy the witness template page
+        const [copiedPage] = await pdfDoc.copyPages(templateDoc, [0]);
+        pdfDoc.addPage(copiedPage);
+
+        // Get the form for this page
+        const form = pdfDoc.getForm();
+
+        // Fill witness fields
+        this.setFieldValue(form, 'User ID', userId || '');
+        this.setFieldValue(form, 'Witness Name', witness.witness_name || '');
+        this.setFieldValue(form, 'Witness Address', witness.witness_address || '');
+        this.setFieldValue(form, 'Witness Mobile', witness.witness_phone || '');
+        this.setFieldValue(form, 'Witness Email', witness.witness_email || '');
+        this.setFieldValue(form, 'Witness Statement', witness.witness_statement || '');
+      }
+
+      logger.info(`✅ Added ${witnesses.length} witness page(s) successfully`);
+    } catch (error) {
+      logger.error('❌ Error appending witness pages:', error);
+      // Don't throw - allow PDF generation to continue without witness pages
+    }
+  }
+
+  /**
+   * Append vehicle pages to the PDF (one page per vehicle)
+   *
+   * @param {PDFDocument} pdfDoc - The main PDF document
+   * @param {Array} vehicles - Array of vehicle objects from database
+   * @param {String} userId - User ID for the PDF header
+   */
+  async appendVehiclePages(pdfDoc, vehicles, userId) {
+    try {
+      const { PDFDocument } = require('pdf-lib');
+      const vehicleTemplatePath = path.join(__dirname, '../../pdf-templates/Car-Crash-Lawyer-AI-Witness-Vehicle-Template.pdf');
+
+      if (!fs.existsSync(vehicleTemplatePath)) {
+        logger.warn('⚠️ Vehicle template not found, skipping vehicle pages');
+        return;
+      }
+
+      // Load the vehicle template
+      const templateBytes = fs.readFileSync(vehicleTemplatePath);
+      const templateDoc = await PDFDocument.load(templateBytes);
+
+      // Copy page 1 (vehicle page) for each vehicle
+      for (let i = 0; i < vehicles.length; i++) {
+        const vehicle = vehicles[i];
+        logger.info(`🚗 Adding vehicle page ${i + 1}/${vehicles.length}: ${vehicle.vehicle_license_plate}`);
+
+        // Copy the vehicle template page
+        const [copiedPage] = await pdfDoc.copyPages(templateDoc, [1]);
+        pdfDoc.addPage(copiedPage);
+
+        // Get the form for this page
+        const form = pdfDoc.getForm();
+
+        // Fill vehicle fields (matching the PDF template field names)
+        this.setFieldValue(form, 'User ID', userId || '');
+        this.setFieldValue(form, 'Additional Driver Name', vehicle.driver_name || '');
+        this.setFieldValue(form, 'Additional Driver Adress', vehicle.driver_address || ''); // Note: "Adress" matches template typo
+        this.setFieldValue(form, 'Additional Driver Mobile', vehicle.driver_phone || '');
+        this.setFieldValue(form, 'Additional Driver email:', vehicle.driver_email || '');
+        this.setFieldValue(form, 'Additional registration Number', vehicle.vehicle_license_plate || '');
+        this.setFieldValue(form, 'Additional Make of Vehicle', vehicle.vehicle_make || '');
+        this.setFieldValue(form, 'Additional Model of Vehicle', vehicle.vehicle_model || '');
+        this.setFieldValue(form, 'Additional Vehicle Colour', vehicle.vehicle_color || '');
+        this.setFieldValue(form, 'Additional Vehicle Year', vehicle.vehicle_year_of_manufacture || '');
+        this.setFieldValue(form, 'Additional Insurance Company', vehicle.insurance_company || '');
+        this.setFieldValue(form, 'Additional Policy Cover', vehicle.policy_cover || '');
+        this.setFieldValue(form, 'Additional Policy Holder', vehicle.policy_holder || '');
+
+        // DVLA-specific fields (if available)
+        this.setFieldValue(form, 'Additional MOT status:', vehicle.mot_status || '');
+        this.setFieldValue(form, 'Additional MOT expiry Date', vehicle.mot_expiry_date || '');
+        this.setFieldValue(form, 'Additional Tax Status', vehicle.tax_status || '');
+        this.setFieldValue(form, 'Additional Tax expiry Date', vehicle.tax_due_date || '');
+        this.setFieldValue(form, 'Additional Fuel Type', vehicle.fuel_type || '');
+        this.setFieldValue(form, 'Additional Engine Capacity', vehicle.engine_capacity || '');
+      }
+
+      logger.info(`✅ Added ${vehicles.length} vehicle page(s) successfully`);
+    } catch (error) {
+      logger.error('❌ Error appending vehicle pages:', error);
+      // Don't throw - allow PDF generation to continue without vehicle pages
+    }
   }
 
   /**
