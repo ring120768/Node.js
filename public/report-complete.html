@@ -169,26 +169,32 @@
             transform: translateY(0);
         }
 
-        /* Traffic Light System - Button State Colors */
-        .emergency-btn.btn-available {
-            background: rgba(16, 185, 129, 0.3);
+        /* Traffic Light System - Urgency-Based Colors */
+        .emergency-btn.critical {
+            background: rgba(239, 68, 68, 0.3);    /* Red - Critical/Emergency */
+            border-color: rgba(239, 68, 68, 0.6);
+        }
+
+        .emergency-btn.critical:hover {
+            background: rgba(239, 68, 68, 0.4);
+        }
+
+        .emergency-btn.recovery {
+            background: rgba(251, 191, 36, 0.3);   /* Amber - Important */
+            border-color: rgba(251, 191, 36, 0.6);
+        }
+
+        .emergency-btn.recovery:hover {
+            background: rgba(251, 191, 36, 0.4);
+        }
+
+        .emergency-btn.contact {
+            background: rgba(16, 185, 129, 0.3);   /* Green - Non-critical */
             border-color: rgba(16, 185, 129, 0.6);
         }
 
-        .emergency-btn.btn-available:hover {
+        .emergency-btn.contact:hover {
             background: rgba(16, 185, 129, 0.4);
-        }
-
-        .emergency-btn.btn-unavailable {
-            background: rgba(239, 68, 68, 0.2);
-            border-color: rgba(239, 68, 68, 0.4);
-            opacity: 0.7;
-            cursor: not-allowed;
-        }
-
-        .emergency-btn.btn-unavailable:hover {
-            background: rgba(239, 68, 68, 0.2);
-            transform: none;
         }
 
         .btn-icon {
@@ -722,7 +728,7 @@
             }
         }
 
-        // Update button handlers and apply traffic light colors
+        // Update button handlers (colors are fixed in CSS by urgency level)
         function updateEmergencyButtons() {
             const call999Btn = document.getElementById('call999Btn');
             const recoveryBtn = document.getElementById('recoveryBtn');
@@ -730,18 +736,15 @@
             const recoveryBtnText = document.getElementById('recoveryBtnText');
             const emergencyContactBtnText = document.getElementById('emergencyContactBtnText');
 
-            // 999 button - always available (green)
-            call999Btn.classList.add('btn-available');
+            // 999 button - always available (red for critical)
             call999Btn.onclick = function() {
                 console.log('📞 Calling 999: 999');
                 window.location.href = 'tel:999';
             };
 
-            // Recovery button - conditional
+            // Recovery button - conditional (amber for important)
             if (emergencyContacts?.recovery_breakdown_number) {
                 console.log('✅ Recovery button enabled with number:', emergencyContacts.recovery_breakdown_number);
-                recoveryBtn.classList.remove('btn-unavailable');
-                recoveryBtn.classList.add('btn-available');
                 recoveryBtnText.textContent = 'Call Recovery Service';
 
                 recoveryBtn.onclick = function() {
@@ -751,9 +754,7 @@
                     }
                 };
             } else {
-                console.log('❌ Recovery button disabled - no number available');
-                recoveryBtn.classList.remove('btn-available');
-                recoveryBtn.classList.add('btn-unavailable');
+                console.log('⚠️ No recovery number available');
                 recoveryBtnText.textContent = 'No Recovery Number';
 
                 recoveryBtn.onclick = function() {
@@ -761,11 +762,9 @@
                 };
             }
 
-            // Emergency contact button - conditional
+            // Emergency contact button - conditional (green for non-critical)
             if (emergencyContacts?.emergency_contact) {
                 console.log('✅ Emergency contact button enabled with number:', emergencyContacts.emergency_contact);
-                emergencyContactBtn.classList.remove('btn-unavailable');
-                emergencyContactBtn.classList.add('btn-available');
                 emergencyContactBtnText.textContent = 'Call Emergency Contact';
 
                 emergencyContactBtn.onclick = function() {
@@ -775,9 +774,7 @@
                     }
                 };
             } else {
-                console.log('❌ Emergency contact button disabled - no number available');
-                emergencyContactBtn.classList.remove('btn-available');
-                emergencyContactBtn.classList.add('btn-unavailable');
+                console.log('⚠️ No emergency contact available');
                 emergencyContactBtnText.textContent = 'No Emergency Contact';
 
                 emergencyContactBtn.onclick = function() {
