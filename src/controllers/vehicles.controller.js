@@ -16,6 +16,7 @@ const logger = require('../utils/logger');
 const config = require('../config');
 const gdprService = require('../services/gdprService');
 const dvlaService = require('../services/dvlaService');
+const witnessVehiclePdfService = require('../services/witnessVehiclePdfService');
 const { createClient } = require('@supabase/supabase-js');
 
 // Initialize Supabase client with service role
@@ -415,10 +416,75 @@ async function dvlaLookup(req, res) {
   }
 }
 
+/**
+ * Generate PDF for a specific vehicle
+ * POST /api/other-vehicles/:vehicle_id/generate-pdf
+ */
+async function generateVehiclePdf(req, res) {
+  if (!supabase) {
+    return sendError(res, 503, 'Service not configured', 'SERVICE_UNAVAILABLE');
+  }
+
+  try {
+    const { vehicle_id } = req.params;
+
+    if (!vehicle_id) {
+      return sendError(res, 400, 'Vehicle ID required', 'MISSING_VEHICLE_ID');
+    }
+
+    logger.info('Generating PDF for vehicle', { vehicle_id });
+
+    // Fetch vehicle data from database
+    const { data: vehicle, error } = await supabase
+      .from('other_vehicles')
+      .select('*')
+      .eq('id', vehicle_id)
+      .is('deleted_at', null)
+      .single();
+
+    if (error || !vehicle) {
+      logger.error('Vehicle not found:', error);
+      return sendError(res, 404, 'Vehicle not found', 'VEHICLE_NOT_FOUND');
+    }
+
+    // Generate PDF using service
+    const pdfBuffer = await witnessVehiclePdfService.generateVehiclePdf(
+      vehicle,
+      vehicle.create_user_id
+    );
+
+    // Store PDF in Supabase Storage (optional - for now just return it)
+    const fileName = `vehicle-${vehicle_id}-${Date.now()}.pdf`;
+
+    // TODO: Upload to Supabase Storage if needed
+    // For now, just send the PDF directly to the client
+
+    // Log GDPR activity
+    await gdprService.logActivity(vehicle.create_user_id, 'VEHICLE_PDF_GENERATED', {
+      vehicle_id,
+      incident_id: vehicle.incident_id
+    }, req);
+
+    logger.success('Vehicle PDF generated successfully', { vehicle_id, size: pdfBuffer.length });
+
+    // Set headers to download PDF
+    res.setHeader('Content-Type', 'application/pdf');
+    res.setHeader('Content-Disposition', `attachment; filename="${fileName}"`);
+    res.setHeader('Content-Length', pdfBuffer.length);
+
+    res.send(pdfBuffer);
+
+  } catch (error) {
+    logger.error('Error generating vehicle PDF:', error);
+    sendError(res, 500, 'Failed to generate vehicle PDF', 'PDF_GENERATION_FAILED');
+  }
+}
+
 module.exports = {
   createVehicle,
   getVehiclesByIncident,
   updateVehicle,
   deleteVehicle,
-  dvlaLookup
+  dvlaLookup,
+  generateVehiclePdf
 };

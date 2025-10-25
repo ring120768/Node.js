@@ -15,6 +15,7 @@ const { sendError } = require('../utils/response');
 const logger = require('../utils/logger');
 const config = require('../config');
 const gdprService = require('../services/gdprService');
+const witnessVehiclePdfService = require('../services/witnessVehiclePdfService');
 const { createClient } = require('@supabase/supabase-js');
 
 // Initialize Supabase client with service role
@@ -292,9 +293,74 @@ async function deleteWitness(req, res) {
   }
 }
 
+/**
+ * Generate PDF for a specific witness
+ * POST /api/witnesses/:witness_id/generate-pdf
+ */
+async function generateWitnessPdf(req, res) {
+  if (!supabase) {
+    return sendError(res, 503, 'Service not configured', 'SERVICE_UNAVAILABLE');
+  }
+
+  try {
+    const { witness_id } = req.params;
+
+    if (!witness_id) {
+      return sendError(res, 400, 'Witness ID required', 'MISSING_WITNESS_ID');
+    }
+
+    logger.info('Generating PDF for witness', { witness_id });
+
+    // Fetch witness data from database
+    const { data: witness, error } = await supabase
+      .from('incident_witnesses')
+      .select('*')
+      .eq('id', witness_id)
+      .is('deleted_at', null)
+      .single();
+
+    if (error || !witness) {
+      logger.error('Witness not found:', error);
+      return sendError(res, 404, 'Witness not found', 'WITNESS_NOT_FOUND');
+    }
+
+    // Generate PDF using service
+    const pdfBuffer = await witnessVehiclePdfService.generateWitnessPdf(
+      witness,
+      witness.create_user_id
+    );
+
+    // Store PDF in Supabase Storage (optional - for now just return it)
+    const fileName = `witness-${witness_id}-${Date.now()}.pdf`;
+
+    // TODO: Upload to Supabase Storage if needed
+    // For now, just send the PDF directly to the client
+
+    // Log GDPR activity
+    await gdprService.logActivity(witness.create_user_id, 'WITNESS_PDF_GENERATED', {
+      witness_id,
+      incident_id: witness.incident_id
+    }, req);
+
+    logger.success('Witness PDF generated successfully', { witness_id, size: pdfBuffer.length });
+
+    // Set headers to download PDF
+    res.setHeader('Content-Type', 'application/pdf');
+    res.setHeader('Content-Disposition', `attachment; filename="${fileName}"`);
+    res.setHeader('Content-Length', pdfBuffer.length);
+
+    res.send(pdfBuffer);
+
+  } catch (error) {
+    logger.error('Error generating witness PDF:', error);
+    sendError(res, 500, 'Failed to generate witness PDF', 'PDF_GENERATION_FAILED');
+  }
+}
+
 module.exports = {
   createWitness,
   getWitnessesByIncident,
   updateWitness,
-  deleteWitness
+  deleteWitness,
+  generateWitnessPdf
 };

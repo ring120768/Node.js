@@ -34,4 +34,10 @@ router.put('/:witness_id', witnessesController.updateWitness);
  */
 router.delete('/:witness_id', witnessesController.deleteWitness);
 
+/**
+ * Generate PDF for a witness
+ * POST /api/witnesses/:witness_id/generate-pdf
+ */
+router.post('/:witness_id/generate-pdf', witnessesController.generateWitnessPdf);
+
 module.exports = router;

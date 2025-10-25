@@ -47,4 +47,10 @@ router.delete('/:vehicle_id', vehiclesController.deleteVehicle);
  */
 router.post('/dvla-lookup', vehiclesController.dvlaLookup);
 
+/**
+ * Generate PDF for a vehicle
+ * POST /api/other-vehicles/:vehicle_id/generate-pdf
+ */
+router.post('/:vehicle_id/generate-pdf', vehiclesController.generateVehiclePdf);
+
 module.exports = router;
