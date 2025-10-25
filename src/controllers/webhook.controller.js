@@ -110,6 +110,29 @@ function getAnswerByRef(answers, ref) {
 }
 
 /**
+ * Get answer with boolean default handling
+ * For boolean fields: returns false if answer not found (checkbox was shown but unchecked)
+ * For other fields: returns null if answer not found
+ *
+ * @param {Array} answers - Typeform answers array
+ * @param {string} ref - Field reference ID
+ * @param {string} fieldType - Field type ('boolean', 'text', etc.)
+ * @returns {*} The answer value, false for unchecked booleans, or null
+ */
+function getAnswerByRefWithDefault(answers, ref, fieldType = 'text') {
+  const answer = answers.find(a => a.field?.ref === ref);
+  const value = extractAnswerValue(answer);
+
+  // For boolean fields, null means "unchecked" → return false
+  // This ensures unchecked checkboxes are saved as false, not deleted as null
+  if (fieldType === 'boolean' && value === null) {
+    return false;
+  }
+
+  return value;
+}
+
+/**
  * Get answer by field title using the title map
  * Matches normalized titles against expected field names
  */
@@ -809,37 +832,37 @@ async function processIncidentReport(formResponse, requestId, imageProcessor = n
       are_you_safe: getAnswerByRef(answers, 'are_you_safe'),
       six_point_safety_check: getAnswerByRef(answers, 'six_point_safety_check'),
 
-      // Medical Symptoms
-      medical_chest_pain: getAnswerByRef(answers, 'medical_chest_pain'),
-      medical_breathlessness: getAnswerByRef(answers, 'medical_breathlessness'),
-      medical_abdominal_bruising: getAnswerByRef(answers, 'medical_abdominal_bruising'),
-      medical_uncontrolled_bleeding: getAnswerByRef(answers, 'medical_uncontrolled_bleeding'),
-      medical_severe_headache: getAnswerByRef(answers, 'medical_severe_headache'),
-      medical_change_in_vision: getAnswerByRef(answers, 'medical_change_in_vision'),
-      medical_abdominal_pain: getAnswerByRef(answers, 'medical_abdominal_pain'),
-      medical_limb_pain: getAnswerByRef(answers, 'medical_limb_pain'),
-      medical_limb_weakness: getAnswerByRef(answers, 'medical_limb_weakness'),
-      medical_loss_of_consciousness: getAnswerByRef(answers, 'medical_loss_of_consciousness'),
-      medical_none_of_these: getAnswerByRef(answers, 'medical_none_of_these'),
+      // Medical Symptoms (all boolean checkboxes - defaults to false if unchecked)
+      medical_chest_pain: getAnswerByRefWithDefault(answers, 'medical_chest_pain', 'boolean'),
+      medical_breathlessness: getAnswerByRefWithDefault(answers, 'medical_breathlessness', 'boolean'),
+      medical_abdominal_bruising: getAnswerByRefWithDefault(answers, 'medical_abdominal_bruising', 'boolean'),
+      medical_uncontrolled_bleeding: getAnswerByRefWithDefault(answers, 'medical_uncontrolled_bleeding', 'boolean'),
+      medical_severe_headache: getAnswerByRefWithDefault(answers, 'medical_severe_headache', 'boolean'),
+      medical_change_in_vision: getAnswerByRefWithDefault(answers, 'medical_change_in_vision', 'boolean'),
+      medical_abdominal_pain: getAnswerByRefWithDefault(answers, 'medical_abdominal_pain', 'boolean'),
+      medical_limb_pain: getAnswerByRefWithDefault(answers, 'medical_limb_pain', 'boolean'),
+      medical_limb_weakness: getAnswerByRefWithDefault(answers, 'medical_limb_weakness', 'boolean'),
+      medical_loss_of_consciousness: getAnswerByRefWithDefault(answers, 'medical_loss_of_consciousness', 'boolean'),
+      medical_none_of_these: getAnswerByRefWithDefault(answers, 'medical_none_of_these', 'boolean'),
 
       // Accident Details
       when_did_the_accident_happen: getAnswerByRef(answers, 'when_did_the_accident_happen'),
       what_time_did_the_accident_happen: getAnswerByRef(answers, 'what_time_did_the_accident_happen'),
       where_exactly_did_this_happen: getAnswerByRef(answers, 'where_exactly_did_this_happen'),
 
-      // Weather Conditions
+      // Weather Conditions (all boolean checkboxes - defaults to false if unchecked)
       weather_conditions: getAnswerByRef(answers, 'weather_conditions'),
-      weather_overcast: getAnswerByRef(answers, 'weather_overcast'),
-      weather_street_lights: getAnswerByRef(answers, 'weather_street_lights'),
-      weather_heavy_rain: getAnswerByRef(answers, 'weather_heavy_rain'),
-      weather_wet_road: getAnswerByRef(answers, 'weather_wet_road'),
-      weather_fog: getAnswerByRef(answers, 'weather_fog'),
-      weather_snow_on_road: getAnswerByRef(answers, 'weather_snow_on_road'),
-      weather_bright_daylight: getAnswerByRef(answers, 'weather_bright_daylight'),
-      weather_light_rain: getAnswerByRef(answers, 'weather_light_rain'),
-      weather_clear_and_dry: getAnswerByRef(answers, 'weather_clear_and_dry'),
-      weather_dusk: getAnswerByRef(answers, 'weather_dusk'),
-      weather_snow: getAnswerByRef(answers, 'weather_snow'),
+      weather_overcast: getAnswerByRefWithDefault(answers, 'weather_overcast', 'boolean'),
+      weather_street_lights: getAnswerByRefWithDefault(answers, 'weather_street_lights', 'boolean'),
+      weather_heavy_rain: getAnswerByRefWithDefault(answers, 'weather_heavy_rain', 'boolean'),
+      weather_wet_road: getAnswerByRefWithDefault(answers, 'weather_wet_road', 'boolean'),
+      weather_fog: getAnswerByRefWithDefault(answers, 'weather_fog', 'boolean'),
+      weather_snow_on_road: getAnswerByRefWithDefault(answers, 'weather_snow_on_road', 'boolean'),
+      weather_bright_daylight: getAnswerByRefWithDefault(answers, 'weather_bright_daylight', 'boolean'),
+      weather_light_rain: getAnswerByRefWithDefault(answers, 'weather_light_rain', 'boolean'),
+      weather_clear_and_dry: getAnswerByRefWithDefault(answers, 'weather_clear_and_dry', 'boolean'),
+      weather_dusk: getAnswerByRefWithDefault(answers, 'weather_dusk', 'boolean'),
+      weather_snow: getAnswerByRefWithDefault(answers, 'weather_snow', 'boolean'),
 
       // Vehicle Information
       wearing_seatbelts: getAnswerByRef(answers, 'wearing_seatbelts'),
@@ -851,17 +874,19 @@ async function processIncidentReport(formResponse, requestId, imageProcessor = n
       road_type: getAnswerByRef(answers, 'road_type'),
       speed_limit: getAnswerByRef(answers, 'speed_limit'),
       junction_information: getAnswerByRef(answers, 'junction_information'),
-      junction_information_roundabout: getAnswerByRef(answers, 'junction_information_roundabout'),
-      junction_information_t_junction: getAnswerByRef(answers, 'junction_information_t_junction'),
-      junction_information_traffic_lights: getAnswerByRef(answers, 'junction_information_traffic_lights'),
-      junction_information_crossroads: getAnswerByRef(answers, 'junction_information_crossroads'),
+      // Junction types (all boolean checkboxes - defaults to false if unchecked)
+      junction_information_roundabout: getAnswerByRefWithDefault(answers, 'junction_information_roundabout', 'boolean'),
+      junction_information_t_junction: getAnswerByRefWithDefault(answers, 'junction_information_t_junction', 'boolean'),
+      junction_information_traffic_lights: getAnswerByRefWithDefault(answers, 'junction_information_traffic_lights', 'boolean'),
+      junction_information_crossroads: getAnswerByRefWithDefault(answers, 'junction_information_crossroads', 'boolean'),
 
-      // Special Conditions
+      // Special Conditions (all boolean checkboxes - defaults to false if unchecked)
       special_conditions: getAnswerByRef(answers, 'special_conditions'),
-      special_conditions_roadworks: getAnswerByRef(answers, 'special_conditions_roadworks'),
-      special_conditions_defective_road: getAnswerByRef(answers, 'special_conditions_defective_road'),
-      special_conditions_oil_spills: getAnswerByRef(answers, 'special_conditions_oil_spills'),
-      special_conditions_workman: getAnswerByRef(answers, 'special_conditions_workman'),
+      special_conditions_roadworks: getAnswerByRefWithDefault(answers, 'special_conditions_roadworks', 'boolean'),
+      special_conditions_defective_road: getAnswerByRefWithDefault(answers, 'special_conditions_defective_road', 'boolean'),
+      special_conditions_oil_spills: getAnswerByRefWithDefault(answers, 'special_conditions_oil_spills', 'boolean'),
+      special_conditions_workman: getAnswerByRefWithDefault(answers, 'special_conditions_workman', 'boolean'),
+      special_conditions_animals: getAnswerByRefWithDefault(answers, 'special_conditions_animals', 'boolean'),
 
       // Detailed Account
       detailed_account_of_what_happened: getAnswerByRef(answers, 'detailed_account_of_what_happened'),
@@ -1001,16 +1026,43 @@ async function processIncidentReport(formResponse, requestId, imageProcessor = n
       console.log(`\n⚠️  Image processor not available - storing Typeform URLs directly`);
     }
 
-    // Remove null/undefined values
+    // Remove null/undefined values BUT preserve boolean false and empty strings
+    // CRITICAL: false is meaningful data (unchecked checkbox), don't delete it!
     Object.keys(incidentData).forEach(key => {
-      if (incidentData[key] === null || incidentData[key] === undefined) {
+      const value = incidentData[key];
+
+      // Keep boolean false values - they mean "checkbox was shown but unchecked"
+      if (value === false) {
+        return;  // Don't delete
+      }
+
+      // Keep empty strings - they mean "field was shown but not filled"
+      if (value === '') {
+        return;  // Don't delete
+      }
+
+      // Remove only null/undefined (field not in payload or genuinely missing)
+      if (value === null || value === undefined) {
         delete incidentData[key];
       }
     });
 
-    console.log(`\n📊 Incident data: ${Object.keys(incidentData).length} fields`);
+    // Count boolean fields for debugging
+    const booleanFields = Object.keys(incidentData).filter(key =>
+      typeof incidentData[key] === 'boolean'
+    );
+    const trueCount = booleanFields.filter(key => incidentData[key] === true).length;
+    const falseCount = booleanFields.filter(key => incidentData[key] === false).length;
 
-    logger.info(`[${requestId}] Inserting incident data with ${Object.keys(incidentData).length} fields`);
+    console.log(`\n📊 Incident data: ${Object.keys(incidentData).length} fields`);
+    console.log(`   ✅ Boolean fields: ${booleanFields.length} (${trueCount} checked, ${falseCount} unchecked)`);
+
+    logger.info(`[${requestId}] Inserting incident data with ${Object.keys(incidentData).length} fields`, {
+      totalFields: Object.keys(incidentData).length,
+      booleanFieldsTotal: booleanFields.length,
+      booleanChecked: trueCount,
+      booleanUnchecked: falseCount
+    });
 
     console.log(`💾 Inserting into Supabase incident_reports table...`);
 
