@@ -309,51 +309,19 @@
         }
 
         function proceedToTypeform(safetyStatus) {
-            // Build Typeform URL with pre-filled data
-            const typeformBaseUrl = 'https://form.typeform.com/to/WvM2ejru';
-            const hiddenFields = {};
+            // Save safety status to sessionStorage for the embedded page
+            sessionStorage.setItem('safetyStatus', safetyStatus);
 
-            // Add safety status
-            hiddenFields.are_you_safe = safetyStatus;
+            // Incident data is already in sessionStorage from incident.html
+            // The embedded Typeform page will read it from there
 
-            // Add what3words storage path if available
-            if (incidentData.what3wordsStoragePath) {
-                hiddenFields.what3words_path = incidentData.what3wordsStoragePath;
-            }
+            console.log('Redirecting to embedded Typeform with data:', {
+                safetyStatus: safetyStatus,
+                incidentData: incidentData
+            });
 
-            // Add location data
-            if (incidentData.location) {
-                hiddenFields.latitude = incidentData.location.lat.toString();
-                hiddenFields.longitude = incidentData.location.lng.toString();
-                hiddenFields.accuracy = incidentData.location.accuracy ? incidentData.location.accuracy.toString() : '';
-            }
-
-            // Add what3words
-            if (incidentData.what3words) {
-                hiddenFields.what3words = incidentData.what3words;
-            }
-
-            // Add address
-            if (incidentData.address) {
-                hiddenFields.incident_address = incidentData.address;
-            }
-
-            // Add timestamp
-            hiddenFields.incident_timestamp = incidentData.timestamp || new Date().toISOString();
-
-            // Add voice transcription if available
-            if (incidentData.voiceTranscription) {
-                hiddenFields.voice_notes = incidentData.voiceTranscription;
-            }
-
-            // Build URL with hidden fields as hash parameters
-            const params = new URLSearchParams(hiddenFields);
-            const finalUrl = `${typeformBaseUrl}#${params.toString()}`;
-
-            console.log('Redirecting to Typeform with data:', hiddenFields);
-
-            // Redirect to Typeform
-            window.location.href = finalUrl;
+            // Redirect to embedded Typeform page with scroll disabled
+            window.location.href = '/typeform-incident-report.html';
         }
 
         // Setup emergency 999 button with what3words integration

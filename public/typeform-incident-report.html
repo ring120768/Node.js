@@ -1,0 +1,227 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Incident Report - Car Crash Lawyer AI</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+            display: flex;
+            flex-direction: column;
+        }
+
+        #typeform-container {
+            flex: 1;
+            width: 100%;
+            height: 100vh;
+        }
+
+        .loading-overlay {
+            position: fixed;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            z-index: 9999;
+            transition: opacity 0.5s ease;
+        }
+
+        .loading-overlay.hidden {
+            opacity: 0;
+            pointer-events: none;
+        }
+
+        .spinner {
+            width: 50px;
+            height: 50px;
+            border: 4px solid rgba(255,255,255,0.3);
+            border-top-color: white;
+            border-radius: 50%;
+            animation: spin 1s linear infinite;
+        }
+
+        @keyframes spin {
+            to { transform: rotate(360deg); }
+        }
+
+        .loading-text {
+            color: white;
+            margin-top: 20px;
+            font-size: 18px;
+            font-weight: 500;
+        }
+    </style>
+</head>
+<body>
+    <!-- Loading overlay -->
+    <div class="loading-overlay" id="loadingOverlay">
+        <div class="spinner"></div>
+        <div class="loading-text">Loading incident report form...</div>
+    </div>
+
+    <!-- Typeform will be embedded here -->
+    <div id="typeform-container"></div>
+
+    <!-- Typeform Embed Library -->
+    <script src="https://embed.typeform.com/next/embed.js"></script>
+
+    <script>
+        // Get incident data from sessionStorage (passed from safety-check.html)
+        const urlParams = new URLSearchParams(window.location.search);
+        const incidentDataParam = urlParams.get('data');
+
+        let incidentData = {};
+
+        if (incidentDataParam) {
+            try {
+                incidentData = JSON.parse(decodeURIComponent(incidentDataParam));
+                console.log('Incident data received via URL:', incidentData);
+            } catch (error) {
+                console.error('Failed to parse incident data from URL:', error);
+            }
+        } else {
+            // Fallback to sessionStorage
+            const storedData = sessionStorage.getItem('incidentData');
+            if (storedData) {
+                incidentData = JSON.parse(storedData);
+                console.log('Incident data received from sessionStorage:', incidentData);
+            }
+        }
+
+        // Build hidden fields object
+        const hiddenFields = {};
+
+        // Add safety status (passed via URL or sessionStorage)
+        const safetyStatus = urlParams.get('safety_status') || sessionStorage.getItem('safetyStatus');
+        if (safetyStatus) {
+            hiddenFields.are_you_safe = safetyStatus;
+        }
+
+        // Add what3words storage path
+        if (incidentData.what3wordsStoragePath) {
+            hiddenFields.what3words_path = incidentData.what3wordsStoragePath;
+        }
+
+        // Add location data
+        if (incidentData.location) {
+            hiddenFields.latitude = incidentData.location.lat.toString();
+            hiddenFields.longitude = incidentData.location.lng.toString();
+            if (incidentData.location.accuracy) {
+                hiddenFields.accuracy = incidentData.location.accuracy.toString();
+            }
+        }
+
+        // Add what3words
+        if (incidentData.what3words) {
+            hiddenFields.what3words = incidentData.what3words;
+        }
+
+        // Add address
+        if (incidentData.address) {
+            hiddenFields.incident_address = incidentData.address;
+        }
+
+        // Add timestamp
+        hiddenFields.incident_timestamp = incidentData.timestamp || new Date().toISOString();
+
+        // Add voice transcription
+        if (incidentData.voiceTranscription) {
+            hiddenFields.voice_notes = incidentData.voiceTranscription;
+        }
+
+        // Add user ID
+        if (incidentData.userId) {
+            hiddenFields.user_id = incidentData.userId;
+        }
+
+        console.log('Hidden fields for Typeform:', hiddenFields);
+
+        // Initialize Typeform with embed options
+        const { createWidget } = window.tf;
+
+        const widget = createWidget('WvM2ejru', {
+            container: document.getElementById('typeform-container'),
+            hidden: hiddenFields,
+
+            // 🔥 CRITICAL: Disable scroll-back behavior
+            disableScroll: true,
+
+            // Additional UX improvements
+            autoFocus: false,           // Don't auto-scroll on load
+            opacity: 100,               // Full opacity
+            hideHeaders: false,         // Keep Typeform headers
+            hideFooter: false,          // Keep progress bar
+
+            // Mobile optimization
+            iframeProps: {
+                title: 'Car Crash Incident Report'
+            },
+
+            // Callbacks
+            onReady: function() {
+                console.log('✅ Typeform loaded successfully');
+                // Hide loading overlay
+                const overlay = document.getElementById('loadingOverlay');
+                overlay.classList.add('hidden');
+
+                // Remove overlay from DOM after transition
+                setTimeout(() => {
+                    overlay.style.display = 'none';
+                }, 500);
+            },
+
+            onSubmit: function(event) {
+                console.log('✅ Form submitted:', event);
+
+                // Clear incident data from storage
+                sessionStorage.removeItem('incidentData');
+                sessionStorage.removeItem('safetyStatus');
+
+                // Typeform handles the redirect via their thank you screen
+                // Or you can redirect here if needed:
+                // window.location.href = '/declaration.html';
+            },
+
+            onQuestionChanged: function(event) {
+                console.log('Question changed:', event.ref);
+            },
+
+            onClose: function() {
+                console.log('Form closed by user');
+                // Optional: handle form closure
+                // window.location.href = '/index.html';
+            }
+        });
+
+        // Handle browser back button
+        window.addEventListener('popstate', function(event) {
+            if (confirm('Are you sure you want to leave? Your progress may be lost.')) {
+                window.location.href = '/index.html';
+            } else {
+                // Push state back to prevent navigation
+                history.pushState(null, '', window.location.href);
+            }
+        });
+
+        // Prevent accidental page unload
+        window.addEventListener('beforeunload', function(event) {
+            event.preventDefault();
+            event.returnValue = '';
+        });
+    </script>
+</body>
+</html>
