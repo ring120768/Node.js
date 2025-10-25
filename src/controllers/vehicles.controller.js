@@ -436,7 +436,7 @@ async function generateVehiclePdf(req, res) {
 
     // Fetch vehicle data from database
     const { data: vehicle, error } = await supabase
-      .from('other_vehicles')
+      .from('incident_other_vehicles')
       .select('*')
       .eq('id', vehicle_id)
       .is('deleted_at', null)
