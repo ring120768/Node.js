@@ -2522,7 +2522,7 @@
         }
 
         // ===== TAB SWITCHING =====
-        function switchTab(tabName) {
+        function switchTab(tabName, event = null) {
             // Remove active class from all tab buttons and panels
             document.querySelectorAll('.tab-button').forEach(button => {
                 button.classList.remove('active');
@@ -2531,8 +2531,16 @@
                 panel.classList.remove('active');
             });
 
-            // Add active class to selected tab button and panel
-            const tabButton = event.target.closest('.tab-button');
+            // Add active class to selected tab button
+            // If event is provided, use it; otherwise find button by onclick attribute
+            let tabButton = null;
+            if (event) {
+                tabButton = event.target.closest('.tab-button');
+            } else {
+                // Find button by searching for one that calls switchTab with this tabName
+                tabButton = document.querySelector(`.tab-button[onclick*="'${tabName}'"]`);
+            }
+
             if (tabButton) {
                 tabButton.classList.add('active');
             }
