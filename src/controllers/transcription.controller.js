@@ -15,8 +15,8 @@ const openai = new OpenAI({
   apiKey: config.openai.apiKey
 });
 
-// Initialize Supabase client with ANON key (for storage only)
-const supabase = createClient(config.supabase.url, config.supabase.anonKey);
+// Initialize Supabase client with SERVICE ROLE key (bypasses RLS for storage uploads)
+const supabase = createClient(config.supabase.url, config.supabase.serviceKey);
 
 /**
  * Transcribe audio file
