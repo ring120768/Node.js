@@ -685,6 +685,26 @@
                     </div>
                 </div>
 
+                <!-- Insurance Information Section (Auto-lookup) -->
+                <div id="insuranceDetailsSection" style="display: none; background: #f0fdf4; padding: 15px; border-radius: 8px; margin-bottom: 15px; border-left: 4px solid #16a34a;">
+                    <h4 style="color: #16a34a; margin-bottom: 12px; font-size: 14px;">🛡️ Insurance Information</h4>
+
+                    <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 8px; font-size: 13px; margin-bottom: 12px;">
+                        <div><strong>ABI Code:</strong> <span id="insuranceAbiCode">-</span></div>
+                        <div><strong>Insurance Group:</strong> <span id="insuranceGroup">-</span></div>
+                    </div>
+
+                    <!-- Disclaimer -->
+                    <div style="background: #fef3c7; border: 1px solid #f59e0b; border-radius: 6px; padding: 10px; margin-top: 12px; font-size: 12px;">
+                        <div style="font-weight: 600; color: #92400e; margin-bottom: 6px;">📋 Important: Manual Verification Required</div>
+                        <div style="color: #92400e; line-height: 1.5;">
+                            The insurance data shown is indicative only. <strong>You must verify current insurance status manually via askMID.com</strong> (UK's official Motor Insurance Database).
+                            <br><br>
+                            <strong>Cost:</strong> One-off searches: £10 per lookup | <strong>Future Plan:</strong> Unlimited access at 100 users (£774/year)
+                        </div>
+                    </div>
+                </div>
+
                 <!-- Driver Information -->
                 <div class="form-group">
                     <label for="driverName">Driver's Full Name *</label>
@@ -1343,6 +1363,44 @@
                         alerts.push('🚨 VEHICLE STATUS: ' + v.vehicle_status.toUpperCase());
                     }
 
+                    // ===== INSURANCE LOOKUP (Automatic) =====
+                    // Call insurance API after DVLA lookup
+                    try {
+                        statusDiv.textContent = '✅ Vehicle found | 🛡️ Checking insurance...';
+
+                        const insuranceResponse = await fetch('/api/other-vehicles/insurance-lookup', {
+                            method: 'POST',
+                            headers: { 'Content-Type': 'application/json' },
+                            body: JSON.stringify({ vehicle_license_plate: licensePlate })
+                        });
+
+                        const insuranceResult = await insuranceResponse.json();
+                        const insuranceSection = document.getElementById('insuranceDetailsSection');
+
+                        if (insuranceResult.success && insuranceResult.insurance) {
+                            const ins = insuranceResult.insurance;
+
+                            // Display insurance data
+                            document.getElementById('insuranceAbiCode').textContent = ins.abi_code || '-';
+                            document.getElementById('insuranceGroup').textContent = ins.insurance_group || '-';
+
+                            insuranceSection.style.display = 'block';
+
+                            // Add insurance alert if no data found
+                            if (!ins.has_insurance_data) {
+                                alerts.push('⚠️ INSURANCE: No insurance data found - Manual verification required via askMID.com');
+                            }
+                        } else {
+                            // Insurance lookup failed or not configured - not critical, just inform
+                            insuranceSection.style.display = 'none';
+                            alerts.push('⚠️ INSURANCE: Unable to verify insurance - Please check manually via askMID.com');
+                        }
+                    } catch (insuranceError) {
+                        console.log('Insurance lookup error (non-critical):', insuranceError);
+                        // Don't fail the whole process if insurance lookup fails
+                        document.getElementById('insuranceDetailsSection').style.display = 'none';
+                    }
+
                     // Display alerts if any issues found
                     if (alerts.length > 0) {
                         const alertMessage = '⚠️ VEHICLE COMPLIANCE ISSUES DETECTED:\n\n' +
@@ -1357,6 +1415,10 @@
 
                         // Also add visual warning to status div
                         statusDiv.innerHTML = '✅ Vehicle found | <strong style="color: #ef4444;">⚠️ ' + alerts.length + ' issue(s) detected</strong>';
+                        statusDiv.style.color = '#10b981';
+                    } else {
+                        // No issues - update status
+                        statusDiv.textContent = '✅ Vehicle verified - All checks passed';
                         statusDiv.style.color = '#10b981';
                     }
                 } else {

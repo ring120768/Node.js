@@ -60,6 +60,12 @@ module.exports = {
     baseUrl: 'https://driver-vehicle-licensing.api.gov.uk/vehicle-enquiry/v1'
   },
 
+  insurance: {
+    apiKey: process.env.INSURANCE_API_KEY,
+    enabled: !!process.env.INSURANCE_API_KEY,
+    baseUrl: 'https://uk1.ukvehicledata.co.uk/api/datapackage'
+  },
+
   // ==================== WEBHOOKS ====================
 
   webhook: {

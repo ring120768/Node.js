@@ -16,6 +16,7 @@ const logger = require('../utils/logger');
 const config = require('../config');
 const gdprService = require('../services/gdprService');
 const dvlaService = require('../services/dvlaService');
+const insuranceService = require('../services/insuranceService');
 const witnessVehiclePdfService = require('../services/witnessVehiclePdfService');
 const { createClient } = require('@supabase/supabase-js');
 
@@ -480,11 +481,60 @@ async function generateVehiclePdf(req, res) {
   }
 }
 
+/**
+ * Lookup insurance details via UK Vehicle Data API (standalone endpoint)
+ * POST /api/other-vehicles/insurance-lookup
+ * Body: { vehicle_license_plate }
+ */
+async function insuranceLookup(req, res) {
+  try {
+    const { vehicle_license_plate } = req.body;
+
+    if (!vehicle_license_plate) {
+      return sendError(res, 400, 'Vehicle license plate required', 'MISSING_LICENSE_PLATE');
+    }
+
+    logger.info('Insurance lookup requested', { vehicle_license_plate });
+
+    const insuranceResult = await insuranceService.lookupInsurance(vehicle_license_plate);
+
+    if (insuranceResult.success) {
+      logger.success('Insurance lookup successful', {
+        registration: vehicle_license_plate,
+        has_insurance_data: insuranceResult.data.has_insurance_data
+      });
+
+      res.json({
+        success: true,
+        insurance: insuranceResult.data,
+        requestId: req.requestId
+      });
+    } else {
+      logger.warn('Insurance lookup failed', {
+        registration: vehicle_license_plate,
+        error: insuranceResult.error
+      });
+
+      res.json({
+        success: false,
+        error: insuranceResult.error,
+        errorCode: insuranceResult.errorCode,
+        requestId: req.requestId
+      });
+    }
+
+  } catch (error) {
+    logger.error('Error in insuranceLookup:', error);
+    sendError(res, 500, 'Failed to lookup insurance', 'INTERNAL_ERROR');
+  }
+}
+
 module.exports = {
   createVehicle,
   getVehiclesByIncident,
   updateVehicle,
   deleteVehicle,
   dvlaLookup,
+  insuranceLookup,
   generateVehiclePdf
 };

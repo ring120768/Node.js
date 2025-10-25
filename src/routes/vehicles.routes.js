@@ -48,6 +48,13 @@ router.delete('/:vehicle_id', vehiclesController.deleteVehicle);
 router.post('/dvla-lookup', vehiclesController.dvlaLookup);
 
 /**
+ * Lookup insurance details via UK Vehicle Data API
+ * POST /api/other-vehicles/insurance-lookup
+ * Body: { vehicle_license_plate }
+ */
+router.post('/insurance-lookup', vehiclesController.insuranceLookup);
+
+/**
  * Generate PDF for a vehicle
  * POST /api/other-vehicles/:vehicle_id/generate-pdf
  */
