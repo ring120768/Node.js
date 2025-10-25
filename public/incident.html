@@ -651,12 +651,13 @@
                 const locationSection = document.getElementById('locationSection');
                 locationSection.classList.add('active');
 
+                // Wait for browser to render the newly visible section before scrolling
                 setTimeout(() => {
                     locationSection.scrollIntoView({
                         behavior: 'smooth',
                         block: 'center'
                     });
-                }, 100);
+                }, 300);
 
                 navigator.geolocation.getCurrentPosition(
                     async (position) => {
