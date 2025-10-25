@@ -2390,9 +2390,9 @@
                     // Clear auto-save draft since we're moving to next page
                     localStorage.removeItem('transcriptionDraft');
 
-                    // Redirect after brief delay to show success message
+                    // Redirect to report completion page to add witnesses/vehicles
                     setTimeout(() => {
-                        window.location.href = '/declaration.html';
+                        window.location.href = '/report-complete.html';
                     }, 1500);
                 } else {
                     throw new Error(result.error || 'Failed to save statement');

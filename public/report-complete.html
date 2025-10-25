@@ -564,6 +564,11 @@
             📊 View Dashboard
         </button>
 
+        <!-- Continue to Declaration Button -->
+        <button class="find-me-btn" id="continueToDeclarationBtn" style="margin-top: 20px;">
+            ✍️ Continue to Declaration →
+        </button>
+
         <p class="helper-text" id="helperText">
             Need help? Contact us anytime at <strong>support@carcrashlawyerai.co.uk</strong>
         </p>
@@ -1032,6 +1037,11 @@
             } else {
                 window.location.href = '/dashboard.html';
             }
+        }
+
+        function goToDeclaration() {
+            // Navigate to declaration page (preserving user context if available)
+            window.location.href = '/declaration.html';
         }
 
         // ===== MODAL FUNCTIONS =====
@@ -1638,6 +1648,7 @@
             document.getElementById('witnessBtn').addEventListener('click', openWitnessModal);
             document.getElementById('vehicleBtn').addEventListener('click', openVehicleModal);
             document.getElementById('dashboardBtn').addEventListener('click', goToDashboard);
+            document.getElementById('continueToDeclarationBtn').addEventListener('click', goToDeclaration);
 
             console.log('📋 Page Context:', {
                 userId,
