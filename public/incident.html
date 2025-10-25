@@ -648,11 +648,19 @@
                 btn.disabled = true;
 
                 // Scroll to location section for better UX (same as transcription page)
+                console.log('🎯 Attempting to scroll to location section...');
                 setTimeout(() => {
-                    document.getElementById('locationSection').scrollIntoView({
-                        behavior: 'smooth',
-                        block: 'center'
-                    });
+                    const locationSection = document.getElementById('locationSection');
+                    console.log('📍 Location section element:', locationSection);
+                    if (locationSection) {
+                        locationSection.scrollIntoView({
+                            behavior: 'smooth',
+                            block: 'center'
+                        });
+                        console.log('✅ Scroll command executed');
+                    } else {
+                        console.error('❌ Location section not found!');
+                    }
                 }, 300); // Small delay to allow smooth scroll
 
                 navigator.geolocation.getCurrentPosition(
