@@ -302,7 +302,7 @@ async function savePersonalStatement(req, res) {
       const { data, error } = await supabase
         .from('incident_reports')
         .update({
-          witness_statement_text: personalStatement,
+          detailed_account_of_what_happened: personalStatement,
           updated_at: new Date().toISOString()
         })
         .eq('id', incidentId)
@@ -328,11 +328,11 @@ async function savePersonalStatement(req, res) {
 
     } else {
       // No incident ID - create a new incident report with just the statement
-      const { data, error } = await supabase
+      const { data, error} = await supabase
         .from('incident_reports')
         .insert([{
           create_user_id: userId,
-          witness_statement_text: personalStatement,
+          detailed_account_of_what_happened: personalStatement,
           date: new Date().toISOString(),
           created_at: new Date().toISOString()
         }])
