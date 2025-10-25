@@ -2,7 +2,17 @@
 /**
  * Check Environment Variables
  * Diagnoses which API keys are configured
+ *
+ * Usage:
+ *   node check-env-vars.js           # Check local .env file
+ *   node check-env-vars.js --replit  # Check Replit environment (no .env loading)
  */
+
+// Only load .env if not in Replit mode
+const isReplit = process.argv.includes('--replit');
+if (!isReplit) {
+  require('dotenv').config();
+}
 
 const colors = {
   reset: '\x1b[0m',
@@ -13,6 +23,13 @@ const colors = {
 };
 
 console.log(colors.cyan, '\n🔍 Environment Variable Diagnostic\n', colors.reset);
+
+if (isReplit) {
+  console.log(colors.yellow, 'ℹ️  Running in Replit mode (checking environment variables only, not .env file)', colors.reset);
+} else {
+  console.log(colors.cyan, 'ℹ️  Running in local mode (loading .env file)', colors.reset);
+}
+console.log('');
 
 // Check DVLA API Key
 const dvlaKey = process.env.DVLA_API_KEY;
@@ -56,9 +73,20 @@ if (dvlaRelated.length > 0) {
 console.log('\n' + colors.cyan + '━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━' + colors.reset);
 
 console.log('\n💡 If DVLA_API_KEY is not showing:');
-console.log('   1. In Replit: Go to Tools → Secrets');
-console.log('   2. Click "New Secret"');
-console.log('   3. Key: DVLA_API_KEY (exact spelling, case-sensitive)');
-console.log('   4. Value: 7i76VHmDog2SkOftinOTPauFFH0oWTbZ4btBFW9q');
-console.log('   5. Click "Add Secret"');
-console.log('   6. Restart your Replit server\n');
+console.log('');
+console.log('   📝 Local Development (.env file):');
+console.log('      1. Open .env file in your editor');
+console.log('      2. Add or update line:');
+console.log('         DVLA_API_KEY=7i76VHmDog2SkOftinOTPauFFH0oWTbZ4btBFW9q');
+console.log('      3. Save the file');
+console.log('      4. Restart your local server');
+console.log('');
+console.log('   🔧 Replit Production (Secrets):');
+console.log('      1. In Replit: Go to Tools → Secrets');
+console.log('      2. Click "New Secret"');
+console.log('      3. Key: DVLA_API_KEY (exact spelling, case-sensitive)');
+console.log('      4. Value: 7i76VHmDog2SkOftinOTPauFFH0oWTbZ4btBFW9q');
+console.log('      5. Click "Add Secret"');
+console.log('      6. Restart your Replit server');
+console.log('      7. Run: node check-env-vars.js --replit');
+console.log('');
