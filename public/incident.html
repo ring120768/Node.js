@@ -647,17 +647,6 @@
                 btn.innerHTML = '<span class="loading-spinner"></span> Locating...';
                 btn.disabled = true;
 
-                // Scroll to location section for better UX (works on mobile)
-                setTimeout(() => {
-                    const locationSection = document.getElementById('locationSection');
-                    if (locationSection) {
-                        locationSection.scrollIntoView({
-                            behavior: 'smooth',
-                            block: 'center'
-                        });
-                    }
-                }, 300);
-
                 navigator.geolocation.getCurrentPosition(
                     async (position) => {
                         userLocation = {
@@ -739,6 +728,17 @@
 
                         // Show location section
                         document.getElementById('locationSection').classList.add('active');
+
+                        // Scroll to location section for better UX (works on mobile)
+                        setTimeout(() => {
+                            const locationSection = document.getElementById('locationSection');
+                            if (locationSection) {
+                                locationSection.scrollIntoView({
+                                    behavior: 'smooth',
+                                    block: 'center'
+                                });
+                            }
+                        }, 300);
 
                         btn.textContent = '📍 Location Found!';
                         btn.disabled = false;
