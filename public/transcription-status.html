@@ -1943,6 +1943,15 @@
 
                 // Show visualizer
                 document.getElementById('visualizer').classList.add('active');
+
+                // Scroll to visualizer for better UX
+                setTimeout(() => {
+                    document.getElementById('visualizer').scrollIntoView({
+                        behavior: 'smooth',
+                        block: 'center'
+                    });
+                }, 300); // Small delay to allow visualizer to render
+
                 animateVisualizer();
 
                 // Setup media recorder
