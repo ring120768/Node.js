@@ -111,7 +111,7 @@ Format as JSON:
 }`;
 
     const summaryResponse = await openai.chat.completions.create({
-      model: 'gpt-4',
+      model: 'gpt-4o',  // gpt-4o supports JSON mode
       messages: [
         { role: 'system', content: 'You are a legal assistant specializing in car accident cases.' },
         { role: 'user', content: summaryPrompt }
@@ -143,7 +143,7 @@ Format as JSON:
 }`;
 
     const reviewResponse = await openai.chat.completions.create({
-      model: 'gpt-4',
+      model: 'gpt-4o',  // gpt-4o supports JSON mode
       messages: [
         { role: 'system', content: 'You are a legal assistant specializing in accident documentation.' },
         { role: 'user', content: reviewPrompt }
@@ -214,7 +214,7 @@ Format as JSON:
 }`;
 
     const finalReviewResponse = await openai.chat.completions.create({
-      model: 'gpt-4',
+      model: 'gpt-4o',  // gpt-4o supports JSON mode
       messages: [
         { role: 'system', content: 'You are a senior legal advisor with 20 years of experience in accident law.' },
         { role: 'user', content: finalReviewPrompt }
