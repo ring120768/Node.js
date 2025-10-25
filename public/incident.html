@@ -647,6 +647,17 @@
                 btn.innerHTML = '<span class="loading-spinner"></span> Locating...';
                 btn.disabled = true;
 
+                // Show location section immediately and scroll to it
+                const locationSection = document.getElementById('locationSection');
+                locationSection.classList.add('active');
+
+                setTimeout(() => {
+                    locationSection.scrollIntoView({
+                        behavior: 'smooth',
+                        block: 'center'
+                    });
+                }, 100);
+
                 navigator.geolocation.getCurrentPosition(
                     async (position) => {
                         userLocation = {
@@ -726,19 +737,8 @@
                             document.getElementById('what3wordsText').textContent = '///location.error.occurred';
                         }
 
-                        // Show location section
-                        document.getElementById('locationSection').classList.add('active');
-
-                        // Scroll to location section for better UX (works on mobile)
-                        setTimeout(() => {
-                            const locationSection = document.getElementById('locationSection');
-                            if (locationSection) {
-                                locationSection.scrollIntoView({
-                                    behavior: 'smooth',
-                                    block: 'center'
-                                });
-                            }
-                        }, 300);
+                        // Location section already visible from button click
+                        // No need to add 'active' class again
 
                         btn.textContent = '📍 Location Found!';
                         btn.disabled = false;
