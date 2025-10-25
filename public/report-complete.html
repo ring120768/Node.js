@@ -609,7 +609,7 @@
                 </div>
 
                 <div class="modal-buttons">
-                    <button type="button" class="modal-btn secondary" onclick="closeModal('witnessModal')">
+                    <button type="button" class="modal-btn secondary" id="witnessModalCancelBtn">
                         Cancel
                     </button>
                     <button type="submit" class="modal-btn primary">
@@ -756,7 +756,7 @@
                 </div>
 
                 <div class="modal-buttons">
-                    <button type="button" class="modal-btn secondary" onclick="closeModal('vehicleModal')">
+                    <button type="button" class="modal-btn secondary" id="vehicleModalCancelBtn">
                         Cancel
                     </button>
                     <button type="submit" class="modal-btn primary">
@@ -1048,6 +1048,25 @@
             document.querySelector(`#${modalId} form`).reset();
             document.querySelector(`#${modalId} .error-message`).classList.remove('show');
         }
+
+        // Setup modal cancel button event listeners (CSP-compliant)
+        document.addEventListener('DOMContentLoaded', function() {
+            // Witness modal cancel button
+            const witnessModalCancelBtn = document.getElementById('witnessModalCancelBtn');
+            if (witnessModalCancelBtn) {
+                witnessModalCancelBtn.addEventListener('click', function() {
+                    closeModal('witnessModal');
+                });
+            }
+
+            // Vehicle modal cancel button
+            const vehicleModalCancelBtn = document.getElementById('vehicleModalCancelBtn');
+            if (vehicleModalCancelBtn) {
+                vehicleModalCancelBtn.addEventListener('click', function() {
+                    closeModal('vehicleModal');
+                });
+            }
+        });
 
         // ===== WITNESS & VEHICLE LIST FUNCTIONS =====
 
