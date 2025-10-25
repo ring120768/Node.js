@@ -641,7 +641,11 @@
                                placeholder="e.g., AB12CDE" style="flex: 1; text-transform: uppercase;">
                         <button type="button" id="dvlaLookupBtn" class="modal-btn primary"
                                 style="padding: 10px 20px; white-space: nowrap;">
-                            🔍 Lookup
+                            🔍 DVLA Lookup
+                        </button>
+                        <button type="button" onclick="checkInsurance()" class="modal-btn"
+                                style="padding: 10px 20px; white-space: nowrap; background: #10b981; border-color: #10b981;">
+                            🛡️ Check Insurance
                         </button>
                     </div>
                     <small id="dvlaStatus" style="display: block; margin-top: 5px; font-size: 12px;"></small>
@@ -1285,6 +1289,76 @@
                     detailsSection.style.display = 'block';
                     statusDiv.textContent = '✅ Vehicle found in DVLA database';
                     statusDiv.style.color = '#10b981';
+
+                    // ===== ALERT SYSTEM: Check for issues =====
+                    const alerts = [];
+
+                    // Check MOT Status
+                    if (v.mot_status && v.mot_status.toLowerCase().includes('no details')) {
+                        alerts.push('⚠️ MOT: No details held by DVLA');
+                    } else if (v.mot_status && !v.mot_status.toLowerCase().includes('valid')) {
+                        alerts.push('🚨 MOT: ' + v.mot_status);
+                    }
+
+                    // Check if MOT is expired based on date
+                    if (v.mot_expiry_date) {
+                        const motExpiry = new Date(v.mot_expiry_date);
+                        const today = new Date();
+                        if (motExpiry < today) {
+                            alerts.push('🚨 MOT EXPIRED: ' + v.mot_expiry_date);
+                        } else {
+                            // Warn if expiring soon (within 30 days)
+                            const daysUntilExpiry = Math.floor((motExpiry - today) / (1000 * 60 * 60 * 24));
+                            if (daysUntilExpiry <= 30 && daysUntilExpiry >= 0) {
+                                alerts.push('⚠️ MOT expires soon: ' + daysUntilExpiry + ' days (' + v.mot_expiry_date + ')');
+                            }
+                        }
+                    }
+
+                    // Check Tax Status
+                    if (v.tax_status && v.tax_status.toLowerCase() === 'sorn') {
+                        alerts.push('🚨 TAX: Vehicle declared SORN (Statutory Off Road Notification)');
+                    } else if (v.tax_status && v.tax_status.toLowerCase() === 'untaxed') {
+                        alerts.push('🚨 TAX: Vehicle UNTAXED');
+                    } else if (v.tax_status && !v.tax_status.toLowerCase().includes('taxed')) {
+                        alerts.push('⚠️ TAX: ' + v.tax_status);
+                    }
+
+                    // Check if Tax is overdue based on date
+                    if (v.tax_due_date && v.tax_status && v.tax_status.toLowerCase() !== 'taxed') {
+                        const taxDue = new Date(v.tax_due_date);
+                        const today = new Date();
+                        if (taxDue < today) {
+                            alerts.push('🚨 TAX OVERDUE: Due ' + v.tax_due_date);
+                        }
+                    }
+
+                    // Check for export marker
+                    if (v.marked_for_export === true) {
+                        alerts.push('⚠️ Vehicle marked for export');
+                    }
+
+                    // Check vehicle status
+                    if (v.vehicle_status && v.vehicle_status.toLowerCase().includes('stolen')) {
+                        alerts.push('🚨 VEHICLE STATUS: ' + v.vehicle_status.toUpperCase());
+                    }
+
+                    // Display alerts if any issues found
+                    if (alerts.length > 0) {
+                        const alertMessage = '⚠️ VEHICLE COMPLIANCE ISSUES DETECTED:\n\n' +
+                            alerts.join('\n') +
+                            '\n\n❗ This vehicle may not be legally compliant to drive on UK roads.' +
+                            '\n\n📸 Document this information for your incident report.';
+
+                        // Show alert after a brief delay to let UI update
+                        setTimeout(() => {
+                            alert(alertMessage);
+                        }, 500);
+
+                        // Also add visual warning to status div
+                        statusDiv.innerHTML = '✅ Vehicle found | <strong style="color: #ef4444;">⚠️ ' + alerts.length + ' issue(s) detected</strong>';
+                        statusDiv.style.color = '#10b981';
+                    }
                 } else {
                     detailsSection.style.display = 'none';
                     statusDiv.textContent = `⚠️ ${result.error || 'Vehicle not found'}. You can still add manually.`;
@@ -1302,36 +1376,22 @@
             }
         });
 
-        // Automatic DVLA lookup when user finishes typing (with debounce)
-        let dvlaLookupTimeout;
-        document.getElementById('vehicleLicensePlate').addEventListener('input', (e) => {
-            const licensePlate = e.target.value.trim();
-
-            // Clear previous timeout
-            clearTimeout(dvlaLookupTimeout);
-
-            // Auto-lookup after 1 second of no typing (UK registrations are 5-7 chars)
-            if (licensePlate.length >= 5) {
-                dvlaLookupTimeout = setTimeout(() => {
-                    document.getElementById('dvlaLookupBtn').click();
-                }, 1000);
+        // Check insurance via askMID.com (UK Motor Insurance Database)
+        function checkInsurance() {
+            const licensePlate = document.getElementById('vehicleLicensePlate').value.trim();
+            if (!licensePlate) {
+                alert('⚠️ Please enter a vehicle registration first');
+                return;
             }
-        });
 
-        // Also trigger on blur (when user tabs out)
-        document.getElementById('vehicleLicensePlate').addEventListener('blur', (e) => {
-            const licensePlate = e.target.value.trim();
-            if (licensePlate.length >= 5) {
-                // Small delay to avoid double-lookup if they clicked the button
-                setTimeout(() => {
-                    const dvlaStatus = document.getElementById('dvlaStatus').textContent;
-                    // Only auto-lookup if we haven't already looked up this plate
-                    if (!dvlaStatus.includes('✅') && !dvlaStatus.includes('Contacting')) {
-                        document.getElementById('dvlaLookupBtn').click();
-                    }
-                }, 300);
-            }
-        });
+            // Open askMID.com in new tab (official public MID service)
+            const url = `https://ownvehicle.askmid.com/`;
+            window.open(url, '_blank');
+
+            alert(`🔍 Opening askMID.com - UK's official Motor Insurance Database\n\n` +
+                  `Enter registration: ${licensePlate}\n\n` +
+                  `This will show if the vehicle is currently insured.`);
+        }
 
         // ===== FORM SUBMISSIONS =====
         document.getElementById('witnessForm').addEventListener('submit', async (e) => {
