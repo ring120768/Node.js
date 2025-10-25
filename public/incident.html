@@ -647,21 +647,16 @@
                 btn.innerHTML = '<span class="loading-spinner"></span> Locating...';
                 btn.disabled = true;
 
-                // Scroll to location section for better UX (same as transcription page)
-                console.log('🎯 Attempting to scroll to location section...');
+                // Scroll to location section for better UX (works on mobile)
                 setTimeout(() => {
                     const locationSection = document.getElementById('locationSection');
-                    console.log('📍 Location section element:', locationSection);
                     if (locationSection) {
                         locationSection.scrollIntoView({
                             behavior: 'smooth',
                             block: 'center'
                         });
-                        console.log('✅ Scroll command executed');
-                    } else {
-                        console.error('❌ Location section not found!');
                     }
-                }, 300); // Small delay to allow smooth scroll
+                }, 300);
 
                 navigator.geolocation.getCurrentPosition(
                     async (position) => {
