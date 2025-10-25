@@ -648,13 +648,36 @@
                 </div>
 
                 <!-- Vehicle Details (auto-populated by DVLA) -->
-                <div id="vehicleDetailsSection" style="display: none; background: #f0f9ff; padding: 15px; border-radius: 8px; margin-bottom: 15px;">
-                    <h4 style="color: #0369a1; margin-bottom: 10px; font-size: 14px;">✅ Vehicle Details (from DVLA)</h4>
-                    <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 10px; font-size: 13px;">
-                        <div><strong>Make:</strong> <span id="dvlaMake">-</span></div>
-                        <div><strong>Model:</strong> <span id="dvlaModel">-</span></div>
-                        <div><strong>Color:</strong> <span id="dvlaColor">-</span></div>
-                        <div><strong>Year:</strong> <span id="dvlaYear">-</span></div>
+                <div id="vehicleDetailsSection" style="display: none; background: #f0f9ff; padding: 15px; border-radius: 8px; margin-bottom: 15px; border-left: 4px solid #0369a1;">
+                    <h4 style="color: #0369a1; margin-bottom: 15px; font-size: 14px;">✅ Vehicle Details (from DVLA)</h4>
+
+                    <!-- Basic Vehicle Info -->
+                    <div style="margin-bottom: 15px;">
+                        <div style="font-weight: 600; color: #0369a1; margin-bottom: 8px; font-size: 12px; text-transform: uppercase;">Basic Information</div>
+                        <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 8px; font-size: 13px;">
+                            <div><strong>Make:</strong> <span id="dvlaMake">-</span></div>
+                            <div><strong>Model:</strong> <span id="dvlaModel">-</span></div>
+                            <div><strong>Color:</strong> <span id="dvlaColor">-</span></div>
+                            <div><strong>Year:</strong> <span id="dvlaYear">-</span></div>
+                            <div><strong>Fuel Type:</strong> <span id="dvlaFuelType">-</span></div>
+                            <div><strong>Engine:</strong> <span id="dvlaEngineCapacity">-</span></div>
+                        </div>
+                    </div>
+
+                    <!-- MOT & Tax Status -->
+                    <div style="margin-bottom: 15px;">
+                        <div style="font-weight: 600; color: #0369a1; margin-bottom: 8px; font-size: 12px; text-transform: uppercase;">MOT & Tax</div>
+                        <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 8px; font-size: 13px;">
+                            <div><strong>MOT Status:</strong> <span id="dvlaMotStatus">-</span></div>
+                            <div><strong>MOT Expiry:</strong> <span id="dvlaMotExpiry">-</span></div>
+                            <div><strong>Tax Status:</strong> <span id="dvlaTaxStatus">-</span></div>
+                            <div><strong>Tax Due:</strong> <span id="dvlaTaxDue">-</span></div>
+                        </div>
+                    </div>
+
+                    <!-- V5C Date -->
+                    <div style="font-size: 13px;">
+                        <strong>V5C Last Issued:</strong> <span id="dvlaV5CDate">-</span>
                     </div>
                 </div>
 
@@ -1231,11 +1254,33 @@
                 const result = await response.json();
 
                 if (result.success && result.vehicle) {
-                    // Show vehicle details
-                    document.getElementById('dvlaMake').textContent = result.vehicle.make || '-';
-                    document.getElementById('dvlaModel').textContent = result.vehicle.model || '-';
-                    document.getElementById('dvlaColor').textContent = result.vehicle.color || '-';
-                    document.getElementById('dvlaYear').textContent = result.vehicle.year_of_manufacture || '-';
+                    const v = result.vehicle;
+
+                    // Basic Information
+                    document.getElementById('dvlaMake').textContent = v.make || '-';
+                    document.getElementById('dvlaModel').textContent = v.model || '-';
+                    document.getElementById('dvlaColor').textContent = v.color || '-';
+                    document.getElementById('dvlaYear').textContent = v.year_of_manufacture || '-';
+                    document.getElementById('dvlaFuelType').textContent = v.fuel_type || '-';
+                    document.getElementById('dvlaEngineCapacity').textContent = v.engine_capacity ? `${v.engine_capacity}cc` : '-';
+
+                    // MOT & Tax Status with color coding
+                    const motStatusEl = document.getElementById('dvlaMotStatus');
+                    motStatusEl.textContent = v.mot_status || '-';
+                    motStatusEl.style.color = v.mot_status === 'Valid' ? '#10b981' : (v.mot_status === 'No details held by DVLA' ? '#f59e0b' : '#ef4444');
+                    motStatusEl.style.fontWeight = '600';
+
+                    document.getElementById('dvlaMotExpiry').textContent = v.mot_expiry_date || '-';
+
+                    const taxStatusEl = document.getElementById('dvlaTaxStatus');
+                    taxStatusEl.textContent = v.tax_status || '-';
+                    taxStatusEl.style.color = v.tax_status === 'Taxed' ? '#10b981' : (v.tax_status === 'SORN' ? '#f59e0b' : '#ef4444');
+                    taxStatusEl.style.fontWeight = '600';
+
+                    document.getElementById('dvlaTaxDue').textContent = v.tax_due_date || '-';
+
+                    // V5C Date
+                    document.getElementById('dvlaV5CDate').textContent = v.date_of_last_v5c_issued || '-';
 
                     detailsSection.style.display = 'block';
                     statusDiv.textContent = '✅ Vehicle found in DVLA database';
@@ -1254,6 +1299,37 @@
             } finally {
                 lookupBtn.disabled = false;
                 lookupBtn.textContent = '🔍 Lookup';
+            }
+        });
+
+        // Automatic DVLA lookup when user finishes typing (with debounce)
+        let dvlaLookupTimeout;
+        document.getElementById('vehicleLicensePlate').addEventListener('input', (e) => {
+            const licensePlate = e.target.value.trim();
+
+            // Clear previous timeout
+            clearTimeout(dvlaLookupTimeout);
+
+            // Auto-lookup after 1 second of no typing (UK registrations are 5-7 chars)
+            if (licensePlate.length >= 5) {
+                dvlaLookupTimeout = setTimeout(() => {
+                    document.getElementById('dvlaLookupBtn').click();
+                }, 1000);
+            }
+        });
+
+        // Also trigger on blur (when user tabs out)
+        document.getElementById('vehicleLicensePlate').addEventListener('blur', (e) => {
+            const licensePlate = e.target.value.trim();
+            if (licensePlate.length >= 5) {
+                // Small delay to avoid double-lookup if they clicked the button
+                setTimeout(() => {
+                    const dvlaStatus = document.getElementById('dvlaStatus').textContent;
+                    // Only auto-lookup if we haven't already looked up this plate
+                    if (!dvlaStatus.includes('✅') && !dvlaStatus.includes('Contacting')) {
+                        document.getElementById('dvlaLookupBtn').click();
+                    }
+                }, 300);
             }
         });
 
