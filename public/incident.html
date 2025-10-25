@@ -647,10 +647,10 @@
                 btn.innerHTML = '<span class="loading-spinner"></span> Locating...';
                 btn.disabled = true;
 
-                // Smooth scroll to map
-                const mapElement = document.getElementById('map');
-                if (mapElement) {
-                    mapElement.scrollIntoView({ behavior: 'smooth', block: 'center' });
+                // Smooth scroll to location section (which contains the map)
+                const locationSection = document.getElementById('locationSection');
+                if (locationSection) {
+                    locationSection.scrollIntoView({ behavior: 'smooth', block: 'start' });
                 }
 
                 navigator.geolocation.getCurrentPosition(
