@@ -28,6 +28,13 @@ router.get('/autosuggest', locationController.getAutosuggest);
 router.get('/legacy', locationController.getLegacyWhat3words);
 
 /**
+ * Convert coordinates to what3words (POST version)
+ * POST /api/location/what3words
+ * Body: { latitude, longitude }
+ */
+router.post('/what3words', locationController.convertToWhat3WordsPost);
+
+/**
  * Upload what3words image
  * POST /api/location/upload-image
  * Body: { imageData: base64 | file upload, what3words, latitude, longitude, userId }

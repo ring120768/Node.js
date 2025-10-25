@@ -238,8 +238,90 @@ async function uploadWhat3wordsImage(req, res) {
   }
 }
 
+/**
+ * Convert coordinates to what3words (POST version for frontend)
+ * POST /api/location/what3words
+ * Body: { latitude, longitude }
+ */
+async function convertToWhat3WordsPost(req, res) {
+  try {
+    const { latitude, longitude } = req.body;
+
+    if (!latitude || !longitude) {
+      return sendError(res, 400, 'Missing coordinates', 'MISSING_COORDS',
+        'Both latitude and longitude are required in request body');
+    }
+
+    const lat = parseFloat(latitude);
+    const lng = parseFloat(longitude);
+
+    if (isNaN(lat) || isNaN(lng) ||
+      lat < -90 || lat > 90 ||
+      lng < -180 || lng > 180) {
+      return sendError(res, 400, 'Invalid coordinates', 'INVALID_COORDS',
+        'Coordinates must be valid latitude (-90 to 90) and longitude (-180 to 180)');
+    }
+
+    if (!config.what3words.apiKey) {
+      logger.warn('what3words API key not configured');
+      // Return a friendly fallback instead of error
+      return res.json({
+        success: false,
+        error: 'what3words service not configured',
+        words: null,
+        requestId: req.requestId
+      });
+    }
+
+    const what3wordsUrl = `https://api.what3words.com/v3/convert-to-3wa?coordinates=${lat},${lng}&key=${config.what3words.apiKey}`;
+
+    logger.info('Converting coordinates to what3words', { lat, lng });
+
+    const response = await axios.get(what3wordsUrl, {
+      timeout: 10000
+    });
+
+    const data = response.data;
+
+    if (response.status !== 200 || !data.words) {
+      logger.error('what3words API error:', data);
+      return res.json({
+        success: false,
+        error: data.error?.message || 'Failed to convert coordinates',
+        words: null,
+        requestId: req.requestId
+      });
+    }
+
+    logger.success('what3words conversion successful', { words: data.words });
+
+    res.json({
+      success: true,
+      words: data.words,
+      coordinates: {
+        lat,
+        lng
+      },
+      nearestPlace: data.nearestPlace || null,
+      country: data.country || null,
+      language: data.language || 'en',
+      requestId: req.requestId
+    });
+  } catch (error) {
+    logger.error('what3words conversion error:', error);
+    // Graceful fallback - don't break the page
+    res.json({
+      success: false,
+      error: 'Failed to convert location to what3words',
+      words: null,
+      requestId: req.requestId
+    });
+  }
+}
+
 module.exports = {
   convertToWhat3Words,
+  convertToWhat3WordsPost,
   getAutosuggest,
   getLegacyWhat3words,
   uploadWhat3wordsImage
