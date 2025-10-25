@@ -1321,6 +1321,9 @@
             <button class="btn btn-primary" id="generateSummaryBtn" style="margin-top: 20px;">
                 🤖 Generate AI Analysis
             </button>
+            <button class="btn btn-warning" id="clearDraftBtn" style="margin-top: 20px;">
+                🗑️ Clear Draft
+            </button>
             <p style="text-align: center; color: #666; margin-top: 10px; font-size: 14px;">
                 You can edit the transcription above if needed
             </p>
@@ -2315,6 +2318,25 @@
             }
         }
 
+        // Clear draft from localStorage and textarea
+        function clearDraft() {
+            if (confirm('Are you sure you want to clear the draft? This cannot be undone.')) {
+                // Clear localStorage
+                localStorage.removeItem('transcriptionDraft');
+
+                // Clear textarea
+                const transcriptionText = document.getElementById('transcriptionText');
+                transcriptionText.textContent = '';
+
+                // Update counters
+                updateCharCount();
+
+                // Show confirmation
+                showStatus('Draft cleared successfully', 'success');
+                console.log('✅ Draft cleared from localStorage');
+            }
+        }
+
         // ===== AI ANALYSIS GENERATION =====
         async function generateAIAnalysis() {
             const text = document.getElementById('transcriptionText').textContent;
@@ -2636,6 +2658,7 @@
             });
             document.getElementById('saveTranscriptionBtn').addEventListener('click', saveTranscription);
             document.getElementById('generateSummaryBtn').addEventListener('click', generateAIAnalysis);
+            document.getElementById('clearDraftBtn').addEventListener('click', clearDraft);
             document.getElementById('securityBadge').addEventListener('click', openSecurityModal);
 
             // Tab navigation event listeners (CSP compliant)
