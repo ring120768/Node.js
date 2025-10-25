@@ -1218,9 +1218,9 @@
 
         <!-- Tab Navigation -->
         <div class="tab-navigation">
-            <button class="tab-button active" onclick="switchTab('record')">🎤 Record</button>
-            <button class="tab-button" onclick="switchTab('transcription')" id="transcriptionTab">📝 Transcription</button>
-            <button class="tab-button" onclick="switchTab('analysis')" id="analysisTab">🤖 AI Analysis</button>
+            <button class="tab-button active" data-tab="record">🎤 Record</button>
+            <button class="tab-button" data-tab="transcription" id="transcriptionTab">📝 Transcription</button>
+            <button class="tab-button" data-tab="analysis" id="analysisTab">🤖 AI Analysis</button>
         </div>
 
         <!-- Tab Panel: Record -->
@@ -1406,7 +1406,7 @@
 
         <!-- AI Review Section -->
         <div id="reviewSection">
-            <div class="collapsible-header" onclick="toggleSection('reviewContent')">
+            <div class="collapsible-header" data-target="reviewContent">
                 <h2 style="margin: 0;">💡 AI Review</h2>
                 <span>▼</span>
             </div>
@@ -1428,7 +1428,7 @@
 
         <!-- Combined Report Summary -->
         <div id="combinedReportSection">
-            <div class="collapsible-header" onclick="toggleSection('combinedReportContent')">
+            <div class="collapsible-header" data-target="combinedReportContent">
                 <h2 style="margin: 0;">📄 Complete Incident Overview</h2>
                 <span>▼</span>
             </div>
@@ -2637,6 +2637,24 @@
             document.getElementById('saveTranscriptionBtn').addEventListener('click', saveTranscription);
             document.getElementById('generateSummaryBtn').addEventListener('click', generateAIAnalysis);
             document.getElementById('securityBadge').addEventListener('click', openSecurityModal);
+
+            // Tab navigation event listeners (CSP compliant)
+            document.querySelectorAll('.tab-button').forEach(button => {
+                button.addEventListener('click', (e) => {
+                    const tabName = e.currentTarget.dataset.tab;
+                    switchTab(tabName, e);
+                });
+            });
+
+            // Collapsible section event listeners (CSP compliant)
+            document.querySelectorAll('.collapsible-header').forEach(header => {
+                header.addEventListener('click', () => {
+                    const targetId = header.dataset.target;
+                    if (targetId) {
+                        toggleSection(targetId);
+                    }
+                });
+            });
 
             // Prevent accidental navigation during recording
             window.addEventListener('beforeunload', (e) => {
