@@ -278,7 +278,7 @@
                     • I acknowledge that providing <strong>false information</strong> may affect my legal claim
                 </div>
 
-                <div class="consent-checkbox" onclick="toggleConsent()">
+                <div class="consent-checkbox" id="consentCheckboxWrapper">
                     <input type="checkbox" id="consentCheckbox">
                     <label for="consentCheckbox">
                         <strong>I have read and agree to the declaration above.</strong>
@@ -288,10 +288,10 @@
             </div>
 
             <div class="button-group">
-                <button class="btn btn-secondary" onclick="goBack()">
+                <button class="btn btn-secondary" id="backBtn">
                     ← Back to Edit
                 </button>
-                <button class="btn btn-primary" id="submitBtn" disabled onclick="submitDeclaration()">
+                <button class="btn btn-primary" id="submitBtn" disabled>
                     Continue to Complete
                     →
                 </button>
@@ -463,7 +463,11 @@
         document.addEventListener('DOMContentLoaded', () => {
             init();
 
+            // Event listeners for CSP compliance (no inline onclick)
             document.getElementById('consentCheckbox').addEventListener('change', updateSubmitButton);
+            document.getElementById('consentCheckboxWrapper').addEventListener('click', toggleConsent);
+            document.getElementById('backBtn').addEventListener('click', goBack);
+            document.getElementById('submitBtn').addEventListener('click', submitDeclaration);
         });
     </script>
     <script src="/js/mascot.js"></script>
