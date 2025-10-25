@@ -1308,6 +1308,9 @@
         <!-- Transcription Result -->
         <div id="transcriptionResult">
             <h2>📝 <span id="userName">Your</span> Personal Statement</h2>
+            <div style="background: #e3f2fd; border-left: 4px solid #2196F3; padding: 12px 16px; margin-bottom: 15px; border-radius: 4px;">
+                <strong>💡 Tip:</strong> You can edit the transcription below to add details or correct any mistakes. Click in the box to start editing.
+            </div>
             <div class="transcription-box" contenteditable="true" id="transcriptionText" placeholder="Your transcription will appear here..."></div>
             <div class="char-count">
                 <span id="wordCount">0 words</span> | <span id="charCount">0 characters</span>
@@ -1461,6 +1464,13 @@
                     <h4>Legal Considerations</h4>
                     <div id="legalConsiderations"></div>
                 </div>
+            </div>
+
+            <!-- Save and Continue Button -->
+            <div style="text-align: center; margin: 30px 0 20px 0;">
+                <button class="btn btn-success" id="saveAndContinueBtn" style="font-size: 18px; padding: 15px 40px;">
+                    💾 Save & Continue to Declaration
+                </button>
             </div>
 
             <div class="ai-disclaimer">
@@ -2337,6 +2347,53 @@
             }
         }
 
+        // ===== SAVE AND CONTINUE TO DECLARATION =====
+        async function saveAndContinue() {
+            const text = document.getElementById('transcriptionText').textContent;
+
+            if (!text || text.trim().length === 0) {
+                showStatus('Please record or enter a statement first.', 'warning');
+                return;
+            }
+
+            try {
+                showStatus('Saving your statement...', 'info');
+
+                const response = await fetch('/api/incident-reports/save-statement', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json'
+                    },
+                    body: JSON.stringify({
+                        userId: userId,
+                        incidentId: currentIncidentId,
+                        personalStatement: text
+                    }),
+                    credentials: 'include'
+                });
+
+                const result = await response.json();
+
+                if (result.success) {
+                    showStatus('Saved! Redirecting to declaration page...', 'success');
+                    console.log('✅ Statement saved, redirecting to declaration');
+
+                    // Clear auto-save draft since we're moving to next page
+                    localStorage.removeItem('transcriptionDraft');
+
+                    // Redirect after brief delay to show success message
+                    setTimeout(() => {
+                        window.location.href = '/declaration.html';
+                    }, 1500);
+                } else {
+                    throw new Error(result.error || 'Failed to save statement');
+                }
+            } catch (error) {
+                console.error('Save error:', error);
+                showStatus('Failed to save. Please try again.', 'error');
+            }
+        }
+
         // ===== AI ANALYSIS GENERATION =====
         async function generateAIAnalysis() {
             const text = document.getElementById('transcriptionText').textContent;
@@ -2659,6 +2716,7 @@
             document.getElementById('saveTranscriptionBtn').addEventListener('click', saveTranscription);
             document.getElementById('generateSummaryBtn').addEventListener('click', generateAIAnalysis);
             document.getElementById('clearDraftBtn').addEventListener('click', clearDraft);
+            document.getElementById('saveAndContinueBtn').addEventListener('click', saveAndContinue);
             document.getElementById('securityBadge').addEventListener('click', openSecurityModal);
 
             // Tab navigation event listeners (CSP compliant)
