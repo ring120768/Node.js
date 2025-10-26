@@ -102,10 +102,26 @@ function extractAnswerValue(answer) {
 }
 
 /**
- * Extract answer by field reference (legacy function - now enhanced)
+ * Extract answer by field reference (enhanced with title map fallback)
+ * @param {Array} answers - Typeform answers array
+ * @param {string} ref - Field reference ID (snake_case expected field name)
+ * @param {Map} titleMap - Optional title map for UUID ref fallback
+ * @returns {*} The answer value or null
  */
-function getAnswerByRef(answers, ref) {
-  const answer = answers.find(a => a.field?.ref === ref);
+function getAnswerByRef(answers, ref, titleMap = null) {
+  // Try direct ref match first (for backwards compatibility)
+  let answer = answers.find(a => a.field?.ref === ref);
+
+  // If not found and titleMap provided, try title matching
+  if (!answer && titleMap) {
+    answer = answers.find(a => {
+      const fieldRef = a.field?.ref;
+      if (!fieldRef) return false;
+      const normalizedTitle = titleMap.get(fieldRef);
+      return normalizedTitle === ref;
+    });
+  }
+
   return extractAnswerValue(answer);
 }
 
@@ -117,10 +133,23 @@ function getAnswerByRef(answers, ref) {
  * @param {Array} answers - Typeform answers array
  * @param {string} ref - Field reference ID
  * @param {string} fieldType - Field type ('boolean', 'text', etc.)
+ * @param {Map} titleMap - Optional title map for UUID ref fallback
  * @returns {*} The answer value, false for unchecked booleans, or null
  */
-function getAnswerByRefWithDefault(answers, ref, fieldType = 'text') {
-  const answer = answers.find(a => a.field?.ref === ref);
+function getAnswerByRefWithDefault(answers, ref, fieldType = 'text', titleMap = null) {
+  // Try direct ref match first (for backwards compatibility and UUID matches)
+  let answer = answers.find(a => a.field?.ref === ref);
+
+  // If not found and titleMap provided, try title matching
+  if (!answer && titleMap) {
+    answer = answers.find(a => {
+      const fieldRef = a.field?.ref;
+      if (!fieldRef) return false;
+      const normalizedTitle = titleMap.get(fieldRef);
+      return normalizedTitle === ref;
+    });
+  }
+
   const value = extractAnswerValue(answer);
 
   // For boolean fields, null means "unchecked" → return false
@@ -818,6 +847,10 @@ async function processIncidentReport(formResponse, requestId, imageProcessor = n
 
     logger.info(`[${requestId}] Processing incident report for user: ${userId || token}`);
 
+    // 🔧 BUILD TITLE MAP: Handle UUID refs from Typeform by matching question titles
+    const titleMap = buildFieldTitleMap(formResponse.definition);
+    console.log(`📋 Built field title map with ${titleMap.size} field mappings`);
+
     // Map to incident_reports table (keeping your existing mapping)
     const incidentData = {
       create_user_id: userId || token,
@@ -825,125 +858,125 @@ async function processIncidentReport(formResponse, requestId, imageProcessor = n
       form_id: formResponse.form_id,
 
       // Medical Information
-      medical_how_are_you_feeling: getAnswerByRef(answers, 'medical_how_are_you_feeling'),
-      medical_attention: getAnswerByRef(answers, 'medical_attention'),
-      medical_attention_from_who: getAnswerByRef(answers, 'medical_attention_from_who'),
-      further_medical_attention: getAnswerByRef(answers, 'further_medical_attention'),
-      are_you_safe: getAnswerByRef(answers, 'are_you_safe'),
-      six_point_safety_check: getAnswerByRef(answers, 'six_point_safety_check'),
+      medical_how_are_you_feeling: getAnswerByRef(answers, 'medical_how_are_you_feeling', titleMap),
+      medical_attention: getAnswerByRef(answers, 'medical_attention', titleMap),
+      medical_attention_from_who: getAnswerByRef(answers, 'medical_attention_from_who', titleMap),
+      further_medical_attention: getAnswerByRef(answers, 'further_medical_attention', titleMap),
+      are_you_safe: getAnswerByRef(answers, 'are_you_safe', titleMap),
+      six_point_safety_check: getAnswerByRef(answers, 'six_point_safety_check', titleMap),
 
       // Medical Symptoms (all boolean checkboxes - defaults to false if unchecked)
-      medical_chest_pain: getAnswerByRefWithDefault(answers, 'medical_chest_pain', 'boolean'),
-      medical_breathlessness: getAnswerByRefWithDefault(answers, 'medical_breathlessness', 'boolean'),
-      medical_abdominal_bruising: getAnswerByRefWithDefault(answers, 'medical_abdominal_bruising', 'boolean'),
-      medical_uncontrolled_bleeding: getAnswerByRefWithDefault(answers, 'medical_uncontrolled_bleeding', 'boolean'),
-      medical_severe_headache: getAnswerByRefWithDefault(answers, 'medical_severe_headache', 'boolean'),
-      medical_change_in_vision: getAnswerByRefWithDefault(answers, 'medical_change_in_vision', 'boolean'),
-      medical_abdominal_pain: getAnswerByRefWithDefault(answers, 'medical_abdominal_pain', 'boolean'),
-      medical_limb_pain: getAnswerByRefWithDefault(answers, 'medical_limb_pain', 'boolean'),
-      medical_limb_weakness: getAnswerByRefWithDefault(answers, 'medical_limb_weakness', 'boolean'),
-      medical_loss_of_consciousness: getAnswerByRefWithDefault(answers, 'medical_loss_of_consciousness', 'boolean'),
-      medical_none_of_these: getAnswerByRefWithDefault(answers, 'medical_none_of_these', 'boolean'),
+      medical_chest_pain: getAnswerByRefWithDefault(answers, 'medical_chest_pain', 'boolean', titleMap),
+      medical_breathlessness: getAnswerByRefWithDefault(answers, 'medical_breathlessness', 'boolean', titleMap),
+      medical_abdominal_bruising: getAnswerByRefWithDefault(answers, 'medical_abdominal_bruising', 'boolean', titleMap),
+      medical_uncontrolled_bleeding: getAnswerByRefWithDefault(answers, 'medical_uncontrolled_bleeding', 'boolean', titleMap),
+      medical_severe_headache: getAnswerByRefWithDefault(answers, 'medical_severe_headache', 'boolean', titleMap),
+      medical_change_in_vision: getAnswerByRefWithDefault(answers, 'medical_change_in_vision', 'boolean', titleMap),
+      medical_abdominal_pain: getAnswerByRefWithDefault(answers, 'medical_abdominal_pain', 'boolean', titleMap),
+      medical_limb_pain: getAnswerByRefWithDefault(answers, 'medical_limb_pain', 'boolean', titleMap),
+      medical_limb_weakness: getAnswerByRefWithDefault(answers, 'medical_limb_weakness', 'boolean', titleMap),
+      medical_loss_of_consciousness: getAnswerByRefWithDefault(answers, 'medical_loss_of_consciousness', 'boolean', titleMap),
+      medical_none_of_these: getAnswerByRefWithDefault(answers, 'medical_none_of_these', 'boolean', titleMap),
 
       // Accident Details
-      when_did_the_accident_happen: getAnswerByRef(answers, 'when_did_the_accident_happen'),
-      what_time_did_the_accident_happen: getAnswerByRef(answers, 'what_time_did_the_accident_happen'),
-      where_exactly_did_this_happen: getAnswerByRef(answers, 'where_exactly_did_this_happen'),
+      when_did_the_accident_happen: getAnswerByRef(answers, 'when_did_the_accident_happen', titleMap),
+      what_time_did_the_accident_happen: getAnswerByRef(answers, 'what_time_did_the_accident_happen', titleMap),
+      where_exactly_did_this_happen: getAnswerByRef(answers, 'where_exactly_did_this_happen', titleMap),
 
       // Weather Conditions (all boolean checkboxes - defaults to false if unchecked)
-      weather_conditions: getAnswerByRef(answers, 'weather_conditions'),
-      weather_overcast: getAnswerByRefWithDefault(answers, 'weather_overcast', 'boolean'),
-      weather_street_lights: getAnswerByRefWithDefault(answers, 'weather_street_lights', 'boolean'),
-      weather_heavy_rain: getAnswerByRefWithDefault(answers, 'weather_heavy_rain', 'boolean'),
-      weather_wet_road: getAnswerByRefWithDefault(answers, 'weather_wet_road', 'boolean'),
-      weather_fog: getAnswerByRefWithDefault(answers, 'weather_fog', 'boolean'),
-      weather_snow_on_road: getAnswerByRefWithDefault(answers, 'weather_snow_on_road', 'boolean'),
-      weather_bright_daylight: getAnswerByRefWithDefault(answers, 'weather_bright_daylight', 'boolean'),
-      weather_light_rain: getAnswerByRefWithDefault(answers, 'weather_light_rain', 'boolean'),
-      weather_clear_and_dry: getAnswerByRefWithDefault(answers, 'weather_clear_and_dry', 'boolean'),
-      weather_dusk: getAnswerByRefWithDefault(answers, 'weather_dusk', 'boolean'),
-      weather_snow: getAnswerByRefWithDefault(answers, 'weather_snow', 'boolean'),
+      weather_conditions: getAnswerByRef(answers, 'weather_conditions', titleMap),
+      weather_overcast: getAnswerByRefWithDefault(answers, 'weather_overcast', 'boolean', titleMap),
+      weather_street_lights: getAnswerByRefWithDefault(answers, 'weather_street_lights', 'boolean', titleMap),
+      weather_heavy_rain: getAnswerByRefWithDefault(answers, 'weather_heavy_rain', 'boolean', titleMap),
+      weather_wet_road: getAnswerByRefWithDefault(answers, 'weather_wet_road', 'boolean', titleMap),
+      weather_fog: getAnswerByRefWithDefault(answers, 'weather_fog', 'boolean', titleMap),
+      weather_snow_on_road: getAnswerByRefWithDefault(answers, 'weather_snow_on_road', 'boolean', titleMap),
+      weather_bright_daylight: getAnswerByRefWithDefault(answers, 'weather_bright_daylight', 'boolean', titleMap),
+      weather_light_rain: getAnswerByRefWithDefault(answers, 'weather_light_rain', 'boolean', titleMap),
+      weather_clear_and_dry: getAnswerByRefWithDefault(answers, 'weather_clear_and_dry', 'boolean', titleMap),
+      weather_dusk: getAnswerByRefWithDefault(answers, 'weather_dusk', 'boolean', titleMap),
+      weather_snow: getAnswerByRefWithDefault(answers, 'weather_snow', 'boolean', titleMap),
 
       // Vehicle Information
-      wearing_seatbelts: getAnswerByRef(answers, 'wearing_seatbelts'),
-      reason_no_seatbelts: getAnswerByRef(answers, 'reason_no_seatbelts'),
-      airbags_deployed: getAnswerByRef(answers, 'airbags_deployed'),
-      damage_to_your_vehicle: getAnswerByRef(answers, 'damage_to_your_vehicle'),
+      wearing_seatbelts: getAnswerByRef(answers, 'wearing_seatbelts', titleMap),
+      reason_no_seatbelts: getAnswerByRef(answers, 'reason_no_seatbelts', titleMap),
+      airbags_deployed: getAnswerByRef(answers, 'airbags_deployed', titleMap),
+      damage_to_your_vehicle: getAnswerByRef(answers, 'damage_to_your_vehicle', titleMap),
 
       // Road Information
-      road_type: getAnswerByRef(answers, 'road_type'),
-      speed_limit: getAnswerByRef(answers, 'speed_limit'),
-      junction_information: getAnswerByRef(answers, 'junction_information'),
+      road_type: getAnswerByRef(answers, 'road_type', titleMap),
+      speed_limit: getAnswerByRef(answers, 'speed_limit', titleMap),
+      junction_information: getAnswerByRef(answers, 'junction_information', titleMap),
       // Junction types (all boolean checkboxes - defaults to false if unchecked)
-      junction_information_roundabout: getAnswerByRefWithDefault(answers, 'junction_information_roundabout', 'boolean'),
-      junction_information_t_junction: getAnswerByRefWithDefault(answers, 'junction_information_t_junction', 'boolean'),
-      junction_information_traffic_lights: getAnswerByRefWithDefault(answers, 'junction_information_traffic_lights', 'boolean'),
-      junction_information_crossroads: getAnswerByRefWithDefault(answers, 'junction_information_crossroads', 'boolean'),
+      junction_information_roundabout: getAnswerByRefWithDefault(answers, 'junction_information_roundabout', 'boolean', titleMap),
+      junction_information_t_junction: getAnswerByRefWithDefault(answers, 'junction_information_t_junction', 'boolean', titleMap),
+      junction_information_traffic_lights: getAnswerByRefWithDefault(answers, 'junction_information_traffic_lights', 'boolean', titleMap),
+      junction_information_crossroads: getAnswerByRefWithDefault(answers, 'junction_information_crossroads', 'boolean', titleMap),
 
       // Special Conditions (all boolean checkboxes - defaults to false if unchecked)
-      special_conditions: getAnswerByRef(answers, 'special_conditions'),
-      special_conditions_roadworks: getAnswerByRefWithDefault(answers, 'special_conditions_roadworks', 'boolean'),
-      special_conditions_defective_road: getAnswerByRefWithDefault(answers, 'special_conditions_defective_road', 'boolean'),
-      special_conditions_oil_spills: getAnswerByRefWithDefault(answers, 'special_conditions_oil_spills', 'boolean'),
-      special_conditions_workman: getAnswerByRefWithDefault(answers, 'special_conditions_workman', 'boolean'),
-      special_conditions_animals: getAnswerByRefWithDefault(answers, 'special_conditions_animals', 'boolean'),
+      special_conditions: getAnswerByRef(answers, 'special_conditions', titleMap),
+      special_conditions_roadworks: getAnswerByRefWithDefault(answers, 'special_conditions_roadworks', 'boolean', titleMap),
+      special_conditions_defective_road: getAnswerByRefWithDefault(answers, 'special_conditions_defective_road', 'boolean', titleMap),
+      special_conditions_oil_spills: getAnswerByRefWithDefault(answers, 'special_conditions_oil_spills', 'boolean', titleMap),
+      special_conditions_workman: getAnswerByRefWithDefault(answers, 'special_conditions_workman', 'boolean', titleMap),
+      special_conditions_animals: getAnswerByRefWithDefault(answers, 'special_conditions_animals', 'boolean', titleMap),
 
       // Detailed Account
-      detailed_account_of_what_happened: getAnswerByRef(answers, 'detailed_account_of_what_happened'),
+      detailed_account_of_what_happened: getAnswerByRef(answers, 'detailed_account_of_what_happened', titleMap),
 
       // Your Vehicle Details
-      make_of_car: getAnswerByRef(answers, 'make_of_car'),
-      model_of_car: getAnswerByRef(answers, 'model_of_car'),
-      license_plate_number: getAnswerByRef(answers, 'license_plate_number'),
-      direction_and_speed: getAnswerByRef(answers, 'direction_and_speed'),
-      impact: getAnswerByRef(answers, 'impact'),
-      damage_caused_by_accident: getAnswerByRef(answers, 'damage_caused_by_accident'),
-      any_damage_prior: getAnswerByRef(answers, 'any_damage_prior'),
+      make_of_car: getAnswerByRef(answers, 'make_of_car', titleMap),
+      model_of_car: getAnswerByRef(answers, 'model_of_car', titleMap),
+      license_plate_number: getAnswerByRef(answers, 'license_plate_number', titleMap),
+      direction_and_speed: getAnswerByRef(answers, 'direction_and_speed', titleMap),
+      impact: getAnswerByRef(answers, 'impact', titleMap),
+      damage_caused_by_accident: getAnswerByRef(answers, 'damage_caused_by_accident', titleMap),
+      any_damage_prior: getAnswerByRef(answers, 'any_damage_prior', titleMap),
 
       // Other Driver Information
-      other_drivers_name: getAnswerByRef(answers, 'other_drivers_name'),
-      other_drivers_number: getAnswerByRef(answers, 'other_drivers_number'),
-      other_drivers_address: getAnswerByRef(answers, 'other_drivers_address'),
-      other_make_of_vehicle: getAnswerByRef(answers, 'other_make_of_vehicle'),
-      other_model_of_vehicle: getAnswerByRef(answers, 'other_model_of_vehicle'),
-      vehicle_license_plate: getAnswerByRef(answers, 'vehicle_license_plate'),
-      other_policy_number: getAnswerByRef(answers, 'other_policy_number'),
-      other_insurance_company: getAnswerByRef(answers, 'other_insurance_company'),
-      other_policy_cover: getAnswerByRef(answers, 'other_policy_cover'),
-      other_policy_holder: getAnswerByRef(answers, 'other_policy_holder'),
-      other_damage_accident: getAnswerByRef(answers, 'other_damage_accident'),
-      other_damage_prior: getAnswerByRef(answers, 'other_damage_prior'),
+      other_drivers_name: getAnswerByRef(answers, 'other_drivers_name', titleMap),
+      other_drivers_number: getAnswerByRef(answers, 'other_drivers_number', titleMap),
+      other_drivers_address: getAnswerByRef(answers, 'other_drivers_address', titleMap),
+      other_make_of_vehicle: getAnswerByRef(answers, 'other_make_of_vehicle', titleMap),
+      other_model_of_vehicle: getAnswerByRef(answers, 'other_model_of_vehicle', titleMap),
+      vehicle_license_plate: getAnswerByRef(answers, 'vehicle_license_plate', titleMap),
+      other_policy_number: getAnswerByRef(answers, 'other_policy_number', titleMap),
+      other_insurance_company: getAnswerByRef(answers, 'other_insurance_company', titleMap),
+      other_policy_cover: getAnswerByRef(answers, 'other_policy_cover', titleMap),
+      other_policy_holder: getAnswerByRef(answers, 'other_policy_holder', titleMap),
+      other_damage_accident: getAnswerByRef(answers, 'other_damage_accident', titleMap),
+      other_damage_prior: getAnswerByRef(answers, 'other_damage_prior', titleMap),
 
       // Police Information
-      did_police_attend: getAnswerByRef(answers, 'did_police_attend'),
-      accident_reference_number: getAnswerByRef(answers, 'accident_reference_number'),
-      police_officer_badge_number: getAnswerByRef(answers, 'police_officer_badge_number'),
-      police_officers_name: getAnswerByRef(answers, 'police_officers_name'),
-      police_force_details: getAnswerByRef(answers, 'police_force_details'),
-      breath_test: getAnswerByRef(answers, 'breath_test'),
-      other_breath_test: getAnswerByRef(answers, 'other_breath_test'),
+      did_police_attend: getAnswerByRef(answers, 'did_police_attend', titleMap),
+      accident_reference_number: getAnswerByRef(answers, 'accident_reference_number', titleMap),
+      police_officer_badge_number: getAnswerByRef(answers, 'police_officer_badge_number', titleMap),
+      police_officers_name: getAnswerByRef(answers, 'police_officers_name', titleMap),
+      police_force_details: getAnswerByRef(answers, 'police_force_details', titleMap),
+      breath_test: getAnswerByRef(answers, 'breath_test', titleMap),
+      other_breath_test: getAnswerByRef(answers, 'other_breath_test', titleMap),
 
       // Witness Information
-      any_witness: getAnswerByRef(answers, 'any_witness'),
-      witness_contact_information: getAnswerByRef(answers, 'witness_contact_information'),
+      any_witness: getAnswerByRef(answers, 'any_witness', titleMap),
+      witness_contact_information: getAnswerByRef(answers, 'witness_contact_information', titleMap),
 
       // Additional Information
-      anything_else: getAnswerByRef(answers, 'anything_else'),
-      call_recovery: getAnswerByRef(answers, 'call_recovery'),
-      upgrade_to_premium: getAnswerByRef(answers, 'upgrade_to_premium'),
+      anything_else: getAnswerByRef(answers, 'anything_else', titleMap),
+      call_recovery: getAnswerByRef(answers, 'call_recovery', titleMap),
+      upgrade_to_premium: getAnswerByRef(answers, 'upgrade_to_premium', titleMap),
 
       // File URLs
-      file_url_documents: getAnswerByRef(answers, 'file_url_documents'),
-      file_url_documents_1: getAnswerByRef(answers, 'file_url_documents_1'),
-      file_url_record_detailed_account_of_what_happened: getAnswerByRef(answers, 'file_url_record_detailed_account_of_what_happened'),
-      file_url_what3words: getAnswerByRef(answers, 'file_url_what3words'),
-      file_url_scene_overview: getAnswerByRef(answers, 'file_url_scene_overview'),
-      file_url_scene_overview_1: getAnswerByRef(answers, 'file_url_scene_overview_1'),
-      file_url_other_vehicle: getAnswerByRef(answers, 'file_url_other_vehicle'),
-      file_url_other_vehicle_1: getAnswerByRef(answers, 'file_url_other_vehicle_1'),
-      file_url_vehicle_damage: getAnswerByRef(answers, 'file_url_vehicle_damage'),
-      file_url_vehicle_damage_1: getAnswerByRef(answers, 'file_url_vehicle_damage_1'),
-      file_url_vehicle_damage_2: getAnswerByRef(answers, 'file_url_vehicle_damage_2')
+      file_url_documents: getAnswerByRef(answers, 'file_url_documents', titleMap),
+      file_url_documents_1: getAnswerByRef(answers, 'file_url_documents_1', titleMap),
+      file_url_record_detailed_account_of_what_happened: getAnswerByRef(answers, 'file_url_record_detailed_account_of_what_happened', titleMap),
+      file_url_what3words: getAnswerByRef(answers, 'file_url_what3words', titleMap),
+      file_url_scene_overview: getAnswerByRef(answers, 'file_url_scene_overview', titleMap),
+      file_url_scene_overview_1: getAnswerByRef(answers, 'file_url_scene_overview_1', titleMap),
+      file_url_other_vehicle: getAnswerByRef(answers, 'file_url_other_vehicle', titleMap),
+      file_url_other_vehicle_1: getAnswerByRef(answers, 'file_url_other_vehicle_1', titleMap),
+      file_url_vehicle_damage: getAnswerByRef(answers, 'file_url_vehicle_damage', titleMap),
+      file_url_vehicle_damage_1: getAnswerByRef(answers, 'file_url_vehicle_damage_1', titleMap),
+      file_url_vehicle_damage_2: getAnswerByRef(answers, 'file_url_vehicle_damage_2', titleMap)
     };
 
     // ==================== IMAGE PROCESSING ====================

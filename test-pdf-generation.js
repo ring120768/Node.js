@@ -1,414 +1,384 @@
 #!/usr/bin/env node
 /**
- * Test Script: PDF Generation with Test Scenarios
- * Purpose: Import test incident data and generate PDF reports
- * Usage: node test-pdf-generation.js [scenario-number]
- *
- * This script:
- * 1. Reads test scenarios from TEST-INCIDENT-SCENARIOS.md
- * 2. Imports data into Supabase (user_signup and incident_reports tables)
- * 3. Calls the PDF generation endpoint
- * 4. Verifies all 150+ fields populate correctly
+ * Test Script: PDF Form Generation with Real User Data
+ * Purpose: Test complete PDF generation pipeline and verify field population
+ * Usage: node test-pdf-generation.js <user-id>
+ * Example: node test-pdf-generation.js nkwxh49sm2swwlzxtx1bnkwxhroukfn7
  */
 
-require('dotenv').config();
-const { createClient } = require('@supabase/supabase-js');
-const fetch = require('node-fetch');
-const fs = require('fs');
-const path = require('path');
+import { createClient } from '@supabase/supabase-js';
+import dotenv from 'dotenv';
+import path from 'path';
+import fs from 'fs';
+import { fileURLToPath } from 'url';
 
-// Initialize Supabase client with service role (bypasses RLS)
-const supabase = createClient(
-  process.env.SUPABASE_URL,
-  process.env.SUPABASE_SERVICE_ROLE_KEY
-);
+// Load environment variables
+dotenv.config();
 
-// Color codes for console output
+const __filename = fileURLToPath(import.meta.url);
+const __dirname = path.dirname(__filename);
+
+// ANSI color codes for terminal output
 const colors = {
   reset: '\x1b[0m',
   bright: '\x1b[1m',
-  green: '\x1b[32m',
+  dim: '\x1b[2m',
   red: '\x1b[31m',
+  green: '\x1b[32m',
   yellow: '\x1b[33m',
+  blue: '\x1b[34m',
+  magenta: '\x1b[35m',
   cyan: '\x1b[36m',
-  magenta: '\x1b[35m'
+  white: '\x1b[37m',
 };
 
-// Test scenario data (extracted from TEST-INCIDENT-SCENARIOS.md)
-// Field names match actual Supabase schema from TYPEFORM_SUPABASE_FIELD_MAPPING.md
-const TEST_SCENARIOS = [
-  {
-    id: 1,
-    name: 'Simple Rear-End Collision (M25)',
-    userSignup: {
-      name: 'James',
-      surname: 'Mitchell',
-      email: 'james.mitchell@email.co.uk',
-      mobile: '07700900123',
-      car_registration_number: 'BF19 XYZ',
-      driving_license_number: 'MITC8712053JM9AB',
-      insurance_company: 'Direct Line',
-      policy_number: 'DL-2024-789456',
-      street_address: '45 Meadow Lane',
-      street_address_optional: '',
-      town: 'Watford',
-      postcode: 'WD17 3QR',
-      country: 'United Kingdom',
-      vehicle_make: 'Ford',
-      vehicle_model: 'Focus',
-      vehicle_colour: 'Blue',
-      policy_holder: 'James Mitchell',
-      cover_type: 'Comprehensive'
-    },
-    incidentReport: {
-      // Essential fields only for initial test
-      where_exactly_did_this_happen: 'M25 Junction 15, Hertfordshire',
-      detailed_account_of_what_happened: 'I was stationary in slow-moving traffic on the M25 near Junction 15. The traffic ahead was at a complete stop. Suddenly, I felt a strong impact from behind. The other driver, Mr Thompson, admitted he was looking at his phone and didn\'t notice the traffic had stopped. He was very apologetic. My vehicle was pushed forward slightly but I managed to keep control. The damage is all to the rear of my vehicle.',
-      medical_how_are_you_feeling: 'Experiencing whiplash, neck pain, and back stiffness',
-      damage_to_your_vehicle: 'Yes',
-      damage_caused_by_accident: 'Rear bumper cracked, boot lid dented, rear lights smashed',
-      other_drivers_name: 'Michael Thompson',
-      other_drivers_number: '07788654321',
-      vehicle_license_plate: 'LK67 MNP',
-      other_insurance_company: 'Admiral Insurance'
-    }
-  },
-  {
-    id: 2,
-    name: 'Roundabout Collision (Heavy Rain)',
-    userSignup: {
-      name: 'Sarah',
-      surname: 'Williams',
-      email: 'sarah.williams@email.co.uk',
-      mobile: '07711123456',
-      car_registration_number: 'FG21 ABC',
-      driving_license_number: 'WILL9103121SW5CD',
-      insurance_company: 'Aviva',
-      policy_number: 'AV-2024-456123',
-      street_address: '12 Oak Drive',
-      street_address_optional: '',
-      town: 'St Albans',
-      postcode: 'AL1 2BG',
-      country: 'United Kingdom',
-      vehicle_make: 'Volkswagen',
-      vehicle_model: 'Golf',
-      vehicle_colour: 'Silver',
-      policy_holder: 'Sarah Williams',
-      cover_type: 'Comprehensive'
-    },
-    incidentReport: {
-      // Essential fields only for initial test
-      where_exactly_did_this_happen: 'Colney Heath Roundabout, St Albans, Hertfordshire',
-      detailed_account_of_what_happened: 'I was entering Colney Heath roundabout from the A414. It was raining heavily with standing water on the road. I was already on the roundabout when a silver Audi A4 entered from the next junction without yielding. We both stopped and exchanged details. A witness saw the incident. Police attended and took statements.',
-      medical_how_are_you_feeling: 'Shaken but physically fine',
-      damage_to_your_vehicle: 'Yes',
-      damage_caused_by_accident: 'Front nearside wing dented, headlight smashed, bumper cracked',
-      other_drivers_name: 'David Patel',
-      other_drivers_number: '07899456123',
-      vehicle_license_plate: 'NM18 XYZ',
-      other_insurance_company: 'LV= Insurance'
-    }
-  }
-];
+function log(message, color = 'white') {
+  console.log(`${colors[color]}${message}${colors.reset}`);
+}
+
+function logSection(title) {
+  console.log('\n' + '='.repeat(80));
+  log(title, 'cyan');
+  console.log('='.repeat(80));
+}
+
+function logField(name, value, populated) {
+  const status = populated ? `${colors.green}✓${colors.reset}` : `${colors.dim}○${colors.reset}`;
+  const valueDisplay = value !== null && value !== undefined && value !== '' 
+    ? String(value).substring(0, 50) 
+    : colors.dim + 'empty' + colors.reset;
+  console.log(`${status} ${name.padEnd(40)} ${valueDisplay}`);
+}
+
+// Initialize Supabase client
+const supabaseUrl = process.env.SUPABASE_URL;
+const supabaseKey = process.env.SUPABASE_SERVICE_ROLE_KEY;
+
+if (!supabaseUrl || !supabaseKey) {
+  log('❌ Missing Supabase credentials in .env file', 'red');
+  process.exit(1);
+}
+
+const supabase = createClient(supabaseUrl, supabaseKey);
 
 /**
- * Clean up test data from database
+ * Fetch all data for a specific user
  */
-async function cleanupTestData(userId) {
-  console.log(colors.yellow, `\n🧹 Cleaning up existing test data for user ${userId}...`);
+async function fetchUserData(userId) {
+  logSection('📊 FETCHING USER DATA FROM SUPABASE');
+  log(`User ID: ${userId}`, 'yellow');
 
-  try {
-    // Delete from related tables first (foreign key constraints)
-    await supabase.from('incident_reports').delete().eq('create_user_id', userId);
-    await supabase.from('user_documents').delete().eq('create_user_id', userId);
-    await supabase.from('completed_incident_forms').delete().eq('create_user_id', userId);
-    await supabase.from('ai_transcription').delete().eq('create_user_id', userId);
-    await supabase.from('ai_summary').delete().eq('create_user_id', userId);
+  const data = {};
+  let totalFields = 0;
+  let populatedFields = 0;
 
-    // Finally delete user signup
-    await supabase.from('user_signup').delete().eq('create_user_id', userId);
+  // 1. User Signup Data
+  log('\n📝 Fetching user_signup...', 'blue');
+  const { data: userSignup, error: signupError } = await supabase
+    .from('user_signup')
+    .select('*')
+    .eq('create_user_id', userId)
+    .single();
 
-    console.log(colors.green, '✅ Test data cleaned up successfully');
-  } catch (error) {
-    console.log(colors.red, `❌ Cleanup error: ${error.message}`);
+  if (signupError) {
+    log(`⚠️  No user_signup record found: ${signupError.message}`, 'yellow');
+  } else {
+    data.userSignup = userSignup;
+    log('✅ User signup data retrieved', 'green');
   }
+
+  // 2. Incident Reports Data
+  log('\n📋 Fetching incident_reports...', 'blue');
+  const { data: incidentReports, error: incidentError } = await supabase
+    .from('incident_reports')
+    .select('*')
+    .eq('create_user_id', userId)
+    .order('created_at', { ascending: false });
+
+  if (incidentError) {
+    log(`⚠️  No incident reports found: ${incidentError.message}`, 'yellow');
+  } else {
+    data.incidentReports = incidentReports;
+    log(`✅ Found ${incidentReports.length} incident report(s)`, 'green');
+  }
+
+  // 3. DVLA Vehicle Info
+  log('\n🚗 Fetching dvla_vehicle_info_new...', 'blue');
+  const { data: dvlaInfo, error: dvlaError } = await supabase
+    .from('dvla_vehicle_info_new')
+    .select('*')
+    .eq('create_user_id', userId)
+    .order('created_at', { ascending: false });
+
+  if (dvlaError) {
+    log(`⚠️  No DVLA data found: ${dvlaError.message}`, 'yellow');
+  } else {
+    data.dvlaInfo = dvlaInfo;
+    log(`✅ Found ${dvlaInfo.length} DVLA record(s)`, 'green');
+  }
+
+  // 4. AI Transcription
+  log('\n🎤 Fetching ai_transcription...', 'blue');
+  const { data: transcription, error: transcriptionError } = await supabase
+    .from('ai_transcription')
+    .select('*')
+    .eq('create_user_id', userId)
+    .order('created_at', { ascending: false });
+
+  if (transcriptionError) {
+    log(`⚠️  No transcription data found: ${transcriptionError.message}`, 'yellow');
+  } else {
+    data.transcription = transcription;
+    log(`✅ Found ${transcription.length} transcription(s)`, 'green');
+  }
+
+  // 5. AI Summary
+  log('\n🤖 Fetching ai_summary...', 'blue');
+  const { data: summary, error: summaryError } = await supabase
+    .from('ai_summary')
+    .select('*')
+    .eq('create_user_id', userId)
+    .order('created_at', { ascending: false });
+
+  if (summaryError) {
+    log(`⚠️  No AI summary found: ${summaryError.message}`, 'yellow');
+  } else {
+    data.summary = summary;
+    log(`✅ Found ${summary.length} summary record(s)`, 'green');
+  }
+
+  // 6. User Documents
+  log('\n📎 Fetching user_documents...', 'blue');
+  const { data: documents, error: documentsError } = await supabase
+    .from('user_documents')
+    .select('*')
+    .eq('create_user_id', userId)
+    .order('created_at', { ascending: false });
+
+  if (documentsError) {
+    log(`⚠️  No documents found: ${documentsError.message}`, 'yellow');
+  } else {
+    data.documents = documents;
+    log(`✅ Found ${documents.length} document(s)`, 'green');
+  }
+
+  return data;
 }
 
 /**
- * Import test scenario data into Supabase
+ * Analyze field population
  */
-async function importScenarioData(scenario) {
-  console.log(colors.cyan, `\n📥 Importing Scenario ${scenario.id}: ${scenario.name}`);
+function analyzeFields(data) {
+  logSection('🔍 FIELD POPULATION ANALYSIS');
 
-  // Generate a unique user ID for this test
-  const createUserId = `test-scenario-${scenario.id}-${Date.now()}`;
+  const stats = {
+    total: 0,
+    populated: 0,
+    sections: {}
+  };
 
-  try {
-    // Step 1: Insert user signup data
-    console.log('1. Inserting user signup data...');
-    const { data: userData, error: userError } = await supabase
-      .from('user_signup')
-      .insert({
-        create_user_id: createUserId,
-        ...scenario.userSignup,
-        gdpr_consent: true,
-        created_at: new Date().toISOString()
-      })
-      .select()
-      .single();
+  function analyzeSection(sectionName, record) {
+    if (!record) {
+      log(`\n${sectionName}: No data available`, 'dim');
+      return;
+    }
 
-    if (userError) throw userError;
-    console.log(colors.green, `   ✅ User created: ${userData.full_name} (${userData.email})`);
+    log(`\n${sectionName}:`, 'cyan');
+    const sectionStats = { total: 0, populated: 0 };
 
-    // Step 2: Insert incident report data
-    console.log('2. Inserting incident report data...');
-    const { data: incidentData, error: incidentError } = await supabase
-      .from('incident_reports')
-      .insert({
-        create_user_id: createUserId,
-        ...scenario.incidentReport,
-        created_at: new Date().toISOString()
-      })
-      .select()
-      .single();
+    Object.keys(record).forEach(key => {
+      // Skip system fields
+      if (['id', 'created_at', 'updated_at', 'create_user_id'].includes(key)) {
+        return;
+      }
 
-    if (incidentError) throw incidentError;
-    console.log(colors.green, `   ✅ Incident report created: ${incidentData.incident_location}`);
+      const value = record[key];
+      const isPopulated = value !== null && value !== undefined && value !== '';
+      
+      logField(key, value, isPopulated);
+      
+      sectionStats.total++;
+      stats.total++;
+      
+      if (isPopulated) {
+        sectionStats.populated++;
+        stats.populated++;
+      }
+    });
 
-    return {
-      success: true,
-      userId: createUserId,
-      userData,
-      incidentData
-    };
-
-  } catch (error) {
-    console.log(colors.red, `❌ Import failed: ${error.message}`);
-    return {
-      success: false,
-      error: error.message
-    };
+    const percentage = sectionStats.total > 0 
+      ? ((sectionStats.populated / sectionStats.total) * 100).toFixed(1)
+      : 0;
+    
+    log(`  └─ ${sectionStats.populated}/${sectionStats.total} fields (${percentage}%)`, 'yellow');
+    stats.sections[sectionName] = sectionStats;
   }
+
+  // Analyze each section
+  if (data.userSignup) {
+    analyzeSection('👤 User Signup', data.userSignup);
+  }
+
+  if (data.incidentReports && data.incidentReports.length > 0) {
+    data.incidentReports.forEach((report, index) => {
+      analyzeSection(`📋 Incident Report #${index + 1}`, report);
+    });
+  }
+
+  if (data.dvlaInfo && data.dvlaInfo.length > 0) {
+    data.dvlaInfo.forEach((vehicle, index) => {
+      analyzeSection(`🚗 DVLA Vehicle #${index + 1}`, vehicle);
+    });
+  }
+
+  if (data.transcription && data.transcription.length > 0) {
+    analyzeSection('🎤 AI Transcription', data.transcription[0]);
+  }
+
+  if (data.summary && data.summary.length > 0) {
+    analyzeSection('🤖 AI Summary', data.summary[0]);
+  }
+
+  return stats;
 }
 
 /**
- * Generate PDF for the imported test data
+ * Generate PDF form
  */
-async function generatePDF(userId) {
-  console.log(colors.cyan, `\n📄 Generating PDF report for user ${userId}...`);
+async function generatePDF(data, userId) {
+  logSection('📄 PDF GENERATION');
 
-  try {
-    const apiUrl = process.env.APP_URL || 'http://localhost:5000';
-    const apiKey = process.env.WEBHOOK_API_KEY || process.env.ZAPIER_SHARED_KEY;
+  // Check if Adobe PDF Services credentials are available
+  const hasAdobeCredentials = process.env.ADOBE_CLIENT_ID && 
+                              process.env.ADOBE_CLIENT_SECRET && 
+                              process.env.ADOBE_FORM_TEMPLATE_PATH;
 
-    if (!apiKey) {
-      throw new Error('Missing API key (WEBHOOK_API_KEY or ZAPIER_SHARED_KEY)');
-    }
-
-    const response = await fetch(`${apiUrl}/api/pdf/generate`, {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-        'X-Api-Key': apiKey
-      },
-      body: JSON.stringify({
-        create_user_id: userId  // Note: correct field name is create_user_id
-      })
-    });
-
-    if (!response.ok) {
-      const errorText = await response.text();
-      throw new Error(`PDF generation failed: ${response.status} - ${errorText}`);
-    }
-
-    const result = await response.json();
-
-    console.log(colors.green, '✅ PDF generated successfully!');
-    console.log(colors.bright, '\n📊 PDF Generation Result:');
-    console.log(`   Success: ${result.success}`);
-    console.log(`   Form ID: ${result.form_id || 'Not available'}`);
-    console.log(`   User ID: ${result.create_user_id || 'Not available'}`);
-    console.log(`   Email Sent: ${result.email_sent ? 'Yes' : 'No'}`);
-    console.log(`   Timestamp: ${result.timestamp || 'Not available'}`);
-
-    return {
-      success: true,
-      result
-    };
-
-  } catch (error) {
-    console.log(colors.red, `❌ PDF generation failed: ${error.message}`);
-    return {
-      success: false,
-      error: error.message
-    };
+  if (!hasAdobeCredentials) {
+    log('⚠️  Adobe PDF Services credentials not configured', 'yellow');
+    log('   PDF generation will use fallback method (pdf-lib)', 'dim');
+    log('   To use Adobe PDF Services, add to .env:', 'dim');
+    log('     ADOBE_CLIENT_ID=xxx', 'dim');
+    log('     ADOBE_CLIENT_SECRET=xxx', 'dim');
+    log('     ADOBE_FORM_TEMPLATE_PATH=xxx', 'dim');
+    return null;
   }
-}
-
-/**
- * Verify PDF data completeness by checking database
- */
-async function verifyPDFData(userId) {
-  console.log(colors.cyan, `\n🔍 Verifying data completeness for PDF...`);
 
   try {
-    // Fetch data using the same queries as PDF generation
-    const { data: userData, error: userError } = await supabase
-      .from('user_signup')
-      .select('*')
-      .eq('create_user_id', userId)
-      .single();
+    // Import PDF generation service
+    const { generateFilledPDF } = await import('./src/services/pdf-form-filler.service.js');
 
-    const { data: incidentData, error: incidentError } = await supabase
-      .from('incident_reports')
-      .select('*')
-      .eq('create_user_id', userId)
-      .order('created_at', { ascending: false })
-      .limit(1)
-      .single();
-
-    if (userError || incidentError) {
-      throw new Error('Failed to fetch data for verification');
-    }
-
-    // Count populated fields
-    const userFieldCount = Object.values(userData).filter(v => v !== null && v !== '').length;
-    const incidentFieldCount = Object.values(incidentData).filter(v => v !== null && v !== '').length;
-
-    console.log(colors.green, '✅ Data verification complete:');
-    console.log(`   User fields populated: ${userFieldCount}`);
-    console.log(`   Incident fields populated: ${incidentFieldCount}`);
-    console.log(`   Total fields: ${userFieldCount + incidentFieldCount}`);
-
-    // Check for critical fields
-    const criticalFields = {
-      user: ['full_name', 'email', 'phone', 'car_registration_number'],
-      incident: ['incident_date', 'incident_time', 'incident_location']
+    // Prepare data for PDF
+    const pdfData = {
+      ...data.userSignup,
+      ...(data.incidentReports && data.incidentReports[0] ? data.incidentReports[0] : {}),
+      ...(data.dvlaInfo && data.dvlaInfo[0] ? data.dvlaInfo[0] : {}),
     };
 
-    let missingCritical = [];
-    criticalFields.user.forEach(field => {
-      if (!userData[field]) missingCritical.push(`user.${field}`);
-    });
-    criticalFields.incident.forEach(field => {
-      if (!incidentData[field]) missingCritical.push(`incident.${field}`);
-    });
+    log('\n🔄 Generating PDF with Adobe Form Filler Service...', 'blue');
+    const outputDir = path.join(__dirname, 'test-output');
+    
+    // Ensure output directory exists
+    if (!fs.existsSync(outputDir)) {
+      fs.mkdirSync(outputDir, { recursive: true });
+      log(`   Created output directory: ${outputDir}`, 'dim');
+    }
 
-    if (missingCritical.length > 0) {
-      console.log(colors.yellow, `\n⚠️  Missing critical fields: ${missingCritical.join(', ')}`);
+    const outputPath = path.join(outputDir, `test-form-${userId}-${Date.now()}.pdf`);
+    
+    const result = await generateFilledPDF(pdfData, outputPath);
+
+    if (result.success) {
+      log('✅ PDF generated successfully!', 'green');
+      log(`   File: ${result.filePath}`, 'cyan');
+      
+      // Get file size
+      const stats = fs.statSync(result.filePath);
+      const fileSizeMB = (stats.size / (1024 * 1024)).toFixed(2);
+      log(`   Size: ${fileSizeMB} MB`, 'dim');
+
+      if (result.compressionRatio) {
+        log(`   Compression: ${result.compressionRatio}`, 'dim');
+      }
+
+      return result;
     } else {
-      console.log(colors.green, '\n✅ All critical fields populated!');
+      log(`❌ PDF generation failed: ${result.error}`, 'red');
+      return null;
     }
-
-    return {
-      success: true,
-      userFieldCount,
-      incidentFieldCount,
-      missingCritical
-    };
-
   } catch (error) {
-    console.log(colors.red, `❌ Verification failed: ${error.message}`);
-    return {
-      success: false,
-      error: error.message
-    };
+    log(`❌ PDF generation error: ${error.message}`, 'red');
+    console.error(error);
+    return null;
   }
 }
 
 /**
- * Main test execution
+ * Display summary statistics
  */
-async function runTest() {
-  console.log(colors.cyan, colors.bright, '\n🧪 PDF GENERATION TEST\n');
-  console.log('=' .repeat(60));
+function displaySummary(stats, pdfResult) {
+  logSection('📊 SUMMARY');
 
-  // Get scenario number from command line args (default to 1)
-  const scenarioNum = parseInt(process.argv[2]) || 1;
+  const percentage = stats.total > 0 
+    ? ((stats.populated / stats.total) * 100).toFixed(1)
+    : 0;
 
-  if (scenarioNum < 1 || scenarioNum > TEST_SCENARIOS.length) {
-    console.log(colors.red, `❌ Invalid scenario number. Must be 1-${TEST_SCENARIOS.length}`);
+  log(`\nTotal Fields Analyzed: ${stats.total}`, 'white');
+  log(`Populated Fields: ${stats.populated} (${percentage}%)`, 'green');
+  log(`Empty Fields: ${stats.total - stats.populated} (${(100 - percentage).toFixed(1)}%)`, 'dim');
+
+  if (pdfResult && pdfResult.success) {
+    log(`\nPDF Generated: ${pdfResult.filePath}`, 'cyan');
+  } else if (pdfResult === null) {
+    log(`\nPDF Generation: Skipped (no Adobe credentials)`, 'yellow');
+  } else {
+    log(`\nPDF Generation: Failed`, 'red');
+  }
+
+  console.log('\n' + '='.repeat(80) + '\n');
+}
+
+/**
+ * Main execution
+ */
+async function main() {
+  log('\n🧪 PDF GENERATION TEST SCRIPT', 'bright');
+  log('Testing complete PDF generation pipeline with real user data\n', 'dim');
+
+  // Get user ID from command line
+  const userId = process.argv[2];
+
+  if (!userId) {
+    log('❌ Usage: node test-pdf-generation.js <user-id>', 'red');
+    log('\nExample:', 'dim');
+    log('  node test-pdf-generation.js nkwxh49sm2swwlzxtx1bnkwxhroukfn7', 'dim');
+    log('\nRecent user IDs from logs:', 'dim');
+    log('  - m6xghh4etc4xnokf4dbsgm6xghhutaio', 'dim');
+    log('  - nkwxh49sm2swwlzxtx1bnkwxhroukfn7', 'dim');
     process.exit(1);
   }
 
-  const scenario = TEST_SCENARIOS[scenarioNum - 1];
-
-  console.log(colors.bright, `\nTesting Scenario ${scenario.id}: ${scenario.name}`);
-  console.log('=' .repeat(60));
-
   try {
-    // Step 1: Import test data
-    const importResult = await importScenarioData(scenario);
-    if (!importResult.success) {
-      throw new Error('Data import failed');
-    }
+    // Step 1: Fetch all user data
+    const data = await fetchUserData(userId);
 
-    const userId = importResult.userId;
-
-    // Step 2: Verify data before PDF generation
-    const verifyResult = await verifyPDFData(userId);
+    // Step 2: Analyze field population
+    const stats = analyzeFields(data);
 
     // Step 3: Generate PDF
-    const pdfResult = await generatePDF(userId);
+    const pdfResult = await generatePDF(data, userId);
 
     // Step 4: Display summary
-    console.log(colors.cyan, '\n' + '='.repeat(60));
-    console.log(colors.bright, '📊 TEST SUMMARY');
-    console.log('='.repeat(60));
+    displaySummary(stats, pdfResult);
 
-    if (importResult.success && pdfResult.success) {
-      console.log(colors.green, '\n✅ ALL TESTS PASSED!\n');
-      console.log('Results:');
-      console.log(`  User ID: ${userId}`);
-      console.log(`  Data fields populated: ${verifyResult.userFieldCount + verifyResult.incidentFieldCount}`);
-      console.log(`  PDF generated: Yes`);
-      console.log(`  Form ID: ${pdfResult.result.form_id}`);
-      console.log(`  Email sent: ${pdfResult.result.email_sent ? 'Yes' : 'No'}`);
-
-      console.log(colors.cyan, `\n📝 To view the PDF:`);
-      console.log(colors.reset, `  1. Check the completed_incident_forms table`);
-      console.log(`  2. Look for form_id: ${pdfResult.result.form_id}`);
-      console.log(`  3. Or check Supabase Storage bucket: incident-images-secure`);
-
-      console.log(colors.yellow, `\n🧹 To clean up test data, run:`);
-      console.log(colors.reset, `  node test-pdf-generation.js cleanup ${userId}`);
-
-    } else {
-      console.log(colors.red, '\n❌ TESTS FAILED\n');
-      if (!importResult.success) {
-        console.log(`  Import error: ${importResult.error}`);
-      }
-      if (!pdfResult.success) {
-        console.log(`  PDF error: ${pdfResult.error}`);
-      }
-    }
-
-    console.log('\n');
+    log('✅ Test completed successfully!', 'green');
+    process.exit(0);
 
   } catch (error) {
-    console.log(colors.red, `\n❌ Test failed: ${error.message}\n`);
+    log(`\n❌ Test failed: ${error.message}`, 'red');
+    console.error(error);
     process.exit(1);
   }
 }
 
-/**
- * Cleanup command handler
- */
-async function handleCleanup() {
-  const userId = process.argv[3];
-  if (!userId) {
-    console.log(colors.red, '❌ Please provide user ID to clean up');
-    console.log(colors.reset, 'Usage: node test-pdf-generation.js cleanup <user-id>');
-    process.exit(1);
-  }
-
-  await cleanupTestData(userId);
-  console.log('\n');
-}
-
-// Execute based on command
-if (process.argv[2] === 'cleanup') {
-  handleCleanup();
-} else {
-  runTest();
-}
+// Run the test
+main();
