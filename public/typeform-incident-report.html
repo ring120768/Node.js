@@ -182,6 +182,10 @@
             container: document.getElementById('typeform-container'),
             hidden: hiddenFields,
 
+            // 🔥 CRITICAL: Force full height for Replit iframe compatibility
+            height: window.innerHeight || 900,  // Use viewport height or fallback
+            width: '100%',
+
             // 🔥 CRITICAL: Disable scroll-back behavior
             disableScroll: true,
 
@@ -193,12 +197,22 @@
 
             // Mobile optimization
             iframeProps: {
-                title: 'Car Crash Incident Report'
+                title: 'Car Crash Incident Report',
+                style: 'height: 100% !important; min-height: 100vh !important;'
             },
 
             // Callbacks
             onReady: function() {
                 console.log('✅ Typeform loaded successfully');
+
+                // Force iframe height after load
+                const iframe = document.querySelector('#typeform-container iframe');
+                if (iframe) {
+                    iframe.style.height = '100%';
+                    iframe.style.minHeight = '100vh';
+                    console.log('✅ Typeform iframe height adjusted');
+                }
+
                 // Hide loading overlay
                 const overlay = document.getElementById('loadingOverlay');
                 overlay.classList.add('hidden');
