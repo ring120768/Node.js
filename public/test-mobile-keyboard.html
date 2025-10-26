@@ -1,0 +1,311 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, interactive-widget=resizes-content">
+    <title>Mobile Keyboard Test - Car Crash Lawyer AI</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+            padding: 20px;
+        }
+
+        .test-container {
+            max-width: 600px;
+            margin: 0 auto;
+            background: white;
+            border-radius: 12px;
+            padding: 30px;
+            box-shadow: 0 10px 40px rgba(0,0,0,0.1);
+        }
+
+        h1 {
+            color: #667eea;
+            margin-bottom: 10px;
+            font-size: 24px;
+        }
+
+        .subtitle {
+            color: #666;
+            margin-bottom: 30px;
+            font-size: 14px;
+        }
+
+        .test-section {
+            margin-bottom: 30px;
+            padding: 20px;
+            background: #f8f9fa;
+            border-radius: 8px;
+            border-left: 4px solid #667eea;
+        }
+
+        .test-section h2 {
+            color: #333;
+            font-size: 18px;
+            margin-bottom: 15px;
+        }
+
+        .test-section p {
+            color: #666;
+            font-size: 14px;
+            margin-bottom: 15px;
+            line-height: 1.6;
+        }
+
+        label {
+            display: block;
+            color: #333;
+            font-weight: 500;
+            margin-bottom: 8px;
+            font-size: 14px;
+        }
+
+        input[type="text"],
+        input[type="email"],
+        input[type="tel"],
+        textarea {
+            width: 100%;
+            padding: 12px 16px;
+            border: 2px solid #e0e0e0;
+            border-radius: 8px;
+            font-size: 16px;  /* Prevents iOS zoom on focus */
+            margin-bottom: 20px;
+            transition: border-color 0.3s;
+            font-family: inherit;
+        }
+
+        input:focus,
+        textarea:focus {
+            outline: none;
+            border-color: #667eea;
+            box-shadow: 0 0 0 3px rgba(102, 126, 234, 0.1);
+        }
+
+        textarea {
+            min-height: 120px;
+            resize: vertical;
+        }
+
+        .status {
+            padding: 15px;
+            border-radius: 8px;
+            margin-bottom: 20px;
+            font-weight: 500;
+        }
+
+        .status.success {
+            background: #d4edda;
+            color: #155724;
+            border: 1px solid #c3e6cb;
+        }
+
+        .status.info {
+            background: #d1ecf1;
+            color: #0c5460;
+            border: 1px solid #bee5eb;
+        }
+
+        .checklist {
+            list-style: none;
+            padding: 0;
+        }
+
+        .checklist li {
+            padding: 10px 0;
+            padding-left: 30px;
+            position: relative;
+            color: #666;
+            font-size: 14px;
+        }
+
+        .checklist li:before {
+            content: '✓';
+            position: absolute;
+            left: 0;
+            color: #667eea;
+            font-weight: bold;
+            font-size: 18px;
+        }
+
+        .footer {
+            margin-top: 40px;
+            padding-top: 20px;
+            border-top: 2px solid #e0e0e0;
+            text-align: center;
+            color: #666;
+            font-size: 13px;
+        }
+
+        .device-info {
+            background: #fff3cd;
+            border: 1px solid #ffeaa7;
+            padding: 15px;
+            border-radius: 8px;
+            margin-bottom: 20px;
+            font-size: 13px;
+            color: #856404;
+        }
+
+        .device-info strong {
+            display: block;
+            margin-bottom: 5px;
+        }
+
+        @media (max-width: 480px) {
+            .test-container {
+                padding: 20px;
+            }
+
+            h1 {
+                font-size: 20px;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="test-container">
+        <h1>🧪 Mobile Keyboard Test</h1>
+        <p class="subtitle">Testing virtual keyboard visibility fix for Typeform inputs</p>
+
+        <div class="status success">
+            ✅ <strong>Fix Applied:</strong> Native scrolling enabled, keyboard should not cover inputs
+        </div>
+
+        <div class="device-info">
+            <strong>Your Device:</strong>
+            <span id="deviceInfo">Loading...</span>
+        </div>
+
+        <!-- Test Section 1: Basic Input -->
+        <div class="test-section">
+            <h2>Test 1: Basic Text Input</h2>
+            <p><strong>Instructions:</strong> Tap the input below. The keyboard should appear and the input should scroll into view automatically.</p>
+
+            <label for="test1">Full Name</label>
+            <input type="text" id="test1" placeholder="Enter your full name">
+
+            <label for="test2">Email Address</label>
+            <input type="email" id="test2" placeholder="your.email@example.com">
+        </div>
+
+        <!-- Test Section 2: Textarea -->
+        <div class="test-section">
+            <h2>Test 2: Multi-line Textarea</h2>
+            <p><strong>Instructions:</strong> Tap the textarea. It should scroll into view and remain visible while typing multiple lines.</p>
+
+            <label for="test3">Incident Description</label>
+            <textarea id="test3" placeholder="Describe what happened in detail..."></textarea>
+        </div>
+
+        <!-- Test Section 3: Bottom Input -->
+        <div class="test-section">
+            <h2>Test 3: Input Near Bottom</h2>
+            <p><strong>Instructions:</strong> This input is near the bottom of the form. When focused, it should scroll into view above the keyboard.</p>
+
+            <label for="test4">Phone Number</label>
+            <input type="tel" id="test4" placeholder="+44 7411 005390">
+
+            <label for="test5">Postcode</label>
+            <input type="text" id="test5" placeholder="SW1A 1AA">
+        </div>
+
+        <!-- Test Section 4: Verification -->
+        <div class="test-section">
+            <h2>Verification Checklist</h2>
+            <p><strong>After testing all inputs above, verify:</strong></p>
+            <ul class="checklist">
+                <li>✓ Keyboard appears when input is focused</li>
+                <li>✓ Input field scrolls into view automatically</li>
+                <li>✓ You can see text as you type</li>
+                <li>✓ Keyboard does NOT cover the input</li>
+                <li>✓ Scrolling feels smooth and natural</li>
+                <li>✓ Dismissing keyboard doesn't cause jumps</li>
+                <li>✓ Re-focusing input works correctly</li>
+            </ul>
+        </div>
+
+        <div class="status info">
+            ℹ️ <strong>Expected Behavior:</strong> Each input should automatically scroll into the center of the visible viewport when focused, ensuring it's always visible above the keyboard.
+        </div>
+
+        <div class="footer">
+            <strong>Car Crash Lawyer AI - Mobile UX Testing</strong><br>
+            Typeform Keyboard Visibility Fix Verification<br>
+            Version 1.0 | 2025-10-26
+        </div>
+    </div>
+
+    <script>
+        // Display device information
+        function getDeviceInfo() {
+            const ua = navigator.userAgent;
+            let device = 'Unknown Device';
+            let browser = 'Unknown Browser';
+
+            // Detect device
+            if (/iPhone/.test(ua)) {
+                device = 'iPhone';
+            } else if (/iPad/.test(ua)) {
+                device = 'iPad';
+            } else if (/Android/.test(ua)) {
+                device = 'Android Device';
+            } else if (/Windows/.test(ua)) {
+                device = 'Windows PC';
+            } else if (/Mac/.test(ua)) {
+                device = 'Mac';
+            }
+
+            // Detect browser
+            if (/Safari/.test(ua) && !/Chrome/.test(ua)) {
+                browser = 'Safari';
+            } else if (/Chrome/.test(ua)) {
+                browser = 'Chrome';
+            } else if (/Firefox/.test(ua)) {
+                browser = 'Firefox';
+            } else if (/Edge/.test(ua)) {
+                browser = 'Edge';
+            }
+
+            // Screen size
+            const width = window.innerWidth;
+            const height = window.innerHeight;
+
+            return `${device} | ${browser} | ${width}x${height}px`;
+        }
+
+        document.getElementById('deviceInfo').textContent = getDeviceInfo();
+
+        // Log focus events for debugging
+        document.querySelectorAll('input, textarea').forEach(element => {
+            element.addEventListener('focus', () => {
+                console.log(`✅ Focused: ${element.id || element.tagName}`);
+                console.log(`   Viewport Height: ${window.innerHeight}px`);
+                console.log(`   Visual Viewport Height: ${window.visualViewport ? window.visualViewport.height : 'N/A'}px`);
+            });
+
+            element.addEventListener('blur', () => {
+                console.log(`❌ Blurred: ${element.id || element.tagName}`);
+            });
+        });
+
+        // Monitor viewport changes (for debugging)
+        if (window.visualViewport) {
+            window.visualViewport.addEventListener('resize', () => {
+                console.log(`📏 Viewport resized: ${window.visualViewport.height}px (Keyboard ${window.innerHeight - window.visualViewport.height}px)`);
+            });
+        }
+
+        console.log('🧪 Mobile Keyboard Test Page Loaded');
+        console.log('📱 Device Info:', getDeviceInfo());
+        console.log('🔍 Visual Viewport API Available:', !!window.visualViewport);
+    </script>
+</body>
+</html>

@@ -1086,6 +1086,10 @@ git push origin branch-name
 - `QUICK_DASHBOARD_TEST.md` - 5-minute dashboard test procedure
 - `IMPLEMENTATION_SUMMARY.md` - Latest implementation details
 
+### Mobile UX & Typeform Documentation
+- `MOBILE_KEYBOARD_FIX.md` - **Complete solution for mobile virtual keyboard covering Typeform inputs**. Documents root cause (triple overflow:hidden lock + fixed positioning), native scrolling solution, iOS-specific optimizations, browser compatibility, testing procedures, and alternative approaches considered. Critical reference for understanding mobile form UX and keyboard handling. Includes comprehensive troubleshooting guide.
+- `public/test-mobile-keyboard.html` - **Interactive mobile keyboard test page**. Standalone test page for verifying keyboard visibility fix works correctly on mobile devices. Includes device detection, focus logging, and verification checklist. Use for QA testing before deploying Typeform changes.
+
 ## Redirect Handling Best Practices
 
 ### Login/Logout Redirect Flow

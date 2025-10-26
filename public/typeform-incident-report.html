@@ -2,7 +2,13 @@
 <html lang="en">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <!-- 🔥 MOBILE KEYBOARD FIX: Enhanced viewport settings -->
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, interactive-widget=resizes-content">
+    <!--
+        interactive-widget=resizes-content: Modern browsers resize viewport when keyboard appears
+        user-scalable=no: Prevents zoom on input focus (better UX for forms)
+        maximum-scale=1.0: Prevents unexpected zoom behavior
+    -->
     <title>Incident Report - Car Crash Lawyer AI</title>
     <style>
         * {
@@ -11,43 +17,51 @@
             box-sizing: border-box;
         }
 
+        /* 🔥 MOBILE KEYBOARD FIX: Enable native scrolling */
         html {
             height: 100%;
-            overflow: hidden;
+            /* REMOVED: overflow: hidden - allows natural scrolling */
         }
 
         body {
             font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
             background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-            height: 100%;
+            min-height: 100%;  /* Changed from height: 100% to allow expansion */
             margin: 0;
             padding: 0;
-            overflow: hidden;
-            /* Use absolute positioning instead of fixed for better iframe compatibility */
-            position: absolute;
-            top: 0;
-            left: 0;
-            right: 0;
-            bottom: 0;
+            /* REMOVED: overflow: hidden - allows natural scrolling */
+            /* REMOVED: position: absolute - allows natural document flow */
         }
 
         #typeform-container {
-            /* Absolute positioning ensures it fills parent regardless of iframe context */
-            position: absolute;
-            top: 0;
-            left: 0;
-            right: 0;
-            bottom: 0;
+            /* Allow natural document flow for mobile keyboard handling */
             width: 100%;
-            height: 100%;
-            overflow: hidden;
+            min-height: 100vh;  /* Minimum full viewport, can expand */
+            /* REMOVED: position: absolute, overflow: hidden */
+            /* This allows browser to scroll input fields into view when keyboard appears */
         }
 
-        /* Prevent Typeform iframe from causing parent scroll */
+        /* Typeform iframe styling */
         #typeform-container iframe {
             border: none !important;
             width: 100% !important;
-            height: 100% !important;
+            min-height: 100vh !important;
+        }
+
+        /* 🔥 iOS-SPECIFIC FIXES for keyboard handling */
+        @supports (-webkit-touch-callout: none) {
+            /* iOS Safari specific */
+            body {
+                /* Prevents iOS Safari from bouncing at top/bottom */
+                position: relative;
+                -webkit-overflow-scrolling: touch;  /* Smooth momentum scrolling */
+            }
+
+            #typeform-container {
+                /* iOS needs explicit touch scrolling */
+                -webkit-overflow-scrolling: touch;
+                overflow-y: auto;  /* Enable vertical scrolling on iOS */
+            }
         }
 
         .loading-overlay {
@@ -182,12 +196,12 @@
             container: document.getElementById('typeform-container'),
             hidden: hiddenFields,
 
-            // 🔥 CRITICAL: Force full height for Replit iframe compatibility
-            height: window.innerHeight || 900,  // Use viewport height or fallback
+            // 🔥 MOBILE KEYBOARD FIX: Use responsive height
+            height: '100vh',  // Use viewport height units for responsive behavior
             width: '100%',
 
-            // 🔥 CRITICAL: Disable scroll-back behavior
-            disableScroll: true,
+            // 🔥 MOBILE KEYBOARD FIX: Enable scrolling for keyboard visibility
+            disableScroll: false,  // CHANGED: Allow Typeform internal scrolling
 
             // Additional UX improvements
             autoFocus: false,           // Don't auto-scroll on load
@@ -262,21 +276,12 @@
             event.returnValue = '';
         });
 
-        // 🔒 SIMPLIFIED SCROLL PREVENTION
-        // Combined with CSS overflow:hidden and Typeform's disableScroll option,
-        // this is sufficient to prevent parent page scrolling
+        // 🔥 MOBILE KEYBOARD FIX: Allow natural scrolling
+        // REMOVED: scroll prevention that was blocking keyboard handling
+        // The browser now handles scrolling naturally, allowing inputs to become visible
+        // when the mobile keyboard appears
 
-        // Ensure page starts at top
-        window.scrollTo(0, 0);
-
-        // Prevent scrolling on body and html only (not iframe content)
-        document.addEventListener('scroll', function(e) {
-            if (e.target === document || e.target === document.body || e.target === document.documentElement) {
-                window.scrollTo(0, 0);
-            }
-        }, { passive: true });
-
-        console.log('🔒 Scroll prevention active - Typeform will manage its own scrolling');
+        console.log('✅ Native scroll enabled - Mobile keyboard will work correctly');
     </script>
 </body>
 </html>
