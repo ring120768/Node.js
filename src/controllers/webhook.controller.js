@@ -3,6 +3,8 @@ const crypto = require('crypto');
 const logger = require('../utils/logger');
 const { createClient } = require('@supabase/supabase-js');
 const { normalizeEmailFields } = require('../utils/emailNormalizer');
+const fs = require('fs');
+const path = require('path');
 
 const supabase = createClient(
   process.env.SUPABASE_URL,
@@ -76,6 +78,35 @@ function buildFieldTitleMap(definition) {
 }
 
 /**
+ * Save webhook payload to disk for debugging
+ * @param {object} payload - The webhook payload to save
+ * @param {string} userId - User ID for the payload
+ * @param {string} formType - Type of form (user_signup or incident_report)
+ */
+function saveWebhookPayload(payload, userId, formType) {
+  try {
+    const logsDir = path.join(__dirname, '../../logs/webhooks');
+
+    // Create logs directory if it doesn't exist
+    if (!fs.existsSync(logsDir)) {
+      fs.mkdirSync(logsDir, { recursive: true });
+    }
+
+    const timestamp = new Date().toISOString().replace(/[:.]/g, '-');
+    const filename = `${formType}_${userId}_${timestamp}.json`;
+    const filepath = path.join(logsDir, filename);
+
+    fs.writeFileSync(filepath, JSON.stringify(payload, null, 2), 'utf8');
+    console.log(`   📁 Payload saved to: logs/webhooks/${filename}`);
+
+    return filepath;
+  } catch (error) {
+    console.log(`   ⚠️  Failed to save payload: ${error.message}`);
+    return null;
+  }
+}
+
+/**
  * Extract answer value from answer object
  */
 function extractAnswerValue(answer) {
@@ -123,6 +154,50 @@ function getAnswerByRef(answers, ref, titleMap = null) {
   }
 
   return extractAnswerValue(answer);
+}
+
+/**
+ * Wrapper for getAnswerByRef that logs extraction attempts (debugging only)
+ * @param {Array} answers - Typeform answers array
+ * @param {string} ref - Field reference ID
+ * @param {Map} titleMap - Title map for UUID ref fallback
+ * @param {boolean} enableLogging - Whether to log this extraction
+ * @returns {*} The answer value or null
+ */
+function getAnswerByRefWithLogging(answers, ref, titleMap = null, enableLogging = false) {
+  if (!enableLogging) {
+    return getAnswerByRef(answers, ref, titleMap);
+  }
+
+  // Try direct ref match first
+  let directMatch = answers.find(a => a.field?.ref === ref);
+
+  // Try titleMap match if no direct match
+  let titleMapMatch = null;
+  if (!directMatch && titleMap) {
+    titleMapMatch = answers.find(a => {
+      const fieldRef = a.field?.ref;
+      if (!fieldRef) return false;
+      const normalizedTitle = titleMap.get(fieldRef);
+      return normalizedTitle === ref;
+    });
+  }
+
+  const finalAnswer = directMatch || titleMapMatch;
+  const value = extractAnswerValue(finalAnswer);
+
+  // Log extraction details
+  const matchType = directMatch ? '✅ DIRECT' : (titleMapMatch ? '✅ TITLE' : '❌ NONE');
+  const displayValue = value !== null && value !== undefined ? JSON.stringify(value).substring(0, 50) : 'null';
+
+  console.log(`      Field: "${ref}"`);
+  console.log(`      Match: ${matchType}`);
+  if (titleMapMatch && !directMatch) {
+    console.log(`      UUID: ${titleMapMatch.field.ref.substring(0, 12)}...`);
+  }
+  console.log(`      Value: ${displayValue}`);
+
+  return value;
 }
 
 /**
@@ -847,9 +922,30 @@ async function processIncidentReport(formResponse, requestId, imageProcessor = n
 
     logger.info(`[${requestId}] Processing incident report for user: ${userId || token}`);
 
+    // 📋 PHASE 1: SAVE RAW WEBHOOK PAYLOAD FOR DEBUGGING
+    console.log(`\n📋 WEBHOOK PAYLOAD LOGGING`);
+    console.log('-'.repeat(60));
+    saveWebhookPayload(formResponse, userId || token, 'incident_report');
+    console.log(`   Answers received: ${answers?.length || 0}`);
+    console.log(`   Definition fields: ${formResponse.definition?.fields?.length || 0}`);
+
     // 🔧 BUILD TITLE MAP: Handle UUID refs from Typeform by matching question titles
     const titleMap = buildFieldTitleMap(formResponse.definition);
-    console.log(`📋 Built field title map with ${titleMap.size} field mappings`);
+    console.log(`\n📋 TITLE MAP ANALYSIS`);
+    console.log('-'.repeat(60));
+    console.log(`   Total mappings: ${titleMap.size}`);
+
+    // Log first 20 titleMap entries for debugging
+    const titleMapEntries = Array.from(titleMap.entries()).slice(0, 20);
+    console.log(`   Sample mappings (first 20):`);
+    titleMapEntries.forEach(([uuid, normalizedTitle], index) => {
+      console.log(`   ${index + 1}. ${uuid.substring(0, 8)}... → "${normalizedTitle}"`);
+    });
+
+    if (titleMap.size > 20) {
+      console.log(`   ... and ${titleMap.size - 20} more mappings`);
+    }
+    console.log('-'.repeat(60));
 
     // Map to incident_reports table (keeping your existing mapping)
     const incidentData = {
@@ -857,12 +953,40 @@ async function processIncidentReport(formResponse, requestId, imageProcessor = n
       date: submitted_at || new Date().toISOString(),
       form_id: formResponse.form_id,
 
-      // Medical Information
-      medical_how_are_you_feeling: getAnswerByRef(answers, 'medical_how_are_you_feeling', titleMap),
-      medical_attention: getAnswerByRef(answers, 'medical_attention', titleMap),
+      // 📋 FIELD EXTRACTION LOGGING (Sample of first 10 fields)
+    };
+
+    console.log(`\n📋 FIELD EXTRACTION SAMPLE (First 10 fields)`);
+    console.log('-'.repeat(60));
+
+    // Log extraction for first 10 sample fields (with logging enabled)
+    const sampleFields = [
+      'medical_how_are_you_feeling',
+      'medical_attention',
+      'are_you_safe',
+      'when_did_the_accident_happen',
+      'what_time_did_the_accident_happen',
+      'where_exactly_did_this_happen',
+      'weather_conditions',
+      'make_of_car',
+      'license_plate_number',
+      'police_officers_name'
+    ];
+
+    sampleFields.forEach((fieldName, index) => {
+      console.log(`   ${index + 1}. Extracting: "${fieldName}"`);
+      const value = getAnswerByRefWithLogging(answers, fieldName, titleMap, true);
+      incidentData[fieldName] = value;
+      console.log('');
+    });
+
+    console.log('-'.repeat(60));
+
+    // Continue extracting remaining fields WITHOUT detailed logging
+    Object.assign(incidentData, {
+      // Medical Information (remaining fields - sample fields already extracted above)
       medical_attention_from_who: getAnswerByRef(answers, 'medical_attention_from_who', titleMap),
       further_medical_attention: getAnswerByRef(answers, 'further_medical_attention', titleMap),
-      are_you_safe: getAnswerByRef(answers, 'are_you_safe', titleMap),
       six_point_safety_check: getAnswerByRef(answers, 'six_point_safety_check', titleMap),
 
       // Medical Symptoms (all boolean checkboxes - defaults to false if unchecked)
@@ -878,13 +1002,11 @@ async function processIncidentReport(formResponse, requestId, imageProcessor = n
       medical_loss_of_consciousness: getAnswerByRefWithDefault(answers, 'medical_loss_of_consciousness', 'boolean', titleMap),
       medical_none_of_these: getAnswerByRefWithDefault(answers, 'medical_none_of_these', 'boolean', titleMap),
 
-      // Accident Details
-      when_did_the_accident_happen: getAnswerByRef(answers, 'when_did_the_accident_happen', titleMap),
-      what_time_did_the_accident_happen: getAnswerByRef(answers, 'what_time_did_the_accident_happen', titleMap),
-      where_exactly_did_this_happen: getAnswerByRef(answers, 'where_exactly_did_this_happen', titleMap),
+      // Accident Details (sample fields already extracted above)
+      // when_did_the_accident_happen, what_time_did_the_accident_happen, where_exactly_did_this_happen already logged
 
       // Weather Conditions (all boolean checkboxes - defaults to false if unchecked)
-      weather_conditions: getAnswerByRef(answers, 'weather_conditions', titleMap),
+      // weather_conditions already extracted above in sample logging
       weather_overcast: getAnswerByRefWithDefault(answers, 'weather_overcast', 'boolean', titleMap),
       weather_street_lights: getAnswerByRefWithDefault(answers, 'weather_street_lights', 'boolean', titleMap),
       weather_heavy_rain: getAnswerByRefWithDefault(answers, 'weather_heavy_rain', 'boolean', titleMap),
@@ -924,10 +1046,8 @@ async function processIncidentReport(formResponse, requestId, imageProcessor = n
       // Detailed Account
       detailed_account_of_what_happened: getAnswerByRef(answers, 'detailed_account_of_what_happened', titleMap),
 
-      // Your Vehicle Details
-      make_of_car: getAnswerByRef(answers, 'make_of_car', titleMap),
+      // Your Vehicle Details (make_of_car and license_plate_number already extracted above in sample logging)
       model_of_car: getAnswerByRef(answers, 'model_of_car', titleMap),
-      license_plate_number: getAnswerByRef(answers, 'license_plate_number', titleMap),
       direction_and_speed: getAnswerByRef(answers, 'direction_and_speed', titleMap),
       impact: getAnswerByRef(answers, 'impact', titleMap),
       damage_caused_by_accident: getAnswerByRef(answers, 'damage_caused_by_accident', titleMap),
@@ -947,11 +1067,10 @@ async function processIncidentReport(formResponse, requestId, imageProcessor = n
       other_damage_accident: getAnswerByRef(answers, 'other_damage_accident', titleMap),
       other_damage_prior: getAnswerByRef(answers, 'other_damage_prior', titleMap),
 
-      // Police Information
+      // Police Information (police_officers_name already extracted above in sample logging)
       did_police_attend: getAnswerByRef(answers, 'did_police_attend', titleMap),
       accident_reference_number: getAnswerByRef(answers, 'accident_reference_number', titleMap),
       police_officer_badge_number: getAnswerByRef(answers, 'police_officer_badge_number', titleMap),
-      police_officers_name: getAnswerByRef(answers, 'police_officers_name', titleMap),
       police_force_details: getAnswerByRef(answers, 'police_force_details', titleMap),
       breath_test: getAnswerByRef(answers, 'breath_test', titleMap),
       other_breath_test: getAnswerByRef(answers, 'other_breath_test', titleMap),
@@ -977,7 +1096,7 @@ async function processIncidentReport(formResponse, requestId, imageProcessor = n
       file_url_vehicle_damage: getAnswerByRef(answers, 'file_url_vehicle_damage', titleMap),
       file_url_vehicle_damage_1: getAnswerByRef(answers, 'file_url_vehicle_damage_1', titleMap),
       file_url_vehicle_damage_2: getAnswerByRef(answers, 'file_url_vehicle_damage_2', titleMap)
-    };
+    });
 
     // ==================== IMAGE PROCESSING ====================
     // Process incident images: download from Typeform and upload to Supabase Storage
@@ -1080,24 +1199,59 @@ async function processIncidentReport(formResponse, requestId, imageProcessor = n
       }
     });
 
-    // Count boolean fields for debugging
-    const booleanFields = Object.keys(incidentData).filter(key =>
-      typeof incidentData[key] === 'boolean'
-    );
+    // 📋 ENHANCED FIELD COUNT ANALYSIS
+    console.log(`\n📊 FINAL DATA ANALYSIS (Before Database Insert)`);
+    console.log('-'.repeat(60));
+
+    const allFields = Object.keys(incidentData);
+    const booleanFields = allFields.filter(key => typeof incidentData[key] === 'boolean');
+    const stringFields = allFields.filter(key => typeof incidentData[key] === 'string');
+    const numberFields = allFields.filter(key => typeof incidentData[key] === 'number');
+    const otherFields = allFields.filter(key => !['boolean', 'string', 'number'].includes(typeof incidentData[key]));
+
     const trueCount = booleanFields.filter(key => incidentData[key] === true).length;
     const falseCount = booleanFields.filter(key => incidentData[key] === false).length;
+    const populatedStrings = stringFields.filter(key => incidentData[key] && incidentData[key].length > 0).length;
+    const emptyStrings = stringFields.filter(key => incidentData[key] === '').length;
 
-    console.log(`\n📊 Incident data: ${Object.keys(incidentData).length} fields`);
-    console.log(`   ✅ Boolean fields: ${booleanFields.length} (${trueCount} checked, ${falseCount} unchecked)`);
+    console.log(`   Total fields being inserted: ${allFields.length}`);
+    console.log(`   ├─ Boolean fields: ${booleanFields.length}`);
+    console.log(`   │  ├─ Checked (true): ${trueCount}`);
+    console.log(`   │  └─ Unchecked (false): ${falseCount}`);
+    console.log(`   ├─ Text fields: ${stringFields.length}`);
+    console.log(`   │  ├─ Populated: ${populatedStrings}`);
+    console.log(`   │  └─ Empty: ${emptyStrings}`);
+    console.log(`   ├─ Number fields: ${numberFields.length}`);
+    console.log(`   └─ Other types: ${otherFields.length}`);
 
-    logger.info(`[${requestId}] Inserting incident data with ${Object.keys(incidentData).length} fields`, {
-      totalFields: Object.keys(incidentData).length,
-      booleanFieldsTotal: booleanFields.length,
+    // Show sample of populated text fields (first 10)
+    const populatedTextFields = stringFields
+      .filter(key => incidentData[key] && incidentData[key].length > 0)
+      .slice(0, 10);
+
+    if (populatedTextFields.length > 0) {
+      console.log(`\n   Sample of populated text fields:`);
+      populatedTextFields.forEach((field, index) => {
+        const value = incidentData[field].substring(0, 40);
+        const truncated = incidentData[field].length > 40 ? '...' : '';
+        console.log(`   ${index + 1}. ${field}: "${value}${truncated}"`);
+      });
+    }
+
+    console.log('-'.repeat(60));
+
+    logger.info(`[${requestId}] Inserting incident data with ${allFields.length} fields`, {
+      totalFields: allFields.length,
+      booleanFields: booleanFields.length,
       booleanChecked: trueCount,
-      booleanUnchecked: falseCount
+      booleanUnchecked: falseCount,
+      textFields: stringFields.length,
+      populatedText: populatedStrings,
+      emptyText: emptyStrings,
+      numberFields: numberFields.length
     });
 
-    console.log(`💾 Inserting into Supabase incident_reports table...`);
+    console.log(`\n💾 Inserting into Supabase incident_reports table...`);
 
     // Insert into incident_reports table
     const { data, error } = await supabase
