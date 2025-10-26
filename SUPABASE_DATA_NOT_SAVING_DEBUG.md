@@ -8,6 +8,50 @@
 
 ---
 
+## 🎯 ACTUAL ROOT CAUSE (2025-10-26)
+
+**Your server logs revealed the real issue!**
+
+### The Problem
+```
+❌ Database insertion failed:
+   Code: PGRST204
+   Message: Could not find the 'special_conditions_animals' column of 'incident_reports' in the schema cache
+```
+
+### What This Means
+- ✅ Webhook IS working correctly (signature verified, data extracted)
+- ✅ User Signup form IS saving data successfully
+- ❌ Incident Report form FAILING due to **missing database column**
+
+### The Missing Column
+Your webhook controller code (`webhook.controller.js` line 889) references:
+```javascript
+special_conditions_animals: getAnswerByRefWithDefault(answers, 'special_conditions_animals', 'boolean')
+```
+
+But this column **doesn't exist** in your `incident_reports` table!
+
+### The Fix (2 minutes)
+1. Go to Supabase Dashboard → SQL Editor
+2. Run this migration: `migrations/add-missing-special-conditions-columns.sql`
+3. Test form submission again
+4. ✅ Data will save successfully!
+
+### Why This Happened
+The field mapping documentation (`TYPEFORM_SUPABASE_FIELD_MAPPING.md`) was incomplete. The `special_conditions_animals` field existed in the code but was never:
+- Documented in the field mapping
+- Added to the database schema
+
+This has now been fixed:
+- ✅ Migration script created
+- ✅ Field mapping documentation updated
+- ⏳ Waiting for you to run migration in Supabase
+
+---
+
+## Original Debugging Guide (For Reference)
+
 ## Quick Diagnosis: Is Typeform Sending Webhooks?
 
 The most likely cause is that **Typeform isn't sending webhooks to your server at all**.
@@ -505,5 +549,6 @@ printenv | grep -E '(TYPEFORM|SUPABASE)'
 
 ---
 
-**Last Updated:** 2025-10-25
-**Status:** Awaiting user verification of Typeform webhook configuration
+**Last Updated:** 2025-10-26
+**Status:** ✅ ROOT CAUSE IDENTIFIED - Database schema missing special_conditions_animals column
+**Solution:** Run migration script: `migrations/add-missing-special-conditions-columns.sql`

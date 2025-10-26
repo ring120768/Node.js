@@ -283,6 +283,7 @@ This document maps all Typeform form fields to their corresponding Supabase data
 | Typeform Field Ref | Supabase Column | Type | Notes |
 |--------------------|-----------------|------|-------|
 | `special_conditions` | `special_conditions` | TEXT | General conditions |
+| `special_conditions_animals` | `special_conditions_animals` | BOOLEAN | Animals on/near road |
 | `special_conditions_roadworks` | `special_conditions_roadworks` | BOOLEAN | Roadworks present |
 | `special_conditions_defective_road` | `special_conditions_defective_road` | BOOLEAN | Road defects |
 | `special_conditions_oil_spills` | `special_conditions_oil_spills` | BOOLEAN | Oil on road |
