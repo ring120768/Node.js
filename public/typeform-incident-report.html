@@ -11,25 +11,36 @@
             box-sizing: border-box;
         }
 
-        html, body {
+        html {
+            height: 100%;
+            overflow: hidden;
+        }
+
+        body {
             font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
             background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-            min-height: 100vh;
-            display: flex;
-            flex-direction: column;
-            /* 🔥 CRITICAL: Prevent ALL scrolling on parent page */
-            overflow: hidden !important;
-            position: fixed !important;
-            width: 100% !important;
-            height: 100% !important;
+            height: 100%;
+            margin: 0;
+            padding: 0;
+            overflow: hidden;
+            /* Use absolute positioning instead of fixed for better iframe compatibility */
+            position: absolute;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
         }
 
         #typeform-container {
-            flex: 1;
+            /* Absolute positioning ensures it fills parent regardless of iframe context */
+            position: absolute;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
             width: 100%;
-            height: 100vh;
-            /* Ensure container doesn't scroll */
-            overflow: hidden !important;
+            height: 100%;
+            overflow: hidden;
         }
 
         /* Prevent Typeform iframe from causing parent scroll */
@@ -237,65 +248,21 @@
             event.returnValue = '';
         });
 
-        // 🔥 AGGRESSIVE SCROLL PREVENTION
-        // Prevent ALL scroll events on window, document, and body
-        function preventScroll(e) {
-            e.preventDefault();
-            e.stopPropagation();
-            return false;
-        }
+        // 🔒 SIMPLIFIED SCROLL PREVENTION
+        // Combined with CSS overflow:hidden and Typeform's disableScroll option,
+        // this is sufficient to prevent parent page scrolling
 
-        // Block scroll events
-        window.addEventListener('scroll', preventScroll, { passive: false });
-        document.addEventListener('scroll', preventScroll, { passive: false });
-        document.body.addEventListener('scroll', preventScroll, { passive: false });
-
-        // Block wheel/mousewheel events that might trigger scrolling
-        window.addEventListener('wheel', preventScroll, { passive: false });
-        window.addEventListener('mousewheel', preventScroll, { passive: false });
-
-        // Block touch events that might cause scrolling (mobile)
-        let touchStartY = 0;
-        document.addEventListener('touchstart', function(e) {
-            touchStartY = e.touches[0].clientY;
-        }, { passive: false });
-
-        document.addEventListener('touchmove', function(e) {
-            const touchY = e.touches[0].clientY;
-            const touchDelta = touchY - touchStartY;
-
-            // Only prevent if trying to scroll the page (not the Typeform iframe)
-            if (e.target === document.body || e.target === document.documentElement) {
-                e.preventDefault();
-                e.stopPropagation();
-            }
-        }, { passive: false });
-
-        // Prevent keyboard scroll (space, page up/down, arrow keys)
-        document.addEventListener('keydown', function(e) {
-            const scrollKeys = [32, 33, 34, 35, 36, 37, 38, 39, 40]; // space, page up/down, home, end, arrows
-            if (scrollKeys.includes(e.keyCode) && (e.target === document.body || e.target === document.documentElement)) {
-                e.preventDefault();
-                e.stopPropagation();
-                return false;
-            }
-        }, { passive: false });
-
-        // Lock scroll position
+        // Ensure page starts at top
         window.scrollTo(0, 0);
-        document.body.scrollTop = 0;
-        document.documentElement.scrollTop = 0;
 
-        // Monitor and reset scroll position if it changes
-        setInterval(function() {
-            if (window.scrollY !== 0 || document.body.scrollTop !== 0 || document.documentElement.scrollTop !== 0) {
+        // Prevent scrolling on body and html only (not iframe content)
+        document.addEventListener('scroll', function(e) {
+            if (e.target === document || e.target === document.body || e.target === document.documentElement) {
                 window.scrollTo(0, 0);
-                document.body.scrollTop = 0;
-                document.documentElement.scrollTop = 0;
             }
-        }, 100);
+        }, { passive: true });
 
-        console.log('🔒 Scroll prevention activated - page is locked at top');
+        console.log('🔒 Scroll prevention active - Typeform will manage its own scrolling');
     </script>
 </body>
 </html>
