@@ -1141,11 +1141,52 @@
       </div>
     </div>
 
-    <!-- Page 9: GDPR Consent -->
+    <!-- Page 9: Account Setup & GDPR Consent -->
     <div class="question-page" data-page="9">
       <div class="question">
-        <h2>🔒 Privacy & consent</h2>
-        <p class="desc">Please review and accept our terms to complete your registration</p>
+        <h2>🔒 Create Your Account</h2>
+        <p class="desc">Set up your password and review our privacy terms</p>
+
+        <!-- Password Fields -->
+        <div style="background: white; border: 2px solid #e0e0e0; border-radius: 12px; padding: 24px; margin: 30px 0;">
+          <h3 style="font-size: 18px; font-weight: 600; margin: 0 0 20px; color: #1a202c;">
+            🔐 Account Security
+          </h3>
+
+          <div style="margin-bottom: 20px;">
+            <label class="label" for="password">Password *</label>
+            <input
+              type="password"
+              id="password"
+              class="input-field"
+              placeholder="Enter password (min 8 characters)"
+              minlength="8"
+              required
+            />
+            <p class="hint" style="margin-top: 8px;">
+              Must be at least 8 characters long
+            </p>
+          </div>
+
+          <div style="margin-bottom: 20px;">
+            <label class="label" for="confirm_password">Confirm Password *</label>
+            <input
+              type="password"
+              id="confirm_password"
+              class="input-field"
+              placeholder="Re-enter your password"
+              minlength="8"
+              required
+            />
+          </div>
+
+          <!-- Password Strength Indicator -->
+          <div id="password-strength" style="display: none; margin-top: 12px; padding: 12px; border-radius: 8px; font-size: 14px;">
+            <div id="password-strength-text"></div>
+          </div>
+
+          <p class="error-message" id="password-error"></p>
+        </div>
 
         <!-- GDPR Info Box -->
         <div style="background: #e8f4f8; border-radius: 12px; padding: 24px; margin: 30px 0; border-left: 4px solid #0088cc;">
@@ -1461,9 +1502,11 @@
         return validateRecoveryEmergency();
       }
 
-      // Page 9: GDPR Consent validation
+      // Page 9: Password & GDPR Consent validation
       if (currentPage === 9) {
-        return validateGDPRConsent();
+        const passwordValid = validatePasswordFields();
+        const gdprValid = validateGDPRConsent();
+        return passwordValid && gdprValid;
       }
 
       // Add validation logic for other pages as we build them
@@ -2066,6 +2109,82 @@
       return true;
     }
 
+    // ===== PASSWORD VALIDATION =====
+
+    function calculatePasswordStrength(password) {
+      if (!password) return { score: 0, text: '', color: '' };
+
+      let score = 0;
+
+      // Length check
+      if (password.length >= 8) score++;
+      if (password.length >= 12) score++;
+
+      // Character variety
+      if (/[a-z]/.test(password)) score++;  // lowercase
+      if (/[A-Z]/.test(password)) score++;  // uppercase
+      if (/[0-9]/.test(password)) score++;  // numbers
+      if (/[^a-zA-Z0-9]/.test(password)) score++; // special chars
+
+      // Return strength rating
+      if (score <= 2) return { score, text: 'Weak', color: '#e74c3c' };
+      if (score <= 4) return { score, text: 'Medium', color: '#f39c12' };
+      return { score, text: 'Strong', color: '#27ae60' };
+    }
+
+    function validatePasswordFields() {
+      const errorEl = document.getElementById('password-error');
+      const strengthEl = document.getElementById('password-strength');
+      const strengthText = document.getElementById('password-strength-text');
+
+      errorEl.textContent = '';
+      errorEl.classList.remove('show');
+
+      const password = document.getElementById('password').value;
+      const confirmPassword = document.getElementById('confirm_password').value;
+
+      // Check minimum length
+      if (!password || password.length < 8) {
+        showError('password-error', 'Password must be at least 8 characters long');
+        document.getElementById('password').classList.add('error');
+        return false;
+      }
+
+      // Check passwords match
+      if (password !== confirmPassword) {
+        showError('password-error', 'Passwords do not match');
+        document.getElementById('confirm_password').classList.add('error');
+        return false;
+      }
+
+      // Clear error states
+      document.getElementById('password').classList.remove('error');
+      document.getElementById('confirm_password').classList.remove('error');
+
+      return true;
+    }
+
+    function updatePasswordStrength() {
+      const password = document.getElementById('password').value;
+      const strengthEl = document.getElementById('password-strength');
+      const strengthText = document.getElementById('password-strength-text');
+
+      if (!password) {
+        strengthEl.style.display = 'none';
+        return;
+      }
+
+      const strength = calculatePasswordStrength(password);
+
+      strengthEl.style.display = 'block';
+      strengthEl.style.backgroundColor = strength.color + '22';
+      strengthEl.style.borderLeft = `4px solid ${strength.color}`;
+
+      strengthText.innerHTML = `
+        <strong style="color: ${strength.color}">Password Strength: ${strength.text}</strong>
+      `;
+    }
+
     // Save current page data
     function saveCurrentPageData() {
       // Page 1 is a statement, no data to save
@@ -2168,10 +2287,14 @@
         return;
       }
 
-      // Page 9: GDPR Consent
+      // Page 9: Password & GDPR Consent
       if (currentPage === 9) {
+        formData.password = document.getElementById('password').value;
+        formData.confirm_password = document.getElementById('confirm_password').value;
         formData.gdpr_consent = document.getElementById('gdpr_consent').checked;
         console.log('✅ Page 9 data saved:', {
+          password_set: !!formData.password,
+          passwords_match: formData.password === formData.confirm_password,
           gdpr_consent: formData.gdpr_consent
         });
         return;
@@ -2244,6 +2367,29 @@
         console.error('❌ Form submission error:', error);
         alert('Sorry, there was an error submitting your form. Please try again.');
       }
+    }
+
+    // ===== PASSWORD FIELD EVENT LISTENERS =====
+
+    // Real-time password strength indicator
+    const passwordInput = document.getElementById('password');
+    const confirmPasswordInput = document.getElementById('confirm_password');
+
+    if (passwordInput) {
+      passwordInput.addEventListener('input', function() {
+        updatePasswordStrength();
+        // Clear error when user types
+        document.getElementById('password-error').classList.remove('show');
+        document.getElementById('password').classList.remove('error');
+      });
+    }
+
+    if (confirmPasswordInput) {
+      confirmPasswordInput.addEventListener('input', function() {
+        // Clear error when user types
+        document.getElementById('password-error').classList.remove('show');
+        document.getElementById('confirm_password').classList.remove('error');
+      });
     }
 
     // Load draft on page load
