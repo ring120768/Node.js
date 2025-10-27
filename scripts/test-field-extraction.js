@@ -26,12 +26,19 @@ const colors = {
 
 /**
  * Current normalization logic (from webhook.controller.js)
+ * Updated with Phase 3 fixes
  */
 function normalizeTitle(title) {
   return title
     .toLowerCase()
-    .replace(/[?.,;:!'"()]/g, '')
-    .replace(/\s+/g, '_')
+    .replace(/\(optional\)/gi, '_optional')  // Handle (optional) first
+    .replace(/[:.;?!'"(),]/g, '')             // Remove common punctuation
+    .replace(/-/g, '_')                       // Convert hyphens to underscores (FIXED!)
+    .replace(/\//g, '_')                      // Convert forward slashes to underscores
+    .replace(/@/g, '')                        // Remove @ symbols
+    .replace(/\s+/g, '_')                     // Replace spaces with underscore
+    .replace(/_+/g, '_')                      // Replace multiple underscores with single
+    .replace(/^_|_$/g, '')                    // Remove leading/trailing underscores
     .trim();
 }
 

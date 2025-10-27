@@ -65,7 +65,10 @@ function buildFieldTitleMap(definition) {
         // Normalize title: lowercase, remove punctuation, convert spaces to underscores
         const normalizedTitle = field.title.toLowerCase()
           .replace(/\(optional\)/gi, '_optional')  // Handle (optional) first
-          .replace(/[:.;?!]/g, '')                  // Remove common punctuation
+          .replace(/[:.;?!'"(),]/g, '')             // Remove common punctuation (including apostrophes, quotes, commas)
+          .replace(/-/g, '_')                       // Convert hyphens to underscores (critical fix!)
+          .replace(/\//g, '_')                      // Convert forward slashes to underscores
+          .replace(/@/g, '')                        // Remove @ symbols (email addresses)
           .replace(/\s+/g, '_')                     // Replace spaces with underscore
           .replace(/_+/g, '_')                      // Replace multiple underscores with single
           .replace(/^_|_$/g, '')                    // Remove leading/trailing underscores
