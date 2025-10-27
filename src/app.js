@@ -125,15 +125,8 @@ function createApp() {
   // Cookie parsing
   app.use(cookieParser());
 
-  // Static files
-  app.use(express.static(path.join(__dirname, '../public')));
-
-  // Rate limiting
-  app.use('/api/', apiLimiter);
-  app.use('/api/whisper/', strictLimiter);
-  app.use('/api/gdpr/', strictLimiter);
-
-  // Cache control for HTML (aggressive caching prevention)
+  // Cache control for HTML (MUST be before express.static to work)
+  // Sets aggressive cache prevention headers for all HTML files
   app.use((req, res, next) => {
     if (req.path.endsWith('.html')) {
       res.setHeader('Cache-Control', 'no-cache, no-store, must-revalidate');
@@ -142,6 +135,14 @@ function createApp() {
     }
     next();
   });
+
+  // Static files (served with cache headers set above)
+  app.use(express.static(path.join(__dirname, '../public')));
+
+  // Rate limiting
+  app.use('/api/', apiLimiter);
+  app.use('/api/whisper/', strictLimiter);
+  app.use('/api/gdpr/', strictLimiter);
 
   // ==================== MULTER (File Uploads) ====================
 
