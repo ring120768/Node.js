@@ -86,6 +86,7 @@ async function submitSignup(req, res) {
       'emergency_contact_last_name',
       'emergency_contact_phone',
       'emergency_contact_email',
+      'password', // Required for authentication
       'gdpr_consent'
     ];
 
