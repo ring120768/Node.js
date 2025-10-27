@@ -479,19 +479,19 @@
 
     <div class="button-container">
         <!-- REPORT INCIDENT BUTTON -->
-        <button class="secondary-btn" onclick="navigateToIncident()">
+        <button class="secondary-btn" id="incidentBtn">
             <span class="btn-icon">📝</span>
             Report an Incident
         </button>
 
         <!-- DASHBOARD BUTTON -->
-        <button class="secondary-btn" onclick="navigateToDashboard()">
+        <button class="secondary-btn" id="dashboardBtn">
             <span class="btn-icon">📋</span>
             View My Reports
         </button>
 
         <!-- DEMO BUTTON -->
-        <button class="secondary-btn" onclick="window.location.href='/demo.html'">
+        <button class="secondary-btn" id="demoBtn">
             <span class="btn-icon">🎬</span>
             Try Demo
         </button>
@@ -503,10 +503,10 @@
 
         <!-- AUTH BUTTONS -->
         <div class="auth-buttons">
-            <button class="auth-btn login" onclick="window.location.href='/login.html'">
+            <button class="auth-btn login" id="loginBtn">
                 🔑 Login
             </button>
-            <button class="auth-btn signup" onclick="window.location.href='/signup-form.html'">
+            <button class="auth-btn signup" id="signupBtn">
                 ✨ Sign Up
             </button>
         </div>
@@ -753,13 +753,13 @@
         // Add event listeners when page loads
         document.addEventListener('DOMContentLoaded', function() {
             console.log('🚗 Car Crash Lawyer AI - Landing Page Initialized');
-            
+
             // Main navigation buttons
-            const incidentBtn = document.querySelector('.secondary-btn[onclick="navigateToIncident()"]');
-            const dashboardBtn = document.querySelector('.secondary-btn[onclick="navigateToDashboard()"]');
-            const demoBtn = document.querySelector('.secondary-btn[onclick*="demo.html"]');
-            const loginBtn = document.querySelector('.auth-btn.login');
-            const signupBtn = document.querySelector('.auth-btn.signup');
+            const incidentBtn = document.getElementById('incidentBtn');
+            const dashboardBtn = document.getElementById('dashboardBtn');
+            const demoBtn = document.getElementById('demoBtn');
+            const loginBtn = document.getElementById('loginBtn');
+            const signupBtn = document.getElementById('signupBtn');
 
             if (incidentBtn) {
                 incidentBtn.addEventListener('click', function(e) {
