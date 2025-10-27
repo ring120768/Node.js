@@ -178,6 +178,7 @@ function getAnswerByRef(answers, ref, titleMap = null) {
   // STRATEGY 3: Fuzzy/keyword matching - look for ref as substring in normalized title
   // This handles long Typeform questions like "🛡️ Quick safety check: Are you safe?"
   // which normalizes to "quick_safety_check_are_you_safe" and should match "are_you_safe"
+  // Also matches "airbags_deployed" in "were_the_airbags_deployed"
   if (!answer && titleMap && ref.length >= 4) { // Only for meaningful field names
     answer = answers.find(a => {
       const fieldRef = a.field?.ref;
@@ -186,9 +187,8 @@ function getAnswerByRef(answers, ref, titleMap = null) {
       if (!normalizedTitle) return false;
 
       // Check if the expected field name appears anywhere in the normalized title
-      // Use word boundaries to avoid false positives
-      const refPattern = new RegExp(`\\b${ref}\\b`, 'i');
-      return refPattern.test(normalizedTitle);
+      // Use simple substring match (word boundaries were too strict)
+      return normalizedTitle.includes(ref);
     });
   }
 
@@ -222,7 +222,7 @@ function getAnswerByRefWithLogging(answers, ref, titleMap = null, enableLogging 
     });
   }
 
-  // STRATEGY 3: Try fuzzy/keyword matching
+  // STRATEGY 3: Try fuzzy/keyword matching (substring match)
   let fuzzyMatch = null;
   if (!directMatch && !titleMapMatch && titleMap && ref.length >= 4) {
     fuzzyMatch = answers.find(a => {
@@ -230,8 +230,8 @@ function getAnswerByRefWithLogging(answers, ref, titleMap = null, enableLogging 
       if (!fieldRef) return false;
       const normalizedTitle = titleMap.get(fieldRef);
       if (!normalizedTitle) return false;
-      const refPattern = new RegExp(`\\b${ref}\\b`, 'i');
-      return refPattern.test(normalizedTitle);
+      // Use simple substring match (word boundaries were too strict)
+      return normalizedTitle.includes(ref);
     });
   }
 

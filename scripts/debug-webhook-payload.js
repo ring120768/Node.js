@@ -46,12 +46,35 @@ function buildFieldTitleMap(definition) {
 
   definition.fields.forEach(field => {
     if (field.ref && field.title) {
-      // Normalize title: lowercase, remove punctuation, replace spaces with underscores
-      const normalizedTitle = field.title
+      // Phase 3.5: Match production normalization logic exactly
+      let normalizedTitle = field.title
         .toLowerCase()
-        .replace(/[?.,;:!'"()]/g, '')
-        .replace(/\s+/g, '_')
+        .replace(/\(optional\)/gi, '_optional')  // Handle (optional) first
+
+        // Remove emojis and Unicode symbols (critical fix for Typeform!)
+        .replace(/[\u{1F000}-\u{1F9FF}]/gu, '')  // Emoticons
+        .replace(/[\u{2600}-\u{26FF}]/gu, '')    // Misc symbols
+        .replace(/[\u{2700}-\u{27BF}]/gu, '')    // Dingbats
+        .replace(/[\u{1F600}-\u{1F64F}]/gu, '') // Emoticons
+        .replace(/[\u{1F300}-\u{1F5FF}]/gu, '') // Misc Symbols and Pictographs
+        .replace(/[\u{1F680}-\u{1F6FF}]/gu, '') // Transport and Map
+        .replace(/[\u{1F1E0}-\u{1F1FF}]/gu, '') // Flags
+        .replace(/[\u{2600}-\u{27BF}✅❌🛡️]/gu, '') // Checkmarks, X, shields
+
+        .replace(/[:.;?!'"(),]/g, '')             // Remove common punctuation
+        .replace(/-/g, '_')                       // Convert hyphens to underscores
+        .replace(/\//g, '_')                      // Convert forward slashes to underscores
+        .replace(/@/g, '')                        // Remove @ symbols
+        .replace(/\s+/g, '_')                     // Replace spaces with underscore
+        .replace(/_+/g, '_')                      // Replace multiple underscores with single
+        .replace(/^_|_$/g, '')                    // Remove leading/trailing underscores
         .trim();
+
+      // CRITICAL: Remove common prefixes from Typeform questions
+      normalizedTitle = normalizedTitle
+        .replace(/^title_+/, '')                  // Remove "title_" prefix
+        .replace(/^question_+/, '')               // Remove "question_" prefix
+        .replace(/^field_+/, '');                 // Remove "field_" prefix
 
       titleMap.set(field.ref, normalizedTitle);
     }
@@ -105,10 +128,10 @@ function extractAnswerValue(answer) {
 }
 
 /**
- * Attempt to get answer by field reference
+ * Attempt to get answer by field reference (3-tier matching strategy)
  */
 function getAnswerByRef(answers, ref, titleMap) {
-  // Try direct ref match first
+  // STRATEGY 1: Try direct ref match first
   const directMatch = answers.find(a => a.field?.ref === ref);
   if (directMatch) {
     return {
@@ -118,7 +141,7 @@ function getAnswerByRef(answers, ref, titleMap) {
     };
   }
 
-  // Try titleMap match
+  // STRATEGY 2: Try exact titleMap match
   if (titleMap) {
     const titleMapMatch = answers.find(a => {
       const fieldRef = a.field?.ref;
@@ -132,6 +155,32 @@ function getAnswerByRef(answers, ref, titleMap) {
         value: extractAnswerValue(titleMapMatch),
         matchType: 'TITLE',
         uuid: titleMapMatch.field.ref
+      };
+    }
+  }
+
+  // STRATEGY 3: Fuzzy/keyword matching - look for ref as substring in normalized title
+  // This handles long Typeform questions like "🛡️ Quick safety check: Are you safe?"
+  // which normalizes to "quick_safety_check_are_you_safe" and should match "are_you_safe"
+  // Also matches "airbags_deployed" in "were_the_airbags_deployed"
+  if (titleMap && ref.length >= 4) { // Only for meaningful field names
+    const fuzzyMatch = answers.find(a => {
+      const fieldRef = a.field?.ref;
+      if (!fieldRef) return false;
+      const normalizedTitle = titleMap.get(fieldRef);
+      if (!normalizedTitle) return false;
+
+      // Check if the expected field name appears anywhere in the normalized title
+      // Use simple substring match (word boundaries were too strict)
+      return normalizedTitle.includes(ref);
+    });
+
+    if (fuzzyMatch) {
+      return {
+        value: extractAnswerValue(fuzzyMatch),
+        matchType: 'FUZZY',
+        uuid: fuzzyMatch.field.ref,
+        normalizedTitle: titleMap.get(fuzzyMatch.field.ref)
       };
     }
   }
@@ -273,8 +322,12 @@ function analyzePayload(payloadPath) {
 
   // Read payload file
   const payload = JSON.parse(fs.readFileSync(payloadPath, 'utf8'));
-  const answers = payload.form_response?.answers || [];
-  const definition = payload.form_response?.definition || {};
+
+  // Handle both payload structures:
+  // 1. Wrapped: payload.form_response.answers (from webhook body)
+  // 2. Direct: payload.answers (from saveWebhookPayload)
+  const answers = payload.form_response?.answers || payload.answers || [];
+  const definition = payload.form_response?.definition || payload.definition || {};
 
   console.log(`📄 Payload file: ${path.basename(payloadPath)}`);
   console.log(`📋 Answers received: ${answers.length}`);
