@@ -2235,8 +2235,8 @@
           // Clear draft
           localStorage.removeItem('ccla_signup_draft');
 
-          // Redirect to payment success page
-          window.location.href = '/payment-success.html';
+          // Redirect to home page (temporary until Stripe integration)
+          window.location.href = '/index.html';
         } else {
           throw new Error(result.error || 'Failed to submit form');
         }
