@@ -1181,49 +1181,8 @@
     <!-- Page 9: Account Setup & GDPR Consent -->
     <div class="question-page" data-page="9">
       <div class="question">
-        <h2>🔒 Create Your Account</h2>
-        <p class="desc">Set up your password and review our privacy terms</p>
-
-        <!-- Password Fields -->
-        <div style="background: white; border: 2px solid #e0e0e0; border-radius: 12px; padding: 24px; margin: 30px 0;">
-          <h3 style="font-size: 18px; font-weight: 600; margin: 0 0 20px; color: #1a202c;">
-            🔐 Account Security
-          </h3>
-
-          <div style="margin-bottom: 20px;">
-            <label class="label" for="password">Password *</label>
-            <input
-              type="password"
-              id="password"
-              class="input-field"
-              placeholder="Enter password (min 8 characters)"
-              minlength="8"
-              required
-            />
-            <p class="hint" style="margin-top: 8px;">
-              Must be at least 8 characters long
-            </p>
-          </div>
-
-          <div style="margin-bottom: 20px;">
-            <label class="label" for="confirm_password">Confirm Password *</label>
-            <input
-              type="password"
-              id="confirm_password"
-              class="input-field"
-              placeholder="Re-enter your password"
-              minlength="8"
-              required
-            />
-          </div>
-
-          <!-- Password Strength Indicator -->
-          <div id="password-strength" style="display: none; margin-top: 12px; padding: 12px; border-radius: 8px; font-size: 14px;">
-            <div id="password-strength-text"></div>
-          </div>
-
-          <p class="error-message" id="password-error"></p>
-        </div>
+        <h2>✅ Review & Consent</h2>
+        <p class="desc">Review our privacy terms and provide your consent</p>
 
         <!-- GDPR Info Box -->
         <div style="background: #e8f4f8; border-radius: 12px; padding: 24px; margin: 30px 0; border-left: 4px solid #0088cc;">
@@ -1568,11 +1527,9 @@
         return validateRecoveryEmergency();
       }
 
-      // Page 9: Password & GDPR Consent validation
+      // Page 9: GDPR Consent validation only (password handled on Page 1)
       if (currentPage === 9) {
-        const passwordValid = validatePasswordFields();
-        const gdprValid = validateGDPRConsent();
-        return passwordValid && gdprValid;
+        return validateGDPRConsent();
       }
 
       // Add validation logic for other pages as we build them
@@ -2186,58 +2143,7 @@
       return { score, text: 'Strong', color: '#27ae60' };
     }
 
-    function validatePasswordFields() {
-      const errorEl = document.getElementById('password-error');
-      const strengthEl = document.getElementById('password-strength');
-      const strengthText = document.getElementById('password-strength-text');
-
-      errorEl.textContent = '';
-      errorEl.classList.remove('show');
-
-      const password = document.getElementById('password').value;
-      const confirmPassword = document.getElementById('confirm_password').value;
-
-      // Check minimum length
-      if (!password || password.length < 8) {
-        showError('password-error', 'Password must be at least 8 characters long');
-        document.getElementById('password').classList.add('error');
-        return false;
-      }
-
-      // Check passwords match
-      if (password !== confirmPassword) {
-        showError('password-error', 'Passwords do not match');
-        document.getElementById('confirm_password').classList.add('error');
-        return false;
-      }
-
-      // Clear error states
-      document.getElementById('password').classList.remove('error');
-      document.getElementById('confirm_password').classList.remove('error');
-
-      return true;
-    }
-
-    function updatePasswordStrength() {
-      const password = document.getElementById('password').value;
-      const strengthEl = document.getElementById('password-strength');
-      const strengthText = document.getElementById('password-strength-text');
-
-      if (!password) {
-        strengthEl.style.display = 'none';
-        return;
-      }
-
-      const strength = calculatePasswordStrength(password);
-
-      strengthEl.style.display = 'block';
-      strengthEl.style.backgroundColor = strength.color + '22';
-      strengthEl.style.borderLeft = `4px solid ${strength.color}`;
-
-      strengthText.innerHTML = `
-        <strong style="color: ${strength.color}">Password Strength: ${strength.text}</strong>
-      `;
-    }
+    // Password validation removed - now handled on Page 1 during account creation
 
     // ===== PAGE 1: ACCOUNT CREATION =====
 
