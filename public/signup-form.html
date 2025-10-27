@@ -1701,12 +1701,22 @@
         formData.dvla_tax_status = vehicle.tax_status || '';  // snake_case
         formData.dvla_tax_due = vehicle.tax_due_date || '';  // snake_case
 
-        // Display results
+        // Display results (DEBUG: Check which values we're setting)
+        console.log('🔍 Updating DOM with:', {
+          color: vehicle.color,
+          year: vehicle.year_of_manufacture,
+          fuel: vehicle.fuel_type,
+          mot: vehicle.mot_status,
+          tax: vehicle.tax_status
+        });
+
         document.getElementById('dvlaMake').textContent = vehicle.make || 'N/A';
         document.getElementById('dvlaModel').textContent = vehicle.model || 'N/A';
         document.getElementById('dvlaColour').textContent = vehicle.color || 'N/A';  // API returns 'color'
         document.getElementById('dvlaYear').textContent = vehicle.year_of_manufacture || 'N/A';
         document.getElementById('dvlaFuelType').textContent = vehicle.fuel_type || 'N/A';
+
+        console.log('✅ DOM updated successfully');
 
         // MOT and Tax status with color coding
         const motStatus = vehicle.mot_status || 'Unknown';
