@@ -2572,35 +2572,9 @@
           // Clear draft
           localStorage.removeItem('ccla_signup_draft');
 
-          // ===== AUTO-LOGIN AFTER SIGNUP =====
-          if (result.autoLogin && supabaseClient) {
-            console.log('🔐 Auto-login enabled, authenticating user...');
-
-            try {
-              const { data: authData, error: loginError } = await supabaseClient.auth.signInWithPassword({
-                email: formData.email,
-                password: formData.password
-              });
-
-              if (loginError) {
-                console.error('❌ Auto-login failed:', loginError);
-                // Redirect to login page with email pre-filled
-                window.location.href = `/login.html?email=${encodeURIComponent(formData.email)}&message=${encodeURIComponent('Account created! Please login with your password.')}`;
-              } else {
-                console.log('✅ Auto-login successful');
-                // Redirect to dashboard
-                window.location.href = '/dashboard.html';
-              }
-            } catch (loginError) {
-              console.error('❌ Auto-login exception:', loginError);
-              // Fallback to login page
-              window.location.href = `/login.html?email=${encodeURIComponent(formData.email)}`;
-            }
-          } else {
-            // Fallback if autoLogin not enabled or Supabase not initialized
-            console.log('ℹ️ Auto-login not available, redirecting to login page');
-            window.location.href = `/login.html?email=${encodeURIComponent(formData.email)}`;
-          }
+          // User is already authenticated (from Page 1) - just redirect to dashboard
+          console.log('✅ Signup complete, redirecting to dashboard...');
+          window.location.href = '/dashboard.html';
         } else {
           throw new Error(result.error || 'Failed to submit form');
         }
