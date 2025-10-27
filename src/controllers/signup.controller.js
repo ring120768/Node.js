@@ -9,28 +9,9 @@ const logger = require('../utils/logger');
 const { createClient } = require('@supabase/supabase-js');
 const config = require('../config');
 const ImageProcessorV2 = require('../services/imageProcessorV2');
-const multer = require('multer');
 
-// Configure multer for memory storage
-const upload = multer({
-  storage: multer.memoryStorage(),
-  limits: {
-    fileSize: 10 * 1024 * 1024, // 10MB max file size
-  },
-  fileFilter: (req, file, cb) => {
-    // Accept images only
-    if (!file.mimetype.startsWith('image/')) {
-      return cb(new Error('Only image files are allowed'), false);
-    }
-    cb(null, true);
-  }
-}).fields([
-  { name: 'driving_license_picture', maxCount: 1 },
-  { name: 'vehicle_front_image', maxCount: 1 },
-  { name: 'vehicle_driver_side_image', maxCount: 1 },
-  { name: 'vehicle_passenger_side_image', maxCount: 1 },
-  { name: 'vehicle_back_image', maxCount: 1 }
-]);
+// Note: Images are now uploaded immediately when selected (temp upload pattern)
+// No multer needed - we receive JSON with temp paths instead of multipart/form-data
 
 /**
  * Convert DD/MM/YYYY to YYYY-MM-DD for PostgreSQL
@@ -56,14 +37,20 @@ async function submitSignup(req, res) {
   try {
     logger.info('📝 Received signup form submission');
 
-    // Parse form data and files
+    // Parse form data (JSON body, not multipart)
     const formData = req.body;
-    const files = req.files;
+    const sessionId = formData.temp_session_id;
 
     logger.info('📋 Form data:', {
-      hasFiles: !!files,
-      fileCount: files ? Object.keys(files).length : 0,
-      fields: Object.keys(formData)
+      hasSessionId: !!sessionId,
+      fields: Object.keys(formData).length,
+      hasImages: !![
+        formData.driving_license_picture,
+        formData.vehicle_front_image,
+        formData.vehicle_driver_side_image,
+        formData.vehicle_passenger_side_image,
+        formData.vehicle_back_image
+      ].filter(Boolean).length
     });
 
     // Validate required fields
@@ -107,7 +94,7 @@ async function submitSignup(req, res) {
       });
     }
 
-    // Check which images were uploaded (images are now OPTIONAL)
+    // Check which images were uploaded to temp storage (images are OPTIONAL)
     const recommendedImages = [
       'driving_license_picture',
       'vehicle_front_image',
@@ -116,13 +103,15 @@ async function submitSignup(req, res) {
       'vehicle_back_image'
     ];
 
-    const missingImages = recommendedImages.filter(img => !files || !files[img] || files[img].length === 0);
-    const uploadedImages = recommendedImages.filter(img => files && files[img] && files[img].length > 0);
+    // Check for temp paths (not File objects)
+    const missingImages = recommendedImages.filter(img => !formData[img]);
+    const uploadedImages = recommendedImages.filter(img => formData[img] && typeof formData[img] === 'string');
 
     logger.info('📸 Image upload status:', {
       uploaded: uploadedImages.length,
       missing: missingImages.length,
-      missingList: missingImages
+      missingList: missingImages,
+      tempPaths: uploadedImages.map(img => formData[img])
     });
 
     // Track if we need to send reminder email (no hard validation - images are optional)
@@ -221,79 +210,100 @@ async function submitSignup(req, res) {
       }
     }
 
-    // ===== 3. Process and upload image files (if any were provided) =====
-    logger.info('📸 Processing image uploads...', {
-      providedCount: files ? Object.keys(files).length : 0
+    // ===== 3. Move temp uploads to permanent storage =====
+    logger.info('📸 Processing temp uploads...', {
+      sessionId,
+      tempUploadsCount: uploadedImages.length
     });
 
     const imageResults = [];
 
-    // Only process if files were actually uploaded
-    if (files && Object.keys(files).length > 0) {
-      for (const [fieldName, fileArray] of Object.entries(files)) {
-      if (fileArray && fileArray.length > 0) {
-        const file = fileArray[0];
+    // Process uploaded images (if any)
+    if (uploadedImages.length > 0) {
+      for (const fieldName of uploadedImages) {
+        const tempPath = formData[fieldName];
+        const uploadId = formData[`${fieldName}_upload_id`];
 
         try {
-          logger.info(`📤 Uploading ${fieldName}:`, {
-            filename: file.originalname,
-            size: `${(file.size / 1024).toFixed(2)} KB`,
-            mimetype: file.mimetype
+          logger.info(`🔄 Moving ${fieldName} from temp to permanent storage...`, {
+            tempPath,
+            uploadId
           });
 
-          // Calculate checksum
-          const checksum = imageProcessor.calculateChecksum(file.buffer);
+          // Get temp upload record
+          const { data: tempUpload, error: tempError } = await supabase
+            .from('temp_uploads')
+            .select('*')
+            .eq('id', uploadId)
+            .single();
 
-          // Upload to Supabase Storage
-          const fileName = `${userId}/${fieldName}_${Date.now()}.${file.originalname.split('.').pop()}`;
-          const { data: uploadData, error: uploadError } = await supabase.storage
-            .from('user-documents')
-            .upload(fileName, file.buffer, {
-              contentType: file.mimetype,
-              cacheControl: '3600',
-              upsert: false
-            });
-
-          if (uploadError) {
-            logger.error(`❌ Failed to upload ${fieldName}:`, uploadError);
-            throw new Error(`Failed to upload ${fieldName}: ${uploadError.message}`);
+          if (tempError || !tempUpload) {
+            throw new Error(`Temp upload not found: ${uploadId}`);
           }
 
-          // Get public URL
+          // Define permanent storage path
+          const permanentPath = tempPath.replace(`temp/${sessionId}/`, `${userId}/`);
+
+          logger.info(`📦 Moving: ${tempPath} → ${permanentPath}`);
+
+          // Move file from temp to permanent location
+          const { error: moveError } = await supabase.storage
+            .from('user-documents')
+            .move(tempPath, permanentPath);
+
+          if (moveError) {
+            logger.error(`❌ Failed to move ${fieldName}:`, moveError);
+            throw new Error(`Failed to move file: ${moveError.message}`);
+          }
+
+          // Get public URL for permanent location
           const { data: { publicUrl } } = supabase.storage
             .from('user-documents')
-            .getPublicUrl(fileName);
+            .getPublicUrl(permanentPath);
 
           // Create document record in user_documents table
           await imageProcessor.createDocumentRecord({
             create_user_id: userId,
             document_type: fieldName,
             document_category: 'user_signup',
-            source_type: 'direct_upload',
+            source_type: 'temp_upload',
             source_field: fieldName,
-            original_filename: file.originalname,
+            original_filename: tempUpload.storage_path.split('/').pop(),
             storage_bucket: 'user-documents',
-            storage_path: fileName,
-            file_size: file.size,
-            mime_type: file.mimetype,
-            file_extension: file.originalname.split('.').pop().toLowerCase(),
+            storage_path: permanentPath,
+            file_size: tempUpload.file_size,
+            mime_type: tempUpload.mime_type,
+            file_extension: permanentPath.split('.').pop().toLowerCase(),
             status: 'completed',
-            original_checksum_sha256: checksum,
-            current_checksum_sha256: checksum,
+            original_checksum_sha256: null, // Checksum from temp upload
+            current_checksum_sha256: null,
             metadata: {
-              uploaded_from: 'custom_signup_form',
-              upload_method: 'multer',
-              original_size: file.size
+              uploaded_from: 'custom_signup_form_temp',
+              upload_method: 'immediate_temp_upload',
+              temp_upload_id: uploadId,
+              temp_session_id: sessionId,
+              moved_from_temp: true
             }
           });
+
+          // Mark temp upload as claimed
+          await supabase
+            .from('temp_uploads')
+            .update({
+              claimed: true,
+              claimed_by_user_id: userId,
+              claimed_at: new Date().toISOString()
+            })
+            .eq('id', uploadId);
 
           imageResults.push({
             field: fieldName,
             status: 'success',
-            url: publicUrl
+            url: publicUrl,
+            path: permanentPath
           });
 
-          logger.success(`✅ ${fieldName} uploaded successfully`);
+          logger.success(`✅ ${fieldName} moved successfully: ${permanentPath}`);
 
         } catch (error) {
           logger.error(`❌ Error processing ${fieldName}:`, error);
@@ -304,9 +314,8 @@ async function submitSignup(req, res) {
           });
         }
       }
-      }
     } else {
-      logger.info('📸 No images uploaded - user will receive reminder email');
+      logger.info('📸 No temp uploads to process - user will receive reminder email');
     }
 
     // Log any failed uploads (but don't block signup)
@@ -364,6 +373,5 @@ async function submitSignup(req, res) {
 }
 
 module.exports = {
-  submitSignup,
-  upload // Export multer middleware
+  submitSignup
 };
