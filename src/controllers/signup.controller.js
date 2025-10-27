@@ -33,6 +33,22 @@ const upload = multer({
 ]);
 
 /**
+ * Convert DD/MM/YYYY to YYYY-MM-DD for PostgreSQL
+ */
+function convertDateFormat(ddmmyyyy) {
+  if (!ddmmyyyy) return null;
+
+  // Handle DD/MM/YYYY format
+  if (ddmmyyyy.includes('/')) {
+    const [day, month, year] = ddmmyyyy.split('/');
+    return `${year}-${month.padStart(2, '0')}-${day.padStart(2, '0')}`;
+  }
+
+  // Already in correct format or invalid
+  return ddmmyyyy;
+}
+
+/**
  * Submit user signup form
  * POST /api/signup/submit
  */
@@ -129,7 +145,7 @@ async function submitSignup(req, res) {
       last_name: formData.last_name,
       email: formData.email.toLowerCase(),
       mobile_number: formData.mobile_number,
-      date_of_birth: formData.date_of_birth, // DD/MM/YYYY format
+      date_of_birth: convertDateFormat(formData.date_of_birth), // Convert DD/MM/YYYY to YYYY-MM-DD
       address_line_1: formData.address_line_1,
       address_line_2: formData.address_line_2 || null,
       city: formData.city,
