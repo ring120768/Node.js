@@ -1684,40 +1684,43 @@
           throw new Error(data.error || 'Failed to lookup vehicle');
         }
 
+        // Extract vehicle data from response (nested under data.vehicle)
+        const vehicle = data.vehicle || {};
+
         // Store DVLA data in formData
         formData.car_registration_number = regNumber;
         formData.dvla_verified = true;
-        formData.dvla_make = data.make || '';
-        formData.dvla_model = data.model || '';
-        formData.dvla_colour = data.colour || '';
-        formData.dvla_year = data.yearOfManufacture || '';
-        formData.dvla_fuel_type = data.fuelType || '';
-        formData.dvla_mot_status = data.motStatus || '';
-        formData.dvla_mot_expiry = data.motExpiryDate || '';
-        formData.dvla_tax_status = data.taxStatus || '';
-        formData.dvla_tax_due = data.taxDueDate || '';
+        formData.dvla_make = vehicle.make || '';
+        formData.dvla_model = vehicle.model || '';
+        formData.dvla_colour = vehicle.colour || '';
+        formData.dvla_year = vehicle.yearOfManufacture || '';
+        formData.dvla_fuel_type = vehicle.fuelType || '';
+        formData.dvla_mot_status = vehicle.motStatus || '';
+        formData.dvla_mot_expiry = vehicle.motExpiryDate || '';
+        formData.dvla_tax_status = vehicle.taxStatus || '';
+        formData.dvla_tax_due = vehicle.taxDueDate || '';
 
         // Display results
-        document.getElementById('dvlaMake').textContent = data.make || 'N/A';
-        document.getElementById('dvlaModel').textContent = data.model || 'N/A';
-        document.getElementById('dvlaColour').textContent = data.colour || 'N/A';
-        document.getElementById('dvlaYear').textContent = data.yearOfManufacture || 'N/A';
-        document.getElementById('dvlaFuelType').textContent = data.fuelType || 'N/A';
+        document.getElementById('dvlaMake').textContent = vehicle.make || 'N/A';
+        document.getElementById('dvlaModel').textContent = vehicle.model || 'N/A';
+        document.getElementById('dvlaColour').textContent = vehicle.colour || 'N/A';
+        document.getElementById('dvlaYear').textContent = vehicle.yearOfManufacture || 'N/A';
+        document.getElementById('dvlaFuelType').textContent = vehicle.fuelType || 'N/A';
 
         // MOT and Tax status with color coding
-        const motStatus = data.motStatus || 'Unknown';
+        const motStatus = vehicle.motStatus || 'Unknown';
         const motStatusEl = document.getElementById('dvlaMotStatus');
         motStatusEl.textContent = motStatus;
         motStatusEl.style.color = motStatus === 'Valid' ? '#10b981' : (motStatus === 'Expired' ? '#ef4444' : '#1a202c');
 
-        document.getElementById('dvlaMotExpiry').textContent = data.motExpiryDate || 'N/A';
+        document.getElementById('dvlaMotExpiry').textContent = vehicle.motExpiryDate || 'N/A';
 
-        const taxStatus = data.taxStatus || 'Unknown';
+        const taxStatus = vehicle.taxStatus || 'Unknown';
         const taxStatusEl = document.getElementById('dvlaTaxStatus');
         taxStatusEl.textContent = taxStatus;
         taxStatusEl.style.color = taxStatus === 'Taxed' ? '#10b981' : (taxStatus === 'Untaxed' ? '#ef4444' : '#1a202c');
 
-        document.getElementById('dvlaTaxDue').textContent = data.taxDueDate || 'N/A';
+        document.getElementById('dvlaTaxDue').textContent = vehicle.taxDueDate || 'N/A';
 
         // Show results card and confirm button
         dvlaResults.style.display = 'block';
