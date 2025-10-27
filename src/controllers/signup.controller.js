@@ -306,7 +306,56 @@ async function submitSignup(req, res) {
       });
     }
 
-    // ===== 4. Return success response =====
+    // ===== 4. Create Supabase Auth user =====
+    logger.info('🔐 Creating Supabase Auth user...');
+
+    try {
+      // Create auth user with the same UUID as user_signup
+      const { data: authUser, error: authError } = await supabase.auth.admin.createUser({
+        id: userId, // Use same UUID for both auth and user_signup
+        email: formData.email.toLowerCase(),
+        password: formData.password,
+        email_confirm: true, // Auto-confirm email (skip verification)
+        user_metadata: {
+          first_name: formData.first_name,
+          last_name: formData.last_name,
+          mobile_number: formData.mobile_number,
+          signup_completed: true
+        }
+      });
+
+      if (authError) {
+        logger.error('❌ Failed to create auth user:', authError);
+
+        // Check if email already exists
+        if (authError.message?.includes('already registered') || authError.message?.includes('already been registered')) {
+          return res.status(400).json({
+            error: 'Email already registered',
+            message: 'This email address is already associated with an account. Please login instead.'
+          });
+        }
+
+        throw new Error(`Failed to create authentication account: ${authError.message}`);
+      }
+
+      logger.success('✅ Auth user created:', userId);
+
+    } catch (authError) {
+      logger.error('❌ Auth user creation failed:', authError);
+
+      // Rollback: Delete user_signup record since auth creation failed
+      await supabase
+        .from('user_signup')
+        .delete()
+        .eq('create_user_id', userId);
+
+      return res.status(500).json({
+        error: 'Failed to create account',
+        message: authError.message || 'Unable to create authentication account. Please try again.'
+      });
+    }
+
+    // ===== 5. Return success response =====
     logger.success('🎉 User signup completed successfully:', userId);
 
     return res.status(201).json({
@@ -314,7 +363,9 @@ async function submitSignup(req, res) {
       message: 'Signup completed successfully',
       userId: userId,
       email: formData.email,
-      images: imageResults
+      images: imageResults,
+      // Frontend will auto-login with stored credentials
+      autoLogin: true
     });
 
   } catch (error) {
