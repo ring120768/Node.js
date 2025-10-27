@@ -1437,6 +1437,91 @@
       localStorage.setItem('ccla_signup_draft', JSON.stringify(dataToSave));
     }
 
+    // ===== IMAGE UPLOAD SESSION MANAGEMENT =====
+
+    /**
+     * Get or create upload session ID
+     * This persists across page refreshes and prevents ERR_UPLOAD_FILE_CHANGED
+     */
+    function getOrCreateSessionId() {
+      let sessionId = localStorage.getItem('ccla_upload_session');
+      if (!sessionId) {
+        sessionId = `session_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`;
+        localStorage.setItem('ccla_upload_session', sessionId);
+        console.log('📝 Created new upload session:', sessionId);
+      }
+      return sessionId;
+    }
+
+    /**
+     * Upload image immediately to temporary storage
+     * This prevents ERR_UPLOAD_FILE_CHANGED on mobile devices
+     *
+     * @param {File} file - The image file to upload
+     * @param {string} fieldName - Form field name (e.g., 'driving_license_picture')
+     * @param {HTMLElement} progressIndicator - Optional element to show upload progress
+     * @returns {Promise<object>} Upload result with tempPath and uploadId
+     */
+    async function uploadImageImmediately(file, fieldName, progressIndicator) {
+      console.log(`📤 Uploading ${fieldName} immediately to temp storage...`);
+
+      // Show uploading state
+      if (progressIndicator) {
+        progressIndicator.textContent = 'Uploading...';
+        progressIndicator.style.display = 'block';
+      }
+
+      try {
+        const sessionId = getOrCreateSessionId();
+
+        // Create FormData for upload
+        const uploadFormData = new FormData();
+        uploadFormData.append('file', file);
+        uploadFormData.append('field_name', fieldName);
+        uploadFormData.append('temp_session_id', sessionId);
+
+        // Upload to temp storage
+        const response = await fetch('/api/images/temp-upload', {
+          method: 'POST',
+          body: uploadFormData
+        });
+
+        if (!response.ok) {
+          const error = await response.json();
+          throw new Error(error.message || 'Upload failed');
+        }
+
+        const result = await response.json();
+
+        console.log(`✅ ${fieldName} uploaded successfully:`, {
+          tempPath: result.tempPath,
+          uploadId: result.uploadId,
+          size: `${(result.fileSize / 1024).toFixed(2)} KB`
+        });
+
+        // Hide progress indicator
+        if (progressIndicator) {
+          progressIndicator.textContent = '✓ Uploaded';
+          setTimeout(() => {
+            progressIndicator.style.display = 'none';
+          }, 2000);
+        }
+
+        return result;
+
+      } catch (error) {
+        console.error(`❌ Error uploading ${fieldName}:`, error);
+
+        // Show error
+        if (progressIndicator) {
+          progressIndicator.textContent = '✗ Upload failed';
+          progressIndicator.style.color = '#dc3545';
+        }
+
+        throw error;
+      }
+    }
+
     // Update progress bar
     function updateProgress() {
       const percentage = ((currentPage - 1) / totalPages) * 100;
@@ -1958,7 +2043,7 @@
     }
 
     // Handle photo file upload
-    function handlePhotoUpload(event, type, fieldName) {
+    async function handlePhotoUpload(event, type, fieldName) {
       const file = event.target.files[0];
       const placeholder = document.getElementById(`${type}Placeholder`);
       const preview = document.getElementById(`${type}Preview`);
@@ -1981,24 +2066,51 @@
         return;
       }
 
-      // Store file in formData
-      formData[fieldName] = file;
-
-      // Show preview
+      // Show preview immediately (before upload completes)
       const reader = new FileReader();
       reader.onload = function(e) {
         previewImage.src = e.target.result;
-        fileName.textContent = file.name;
+        fileName.textContent = file.name + ' (uploading...)';
         placeholder.style.display = 'none';
         preview.style.display = 'flex';
       };
       reader.readAsDataURL(file);
 
-      console.log(`✅ ${type} photo uploaded:`, {
-        name: file.name,
-        size: `${(file.size / 1024).toFixed(2)} KB`,
-        type: file.type
-      });
+      // Upload to temp storage immediately (prevents ERR_UPLOAD_FILE_CHANGED)
+      try {
+        const uploadResult = await uploadImageImmediately(file, fieldName);
+
+        // Store temp path in formData (NOT the File object)
+        formData[fieldName] = uploadResult.tempPath;
+        formData[`${fieldName}_upload_id`] = uploadResult.uploadId;
+        formData[`${fieldName}_preview_url`] = uploadResult.previewUrl;
+
+        // Update filename to show upload complete
+        fileName.textContent = file.name + ' ✓';
+
+        console.log(`✅ ${type} photo ready:`, {
+          name: file.name,
+          size: `${(file.size / 1024).toFixed(2)} KB`,
+          tempPath: uploadResult.tempPath
+        });
+
+        // Save draft now that we have temp path (not File object)
+        saveDraft();
+
+      } catch (error) {
+        console.error(`❌ Failed to upload ${type} photo:`, error);
+
+        // Show error to user
+        showError('photos-upload-error', `Failed to upload ${type} photo: ${error.message}. Please try again.`);
+
+        // Reset UI
+        placeholder.style.display = 'block';
+        preview.style.display = 'none';
+        event.target.value = ''; // Clear file input
+
+        // Don't store anything in formData if upload failed
+        formData[fieldName] = null;
+      }
     }
 
     // Remove uploaded photo
@@ -2429,7 +2541,19 @@
 
     // Submit form
     async function submitForm() {
+      const FORM_VERSION = '2.1.0-temp-upload'; // Update this when changing submission logic
+      console.log(`📤 Submitting form (version: ${FORM_VERSION})`);
       console.log('📤 Submitting form data:', formData);
+
+      // ===== DEFENSIVE CHECK FOR BROWSER CACHE ISSUES =====
+      // Check for File objects (shouldn't exist after temp upload)
+      const fileObjects = Object.entries(formData).filter(([k, v]) => v instanceof File);
+      if (fileObjects.length > 0) {
+        console.error('❌ CRITICAL: Found File objects in formData (should be temp paths):',
+                      fileObjects.map(([k]) => k));
+        alert('⚠️ Browser cache issue detected. Please hard refresh (Ctrl+Shift+R or Cmd+Shift+R) and try again.');
+        return;
+      }
 
       // ===== CHECK FOR MISSING IMAGES (SOFT WARNING) =====
       const recommendedImages = [
@@ -2441,8 +2565,10 @@
       ];
 
       const missingImages = recommendedImages.filter(img => {
-        const file = formData[img.field];
-        return !file || !(file instanceof File);
+        const value = formData[img.field];
+        // After temp upload, value should be a string (temp path like 'temp/session-id/file.jpg')
+        // Check if value is missing OR not a string (temp path)
+        return !value || typeof value !== 'string';
       });
 
       // If images are missing, warn but allow user to proceed
@@ -2472,45 +2598,42 @@
 
       try {
         // Create FormData for multipart upload (required for images)
-        const formDataToSend = new FormData();
+        // Prepare data for submission
+        // Images are already uploaded to temp storage, formData contains temp paths (not File objects)
+        const dataToSend = {
+          ...formData,
+          temp_session_id: getOrCreateSessionId()
+        };
 
-        // Add all text fields
-        for (const [key, value] of Object.entries(formData)) {
-          // Skip file fields - they'll be added separately
-          if (key.includes('_image') || key.includes('_picture')) {
-            continue;
-          }
-
-          // Convert boolean to string for backend
-          if (typeof value === 'boolean') {
-            formDataToSend.append(key, value ? 'true' : 'false');
-          } else if (value !== null && value !== undefined) {
-            formDataToSend.append(key, value);
-          }
-        }
-
-        // Add image files
-        const imageFields = [
-          'driving_license_picture',
-          'vehicle_front_image',
-          'vehicle_driver_side_image',
-          'vehicle_passenger_side_image',
-          'vehicle_back_image'
-        ];
-
-        for (const fieldName of imageFields) {
-          if (formData[fieldName] && formData[fieldName] instanceof File) {
-            formDataToSend.append(fieldName, formData[fieldName]);
-            console.log(`📎 Attached ${fieldName}:`, formData[fieldName].name);
+        // Remove any File objects that somehow got through (shouldn't happen)
+        const cleanedData = {};
+        for (const [key, value] of Object.entries(dataToSend)) {
+          if (!(value instanceof File)) {
+            cleanedData[key] = value;
+          } else {
+            console.warn(`⚠️ Found File object in formData: ${key} (should be temp path)`);
           }
         }
 
-        console.log('📤 Sending multipart form data with images...');
+        console.log('📤 Sending form data with temp image paths...');
+        console.log('📋 Data summary:', {
+          fields: Object.keys(cleanedData).length,
+          sessionId: cleanedData.temp_session_id,
+          images: [
+            'driving_license_picture',
+            'vehicle_front_image',
+            'vehicle_driver_side_image',
+            'vehicle_passenger_side_image',
+            'vehicle_back_image'
+          ].filter(field => cleanedData[field]).length
+        });
 
         const response = await fetch('/api/signup/submit', {
           method: 'POST',
-          // Don't set Content-Type - browser will set it automatically with boundary
-          body: formDataToSend
+          headers: {
+            'Content-Type': 'application/json'
+          },
+          body: JSON.stringify(cleanedData)
         });
 
         const result = await response.json();
@@ -2562,20 +2685,20 @@
     // Auto-save draft every 30 seconds
     setInterval(saveDraft, 30000);
 
-    // Save draft and warn about unsaved images before page unload
+    // Save draft before page unload
     window.addEventListener('beforeunload', function(e) {
-      // Always save draft (text fields only)
+      // Always save draft (includes temp image paths)
       saveDraft();
 
-      // Check if there are uploaded images that haven't been submitted
-      const hasUploadedImages = Object.entries(formData).some(([key, value]) => {
-        return (key.includes('_image') || key.includes('_picture')) && value instanceof File;
-      });
+      // Note: Images are now uploaded immediately to temp storage, so no need
+      // to warn about file uploads. Temp paths are stored in formData and saved.
+      // User can continue form even after page refresh.
 
-      if (hasUploadedImages) {
-        // Show browser warning - user has unsaved file uploads
+      // Only warn if user has started the form but not completed it
+      if (currentPage > 1 && currentPage < totalPages) {
+        // Show browser warning - user has incomplete form
         e.preventDefault();
-        e.returnValue = '⚠️ You have uploaded images that will be lost if you leave this page. Images cannot be saved in browser storage. Are you sure you want to leave?';
+        e.returnValue = '⚠️ You have an incomplete signup form. Your progress has been saved and you can continue later. Are you sure you want to leave?';
         return e.returnValue;
       }
     });

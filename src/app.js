@@ -133,10 +133,12 @@ function createApp() {
   app.use('/api/whisper/', strictLimiter);
   app.use('/api/gdpr/', strictLimiter);
 
-  // Cache control for HTML
+  // Cache control for HTML (aggressive caching prevention)
   app.use((req, res, next) => {
     if (req.path.endsWith('.html')) {
       res.setHeader('Cache-Control', 'no-cache, no-store, must-revalidate');
+      res.setHeader('Pragma', 'no-cache');
+      res.setHeader('Expires', '0');
     }
     next();
   });
