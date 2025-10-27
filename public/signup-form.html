@@ -7,6 +7,9 @@
   <meta http-equiv="Pragma" content="no-cache" />
   <meta http-equiv="Expires" content="0" />
   <title>Car Crash Lawyer AI — Sign Up</title>
+
+  <!-- Supabase Client for Auto-Login -->
+  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
   <style>
     :root {
       --grad-start: #2e6a9d;
@@ -1248,7 +1251,30 @@
   <div class="curve-accent" aria-hidden="true"></div>
 
   <script>
-    // Form state management
+    // ===== SUPABASE CLIENT INITIALIZATION =====
+    let supabaseClient = null;
+
+    // Fetch Supabase config and initialize client
+    async function initializeSupabase() {
+      try {
+        const response = await fetch('/api/config');
+        const config = await response.json();
+
+        if (config.supabaseUrl && config.supabaseAnonKey) {
+          supabaseClient = supabase.createClient(config.supabaseUrl, config.supabaseAnonKey);
+          console.log('✅ Supabase client initialized');
+        } else {
+          console.warn('⚠️ Supabase config not available');
+        }
+      } catch (error) {
+        console.error('❌ Failed to initialize Supabase:', error);
+      }
+    }
+
+    // Initialize Supabase on page load
+    initializeSupabase();
+
+    // ===== FORM STATE MANAGEMENT =====
     const formData = {
       date_of_birth: '', // DD/MM/YYYY format
       first_name: '',
@@ -2358,8 +2384,35 @@
           // Clear draft
           localStorage.removeItem('ccla_signup_draft');
 
-          // Redirect to home page (temporary until Stripe integration)
-          window.location.href = '/index.html';
+          // ===== AUTO-LOGIN AFTER SIGNUP =====
+          if (result.autoLogin && supabaseClient) {
+            console.log('🔐 Auto-login enabled, authenticating user...');
+
+            try {
+              const { data: authData, error: loginError } = await supabaseClient.auth.signInWithPassword({
+                email: formData.email,
+                password: formData.password
+              });
+
+              if (loginError) {
+                console.error('❌ Auto-login failed:', loginError);
+                // Redirect to login page with email pre-filled
+                window.location.href = `/login.html?email=${encodeURIComponent(formData.email)}&message=${encodeURIComponent('Account created! Please login with your password.')}`;
+              } else {
+                console.log('✅ Auto-login successful');
+                // Redirect to dashboard
+                window.location.href = '/dashboard.html';
+              }
+            } catch (loginError) {
+              console.error('❌ Auto-login exception:', loginError);
+              // Fallback to login page
+              window.location.href = `/login.html?email=${encodeURIComponent(formData.email)}`;
+            }
+          } else {
+            // Fallback if autoLogin not enabled or Supabase not initialized
+            console.log('ℹ️ Auto-login not available, redirecting to login page');
+            window.location.href = `/login.html?email=${encodeURIComponent(formData.email)}`;
+          }
         } else {
           throw new Error(result.error || 'Failed to submit form');
         }
