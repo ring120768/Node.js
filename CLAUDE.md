@@ -54,7 +54,27 @@ npm run test:watch
 
 ### Request Flow
 
-**User Signup via Typeform:**
+**User Signup via Custom Form (Auth-First):**
+```
+Page 1: Account Creation
+  → POST /auth/signup (Supabase Auth)
+  → User authenticated, receives session
+
+Pages 2-9: Profile Completion (while authenticated)
+  → Image selection triggers immediate upload
+  → POST /api/images/temp-upload → temp_uploads table
+  → Returns temp path (not File object)
+
+Page 9: Final Submission
+  → POST /api/signup/submit (JSON with temp paths)
+  → Moves temp files to permanent storage
+  → Creates user_signup record
+  → Creates user_documents records
+  → Sends email reminder if images missing (optional)
+  → Redirect to dashboard
+```
+
+**User Signup via Typeform (Legacy):**
 ```
 Typeform → POST /webhooks/typeform → webhook.controller.js
   → ImageProcessorV2.processTypeformImage() (async)
@@ -92,6 +112,17 @@ POST /api/transcription/transcribe → transcription.controller.js
 - 7-year retention policy for legal documents
 
 **Image Processing Pipeline:**
+
+**Custom Form (Immediate Upload):**
+- User selects/captures image → immediate upload to `temp/` storage
+- Prevents ERR_UPLOAD_FILE_CHANGED on mobile devices
+- Creates record in `temp_uploads` table (expires in 24 hours)
+- Client stores temp path (string), not File object
+- On form submission: moves temp → permanent storage (`user_id/`)
+- Claims temp upload, creates `user_documents` record
+- **Images are OPTIONAL** - Missing images trigger email reminder
+
+**Typeform (Async Processing):**
 - V2 processor uses database-driven status tracking (`pending` → `processing` → `completed`/`failed`)
 - Automatic retry with exponential backoff (max 3 retries)
 - Error categorization: AUTH_ERROR, NOT_FOUND, TIMEOUT, RATE_LIMIT, etc.
@@ -120,9 +151,10 @@ try {
 
 | Table | Primary Purpose | Key Columns |
 |-------|----------------|-------------|
-| `user_signup` | Personal info, vehicle, insurance | email, name, car_registration_number, driving_license_number |
+| `user_signup` | Personal info, vehicle, insurance | email, name, car_registration_number, driving_license_number, images_status, missing_images |
 | `incident_reports` | Accident details (131+ columns) | medical info, weather, vehicle damage, other drivers |
 | `user_documents` | Image processing status | status, retry_count, error_code, storage_path, public_url |
+| `temp_uploads` | Temporary image uploads (24hr expiry) | session_id, field_name, storage_path, claimed, expires_at |
 | `dvla_vehicle_info_new` | DVLA lookup results | make, model, colour, year_of_manufacture |
 | `ai_transcription` | OpenAI Whisper transcripts | transcript_text, audio_duration, language |
 | `ai_summary` | GPT-4 summaries | summary_text, transcription_id |
@@ -139,19 +171,42 @@ try {
 ```
 /src/
   controllers/    # Request handlers (thin layer)
-  services/       # Business logic (image processing, AI, GDPR)
+    pdf.controller.js           # PDF generation
+    webhook.controller.js       # Typeform webhooks (legacy)
+    signup.controller.js        # Custom form signup (auth-first)
+    tempImageUpload.controller.js  # Immediate image uploads
+  services/       # Business logic
+    adobePdfFormFillerService.js   # PDF form filling
+    adobePdfService.js             # Adobe PDF operations
+    imageProcessorV2.js            # Image processing pipeline
+    gdprService.js                 # GDPR compliance
   middleware/     # Auth, CORS, rate limiting, error handling
   routes/         # API route definitions
+    signup.routes.js               # POST /api/signup/submit
+    tempImageUpload.routes.js      # POST /api/images/temp-upload
   utils/          # Logger, validators, helpers
 
 /lib/
   dataFetcher.js     # Fetch data from 6 tables for PDF generation
-  emailService.js    # Send emails via nodemailer
+  emailService.js    # Send emails (including image upload reminders)
   pdfGenerator.js    # Legacy fallback (pdf-lib only)
   generators/        # Email templates, PDF utilities
 
-/public/            # 18 HTML pages (landing, dashboard, forms)
-/scripts/           # Cron jobs, testing, migrations
+/public/            # HTML pages
+  index.html               # Landing page
+  signup-form.html         # Multi-page signup (Pages 1-9)
+  dashboard.html           # User dashboard
+  transcription-status.html
+  payment-success.html
+
+/scripts/           # Testing, migrations, cron jobs
+  test-temp-upload.js             # Test temp upload system
+  verify-temp-uploads-table.js    # Verify table structure
+  setup-witness-vehicle-tables.js # Create new tables
+
+/migrations/        # Database migrations
+  create-temp-uploads-table.sql  # Temp uploads table schema
+
 /pdf-templates/     # Car-Crash-Lawyer-AI-Incident-Report.pdf (150+ fields)
 /credentials/       # Adobe credentials (NOT in Git)
 ```
@@ -209,6 +264,81 @@ res.status(200).json({ received: true });
 // 4. Process async (don't await in webhook handler)
 processImagesAsync(create_user_id, imageUrls).catch(logger.error);
 ```
+
+### Custom Form Signup Workflow (Auth-First)
+
+**CRITICAL: Auth-first signup flow - user creates account BEFORE completing profile**
+
+**Flow:**
+```
+Page 1: Account Creation
+├── User enters email + password
+├── POST /auth/signup (Supabase Auth)
+├── Create auth.users record
+├── User receives session/JWT
+└── Redirect to Page 2 (authenticated)
+
+Pages 2-9: Profile Completion (authenticated)
+├── User fills forms while authenticated
+├── Image uploads happen IMMEDIATELY when selected
+│   ├── POST /api/images/temp-upload (multipart/form-data)
+│   ├── Upload to temp/ storage location
+│   ├── Create temp_uploads record (expires 24hrs)
+│   └── Return temp path to client (string, not File)
+├── Client stores temp paths in formData
+└── User navigates through pages
+
+Page 9: Final Submission
+├── POST /api/signup/submit (application/json)
+├── Body contains:
+│   ├── auth_user_id (from authenticated session)
+│   ├── Text fields (name, email, address, etc.)
+│   ├── Temp image paths (strings, not File objects)
+│   └── temp_session_id (for claiming uploads)
+├── Backend process:
+│   1. Verify auth_user_id exists (from Supabase Auth)
+│   2. Insert user_signup record
+│   3. Move temp files to permanent storage (temp/ → userId/)
+│   4. Create user_documents records
+│   5. Mark temp_uploads as claimed
+│   6. Send email reminder if images missing (images are OPTIONAL)
+└── Redirect to dashboard (already authenticated)
+```
+
+**Pattern for immediate image upload:**
+```javascript
+// Frontend: Upload image immediately when selected (prevents ERR_UPLOAD_FILE_CHANGED)
+async function handleImageSelect(event, fieldName) {
+  const file = event.target.files[0];
+  const formData = new FormData();
+  formData.append('file', file);
+  formData.append('field_name', fieldName);
+  formData.append('temp_session_id', sessionId);
+
+  const response = await fetch('/api/images/temp-upload', {
+    method: 'POST',
+    body: formData
+  });
+
+  const { tempPath, uploadId } = await response.json();
+
+  // Store temp path (not File object) for form submission
+  formDataObject[fieldName] = tempPath;
+  formDataObject[`${fieldName}_upload_id`] = uploadId;
+}
+
+// Backend: Move temp to permanent on form submission
+await supabase.storage
+  .from('user-documents')
+  .move(`temp/${sessionId}/${filename}`, `${userId}/${filename}`);
+```
+
+**Why this pattern?**
+- Prevents ERR_UPLOAD_FILE_CHANGED on mobile (file handle expires)
+- Works with camera captures and library selections
+- Survives app backgrounding and network issues
+- Scales to multi-page forms with images anywhere
+- Images stored immediately, not held in browser memory
 
 ### Image Processing Workflow
 
@@ -372,6 +502,18 @@ node scripts/test-typeform-webhook.js
 
 # Test incident report webhook
 node scripts/test-incident-webhook.js
+```
+
+### Temp Upload Tests
+```bash
+# Test temp upload system
+node scripts/test-temp-upload.js
+
+# Verify temp_uploads table structure
+node scripts/verify-temp-uploads-table.js
+
+# Monitor temp upload cleanup (24hr expiry)
+# Note: Scheduled via cron job to delete expired uploads
 ```
 
 ### Database Tests
@@ -602,6 +744,67 @@ res.status(statusCode).json({
 - Semicolons required
 - Line length <100 characters
 - ES6+ features (async/await, destructuring, template literals)
+
+**Content Security Policy (CSP) Compliance:**
+
+🚨 **CRITICAL:** This application has strict CSP enabled. **NEVER use inline event handlers** in HTML.
+
+❌ **NEVER DO THIS:**
+```html
+<button onclick="handleClick()">Click me</button>
+<button onclick="nextPage()">Continue</button>
+<a href="javascript:doSomething()">Link</a>
+```
+
+**CSP Error:**
+```
+Refused to execute inline event handler because it violates the following
+Content Security Policy directive: "script-src-attr 'none'"
+```
+
+✅ **ALWAYS DO THIS INSTEAD:**
+```html
+<!-- Use IDs or data attributes -->
+<button id="myButton">Click me</button>
+<button class="btn-next" data-action="next">Continue</button>
+
+<!-- Add event listeners in JavaScript -->
+<script>
+  // Direct listener
+  document.getElementById('myButton').addEventListener('click', handleClick);
+
+  // Event delegation (preferred for dynamic content)
+  document.addEventListener('click', function(e) {
+    if (e.target.classList.contains('btn-next')) {
+      nextPage();
+    }
+  });
+</script>
+```
+
+**Why this matters:**
+- CSP blocks inline JavaScript for security
+- Prevents XSS attacks
+- Required for payment processing (PCI compliance)
+- Mobile apps require CSP for app store approval
+
+**Pattern for multi-page forms:**
+```javascript
+function setupEventListeners() {
+  // Event delegation handles all buttons at once
+  document.addEventListener('click', function(e) {
+    const target = e.target;
+
+    if (target.getAttribute('data-action') === 'back') {
+      prevPage();
+    }
+
+    if (target.getAttribute('data-action') === 'next') {
+      nextPage();
+    }
+  });
+}
+```
 
 ## Development Workflow Standards
 
@@ -1159,7 +1362,110 @@ window.location.href = redirect;  // Could redirect to https://evil.com
 
 **See `LOGIN_REDIRECT_FIX.md` for complete documentation.**
 
+## New API Endpoints (v2.1.0+)
+
+### Signup System (Auth-First)
+
+**POST /api/signup/submit**
+```javascript
+// Submit completed signup form (user already authenticated)
+// Body: application/json
+{
+  auth_user_id: "uuid",           // From Supabase Auth session
+  temp_session_id: "uuid",        // For claiming temp uploads
+  first_name: "string",
+  last_name: "string",
+  email: "string",
+  // ... 60+ more fields
+  driving_license_picture: "temp/session-id/license_123.jpg",  // Temp path (string)
+  driving_license_picture_upload_id: "uuid",  // For claiming
+  // ... other image fields (optional)
+}
+
+// Response:
+{
+  success: true,
+  userId: "uuid",
+  email: "string",
+  images: [{ field, status, url, path }],
+  needsImageUpload: true,  // If reminder email sent
+  missingImages: ["vehicle_front_image", ...]
+}
+```
+
+**Key Requirements:**
+- User MUST be authenticated (auth_user_id from session)
+- Images are OPTIONAL (missing images trigger email reminder)
+- Images uploaded as temp files BEFORE form submission
+- Backend moves temp → permanent and claims uploads
+
+### Temp Image Upload System
+
+**POST /api/images/temp-upload**
+```javascript
+// Upload image immediately when selected (multipart/form-data)
+// Body:
+{
+  file: File,                    // Image file
+  field_name: "string",          // e.g., "driving_license_picture"
+  temp_session_id: "uuid"        // Client-generated session ID
+}
+
+// Response:
+{
+  success: true,
+  tempPath: "temp/session-id/license_123.jpg",
+  uploadId: "uuid",
+  previewUrl: "https://...",
+  fileSize: 123456,
+  checksum: "sha256...",
+  expiresAt: "2025-10-25T12:00:00Z"  // 24 hours from upload
+}
+```
+
+**GET /api/images/temp-uploads/:sessionId**
+```javascript
+// Get all temp uploads for a session
+// Response:
+{
+  success: true,
+  sessionId: "uuid",
+  uploads: [
+    {
+      id: "uuid",
+      field_name: "driving_license_picture",
+      storage_path: "temp/session-id/...",
+      claimed: false,
+      expires_at: "2025-10-25T12:00:00Z"
+    }
+  ]
+}
+```
+
+**DELETE /api/images/temp-upload/:uploadId**
+```javascript
+// Delete a temp upload (e.g., user removes image)
+// Response: { success: true, message: "Upload deleted successfully" }
+```
+
+**Temp Upload Lifecycle:**
+1. User selects image → immediate POST /api/images/temp-upload
+2. File stored in `temp/session-id/` location
+3. Record created in `temp_uploads` table (expires 24hrs)
+4. Client stores temp path (not File object)
+5. On form submit → backend moves temp → permanent
+6. Temp upload marked as claimed
+7. Unclaimed uploads auto-deleted after 24hrs (cron job)
+
+**Why Temp Uploads?**
+- Prevents ERR_UPLOAD_FILE_CHANGED on mobile
+- File handles expire when app backgrounds
+- Works with camera captures and library selections
+- Images persist across page navigation
+- No need to hold File objects in browser memory
+
 ---
 
-**Last Updated:** 2025-10-24
+**Last Updated:** 2025-10-27
+**Version:** 2.1.0+ (Auth-First Signup + Optional Images)
 **For Questions:** Review `replit.md` for comprehensive system documentation
