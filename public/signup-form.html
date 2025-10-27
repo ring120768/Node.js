@@ -1426,7 +1426,15 @@
 
     // Save draft to localStorage
     function saveDraft() {
-      localStorage.setItem('ccla_signup_draft', JSON.stringify(formData));
+      // Create a copy of formData excluding File objects (they can't be serialized)
+      const dataToSave = {};
+      for (const [key, value] of Object.entries(formData)) {
+        // Skip File objects - users will need to re-upload if they refresh
+        if (!(value instanceof File)) {
+          dataToSave[key] = value;
+        }
+      }
+      localStorage.setItem('ccla_signup_draft', JSON.stringify(dataToSave));
     }
 
     // Update progress bar
@@ -2423,6 +2431,45 @@
     async function submitForm() {
       console.log('📤 Submitting form data:', formData);
 
+      // ===== CHECK FOR MISSING IMAGES (SOFT WARNING) =====
+      const recommendedImages = [
+        { field: 'driving_license_picture', label: 'Driving License Photo' },
+        { field: 'vehicle_front_image', label: 'Vehicle Front Photo' },
+        { field: 'vehicle_driver_side_image', label: 'Vehicle Driver Side Photo' },
+        { field: 'vehicle_passenger_side_image', label: 'Vehicle Passenger Side Photo' },
+        { field: 'vehicle_back_image', label: 'Vehicle Back Photo' }
+      ];
+
+      const missingImages = recommendedImages.filter(img => {
+        const file = formData[img.field];
+        return !file || !(file instanceof File);
+      });
+
+      // If images are missing, warn but allow user to proceed
+      if (missingImages.length > 0) {
+        const missingList = missingImages.map(img => `• ${img.label}`).join('\n');
+        const proceed = confirm(
+          `⚠️ You haven't uploaded all photos yet:\n\n${missingList}\n\n` +
+          `✅ You can complete signup now and we'll email you a reminder to upload photos later.\n\n` +
+          `📸 Or click "Cancel" to go back and upload them now.\n\n` +
+          `Continue without photos?`
+        );
+
+        if (!proceed) {
+          // User wants to upload photos now
+          console.log('📸 User chose to upload photos first');
+          currentPage = 8;
+          showPage(8);
+          return;
+        }
+
+        // User chose to proceed without photos - we'll send reminder email
+        console.log('✅ User proceeding without photos - will send reminder email');
+        formData.images_uploaded = 'partial'; // Track for email reminder
+      } else {
+        formData.images_uploaded = 'complete'; // All images present
+      }
+
       try {
         // Create FormData for multipart upload (required for images)
         const formDataToSend = new FormData();
@@ -2515,8 +2562,23 @@
     // Auto-save draft every 30 seconds
     setInterval(saveDraft, 30000);
 
-    // Save draft before page unload
-    window.addEventListener('beforeunload', saveDraft);
+    // Save draft and warn about unsaved images before page unload
+    window.addEventListener('beforeunload', function(e) {
+      // Always save draft (text fields only)
+      saveDraft();
+
+      // Check if there are uploaded images that haven't been submitted
+      const hasUploadedImages = Object.entries(formData).some(([key, value]) => {
+        return (key.includes('_image') || key.includes('_picture')) && value instanceof File;
+      });
+
+      if (hasUploadedImages) {
+        // Show browser warning - user has unsaved file uploads
+        e.preventDefault();
+        e.returnValue = '⚠️ You have uploaded images that will be lost if you leave this page. Images cannot be saved in browser storage. Are you sure you want to leave?';
+        return e.returnValue;
+      }
+    });
   </script>
 </body>
 </html>

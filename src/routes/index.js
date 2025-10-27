@@ -28,6 +28,7 @@ const imageProxyRoutes = require('./imageProxy.routes'); // NEW: Image proxy for
 const witnessesRoutes = require('./witnesses.routes'); // NEW: Witnesses management
 const vehiclesRoutes = require('./vehicles.routes'); // NEW: Other vehicles with DVLA integration
 const signupRoutes = require('./signup.routes'); // NEW: User signup form submission
+const imageUploadRoutes = require('./imageUpload.routes'); // NEW: Post-signup image upload
 
 // GitHub webhooks are mounted in app.js via webhook.routes.js (not imported here)
 const locationRoutes = require('./location.routes');
@@ -275,6 +276,7 @@ router.get('/system-status', async (req, res) => {
                 <li><code>/api/location/*</code> - Location services</li>
                 <li><code>/api/witnesses/*</code> - Witness management</li>
                 <li><code>/api/other-vehicles/*</code> - Other vehicles (DVLA)</li>
+                <li><code>/api/images/*</code> - Post-signup image upload</li>
                 <li><code>/api/debug/*</code> - Debug tools</li>
             </ul>
         </div>
@@ -323,6 +325,7 @@ router.use('/api/incident-reports', incidentRoutes); // NEW: Incident reports ro
 router.use('/api/profile', profileRoutes); // NEW: User profile management
 router.use('/api/user-documents', userDocumentsRoutes); // NEW: User documents/images API
 router.use('/api', imageProxyRoutes); // NEW: Image proxy routes (/api/images/:id)
+router.use('/api/images', imageUploadRoutes); // NEW: Post-signup image upload endpoint
 router.use('/api/witnesses', witnessesRoutes); // NEW: Witnesses management
 router.use('/api/other-vehicles', vehiclesRoutes); // NEW: Other vehicles with DVLA integration
 router.use('/api/signup', signupRoutes); // NEW: User signup form submission (custom HTML form)

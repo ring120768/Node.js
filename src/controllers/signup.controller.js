@@ -107,8 +107,8 @@ async function submitSignup(req, res) {
       });
     }
 
-    // Validate image uploads
-    const requiredImages = [
+    // Check which images were uploaded (images are now OPTIONAL)
+    const recommendedImages = [
       'driving_license_picture',
       'vehicle_front_image',
       'vehicle_driver_side_image',
@@ -116,14 +116,17 @@ async function submitSignup(req, res) {
       'vehicle_back_image'
     ];
 
-    const missingImages = requiredImages.filter(img => !files || !files[img] || files[img].length === 0);
-    if (missingImages.length > 0) {
-      logger.warn('Missing required images:', missingImages);
-      return res.status(400).json({
-        error: 'Missing required images',
-        images: missingImages
-      });
-    }
+    const missingImages = recommendedImages.filter(img => !files || !files[img] || files[img].length === 0);
+    const uploadedImages = recommendedImages.filter(img => files && files[img] && files[img].length > 0);
+
+    logger.info('📸 Image upload status:', {
+      uploaded: uploadedImages.length,
+      missing: missingImages.length,
+      missingList: missingImages
+    });
+
+    // Track if we need to send reminder email (no hard validation - images are optional)
+    const needsImageReminder = missingImages.length > 0;
 
     // Get auth user ID from frontend (user already authenticated on Page 1)
     const userId = formData.auth_user_id;
@@ -168,6 +171,8 @@ async function submitSignup(req, res) {
       emergency_contact_email: formData.emergency_contact_email.toLowerCase(),
       emergency_contact_company: formData.emergency_contact_company || null,
       gdpr_consent: true,
+      images_status: uploadedImages.length === 5 ? 'complete' : 'partial', // Track image upload status
+      missing_images: missingImages.length > 0 ? missingImages : null, // Store which images are missing
       created_at: new Date().toISOString(),
       updated_at: new Date().toISOString()
     };
@@ -216,12 +221,16 @@ async function submitSignup(req, res) {
       }
     }
 
-    // ===== 3. Process and upload image files =====
-    logger.info('📸 Processing image uploads...');
+    // ===== 3. Process and upload image files (if any were provided) =====
+    logger.info('📸 Processing image uploads...', {
+      providedCount: files ? Object.keys(files).length : 0
+    });
 
     const imageResults = [];
 
-    for (const [fieldName, fileArray] of Object.entries(files)) {
+    // Only process if files were actually uploaded
+    if (files && Object.keys(files).length > 0) {
+      for (const [fieldName, fileArray] of Object.entries(files)) {
       if (fileArray && fileArray.length > 0) {
         const file = fileArray[0];
 
@@ -295,20 +304,42 @@ async function submitSignup(req, res) {
           });
         }
       }
+      }
+    } else {
+      logger.info('📸 No images uploaded - user will receive reminder email');
     }
 
-    // Check if all images uploaded successfully
+    // Log any failed uploads (but don't block signup)
     const failedImages = imageResults.filter(r => r.status === 'error');
     if (failedImages.length > 0) {
-      logger.warn('⚠️ Some images failed to upload:', failedImages);
-      return res.status(500).json({
-        error: 'Some images failed to upload',
-        userId: userId,
-        failedImages: failedImages
-      });
+      logger.warn('⚠️ Some images failed to upload (non-fatal):', failedImages);
+      // Don't return error - signup succeeds even if some images failed
     }
 
-    // ===== 4. Return success response =====
+    // ===== 4. Send reminder email if images are missing =====
+    if (needsImageReminder) {
+      try {
+        logger.info('📧 Sending image upload reminder email to:', formData.email);
+
+        // Import email service
+        const emailService = require('../../lib/emailService');
+
+        // Send reminder email with upload link
+        await emailService.sendImageUploadReminder({
+          email: formData.email,
+          firstName: formData.first_name,
+          userId: userId,
+          missingImages: missingImages
+        });
+
+        logger.success('✅ Reminder email sent successfully');
+      } catch (emailError) {
+        // Non-fatal error - don't block signup
+        logger.error('⚠️ Failed to send reminder email (non-fatal):', emailError);
+      }
+    }
+
+    // ===== 5. Return success response =====
     // Note: Auth user already created on Page 1 - no auth creation needed here
     logger.success('🎉 User signup completed successfully:', userId);
 
@@ -317,7 +348,9 @@ async function submitSignup(req, res) {
       message: 'Signup completed successfully',
       userId: userId,
       email: formData.email,
-      images: imageResults
+      images: imageResults,
+      needsImageUpload: needsImageReminder, // Tell frontend if reminder was sent
+      missingImages: missingImages
       // Note: User already authenticated - no auto-login needed
     });
 

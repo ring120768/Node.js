@@ -1,0 +1,385 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Upload Photos - Car Crash Lawyer AI</title>
+  <style>
+    * {
+      margin: 0;
+      padding: 0;
+      box-sizing: border-box;
+    }
+
+    body {
+      font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Arial, sans-serif;
+      background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+      min-height: 100vh;
+      padding: 20px;
+    }
+
+    .container {
+      max-width: 800px;
+      margin: 40px auto;
+      background: white;
+      border-radius: 12px;
+      box-shadow: 0 10px 40px rgba(0,0,0,0.1);
+      overflow: hidden;
+    }
+
+    .header {
+      background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+      color: white;
+      padding: 30px;
+      text-align: center;
+    }
+
+    .header h1 {
+      font-size: 28px;
+      margin-bottom: 10px;
+    }
+
+    .header p {
+      opacity: 0.9;
+      font-size: 16px;
+    }
+
+    .content {
+      padding: 40px;
+    }
+
+    .info-box {
+      background: #e3f2fd;
+      border-left: 4px solid #2196f3;
+      padding: 15px;
+      margin-bottom: 30px;
+      border-radius: 4px;
+    }
+
+    .upload-section {
+      margin-bottom: 25px;
+      padding: 20px;
+      border: 2px dashed #ddd;
+      border-radius: 8px;
+      transition: all 0.3s;
+    }
+
+    .upload-section:hover {
+      border-color: #667eea;
+      background: #f9fafb;
+    }
+
+    .upload-section.completed {
+      border-color: #4caf50;
+      background: #f1f8f4;
+    }
+
+    .upload-section h3 {
+      margin-bottom: 10px;
+      color: #333;
+      font-size: 18px;
+    }
+
+    .upload-section p {
+      color: #666;
+      font-size: 14px;
+      margin-bottom: 15px;
+    }
+
+    .file-input-wrapper {
+      position: relative;
+    }
+
+    .file-input {
+      display: none;
+    }
+
+    .file-input-label {
+      display: inline-block;
+      padding: 12px 24px;
+      background: #667eea;
+      color: white;
+      border-radius: 6px;
+      cursor: pointer;
+      transition: all 0.3s;
+      font-weight: 500;
+    }
+
+    .file-input-label:hover {
+      background: #5568d3;
+      transform: translateY(-1px);
+    }
+
+    .preview {
+      margin-top: 15px;
+      display: none;
+    }
+
+    .preview.show {
+      display: block;
+    }
+
+    .preview img {
+      max-width: 200px;
+      max-height: 150px;
+      border-radius: 6px;
+      box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+    }
+
+    .preview-info {
+      margin-top: 8px;
+      font-size: 13px;
+      color: #666;
+    }
+
+    .submit-btn {
+      width: 100%;
+      padding: 16px;
+      background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+      color: white;
+      border: none;
+      border-radius: 8px;
+      font-size: 18px;
+      font-weight: 600;
+      cursor: pointer;
+      transition: all 0.3s;
+      margin-top: 30px;
+    }
+
+    .submit-btn:hover:not(:disabled) {
+      transform: translateY(-2px);
+      box-shadow: 0 6px 20px rgba(102, 126, 234, 0.4);
+    }
+
+    .submit-btn:disabled {
+      opacity: 0.5;
+      cursor: not-allowed;
+    }
+
+    .success-message {
+      background: #4caf50;
+      color: white;
+      padding: 20px;
+      border-radius: 8px;
+      text-align: center;
+      display: none;
+    }
+
+    .success-message.show {
+      display: block;
+    }
+
+    .error-message {
+      background: #f44336;
+      color: white;
+      padding: 15px;
+      border-radius: 6px;
+      margin-bottom: 20px;
+      display: none;
+    }
+
+    .error-message.show {
+      display: block;
+    }
+  </style>
+</head>
+<body>
+  <div class="container">
+    <div class="header">
+      <h1>📸 Upload Your Photos</h1>
+      <p>Complete your profile by uploading the required photos</p>
+    </div>
+
+    <div class="content">
+      <div class="error-message" id="errorMessage"></div>
+
+      <div class="success-message" id="successMessage">
+        <h2>✅ Photos Uploaded Successfully!</h2>
+        <p>Thank you for completing your profile. You can now close this page.</p>
+        <a href="/dashboard.html" style="color: white; text-decoration: underline; margin-top: 10px; display: inline-block;">Go to Dashboard</a>
+      </div>
+
+      <div id="uploadForm">
+        <div class="info-box">
+          <strong>📌 Important:</strong> Please upload clear photos of your driving license and vehicle from all angles. These photos help us process any incident reports quickly and accurately.
+        </div>
+
+        <form id="photoUploadForm">
+          <!-- Driving License -->
+          <div class="upload-section" id="section-license">
+            <h3>1️⃣ Driving License</h3>
+            <p>Photo of your UK driving license (both sides if photocard)</p>
+            <div class="file-input-wrapper">
+              <label for="driving_license_picture" class="file-input-label">Choose File</label>
+              <input type="file" id="driving_license_picture" name="driving_license_picture" class="file-input" accept="image/*">
+            </div>
+            <div class="preview" id="preview-license">
+              <img id="img-license" alt="License preview">
+              <div class="preview-info" id="info-license"></div>
+            </div>
+          </div>
+
+          <!-- Vehicle Front -->
+          <div class="upload-section" id="section-front">
+            <h3>2️⃣ Vehicle Front</h3>
+            <p>Clear photo of the front of your vehicle (including registration plate)</p>
+            <div class="file-input-wrapper">
+              <label for="vehicle_front_image" class="file-input-label">Choose File</label>
+              <input type="file" id="vehicle_front_image" name="vehicle_front_image" class="file-input" accept="image/*">
+            </div>
+            <div class="preview" id="preview-front">
+              <img id="img-front" alt="Front preview">
+              <div class="preview-info" id="info-front"></div>
+            </div>
+          </div>
+
+          <!-- Vehicle Driver Side -->
+          <div class="upload-section" id="section-driver">
+            <h3>3️⃣ Vehicle Driver Side</h3>
+            <p>Photo of the driver's side of your vehicle</p>
+            <div class="file-input-wrapper">
+              <label for="vehicle_driver_side_image" class="file-input-label">Choose File</label>
+              <input type="file" id="vehicle_driver_side_image" name="vehicle_driver_side_image" class="file-input" accept="image/*">
+            </div>
+            <div class="preview" id="preview-driver">
+              <img id="img-driver" alt="Driver side preview">
+              <div class="preview-info" id="info-driver"></div>
+            </div>
+          </div>
+
+          <!-- Vehicle Passenger Side -->
+          <div class="upload-section" id="section-passenger">
+            <h3>4️⃣ Vehicle Passenger Side</h3>
+            <p>Photo of the passenger side of your vehicle</p>
+            <div class="file-input-wrapper">
+              <label for="vehicle_passenger_side_image" class="file-input-label">Choose File</label>
+              <input type="file" id="vehicle_passenger_side_image" name="vehicle_passenger_side_image" class="file-input" accept="image/*">
+            </div>
+            <div class="preview" id="preview-passenger">
+              <img id="img-passenger" alt="Passenger side preview">
+              <div class="preview-info" id="info-passenger"></div>
+            </div>
+          </div>
+
+          <!-- Vehicle Back -->
+          <div class="upload-section" id="section-back">
+            <h3>5️⃣ Vehicle Back</h3>
+            <p>Photo of the back of your vehicle (including registration plate)</p>
+            <div class="file-input-wrapper">
+              <label for="vehicle_back_image" class="file-input-label">Choose File</label>
+              <input type="file" id="vehicle_back_image" name="vehicle_back_image" class="file-input" accept="image/*">
+            </div>
+            <div class="preview" id="preview-back">
+              <img id="img-back" alt="Back preview">
+              <div class="preview-info" id="info-back"></div>
+            </div>
+          </div>
+
+          <button type="submit" class="submit-btn" id="submitBtn">Upload All Photos</button>
+        </form>
+      </div>
+    </div>
+  </div>
+
+  <script>
+    // Get userId from URL
+    const urlParams = new URLSearchParams(window.location.search);
+    const userId = urlParams.get('userId');
+
+    if (!userId) {
+      showError('Missing user ID. Please use the link from your email.');
+    }
+
+    // Handle file selection and preview
+    const fileInputs = ['driving_license_picture', 'vehicle_front_image', 'vehicle_driver_side_image', 'vehicle_passenger_side_image', 'vehicle_back_image'];
+    const sectionNames = ['license', 'front', 'driver', 'passenger', 'back'];
+
+    fileInputs.forEach((inputId, index) => {
+      const input = document.getElementById(inputId);
+      const sectionName = sectionNames[index];
+
+      input.addEventListener('change', function(e) {
+        const file = e.target.files[0];
+        if (!file) return;
+
+        // Show preview
+        const preview = document.getElementById(`preview-${sectionName}`);
+        const img = document.getElementById(`img-${sectionName}`);
+        const info = document.getElementById(`info-${sectionName}`);
+        const section = document.getElementById(`section-${sectionName}`);
+
+        const reader = new FileReader();
+        reader.onload = function(e) {
+          img.src = e.target.result;
+          info.textContent = `✅ ${file.name} (${(file.size / 1024).toFixed(2)} KB)`;
+          preview.classList.add('show');
+          section.classList.add('completed');
+        };
+        reader.readAsDataURL(file);
+      });
+    });
+
+    // Handle form submission
+    document.getElementById('photoUploadForm').addEventListener('submit', async function(e) {
+      e.preventDefault();
+
+      const submitBtn = document.getElementById('submitBtn');
+      submitBtn.disabled = true;
+      submitBtn.textContent = 'Uploading...';
+
+      try {
+        // Create FormData
+        const formData = new FormData();
+        formData.append('auth_user_id', userId);
+
+        // Add all uploaded files
+        let fileCount = 0;
+        fileInputs.forEach(inputId => {
+          const input = document.getElementById(inputId);
+          if (input.files[0]) {
+            formData.append(inputId, input.files[0]);
+            fileCount++;
+          }
+        });
+
+        if (fileCount === 0) {
+          showError('Please upload at least one photo.');
+          submitBtn.disabled = false;
+          submitBtn.textContent = 'Upload All Photos';
+          return;
+        }
+
+        // Submit to backend
+        const response = await fetch('/api/images/upload', {
+          method: 'POST',
+          body: formData
+        });
+
+        const result = await response.json();
+
+        if (response.ok) {
+          // Success!
+          document.getElementById('uploadForm').style.display = 'none';
+          document.getElementById('successMessage').classList.add('show');
+        } else {
+          showError(result.error || 'Failed to upload photos. Please try again.');
+          submitBtn.disabled = false;
+          submitBtn.textContent = 'Upload All Photos';
+        }
+
+      } catch (error) {
+        console.error('Upload error:', error);
+        showError('Network error. Please check your connection and try again.');
+        submitBtn.disabled = false;
+        submitBtn.textContent = 'Upload All Photos';
+      }
+    });
+
+    function showError(message) {
+      const errorBox = document.getElementById('errorMessage');
+      errorBox.textContent = message;
+      errorBox.classList.add('show');
+    }
+  </script>
+</body>
+</html>
