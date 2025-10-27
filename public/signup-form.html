@@ -2407,14 +2407,10 @@
         return;
       }
 
-      // Page 9: Password & GDPR Consent
+      // Page 9: GDPR Consent only (password handled on Page 1)
       if (currentPage === 9) {
-        formData.password = document.getElementById('password').value;
-        formData.confirm_password = document.getElementById('confirm_password').value;
         formData.gdpr_consent = document.getElementById('gdpr_consent').checked;
         console.log('✅ Page 9 data saved:', {
-          password_set: !!formData.password,
-          passwords_match: formData.password === formData.confirm_password,
           gdpr_consent: formData.gdpr_consent
         });
         return;
