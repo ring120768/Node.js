@@ -557,13 +557,61 @@
   <!-- Content Area -->
   <div class="content">
 
-    <!-- Page 1: Welcome Statement -->
+    <!-- Page 1: Create Account (Auth-First) -->
     <div class="question-page active" data-page="1">
-      <div class="welcome-statement">
-        <img class="icon" src="/images/logo.png" alt="Car Crash Lawyer AI logo" />
-        <h2>First you choose what subscription suits you Best?</h2>
-        <p class="description">Not yet though!</p>
-        <button class="btn-continue" id="welcomeContinueBtn">Continue</button>
+      <div class="question">
+        <h2>Create Your Account</h2>
+        <p class="desc">Let's start by setting up your login credentials</p>
+
+        <div style="margin-bottom: 20px;">
+          <label for="account_email" style="display: block; margin-bottom: 8px; font-weight: 500; color: #4a5568;">
+            Email Address *
+          </label>
+          <input
+            type="email"
+            id="account_email"
+            class="input-field"
+            placeholder="your.email@example.com"
+            required
+          />
+          <p class="hint">This will be your username for logging in</p>
+        </div>
+
+        <div style="margin-bottom: 20px;">
+          <label for="account_password" style="display: block; margin-bottom: 8px; font-weight: 500; color: #4a5568;">
+            Password *
+          </label>
+          <input
+            type="password"
+            id="account_password"
+            class="input-field"
+            placeholder="Enter secure password"
+            required
+          />
+        </div>
+
+        <div style="margin-bottom: 20px;">
+          <label for="account_confirm_password" style="display: block; margin-bottom: 8px; font-weight: 500; color: #4a5568;">
+            Confirm Password *
+          </label>
+          <input
+            type="password"
+            id="account_confirm_password"
+            class="input-field"
+            placeholder="Re-enter password"
+            required
+          />
+        </div>
+
+        <!-- Password strength indicator -->
+        <div id="account-password-strength" style="display: none; padding: 12px; border-radius: 8px; margin-bottom: 20px;">
+          <span id="account-password-strength-text"></span>
+        </div>
+
+        <p class="error-message" id="account-error"></p>
+      </div>
+      <div class="nav-buttons">
+        <button class="btn btn-next" id="createAccountBtn">Create Account & Continue</button>
       </div>
     </div>
 
@@ -618,20 +666,6 @@
             placeholder="e.g. Smith"
             required
           />
-        </div>
-
-        <div style="margin-bottom: 20px;">
-          <label for="email" style="display: block; margin-bottom: 8px; font-weight: 500; color: #4a5568;">
-            Email Address *
-          </label>
-          <input
-            type="email"
-            id="email"
-            class="input-field"
-            placeholder="e.g. john.smith@example.com"
-            required
-          />
-          <p class="hint">We'll send your reports to this email</p>
         </div>
 
         <div style="margin-bottom: 20px;">
@@ -1345,10 +1379,16 @@
 
     // Setup event listeners (CSP-compliant - no inline onclick)
     function setupEventListeners() {
-      // Welcome page continue button
-      const welcomeBtn = document.getElementById('welcomeContinueBtn');
-      if (welcomeBtn) {
-        welcomeBtn.addEventListener('click', nextPage);
+      // Page 1: Account creation button
+      const createAccountBtn = document.getElementById('createAccountBtn');
+      if (createAccountBtn) {
+        createAccountBtn.addEventListener('click', createAccountAndContinue);
+      }
+
+      // Page 1: Password strength indicator
+      const accountPasswordInput = document.getElementById('account_password');
+      if (accountPasswordInput) {
+        accountPasswordInput.addEventListener('input', updateAccountPasswordStrength);
       }
 
       // DVLA lookup button (Page 5)
@@ -1490,7 +1530,7 @@
 
     // Validate current page
     function validateCurrentPage() {
-      // Page 1 is a statement, no validation needed
+      // Page 1: Account creation validation is handled by createAccountBtn
       if (currentPage === 1) return true;
 
       // Page 2: Date of Birth validation
@@ -1604,13 +1644,12 @@
     function validatePersonalDetails() {
       const firstName = document.getElementById('first_name');
       const lastName = document.getElementById('last_name');
-      const email = document.getElementById('email');
       const mobile = document.getElementById('mobile_number');
       const errorEl = document.getElementById('personal-error');
 
       // Clear previous errors
       errorEl.classList.remove('show');
-      [firstName, lastName, email, mobile].forEach(field => field.classList.remove('error'));
+      [firstName, lastName, mobile].forEach(field => field.classList.remove('error'));
 
       // Validate first name
       if (!firstName.value.trim()) {
@@ -1626,20 +1665,9 @@
         return false;
       }
 
-      // Validate email format
-      const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
-      if (!email.value.trim()) {
-        showError('personal-error', 'Please enter your email address');
-        email.classList.add('error');
-        return false;
-      }
-      if (!emailRegex.test(email.value.trim())) {
-        showError('personal-error', 'Please enter a valid email address');
-        email.classList.add('error');
-        return false;
-      }
+      // Email is already validated on Page 1 (account creation)
 
-      // Validate UK mobile number (basic check)
+      // Validate UK mobile number
       const mobileValue = mobile.value.trim().replace(/\s+/g, '');
       if (!mobileValue) {
         showError('personal-error', 'Please enter your mobile number');
@@ -2211,9 +2239,170 @@
       `;
     }
 
+    // ===== PAGE 1: ACCOUNT CREATION =====
+
+    /**
+     * Update password strength indicator for Page 1 account creation
+     */
+    function updateAccountPasswordStrength() {
+      const password = document.getElementById('account_password').value;
+      const strengthEl = document.getElementById('account-password-strength');
+      const strengthText = document.getElementById('account-password-strength-text');
+
+      if (!password) {
+        strengthEl.style.display = 'none';
+        return;
+      }
+
+      const strength = calculatePasswordStrength(password);
+
+      strengthEl.style.display = 'block';
+      strengthEl.style.backgroundColor = strength.color + '22';
+      strengthEl.style.borderLeft = `4px solid ${strength.color}`;
+
+      strengthText.innerHTML = `
+        <strong style="color: ${strength.color}">Password Strength: ${strength.text}</strong>
+      `;
+    }
+
+    /**
+     * Validate account creation fields (Page 1)
+     */
+    function validateAccountCreation() {
+      const errorEl = document.getElementById('account-error');
+      errorEl.textContent = '';
+      errorEl.classList.remove('show');
+
+      const email = document.getElementById('account_email').value.trim();
+      const password = document.getElementById('account_password').value;
+      const confirmPassword = document.getElementById('account_confirm_password').value;
+
+      // Validate email
+      if (!email) {
+        showError('account-error', 'Please enter your email address');
+        document.getElementById('account_email').classList.add('error');
+        return false;
+      }
+
+      if (!isValidEmail(email)) {
+        showError('account-error', 'Please enter a valid email address');
+        document.getElementById('account_email').classList.add('error');
+        return false;
+      }
+
+      // Validate password minimum length
+      if (!password || password.length < 8) {
+        showError('account-error', 'Password must be at least 8 characters long');
+        document.getElementById('account_password').classList.add('error');
+        return false;
+      }
+
+      // Check passwords match
+      if (password !== confirmPassword) {
+        showError('account-error', 'Passwords do not match');
+        document.getElementById('account_confirm_password').classList.add('error');
+        return false;
+      }
+
+      // Clear error states
+      document.getElementById('account_email').classList.remove('error');
+      document.getElementById('account_password').classList.remove('error');
+      document.getElementById('account_confirm_password').classList.remove('error');
+
+      return true;
+    }
+
+    /**
+     * Create Supabase auth account and proceed to Page 2
+     */
+    async function createAccountAndContinue() {
+      console.log('🔐 Creating account...');
+
+      // Validate fields
+      if (!validateAccountCreation()) {
+        return;
+      }
+
+      const btn = document.getElementById('createAccountBtn');
+      const originalText = btn.textContent;
+
+      try {
+        // Disable button and show loading state
+        btn.disabled = true;
+        btn.textContent = 'Creating Account...';
+
+        const email = document.getElementById('account_email').value.trim().toLowerCase();
+        const password = document.getElementById('account_password').value;
+
+        console.log('📧 Attempting signup with email:', email);
+
+        // Create Supabase auth account
+        const { data, error } = await supabaseClient.auth.signUp({
+          email: email,
+          password: password,
+          options: {
+            emailRedirectTo: window.location.origin + '/dashboard.html'
+          }
+        });
+
+        if (error) {
+          console.error('❌ Signup error:', error);
+
+          // Handle specific error cases
+          if (error.message?.includes('already registered') || error.message?.includes('already been registered')) {
+            showError('account-error', 'This email is already registered. Please login instead.');
+          } else if (error.message?.includes('invalid')) {
+            showError('account-error', 'Invalid email or password format');
+          } else {
+            showError('account-error', error.message || 'Failed to create account. Please try again.');
+          }
+
+          btn.disabled = false;
+          btn.textContent = originalText;
+          return;
+        }
+
+        if (!data.user) {
+          console.error('❌ No user returned from signup');
+          showError('account-error', 'Failed to create account. Please try again.');
+          btn.disabled = false;
+          btn.textContent = originalText;
+          return;
+        }
+
+        console.log('✅ Account created successfully:', data.user.id);
+
+        // Store auth user ID in formData (this will be sent to backend)
+        formData.auth_user_id = data.user.id;
+        formData.email = email;
+
+        console.log('📝 Stored in formData:', {
+          auth_user_id: formData.auth_user_id,
+          email: formData.email
+        });
+
+        // Success! Proceed to Page 2
+        console.log('✅ Account creation complete, proceeding to Page 2');
+        btn.textContent = '✓ Account Created!';
+
+        // Small delay to show success message, then proceed
+        setTimeout(() => {
+          btn.disabled = false;
+          btn.textContent = originalText;
+          nextPage();
+        }, 500);
+
+      } catch (error) {
+        console.error('❌ Unexpected error during account creation:', error);
+        showError('account-error', 'An unexpected error occurred. Please try again.');
+        btn.disabled = false;
+        btn.textContent = originalText;
+      }
+    }
+
     // Save current page data
     function saveCurrentPageData() {
-      // Page 1 is a statement, no data to save
+      // Page 1: Account creation data already saved in createAccountAndContinue()
       if (currentPage === 1) return;
 
       // Page 2: Date of Birth
@@ -2231,12 +2420,11 @@
       if (currentPage === 3) {
         formData.first_name = document.getElementById('first_name').value.trim();
         formData.last_name = document.getElementById('last_name').value.trim();
-        formData.email = document.getElementById('email').value.trim();
+        // Email is already saved from Page 1 account creation
         formData.mobile_number = document.getElementById('mobile_number').value.trim();
         console.log('✅ Page 3 data saved:', {
           first_name: formData.first_name,
           last_name: formData.last_name,
-          email: formData.email,
           mobile_number: formData.mobile_number
         });
         return;
