@@ -1,0 +1,2210 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate" />
+  <meta http-equiv="Pragma" content="no-cache" />
+  <meta http-equiv="Expires" content="0" />
+  <title>Car Crash Lawyer AI — Sign Up</title>
+  <style>
+    :root {
+      --grad-start: #2e6a9d;
+      --grad-end: #3776a2;
+      --accent: #357a94;
+      --page-bg: #f0ebe3;
+      --muted: #9aa3ab;
+      --text-dark: #1a1a1a;
+      --text-light: #7a7a7a;
+      --border: #c9c4bd;
+    }
+
+    * {
+      box-sizing: border-box;
+      margin: 0;
+      padding: 0;
+    }
+
+    html, body {
+      font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, Cantarell, 'Helvetica Neue', Arial, sans-serif;
+      background: var(--page-bg);
+      color: var(--text-dark);
+      height: 100%;
+      overflow-x: hidden;
+    }
+
+    /* Top gradient banner */
+    .banner {
+      background: linear-gradient(135deg, var(--grad-start) 0%, var(--grad-end) 100%);
+      color: #ffffff;
+      padding: 24px 20px 20px;
+      position: relative;
+      overflow: hidden;
+      box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+    }
+
+    .brand {
+      max-width: 1040px;
+      margin: 0 auto;
+      display: grid;
+      grid-template-columns: auto 1fr;
+      gap: 16px;
+      align-items: center;
+    }
+
+    .brand .logo {
+      width: 64px;
+      height: 64px;
+      flex: 0 0 64px;
+    }
+
+    .brand .title-wrap h1 {
+      font-size: 32px;
+      line-height: 1.1;
+      margin: 0;
+      font-weight: 700;
+    }
+
+    .brand .title-wrap p.sub {
+      margin: 4px 0 4px;
+      font-size: 16px;
+      opacity: 0.95;
+    }
+
+    .brand .title-wrap p.tag {
+      margin: 4px 0 0;
+      font-size: 18px;
+      font-weight: 700;
+      letter-spacing: .2px;
+    }
+
+    /* Progress bar */
+    .progress-container {
+      background: white;
+      border-bottom: 1px solid #e5e5e5;
+      padding: 12px 20px;
+      position: sticky;
+      top: 0;
+      z-index: 100;
+      box-shadow: 0 1px 3px rgba(0,0,0,0.05);
+    }
+
+    .progress-wrapper {
+      max-width: 840px;
+      margin: 0 auto;
+    }
+
+    .progress-bar {
+      width: 100%;
+      height: 6px;
+      background: #e5e5e5;
+      border-radius: 3px;
+      overflow: hidden;
+      margin-bottom: 8px;
+    }
+
+    .progress-fill {
+      height: 100%;
+      background: linear-gradient(90deg, var(--grad-start), var(--grad-end));
+      transition: width 0.3s ease;
+      border-radius: 3px;
+    }
+
+    .progress-text {
+      font-size: 13px;
+      color: var(--text-light);
+      text-align: center;
+    }
+
+    /* Bottom-right curved accent */
+    .curve-accent {
+      position: fixed;
+      right: 0;
+      bottom: 0;
+      width: 54vw;
+      height: 54vw;
+      max-width: 700px;
+      max-height: 700px;
+      background: radial-gradient(closest-side, var(--accent) 0%, var(--accent) 55%, transparent 56%);
+      border-bottom-left-radius: 100%;
+      pointer-events: none;
+      z-index: 0;
+      opacity: 0.95;
+      transform: translate(20%, 20%);
+    }
+
+    /* Content area */
+    .content {
+      position: relative;
+      z-index: 1;
+      max-width: 840px;
+      margin: 40px auto 100px;
+      padding: 0 20px;
+      min-height: calc(100vh - 300px);
+    }
+
+    /* Question page (hidden by default) */
+    .question-page {
+      display: none;
+      animation: fadeIn 0.3s ease;
+    }
+
+    .question-page.active {
+      display: block;
+    }
+
+    @keyframes fadeIn {
+      from { opacity: 0; transform: translateY(20px); }
+      to { opacity: 1; transform: translateY(0); }
+    }
+
+    /* Welcome statement styling */
+    .welcome-statement {
+      text-align: center;
+      padding: 60px 20px;
+    }
+
+    .welcome-statement .icon {
+      width: 120px;
+      height: 120px;
+      margin: 0 auto 30px;
+      opacity: 0.9;
+    }
+
+    .welcome-statement h2 {
+      font-size: 42px;
+      font-weight: 600;
+      line-height: 1.2;
+      margin: 0 0 20px;
+      color: var(--text-dark);
+    }
+
+    .welcome-statement p.description {
+      font-size: 20px;
+      color: var(--text-light);
+      margin: 0 0 50px;
+      font-style: italic;
+    }
+
+    .btn-continue {
+      background: linear-gradient(135deg, var(--grad-start), var(--grad-end));
+      color: white;
+      border: none;
+      padding: 18px 48px;
+      font-size: 18px;
+      font-weight: 600;
+      border-radius: 6px;
+      cursor: pointer;
+      transition: all 0.2s ease;
+      box-shadow: 0 4px 12px rgba(46, 106, 157, 0.3);
+    }
+
+    .btn-continue:hover {
+      transform: translateY(-2px);
+      box-shadow: 0 6px 16px rgba(46, 106, 157, 0.4);
+    }
+
+    .btn-continue:active {
+      transform: translateY(0);
+    }
+
+    /* Question styling */
+    .question h2 {
+      font-size: 34px;
+      font-weight: 600;
+      line-height: 1.25;
+      margin: 12px 0 8px;
+    }
+
+    .question p.desc {
+      color: var(--text-light);
+      font-style: italic;
+      margin: 2px 0 20px;
+      font-size: 16px;
+    }
+
+    /* Input styling */
+    .input-field {
+      width: 100%;
+      font-size: 22px;
+      padding: 18px 4px 10px;
+      border: none;
+      border-bottom: 2px solid var(--border);
+      outline: none;
+      background: transparent;
+      color: #444;
+      transition: border-color 0.2s ease;
+    }
+
+    .input-field:focus {
+      border-bottom-color: var(--grad-start);
+    }
+
+    .input-field::placeholder {
+      color: #b1aba4;
+    }
+
+    .textarea {
+      resize: vertical;
+      min-height: 60px;
+    }
+
+    .hint {
+      margin-top: 10px;
+      font-size: 14px;
+      color: #6f6f6f;
+    }
+
+    /* Navigation buttons */
+    .nav-buttons {
+      margin-top: 40px;
+      display: flex;
+      gap: 12px;
+      justify-content: flex-end;
+    }
+
+    .btn {
+      padding: 14px 32px;
+      font-size: 16px;
+      font-weight: 600;
+      border: none;
+      border-radius: 6px;
+      cursor: pointer;
+      transition: all 0.2s ease;
+    }
+
+    .btn-back {
+      background: transparent;
+      color: var(--text-light);
+      border: 2px solid var(--border);
+    }
+
+    .btn-back:hover {
+      background: rgba(0,0,0,0.05);
+    }
+
+    .btn-next {
+      background: linear-gradient(135deg, var(--grad-start), var(--grad-end));
+      color: white;
+      box-shadow: 0 2px 8px rgba(46, 106, 157, 0.3);
+    }
+
+    .btn-next:hover {
+      transform: translateY(-1px);
+      box-shadow: 0 4px 12px rgba(46, 106, 157, 0.4);
+    }
+
+    .btn-next:disabled {
+      opacity: 0.5;
+      cursor: not-allowed;
+      transform: none;
+    }
+
+    /* Error message */
+    .error-message {
+      color: #d32f2f;
+      font-size: 14px;
+      margin-top: 8px;
+      display: none;
+    }
+
+    .error-message.show {
+      display: block;
+    }
+
+    .input-field.error {
+      border-bottom-color: #d32f2f;
+    }
+
+    /* Upload Card Styles */
+    .upload-card {
+      background: #f9f9f9;
+      border-radius: 12px;
+      padding: 16px;
+      border: 2px solid #e0e0e0;
+      transition: all 0.2s ease;
+    }
+
+    .upload-card:hover {
+      border-color: var(--grad-start);
+      box-shadow: 0 2px 8px rgba(46, 106, 157, 0.1);
+    }
+
+    .upload-area {
+      background: white;
+      border: 2px dashed #cbd5e0;
+      border-radius: 8px;
+      padding: 24px;
+      text-align: center;
+      cursor: pointer;
+      transition: all 0.2s ease;
+      min-height: 140px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+    }
+
+    .upload-area:hover {
+      border-color: var(--grad-start);
+      background: #f8fafc;
+    }
+
+    .upload-placeholder {
+      color: #718096;
+      width: 100%;
+    }
+
+    .upload-preview {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      gap: 12px;
+      width: 100%;
+    }
+
+    .preview-image {
+      max-width: 100%;
+      max-height: 200px;
+      border-radius: 8px;
+      object-fit: contain;
+      box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+    }
+
+    .file-name {
+      font-size: 13px;
+      color: #4a5568;
+      font-weight: 500;
+      word-break: break-all;
+      text-align: center;
+      margin: 0;
+    }
+
+    .remove-btn {
+      background: #dc2626;
+      color: white;
+      border: none;
+      padding: 8px 16px;
+      border-radius: 6px;
+      font-size: 13px;
+      font-weight: 600;
+      cursor: pointer;
+      transition: all 0.2s ease;
+    }
+
+    .remove-btn:hover {
+      background: #b91c1c;
+      transform: translateY(-1px);
+    }
+
+    .remove-btn:active {
+      transform: translateY(0);
+    }
+
+    .file-input {
+      display: none;
+    }
+
+    /* Mobile-first optimizations */
+    @media (max-width: 640px) {
+      /* Banner adjustments */
+      .banner { padding: 16px 16px 12px; }
+      .brand { gap: 12px; }
+      .brand .logo { width: 48px; height: 48px; }
+      .brand .title-wrap h1 { font-size: 22px; }
+      .brand .title-wrap p.sub { font-size: 14px; }
+      .brand .title-wrap p.tag { font-size: 15px; }
+
+      /* Progress bar - make more prominent */
+      .progress-container { padding: 10px 16px; }
+      .progress-bar { height: 8px; }
+      .progress-text { font-size: 14px; font-weight: 600; }
+
+      /* Content area - better mobile spacing */
+      .content {
+        margin: 16px auto 80px;
+        padding: 0 16px;
+        min-height: calc(100vh - 240px);
+      }
+
+      /* Welcome statement - mobile optimized */
+      .welcome-statement { padding: 40px 16px; }
+      .welcome-statement .icon { width: 100px; height: 100px; margin: 0 auto 24px; }
+      .welcome-statement h2 { font-size: 28px; margin: 0 0 16px; }
+      .welcome-statement p.description { font-size: 18px; margin: 0 0 40px; }
+
+      /* Continue button - larger touch target */
+      .btn-continue {
+        padding: 16px 40px;
+        font-size: 17px;
+        min-height: 52px;
+        width: 100%;
+        max-width: 320px;
+      }
+
+      /* Question styling - mobile friendly */
+      .question h2 {
+        font-size: 24px;
+        margin: 8px 0 6px;
+        line-height: 1.3;
+      }
+      .question p.desc {
+        font-size: 15px;
+        margin: 2px 0 16px;
+      }
+
+      /* Input fields - larger touch targets */
+      .input-field {
+        font-size: 16px; /* Prevents iOS zoom */
+        padding: 16px 8px 12px;
+        border-bottom-width: 3px;
+      }
+
+      /* Date input specific */
+      input[type="date"].input-field {
+        min-height: 48px;
+        padding: 12px 8px;
+      }
+
+      /* Hint text - better readability */
+      .hint {
+        font-size: 13px;
+        margin-top: 12px;
+        line-height: 1.4;
+      }
+
+      /* Error messages - more prominent */
+      .error-message {
+        font-size: 13px;
+        margin-top: 10px;
+        font-weight: 600;
+      }
+
+      /* Navigation buttons - mobile optimized */
+      .nav-buttons {
+        margin-top: 32px;
+        gap: 10px;
+        flex-direction: column-reverse; /* Next on top, Back below */
+      }
+
+      .btn {
+        padding: 16px 24px;
+        font-size: 17px;
+        min-height: 52px; /* Apple's recommended minimum touch target */
+        width: 100%;
+      }
+
+      .btn-back {
+        border-width: 2px;
+      }
+
+      /* Curved accent - less intrusive on mobile */
+      .curve-accent {
+        width: 85vw;
+        height: 85vw;
+        transform: translate(35%, 35%);
+        opacity: 0.9;
+      }
+    }
+
+    /* Extra small mobile devices (iPhone SE, etc.) */
+    @media (max-width: 375px) {
+      .brand .title-wrap h1 { font-size: 20px; }
+      .brand .title-wrap p.tag { font-size: 14px; }
+      .welcome-statement h2 { font-size: 26px; }
+      .question h2 { font-size: 22px; }
+      .content { padding: 0 12px; }
+    }
+
+    /* Tablet and larger - optimize for wider screens */
+    @media (min-width: 641px) {
+      .nav-buttons {
+        flex-direction: row; /* Side by side on tablet+ */
+      }
+      .btn {
+        width: auto;
+      }
+    }
+  </style>
+</head>
+<body>
+  <!-- Banner -->
+  <div class="banner">
+    <div class="brand">
+      <img class="logo" alt="Car Crash Lawyer AI logo" src="/images/logo.png" />
+      <div class="title-wrap">
+        <h1>Car Crash Lawyer AI</h1>
+        <p class="sub">Your Legal First Responder</p>
+        <p class="tag">The Only App EVERY Motorist SHOULD Have!</p>
+      </div>
+    </div>
+  </div>
+
+  <!-- Progress Bar -->
+  <div class="progress-container">
+    <div class="progress-wrapper">
+      <div class="progress-bar">
+        <div class="progress-fill" id="progressFill" style="width: 0%"></div>
+      </div>
+      <div class="progress-text">
+        <span id="progressText">Question 0 of 15</span>
+      </div>
+    </div>
+  </div>
+
+  <!-- Content Area -->
+  <div class="content">
+
+    <!-- Page 1: Welcome Statement -->
+    <div class="question-page active" data-page="1">
+      <div class="welcome-statement">
+        <img class="icon" src="/images/logo.png" alt="Car Crash Lawyer AI logo" />
+        <h2>First you choose what subscription suits you Best?</h2>
+        <p class="description">Not yet though!</p>
+        <button class="btn-continue" id="welcomeContinueBtn">Continue</button>
+      </div>
+    </div>
+
+    <!-- Page 2: Date of Birth -->
+    <div class="question-page" data-page="2">
+      <div class="question">
+        <h2>Please enter your Date of Birth</h2>
+        <p class="desc">We need this to verify you're 16 or older</p>
+        <input
+          type="date"
+          id="date_of_birth"
+          class="input-field"
+          required
+          max=""
+        />
+        <p class="hint">You must be at least 16 years old to use this service</p>
+        <p class="error-message" id="dob-error"></p>
+      </div>
+      <div class="nav-buttons">
+        <button class="btn btn-back" data-action="back">Back</button>
+        <button class="btn btn-next" data-action="next">Continue</button>
+      </div>
+    </div>
+
+    <!-- Page 3: Personal Details -->
+    <div class="question-page" data-page="3">
+      <div class="question">
+        <h2>Let's get to know you</h2>
+        <p class="desc">We need some basic information to help you</p>
+
+        <div style="margin-bottom: 20px;">
+          <label for="first_name" style="display: block; margin-bottom: 8px; font-weight: 500; color: #4a5568;">
+            First Name *
+          </label>
+          <input
+            type="text"
+            id="first_name"
+            class="input-field"
+            placeholder="e.g. John"
+            required
+          />
+        </div>
+
+        <div style="margin-bottom: 20px;">
+          <label for="last_name" style="display: block; margin-bottom: 8px; font-weight: 500; color: #4a5568;">
+            Last Name *
+          </label>
+          <input
+            type="text"
+            id="last_name"
+            class="input-field"
+            placeholder="e.g. Smith"
+            required
+          />
+        </div>
+
+        <div style="margin-bottom: 20px;">
+          <label for="email" style="display: block; margin-bottom: 8px; font-weight: 500; color: #4a5568;">
+            Email Address *
+          </label>
+          <input
+            type="email"
+            id="email"
+            class="input-field"
+            placeholder="e.g. john.smith@example.com"
+            required
+          />
+          <p class="hint">We'll send your reports to this email</p>
+        </div>
+
+        <div style="margin-bottom: 20px;">
+          <label for="mobile_number" style="display: block; margin-bottom: 8px; font-weight: 500; color: #4a5568;">
+            Mobile Number *
+          </label>
+          <input
+            type="tel"
+            id="mobile_number"
+            class="input-field"
+            placeholder="e.g. 07700 900000"
+            required
+          />
+          <p class="hint">UK mobile number (for emergency contact)</p>
+        </div>
+
+        <p class="error-message" id="personal-error"></p>
+      </div>
+
+      <div class="nav-buttons">
+        <button class="btn btn-back" data-action="back">Back</button>
+        <button class="btn btn-next" data-action="next">Continue</button>
+      </div>
+    </div>
+
+    <!-- Page 4: Address Details -->
+    <div class="question-page" data-page="4">
+      <div class="question">
+        <h2>What's your address?</h2>
+        <p class="desc">We need your current residential address</p>
+
+        <div style="margin-bottom: 20px;">
+          <label for="address_line_1" style="display: block; margin-bottom: 8px; font-weight: 500; color: #4a5568;">
+            Address Line 1 *
+          </label>
+          <input
+            type="text"
+            id="address_line_1"
+            class="input-field"
+            placeholder="e.g. 123 High Street"
+            required
+          />
+        </div>
+
+        <div style="margin-bottom: 20px;">
+          <label for="address_line_2" style="display: block; margin-bottom: 8px; font-weight: 500; color: #4a5568;">
+            Address Line 2 (optional)
+          </label>
+          <input
+            type="text"
+            id="address_line_2"
+            class="input-field"
+            placeholder="e.g. Apartment 4B"
+          />
+        </div>
+
+        <div style="margin-bottom: 20px;">
+          <label for="city" style="display: block; margin-bottom: 8px; font-weight: 500; color: #4a5568;">
+            Town/City *
+          </label>
+          <input
+            type="text"
+            id="city"
+            class="input-field"
+            placeholder="e.g. London"
+            required
+          />
+        </div>
+
+        <div style="margin-bottom: 20px;">
+          <label for="county" style="display: block; margin-bottom: 8px; font-weight: 500; color: #4a5568;">
+            County (optional)
+          </label>
+          <input
+            type="text"
+            id="county"
+            class="input-field"
+            placeholder="e.g. Greater London"
+          />
+        </div>
+
+        <div style="margin-bottom: 20px;">
+          <label for="postcode" style="display: block; margin-bottom: 8px; font-weight: 500; color: #4a5568;">
+            Postcode *
+          </label>
+          <input
+            type="text"
+            id="postcode"
+            class="input-field"
+            placeholder="e.g. SW1A 1AA"
+            maxlength="8"
+            required
+            style="text-transform: uppercase;"
+          />
+          <p class="hint">UK postcode format</p>
+        </div>
+
+        <p class="error-message" id="address-error"></p>
+      </div>
+
+      <div class="nav-buttons">
+        <button class="btn btn-back" data-action="back">Back</button>
+        <button class="btn btn-next" data-action="next">Continue</button>
+      </div>
+    </div>
+
+    <!-- Page 5: Car Registration with DVLA Lookup -->
+    <div class="question-page" data-page="5">
+      <div class="question">
+        <h2>What's your car registration?</h2>
+        <p class="desc">We'll automatically fetch your vehicle details from the DVLA</p>
+
+        <input
+          type="text"
+          id="car_registration_number"
+          class="input-field"
+          placeholder="e.g. AB12 CDE"
+          maxlength="8"
+          required
+          style="text-transform: uppercase;"
+        />
+        <p class="hint">Enter your UK vehicle registration number</p>
+
+        <!-- Lookup Button -->
+        <button
+          id="lookupDvlaBtn"
+          class="btn btn-lookup"
+          style="margin-top: 24px; background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);"
+        >
+          <span id="lookupBtnText">🔍 Lookup Vehicle</span>
+          <span id="lookupBtnLoading" style="display: none;">⏳ Looking up...</span>
+        </button>
+
+        <!-- DVLA Results Card -->
+        <div id="dvlaResults" style="display: none; margin-top: 32px; padding: 24px; background: rgba(102, 126, 234, 0.1); border-radius: 12px; border: 2px solid rgba(102, 126, 234, 0.3);">
+          <h3 style="margin: 0 0 16px 0; font-size: 18px; color: #1a202c;">Vehicle Details</h3>
+
+          <div style="display: grid; gap: 12px;">
+            <div style="display: flex; justify-content: space-between; padding: 8px 0; border-bottom: 1px solid rgba(102, 126, 234, 0.2);">
+              <span style="font-weight: 500; color: #4a5568;">Make:</span>
+              <span id="dvlaMake" style="color: #1a202c;">-</span>
+            </div>
+            <div style="display: flex; justify-content: space-between; padding: 8px 0; border-bottom: 1px solid rgba(102, 126, 234, 0.2);">
+              <span style="font-weight: 500; color: #4a5568;">Model:</span>
+              <span id="dvlaModel" style="color: #1a202c;">-</span>
+            </div>
+            <div style="display: flex; justify-content: space-between; padding: 8px 0; border-bottom: 1px solid rgba(102, 126, 234, 0.2);">
+              <span style="font-weight: 500; color: #4a5568;">Colour:</span>
+              <span id="dvlaColour" style="color: #1a202c;">-</span>
+            </div>
+            <div style="display: flex; justify-content: space-between; padding: 8px 0; border-bottom: 1px solid rgba(102, 126, 234, 0.2);">
+              <span style="font-weight: 500; color: #4a5568;">Year:</span>
+              <span id="dvlaYear" style="color: #1a202c;">-</span>
+            </div>
+            <div style="display: flex; justify-content: space-between; padding: 8px 0; border-bottom: 1px solid rgba(102, 126, 234, 0.2);">
+              <span style="font-weight: 500; color: #4a5568;">Fuel Type:</span>
+              <span id="dvlaFuelType" style="color: #1a202c;">-</span>
+            </div>
+            <div style="display: flex; justify-content: space-between; padding: 8px 0; border-bottom: 1px solid rgba(102, 126, 234, 0.2);">
+              <span style="font-weight: 500; color: #4a5568;">MOT Status:</span>
+              <span id="dvlaMotStatus" style="color: #1a202c;">-</span>
+            </div>
+            <div style="display: flex; justify-content: space-between; padding: 8px 0; border-bottom: 1px solid rgba(102, 126, 234, 0.2);">
+              <span style="font-weight: 500; color: #4a5568;">MOT Expiry:</span>
+              <span id="dvlaMotExpiry" style="color: #1a202c;">-</span>
+            </div>
+            <div style="display: flex; justify-content: space-between; padding: 8px 0; border-bottom: 1px solid rgba(102, 126, 234, 0.2);">
+              <span style="font-weight: 500; color: #4a5568;">Tax Status:</span>
+              <span id="dvlaTaxStatus" style="color: #1a202c;">-</span>
+            </div>
+            <div style="display: flex; justify-content: space-between; padding: 8px 0;">
+              <span style="font-weight: 500; color: #4a5568;">Tax Due:</span>
+              <span id="dvlaTaxDue" style="color: #1a202c;">-</span>
+            </div>
+          </div>
+
+          <p style="margin: 16px 0 0 0; font-size: 14px; color: #4a5568; font-weight: 500;">
+            Are these details correct?
+          </p>
+        </div>
+
+        <p class="error-message" id="dvla-error"></p>
+      </div>
+
+      <div class="nav-buttons">
+        <button class="btn btn-back" data-action="back">Back</button>
+        <button class="btn btn-next" data-action="next" id="confirmDvlaBtn" style="display: none;">
+          ✅ Yes, Correct
+        </button>
+      </div>
+    </div>
+
+    <!-- Page 6: Driving Records Group -->
+    <div class="question-page" data-page="6">
+      <div class="question">
+        <h2>Your driving & insurance details</h2>
+        <p class="desc">We need this information for your legal case</p>
+
+        <div style="margin-bottom: 20px;">
+          <label for="driving_license_number" style="display: block; margin-bottom: 8px; font-weight: 500; color: #4a5568;">
+            Driving License Number *
+          </label>
+          <input
+            type="text"
+            id="driving_license_number"
+            class="input-field"
+            placeholder="e.g. SMITH701150AB1CD"
+            maxlength="16"
+            required
+            style="text-transform: uppercase;"
+          />
+          <p class="hint">UK driving license number (found on your photocard)</p>
+        </div>
+
+        <div style="margin-bottom: 20px;">
+          <label for="insurance_company" style="display: block; margin-bottom: 8px; font-weight: 500; color: #4a5568;">
+            Insurance Company *
+          </label>
+          <input
+            type="text"
+            id="insurance_company"
+            class="input-field"
+            placeholder="e.g. Admiral, Aviva, Direct Line"
+            required
+          />
+          <p class="hint">Name of your car insurance provider</p>
+        </div>
+
+        <div style="margin-bottom: 20px;">
+          <label for="policy_number" style="display: block; margin-bottom: 8px; font-weight: 500; color: #4a5568;">
+            Policy Number *
+          </label>
+          <input
+            type="text"
+            id="policy_number"
+            class="input-field"
+            placeholder="e.g. POL123456789"
+            required
+            style="text-transform: uppercase;"
+          />
+          <p class="hint">Your insurance policy number</p>
+        </div>
+
+        <div style="margin-bottom: 20px;">
+          <label for="policy_holder" style="display: block; margin-bottom: 8px; font-weight: 500; color: #4a5568;">
+            Policy Holder *
+          </label>
+          <input
+            type="text"
+            id="policy_holder"
+            class="input-field"
+            placeholder="e.g. John Smith"
+            required
+          />
+          <p class="hint">Main person named on the insurance policy</p>
+        </div>
+
+        <div style="margin-bottom: 20px;">
+          <label for="cover_type" style="display: block; margin-bottom: 8px; font-weight: 500; color: #4a5568;">
+            Type of Cover *
+          </label>
+          <select id="cover_type" class="input-field" required style="cursor: pointer;">
+            <option value="">Select cover type...</option>
+            <option value="comprehensive">Comprehensive</option>
+            <option value="third_party_fire_theft">Third Party, Fire & Theft</option>
+            <option value="third_party_only">Third Party Only</option>
+          </select>
+          <p class="hint">Your insurance coverage level</p>
+        </div>
+
+        <p class="error-message" id="driving-error"></p>
+      </div>
+
+      <div class="nav-buttons">
+        <button class="btn btn-back" data-action="back">Back</button>
+        <button class="btn btn-next" data-action="next">Continue</button>
+      </div>
+    </div>
+
+    <!-- Page 7: All Photo Uploads -->
+    <div class="question-page" data-page="7">
+      <div class="question">
+        <h2>Upload your photos</h2>
+        <p class="desc">Please upload clear photos of your driving license and vehicle (all angles)</p>
+
+        <!-- Upload Grid -->
+        <div style="display: grid; grid-template-columns: 1fr; gap: 20px; max-width: 600px; margin: 0 auto;">
+
+          <!-- License Photo -->
+          <div class="upload-card">
+            <h3 style="font-size: 16px; font-weight: 600; margin-bottom: 12px; color: #1a202c;">
+              📄 Driving License (Front)
+            </h3>
+            <div class="upload-area" id="licenseUploadArea" data-type="license">
+              <div class="upload-placeholder" id="licensePlaceholder">
+                <div style="font-size: 36px; margin-bottom: 8px;">📷</div>
+                <p style="font-size: 14px; font-weight: 500; color: #4a5568;">Tap to upload</p>
+              </div>
+              <div class="upload-preview" id="licensePreview" style="display: none;">
+                <img class="preview-image" id="licenseImage" />
+                <p class="file-name" id="licenseName"></p>
+                <button class="remove-btn" id="licenseRemove">🗑️ Remove</button>
+              </div>
+            </div>
+            <input type="file" id="driving_license_picture" class="file-input" accept="image/*" />
+          </div>
+
+          <!-- Vehicle Front -->
+          <div class="upload-card">
+            <h3 style="font-size: 16px; font-weight: 600; margin-bottom: 12px; color: #1a202c;">
+              🚗 Vehicle Front View
+            </h3>
+            <div class="upload-area" id="frontUploadArea" data-type="front">
+              <div class="upload-placeholder" id="frontPlaceholder">
+                <div style="font-size: 36px; margin-bottom: 8px;">📷</div>
+                <p style="font-size: 14px; font-weight: 500; color: #4a5568;">Tap to upload</p>
+              </div>
+              <div class="upload-preview" id="frontPreview" style="display: none;">
+                <img class="preview-image" id="frontImage" />
+                <p class="file-name" id="frontName"></p>
+                <button class="remove-btn" id="frontRemove">🗑️ Remove</button>
+              </div>
+            </div>
+            <input type="file" id="vehicle_front_image" class="file-input" accept="image/*" />
+          </div>
+
+          <!-- Vehicle Driver Side -->
+          <div class="upload-card">
+            <h3 style="font-size: 16px; font-weight: 600; margin-bottom: 12px; color: #1a202c;">
+              🚗 Vehicle Driver Side
+            </h3>
+            <div class="upload-area" id="driverUploadArea" data-type="driver">
+              <div class="upload-placeholder" id="driverPlaceholder">
+                <div style="font-size: 36px; margin-bottom: 8px;">📷</div>
+                <p style="font-size: 14px; font-weight: 500; color: #4a5568;">Tap to upload</p>
+              </div>
+              <div class="upload-preview" id="driverPreview" style="display: none;">
+                <img class="preview-image" id="driverImage" />
+                <p class="file-name" id="driverName"></p>
+                <button class="remove-btn" id="driverRemove">🗑️ Remove</button>
+              </div>
+            </div>
+            <input type="file" id="vehicle_driver_side_image" class="file-input" accept="image/*" />
+          </div>
+
+          <!-- Vehicle Passenger Side -->
+          <div class="upload-card">
+            <h3 style="font-size: 16px; font-weight: 600; margin-bottom: 12px; color: #1a202c;">
+              🚗 Vehicle Passenger Side
+            </h3>
+            <div class="upload-area" id="passengerUploadArea" data-type="passenger">
+              <div class="upload-placeholder" id="passengerPlaceholder">
+                <div style="font-size: 36px; margin-bottom: 8px;">📷</div>
+                <p style="font-size: 14px; font-weight: 500; color: #4a5568;">Tap to upload</p>
+              </div>
+              <div class="upload-preview" id="passengerPreview" style="display: none;">
+                <img class="preview-image" id="passengerImage" />
+                <p class="file-name" id="passengerName"></p>
+                <button class="remove-btn" id="passengerRemove">🗑️ Remove</button>
+              </div>
+            </div>
+            <input type="file" id="vehicle_passenger_side_image" class="file-input" accept="image/*" />
+          </div>
+
+          <!-- Vehicle Back -->
+          <div class="upload-card">
+            <h3 style="font-size: 16px; font-weight: 600; margin-bottom: 12px; color: #1a202c;">
+              🚗 Vehicle Back View
+            </h3>
+            <div class="upload-area" id="backUploadArea" data-type="back">
+              <div class="upload-placeholder" id="backPlaceholder">
+                <div style="font-size: 36px; margin-bottom: 8px;">📷</div>
+                <p style="font-size: 14px; font-weight: 500; color: #4a5568;">Tap to upload</p>
+              </div>
+              <div class="upload-preview" id="backPreview" style="display: none;">
+                <img class="preview-image" id="backImage" />
+                <p class="file-name" id="backName"></p>
+                <button class="remove-btn" id="backRemove">🗑️ Remove</button>
+              </div>
+            </div>
+            <input type="file" id="vehicle_back_image" class="file-input" accept="image/*" />
+          </div>
+
+        </div>
+
+        <p class="hint" style="margin-top: 20px; text-align: center;">
+          💡 All photos are required. Make sure images are clear and well-lit.
+        </p>
+
+        <p class="error-message" id="photos-upload-error"></p>
+      </div>
+
+      <div class="nav-buttons">
+        <button class="btn btn-back" data-action="back">Back</button>
+        <button class="btn btn-next" data-action="next">Continue</button>
+      </div>
+    </div>
+
+    <!-- Page 8: Recovery & Emergency Contact -->
+    <div class="question-page" data-page="8">
+      <div class="question">
+        <h2>📞 Emergency information</h2>
+        <p class="desc">Let's set up your recovery service and emergency contact details</p>
+
+        <!-- Recovery Subscriptions Section -->
+        <div style="background: #f9f9f9; border-radius: 12px; padding: 20px; margin: 30px 0; border-left: 4px solid var(--grad-start);">
+          <h3 style="font-size: 20px; font-weight: 600; margin: 0 0 16px; color: #1a202c;">
+            🚗 Recovery Service
+          </h3>
+
+          <div style="margin-bottom: 16px;">
+            <label class="label" for="recovery_company">Recovery Company</label>
+            <input
+              type="text"
+              id="recovery_company"
+              class="input-field"
+              placeholder="e.g. AA, RAC, Green Flag"
+            />
+          </div>
+
+          <div style="margin-bottom: 16px;">
+            <label class="label" for="recovery_breakdown_number">Breakdown Number</label>
+            <input
+              type="tel"
+              id="recovery_breakdown_number"
+              class="input-field"
+              placeholder="Your recovery service phone number"
+            />
+          </div>
+
+          <div style="margin-bottom: 0;">
+            <label class="label" for="recovery_breakdown_email">Recovery Email (Optional)</label>
+            <input
+              type="email"
+              id="recovery_breakdown_email"
+              class="input-field"
+              placeholder="email@recoveryservice.com"
+            />
+          </div>
+
+          <p class="hint">💡 This will be used to contact your recovery service in case of breakdown</p>
+        </div>
+
+        <!-- Emergency Contact Section -->
+        <div style="background: #fff3cd; border-radius: 12px; padding: 20px; margin: 30px 0; border-left: 4px solid #ffc107;">
+          <h3 style="font-size: 20px; font-weight: 600; margin: 0 0 16px; color: #1a202c;">
+            🆘 Emergency Contact
+          </h3>
+
+          <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 16px; margin-bottom: 16px;">
+            <div>
+              <label class="label" for="emergency_contact_first_name">First Name</label>
+              <input
+                type="text"
+                id="emergency_contact_first_name"
+                class="input-field"
+                placeholder="First name"
+              />
+            </div>
+            <div>
+              <label class="label" for="emergency_contact_last_name">Last Name</label>
+              <input
+                type="text"
+                id="emergency_contact_last_name"
+                class="input-field"
+                placeholder="Last name"
+              />
+            </div>
+          </div>
+
+          <div style="margin-bottom: 16px;">
+            <label class="label" for="emergency_contact_phone">Phone Number</label>
+            <input
+              type="tel"
+              id="emergency_contact_phone"
+              class="input-field"
+              placeholder="07XXX XXXXXX"
+            />
+          </div>
+
+          <div style="margin-bottom: 16px;">
+            <label class="label" for="emergency_contact_email">Email Address</label>
+            <input
+              type="email"
+              id="emergency_contact_email"
+              class="input-field"
+              placeholder="emergency@contact.com"
+            />
+          </div>
+
+          <div style="margin-bottom: 0;">
+            <label class="label" for="emergency_contact_company">Company/Relationship (Optional)</label>
+            <input
+              type="text"
+              id="emergency_contact_company"
+              class="input-field"
+              placeholder="e.g. Spouse, Parent, Solicitor"
+            />
+          </div>
+
+          <p class="hint">🔒 This person will be contacted in case of emergency</p>
+        </div>
+
+        <p class="error-message" id="recovery-emergency-error"></p>
+      </div>
+
+      <div class="nav-buttons">
+        <button class="btn btn-back" data-action="back">Back</button>
+        <button class="btn btn-next" data-action="next">Continue</button>
+      </div>
+    </div>
+
+    <!-- Page 9: GDPR Consent -->
+    <div class="question-page" data-page="9">
+      <div class="question">
+        <h2>🔒 Privacy & consent</h2>
+        <p class="desc">Please review and accept our terms to complete your registration</p>
+
+        <!-- GDPR Info Box -->
+        <div style="background: #e8f4f8; border-radius: 12px; padding: 24px; margin: 30px 0; border-left: 4px solid #0088cc;">
+          <h3 style="font-size: 18px; font-weight: 600; margin: 0 0 16px; color: #1a202c;">
+            📋 What we collect and why
+          </h3>
+          <ul style="margin: 0; padding-left: 24px; color: #4a5568; line-height: 1.8;">
+            <li><strong>Personal Information:</strong> To identify you and provide legal services</li>
+            <li><strong>Vehicle Details:</strong> To process your insurance claims and legal matters</li>
+            <li><strong>Photos & Documents:</strong> For evidence and legal documentation</li>
+            <li><strong>Emergency Contacts:</strong> To reach your designated contacts if needed</li>
+          </ul>
+        </div>
+
+        <!-- GDPR Consent Checkbox -->
+        <div style="background: white; border: 2px solid #e0e0e0; border-radius: 12px; padding: 24px; margin: 20px 0;">
+          <label style="display: flex; align-items: start; gap: 16px; cursor: pointer;">
+            <input
+              type="checkbox"
+              id="gdpr_consent"
+              style="width: 24px; height: 24px; margin-top: 2px; cursor: pointer; flex-shrink: 0;"
+            />
+            <div style="flex: 1;">
+              <p style="margin: 0 0 12px; font-size: 16px; font-weight: 600; color: #1a202c;">
+                I consent to data processing
+              </p>
+              <p style="margin: 0; font-size: 14px; color: #4a5568; line-height: 1.6;">
+                I understand and agree that Car Crash Lawyer AI will process my personal data in accordance with
+                <a href="/privacy-policy.html" target="_blank" style="color: var(--grad-start); text-decoration: underline;">GDPR regulations</a>
+                and the
+                <a href="/terms.html" target="_blank" style="color: var(--grad-start); text-decoration: underline;">Terms & Conditions</a>.
+                I can withdraw my consent at any time by contacting support.
+              </p>
+            </div>
+          </label>
+        </div>
+
+        <!-- Data Rights Info -->
+        <div style="background: #f9f9f9; border-radius: 8px; padding: 16px; margin: 20px 0;">
+          <p style="margin: 0; font-size: 14px; color: #6f6f6f; line-height: 1.6;">
+            <strong>Your rights:</strong> You have the right to access, correct, delete, or export your data at any time.
+            Contact us at <a href="mailto:privacy@carcrashlawyerai.com" style="color: var(--grad-start);">privacy@carcrashlawyerai.com</a>
+            to exercise your rights.
+          </p>
+        </div>
+
+        <p class="error-message" id="gdpr-consent-error"></p>
+      </div>
+
+      <div class="nav-buttons">
+        <button class="btn btn-back" data-action="back">Back</button>
+        <button class="btn btn-next" data-action="next">Submit Registration</button>
+      </div>
+    </div>
+
+  </div>
+
+  <!-- Curved Accent -->
+  <div class="curve-accent" aria-hidden="true"></div>
+
+  <script>
+    // Form state management
+    const formData = {
+      date_of_birth: '', // DD/MM/YYYY format
+      first_name: '',
+      last_name: '',
+      email: '',
+      mobile_number: '',
+      address_line_1: '',
+      address_line_2: '',
+      city: '',
+      county: '',
+      postcode: '',
+      car_registration_number: '',
+      driving_license_number: '',
+      insurance_company: '',
+      policy_number: '',
+      policy_holder: '',
+      cover_type: '',
+      driving_license_picture: null,
+      vehicle_make: '',
+      vehicle_model: '',
+      vehicle_colour: '',
+      vehicle_condition: '',
+      vehicle_front_image: null,
+      vehicle_driver_side_image: null,
+      vehicle_passenger_side_image: null,
+      vehicle_back_image: null,
+      recovery_company: '',
+      recovery_breakdown_number: '',
+      recovery_breakdown_email: '',
+      emergency_contact_first_name: '',
+      emergency_contact_last_name: '',
+      emergency_contact_phone: '',
+      emergency_contact_email: '',
+      emergency_contact_company: '',
+      gdpr_consent: false,
+      timestamp: new Date().toISOString(),
+      // DVLA lookup data (populated after car reg verification)
+      dvla_verified: false,
+      dvla_make: '',
+      dvla_model: '',
+      dvla_colour: '',
+      dvla_year: '',
+      dvla_fuel_type: '',
+      dvla_mot_status: '',
+      dvla_mot_expiry: '',
+      dvla_tax_status: '',
+      dvla_tax_due: ''
+    };
+
+    let currentPage = 1;
+    const totalPages = 9; // Consolidated form: photos + recovery/emergency on one page
+
+    // Initialize
+    console.log('🚀 Form initialized - v2.0 with Page 2');
+    console.log(`📄 Total pages defined: ${totalPages}`);
+
+    // Verify all pages exist in DOM
+    const pageElements = document.querySelectorAll('.question-page');
+    console.log(`📋 Pages found in DOM: ${pageElements.length}`);
+    pageElements.forEach((page, index) => {
+      const pageNum = page.getAttribute('data-page');
+      console.log(`  - Page ${pageNum}: ${page.classList.contains('active') ? '✅ ACTIVE' : '⭕ Hidden'}`);
+    });
+
+    updateProgress();
+    initializePage();
+    setupEventListeners();
+
+    // Setup event listeners (CSP-compliant - no inline onclick)
+    function setupEventListeners() {
+      // Welcome page continue button
+      const welcomeBtn = document.getElementById('welcomeContinueBtn');
+      if (welcomeBtn) {
+        welcomeBtn.addEventListener('click', nextPage);
+      }
+
+      // DVLA lookup button (Page 5)
+      const lookupBtn = document.getElementById('lookupDvlaBtn');
+      if (lookupBtn) {
+        lookupBtn.addEventListener('click', lookupDVLA);
+      }
+
+      // Page 7: All photo upload handlers
+      const photoTypes = [
+        { type: 'license', fieldName: 'driving_license_picture' },
+        { type: 'front', fieldName: 'vehicle_front_image' },
+        { type: 'driver', fieldName: 'vehicle_driver_side_image' },
+        { type: 'passenger', fieldName: 'vehicle_passenger_side_image' },
+        { type: 'back', fieldName: 'vehicle_back_image' }
+      ];
+
+      photoTypes.forEach(photo => {
+        setupPhotoUpload(photo.type, photo.fieldName);
+      });
+
+      // Event delegation for navigation buttons
+      document.addEventListener('click', function(e) {
+        const target = e.target;
+
+        // Handle back buttons
+        if (target.classList.contains('btn-back') || target.getAttribute('data-action') === 'back') {
+          prevPage();
+        }
+
+        // Handle next/continue buttons
+        if (target.classList.contains('btn-next') || target.getAttribute('data-action') === 'next') {
+          nextPage();
+        }
+      });
+
+      console.log('✅ Event listeners attached (CSP-compliant)');
+    }
+
+    // Initialize page-specific settings
+    function initializePage() {
+      // Set max date for DOB input (must be 16+ years old)
+      const dobInput = document.getElementById('date_of_birth');
+      if (dobInput) {
+        const today = new Date();
+        const maxDate = new Date(today.getFullYear() - 16, today.getMonth(), today.getDate());
+        const maxDateString = maxDate.toISOString().split('T')[0];
+        dobInput.setAttribute('max', maxDateString);
+      }
+    }
+
+    // Load saved draft from localStorage
+    function loadDraft() {
+      const saved = localStorage.getItem('ccla_signup_draft');
+      if (saved) {
+        try {
+          const draft = JSON.parse(saved);
+          Object.assign(formData, draft);
+          console.log('✅ Loaded draft from localStorage');
+
+          // Restore date of birth if exists (convert DD/MM/YYYY to YYYY-MM-DD for input)
+          if (formData.date_of_birth) {
+            const [day, month, year] = formData.date_of_birth.split('/');
+            if (day && month && year) {
+              const dobInput = document.getElementById('date_of_birth');
+              if (dobInput) {
+                dobInput.value = `${year}-${month}-${day}`;
+              }
+            }
+          }
+        } catch (e) {
+          console.error('Failed to load draft:', e);
+        }
+      }
+    }
+
+    // Save draft to localStorage
+    function saveDraft() {
+      localStorage.setItem('ccla_signup_draft', JSON.stringify(formData));
+    }
+
+    // Update progress bar
+    function updateProgress() {
+      const percentage = ((currentPage - 1) / totalPages) * 100;
+      document.getElementById('progressFill').style.width = percentage + '%';
+      document.getElementById('progressText').textContent = `Question ${currentPage} of ${totalPages}`;
+    }
+
+    // Navigate to next page
+    function nextPage() {
+      console.log(`🔄 Navigating from page ${currentPage}...`);
+
+      // Validate current page before proceeding
+      if (!validateCurrentPage()) {
+        console.log('❌ Validation failed, staying on current page');
+        return;
+      }
+
+      // Save current page data
+      saveCurrentPageData();
+      saveDraft();
+
+      // Hide current page
+      const currentPageEl = document.querySelector('.question-page.active');
+      if (currentPageEl) {
+        currentPageEl.classList.remove('active');
+        console.log(`✅ Hidden page ${currentPage}`);
+      }
+
+      // Show next page
+      currentPage++;
+      const nextPageEl = document.querySelector(`[data-page="${currentPage}"]`);
+
+      if (nextPageEl) {
+        nextPageEl.classList.add('active');
+        updateProgress();
+        window.scrollTo(0, 0);
+        console.log(`✅ Now showing page ${currentPage}`);
+      } else {
+        console.log('📝 No more pages, submitting form...');
+        // Form complete - submit
+        submitForm();
+      }
+    }
+
+    // Navigate to previous page
+    function prevPage() {
+      if (currentPage === 1) return;
+
+      // Hide current page
+      document.querySelector('.question-page.active').classList.remove('active');
+
+      // Show previous page
+      currentPage--;
+      document.querySelector(`[data-page="${currentPage}"]`).classList.add('active');
+      updateProgress();
+      window.scrollTo(0, 0);
+    }
+
+    // Validate current page
+    function validateCurrentPage() {
+      // Page 1 is a statement, no validation needed
+      if (currentPage === 1) return true;
+
+      // Page 2: Date of Birth validation
+      if (currentPage === 2) {
+        return validateDOB();
+      }
+
+      // Page 3: Personal Details validation
+      if (currentPage === 3) {
+        return validatePersonalDetails();
+      }
+
+      // Page 4: Address validation
+      if (currentPage === 4) {
+        return validateAddress();
+      }
+
+      // Page 5: Car Registration with DVLA verification
+      if (currentPage === 5) {
+        return validateCarRegistration();
+      }
+
+      // Page 6: Driving Records validation
+      if (currentPage === 6) {
+        return validateDrivingRecords();
+      }
+
+      // Page 7: All Photo Uploads validation
+      if (currentPage === 7) {
+        return validatePhotoUploads();
+      }
+
+      // Page 8: Recovery & Emergency Contact validation
+      if (currentPage === 8) {
+        return validateRecoveryEmergency();
+      }
+
+      // Page 9: GDPR Consent validation
+      if (currentPage === 9) {
+        return validateGDPRConsent();
+      }
+
+      // Add validation logic for other pages as we build them
+      return true;
+    }
+
+    // Validate Date of Birth (16+ required)
+    function validateDOB() {
+      const dobInput = document.getElementById('date_of_birth');
+      const dobError = document.getElementById('dob-error');
+      const dob = dobInput.value;
+
+      // Clear previous error
+      dobError.classList.remove('show');
+      dobInput.classList.remove('error');
+
+      if (!dob) {
+        showError('dob-error', 'Please enter your date of birth');
+        dobInput.classList.add('error');
+        return false;
+      }
+
+      // Calculate age
+      const birthDate = new Date(dob);
+      const today = new Date();
+      let age = today.getFullYear() - birthDate.getFullYear();
+      const monthDiff = today.getMonth() - birthDate.getMonth();
+
+      // Adjust age if birthday hasn't occurred this year
+      if (monthDiff < 0 || (monthDiff === 0 && today.getDate() < birthDate.getDate())) {
+        age--;
+      }
+
+      if (age < 16) {
+        showError('dob-error', 'You must be at least 16 years old to use this service');
+        dobInput.classList.add('error');
+        return false;
+      }
+
+      return true;
+    }
+
+    // Show error message
+    function showError(elementId, message) {
+      const errorEl = document.getElementById(elementId);
+      errorEl.textContent = message;
+      errorEl.classList.add('show');
+    }
+
+    // ===== HELPER VALIDATION FUNCTIONS =====
+
+    // Validate email format
+    function isValidEmail(email) {
+      const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+      return emailRegex.test(email);
+    }
+
+    // Validate UK phone number format
+    function isValidUKPhone(phone) {
+      // Remove spaces and check format: 07XXX XXXXXX or 07XXXXXXXXX
+      const cleaned = phone.replace(/\s/g, '');
+      const ukMobileRegex = /^07\d{9}$/;
+      return ukMobileRegex.test(cleaned);
+    }
+
+    // ===== PAGE 3: PERSONAL DETAILS =====
+
+    // Validate personal details
+    function validatePersonalDetails() {
+      const firstName = document.getElementById('first_name');
+      const lastName = document.getElementById('last_name');
+      const email = document.getElementById('email');
+      const mobile = document.getElementById('mobile_number');
+      const errorEl = document.getElementById('personal-error');
+
+      // Clear previous errors
+      errorEl.classList.remove('show');
+      [firstName, lastName, email, mobile].forEach(field => field.classList.remove('error'));
+
+      // Validate first name
+      if (!firstName.value.trim()) {
+        showError('personal-error', 'Please enter your first name');
+        firstName.classList.add('error');
+        return false;
+      }
+
+      // Validate last name
+      if (!lastName.value.trim()) {
+        showError('personal-error', 'Please enter your last name');
+        lastName.classList.add('error');
+        return false;
+      }
+
+      // Validate email format
+      const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+      if (!email.value.trim()) {
+        showError('personal-error', 'Please enter your email address');
+        email.classList.add('error');
+        return false;
+      }
+      if (!emailRegex.test(email.value.trim())) {
+        showError('personal-error', 'Please enter a valid email address');
+        email.classList.add('error');
+        return false;
+      }
+
+      // Validate UK mobile number (basic check)
+      const mobileValue = mobile.value.trim().replace(/\s+/g, '');
+      if (!mobileValue) {
+        showError('personal-error', 'Please enter your mobile number');
+        mobile.classList.add('error');
+        return false;
+      }
+      // UK mobile numbers start with 07 and are 11 digits
+      const ukMobileRegex = /^(\+44|0)7\d{9}$/;
+      if (!ukMobileRegex.test(mobileValue)) {
+        showError('personal-error', 'Please enter a valid UK mobile number (e.g. 07700 900000)');
+        mobile.classList.add('error');
+        return false;
+      }
+
+      return true;
+    }
+
+    // ===== PAGE 4: ADDRESS DETAILS =====
+
+    // Validate address details
+    function validateAddress() {
+      const addressLine1 = document.getElementById('address_line_1');
+      const city = document.getElementById('city');
+      const postcode = document.getElementById('postcode');
+      const errorEl = document.getElementById('address-error');
+
+      // Clear previous errors
+      errorEl.classList.remove('show');
+      [addressLine1, city, postcode].forEach(field => field.classList.remove('error'));
+
+      // Validate address line 1
+      if (!addressLine1.value.trim()) {
+        showError('address-error', 'Please enter your address');
+        addressLine1.classList.add('error');
+        return false;
+      }
+
+      // Validate city
+      if (!city.value.trim()) {
+        showError('address-error', 'Please enter your town or city');
+        city.classList.add('error');
+        return false;
+      }
+
+      // Validate UK postcode format
+      const postcodeValue = postcode.value.trim().toUpperCase();
+      if (!postcodeValue) {
+        showError('address-error', 'Please enter your postcode');
+        postcode.classList.add('error');
+        return false;
+      }
+
+      // UK postcode regex (handles various formats)
+      const ukPostcodeRegex = /^[A-Z]{1,2}\d{1,2}[A-Z]?\s?\d[A-Z]{2}$/;
+      if (!ukPostcodeRegex.test(postcodeValue)) {
+        showError('address-error', 'Please enter a valid UK postcode (e.g. SW1A 1AA)');
+        postcode.classList.add('error');
+        return false;
+      }
+
+      return true;
+    }
+
+    // ===== PAGE 5: CAR REGISTRATION & DVLA LOOKUP =====
+
+    // Lookup vehicle details from DVLA
+    async function lookupDVLA() {
+      const regInput = document.getElementById('car_registration_number');
+      const regNumber = regInput.value.trim().toUpperCase().replace(/\s+/g, '');
+      const errorEl = document.getElementById('dvla-error');
+      const lookupBtn = document.getElementById('lookupDvlaBtn');
+      const lookupBtnText = document.getElementById('lookupBtnText');
+      const lookupBtnLoading = document.getElementById('lookupBtnLoading');
+      const dvlaResults = document.getElementById('dvlaResults');
+      const confirmBtn = document.getElementById('confirmDvlaBtn');
+
+      // Clear previous errors
+      errorEl.classList.remove('show');
+      regInput.classList.remove('error');
+
+      // Validate UK registration format
+      const ukRegex = /^[A-Z]{2}[0-9]{2}[A-Z]{3}$|^[A-Z][0-9]{1,3}[A-Z]{3}$|^[A-Z]{3}[0-9]{1,3}[A-Z]$/;
+      if (!regNumber) {
+        showError('dvla-error', 'Please enter a registration number');
+        regInput.classList.add('error');
+        return;
+      }
+
+      if (!ukRegex.test(regNumber)) {
+        showError('dvla-error', 'Please enter a valid UK registration (e.g. AB12CDE)');
+        regInput.classList.add('error');
+        return;
+      }
+
+      // Show loading state
+      lookupBtn.disabled = true;
+      lookupBtnText.style.display = 'none';
+      lookupBtnLoading.style.display = 'inline';
+      console.log('🔍 Looking up DVLA for:', regNumber);
+
+      try {
+        const response = await fetch('/api/other-vehicles/dvla-lookup', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ vehicle_license_plate: regNumber })
+        });
+
+        const data = await response.json();
+
+        if (!response.ok) {
+          throw new Error(data.error || 'Failed to lookup vehicle');
+        }
+
+        // Store DVLA data in formData
+        formData.car_registration_number = regNumber;
+        formData.dvla_verified = true;
+        formData.dvla_make = data.make || '';
+        formData.dvla_model = data.model || '';
+        formData.dvla_colour = data.colour || '';
+        formData.dvla_year = data.yearOfManufacture || '';
+        formData.dvla_fuel_type = data.fuelType || '';
+        formData.dvla_mot_status = data.motStatus || '';
+        formData.dvla_mot_expiry = data.motExpiryDate || '';
+        formData.dvla_tax_status = data.taxStatus || '';
+        formData.dvla_tax_due = data.taxDueDate || '';
+
+        // Display results
+        document.getElementById('dvlaMake').textContent = data.make || 'N/A';
+        document.getElementById('dvlaModel').textContent = data.model || 'N/A';
+        document.getElementById('dvlaColour').textContent = data.colour || 'N/A';
+        document.getElementById('dvlaYear').textContent = data.yearOfManufacture || 'N/A';
+        document.getElementById('dvlaFuelType').textContent = data.fuelType || 'N/A';
+
+        // MOT and Tax status with color coding
+        const motStatus = data.motStatus || 'Unknown';
+        const motStatusEl = document.getElementById('dvlaMotStatus');
+        motStatusEl.textContent = motStatus;
+        motStatusEl.style.color = motStatus === 'Valid' ? '#10b981' : (motStatus === 'Expired' ? '#ef4444' : '#1a202c');
+
+        document.getElementById('dvlaMotExpiry').textContent = data.motExpiryDate || 'N/A';
+
+        const taxStatus = data.taxStatus || 'Unknown';
+        const taxStatusEl = document.getElementById('dvlaTaxStatus');
+        taxStatusEl.textContent = taxStatus;
+        taxStatusEl.style.color = taxStatus === 'Taxed' ? '#10b981' : (taxStatus === 'Untaxed' ? '#ef4444' : '#1a202c');
+
+        document.getElementById('dvlaTaxDue').textContent = data.taxDueDate || 'N/A';
+
+        // Show results card and confirm button
+        dvlaResults.style.display = 'block';
+        confirmBtn.style.display = 'inline-block';
+
+        console.log('✅ DVLA lookup successful:', data);
+
+      } catch (error) {
+        console.error('❌ DVLA lookup failed:', error);
+        showError('dvla-error', error.message || 'Unable to verify vehicle. Please check the registration and try again.');
+        regInput.classList.add('error');
+
+        // Hide results if there was an error
+        dvlaResults.style.display = 'none';
+        confirmBtn.style.display = 'none';
+      } finally {
+        // Reset button state
+        lookupBtn.disabled = false;
+        lookupBtnText.style.display = 'inline';
+        lookupBtnLoading.style.display = 'none';
+      }
+    }
+
+    // Validate car registration (must be verified via DVLA)
+    function validateCarRegistration() {
+      const regInput = document.getElementById('car_registration_number');
+      const errorEl = document.getElementById('dvla-error');
+      const regNumber = regInput.value.trim();
+
+      // Clear previous errors
+      errorEl.classList.remove('show');
+      regInput.classList.remove('error');
+
+      if (!regNumber) {
+        showError('dvla-error', 'Please enter your car registration');
+        regInput.classList.add('error');
+        return false;
+      }
+
+      if (!formData.dvla_verified) {
+        showError('dvla-error', 'Please verify your vehicle using the "Lookup Vehicle" button');
+        regInput.classList.add('error');
+        return false;
+      }
+
+      return true;
+    }
+
+    // ===== PAGE 6: DRIVING RECORDS =====
+
+    // Validate driving records
+    function validateDrivingRecords() {
+      const licenseNumber = document.getElementById('driving_license_number');
+      const insuranceCompany = document.getElementById('insurance_company');
+      const policyNumber = document.getElementById('policy_number');
+      const policyHolder = document.getElementById('policy_holder');
+      const coverType = document.getElementById('cover_type');
+      const errorEl = document.getElementById('driving-error');
+
+      // Clear previous errors
+      errorEl.classList.remove('show');
+      [licenseNumber, insuranceCompany, policyNumber, policyHolder, coverType].forEach(field => field.classList.remove('error'));
+
+      // Validate driving license number
+      const licenseValue = licenseNumber.value.trim().toUpperCase().replace(/\s+/g, '');
+      if (!licenseValue) {
+        showError('driving-error', 'Please enter your driving license number');
+        licenseNumber.classList.add('error');
+        return false;
+      }
+      // UK driving license is 16 characters
+      if (licenseValue.length !== 16) {
+        showError('driving-error', 'UK driving license number must be 16 characters');
+        licenseNumber.classList.add('error');
+        return false;
+      }
+
+      // Validate insurance company
+      if (!insuranceCompany.value.trim()) {
+        showError('driving-error', 'Please enter your insurance company name');
+        insuranceCompany.classList.add('error');
+        return false;
+      }
+
+      // Validate policy number
+      if (!policyNumber.value.trim()) {
+        showError('driving-error', 'Please enter your policy number');
+        policyNumber.classList.add('error');
+        return false;
+      }
+
+      // Validate policy holder
+      if (!policyHolder.value.trim()) {
+        showError('driving-error', 'Please enter the policy holder name');
+        policyHolder.classList.add('error');
+        return false;
+      }
+
+      // Validate cover type
+      if (!coverType.value) {
+        showError('driving-error', 'Please select your insurance cover type');
+        coverType.classList.add('error');
+        return false;
+      }
+
+      return true;
+    }
+
+    // ===== PAGE 7: ALL PHOTO UPLOADS =====
+
+    // Setup photo upload handlers for a specific photo type
+    function setupPhotoUpload(type, fieldName) {
+      const uploadArea = document.getElementById(`${type}UploadArea`);
+      const fileInput = document.getElementById(fieldName);
+      const removeBtn = document.getElementById(`${type}Remove`);
+
+      if (!uploadArea || !fileInput) return;
+
+      // Click upload area to trigger file input
+      uploadArea.addEventListener('click', function(e) {
+        // Don't trigger if clicking remove button
+        if (e.target.closest('.remove-btn')) return;
+        fileInput.click();
+      });
+
+      // Handle file selection
+      fileInput.addEventListener('change', function(event) {
+        handlePhotoUpload(event, type, fieldName);
+      });
+
+      // Handle remove button
+      if (removeBtn) {
+        removeBtn.addEventListener('click', function(event) {
+          removePhoto(event, type, fieldName);
+        });
+      }
+
+      // Drag and drop handlers
+      uploadArea.addEventListener('dragover', function(e) {
+        e.preventDefault();
+        uploadArea.style.borderColor = 'var(--grad-start)';
+        uploadArea.style.background = '#f8fafc';
+      });
+
+      uploadArea.addEventListener('dragleave', function(e) {
+        e.preventDefault();
+        uploadArea.style.borderColor = '#cbd5e0';
+        uploadArea.style.background = 'white';
+      });
+
+      uploadArea.addEventListener('drop', function(e) {
+        e.preventDefault();
+        uploadArea.style.borderColor = '#cbd5e0';
+        uploadArea.style.background = 'white';
+
+        const files = e.dataTransfer.files;
+        if (files.length > 0) {
+          fileInput.files = files;
+          handlePhotoUpload({ target: fileInput }, type, fieldName);
+        }
+      });
+    }
+
+    // Handle photo file upload
+    function handlePhotoUpload(event, type, fieldName) {
+      const file = event.target.files[0];
+      const placeholder = document.getElementById(`${type}Placeholder`);
+      const preview = document.getElementById(`${type}Preview`);
+      const previewImage = document.getElementById(`${type}Image`);
+      const fileName = document.getElementById(`${type}Name`);
+
+      if (!file) return;
+
+      // Validate file type
+      const allowedTypes = ['image/png', 'image/jpeg', 'image/jpg'];
+      if (!allowedTypes.includes(file.type)) {
+        showError('photos-upload-error', 'Please upload PNG or JPEG images only');
+        return;
+      }
+
+      // Validate file size (10MB max)
+      const maxSize = 10 * 1024 * 1024; // 10MB in bytes
+      if (file.size > maxSize) {
+        showError('photos-upload-error', 'File size must be less than 10MB');
+        return;
+      }
+
+      // Store file in formData
+      formData[fieldName] = file;
+
+      // Show preview
+      const reader = new FileReader();
+      reader.onload = function(e) {
+        previewImage.src = e.target.result;
+        fileName.textContent = file.name;
+        placeholder.style.display = 'none';
+        preview.style.display = 'flex';
+      };
+      reader.readAsDataURL(file);
+
+      console.log(`✅ ${type} photo uploaded:`, {
+        name: file.name,
+        size: `${(file.size / 1024).toFixed(2)} KB`,
+        type: file.type
+      });
+    }
+
+    // Remove uploaded photo
+    function removePhoto(event, type, fieldName) {
+      event.stopPropagation(); // Prevent triggering parent click
+
+      const fileInput = document.getElementById(fieldName);
+      const placeholder = document.getElementById(`${type}Placeholder`);
+      const preview = document.getElementById(`${type}Preview`);
+
+      // Clear file input
+      fileInput.value = '';
+      formData[fieldName] = null;
+
+      // Reset UI
+      placeholder.style.display = 'block';
+      preview.style.display = 'none';
+
+      console.log(`🗑️ ${type} photo removed`);
+    }
+
+    // Validate all photo uploads
+    function validatePhotoUploads() {
+      const errorEl = document.getElementById('photos-upload-error');
+      errorEl.classList.remove('show');
+
+      const requiredPhotos = [
+        { field: 'driving_license_picture', name: 'Driving License' },
+        { field: 'vehicle_front_image', name: 'Vehicle Front' },
+        { field: 'vehicle_driver_side_image', name: 'Vehicle Driver Side' },
+        { field: 'vehicle_passenger_side_image', name: 'Vehicle Passenger Side' },
+        { field: 'vehicle_back_image', name: 'Vehicle Back' }
+      ];
+
+      const missing = requiredPhotos.filter(photo => !formData[photo.field]);
+
+      if (missing.length > 0) {
+        const names = missing.map(p => p.name).join(', ');
+        showError('photos-upload-error', `Please upload all required photos. Missing: ${names}`);
+        return false;
+      }
+
+      return true;
+    }
+
+    // ===== PAGE 8: RECOVERY & EMERGENCY CONTACT =====
+
+    // Validate Recovery & Emergency Contact
+    function validateRecoveryEmergency() {
+      const errorEl = document.getElementById('recovery-emergency-error');
+      errorEl.classList.remove('show');
+
+      // Recovery service (optional but if provided, validate format)
+      const recoveryNumber = document.getElementById('recovery_breakdown_number').value.trim();
+      const recoveryEmail = document.getElementById('recovery_breakdown_email').value.trim();
+
+      if (recoveryEmail && !isValidEmail(recoveryEmail)) {
+        showError('recovery-emergency-error', 'Please enter a valid recovery service email');
+        return false;
+      }
+
+      // Emergency contact (required)
+      const firstName = document.getElementById('emergency_contact_first_name').value.trim();
+      const lastName = document.getElementById('emergency_contact_last_name').value.trim();
+      const phone = document.getElementById('emergency_contact_phone').value.trim();
+      const email = document.getElementById('emergency_contact_email').value.trim();
+
+      if (!firstName) {
+        showError('recovery-emergency-error', 'Please enter emergency contact first name');
+        document.getElementById('emergency_contact_first_name').classList.add('error');
+        return false;
+      }
+
+      if (!lastName) {
+        showError('recovery-emergency-error', 'Please enter emergency contact last name');
+        document.getElementById('emergency_contact_last_name').classList.add('error');
+        return false;
+      }
+
+      if (!phone) {
+        showError('recovery-emergency-error', 'Please enter emergency contact phone number');
+        document.getElementById('emergency_contact_phone').classList.add('error');
+        return false;
+      }
+
+      // Validate UK phone format
+      if (!isValidUKPhone(phone)) {
+        showError('recovery-emergency-error', 'Please enter a valid UK phone number (e.g., 07XXX XXXXXX)');
+        document.getElementById('emergency_contact_phone').classList.add('error');
+        return false;
+      }
+
+      if (!email) {
+        showError('recovery-emergency-error', 'Please enter emergency contact email');
+        document.getElementById('emergency_contact_email').classList.add('error');
+        return false;
+      }
+
+      if (!isValidEmail(email)) {
+        showError('recovery-emergency-error', 'Please enter a valid email address');
+        document.getElementById('emergency_contact_email').classList.add('error');
+        return false;
+      }
+
+      // Clear any error classes
+      document.getElementById('emergency_contact_first_name').classList.remove('error');
+      document.getElementById('emergency_contact_last_name').classList.remove('error');
+      document.getElementById('emergency_contact_phone').classList.remove('error');
+      document.getElementById('emergency_contact_email').classList.remove('error');
+
+      return true;
+    }
+
+    // ===== PAGE 9: GDPR CONSENT =====
+
+    function validateGDPRConsent() {
+      const errorEl = document.getElementById('gdpr-consent-error');
+      errorEl.classList.remove('show');
+
+      const consentCheckbox = document.getElementById('gdpr_consent');
+
+      if (!consentCheckbox.checked) {
+        showError('gdpr-consent-error', 'You must consent to data processing to continue');
+        return false;
+      }
+
+      return true;
+    }
+
+    // Save current page data
+    function saveCurrentPageData() {
+      // Page 1 is a statement, no data to save
+      if (currentPage === 1) return;
+
+      // Page 2: Date of Birth
+      if (currentPage === 2) {
+        const dobValue = document.getElementById('date_of_birth').value;
+        // Convert from YYYY-MM-DD (HTML5 date format) to DD/MM/YYYY (UK format)
+        if (dobValue) {
+          const [year, month, day] = dobValue.split('-');
+          formData.date_of_birth = `${day}/${month}/${year}`;
+        }
+        return;
+      }
+
+      // Page 3: Personal Details
+      if (currentPage === 3) {
+        formData.first_name = document.getElementById('first_name').value.trim();
+        formData.last_name = document.getElementById('last_name').value.trim();
+        formData.email = document.getElementById('email').value.trim();
+        formData.mobile_number = document.getElementById('mobile_number').value.trim();
+        console.log('✅ Page 3 data saved:', {
+          first_name: formData.first_name,
+          last_name: formData.last_name,
+          email: formData.email,
+          mobile_number: formData.mobile_number
+        });
+        return;
+      }
+
+      // Page 4: Address Details
+      if (currentPage === 4) {
+        formData.address_line_1 = document.getElementById('address_line_1').value.trim();
+        formData.address_line_2 = document.getElementById('address_line_2').value.trim();
+        formData.city = document.getElementById('city').value.trim();
+        formData.county = document.getElementById('county').value.trim();
+        formData.postcode = document.getElementById('postcode').value.trim().toUpperCase();
+        console.log('✅ Page 4 data saved:', {
+          address_line_1: formData.address_line_1,
+          city: formData.city,
+          postcode: formData.postcode
+        });
+        return;
+      }
+
+      // Page 5: Car Registration - data already saved in lookupDVLA()
+      if (currentPage === 5) {
+        // DVLA data is already stored in formData by lookupDVLA() function
+        console.log('✅ Page 5 data saved:', {
+          car_registration_number: formData.car_registration_number,
+          dvla_verified: formData.dvla_verified
+        });
+        return;
+      }
+
+      // Page 6: Driving Records
+      if (currentPage === 6) {
+        formData.driving_license_number = document.getElementById('driving_license_number').value.trim().toUpperCase();
+        formData.insurance_company = document.getElementById('insurance_company').value.trim();
+        formData.policy_number = document.getElementById('policy_number').value.trim().toUpperCase();
+        formData.policy_holder = document.getElementById('policy_holder').value.trim();
+        formData.cover_type = document.getElementById('cover_type').value;
+        console.log('✅ Page 6 data saved:', {
+          driving_license_number: formData.driving_license_number,
+          insurance_company: formData.insurance_company,
+          policy_number: formData.policy_number,
+          cover_type: formData.cover_type
+        });
+        return;
+      }
+
+      // Page 7: All Photo Uploads - files already saved in handlePhotoUpload()
+      if (currentPage === 7) {
+        console.log('✅ Page 7 data saved:', {
+          license: !!formData.driving_license_picture,
+          front: !!formData.vehicle_front_image,
+          driver_side: !!formData.vehicle_driver_side_image,
+          passenger_side: !!formData.vehicle_passenger_side_image,
+          back: !!formData.vehicle_back_image
+        });
+        return;
+      }
+
+      // Page 8: Recovery & Emergency Contact
+      if (currentPage === 8) {
+        formData.recovery_company = document.getElementById('recovery_company').value.trim();
+        formData.recovery_breakdown_number = document.getElementById('recovery_breakdown_number').value.trim();
+        formData.recovery_breakdown_email = document.getElementById('recovery_breakdown_email').value.trim();
+        formData.emergency_contact_first_name = document.getElementById('emergency_contact_first_name').value.trim();
+        formData.emergency_contact_last_name = document.getElementById('emergency_contact_last_name').value.trim();
+        formData.emergency_contact_phone = document.getElementById('emergency_contact_phone').value.trim();
+        formData.emergency_contact_email = document.getElementById('emergency_contact_email').value.trim();
+        formData.emergency_contact_company = document.getElementById('emergency_contact_company').value.trim();
+        console.log('✅ Page 8 data saved:', {
+          recovery_company: formData.recovery_company,
+          emergency_contact: `${formData.emergency_contact_first_name} ${formData.emergency_contact_last_name}`,
+          emergency_phone: formData.emergency_contact_phone
+        });
+        return;
+      }
+
+      // Page 9: GDPR Consent
+      if (currentPage === 9) {
+        formData.gdpr_consent = document.getElementById('gdpr_consent').checked;
+        console.log('✅ Page 9 data saved:', {
+          gdpr_consent: formData.gdpr_consent
+        });
+        return;
+      }
+
+      // Add data extraction logic for other pages as we build them
+    }
+
+    // Submit form
+    async function submitForm() {
+      console.log('📤 Submitting form data:', formData);
+
+      try {
+        const response = await fetch('/api/signup/submit', {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json'
+          },
+          body: JSON.stringify(formData)
+        });
+
+        if (response.ok) {
+          const result = await response.json();
+          console.log('✅ Form submitted successfully:', result);
+
+          // Clear draft
+          localStorage.removeItem('ccla_signup_draft');
+
+          // Redirect to payment success page
+          window.location.href = '/payment-success.html';
+        } else {
+          throw new Error('Failed to submit form');
+        }
+      } catch (error) {
+        console.error('❌ Form submission error:', error);
+        alert('Sorry, there was an error submitting your form. Please try again.');
+      }
+    }
+
+    // Load draft on page load
+    loadDraft();
+
+    // Auto-save draft every 30 seconds
+    setInterval(saveDraft, 30000);
+
+    // Save draft before page unload
+    window.addEventListener('beforeunload', saveDraft);
+  </script>
+</body>
+</html>

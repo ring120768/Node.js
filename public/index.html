@@ -506,7 +506,7 @@
             <button class="auth-btn login" onclick="window.location.href='/login.html'">
                 🔑 Login
             </button>
-            <button class="auth-btn signup" onclick="window.location.href='/signup-auth.html'">
+            <button class="auth-btn signup" onclick="window.location.href='/signup-form.html'">
                 ✨ Sign Up
             </button>
         </div>
@@ -799,7 +799,7 @@
                 signupBtn.addEventListener('click', function(e) {
                     e.preventDefault();
                     console.log('✨ Signup button clicked');
-                    window.location.href = '/signup-auth.html';
+                    window.location.href = '/signup-form.html';
                 });
                 console.log('✅ Signup button event listener added');
             }
@@ -842,7 +842,7 @@
                     window.location.href = '/login.html';
                 } else if (target.matches('.auth-btn.signup')) {
                     e.preventDefault();
-                    window.location.href = '/signup-auth.html';
+                    window.location.href = '/signup-form.html';
                 }
             });
             

@@ -27,6 +27,7 @@ const userDocumentsRoutes = require('./userDocuments.routes'); // NEW: User docu
 const imageProxyRoutes = require('./imageProxy.routes'); // NEW: Image proxy for authenticated access
 const witnessesRoutes = require('./witnesses.routes'); // NEW: Witnesses management
 const vehiclesRoutes = require('./vehicles.routes'); // NEW: Other vehicles with DVLA integration
+const signupRoutes = require('./signup.routes'); // NEW: User signup form submission
 
 // GitHub webhooks are mounted in app.js via webhook.routes.js (not imported here)
 const locationRoutes = require('./location.routes');
@@ -265,6 +266,7 @@ router.get('/system-status', async (req, res) => {
             <h3>🔌 API Endpoints</h3>
             <ul>
                 <li><code>/api/auth/*</code> - Authentication</li>
+                <li><code>/api/signup/*</code> - User signup (custom form)</li>
                 <li><code>/api/profile/*</code> - User profile management</li>
                 <li><code>/api/transcription/*</code> - Audio transcription</li>
                 <li><code>/api/gdpr/*</code> - GDPR compliance</li>
@@ -323,6 +325,7 @@ router.use('/api/user-documents', userDocumentsRoutes); // NEW: User documents/i
 router.use('/api', imageProxyRoutes); // NEW: Image proxy routes (/api/images/:id)
 router.use('/api/witnesses', witnessesRoutes); // NEW: Witnesses management
 router.use('/api/other-vehicles', vehiclesRoutes); // NEW: Other vehicles with DVLA integration
+router.use('/api/signup', signupRoutes); // NEW: User signup form submission (custom HTML form)
 // Note: Webhook routes are mounted directly in app.js for raw body handling
 // GitHub webhooks are mounted in app.js via webhook.routes.js (not here)
 router.use('/api/location', locationRoutes);
