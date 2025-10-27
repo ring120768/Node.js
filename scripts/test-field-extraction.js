@@ -29,17 +29,36 @@ const colors = {
  * Updated with Phase 3 fixes
  */
 function normalizeTitle(title) {
-  return title
+  let normalized = title
     .toLowerCase()
     .replace(/\(optional\)/gi, '_optional')  // Handle (optional) first
+
+    // Remove emojis and Unicode symbols (Phase 3.5 fix!)
+    .replace(/[\u{1F000}-\u{1F9FF}]/gu, '')  // Emoticons
+    .replace(/[\u{2600}-\u{26FF}]/gu, '')    // Misc symbols
+    .replace(/[\u{2700}-\u{27BF}]/gu, '')    // Dingbats
+    .replace(/[\u{1F600}-\u{1F64F}]/gu, '') // Emoticons
+    .replace(/[\u{1F300}-\u{1F5FF}]/gu, '') // Misc Symbols and Pictographs
+    .replace(/[\u{1F680}-\u{1F6FF}]/gu, '') // Transport and Map
+    .replace(/[\u{1F1E0}-\u{1F1FF}]/gu, '') // Flags
+    .replace(/[\u{2600}-\u{27BF}✅❌🛡️]/gu, '') // Checkmarks, X, shields
+
     .replace(/[:.;?!'"(),]/g, '')             // Remove common punctuation
-    .replace(/-/g, '_')                       // Convert hyphens to underscores (FIXED!)
+    .replace(/-/g, '_')                       // Convert hyphens to underscores
     .replace(/\//g, '_')                      // Convert forward slashes to underscores
     .replace(/@/g, '')                        // Remove @ symbols
     .replace(/\s+/g, '_')                     // Replace spaces with underscore
     .replace(/_+/g, '_')                      // Replace multiple underscores with single
     .replace(/^_|_$/g, '')                    // Remove leading/trailing underscores
     .trim();
+
+  // CRITICAL: Remove common prefixes from Typeform questions
+  normalized = normalized
+    .replace(/^title_+/, '')                  // Remove "title_" prefix
+    .replace(/^question_+/, '')               // Remove "question_" prefix
+    .replace(/^field_+/, '');                 // Remove "field_" prefix
+
+  return normalized;
 }
 
 /**
@@ -138,6 +157,28 @@ const testCases = [
     typeformTitle: 'Detailed  account  of  what  happened',
     expectedField: 'detailed_account_of_what_happened',
     category: 'Incident'
+  },
+
+  // Emoji test cases (Phase 3.5)
+  {
+    typeformTitle: '🛡️ Quick safety check: Are you safe?',
+    expectedField: 'are_you_safe',
+    category: 'Safety'
+  },
+  {
+    typeformTitle: 'Title: Weather conditions ✅',
+    expectedField: 'weather_conditions',
+    category: 'Weather'
+  },
+  {
+    typeformTitle: '📋 License plate number',
+    expectedField: 'license_plate_number',
+    category: 'Vehicle'
+  },
+  {
+    typeformTitle: 'Title - Medical attention ❌',
+    expectedField: 'medical_attention',
+    category: 'Medical'
   }
 ];
 

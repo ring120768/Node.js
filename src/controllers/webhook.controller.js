@@ -63,16 +63,35 @@ function buildFieldTitleMap(definition) {
     definition.fields.forEach(field => {
       if (field.ref && field.title) {
         // Normalize title: lowercase, remove punctuation, convert spaces to underscores
-        const normalizedTitle = field.title.toLowerCase()
+        let normalizedTitle = field.title.toLowerCase()
           .replace(/\(optional\)/gi, '_optional')  // Handle (optional) first
-          .replace(/[:.;?!'"(),]/g, '')             // Remove common punctuation (including apostrophes, quotes, commas)
-          .replace(/-/g, '_')                       // Convert hyphens to underscores (critical fix!)
+
+          // Remove emojis and Unicode symbols (critical fix for Typeform!)
+          .replace(/[\u{1F000}-\u{1F9FF}]/gu, '')  // Emoticons
+          .replace(/[\u{2600}-\u{26FF}]/gu, '')    // Misc symbols
+          .replace(/[\u{2700}-\u{27BF}]/gu, '')    // Dingbats
+          .replace(/[\u{1F600}-\u{1F64F}]/gu, '') // Emoticons
+          .replace(/[\u{1F300}-\u{1F5FF}]/gu, '') // Misc Symbols and Pictographs
+          .replace(/[\u{1F680}-\u{1F6FF}]/gu, '') // Transport and Map
+          .replace(/[\u{1F1E0}-\u{1F1FF}]/gu, '') // Flags
+          .replace(/[\u{2600}-\u{27BF}✅❌🛡️]/gu, '') // Checkmarks, X, shields
+
+          .replace(/[:.;?!'"(),]/g, '')             // Remove common punctuation
+          .replace(/-/g, '_')                       // Convert hyphens to underscores
           .replace(/\//g, '_')                      // Convert forward slashes to underscores
-          .replace(/@/g, '')                        // Remove @ symbols (email addresses)
+          .replace(/@/g, '')                        // Remove @ symbols
           .replace(/\s+/g, '_')                     // Replace spaces with underscore
           .replace(/_+/g, '_')                      // Replace multiple underscores with single
           .replace(/^_|_$/g, '')                    // Remove leading/trailing underscores
           .trim();
+
+        // CRITICAL: Remove common prefixes from Typeform questions
+        // Questions often start with "Title:", "Title -", or other prefixes
+        normalizedTitle = normalizedTitle
+          .replace(/^title_+/, '')                  // Remove "title_" prefix
+          .replace(/^question_+/, '')               // Remove "question_" prefix
+          .replace(/^field_+/, '');                 // Remove "field_" prefix
+
         map.set(field.ref, normalizedTitle);
       }
     });
@@ -136,23 +155,40 @@ function extractAnswerValue(answer) {
 }
 
 /**
- * Extract answer by field reference (enhanced with title map fallback)
+ * Extract answer by field reference (enhanced with title map fallback + fuzzy matching)
  * @param {Array} answers - Typeform answers array
  * @param {string} ref - Field reference ID (snake_case expected field name)
  * @param {Map} titleMap - Optional title map for UUID ref fallback
  * @returns {*} The answer value or null
  */
 function getAnswerByRef(answers, ref, titleMap = null) {
-  // Try direct ref match first (for backwards compatibility)
+  // STRATEGY 1: Try direct ref match first (for backwards compatibility)
   let answer = answers.find(a => a.field?.ref === ref);
 
-  // If not found and titleMap provided, try title matching
+  // STRATEGY 2: If not found and titleMap provided, try exact title matching
   if (!answer && titleMap) {
     answer = answers.find(a => {
       const fieldRef = a.field?.ref;
       if (!fieldRef) return false;
       const normalizedTitle = titleMap.get(fieldRef);
       return normalizedTitle === ref;
+    });
+  }
+
+  // STRATEGY 3: Fuzzy/keyword matching - look for ref as substring in normalized title
+  // This handles long Typeform questions like "🛡️ Quick safety check: Are you safe?"
+  // which normalizes to "quick_safety_check_are_you_safe" and should match "are_you_safe"
+  if (!answer && titleMap && ref.length >= 4) { // Only for meaningful field names
+    answer = answers.find(a => {
+      const fieldRef = a.field?.ref;
+      if (!fieldRef) return false;
+      const normalizedTitle = titleMap.get(fieldRef);
+      if (!normalizedTitle) return false;
+
+      // Check if the expected field name appears anywhere in the normalized title
+      // Use word boundaries to avoid false positives
+      const refPattern = new RegExp(`\\b${ref}\\b`, 'i');
+      return refPattern.test(normalizedTitle);
     });
   }
 
@@ -172,10 +208,10 @@ function getAnswerByRefWithLogging(answers, ref, titleMap = null, enableLogging 
     return getAnswerByRef(answers, ref, titleMap);
   }
 
-  // Try direct ref match first
+  // STRATEGY 1: Try direct ref match first
   let directMatch = answers.find(a => a.field?.ref === ref);
 
-  // Try titleMap match if no direct match
+  // STRATEGY 2: Try exact titleMap match if no direct match
   let titleMapMatch = null;
   if (!directMatch && titleMap) {
     titleMapMatch = answers.find(a => {
@@ -186,17 +222,39 @@ function getAnswerByRefWithLogging(answers, ref, titleMap = null, enableLogging 
     });
   }
 
-  const finalAnswer = directMatch || titleMapMatch;
+  // STRATEGY 3: Try fuzzy/keyword matching
+  let fuzzyMatch = null;
+  if (!directMatch && !titleMapMatch && titleMap && ref.length >= 4) {
+    fuzzyMatch = answers.find(a => {
+      const fieldRef = a.field?.ref;
+      if (!fieldRef) return false;
+      const normalizedTitle = titleMap.get(fieldRef);
+      if (!normalizedTitle) return false;
+      const refPattern = new RegExp(`\\b${ref}\\b`, 'i');
+      return refPattern.test(normalizedTitle);
+    });
+  }
+
+  const finalAnswer = directMatch || titleMapMatch || fuzzyMatch;
   const value = extractAnswerValue(finalAnswer);
 
   // Log extraction details
-  const matchType = directMatch ? '✅ DIRECT' : (titleMapMatch ? '✅ TITLE' : '❌ NONE');
+  let matchType = '❌ NONE';
+  if (directMatch) matchType = '✅ DIRECT';
+  else if (titleMapMatch) matchType = '✅ TITLE';
+  else if (fuzzyMatch) matchType = '✅ FUZZY';
+
   const displayValue = value !== null && value !== undefined ? JSON.stringify(value).substring(0, 50) : 'null';
 
   console.log(`      Field: "${ref}"`);
   console.log(`      Match: ${matchType}`);
-  if (titleMapMatch && !directMatch) {
-    console.log(`      UUID: ${titleMapMatch.field.ref.substring(0, 12)}...`);
+  if ((titleMapMatch || fuzzyMatch) && !directMatch) {
+    const match = titleMapMatch || fuzzyMatch;
+    console.log(`      UUID: ${match.field.ref.substring(0, 12)}...`);
+    if (fuzzyMatch) {
+      const normalizedTitle = titleMap.get(fuzzyMatch.field.ref);
+      console.log(`      Title: "${normalizedTitle.substring(0, 60)}${normalizedTitle.length > 60 ? '...' : ''}"`);
+    }
   }
   console.log(`      Value: ${displayValue}`);
 
