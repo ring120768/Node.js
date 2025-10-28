@@ -125,6 +125,30 @@ function createApp() {
   // Cookie parsing
   app.use(cookieParser());
 
+  // ==================== PROTECTED PAGE ROUTES (SECURITY WALL) ====================
+
+  /**
+   * Page Authentication Middleware
+   * Protects sensitive HTML pages at the server level before serving static files.
+   *
+   * This is the "security wall" - authentication happens before HTML is served,
+   * not just in client-side JavaScript.
+   */
+  const { pageAuth } = require('./middleware/pageAuth');
+
+  // Protected pages (require authentication)
+  app.get('/dashboard.html', pageAuth, (req, res) => {
+    res.sendFile(path.join(__dirname, '../public/dashboard.html'));
+  });
+
+  app.get('/transcription-status.html', pageAuth, (req, res) => {
+    res.sendFile(path.join(__dirname, '../public/transcription-status.html'));
+  });
+
+  app.get('/incident.html', pageAuth, (req, res) => {
+    res.sendFile(path.join(__dirname, '../public/incident.html'));
+  });
+
   // Cache control for HTML (MUST be before express.static to work)
   // Sets aggressive cache prevention headers for all HTML files
   app.use((req, res, next) => {
@@ -137,6 +161,7 @@ function createApp() {
   });
 
   // Static files (served with cache headers set above)
+  // Protected pages are intercepted above, so only public pages reach here
   app.use(express.static(path.join(__dirname, '../public')));
 
   // Rate limiting
