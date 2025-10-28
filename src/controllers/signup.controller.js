@@ -166,6 +166,7 @@ async function submitSignup(req, res) {
       vehicle_make: formData.dvla_make || null,
       vehicle_model: formData.dvla_model || null,
       vehicle_colour: formData.dvla_colour || null,
+      vehicle_condition: formData.vehicle_condition || null, // User's declaration of vehicle condition
       gdpr_consent: true,
       images_status: uploadedImages.length === 5 ? 'complete' : 'partial', // Track image upload status
       missing_images: missingImages.length > 0 ? missingImages : null, // Store which images are missing

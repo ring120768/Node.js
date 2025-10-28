@@ -973,6 +973,32 @@
             <input type="file" id="driving_license_picture" class="file-input" accept="image/*" />
           </div>
 
+          <!-- Vehicle Condition Declaration -->
+          <div style="background: #f0f9ff; border-radius: 12px; padding: 24px; border-left: 4px solid #3b82f6; margin: 20px 0;">
+            <h3 style="font-size: 18px; font-weight: 600; margin: 0 0 12px; color: #1a202c;">
+              📋 Vehicle Condition Declaration
+            </h3>
+            <p style="font-size: 14px; color: #4a5568; margin: 0 0 16px;">
+              Before uploading photos, please describe your vehicle's overall condition
+            </p>
+            <select
+              id="vehicle_condition"
+              class="input-field"
+              required
+              style="width: 100%; max-width: 400px;"
+            >
+              <option value="" disabled selected>Select vehicle condition</option>
+              <option value="excellent">Excellent - No visible damage, like new</option>
+              <option value="good">Good - Minor cosmetic issues only</option>
+              <option value="fair">Fair - Some visible damage or wear</option>
+              <option value="poor">Poor - Significant damage visible</option>
+              <option value="not_driveable">Not Driveable - Severely damaged</option>
+            </select>
+            <p class="hint" style="margin-top: 12px; font-size: 13px;">
+              💡 This helps us understand the extent of any damage before reviewing your photos
+            </p>
+          </div>
+
           <!-- Vehicle Front -->
           <div class="upload-card">
             <h3 style="font-size: 16px; font-weight: 600; margin-bottom: 12px; color: #1a202c;">
@@ -2497,9 +2523,16 @@
         return;
       }
 
-      // Page 7: All Photo Uploads - files already saved in handlePhotoUpload()
+      // Page 7: All Photo Uploads + Vehicle Condition
       if (currentPage === 7) {
+        // Save vehicle condition field
+        const vehicleCondition = document.getElementById('vehicle_condition');
+        if (vehicleCondition && vehicleCondition.value) {
+          formData.vehicle_condition = vehicleCondition.value;
+        }
+
         console.log('✅ Page 7 data saved:', {
+          vehicle_condition: formData.vehicle_condition,
           license: !!formData.driving_license_picture,
           front: !!formData.vehicle_front_image,
           driver_side: !!formData.vehicle_driver_side_image,
