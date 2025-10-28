@@ -143,7 +143,6 @@ async function submitSignup(req, res) {
       street_address: formData.address_line_1, // Map form → DB
       street_address_optional: formData.address_line_2 || null, // Map form → DB
       town: formData.city, // Map form → DB
-      county: formData.county || null,
       country: formData.country || 'United Kingdom', // Default to UK
       postcode: formData.postcode.toUpperCase(),
       car_registration_number: formData.car_registration_number.toUpperCase(),
