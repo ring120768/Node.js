@@ -2588,6 +2588,39 @@
         return;
       }
 
+      // ===== DEFENSIVE CHECK FOR MISSING ACCOUNT CREATION (Page 1) =====
+      // Prevent form submission if user somehow skipped Page 1 (account creation)
+      if (!formData.auth_user_id) {
+        console.error('❌ CRITICAL: Missing auth_user_id - Page 1 (Account Creation) was skipped');
+        console.error('   Expected: User creates account → formData.auth_user_id = Supabase user ID');
+        console.error('   Actual: formData.auth_user_id =', formData.auth_user_id);
+        alert('❌ Account creation required!\n\n' +
+              'It looks like you skipped Page 1 (Create Account).\n\n' +
+              'You must create an account first to continue.\n\n' +
+              '📝 Click OK to go back to Page 1 and create your account.');
+        currentPage = 1;
+        showPage(1);
+        return;
+      }
+
+      if (!formData.email) {
+        console.error('❌ CRITICAL: Missing email - Page 1 (Account Creation) was incomplete');
+        console.error('   Expected: User enters email → formData.email = email address');
+        console.error('   Actual: formData.email =', formData.email);
+        alert('❌ Email address required!\n\n' +
+              'Your email address is missing.\n\n' +
+              'Please go back to Page 1 and complete account creation.\n\n' +
+              '📝 Click OK to go back to Page 1.');
+        currentPage = 1;
+        showPage(1);
+        return;
+      }
+
+      console.log('✅ Account validation passed:', {
+        auth_user_id: formData.auth_user_id,
+        email: formData.email
+      });
+
       // ===== CHECK FOR MISSING IMAGES (SOFT WARNING) =====
       const recommendedImages = [
         { field: 'driving_license_picture', label: 'Driving License Photo' },
@@ -2677,9 +2710,9 @@
           // Clear draft
           localStorage.removeItem('ccla_signup_draft');
 
-          // User is already authenticated (from Page 1) - just redirect to dashboard
-          console.log('✅ Signup complete, redirecting to dashboard...');
-          window.location.href = '/dashboard.html';
+          // User is already authenticated (from Page 1) - redirect to payment page
+          console.log('✅ Signup complete, redirecting to payment...');
+          window.location.href = '/payment-success.html';
         } else {
           throw new Error(result.error || 'Failed to submit form');
         }
