@@ -591,8 +591,10 @@ class ImageProcessorV2 {
         documentId
       );
 
-      // Step 5: Generate signed URL
-      const signedUrl = await this.getSignedUrl(fullStoragePath, 86400); // 24 hours
+      // Step 5: Generate signed URL (12 months expiry to match subscription period)
+      const signedUrlExpirySeconds = 31536000; // 365 days (12 months)
+      const signedUrl = await this.getSignedUrl(fullStoragePath, signedUrlExpirySeconds);
+      const signedUrlExpiresAt = new Date(Date.now() + (signedUrlExpirySeconds * 1000));
 
       // Step 6: Mark as completed
       const processingEndTime = Date.now();
@@ -601,7 +603,9 @@ class ImageProcessorV2 {
 
       await this.updateDocumentRecord(documentId, {
         status: 'completed',
-        public_url: signedUrl,
+        public_url: signedUrl, // Keep for backwards compatibility
+        signed_url: signedUrl, // NEW: Store in signed_url field for PDF generation
+        signed_url_expires_at: signedUrlExpiresAt.toISOString(), // NEW: Track expiry
         processing_completed_at: new Date().toISOString(),
         processing_duration_ms: processingDuration
       });
