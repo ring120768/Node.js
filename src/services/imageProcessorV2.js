@@ -18,13 +18,37 @@ const logger = require('../utils/logger');
 const config = require('../config');
 
 class ImageProcessorV2 {
-  constructor(supabaseClient) {
+  constructor(supabaseClient, websocketService = null) {
     if (!supabaseClient) {
       throw new Error('Supabase client is required for ImageProcessorV2');
     }
     this.supabase = supabaseClient;
+    this.websocketService = websocketService;
     this.initialized = true;
     logger.info('✅ ImageProcessorV2 service initialized with user_documents support');
+  }
+
+  /**
+   * Emit WebSocket update for image processing
+   * @param {string} userId - User ID
+   * @param {string} type - Message type
+   * @param {Object} data - Update data
+   */
+  emitWebSocketUpdate(userId, type, data) {
+    if (this.websocketService && this.websocketService.broadcastImageProcessingUpdate) {
+      try {
+        this.websocketService.broadcastImageProcessingUpdate(userId, {
+          type,
+          ...data
+        });
+      } catch (error) {
+        logger.warn('Failed to emit WebSocket update', {
+          error: error.message,
+          userId,
+          type
+        });
+      }
+    }
   }
 
   /**
@@ -551,6 +575,13 @@ class ImageProcessorV2 {
         associatedWith
       });
 
+      // Emit WebSocket: Image processing started
+      this.emitWebSocketUpdate(userId, config.constants.WS_MESSAGE_TYPES.IMAGE_PROCESSING_STARTED, {
+        documentId,
+        documentType: imageType,
+        status: 'pending'
+      });
+
       // Step 2: Download image from Typeform
       const { buffer, contentType, fileName, fileSize } = await this.downloadFromUrl(
         typeformUrl,
@@ -619,6 +650,15 @@ class ImageProcessorV2 {
         checksum: checksum.substring(0, 16) + '...'
       });
 
+      // Emit WebSocket: Image processed successfully
+      this.emitWebSocketUpdate(userId, config.constants.WS_MESSAGE_TYPES.IMAGE_PROCESSED, {
+        documentId,
+        documentType: imageType,
+        status: 'completed',
+        signedUrl,
+        processingDuration
+      });
+
       return {
         storagePath: fullStoragePath,
         documentId,
@@ -643,6 +683,14 @@ class ImageProcessorV2 {
             status: 'failed',
             error_message: error.message,
             error_code: 'PROCESSING_ERROR'
+          });
+
+          // Emit WebSocket: Image processing failed
+          this.emitWebSocketUpdate(userId, config.constants.WS_MESSAGE_TYPES.IMAGE_PROCESSING_FAILED, {
+            documentId,
+            documentType: imageType,
+            status: 'failed',
+            error: error.message
           });
         } catch (updateError) {
           logger.error('Failed to update document status to failed', {
