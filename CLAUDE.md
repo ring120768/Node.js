@@ -710,6 +710,206 @@ Dashboard uses WebSocket for live updates. If changes don't appear:
 
 ---
 
+## MCP Servers & Sub-Agents
+
+This project leverages **Model Context Protocol (MCP) servers** and **specialized sub-agents** for enhanced development capabilities.
+
+### Available MCP Servers
+
+**1. Perplexity MCP** - Web Research & Current Information
+- **Use for**: Researching latest tech docs, checking current best practices, comparing approaches
+- **Tools**: `perplexity_search`, `perplexity_ask`, `perplexity_research`, `perplexity_reason`
+- **Example**: "Research latest Supabase Auth v2 features and breaking changes"
+
+**2. Firecrawl MCP** - Web Scraping & Data Extraction
+- **Use for**: Extracting structured data from documentation sites, competitor analysis
+- **Tools**: `firecrawl_scrape`, `firecrawl_map`, `firecrawl_search`, `firecrawl_crawl`
+- **Example**: "Scrape Stripe UK payment documentation for integration examples"
+
+**3. Ref MCP** - Documentation Search (Token-Efficient)
+- **Use for**: Looking up API docs without full page loads (85% token reduction)
+- **Tools**: `ref_search_documentation`, `ref_read_url`
+- **Example**: "Use ref to find Supabase RLS policy examples"
+
+**4. Supabase MCP** - Database Management
+- **Use for**: Direct database queries, schema changes, user management
+- **Tools**: `execute_sql`, `list_tables`, `get_project`, `apply_migration`
+- **Example**: "List all tables in current project and show row counts"
+
+**5. Sentry MCP** - Error Tracking
+- **Use for**: Debugging production errors, analyzing issue patterns
+- **Tools**: `search_issues`, `get_issue_details`, `analyze_issue_with_seer`
+- **Example**: "Show all unresolved errors from the last 24 hours"
+
+**6. Sequential Thinking MCP** - Complex Problem Solving
+- **Use for**: Breaking down complex architectural decisions, debugging multi-step issues
+- **Tools**: `sequentialthinking` (multi-step reasoning with revision capability)
+- **Example**: "Plan migration from monolithic dashboard to component architecture"
+
+**7. Playwright MCP** - Browser Automation
+- **Use for**: End-to-end testing, screenshot capture, form validation testing
+- **Tools**: `browser_navigate`, `browser_click`, `browser_snapshot`, `browser_take_screenshot`
+- **Example**: "Test signup flow from page 1 to 9 and capture screenshots"
+
+### Specialized Sub-Agents (37 Available)
+
+Sub-agents are expert AI assistants that handle specific domains. They're automatically invoked based on task context or can be explicitly called.
+
+**Frontend Development (6 agents)**
+- `frontend-developer` - React, responsive layouts, state management
+- `react-pro` - Expert React with hooks & performance optimization
+- `nextjs-pro` - Next.js SSR/SSG specialist
+- `ui-designer` - Creative UI design and prototyping
+- `ux-designer` - User experience optimization
+- `mobile-developer` - React Native/Flutter apps
+
+**Backend Development (5 agents)**
+- `backend-architect` - RESTful APIs, microservices, schemas
+- `full-stack-developer` - End-to-end web applications
+- `typescript-pro` - Advanced TypeScript development
+- `python-pro` - Idiomatic Python with optimizations
+- `golang-pro` - Go with goroutines & channels
+
+**Data & AI (5 agents)**
+- `ai-engineer` - AI/ML integrations, LLM implementations
+- `data-engineer` - Data pipelines & ETL systems
+- `postgres-pro` - PostgreSQL optimization and schema design
+- `database-optimizer` - Database performance tuning
+- `graphql-architect` - GraphQL API design
+
+**Infrastructure (5 agents)**
+- `cloud-architect` - AWS/Azure/GCP infrastructure design
+- `deployment-engineer` - CI/CD pipelines and deployments
+- `devops-incident-responder` - Production incident response
+- `incident-responder` - General incident management
+- `performance-engineer` - Application performance optimization
+
+**Quality & Testing (5 agents)**
+- `code-reviewer` - Code quality reviews and best practices
+- `architect-review` - Architecture consistency validation
+- `debugger` - Bug investigation and fixes
+- `qa-expert` - Quality assurance and test planning
+- `test-automator` - Automated test suite creation
+
+**Security & Documentation (4 agents)**
+- `security-auditor` - Security audits & vulnerability scanning
+- `api-documenter` - API documentation generation
+- `documentation-expert` - Technical documentation writing
+- `legacy-modernizer` - Refactoring legacy codebases
+
+**Meta Orchestration (2 agents)**
+- `agent-organizer` - **Master orchestrator** - coordinates multiple agents for complex tasks
+- `product-manager` - Product strategy & requirements analysis
+
+### When to Use MCP Servers
+
+**Automatic (no permission needed):**
+- Web searches and documentation lookups
+- Reading documentation pages
+- Analyzing code patterns
+
+**Ask first:**
+- Database modifications (INSERT, UPDATE, DELETE)
+- Large-scale web scraping (cost implications)
+- Production error tracking queries
+
+### When to Use Sub-Agents
+
+**Architecture & Planning:**
+```bash
+# Use agent-organizer for complex multi-domain tasks
+"Use agent-organizer to plan migration from monolithic dashboard to components"
+
+# Use architect-review after major changes
+"Have architect-review validate the new authentication flow"
+```
+
+**Code Quality:**
+```bash
+# Use code-reviewer after completing features
+"Use code-reviewer to review the new pageAuth middleware"
+
+# Use debugger for complex issues
+"Have debugger investigate why WebSocket disconnects on mobile"
+```
+
+**Specialized Development:**
+```bash
+# Frontend work
+"Use react-pro to refactor dashboard into functional components with hooks"
+
+# Database work
+"Have postgres-pro optimize the user_signup table queries"
+
+# Security work
+"Use security-auditor to scan for vulnerabilities in authentication flow"
+```
+
+**Testing:**
+```bash
+# Create test suites
+"Use test-automator to create comprehensive tests for signup flow"
+
+# Quality assurance
+"Have qa-expert create test plan for dashboard component migration"
+```
+
+### MCP + Sub-Agent Workflows
+
+**Example 1: Add New Feature with Full Quality Checks**
+```
+1. perplexity - Research best practices for feature
+2. architect-review - Review implementation plan
+3. react-pro - Implement frontend components
+4. backend-architect - Design API endpoints
+5. postgres-pro - Optimize database queries
+6. security-auditor - Security review
+7. test-automator - Create tests
+8. code-reviewer - Final quality check
+9. documentation-expert - Write docs
+```
+
+**Example 2: Debug Production Issue**
+```
+1. sentry - Identify error patterns from production
+2. debugger - Investigate root cause
+3. sequential-thinking - Plan fix strategy
+4. Fix implementation
+5. test-automator - Add regression tests
+6. deployment-engineer - Deploy fix
+```
+
+**Example 3: Architecture Audit (What We Just Did)**
+```
+1. agent-organizer - Coordinate comprehensive audit
+2. Explore sub-agent - Scan entire codebase
+3. architect-review - Identify architectural issues
+4. documentation-expert - Create revised CLAUDE.md
+5. Plan execution phases with priorities
+```
+
+### Best Practices
+
+**MCP Usage:**
+- Use `ref` for quick doc lookups (token-efficient)
+- Use `perplexity` for research requiring multiple sources
+- Use `firecrawl` only when structured extraction needed
+- Always check cost implications for large operations
+
+**Sub-Agent Usage:**
+- Let Claude Code choose agents automatically for routine tasks
+- Explicitly call agents for specialized expertise
+- Use `agent-organizer` for tasks spanning multiple domains
+- Review agent output before committing changes
+
+**Documentation After Agent Use:**
+- Create test scripts for implementations
+- Update CLAUDE.md with architectural decisions
+- Document assumptions and trade-offs
+- Add troubleshooting guides for complex features
+
+---
+
 ## Next Steps / Known Issues
 
 - Dashboard rebuild (component-based) is in progress
