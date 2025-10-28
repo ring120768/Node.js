@@ -140,8 +140,8 @@ async function submitSignup(req, res) {
       email: formData.email.toLowerCase(),
       mobile_number: formData.mobile_number,
       date_of_birth: convertDateFormat(formData.date_of_birth), // Convert DD/MM/YYYY to YYYY-MM-DD
-      address_line_1: formData.address_line_1,
-      address_line_2: formData.address_line_2 || null,
+      street_address: formData.address_line_1, // Map form field to DB column
+      street_address_optional: formData.address_line_2 || null, // Map form field to DB column
       city: formData.city,
       county: formData.county || null,
       postcode: formData.postcode.toUpperCase(),
