@@ -9,6 +9,7 @@ const logger = require('../utils/logger');
 const { createClient } = require('@supabase/supabase-js');
 const config = require('../config');
 const ImageProcessorV2 = require('../services/imageProcessorV2');
+const gdprService = require('../services/gdprService');
 
 // Note: Images are now uploaded immediately when selected (temp upload pattern)
 // No multer needed - we receive JSON with temp paths instead of multipart/form-data
@@ -161,6 +162,10 @@ async function submitSignup(req, res) {
         formData.emergency_contact_email.toLowerCase(),
         formData.emergency_contact_company || ''
       ].join(' | '),
+      // DVLA vehicle info (populated from DVLA lookup on Page 5)
+      vehicle_make: formData.dvla_make || null,
+      vehicle_model: formData.dvla_model || null,
+      vehicle_colour: formData.dvla_colour || null,
       gdpr_consent: true,
       images_status: uploadedImages.length === 5 ? 'complete' : 'partial', // Track image upload status
       missing_images: missingImages.length > 0 ? missingImages : null, // Store which images are missing
@@ -180,6 +185,26 @@ async function submitSignup(req, res) {
     }
 
     logger.success('✅ User record created:', userId);
+
+    // ===== 1.5. Create GDPR audit log for account creation =====
+    try {
+      await gdprService.logActivity(
+        userId,
+        'ACCOUNT_CREATED',
+        {
+          method: 'custom_signup_form',
+          email: formData.email,
+          hasImages: uploadedImages.length > 0,
+          imagesComplete: uploadedImages.length === 5,
+          dvlaVerified: formData.dvla_verified === 'true'
+        },
+        req
+      );
+      logger.info('✅ GDPR audit log created for signup');
+    } catch (gdprError) {
+      // Non-fatal - don't block signup if audit log fails
+      logger.warn('⚠️ Failed to create GDPR audit log (non-fatal):', gdprError.message);
+    }
 
     // ===== 2. Insert dvla_vehicle_info_new record (if DVLA data present) =====
     if (formData.dvla_verified === 'true' && formData.make && formData.model) {
