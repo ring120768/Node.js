@@ -1286,12 +1286,13 @@
           allData.images = data.data?.documents || data.documents || [];
           console.log('Images found:', allData.images.length);
           if (allData.images.length > 0) {
+            const firstImage = allData.images[0];
             console.log('First image:', {
-              type: allData.images[0].document_type,
-              has_signed_url: false,
-              has_public_url: !!allData.images[0].public_url,
-              url_preview: allData.images[0].public_url ?
-                allData.images[0].public_url.substring(0, 100) + '...' :
+              type: firstImage.document_type,
+              has_signed_url: !!firstImage.signed_url,
+              has_public_url: !!firstImage.public_url,
+              url_preview: (firstImage.signed_url || firstImage.public_url) ?
+                (firstImage.signed_url || firstImage.public_url).substring(0, 100) + '...' :
                 'No URL'
             });
           }
@@ -1438,11 +1439,13 @@
         <div class="items-grid">
           ${allData.images.map((image, index) => {
             console.log('Rendering image', index, image.id, image.document_type);
+            // API returns signed_url, fallback to public_url for backwards compatibility
+            const imageUrl = image.signed_url || image.public_url;
             return `
             <div class="item-card">
               <div class="item-preview">
-                ${image.public_url ?
-                  `<img src="${image.public_url}" alt="${image.document_type}" onerror="this.parentElement.innerHTML='<span>🖼️</span>'">` :
+                ${imageUrl ?
+                  `<img src="${imageUrl}" alt="${image.document_type}" onerror="this.parentElement.innerHTML='<span>🖼️</span>'">` :
                   '<span>🖼️</span>'
                 }
               </div>
@@ -1454,7 +1457,7 @@
                 </div>
                 <div class="item-actions">
                   <button class="btn btn-primary" data-action="view" data-index="${index}">View</button>
-                  <button class="btn btn-secondary" data-action="download" data-url="${image.public_url}" data-filename="${image.document_type}">Download</button>
+                  <button class="btn btn-secondary" data-action="download" data-url="${imageUrl}" data-filename="${image.document_type}">Download</button>
                   <button class="btn btn-danger" data-action="delete" data-id="${image.id}">Delete</button>
                 </div>
               </div>
@@ -1475,8 +1478,10 @@
         return;
       }
       currentImageData = image;
+      // API returns signed_url, fallback to public_url for backwards compatibility
+      const imageUrl = image.signed_url || image.public_url;
       document.getElementById('modalTitle').textContent = formatDocumentType(image.document_type);
-      document.getElementById('modalImage').src = image.public_url || '';
+      document.getElementById('modalImage').src = imageUrl || '';
       document.getElementById('modalMeta').innerHTML = `
         <div><strong>Type:</strong> ${formatDocumentType(image.document_type)}</div>
         <div><strong>Date:</strong> ${formatDate(image.created_at)}</div>
@@ -1496,7 +1501,8 @@
     // Download current image
     function downloadCurrentImage() {
       if (currentImageData) {
-        const url = currentImageData.public_url;
+        // API returns signed_url, fallback to public_url for backwards compatibility
+        const url = currentImageData.signed_url || currentImageData.public_url;
         if (url) {
           downloadImage(url, currentImageData.document_type);
         }
