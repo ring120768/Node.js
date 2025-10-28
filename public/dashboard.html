@@ -355,14 +355,16 @@
 
     .item-card {
       background: white;
-      border-radius: 0.5rem;
+      border-radius: 0.75rem;
       overflow: hidden;
-      box-shadow: 0 1px 3px rgba(0,0,0,0.1);
-      transition: all 0.2s;
+      box-shadow: 0 1px 3px rgba(0,0,0,0.1), 0 1px 2px rgba(0,0,0,0.06);
+      transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+      cursor: pointer;
     }
 
     .item-card:hover {
-      box-shadow: 0 4px 8px rgba(0,0,0,0.15);
+      box-shadow: 0 10px 15px -3px rgba(0,0,0,0.1), 0 4px 6px -2px rgba(0,0,0,0.05);
+      transform: translateY(-4px);
     }
 
     .item-preview {
@@ -668,6 +670,238 @@
       background-color: #FEE2E2;
       color: #991B1B;
       border: 1px solid #FCA5A5;
+    }
+
+    /* Toast Notifications */
+    .toast-container {
+      position: fixed;
+      bottom: 2rem;
+      right: 2rem;
+      z-index: 9999;
+      display: flex;
+      flex-direction: column;
+      gap: 0.5rem;
+      max-width: 400px;
+    }
+
+    .toast {
+      padding: 1rem 1.5rem;
+      background: white;
+      border-radius: 0.5rem;
+      box-shadow: 0 10px 25px rgba(0,0,0,0.15);
+      display: flex;
+      align-items: center;
+      gap: 0.75rem;
+      animation: slideInUp 0.3s ease;
+      border-left: 4px solid;
+    }
+
+    .toast-success {
+      border-left-color: var(--success-green);
+    }
+
+    .toast-error {
+      border-left-color: var(--danger-red);
+    }
+
+    .toast-info {
+      border-left-color: var(--primary-blue);
+    }
+
+    .toast-icon {
+      font-size: 1.25rem;
+      flex-shrink: 0;
+    }
+
+    .toast-message {
+      flex-grow: 1;
+      font-size: 0.875rem;
+      color: var(--text-dark);
+    }
+
+    @keyframes slideInUp {
+      from {
+        transform: translateY(100%);
+        opacity: 0;
+      }
+      to {
+        transform: translateY(0);
+        opacity: 1;
+      }
+    }
+
+    @keyframes slideOutDown {
+      from {
+        transform: translateY(0);
+        opacity: 1;
+      }
+      to {
+        transform: translateY(100%);
+        opacity: 0;
+      }
+    }
+
+    /* Loading Skeleton */
+    .skeleton-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
+      gap: 1.5rem;
+    }
+
+    .skeleton-card {
+      background: white;
+      border-radius: 0.75rem;
+      overflow: hidden;
+      box-shadow: 0 1px 3px rgba(0,0,0,0.1);
+    }
+
+    .skeleton-content {
+      padding: 1rem;
+    }
+
+    .skeleton-image {
+      width: 100%;
+      height: 200px;
+      background: linear-gradient(90deg, #f0f0f0 25%, #e0e0e0 50%, #f0f0f0 75%);
+      background-size: 200% 100%;
+      animation: loading 1.5s infinite;
+    }
+
+    .skeleton-text {
+      height: 1rem;
+      background: linear-gradient(90deg, #f0f0f0 25%, #e0e0e0 50%, #f0f0f0 75%);
+      background-size: 200% 100%;
+      animation: loading 1.5s infinite;
+      margin: 1rem;
+      border-radius: 0.25rem;
+    }
+
+    .skeleton-text.short {
+      width: 60%;
+    }
+
+    @keyframes loading {
+      0% {
+        background-position: 200% 0;
+      }
+      100% {
+        background-position: -200% 0;
+      }
+    }
+
+    /* Edit Modal */
+    #editModal {
+      display: none;
+    }
+
+    #editModal.active {
+      display: flex;
+    }
+
+    .edit-form-group {
+      margin-bottom: 1.5rem;
+    }
+
+    .edit-form-group label {
+      display: block;
+      margin-bottom: 0.5rem;
+      font-weight: 600;
+      color: var(--text-dark);
+    }
+
+    .edit-form-group select,
+    .edit-form-group textarea {
+      width: 100%;
+      padding: 0.75rem;
+      border: 1px solid var(--border-gray);
+      border-radius: 0.5rem;
+      font-size: 1rem;
+      transition: border-color 0.2s, box-shadow 0.2s;
+    }
+
+    .edit-form-group select:focus,
+    .edit-form-group textarea:focus {
+      outline: none;
+      border-color: var(--primary-blue);
+      box-shadow: 0 0 0 3px rgba(11, 122, 176, 0.1);
+    }
+
+    .edit-form-group textarea {
+      min-height: 100px;
+      resize: vertical;
+      font-family: inherit;
+    }
+
+    /* Button improvements */
+    .btn {
+      position: relative;
+      overflow: hidden;
+    }
+
+    .btn::after {
+      content: '';
+      position: absolute;
+      top: 50%;
+      left: 50%;
+      width: 0;
+      height: 0;
+      border-radius: 50%;
+      background: rgba(255, 255, 255, 0.3);
+      transform: translate(-50%, -50%);
+      transition: width 0.6s, height 0.6s;
+    }
+
+    .btn:active::after {
+      width: 300px;
+      height: 300px;
+    }
+
+    /* Smooth transitions for section changes */
+    .section-view {
+      animation: fadeIn 0.3s ease;
+    }
+
+    @keyframes fadeIn {
+      from {
+        opacity: 0;
+        transform: translateY(10px);
+      }
+      to {
+        opacity: 1;
+        transform: translateY(0);
+      }
+    }
+
+    /* Improved item-actions buttons */
+    .item-actions {
+      display: flex;
+      gap: 0.5rem;
+      flex-wrap: wrap;
+    }
+
+    .item-actions .btn {
+      flex: 1;
+      min-width: max-content;
+      justify-content: center;
+      font-size: 0.875rem;
+      padding: 0.5rem 0.75rem;
+    }
+
+    /* Responsive improvements */
+    @media (max-width: 768px) {
+      .toast-container {
+        left: 1rem;
+        right: 1rem;
+        bottom: 1rem;
+      }
+
+      .item-actions {
+        flex-direction: column;
+      }
+
+      .item-actions .btn {
+        width: 100%;
+      }
     }
   </style>
   <link rel="stylesheet" href="/css/mascot.css">
@@ -1127,6 +1361,64 @@
     </div>
   </div>
 
+  <!-- Edit Document Modal -->
+  <div id="editModal" class="modal">
+    <div class="modal-content">
+      <div class="modal-header">
+        <h2>Edit Document</h2>
+        <button class="modal-close" onclick="closeEditModal()">&times;</button>
+      </div>
+      <div class="modal-body">
+        <form id="editForm">
+          <div class="edit-form-group">
+            <label for="editDocumentType">Document Type *</label>
+            <select id="editDocumentType" required>
+              <option value="">Select type...</option>
+              <option value="driving_license_picture">Driving License</option>
+              <option value="vehicle_front">Vehicle Front</option>
+              <option value="vehicle_rear">Vehicle Rear</option>
+              <option value="vehicle_side_left">Vehicle Side Left</option>
+              <option value="vehicle_side_right">Vehicle Side Right</option>
+              <option value="dashcam_footage">Dashcam Footage</option>
+              <option value="accident_scene">Accident Scene</option>
+              <option value="damage_photo">Damage Photo</option>
+              <option value="witness_statement">Witness Statement</option>
+              <option value="police_report">Police Report</option>
+              <option value="insurance_document">Insurance Document</option>
+              <option value="medical_report">Medical Report</option>
+              <option value="other">Other</option>
+            </select>
+          </div>
+
+          <div class="edit-form-group">
+            <label for="editDocumentCategory">Category</label>
+            <select id="editDocumentCategory">
+              <option value="">Select category...</option>
+              <option value="identification">Identification</option>
+              <option value="vehicle">Vehicle</option>
+              <option value="accident">Accident</option>
+              <option value="legal">Legal</option>
+              <option value="medical">Medical</option>
+              <option value="insurance">Insurance</option>
+            </select>
+          </div>
+
+          <div class="edit-form-group">
+            <label for="editNotes">Notes</label>
+            <textarea id="editNotes" placeholder="Add any notes about this document..."></textarea>
+          </div>
+        </form>
+      </div>
+      <div class="modal-footer">
+        <button class="btn btn-secondary" onclick="closeEditModal()">Cancel</button>
+        <button class="btn btn-primary" onclick="saveDocumentEdit()">Save Changes</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Toast Notification Container -->
+  <div id="toastContainer" class="toast-container"></div>
+
   <script src="/js/mascot.js"></script>
   <script>
     // ============================================================
@@ -1237,6 +1529,10 @@
           const index = parseInt(button.dataset.index);
           console.log('Calling viewImage with index:', index, 'Image:', allData.images[index]);
           viewImage(allData.images[index]);
+        } else if (action === 'edit') {
+          const index = parseInt(button.dataset.index);
+          console.log('Edit action triggered for image:', allData.images[index]);
+          openEditModal(allData.images[index]);
         } else if (action === 'download') {
           console.log('Download action triggered');
           downloadImage(button.dataset.url, button.dataset.filename);
@@ -1456,9 +1752,10 @@
                   <div>📊 ${image.status || 'pending'}</div>
                 </div>
                 <div class="item-actions">
-                  <button class="btn btn-primary" data-action="view" data-index="${index}">View</button>
-                  <button class="btn btn-secondary" data-action="download" data-url="${imageUrl}" data-filename="${image.document_type}">Download</button>
-                  <button class="btn btn-danger" data-action="delete" data-id="${image.id}">Delete</button>
+                  <button class="btn btn-primary" data-action="view" data-index="${index}"><i class="fas fa-eye"></i> View</button>
+                  <button class="btn btn-secondary" data-action="edit" data-index="${index}"><i class="fas fa-edit"></i> Edit</button>
+                  <button class="btn btn-secondary" data-action="download" data-url="${imageUrl}" data-filename="${image.document_type}"><i class="fas fa-download"></i> Download</button>
+                  <button class="btn btn-danger" data-action="delete" data-id="${image.id}"><i class="fas fa-trash-alt"></i> Delete</button>
                 </div>
               </div>
             </div>
@@ -1556,6 +1853,98 @@
         console.error('Delete failed:', error);
         alert('Failed to delete image. Please try again.');
       }
+    }
+
+    // ===== TOAST NOTIFICATION SYSTEM =====
+
+    function showToast(message, type = 'success') {
+      const container = document.getElementById('toastContainer');
+      const toast = document.createElement('div');
+      toast.className = `toast toast-${type}`;
+
+      const icon = type === 'success' ? '✅' : type === 'error' ? '❌' : 'ℹ️';
+      toast.innerHTML = `
+        <span class="toast-icon">${icon}</span>
+        <span class="toast-message">${message}</span>
+      `;
+
+      container.appendChild(toast);
+
+      setTimeout(() => {
+        toast.style.animation = 'slideOutDown 0.3s ease';
+        setTimeout(() => toast.remove(), 300);
+      }, 3000);
+    }
+
+    // ===== EDIT MODAL FUNCTIONS =====
+
+    let currentEditDocument = null;
+
+    function openEditModal(document) {
+      currentEditDocument = document;
+
+      // Populate form fields
+      document.getElementById('editDocumentType').value = document.document_type || '';
+      document.getElementById('editDocumentCategory').value = document.document_category || '';
+      document.getElementById('editNotes').value = document.notes || '';
+
+      // Show modal
+      document.getElementById('editModal').classList.add('active');
+    }
+
+    function closeEditModal() {
+      document.getElementById('editModal').classList.remove('active');
+      currentEditDocument = null;
+    }
+
+    async function saveDocumentEdit() {
+      if (!currentEditDocument) return;
+
+      const updates = {
+        document_type: document.getElementById('editDocumentType').value,
+        document_category: document.getElementById('editDocumentCategory').value,
+        notes: document.getElementById('editNotes').value
+      };
+
+      try {
+        const response = await fetch(`/api/user-documents/${currentEditDocument.id}`, {
+          method: 'PATCH',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify(updates),
+          credentials: 'include'
+        });
+
+        if (response.ok) {
+          showToast('Document updated successfully', 'success');
+          closeEditModal();
+          await loadImages(); // Refresh the list
+        } else {
+          throw new Error('Update failed');
+        }
+      } catch (error) {
+        console.error('Edit failed:', error);
+        showToast('Failed to update document', 'error');
+      }
+    }
+
+    // ===== LOADING SKELETON =====
+
+    function showLoadingSkeleton(containerId, count = 6) {
+      const container = document.getElementById(containerId);
+      const skeletonHTML = `
+        <div class="skeleton-grid">
+          ${Array(count).fill().map(() => `
+            <div class="skeleton-card">
+              <div class="skeleton-image"></div>
+              <div class="skeleton-content">
+                <div class="skeleton-text"></div>
+                <div class="skeleton-text short"></div>
+              </div>
+            </div>
+          `).join('')}
+        </div>
+      `;
+      container.innerHTML = skeletonHTML;
     }
 
     // ===== VIDEOS SECTION =====
