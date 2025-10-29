@@ -59,7 +59,7 @@ async function pageAuth(req, res, next) {
       return res.status(401).json({
         error: 'Unauthorized',
         message: 'Please log in to access this page',
-        redirect: `/login.html?redirect=${encodeURIComponent(req.path)}`
+        redirect: `/login-improved.html?redirect=${encodeURIComponent(req.path)}`
       });
     }
 
@@ -76,7 +76,7 @@ async function pageAuth(req, res, next) {
       return res.status(401).json({
         error: 'Session Expired',
         message: 'Your session has expired. Please log in again.',
-        redirect: `/login.html?redirect=${encodeURIComponent(req.path)}`
+        redirect: `/login-improved.html?redirect=${encodeURIComponent(req.path)}`
       });
     }
 
@@ -97,7 +97,7 @@ async function pageAuth(req, res, next) {
     return res.status(500).json({
       error: 'Server Error',
       message: 'Authentication service temporarily unavailable',
-      redirect: '/login.html'
+      redirect: '/login-improved.html'
     });
   }
 }
