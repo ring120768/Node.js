@@ -1,0 +1,674 @@
+<!DOCTYPE html>
+<html lang="en-GB">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+  <meta name="apple-mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+  <title>Location & Conditions - Page 4 of 12</title>
+
+  <style>
+    /* Design System Variables */
+    :root {
+      --grad-start: #2e6a9d;
+      --grad-end: #3776a2;
+      --accent: #357a94;
+      --accent-hover: #2c6880;
+      --bg-light: #f0ebe3;
+      --text-dark: #333;
+      --text-muted: #666;
+      --border: #d1d5db;
+      --success: #10b981;
+      --danger: #ef4444;
+      --warning: #f59e0b;
+    }
+
+    /* Reset & Base */
+    * {
+      margin: 0;
+      padding: 0;
+      box-sizing: border-box;
+      -webkit-tap-highlight-color: transparent;
+    }
+
+    html {
+      font-size: 16px;
+      -webkit-text-size-adjust: 100%;
+    }
+
+    body {
+      font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, Cantarell, sans-serif;
+      background: var(--bg-light);
+      color: var(--text-dark);
+      line-height: 1.6;
+      overflow-x: hidden;
+      padding-bottom: env(safe-area-inset-bottom, 20px);
+    }
+
+    /* Sticky Banner */
+    .banner {
+      background: linear-gradient(135deg, var(--grad-start) 0%, var(--grad-end) 100%);
+      padding: 20px 16px;
+      position: sticky;
+      top: 0;
+      z-index: 200;
+      box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+    }
+
+    @supports (padding-top: env(safe-area-inset-top)) {
+      .banner {
+        padding-top: max(20px, env(safe-area-inset-top));
+      }
+    }
+
+    .brand {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      text-align: center;
+      gap: 12px;
+    }
+
+    .brand .logo {
+      width: 80px;
+      height: 80px;
+      border-radius: 12px;
+      box-shadow: 0 4px 12px rgba(0,0,0,0.15);
+    }
+
+    .brand h1 {
+      font-size: 1.25rem;
+      font-weight: 700;
+      color: white;
+      text-shadow: 0 2px 4px rgba(0,0,0,0.1);
+    }
+
+    .brand .tagline {
+      font-size: 0.875rem;
+      color: rgba(255,255,255,0.95);
+      font-weight: 500;
+    }
+
+    /* Progress Bar */
+    .progress-container {
+      margin-top: 16px;
+      background: rgba(255,255,255,0.2);
+      border-radius: 20px;
+      height: 8px;
+      overflow: hidden;
+      backdrop-filter: blur(8px);
+    }
+
+    .progress-bar {
+      height: 100%;
+      background: white;
+      border-radius: 20px;
+      transition: width 0.3s ease;
+      width: 33.33%; /* Page 4 of 12 */
+    }
+
+    .progress-label {
+      text-align: center;
+      color: white;
+      font-size: 0.75rem;
+      margin-top: 8px;
+      font-weight: 600;
+    }
+
+    /* Main Container */
+    .container {
+      max-width: 600px;
+      margin: 0 auto;
+      padding: 24px 16px;
+    }
+
+    .page-header {
+      text-align: center;
+      margin-bottom: 32px;
+    }
+
+    .page-header h2 {
+      font-size: 1.5rem;
+      color: var(--text-dark);
+      margin-bottom: 8px;
+    }
+
+    .page-header p {
+      color: var(--text-muted);
+      font-size: 0.938rem;
+    }
+
+    /* Form Section */
+    .form-section {
+      background: white;
+      border-radius: 12px;
+      padding: 24px;
+      margin-bottom: 20px;
+      box-shadow: 0 2px 8px rgba(0,0,0,0.05);
+    }
+
+    .form-section h3 {
+      color: var(--accent);
+      font-size: 1.125rem;
+      margin-bottom: 20px;
+      display: flex;
+      align-items: center;
+      gap: 8px;
+    }
+
+    .form-group {
+      margin-bottom: 20px;
+    }
+
+    .form-group label {
+      display: block;
+      font-weight: 600;
+      color: var(--text-dark);
+      margin-bottom: 8px;
+      font-size: 0.938rem;
+    }
+
+    .form-group label .required {
+      color: var(--danger);
+      margin-left: 4px;
+    }
+
+    .form-group input,
+    .form-group select,
+    .form-group textarea {
+      width: 100%;
+      padding: 14px 16px;
+      border: 2px solid var(--border);
+      border-radius: 8px;
+      font-size: 16px;
+      font-family: inherit;
+      transition: border-color 0.2s ease;
+      -webkit-appearance: none;
+      appearance: none;
+    }
+
+    .form-group textarea {
+      min-height: 100px;
+      resize: vertical;
+    }
+
+    .form-group input:focus,
+    .form-group select:focus,
+    .form-group textarea:focus {
+      outline: none;
+      border-color: var(--accent);
+      box-shadow: 0 0 0 3px rgba(53, 122, 148, 0.1);
+    }
+
+    .form-group input::placeholder,
+    .form-group textarea::placeholder {
+      color: #999;
+    }
+
+    .form-group select {
+      background: white url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='12' viewBox='0 0 12 12'%3E%3Cpath fill='%23333' d='M6 9L1 4h10z'/%3E%3C/svg%3E") no-repeat right 16px center;
+      padding-right: 40px;
+      cursor: pointer;
+    }
+
+    .form-group .help-text {
+      font-size: 0.813rem;
+      color: var(--text-muted);
+      margin-top: 6px;
+    }
+
+    /* Checkbox Group */
+    .checkbox-group {
+      display: flex;
+      flex-direction: column;
+      gap: 12px;
+    }
+
+    .checkbox-group label {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+      padding: 14px 16px;
+      border: 2px solid var(--border);
+      border-radius: 8px;
+      cursor: pointer;
+      transition: all 0.2s ease;
+      font-weight: 500;
+    }
+
+    .checkbox-group label:hover {
+      border-color: var(--accent);
+      background: rgba(53, 122, 148, 0.05);
+    }
+
+    .checkbox-group input[type="checkbox"] {
+      width: 22px;
+      height: 22px;
+      min-width: 22px;
+      cursor: pointer;
+      accent-color: var(--accent);
+    }
+
+    .checkbox-group input[type="checkbox"]:checked + span {
+      color: var(--accent);
+      font-weight: 600;
+    }
+
+    /* Navigation Buttons */
+    .nav-buttons {
+      display: flex;
+      gap: 12px;
+      margin-top: 32px;
+      padding-bottom: env(safe-area-inset-bottom, 0px);
+    }
+
+    .btn {
+      flex: 1;
+      padding: 16px 24px;
+      border: none;
+      border-radius: 12px;
+      font-size: 1rem;
+      font-weight: 600;
+      cursor: pointer;
+      transition: all 0.2s ease;
+      min-height: 56px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: 8px;
+    }
+
+    .btn-secondary {
+      background: white;
+      color: var(--accent);
+      border: 2px solid var(--accent);
+    }
+
+    .btn-secondary:hover {
+      background: rgba(53, 122, 148, 0.1);
+    }
+
+    .btn-primary {
+      background: linear-gradient(135deg, var(--accent) 0%, var(--accent-hover) 100%);
+      color: white;
+      box-shadow: 0 4px 12px rgba(53, 122, 148, 0.3);
+    }
+
+    .btn-primary:hover {
+      transform: translateY(-2px);
+      box-shadow: 0 6px 16px rgba(53, 122, 148, 0.4);
+    }
+
+    .btn-primary:active {
+      transform: translateY(0);
+    }
+
+    /* Mobile Optimizations */
+    @media (max-width: 480px) {
+      .container {
+        padding: 16px 12px;
+      }
+
+      .page-header h2 {
+        font-size: 1.25rem;
+      }
+
+      .form-section {
+        padding: 20px 16px;
+      }
+    }
+
+    /* Touch Feedback */
+    @media (hover: none) {
+      .btn:active {
+        opacity: 0.8;
+      }
+    }
+  </style>
+</head>
+<body>
+  <!-- Sticky Banner -->
+  <div class="banner">
+    <div class="brand">
+      <img src="/images/car-crash-lawyer-ai-80.webp" alt="Logo" class="logo">
+      <h1>Car Crash Lawyer AI</h1>
+      <p class="tagline">Legal Incident Report</p>
+    </div>
+    <div class="progress-container">
+      <div class="progress-bar"></div>
+    </div>
+    <div class="progress-label">Page 4 of 12</div>
+  </div>
+
+  <!-- Main Content -->
+  <div class="container">
+    <div class="page-header">
+      <h2>📍 Location & Road Conditions</h2>
+      <p>Tell us where the accident happened and the conditions at the time</p>
+    </div>
+
+    <!-- Location -->
+    <div class="form-section">
+      <h3>📌 Accident Location</h3>
+
+      <div class="form-group">
+        <label for="location">
+          Street address or location description
+          <span class="required">*</span>
+        </label>
+        <textarea
+          id="location"
+          name="location"
+          required
+          placeholder="e.g. Junction of High Street and Park Road, London, or M25 between Junction 15 and 16 northbound"
+        ></textarea>
+        <p class="help-text">Be as specific as possible - include landmarks, road names, junction numbers</p>
+      </div>
+
+      <div class="form-group">
+        <label for="what3words">
+          what3words address (optional)
+        </label>
+        <input
+          type="text"
+          id="what3words"
+          name="what3words"
+          placeholder="e.g. ///filled.count.soap"
+        >
+        <p class="help-text">If you have the what3words location, enter it here (3 words separated by dots)</p>
+      </div>
+    </div>
+
+    <!-- Weather & Lighting -->
+    <div class="form-section">
+      <h3>🌤️ Weather & Light Conditions</h3>
+
+      <div class="form-group">
+        <label for="weather">
+          Weather conditions
+          <span class="required">*</span>
+        </label>
+        <select id="weather" name="weather" required>
+          <option value="">Select weather...</option>
+          <option value="clear_dry">Clear and dry</option>
+          <option value="raining">Raining</option>
+          <option value="heavy_rain">Heavy rain</option>
+          <option value="fog_mist">Fog or mist</option>
+          <option value="snow_ice">Snow or ice</option>
+          <option value="windy">Windy</option>
+          <option value="other">Other</option>
+        </select>
+      </div>
+
+      <div class="form-group">
+        <label for="lighting">
+          Light conditions
+          <span class="required">*</span>
+        </label>
+        <select id="lighting" name="lighting" required>
+          <option value="">Select lighting...</option>
+          <option value="daylight">Daylight</option>
+          <option value="dusk_dawn">Dusk or dawn</option>
+          <option value="dark_street_lit">Darkness with street lighting</option>
+          <option value="dark_no_lighting">Darkness with no street lighting</option>
+        </select>
+      </div>
+
+      <div class="form-group">
+        <label for="roadSurface">
+          Road surface condition
+          <span class="required">*</span>
+        </label>
+        <select id="roadSurface" name="roadSurface" required>
+          <option value="">Select condition...</option>
+          <option value="dry">Dry</option>
+          <option value="wet">Wet</option>
+          <option value="icy">Icy or frosty</option>
+          <option value="snow">Snow</option>
+          <option value="flooded">Flooded</option>
+          <option value="mud">Mud</option>
+        </select>
+      </div>
+    </div>
+
+    <!-- Road Type -->
+    <div class="form-section">
+      <h3>🛣️ Road Type</h3>
+
+      <div class="form-group">
+        <label for="roadType">
+          Type of road
+          <span class="required">*</span>
+        </label>
+        <select id="roadType" name="roadType" required>
+          <option value="">Select road type...</option>
+          <option value="motorway">Motorway</option>
+          <option value="dual_carriageway">Dual carriageway (A-road)</option>
+          <option value="single_carriageway">Single carriageway (A-road)</option>
+          <option value="b_road">B-road</option>
+          <option value="residential">Residential street</option>
+          <option value="private_road">Private road</option>
+          <option value="car_park">Car park</option>
+          <option value="other">Other</option>
+        </select>
+      </div>
+
+      <div class="form-group">
+        <label for="speedLimit">
+          Speed limit (mph)
+          <span class="required">*</span>
+        </label>
+        <select id="speedLimit" name="speedLimit" required>
+          <option value="">Select speed limit...</option>
+          <option value="20">20 mph</option>
+          <option value="30">30 mph</option>
+          <option value="40">40 mph</option>
+          <option value="50">50 mph</option>
+          <option value="60">60 mph</option>
+          <option value="70">70 mph</option>
+          <option value="unknown">Unknown</option>
+        </select>
+      </div>
+    </div>
+
+    <!-- Junction Information -->
+    <div class="form-section">
+      <h3>🔀 Junction / Intersection</h3>
+
+      <div class="form-group">
+        <label for="junctionType">
+          Type of junction
+          <span class="required">*</span>
+        </label>
+        <select id="junctionType" name="junctionType" required>
+          <option value="">Select junction type...</option>
+          <option value="not_junction">Not at or near a junction</option>
+          <option value="roundabout">Roundabout</option>
+          <option value="mini_roundabout">Mini-roundabout</option>
+          <option value="t_junction">T-junction or Y-junction</option>
+          <option value="crossroads">Crossroads</option>
+          <option value="slip_road">Slip road / on-ramp / off-ramp</option>
+          <option value="traffic_lights">Traffic lights</option>
+          <option value="other">Other junction type</option>
+        </select>
+      </div>
+    </div>
+
+    <!-- Special Conditions -->
+    <div class="form-section">
+      <h3>⚠️ Special Road Conditions</h3>
+      <p class="help-text" style="margin-bottom: 16px;">
+        Select any that apply:
+      </p>
+
+      <div class="checkbox-group">
+        <label>
+          <input type="checkbox" name="specialConditions" value="roadworks">
+          <span>Roadworks or construction</span>
+        </label>
+        <label>
+          <input type="checkbox" name="specialConditions" value="traffic_calming">
+          <span>Traffic calming measures (speed bumps, chicanes)</span>
+        </label>
+        <label>
+          <input type="checkbox" name="specialConditions" value="parked_vehicles">
+          <span>Parked vehicles obstructing view</span>
+        </label>
+        <label>
+          <input type="checkbox" name="specialConditions" value="pedestrian_crossing">
+          <span>Near pedestrian crossing</span>
+        </label>
+        <label>
+          <input type="checkbox" name="specialConditions" value="school_zone">
+          <span>School zone or playground area</span>
+        </label>
+        <label>
+          <input type="checkbox" name="specialConditions" value="narrow_road">
+          <span>Narrow road or single-track</span>
+        </label>
+        <label>
+          <input type="checkbox" name="specialConditions" value="poor_signage">
+          <span>Poor road markings or signage</span>
+        </label>
+        <label>
+          <input type="checkbox" name="specialConditions" value="none">
+          <span>None of these apply</span>
+        </label>
+      </div>
+    </div>
+
+    <!-- Navigation -->
+    <div class="nav-buttons">
+      <button type="button" class="btn btn-secondary" id="backBtn">
+        ← Back
+      </button>
+      <button type="button" class="btn btn-primary" id="nextBtn">
+        Continue →
+      </button>
+    </div>
+  </div>
+
+  <script>
+    // Elements
+    const backBtn = document.getElementById('backBtn');
+    const nextBtn = document.getElementById('nextBtn');
+    const noneCheckbox = document.querySelector('input[value="none"]');
+    const specialConditionsCheckboxes = document.querySelectorAll('input[name="specialConditions"]:not([value="none"])');
+
+    // "None" checkbox logic (exclusive with other conditions)
+    noneCheckbox.addEventListener('change', function() {
+      if (this.checked) {
+        specialConditionsCheckboxes.forEach(cb => cb.checked = false);
+      }
+    });
+
+    specialConditionsCheckboxes.forEach(checkbox => {
+      checkbox.addEventListener('change', function() {
+        if (this.checked) {
+          noneCheckbox.checked = false;
+        }
+      });
+    });
+
+    // Validate form
+    function validateForm() {
+      const location = document.getElementById('location').value.trim();
+      const weather = document.getElementById('weather').value;
+      const lighting = document.getElementById('lighting').value;
+      const roadSurface = document.getElementById('roadSurface').value;
+      const roadType = document.getElementById('roadType').value;
+      const speedLimit = document.getElementById('speedLimit').value;
+      const junctionType = document.getElementById('junctionType').value;
+
+      if (!location) {
+        alert('Please provide the accident location.');
+        return false;
+      }
+
+      if (!weather || !lighting || !roadSurface || !roadType || !speedLimit || !junctionType) {
+        alert('Please complete all required fields about the road conditions.');
+        return false;
+      }
+
+      return true;
+    }
+
+    // Save and proceed
+    nextBtn.addEventListener('click', function() {
+      if (!validateForm()) {
+        return;
+      }
+
+      // Get selected special conditions
+      const selectedConditions = Array.from(document.querySelectorAll('input[name="specialConditions"]:checked'))
+        .map(cb => cb.value);
+
+      // Save data to session storage
+      const pageData = {
+        location: document.getElementById('location').value.trim(),
+        what3words: document.getElementById('what3words').value.trim(),
+        weather: document.getElementById('weather').value,
+        lighting: document.getElementById('lighting').value,
+        road_surface: document.getElementById('roadSurface').value,
+        road_type: document.getElementById('roadType').value,
+        speed_limit: document.getElementById('speedLimit').value,
+        junction_type: document.getElementById('junctionType').value,
+        special_conditions: selectedConditions,
+        completed_at: new Date().toISOString()
+      };
+
+      sessionStorage.setItem('incident_page4', JSON.stringify(pageData));
+
+      console.log('✅ Page 4 saved:', pageData);
+
+      // Navigate to page 5 (page 4a is the extended vehicle info)
+      window.location.href = '/incident-form-page4a-vehicle-extended.html';
+    });
+
+    // Back button
+    backBtn.addEventListener('click', function() {
+      window.location.href = '/incident-form-page3.html';
+    });
+
+    // Restore saved data if returning to this page
+    window.addEventListener('DOMContentLoaded', function() {
+      const saved = sessionStorage.getItem('incident_page4');
+      if (saved) {
+        try {
+          const data = JSON.parse(saved);
+
+          // Restore location
+          if (data.location) document.getElementById('location').value = data.location;
+          if (data.what3words) document.getElementById('what3words').value = data.what3words;
+
+          // Restore weather & lighting
+          if (data.weather) document.getElementById('weather').value = data.weather;
+          if (data.lighting) document.getElementById('lighting').value = data.lighting;
+          if (data.road_surface) document.getElementById('roadSurface').value = data.road_surface;
+
+          // Restore road type
+          if (data.road_type) document.getElementById('roadType').value = data.road_type;
+          if (data.speed_limit) document.getElementById('speedLimit').value = data.speed_limit;
+
+          // Restore junction
+          if (data.junction_type) document.getElementById('junctionType').value = data.junction_type;
+
+          // Restore special conditions
+          if (data.special_conditions && Array.isArray(data.special_conditions)) {
+            data.special_conditions.forEach(condition => {
+              const checkbox = document.querySelector(`input[name="specialConditions"][value="${condition}"]`);
+              if (checkbox) checkbox.checked = true;
+            });
+          }
+
+          console.log('✅ Page 4 data restored');
+        } catch (e) {
+          console.error('Error restoring page 4 data:', e);
+        }
+      }
+    });
+
+    console.log('📋 Incident Form - Page 4: Location & Conditions loaded');
+  </script>
+</body>
+</html>

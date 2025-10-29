@@ -1,0 +1,679 @@
+<!DOCTYPE html>
+<html lang="en-GB">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+  <meta name="apple-mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+  <title>Safety Check & Basic Info - Page 2 of 12</title>
+
+  <style>
+    /* Design System Variables */
+    :root {
+      --grad-start: #2e6a9d;
+      --grad-end: #3776a2;
+      --accent: #357a94;
+      --accent-hover: #2c6880;
+      --bg-light: #f0ebe3;
+      --text-dark: #333;
+      --text-muted: #666;
+      --border: #d1d5db;
+      --success: #10b981;
+      --danger: #ef4444;
+      --warning: #f59e0b;
+    }
+
+    /* Reset & Base */
+    * {
+      margin: 0;
+      padding: 0;
+      box-sizing: border-box;
+      -webkit-tap-highlight-color: transparent;
+    }
+
+    html {
+      font-size: 16px;
+      -webkit-text-size-adjust: 100%;
+    }
+
+    body {
+      font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, Cantarell, sans-serif;
+      background: var(--bg-light);
+      color: var(--text-dark);
+      line-height: 1.6;
+      overflow-x: hidden;
+      padding-bottom: env(safe-area-inset-bottom, 20px);
+    }
+
+    /* Sticky Banner */
+    .banner {
+      background: linear-gradient(135deg, var(--grad-start) 0%, var(--grad-end) 100%);
+      padding: 20px 16px;
+      position: sticky;
+      top: 0;
+      z-index: 200;
+      box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+    }
+
+    @supports (padding-top: env(safe-area-inset-top)) {
+      .banner {
+        padding-top: max(20px, env(safe-area-inset-top));
+      }
+    }
+
+    .brand {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      text-align: center;
+      gap: 12px;
+    }
+
+    .brand .logo {
+      width: 80px;
+      height: 80px;
+      border-radius: 12px;
+      box-shadow: 0 4px 12px rgba(0,0,0,0.15);
+    }
+
+    .brand h1 {
+      font-size: 1.25rem;
+      font-weight: 700;
+      color: white;
+      text-shadow: 0 2px 4px rgba(0,0,0,0.1);
+    }
+
+    .brand .tagline {
+      font-size: 0.875rem;
+      color: rgba(255,255,255,0.95);
+      font-weight: 500;
+    }
+
+    /* Progress Bar */
+    .progress-container {
+      margin-top: 16px;
+      background: rgba(255,255,255,0.2);
+      border-radius: 20px;
+      height: 8px;
+      overflow: hidden;
+      backdrop-filter: blur(8px);
+    }
+
+    .progress-bar {
+      height: 100%;
+      background: white;
+      border-radius: 20px;
+      transition: width 0.3s ease;
+      width: 16.67%; /* Page 2 of 12 */
+    }
+
+    .progress-label {
+      text-align: center;
+      color: white;
+      font-size: 0.75rem;
+      margin-top: 8px;
+      font-weight: 600;
+    }
+
+    /* Main Container */
+    .container {
+      max-width: 600px;
+      margin: 0 auto;
+      padding: 24px 16px;
+    }
+
+    .page-header {
+      text-align: center;
+      margin-bottom: 32px;
+    }
+
+    .page-header h2 {
+      font-size: 1.5rem;
+      color: var(--text-dark);
+      margin-bottom: 8px;
+    }
+
+    .page-header p {
+      color: var(--text-muted);
+      font-size: 0.938rem;
+    }
+
+    /* Emergency Banner */
+    .emergency-banner {
+      background: linear-gradient(135deg, var(--danger) 0%, #dc2626 100%);
+      border-radius: 12px;
+      padding: 20px;
+      margin-bottom: 24px;
+      color: white;
+      display: none;
+      animation: slideDown 0.3s ease-out;
+    }
+
+    .emergency-banner.show {
+      display: block;
+    }
+
+    @keyframes slideDown {
+      from {
+        opacity: 0;
+        transform: translateY(-20px);
+      }
+      to {
+        opacity: 1;
+        transform: translateY(0);
+      }
+    }
+
+    .emergency-banner h3 {
+      font-size: 1.25rem;
+      margin-bottom: 12px;
+      display: flex;
+      align-items: center;
+      gap: 10px;
+    }
+
+    .emergency-banner p {
+      font-size: 0.938rem;
+      line-height: 1.6;
+    }
+
+    /* Form Section */
+    .form-section {
+      background: white;
+      border-radius: 12px;
+      padding: 24px;
+      margin-bottom: 20px;
+      box-shadow: 0 2px 8px rgba(0,0,0,0.05);
+    }
+
+    .form-section h3 {
+      color: var(--accent);
+      font-size: 1.125rem;
+      margin-bottom: 20px;
+      display: flex;
+      align-items: center;
+      gap: 8px;
+    }
+
+    .form-group {
+      margin-bottom: 20px;
+    }
+
+    .form-group label {
+      display: block;
+      font-weight: 600;
+      color: var(--text-dark);
+      margin-bottom: 8px;
+      font-size: 0.938rem;
+    }
+
+    .form-group label .required {
+      color: var(--danger);
+      margin-left: 4px;
+    }
+
+    .form-group input,
+    .form-group select {
+      width: 100%;
+      padding: 14px 16px;
+      border: 2px solid var(--border);
+      border-radius: 8px;
+      font-size: 16px;
+      font-family: inherit;
+      transition: border-color 0.2s ease;
+      -webkit-appearance: none;
+      appearance: none;
+    }
+
+    .form-group input:focus,
+    .form-group select:focus {
+      outline: none;
+      border-color: var(--accent);
+      box-shadow: 0 0 0 3px rgba(53, 122, 148, 0.1);
+    }
+
+    .form-group input::placeholder {
+      color: #999;
+    }
+
+    .form-group select {
+      background: white url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='12' viewBox='0 0 12 12'%3E%3Cpath fill='%23333' d='M6 9L1 4h10z'/%3E%3C/svg%3E") no-repeat right 16px center;
+      padding-right: 40px;
+      cursor: pointer;
+    }
+
+    .form-group .help-text {
+      font-size: 0.813rem;
+      color: var(--text-muted);
+      margin-top: 6px;
+    }
+
+    /* Radio Group */
+    .radio-group {
+      display: flex;
+      flex-direction: column;
+      gap: 12px;
+    }
+
+    .radio-group label {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      padding: 12px 16px;
+      border: 2px solid var(--border);
+      border-radius: 8px;
+      cursor: pointer;
+      transition: all 0.2s ease;
+      font-weight: 500;
+    }
+
+    .radio-group label:hover {
+      border-color: var(--accent);
+      background: rgba(53, 122, 148, 0.05);
+    }
+
+    .radio-group input[type="radio"] {
+      width: 20px;
+      height: 20px;
+      min-width: 20px;
+      cursor: pointer;
+      accent-color: var(--accent);
+    }
+
+    .radio-group input[type="radio"]:checked + span {
+      color: var(--accent);
+      font-weight: 600;
+    }
+
+    /* Navigation Buttons */
+    .nav-buttons {
+      display: flex;
+      gap: 12px;
+      margin-top: 32px;
+      padding-bottom: env(safe-area-inset-bottom, 0px);
+    }
+
+    .btn {
+      flex: 1;
+      padding: 16px 24px;
+      border: none;
+      border-radius: 12px;
+      font-size: 1rem;
+      font-weight: 600;
+      cursor: pointer;
+      transition: all 0.2s ease;
+      min-height: 56px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: 8px;
+    }
+
+    .btn-secondary {
+      background: white;
+      color: var(--accent);
+      border: 2px solid var(--accent);
+    }
+
+    .btn-secondary:hover {
+      background: rgba(53, 122, 148, 0.1);
+    }
+
+    .btn-primary {
+      background: linear-gradient(135deg, var(--accent) 0%, var(--accent-hover) 100%);
+      color: white;
+      box-shadow: 0 4px 12px rgba(53, 122, 148, 0.3);
+    }
+
+    .btn-primary:hover {
+      transform: translateY(-2px);
+      box-shadow: 0 6px 16px rgba(53, 122, 148, 0.4);
+    }
+
+    .btn-primary:active {
+      transform: translateY(0);
+    }
+
+    .btn-primary:disabled {
+      opacity: 0.5;
+      cursor: not-allowed;
+      transform: none;
+    }
+
+    /* Mobile Optimizations */
+    @media (max-width: 480px) {
+      .container {
+        padding: 16px 12px;
+      }
+
+      .page-header h2 {
+        font-size: 1.25rem;
+      }
+
+      .form-section {
+        padding: 20px 16px;
+      }
+    }
+
+    /* Touch Feedback */
+    @media (hover: none) {
+      .btn:active {
+        opacity: 0.8;
+      }
+    }
+  </style>
+</head>
+<body>
+  <!-- Sticky Banner -->
+  <div class="banner">
+    <div class="brand">
+      <img src="/images/car-crash-lawyer-ai-80.webp" alt="Logo" class="logo">
+      <h1>Car Crash Lawyer AI</h1>
+      <p class="tagline">Legal Incident Report</p>
+    </div>
+    <div class="progress-container">
+      <div class="progress-bar"></div>
+    </div>
+    <div class="progress-label">Page 2 of 12</div>
+  </div>
+
+  <!-- Main Content -->
+  <div class="container">
+    <div class="page-header">
+      <h2>🚑 Safety Check & Basic Information</h2>
+      <p>Please provide your personal details and when the accident occurred</p>
+    </div>
+
+    <!-- Emergency Banner (shown conditionally) -->
+    <div class="emergency-banner" id="emergencyBanner">
+      <h3>
+        <span style="font-size: 2rem;">🚨</span>
+        Emergency Situation Detected
+      </h3>
+      <p>
+        If you or anyone else is injured or in danger, please stop completing this form
+        and call <strong>999</strong> immediately. This form is not a substitute for
+        emergency medical attention.
+      </p>
+    </div>
+
+    <!-- Safety Status -->
+    <div class="form-section">
+      <h3>🛡️ Safety Status</h3>
+      <div class="form-group">
+        <label>
+          Is everyone safe right now?
+          <span class="required">*</span>
+        </label>
+        <div class="radio-group">
+          <label>
+            <input type="radio" name="safetyStatus" value="all_safe" required>
+            <span>✅ Everyone is safe</span>
+          </label>
+          <label>
+            <input type="radio" name="safetyStatus" value="injured" required>
+            <span>🩹 Someone is injured but not life-threatening</span>
+          </label>
+          <label>
+            <input type="radio" name="safetyStatus" value="danger" required>
+            <span>🚨 Emergency - someone needs immediate help</span>
+          </label>
+        </div>
+        <p class="help-text">If this is an emergency, call 999 immediately</p>
+      </div>
+    </div>
+
+    <!-- Personal Information -->
+    <div class="form-section">
+      <h3>👤 Your Details</h3>
+
+      <div class="form-group">
+        <label for="fullName">
+          Full Name
+          <span class="required">*</span>
+        </label>
+        <input
+          type="text"
+          id="fullName"
+          name="fullName"
+          required
+          placeholder="e.g. John Smith"
+          autocomplete="name"
+        >
+      </div>
+
+      <div class="form-group">
+        <label for="dateOfBirth">
+          Date of Birth
+          <span class="required">*</span>
+        </label>
+        <input
+          type="date"
+          id="dateOfBirth"
+          name="dateOfBirth"
+          required
+          max=""
+        >
+        <p class="help-text">Format: DD/MM/YYYY</p>
+      </div>
+
+      <div class="form-group">
+        <label for="phone">
+          Phone Number
+          <span class="required">*</span>
+        </label>
+        <input
+          type="tel"
+          id="phone"
+          name="phone"
+          required
+          placeholder="+44 7700 900000"
+          autocomplete="tel"
+        >
+        <p class="help-text">Include country code (+44 for UK)</p>
+      </div>
+
+      <div class="form-group">
+        <label for="email">
+          Email Address
+          <span class="required">*</span>
+        </label>
+        <input
+          type="email"
+          id="email"
+          name="email"
+          required
+          placeholder="your@email.com"
+          autocomplete="email"
+        >
+      </div>
+
+      <div class="form-group">
+        <label for="address">
+          Home Address
+          <span class="required">*</span>
+        </label>
+        <input
+          type="text"
+          id="address"
+          name="address"
+          required
+          placeholder="123 Main Street, London, SW1A 1AA"
+          autocomplete="street-address"
+        >
+      </div>
+    </div>
+
+    <!-- Accident Date/Time -->
+    <div class="form-section">
+      <h3>📅 When Did This Happen?</h3>
+
+      <div class="form-group">
+        <label for="accidentDate">
+          Date of Accident
+          <span class="required">*</span>
+        </label>
+        <input
+          type="date"
+          id="accidentDate"
+          name="accidentDate"
+          required
+          max=""
+        >
+        <p class="help-text">The date the accident occurred</p>
+      </div>
+
+      <div class="form-group">
+        <label for="accidentTime">
+          Time of Accident
+          <span class="required">*</span>
+        </label>
+        <input
+          type="time"
+          id="accidentTime"
+          name="accidentTime"
+          required
+        >
+        <p class="help-text">Approximate time (24-hour format)</p>
+      </div>
+    </div>
+
+    <!-- Navigation -->
+    <div class="nav-buttons">
+      <button type="button" class="btn btn-secondary" id="backBtn">
+        ← Back
+      </button>
+      <button type="button" class="btn btn-primary" id="nextBtn">
+        Continue →
+      </button>
+    </div>
+  </div>
+
+  <script>
+    // Elements
+    const form = document.querySelector('.container');
+    const backBtn = document.getElementById('backBtn');
+    const nextBtn = document.getElementById('nextBtn');
+    const emergencyBanner = document.getElementById('emergencyBanner');
+    const safetyRadios = document.querySelectorAll('input[name="safetyStatus"]');
+
+    // Set max date for DOB and accident date (today)
+    const today = new Date().toISOString().split('T')[0];
+    document.getElementById('dateOfBirth').setAttribute('max', today);
+    document.getElementById('accidentDate').setAttribute('max', today);
+
+    // Show emergency banner if injured or danger selected
+    safetyRadios.forEach(radio => {
+      radio.addEventListener('change', function() {
+        if (this.value === 'injured' || this.value === 'danger') {
+          emergencyBanner.classList.add('show');
+          window.scrollTo({ top: 0, behavior: 'smooth' });
+        } else {
+          emergencyBanner.classList.remove('show');
+        }
+      });
+    });
+
+    // Validate form
+    function validateForm() {
+      const safetyStatus = document.querySelector('input[name="safetyStatus"]:checked');
+      const fullName = document.getElementById('fullName').value.trim();
+      const dateOfBirth = document.getElementById('dateOfBirth').value;
+      const phone = document.getElementById('phone').value.trim();
+      const email = document.getElementById('email').value.trim();
+      const address = document.getElementById('address').value.trim();
+      const accidentDate = document.getElementById('accidentDate').value;
+      const accidentTime = document.getElementById('accidentTime').value;
+
+      if (!safetyStatus) {
+        alert('Please select your current safety status.');
+        return false;
+      }
+
+      if (!fullName || !dateOfBirth || !phone || !email || !address || !accidentDate || !accidentTime) {
+        alert('Please complete all required fields.');
+        return false;
+      }
+
+      // Basic email validation
+      const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+      if (!emailRegex.test(email)) {
+        alert('Please enter a valid email address.');
+        return false;
+      }
+
+      return true;
+    }
+
+    // Save and proceed
+    nextBtn.addEventListener('click', function() {
+      if (!validateForm()) {
+        return;
+      }
+
+      // Save data to session storage
+      const pageData = {
+        safety_status: document.querySelector('input[name="safetyStatus"]:checked').value,
+        full_name: document.getElementById('fullName').value.trim(),
+        date_of_birth: document.getElementById('dateOfBirth').value,
+        phone: document.getElementById('phone').value.trim(),
+        email: document.getElementById('email').value.trim().toLowerCase(),
+        address: document.getElementById('address').value.trim(),
+        accident_date: document.getElementById('accidentDate').value,
+        accident_time: document.getElementById('accidentTime').value,
+        completed_at: new Date().toISOString()
+      };
+
+      sessionStorage.setItem('incident_page2', JSON.stringify(pageData));
+
+      console.log('✅ Page 2 saved:', pageData);
+
+      // Navigate to page 3
+      window.location.href = '/incident-form-page3.html';
+    });
+
+    // Back button
+    backBtn.addEventListener('click', function() {
+      window.location.href = '/incident-form-page1.html';
+    });
+
+    // Restore saved data if returning to this page
+    window.addEventListener('DOMContentLoaded', function() {
+      const saved = sessionStorage.getItem('incident_page2');
+      if (saved) {
+        try {
+          const data = JSON.parse(saved);
+
+          // Restore safety status
+          if (data.safety_status) {
+            const radio = document.querySelector(`input[name="safetyStatus"][value="${data.safety_status}"]`);
+            if (radio) {
+              radio.checked = true;
+              if (data.safety_status === 'injured' || data.safety_status === 'danger') {
+                emergencyBanner.classList.add('show');
+              }
+            }
+          }
+
+          // Restore personal details
+          if (data.full_name) document.getElementById('fullName').value = data.full_name;
+          if (data.date_of_birth) document.getElementById('dateOfBirth').value = data.date_of_birth;
+          if (data.phone) document.getElementById('phone').value = data.phone;
+          if (data.email) document.getElementById('email').value = data.email;
+          if (data.address) document.getElementById('address').value = data.address;
+
+          // Restore accident date/time
+          if (data.accident_date) document.getElementById('accidentDate').value = data.accident_date;
+          if (data.accident_time) document.getElementById('accidentTime').value = data.accident_time;
+
+          console.log('✅ Page 2 data restored');
+        } catch (e) {
+          console.error('Error restoring page 2 data:', e);
+        }
+      }
+    });
+
+    console.log('📋 Incident Form - Page 2: Safety Check & Basic Info loaded');
+  </script>
+</body>
+</html>
