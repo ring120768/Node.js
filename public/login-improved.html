@@ -348,7 +348,7 @@
       const redirect = urlParams.get('redirect');
 
       if (!redirect) {
-        return '/dashboard.html'; // Default to dashboard after login
+        return '/'; // Default to home page after login
       }
 
       // Decode and sanitize redirect URL
@@ -360,8 +360,8 @@
           const url = new URL(decodedRedirect);
           decodedRedirect = url.pathname + url.search + url.hash;
         } catch (e) {
-          console.warn('Invalid redirect URL, defaulting to dashboard');
-          return '/dashboard.html';
+          console.warn('Invalid redirect URL, defaulting to home page');
+          return '/';
         }
       }
 
