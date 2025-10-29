@@ -1,0 +1,721 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Final Medical Check - Page 12 of 12 | Car Crash Lawyer AI</title>
+  <style>
+    :root {
+      --grad-start: #2e6a9d;
+      --grad-end: #3776a2;
+      --accent: #357a94;
+      --page-bg: #f0ebe3;
+      --text-dark: #1a1a1a;
+      --text-light: #7a7a7a;
+      --border: #c9c4bd;
+      --success: #10b981;
+      --warning: #f59e0b;
+      --danger: #e53e3e;
+    }
+
+    * {
+      margin: 0;
+      padding: 0;
+      box-sizing: border-box;
+    }
+
+    html, body {
+      font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, Cantarell, 'Helvetica Neue', Arial, sans-serif;
+      background: var(--page-bg);
+      color: var(--text-dark);
+      min-height: 100%;
+      overflow-x: hidden;
+    }
+
+    /* Top gradient banner */
+    .banner {
+      background: linear-gradient(135deg, var(--grad-start) 0%, var(--grad-end) 100%);
+      color: #ffffff;
+      padding: 24px 20px 20px;
+      position: sticky;
+      top: 0;
+      z-index: 200;
+      overflow: hidden;
+      box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+    }
+
+    .brand {
+      max-width: 1040px;
+      margin: 0 auto;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      text-align: center;
+      gap: 12px;
+    }
+
+    .brand .logo {
+      width: 80px;
+      height: 80px;
+      border-radius: 12px;
+    }
+
+    .brand h1 {
+      font-size: 28px;
+      line-height: 1.2;
+      font-weight: 700;
+      margin: 0;
+    }
+
+    .brand p {
+      font-size: 16px;
+      opacity: 0.95;
+      margin: 4px 0;
+    }
+
+    /* Progress bar */
+    .progress-container {
+      background: white;
+      border-bottom: 1px solid #e5e5e5;
+      padding: 12px 20px;
+      position: sticky;
+      top: 0;
+      z-index: 100;
+      box-shadow: 0 1px 3px rgba(0,0,0,0.05);
+    }
+
+    .progress-wrapper {
+      max-width: 840px;
+      margin: 0 auto;
+    }
+
+    .progress-bar {
+      width: 100%;
+      height: 8px;
+      background: #e5e5e5;
+      border-radius: 99px;
+      overflow: hidden;
+      position: relative;
+    }
+
+    .progress-fill {
+      height: 100%;
+      background: linear-gradient(90deg, var(--grad-start), var(--grad-end));
+      border-radius: 99px;
+      transition: width 0.4s cubic-bezier(0.4, 0, 0.2, 1);
+      width: 100%; /* Page 12 of 12 - Complete! */
+    }
+
+    .progress-label {
+      text-align: center;
+      margin-top: 8px;
+      font-size: 14px;
+      font-weight: 600;
+      color: var(--text-light);
+    }
+
+    /* Main content area */
+    .content-wrapper {
+      max-width: 840px;
+      margin: 0 auto;
+      padding: 30px 20px 40px;
+    }
+
+    /* Medical Check Card */
+    .medical-check-card {
+      background: white;
+      border-radius: 16px;
+      padding: 32px;
+      box-shadow: 0 4px 12px rgba(0,0,0,0.08);
+      margin-bottom: 24px;
+    }
+
+    .card-header {
+      text-align: center;
+      margin-bottom: 32px;
+    }
+
+    .card-header-icon {
+      font-size: 64px;
+      margin-bottom: 16px;
+    }
+
+    .card-header h2 {
+      font-size: 32px;
+      color: var(--text-dark);
+      margin-bottom: 12px;
+      font-weight: 700;
+    }
+
+    .card-header p {
+      font-size: 18px;
+      color: var(--text-light);
+      line-height: 1.6;
+    }
+
+    /* Question Section */
+    .question-section {
+      background: linear-gradient(135deg, #e3f2fd 0%, #f3e5f5 100%);
+      border: 3px solid #2196F3;
+      border-radius: 12px;
+      padding: 24px;
+      margin-bottom: 24px;
+    }
+
+    .question-section h3 {
+      font-size: 20px;
+      color: #1565c0;
+      margin-bottom: 16px;
+      text-align: center;
+    }
+
+    .question-section label {
+      display: block;
+      font-weight: 600;
+      color: var(--text-dark);
+      margin-bottom: 16px;
+      font-size: 18px;
+    }
+
+    .required {
+      color: var(--danger);
+      margin-left: 4px;
+    }
+
+    /* Feeling Options */
+    .feeling-options {
+      display: flex;
+      flex-direction: column;
+      gap: 12px;
+    }
+
+    .feeling-option {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+      padding: 16px;
+      border: 2px solid #e5e5e5;
+      border-radius: 8px;
+      cursor: pointer;
+      transition: all 0.2s;
+      background: white;
+    }
+
+    .feeling-option:hover {
+      border-color: #2196F3;
+      box-shadow: 0 2px 8px rgba(33, 150, 243, 0.2);
+    }
+
+    .feeling-option input[type="radio"] {
+      width: 20px;
+      height: 20px;
+      cursor: pointer;
+    }
+
+    .feeling-option-content {
+      flex: 1;
+    }
+
+    .feeling-option strong {
+      display: block;
+      font-size: 16px;
+      margin-bottom: 4px;
+    }
+
+    .feeling-option span {
+      font-size: 14px;
+      color: var(--text-light);
+    }
+
+    /* Warning levels */
+    .feeling-option.warning {
+      border-color: var(--warning);
+      background: #fff8e1;
+    }
+
+    .feeling-option.danger {
+      border-color: var(--danger);
+      background: #fff5f5;
+    }
+
+    .feeling-option.selected {
+      border-color: #2196F3;
+      border-width: 3px;
+      box-shadow: 0 4px 12px rgba(33, 150, 243, 0.3);
+    }
+
+    /* Alert Boxes */
+    .alert {
+      display: none;
+      border-radius: 8px;
+      padding: 20px;
+      margin-top: 16px;
+    }
+
+    .alert.show {
+      display: block;
+    }
+
+    .alert-emergency {
+      background: #fff5f5;
+      border: 3px solid var(--danger);
+    }
+
+    .alert-warning {
+      background: #fffbeb;
+      border: 2px solid var(--warning);
+    }
+
+    .alert h4 {
+      font-size: 18px;
+      margin-bottom: 12px;
+      display: flex;
+      align-items: center;
+      gap: 8px;
+    }
+
+    .alert ul {
+      margin: 12px 0;
+      padding-left: 24px;
+      line-height: 1.8;
+    }
+
+    .alert-emergency h4 {
+      color: #b91c1c;
+    }
+
+    .alert-warning h4 {
+      color: #92400e;
+    }
+
+    .emergency-call-btn {
+      display: block;
+      background: linear-gradient(135deg, #dc2626 0%, #b91c1c 100%);
+      color: white;
+      text-align: center;
+      padding: 16px 24px;
+      border-radius: 8px;
+      text-decoration: none;
+      font-weight: 700;
+      font-size: 18px;
+      box-shadow: 0 4px 12px rgba(220, 38, 38, 0.3);
+      margin-top: 16px;
+    }
+
+    .emergency-call-btn:hover {
+      background: linear-gradient(135deg, #b91c1c 0%, #991b1b 100%);
+    }
+
+    .nhs-link {
+      color: #92400e;
+      font-weight: 700;
+      text-decoration: underline;
+    }
+
+    /* Completion Info */
+    .completion-info {
+      background: linear-gradient(135deg, #d1fae5 0%, #a7f3d0 100%);
+      border: 2px solid var(--success);
+      border-radius: 12px;
+      padding: 24px;
+      margin-bottom: 24px;
+      text-align: center;
+    }
+
+    .completion-info-icon {
+      font-size: 48px;
+      margin-bottom: 12px;
+    }
+
+    .completion-info h3 {
+      font-size: 22px;
+      color: #065f46;
+      margin-bottom: 12px;
+    }
+
+    .completion-info p {
+      font-size: 16px;
+      color: #047857;
+      line-height: 1.6;
+    }
+
+    /* Navigation buttons */
+    .nav-buttons {
+      display: flex;
+      gap: 16px;
+      margin-top: 32px;
+    }
+
+    .btn {
+      flex: 1;
+      padding: 16px 24px;
+      border: none;
+      border-radius: 8px;
+      font-size: 16px;
+      font-weight: 600;
+      cursor: pointer;
+      transition: all 0.2s;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: 8px;
+    }
+
+    .btn-secondary {
+      background: #e5e5e5;
+      color: var(--text-dark);
+    }
+
+    .btn-secondary:hover {
+      background: #d4d4d4;
+    }
+
+    .btn-primary {
+      background: linear-gradient(135deg, var(--grad-start) 0%, var(--grad-end) 100%);
+      color: white;
+      box-shadow: 0 4px 12px rgba(46, 106, 157, 0.3);
+    }
+
+    .btn-primary:hover:not(:disabled) {
+      transform: translateY(-2px);
+      box-shadow: 0 6px 16px rgba(46, 106, 157, 0.4);
+    }
+
+    .btn-primary:disabled {
+      opacity: 0.5;
+      cursor: not-allowed;
+    }
+
+    /* Validation feedback */
+    .validation-feedback {
+      display: none;
+      background: #fff5f5;
+      border: 2px solid var(--danger);
+      border-radius: 8px;
+      padding: 16px;
+      margin-top: 16px;
+    }
+
+    .validation-feedback.show {
+      display: block;
+    }
+
+    .validation-feedback h4 {
+      color: var(--danger);
+      margin-bottom: 8px;
+      display: flex;
+      align-items: center;
+      gap: 8px;
+    }
+
+    .validation-feedback ul {
+      margin: 0;
+      padding-left: 24px;
+      color: var(--danger);
+    }
+
+    /* Mobile responsive */
+    @media (max-width: 640px) {
+      .brand h1 {
+        font-size: 24px;
+      }
+
+      .card-header h2 {
+        font-size: 26px;
+      }
+
+      .nav-buttons {
+        flex-direction: column;
+      }
+    }
+  </style>
+</head>
+<body>
+
+  <!-- Top Banner -->
+  <div class="banner">
+    <div class="brand">
+      <img src="/lawyer-app-icon.jpg" alt="Car Crash Lawyer AI" class="logo">
+      <h1>Car Crash Lawyer AI</h1>
+      <p>Final Medical Check - Almost Done!</p>
+    </div>
+  </div>
+
+  <!-- Progress Bar -->
+  <div class="progress-container">
+    <div class="progress-wrapper">
+      <div class="progress-bar">
+        <div class="progress-fill"></div>
+      </div>
+      <div class="progress-label">Page 12 of 12 - Final Step 🎉</div>
+    </div>
+  </div>
+
+  <!-- Main Content -->
+  <div class="content-wrapper">
+
+    <!-- Completion Info -->
+    <div class="completion-info">
+      <div class="completion-info-icon">🎉</div>
+      <h3>You're Almost Finished!</h3>
+      <p>Before we finalize your incident report, let's do one final check on your wellbeing. Your health and safety are our top priority.</p>
+    </div>
+
+    <!-- Medical Check Card -->
+    <div class="medical-check-card">
+      <div class="card-header">
+        <div class="card-header-icon">💙</div>
+        <h2>Final Wellbeing Check</h2>
+        <p>Please let us know how you're feeling right now</p>
+      </div>
+
+      <!-- Question Section -->
+      <div class="question-section">
+        <h3>How Are You Feeling?</h3>
+        <label for="final-feeling">
+          Please select your current condition
+          <span class="required">*</span>
+        </label>
+
+        <div class="feeling-options">
+          <label class="feeling-option" data-value="fine">
+            <input type="radio" name="final_feeling" value="fine">
+            <div class="feeling-option-content">
+              <strong>✅ I'm feeling fine</strong>
+              <span>No injuries or pain, ready to complete the report</span>
+            </div>
+          </label>
+
+          <label class="feeling-option" data-value="shaken">
+            <input type="radio" name="final_feeling" value="shaken">
+            <div class="feeling-option-content">
+              <strong>😟 Still a bit shaken</strong>
+              <span>Stressed or anxious but no physical injuries</span>
+            </div>
+          </label>
+
+          <label class="feeling-option warning" data-value="minor_pain">
+            <input type="radio" name="final_feeling" value="minor_pain">
+            <div class="feeling-option-content">
+              <strong>⚠️ Minor pain or discomfort</strong>
+              <span>Experiencing some pain that should be checked</span>
+            </div>
+          </label>
+
+          <label class="feeling-option danger" data-value="significant_pain">
+            <input type="radio" name="final_feeling" value="significant_pain">
+            <div class="feeling-option-content">
+              <strong>🚨 Significant pain or new symptoms</strong>
+              <span>Pain has worsened or new symptoms have appeared</span>
+            </div>
+          </label>
+
+          <label class="feeling-option danger" data-value="emergency">
+            <input type="radio" name="final_feeling" value="emergency">
+            <div class="feeling-option-content">
+              <strong>🚨 I need emergency help</strong>
+              <span>Injured or experiencing a medical emergency</span>
+            </div>
+          </label>
+        </div>
+      </div>
+
+      <!-- Emergency Alert -->
+      <div id="emergency-alert" class="alert alert-emergency">
+        <h4>🚨 Seek Emergency Medical Attention Immediately</h4>
+        <p>If you or anyone else is experiencing a medical emergency, please call 999 right away.</p>
+        <ul>
+          <li>Call 999 immediately for emergency services</li>
+          <li>Do not drive yourself - wait for an ambulance</li>
+          <li>If symptoms worsen, don't wait - call now</li>
+        </ul>
+        <a href="tel:999" class="emergency-call-btn">📞 Call 999 Emergency Services</a>
+        <p style="text-align: center; margin: 12px 0 0; font-size: 14px; color: #666;">You can complete this report after receiving medical attention</p>
+      </div>
+
+      <!-- Medical Advice Alert -->
+      <div id="medical-advice-alert" class="alert alert-warning">
+        <h4>⚠️ Medical Attention Recommended</h4>
+        <p>It's important to have any pain or discomfort checked by a medical professional, even if it seems minor.</p>
+        <ul>
+          <li>Contact <a href="tel:111" class="nhs-link">NHS 111</a> for medical advice (non-emergency)</li>
+          <li>Visit your GP or a walk-in centre</li>
+          <li>Some injuries may not be immediately apparent</li>
+          <li>Document any medical treatment for your claim</li>
+        </ul>
+        <p style="margin: 12px 0 0;"><a href="tel:111" class="nhs-link">Call NHS 111 for medical advice</a></p>
+      </div>
+
+      <!-- Validation Feedback -->
+      <div id="validation-feedback" class="validation-feedback">
+        <h4>⚠️ Please Complete This Section</h4>
+        <ul id="validation-list"></ul>
+      </div>
+
+      <!-- Navigation Buttons -->
+      <div class="nav-buttons">
+        <button type="button" class="btn btn-secondary" id="back-btn">
+          <span>←</span>
+          <span>Back</span>
+        </button>
+        <button type="button" class="btn btn-primary" id="submit-btn" disabled>
+          <span>Complete Report</span>
+          <span>✓</span>
+        </button>
+      </div>
+    </div>
+
+  </div>
+
+  <script>
+    // Element references
+    const feelingRadios = document.querySelectorAll('input[name="final_feeling"]');
+    const feelingOptions = document.querySelectorAll('.feeling-option');
+    const emergencyAlert = document.getElementById('emergency-alert');
+    const medicalAdviceAlert = document.getElementById('medical-advice-alert');
+    const validationFeedback = document.getElementById('validation-feedback');
+    const validationList = document.getElementById('validation-list');
+    const submitBtn = document.getElementById('submit-btn');
+    const backBtn = document.getElementById('back-btn');
+
+    // Handle feeling selection
+    feelingRadios.forEach(radio => {
+      radio.addEventListener('change', function() {
+        // Hide all alerts
+        emergencyAlert.classList.remove('show');
+        medicalAdviceAlert.classList.remove('show');
+
+        // Remove selected class from all options
+        feelingOptions.forEach(opt => opt.classList.remove('selected'));
+
+        // Add selected class to chosen option
+        const selectedOption = this.closest('.feeling-option');
+        selectedOption.classList.add('selected');
+
+        // Show appropriate alert
+        const value = this.value;
+        if (value === 'emergency' || value === 'significant_pain') {
+          emergencyAlert.classList.add('show');
+          // Smooth scroll to alert
+          setTimeout(() => {
+            emergencyAlert.scrollIntoView({ behavior: 'smooth', block: 'center' });
+          }, 100);
+        } else if (value === 'minor_pain') {
+          medicalAdviceAlert.classList.add('show');
+          // Smooth scroll to alert
+          setTimeout(() => {
+            medicalAdviceAlert.scrollIntoView({ behavior: 'smooth', block: 'center' });
+          }, 100);
+        }
+
+        // Update validation
+        updateValidation();
+        autoSave();
+      });
+    });
+
+    // Visual feedback for clicking options
+    feelingOptions.forEach(option => {
+      option.addEventListener('click', function() {
+        const radio = this.querySelector('input[type="radio"]');
+        if (radio && !radio.checked) {
+          radio.checked = true;
+          radio.dispatchEvent(new Event('change'));
+        }
+      });
+    });
+
+    // Validation
+    function updateValidation() {
+      const issues = [];
+      const feelingSelected = Array.from(feelingRadios).some(radio => radio.checked);
+
+      if (!feelingSelected) {
+        issues.push('Please let us know how you\'re feeling before completing the report');
+      }
+
+      // Update button state
+      submitBtn.disabled = issues.length > 0;
+
+      // Show/hide validation feedback
+      if (issues.length > 0) {
+        validationList.innerHTML = issues.map(issue => `<li>${issue}</li>`).join('');
+        validationFeedback.classList.add('show');
+      } else {
+        validationFeedback.classList.remove('show');
+      }
+    }
+
+    // Auto-save
+    function autoSave() {
+      const selectedFeeling = Array.from(feelingRadios).find(r => r.checked);
+      const data = {
+        final_feeling: selectedFeeling ? selectedFeeling.value : null,
+        completed_at: new Date().toISOString()
+      };
+
+      sessionStorage.setItem('incident_page12', JSON.stringify(data));
+      console.log('Page 12 data saved:', data);
+    }
+
+    // Load saved data
+    function loadSavedData() {
+      const saved = sessionStorage.getItem('incident_page12');
+      if (saved) {
+        try {
+          const data = JSON.parse(saved);
+          if (data.final_feeling) {
+            const radio = document.querySelector(`input[value="${data.final_feeling}"]`);
+            if (radio) {
+              radio.checked = true;
+              radio.dispatchEvent(new Event('change'));
+            }
+          }
+        } catch (e) {
+          console.error('Error loading saved data:', e);
+        }
+      }
+    }
+
+    // Navigation
+    backBtn.addEventListener('click', () => {
+      autoSave();
+      window.location.href = '/incident-form-page10-police-details.html';
+    });
+
+    submitBtn.addEventListener('click', () => {
+      if (!submitBtn.disabled) {
+        autoSave();
+
+        // Merge all page data
+        const allData = {};
+        for (let i = 1; i <= 12; i++) {
+          const pageData = sessionStorage.getItem(`incident_page${i}`);
+          if (pageData) {
+            Object.assign(allData, JSON.parse(pageData));
+          }
+        }
+
+        // Also get the merged data
+        const mergedData = sessionStorage.getItem('incident_form_data');
+        if (mergedData) {
+          Object.assign(allData, JSON.parse(mergedData));
+        }
+
+        console.log('Complete incident report data:', allData);
+
+        // TODO: Submit to API endpoint
+        alert('Report Complete!\n\nNext: Submit all data to /api/incident-report/submit\n\nThis will process all 12 pages and redirect to dashboard.');
+
+        // Redirect to dashboard after submission
+        // window.location.href = '/dashboard.html';
+      }
+    });
+
+    // Initialize
+    loadSavedData();
+    updateValidation();
+  </script>
+
+</body>
+</html>
