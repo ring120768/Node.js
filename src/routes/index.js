@@ -27,6 +27,7 @@ const userDocumentsRoutes = require('./userDocuments.routes'); // NEW: User docu
 const imageProxyRoutes = require('./imageProxy.routes'); // NEW: Image proxy for authenticated access
 const witnessesRoutes = require('./witnesses.routes'); // NEW: Witnesses management
 const vehiclesRoutes = require('./vehicles.routes'); // NEW: Other vehicles with DVLA integration
+const dvlaRoutes = require('./dvla.routes'); // NEW: DVLA vehicle lookup (frontend-friendly)
 const signupRoutes = require('./signup.routes'); // NEW: User signup form submission
 const imageUploadRoutes = require('./imageUpload.routes'); // NEW: Post-signup image upload
 const tempImageUploadRoutes = require('./tempImageUpload.routes'); // NEW: Immediate temp upload for mobile
@@ -277,6 +278,7 @@ router.get('/system-status', async (req, res) => {
                 <li><code>/api/location/*</code> - Location services</li>
                 <li><code>/api/witnesses/*</code> - Witness management</li>
                 <li><code>/api/other-vehicles/*</code> - Other vehicles (DVLA)</li>
+                <li><code>/api/dvla/*</code> - DVLA vehicle lookup (GET)</li>
                 <li><code>/api/images/*</code> - Post-signup image upload</li>
                 <li><code>/api/debug/*</code> - Debug tools</li>
             </ul>
@@ -330,6 +332,7 @@ router.use('/api/images', tempImageUploadRoutes); // NEW: Immediate temp upload 
 router.use('/api/images', imageUploadRoutes); // NEW: Post-signup image upload endpoint
 router.use('/api/witnesses', witnessesRoutes); // NEW: Witnesses management
 router.use('/api/other-vehicles', vehiclesRoutes); // NEW: Other vehicles with DVLA integration
+router.use('/api/dvla', dvlaRoutes); // NEW: DVLA vehicle lookup (frontend-friendly GET endpoints)
 router.use('/api/signup', signupRoutes); // NEW: User signup form submission (custom HTML form)
 // Note: Webhook routes are mounted directly in app.js for raw body handling
 // GitHub webhooks are mounted in app.js via webhook.routes.js (not here)

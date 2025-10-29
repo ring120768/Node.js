@@ -585,7 +585,7 @@
             type="password"
             id="account_password"
             class="input-field"
-            placeholder="Enter secure password"
+            placeholder="Enter secure password (min 8 characters)"
             required
           />
         </div>
@@ -603,9 +603,26 @@
           />
         </div>
 
+        <!-- Show password checkbox -->
+        <div style="margin-bottom: 20px;">
+          <label style="display: flex; align-items: center; gap: 8px; cursor: pointer; user-select: none;">
+            <input
+              type="checkbox"
+              id="show_password"
+              style="width: 18px; height: 18px; cursor: pointer;"
+            />
+            <span style="font-size: 14px; color: #4a5568;">Show password</span>
+          </label>
+        </div>
+
         <!-- Password strength indicator -->
         <div id="account-password-strength" style="display: none; padding: 12px; border-radius: 8px; margin-bottom: 20px;">
           <span id="account-password-strength-text"></span>
+        </div>
+
+        <!-- Password match indicator -->
+        <div id="account-password-match" style="display: none; padding: 12px; border-radius: 8px; margin-bottom: 20px;">
+          <span id="account-password-match-text"></span>
         </div>
 
         <p class="error-message" id="account-error"></p>
@@ -1374,6 +1391,18 @@
       const accountPasswordInput = document.getElementById('account_password');
       if (accountPasswordInput) {
         accountPasswordInput.addEventListener('input', updateAccountPasswordStrength);
+      }
+
+      // Page 1: Password match indicator (real-time)
+      const accountConfirmPasswordInput = document.getElementById('account_confirm_password');
+      if (accountConfirmPasswordInput) {
+        accountConfirmPasswordInput.addEventListener('input', updatePasswordMatchIndicator);
+      }
+
+      // Page 1: Show password checkbox
+      const showPasswordCheckbox = document.getElementById('show_password');
+      if (showPasswordCheckbox) {
+        showPasswordCheckbox.addEventListener('change', togglePasswordVisibility);
       }
 
       // DVLA lookup button (Page 5)
@@ -2315,6 +2344,62 @@
       strengthText.innerHTML = `
         <strong style="color: ${strength.color}">Password Strength: ${strength.text}</strong>
       `;
+
+      // Also update match indicator if confirm password has value
+      updatePasswordMatchIndicator();
+    }
+
+    /**
+     * Update password match indicator (real-time feedback)
+     */
+    function updatePasswordMatchIndicator() {
+      const password = document.getElementById('account_password').value;
+      const confirmPassword = document.getElementById('account_confirm_password').value;
+      const matchEl = document.getElementById('account-password-match');
+      const matchText = document.getElementById('account-password-match-text');
+
+      // Only show if confirm password has content
+      if (!confirmPassword) {
+        matchEl.style.display = 'none';
+        return;
+      }
+
+      matchEl.style.display = 'block';
+
+      if (password === confirmPassword) {
+        // Passwords match - show green success
+        matchEl.style.backgroundColor = '#10b98122';
+        matchEl.style.borderLeft = '4px solid #10b981';
+        matchText.innerHTML = `
+          <strong style="color: #10b981">✓ Passwords match</strong>
+        `;
+      } else {
+        // Passwords don't match - show red warning
+        matchEl.style.backgroundColor = '#ef444422';
+        matchEl.style.borderLeft = '4px solid #ef4444';
+        matchText.innerHTML = `
+          <strong style="color: #ef4444">✗ Passwords do not match</strong>
+        `;
+      }
+    }
+
+    /**
+     * Toggle password visibility (show/hide)
+     */
+    function togglePasswordVisibility() {
+      const showPasswordCheckbox = document.getElementById('show_password');
+      const passwordInput = document.getElementById('account_password');
+      const confirmPasswordInput = document.getElementById('account_confirm_password');
+
+      if (showPasswordCheckbox.checked) {
+        // Show passwords
+        passwordInput.type = 'text';
+        confirmPasswordInput.type = 'text';
+      } else {
+        // Hide passwords
+        passwordInput.type = 'password';
+        confirmPasswordInput.type = 'password';
+      }
     }
 
     /**
@@ -2433,12 +2518,21 @@
           email: formData.email
         });
 
-        // Success! Proceed to Page 2
-        console.log('✅ Account creation complete, proceeding to Page 2');
+        // Success! Show confirmation before proceeding
+        console.log('✅ Account creation complete, showing confirmation');
         btn.textContent = '✓ Account Created!';
 
-        // Small delay to show success message, then proceed
+        // Show confirmation alert with login credentials
         setTimeout(() => {
+          alert(
+            '✅ Account Created Successfully!\n\n' +
+            '🔐 Your Login Credentials:\n' +
+            `📧 Email: ${email}\n` +
+            `🔑 Password: (securely saved)\n\n` +
+            'You can now use these credentials to login anytime.\n\n' +
+            'Click OK to continue with your profile setup.'
+          );
+
           btn.disabled = false;
           btn.textContent = originalText;
           nextPage();

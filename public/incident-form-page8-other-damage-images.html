@@ -1,0 +1,627 @@
+<!DOCTYPE html>
+<html lang="en-GB">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+  <meta name="apple-mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+  <title>Other Damage Images - Page 8 of 10</title>
+
+  <style>
+    /* Design System Variables */
+    :root {
+      --grad-start: #2e6a9d;
+      --grad-end: #3776a2;
+      --accent: #357a94;
+      --accent-hover: #2c6880;
+      --bg-light: #f0ebe3;
+      --text-dark: #333;
+      --text-muted: #666;
+      --border: #d1d5db;
+      --success: #10b981;
+      --danger: #ef4444;
+      --warning: #f59e0b;
+    }
+
+    /* Reset & Base */
+    * {
+      margin: 0;
+      padding: 0;
+      box-sizing: border-box;
+      -webkit-tap-highlight-color: transparent;
+    }
+
+    html {
+      font-size: 16px;
+      -webkit-text-size-adjust: 100%;
+    }
+
+    body {
+      font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, Cantarell, sans-serif;
+      background: var(--bg-light);
+      color: var(--text-dark);
+      line-height: 1.6;
+      overflow-x: hidden;
+      padding-bottom: env(safe-area-inset-bottom, 20px);
+    }
+
+    /* Sticky Banner */
+    .banner {
+      background: linear-gradient(135deg, var(--grad-start) 0%, var(--grad-end) 100%);
+      padding: 20px 16px;
+      position: sticky;
+      top: 0;
+      z-index: 200;
+      box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+    }
+
+    @supports (padding-top: env(safe-area-inset-top)) {
+      .banner {
+        padding-top: max(20px, env(safe-area-inset-top));
+      }
+    }
+
+    .brand {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      text-align: center;
+      gap: 12px;
+    }
+
+    .brand .logo {
+      width: 80px;
+      height: 80px;
+      border-radius: 12px;
+      box-shadow: 0 4px 12px rgba(0,0,0,0.15);
+    }
+
+    .brand h1 {
+      font-size: 1.25rem;
+      font-weight: 700;
+      color: white;
+      text-shadow: 0 2px 4px rgba(0,0,0,0.1);
+    }
+
+    .brand .tagline {
+      font-size: 0.875rem;
+      color: rgba(255,255,255,0.95);
+      font-weight: 500;
+    }
+
+    /* Progress Bar */
+    .progress-container {
+      margin-top: 16px;
+      background: rgba(255,255,255,0.2);
+      border-radius: 20px;
+      height: 8px;
+      overflow: hidden;
+      backdrop-filter: blur(8px);
+    }
+
+    .progress-bar {
+      height: 100%;
+      background: white;
+      border-radius: 20px;
+      transition: width 0.3s ease;
+      width: 80%; /* Page 8 of 10 */
+    }
+
+    .progress-label {
+      text-align: center;
+      color: white;
+      font-size: 0.75rem;
+      margin-top: 8px;
+      font-weight: 600;
+    }
+
+    /* Main Container */
+    .container {
+      max-width: 600px;
+      margin: 0 auto;
+      padding: 24px 16px;
+    }
+
+    .page-header {
+      text-align: center;
+      margin-bottom: 32px;
+    }
+
+    .page-header h2 {
+      font-size: 1.5rem;
+      color: var(--text-dark);
+      margin-bottom: 8px;
+    }
+
+    .page-header p {
+      color: var(--text-muted);
+      font-size: 0.938rem;
+    }
+
+    /* Form Sections */
+    .form-section {
+      background: white;
+      border-radius: 12px;
+      padding: 20px;
+      margin-bottom: 20px;
+      box-shadow: 0 2px 8px rgba(0,0,0,0.05);
+    }
+
+    .section-title {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      font-size: 1.125rem;
+      font-weight: 600;
+      color: var(--text-dark);
+      margin-bottom: 16px;
+    }
+
+    .section-icon {
+      font-size: 1.5rem;
+    }
+
+    /* Form Groups */
+    .form-group {
+      margin-bottom: 20px;
+    }
+
+    .form-group:last-child {
+      margin-bottom: 0;
+    }
+
+    .form-label {
+      display: block;
+      font-weight: 600;
+      color: var(--text-dark);
+      margin-bottom: 8px;
+      font-size: 0.938rem;
+    }
+
+    .required {
+      color: var(--danger);
+    }
+
+    .form-hint {
+      font-size: 0.813rem;
+      color: var(--text-muted);
+      margin-bottom: 12px;
+      line-height: 1.5;
+    }
+
+    /* Image Card Styles */
+    .image-card {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+      padding: 12px;
+      background: white;
+      border: 2px solid var(--border);
+      border-radius: 12px;
+      transition: all 0.2s;
+    }
+
+    .image-card:hover {
+      border-color: var(--accent);
+      box-shadow: 0 2px 8px rgba(0,0,0,0.05);
+    }
+
+    .image-card-thumbnail {
+      width: 80px;
+      height: 80px;
+      border-radius: 8px;
+      object-fit: cover;
+      flex-shrink: 0;
+    }
+
+    .image-card-info {
+      flex: 1;
+      min-width: 0;
+    }
+
+    .image-card-name {
+      font-weight: 600;
+      color: var(--text-dark);
+      font-size: 0.938rem;
+      white-space: nowrap;
+      overflow: hidden;
+      text-overflow: ellipsis;
+    }
+
+    .image-card-size {
+      font-size: 0.813rem;
+      color: var(--text-muted);
+      margin-top: 4px;
+    }
+
+    .image-card-remove {
+      width: 36px;
+      height: 36px;
+      background: var(--danger);
+      color: white;
+      border: none;
+      border-radius: 8px;
+      cursor: pointer;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 1.25rem;
+      flex-shrink: 0;
+      transition: all 0.2s;
+    }
+
+    .image-card-remove:hover {
+      background: #dc2626;
+      transform: scale(1.05);
+    }
+
+    /* Navigation Buttons */
+    .nav-buttons {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 12px;
+      margin-top: 32px;
+    }
+
+    .btn {
+      padding: 16px 24px;
+      border-radius: 12px;
+      font-weight: 600;
+      font-size: 1rem;
+      cursor: pointer;
+      transition: all 0.2s;
+      border: none;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: 8px;
+    }
+
+    .btn-secondary {
+      background: white;
+      color: var(--text-dark);
+      border: 2px solid var(--border);
+    }
+
+    .btn-secondary:hover {
+      border-color: var(--accent);
+      background: rgba(53, 122, 148, 0.05);
+    }
+
+    .btn-primary {
+      background: linear-gradient(135deg, var(--grad-start) 0%, var(--grad-end) 100%);
+      color: white;
+      box-shadow: 0 4px 12px rgba(46, 106, 157, 0.2);
+    }
+
+    .btn-primary:hover {
+      transform: translateY(-2px);
+      box-shadow: 0 6px 16px rgba(46, 106, 157, 0.3);
+    }
+
+    .btn-primary:active {
+      transform: translateY(0);
+    }
+
+    .btn:disabled {
+      opacity: 0.5;
+      cursor: not-allowed;
+      transform: none;
+    }
+
+    /* Alert Messages */
+    .alert {
+      padding: 12px 16px;
+      border-radius: 8px;
+      margin-bottom: 16px;
+      display: flex;
+      align-items: flex-start;
+      gap: 10px;
+      font-size: 0.875rem;
+    }
+
+    .alert-info {
+      background: rgba(99, 102, 241, 0.1);
+      color: #4338ca;
+      border: 1px solid rgba(99, 102, 241, 0.2);
+    }
+  </style>
+</head>
+<body>
+
+  <!-- Sticky Banner -->
+  <div class="banner">
+    <div class="brand">
+      <img src="/images/logo.png" alt="Car Crash Lawyer AI Logo" class="logo">
+      <h1>Incident Report</h1>
+      <p class="tagline">Page 8 of 10: Other Damage Images</p>
+    </div>
+
+    <div class="progress-container">
+      <div class="progress-bar"></div>
+    </div>
+    <div class="progress-label">80% Complete</div>
+  </div>
+
+  <!-- Main Container -->
+  <div class="container">
+
+    <div class="page-header">
+      <h2>Other Damage & Documents</h2>
+      <p>Upload photos of other vehicles, property damage, or relevant documents</p>
+    </div>
+
+    <!-- Other Damage Images -->
+    <div class="form-section">
+      <div class="section-title">
+        <span class="section-icon">📸</span>
+        <span>Other Damage & Documents</span>
+      </div>
+
+      <div class="alert alert-info">
+        <span>ℹ️</span>
+        <span>Upload photos showing damage to OTHER vehicles, property damage, insurance documents, or any other relevant images. Maximum 5 images. <strong>If there is no damage, please take a photo to confirm this.</strong></span>
+      </div>
+
+      <div class="form-group">
+        <label class="form-label">Upload damage/document photos (optional)</label>
+        <p class="form-hint">Add up to 5 images showing other vehicles, property damage, or relevant documents.</p>
+
+        <input type="file" id="image-input" accept="image/*" capture="environment" style="display: none;">
+
+        <div id="images-container" style="display: flex; flex-direction: column; gap: 12px; margin-bottom: 16px;">
+        </div>
+
+        <button type="button" id="add-image-btn" class="btn btn-secondary" style="width: 100%;">
+          <span>📷</span>
+          <span>Add Image</span>
+          <span id="image-count">(0/5)</span>
+        </button>
+      </div>
+    </div>
+
+    <!-- Navigation Buttons -->
+    <div class="nav-buttons">
+      <button type="button" class="btn btn-secondary" id="back-btn">
+        <span>←</span>
+        <span>Back</span>
+      </button>
+      <button type="button" class="btn btn-primary" id="next-btn">
+        <span>Next</span>
+        <span>→</span>
+      </button>
+    </div>
+
+  </div>
+
+  <script>
+    // Page state
+    let uploadedImages = []; // Array of uploaded image objects
+    const MAX_IMAGES = 5; // Maximum 5 images
+
+    // DOM elements
+    const imageInput = document.getElementById('image-input');
+    const addImageBtn = document.getElementById('add-image-btn');
+    const imagesContainer = document.getElementById('images-container');
+    const imageCountSpan = document.getElementById('image-count');
+
+    // Update image count display
+    function updateImageCount() {
+      imageCountSpan.textContent = `(${uploadedImages.length}/${MAX_IMAGES})`;
+      addImageBtn.disabled = uploadedImages.length >= MAX_IMAGES;
+    }
+
+    // Add image button click
+    addImageBtn.addEventListener('click', () => {
+      console.log('Add Image button clicked, current count:', uploadedImages.length);
+
+      if (uploadedImages.length >= MAX_IMAGES) {
+        alert(`Maximum ${MAX_IMAGES} images allowed`);
+        return;
+      }
+
+      console.log('Opening file picker...');
+      imageInput.click();
+    });
+
+    // Handle file selection
+    imageInput.addEventListener('change', async (e) => {
+      const file = e.target.files[0];
+      if (!file) return;
+
+      console.log('File selected:', file.name, file.size, 'bytes');
+
+      // Upload immediately to prevent mobile file handle expiration
+      try {
+        const formData = new FormData();
+        formData.append('file', file);
+        formData.append('field_name', 'other_damage_photo');  // Required by backend
+        formData.append('temp_session_id', sessionStorage.getItem('temp_session_id') || crypto.randomUUID());
+
+        const response = await fetch('/api/images/temp-upload', {
+          method: 'POST',
+          body: formData,
+          credentials: 'include'
+        });
+
+        if (!response.ok) {
+          const errorData = await response.json();
+          throw new Error(errorData.error || 'Upload failed');
+        }
+
+        const result = await response.json();
+        console.log('✅ Image uploaded:', result.tempPath);
+
+        // Create blob preview
+        const blobUrl = URL.createObjectURL(file);
+
+        // Add to uploadedImages array
+        const imageObj = {
+          path: result.tempPath,
+          blobUrl: blobUrl,
+          fileName: file.name,
+          fileSize: formatFileSize(file.size)
+        };
+
+        uploadedImages.push(imageObj);
+
+        // Create image card
+        const card = document.createElement('div');
+        card.className = 'image-card';
+        card.dataset.index = uploadedImages.length - 1;
+
+        card.innerHTML = `
+          <img src="${blobUrl}" alt="${file.name}" class="image-card-thumbnail">
+          <div class="image-card-info">
+            <div class="image-card-name">${file.name}</div>
+            <div class="image-card-size">${imageObj.fileSize}</div>
+          </div>
+          <button type="button" class="image-card-remove" data-index="${uploadedImages.length - 1}">×</button>
+        `;
+
+        card.querySelector('.image-card-remove').addEventListener('click', (e) => {
+          const idx = parseInt(e.target.dataset.index);
+          removeImage(idx);
+        });
+
+        imagesContainer.appendChild(card);
+        updateImageCount();
+        autoSave();
+
+      } catch (error) {
+        console.error('Upload error:', error);
+        alert('Failed to upload image: ' + error.message);
+      }
+
+      // Clear input for re-use
+      imageInput.value = '';
+    });
+
+    // Remove image
+    function removeImage(index) {
+      console.log('Removing image at index:', index);
+
+      // Revoke blob URL to free memory
+      if (uploadedImages[index].blobUrl) {
+        URL.revokeObjectURL(uploadedImages[index].blobUrl);
+      }
+
+      // Remove from array
+      uploadedImages.splice(index, 1);
+
+      // Rebuild cards
+      imagesContainer.innerHTML = '';
+      uploadedImages.forEach((imageObj, idx) => {
+        const card = document.createElement('div');
+        card.className = 'image-card';
+        card.dataset.index = idx;
+
+        card.innerHTML = `
+          <img src="${imageObj.blobUrl}" alt="${imageObj.fileName}" class="image-card-thumbnail">
+          <div class="image-card-info">
+            <div class="image-card-name">${imageObj.fileName}</div>
+            <div class="image-card-size">${imageObj.fileSize}</div>
+          </div>
+          <button type="button" class="image-card-remove" data-index="${idx}">×</button>
+        `;
+
+        card.querySelector('.image-card-remove').addEventListener('click', (e) => {
+          const i = parseInt(e.target.dataset.index);
+          removeImage(i);
+        });
+
+        imagesContainer.appendChild(card);
+      });
+
+      updateImageCount();
+      autoSave();
+    }
+
+    // Format file size
+    function formatFileSize(bytes) {
+      if (bytes < 1024) return bytes + ' B';
+      if (bytes < 1024 * 1024) return (bytes / 1024).toFixed(1) + ' KB';
+      return (bytes / (1024 * 1024)).toFixed(1) + ' MB';
+    }
+
+    // Auto-save
+    function autoSave() {
+      const formData = {
+        other_damage_images: uploadedImages.map(img => ({
+          path: img.path,
+          fileName: img.fileName,
+          fileSize: img.fileSize
+        }))
+      };
+
+      localStorage.setItem('page8_data', JSON.stringify(formData));
+      console.log('Page 8 data saved:', formData);
+    }
+
+    // Load saved data
+    function loadSavedData() {
+      const saved = localStorage.getItem('page8_data');
+      if (saved) {
+        const data = JSON.parse(saved);
+
+        if (data.other_damage_images && Array.isArray(data.other_damage_images)) {
+          uploadedImages = data.other_damage_images;
+
+          // Re-display image cards (without blob preview)
+          imagesContainer.innerHTML = '';
+          uploadedImages.forEach((imageObj, index) => {
+            const card = document.createElement('div');
+            card.className = 'image-card';
+            card.dataset.index = index;
+
+            // Show placeholder icon since blob URLs don't persist
+            card.innerHTML = `
+              <div class="image-card-thumbnail" style="background: #f3f4f6; display: flex; align-items: center; justify-content: center; color: #9ca3af; font-size: 2rem;">
+                📷
+              </div>
+              <div class="image-card-info">
+                <div class="image-card-name">${imageObj.fileName}</div>
+                <div class="image-card-size">${imageObj.fileSize}</div>
+              </div>
+              <button type="button" class="image-card-remove" data-index="${index}">×</button>
+            `;
+
+            card.querySelector('.image-card-remove').addEventListener('click', (e) => {
+              const idx = parseInt(e.target.dataset.index);
+              removeImage(idx);
+            });
+
+            imagesContainer.appendChild(card);
+          });
+
+          updateImageCount();
+        }
+      }
+    }
+
+    // Navigation
+    document.getElementById('back-btn').addEventListener('click', () => {
+      autoSave();
+      window.location.href = '/incident-form-page7-other-vehicle.html';
+    });
+
+    document.getElementById('next-btn').addEventListener('click', () => {
+      autoSave();
+      console.log('Next button clicked - proceeding to Page 9');
+      window.location.href = '/incident-form-page9-witnesses.html';
+    });
+
+    // Initialize
+    window.addEventListener('DOMContentLoaded', () => {
+      // Create or reuse session ID for temp uploads
+      if (!sessionStorage.getItem('temp_session_id')) {
+        sessionStorage.setItem('temp_session_id', crypto.randomUUID());
+      }
+      console.log('Session ID:', sessionStorage.getItem('temp_session_id'));
+
+      loadSavedData();
+    });
+  </script>
+
+</body>
+</html>
