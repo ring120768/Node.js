@@ -368,106 +368,181 @@
   <!-- Main Content -->
   <div class="container">
     <div class="page-header">
-      <h2>🩺 Medical Assessment</h2>
-      <p>Please tell us about any injuries or symptoms</p>
+      <h2>🩺 Medical Questionnaire</h2>
+      <p>Please answer all medical questions as specified by our medical consultant</p>
     </div>
 
-    <!-- Symptoms -->
-    <div class="form-section">
-      <h3>💢 Current Symptoms</h3>
-      <p class="help-text" style="margin-bottom: 16px;">
-        Select all symptoms you are currently experiencing:
-      </p>
-
-      <div class="checkbox-group">
-        <label>
-          <input type="checkbox" name="symptoms" value="chest_pain">
-          <span>Chest pain or tightness</span>
-        </label>
-        <label>
-          <input type="checkbox" name="symptoms" value="bleeding">
-          <span>Bleeding (external or suspected internal)</span>
-        </label>
-        <label>
-          <input type="checkbox" name="symptoms" value="breathlessness">
-          <span>Difficulty breathing or breathlessness</span>
-        </label>
-        <label>
-          <input type="checkbox" name="symptoms" value="unconsciousness">
-          <span>Loss of consciousness (even briefly)</span>
-        </label>
-        <label>
-          <input type="checkbox" name="symptoms" value="head_injury">
-          <span>Head injury or severe headache</span>
-        </label>
-        <label>
-          <input type="checkbox" name="symptoms" value="neck_back_pain">
-          <span>Neck or back pain</span>
-        </label>
-        <label>
-          <input type="checkbox" name="symptoms" value="broken_bones">
-          <span>Suspected broken bones or fractures</span>
-        </label>
-        <label>
-          <input type="checkbox" name="symptoms" value="severe_pain">
-          <span>Severe pain anywhere in body</span>
-        </label>
-        <label>
-          <input type="checkbox" name="symptoms" value="cuts_bruises">
-          <span>Cuts, bruises, or abrasions</span>
-        </label>
-        <label>
-          <input type="checkbox" name="symptoms" value="whiplash">
-          <span>Whiplash symptoms (neck stiffness)</span>
-        </label>
-        <label>
-          <input type="checkbox" name="symptoms" value="shock">
-          <span>Shock or feeling dazed/confused</span>
-        </label>
-        <label>
-          <input type="checkbox" name="symptoms" value="other_injury">
-          <span>Other injury or symptom</span>
-        </label>
-        <label>
-          <input type="checkbox" name="symptoms" value="no_injuries">
-          <span>✅ No injuries or symptoms</span>
-        </label>
-      </div>
-    </div>
-
-    <!-- Medical Attention -->
+    <!-- Medical Attention Needed -->
     <div class="form-section">
       <h3>🚑 Medical Attention</h3>
 
       <div class="form-group">
         <label>
-          Did you receive medical attention at the scene?
+          Do you need Medical Attention?
+          <span class="required">*</span>
         </label>
         <div class="radio-group">
           <label>
-            <input type="radio" name="medicalAttention" value="yes" required>
+            <input type="radio" name="medicalAttentionNeeded" value="yes" required>
             <span>Yes</span>
           </label>
           <label>
-            <input type="radio" name="medicalAttention" value="no" required>
+            <input type="radio" name="medicalAttentionNeeded" value="no" required>
             <span>No</span>
           </label>
         </div>
       </div>
 
-      <!-- Conditional: Medical Details -->
-      <div class="conditional-field" id="medicalDetailsField">
-        <label for="medicalDetails">
-          Please provide details:
+      <!-- Conditional: Injury Details -->
+      <div class="conditional-field" id="injuryDetailsField">
+        <label for="injuryDetails">
+          Please provide Details of any injuries:
+          <span class="required">*</span>
         </label>
         <p class="help-text" style="margin-bottom: 8px;">
-          Who provided treatment? What treatment was given? Any medications?
+          Describe your injuries in detail
         </p>
         <textarea
-          id="medicalDetails"
-          name="medicalDetails"
-          placeholder="e.g. Paramedics attended, checked for injuries, provided pain relief. No hospital transfer needed."
+          id="injuryDetails"
+          name="injuryDetails"
+          placeholder="Please describe your injuries in detail..."
         ></textarea>
+      </div>
+    </div>
+
+    <!-- Injury Severity -->
+    <div class="form-section">
+      <h3>⚕️ Severity of Injuries</h3>
+
+      <div class="form-group">
+        <label>
+          Rate the severity of your injuries
+          <span class="required">*</span>
+        </label>
+        <div class="radio-group">
+          <label>
+            <input type="radio" name="injurySeverity" value="1" required>
+            <span>1 - Minor (cuts, bruises)</span>
+          </label>
+          <label>
+            <input type="radio" name="injurySeverity" value="2" required>
+            <span>2 - Mild (minor pain, discomfort)</span>
+          </label>
+          <label>
+            <input type="radio" name="injurySeverity" value="3" required>
+            <span>3 - Moderate (significant pain)</span>
+          </label>
+          <label>
+            <input type="radio" name="injurySeverity" value="4" required>
+            <span>4 - Serious (severe pain, restricted movement)</span>
+          </label>
+          <label>
+            <input type="radio" name="injurySeverity" value="5" required>
+            <span>5 - Severe (life-threatening, immediate care needed)</span>
+          </label>
+        </div>
+      </div>
+    </div>
+
+    <!-- Hospital/Medical Center -->
+    <div class="form-section">
+      <h3>🏥 Medical Facility</h3>
+
+      <div class="form-group">
+        <label for="hospitalName">
+          Hospital or Medical Center Name (if applicable)
+        </label>
+        <input
+          type="text"
+          id="hospitalName"
+          name="hospitalName"
+          placeholder="Name of hospital or medical center"
+        >
+        <p class="help-text">Leave blank if no hospital visit</p>
+      </div>
+
+      <div class="form-group">
+        <label>
+          Ambulance Called?
+          <span class="required">*</span>
+        </label>
+        <div class="radio-group">
+          <label>
+            <input type="radio" name="ambulanceCalled" value="yes" required>
+            <span>Yes</span>
+          </label>
+          <label>
+            <input type="radio" name="ambulanceCalled" value="no" required>
+            <span>No</span>
+          </label>
+        </div>
+      </div>
+
+      <div class="form-group">
+        <label for="treatmentReceived">
+          Treatment Received
+        </label>
+        <textarea
+          id="treatmentReceived"
+          name="treatmentReceived"
+          placeholder="Details of any treatment or medication administered"
+        ></textarea>
+        <p class="help-text">Describe any treatment, medication, or medical procedures</p>
+      </div>
+    </div>
+
+    <!-- Medical Symptoms (Exact list from medical consultant) -->
+    <div class="form-section">
+      <h3>💢 Medical Symptoms</h3>
+      <p class="help-text" style="margin-bottom: 16px;">
+        What symptoms are you experiencing? (Select all that apply)
+      </p>
+
+      <div class="checkbox-group">
+        <label>
+          <input type="checkbox" name="symptoms" value="headache">
+          <span>Headache</span>
+        </label>
+        <label>
+          <input type="checkbox" name="symptoms" value="dizziness">
+          <span>Dizziness</span>
+        </label>
+        <label>
+          <input type="checkbox" name="symptoms" value="nausea">
+          <span>Nausea</span>
+        </label>
+        <label>
+          <input type="checkbox" name="symptoms" value="back_pain">
+          <span>Back Pain</span>
+        </label>
+        <label>
+          <input type="checkbox" name="symptoms" value="neck_pain">
+          <span>Neck Pain</span>
+        </label>
+        <label>
+          <input type="checkbox" name="symptoms" value="chest_pain">
+          <span>Chest Pain</span>
+        </label>
+        <label>
+          <input type="checkbox" name="symptoms" value="abdominal_pain">
+          <span>Abdominal Pain</span>
+        </label>
+        <label>
+          <input type="checkbox" name="symptoms" value="difficulty_breathing">
+          <span>Difficulty Breathing</span>
+        </label>
+        <label>
+          <input type="checkbox" name="symptoms" value="bleeding">
+          <span>Bleeding</span>
+        </label>
+        <label>
+          <input type="checkbox" name="symptoms" value="loss_of_consciousness">
+          <span>Loss of Consciousness</span>
+        </label>
+        <label>
+          <input type="checkbox" name="symptoms" value="other">
+          <span>Other Symptoms</span>
+        </label>
       </div>
     </div>
 
@@ -486,52 +561,47 @@
     // Elements
     const backBtn = document.getElementById('backBtn');
     const nextBtn = document.getElementById('nextBtn');
-    const medicalAttentionRadios = document.querySelectorAll('input[name="medicalAttention"]');
-    const medicalDetailsField = document.getElementById('medicalDetailsField');
-    const noInjuriesCheckbox = document.querySelector('input[value="no_injuries"]');
-    const symptomCheckboxes = document.querySelectorAll('input[name="symptoms"]:not([value="no_injuries"])');
+    const medicalAttentionNeededRadios = document.querySelectorAll('input[name="medicalAttentionNeeded"]');
+    const injuryDetailsField = document.getElementById('injuryDetailsField');
 
-    // Show/hide medical details based on selection
-    medicalAttentionRadios.forEach(radio => {
+    // Show/hide injury details based on medical attention selection
+    medicalAttentionNeededRadios.forEach(radio => {
       radio.addEventListener('change', function() {
         if (this.value === 'yes') {
-          medicalDetailsField.classList.add('show');
+          injuryDetailsField.classList.add('show');
         } else {
-          medicalDetailsField.classList.remove('show');
-        }
-      });
-    });
-
-    // "No injuries" checkbox logic (exclusive with other symptoms)
-    noInjuriesCheckbox.addEventListener('change', function() {
-      if (this.checked) {
-        symptomCheckboxes.forEach(cb => cb.checked = false);
-      }
-    });
-
-    symptomCheckboxes.forEach(checkbox => {
-      checkbox.addEventListener('change', function() {
-        if (this.checked) {
-          noInjuriesCheckbox.checked = false;
+          injuryDetailsField.classList.remove('show');
         }
       });
     });
 
     // Validate form
     function validateForm() {
-      const medicalAttention = document.querySelector('input[name="medicalAttention"]:checked');
+      const medicalAttentionNeeded = document.querySelector('input[name="medicalAttentionNeeded"]:checked');
+      const injurySeverity = document.querySelector('input[name="injurySeverity"]:checked');
+      const ambulanceCalled = document.querySelector('input[name="ambulanceCalled"]:checked');
 
-      if (!medicalAttention) {
-        alert('Please indicate whether you received medical attention at the scene.');
+      if (!medicalAttentionNeeded) {
+        alert('Please indicate whether you need medical attention.');
         return false;
       }
 
-      if (medicalAttention.value === 'yes') {
-        const medicalDetails = document.getElementById('medicalDetails').value.trim();
-        if (!medicalDetails) {
-          alert('Please provide details about the medical attention you received.');
+      if (medicalAttentionNeeded.value === 'yes') {
+        const injuryDetails = document.getElementById('injuryDetails').value.trim();
+        if (!injuryDetails) {
+          alert('Please provide details of your injuries.');
           return false;
         }
+      }
+
+      if (!injurySeverity) {
+        alert('Please rate the severity of your injuries.');
+        return false;
+      }
+
+      if (!ambulanceCalled) {
+        alert('Please indicate whether an ambulance was called.');
+        return false;
       }
 
       return true;
@@ -549,9 +619,13 @@
 
       // Save data to session storage
       const pageData = {
-        symptoms: selectedSymptoms,
-        medical_attention_at_scene: document.querySelector('input[name="medicalAttention"]:checked').value,
-        medical_details: document.getElementById('medicalDetails').value.trim(),
+        medical_attention_needed: document.querySelector('input[name="medicalAttentionNeeded"]:checked').value,
+        medical_injury_details: document.getElementById('injuryDetails').value.trim(),
+        medical_injury_severity: document.querySelector('input[name="injurySeverity"]:checked').value,
+        medical_hospital_name: document.getElementById('hospitalName').value.trim(),
+        medical_ambulance_called: document.querySelector('input[name="ambulanceCalled"]:checked').value,
+        medical_treatment_received: document.getElementById('treatmentReceived').value.trim(),
+        medical_symptoms: selectedSymptoms,
         completed_at: new Date().toISOString()
       };
 
@@ -575,28 +649,50 @@
         try {
           const data = JSON.parse(saved);
 
-          // Restore symptoms
-          if (data.symptoms && Array.isArray(data.symptoms)) {
-            data.symptoms.forEach(symptom => {
-              const checkbox = document.querySelector(`input[name="symptoms"][value="${symptom}"]`);
-              if (checkbox) checkbox.checked = true;
-            });
-          }
-
-          // Restore medical attention
-          if (data.medical_attention_at_scene) {
-            const radio = document.querySelector(`input[name="medicalAttention"][value="${data.medical_attention_at_scene}"]`);
+          // Restore medical attention needed
+          if (data.medical_attention_needed) {
+            const radio = document.querySelector(`input[name="medicalAttentionNeeded"][value="${data.medical_attention_needed}"]`);
             if (radio) {
               radio.checked = true;
-              if (data.medical_attention_at_scene === 'yes') {
-                medicalDetailsField.classList.add('show');
+              if (data.medical_attention_needed === 'yes') {
+                injuryDetailsField.classList.add('show');
               }
             }
           }
 
-          // Restore medical details
-          if (data.medical_details) {
-            document.getElementById('medicalDetails').value = data.medical_details;
+          // Restore injury details
+          if (data.medical_injury_details) {
+            document.getElementById('injuryDetails').value = data.medical_injury_details;
+          }
+
+          // Restore injury severity
+          if (data.medical_injury_severity) {
+            const radio = document.querySelector(`input[name="injurySeverity"][value="${data.medical_injury_severity}"]`);
+            if (radio) radio.checked = true;
+          }
+
+          // Restore hospital name
+          if (data.medical_hospital_name) {
+            document.getElementById('hospitalName').value = data.medical_hospital_name;
+          }
+
+          // Restore ambulance called
+          if (data.medical_ambulance_called) {
+            const radio = document.querySelector(`input[name="ambulanceCalled"][value="${data.medical_ambulance_called}"]`);
+            if (radio) radio.checked = true;
+          }
+
+          // Restore treatment received
+          if (data.medical_treatment_received) {
+            document.getElementById('treatmentReceived').value = data.medical_treatment_received;
+          }
+
+          // Restore symptoms
+          if (data.medical_symptoms && Array.isArray(data.medical_symptoms)) {
+            data.medical_symptoms.forEach(symptom => {
+              const checkbox = document.querySelector(`input[name="symptoms"][value="${symptom}"]`);
+              if (checkbox) checkbox.checked = true;
+            });
           }
 
           console.log('✅ Page 3 data restored');
@@ -606,7 +702,7 @@
       }
     });
 
-    console.log('📋 Incident Form - Page 3: Medical Assessment loaded');
+    console.log('📋 Incident Form - Page 3: Medical Questionnaire loaded (medical consultant specifications)');
   </script>
 </body>
 </html>
