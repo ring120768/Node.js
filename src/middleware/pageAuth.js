@@ -55,12 +55,9 @@ async function pageAuth(req, res, next) {
         userAgent: req.headers['user-agent']
       });
 
-      // Return 401 with redirect instruction
-      return res.status(401).json({
-        error: 'Unauthorized',
-        message: 'Please log in to access this page',
-        redirect: `/login-improved.html?redirect=${encodeURIComponent(req.path)}`
-      });
+      // Redirect to login page (browser will follow automatically)
+      const redirectUrl = `/login-improved.html?redirect=${encodeURIComponent(req.path)}`;
+      return res.redirect(302, redirectUrl);
     }
 
     // Verify token with Supabase Auth
@@ -73,11 +70,9 @@ async function pageAuth(req, res, next) {
         error: error?.message
       });
 
-      return res.status(401).json({
-        error: 'Session Expired',
-        message: 'Your session has expired. Please log in again.',
-        redirect: `/login-improved.html?redirect=${encodeURIComponent(req.path)}`
-      });
+      // Redirect to login page (session expired)
+      const redirectUrl = `/login-improved.html?redirect=${encodeURIComponent(req.path)}`;
+      return res.redirect(302, redirectUrl);
     }
 
     // ✅ Valid session - attach user to request
@@ -94,11 +89,8 @@ async function pageAuth(req, res, next) {
   } catch (error) {
     logger.error('Page auth middleware error:', error);
 
-    return res.status(500).json({
-      error: 'Server Error',
-      message: 'Authentication service temporarily unavailable',
-      redirect: '/login-improved.html'
-    });
+    // Redirect to login page (server error)
+    return res.redirect(302, '/login-improved.html');
   }
 }
 
