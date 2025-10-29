@@ -701,54 +701,16 @@
             }
         });
 
-        // Navigate to incident report
-        async function navigateToIncident() {
-            console.log('📝 Incident button clicked');
-            try {
-                const response = await fetch('/api/auth/status', {
-                    credentials: 'include'
-                });
-                const data = await response.json();
-
-                console.log('🔍 Auth status check:', data);
-
-                if (data.authenticated) {
-                    console.log('✅ User authenticated, going to incident.html');
-                    window.location.href = '/incident.html';
-                } else {
-                    console.log('❌ User not authenticated, redirecting to login with redirect=incident.html');
-                    window.location.href = '/login-improved.html?redirect=incident.html';
-                }
-            } catch (error) {
-                console.error('❌ Auth check failed:', error);
-                console.log('Redirecting to login with redirect=incident.html (fallback)');
-                window.location.href = '/login-improved.html?redirect=incident.html';
-            }
+        // Navigate to incident report (seamless - server handles auth)
+        function navigateToIncident() {
+            console.log('📝 Incident button clicked - navigating to incident form');
+            window.location.href = '/incident-form-page1.html';
         }
 
-        // Navigate to dashboard
-        async function navigateToDashboard() {
-            console.log('📋 Dashboard button clicked');
-            try {
-                const response = await fetch('/api/auth/status', {
-                    credentials: 'include'
-                });
-                const data = await response.json();
-
-                console.log('🔍 Auth status check:', data);
-
-                if (data.authenticated) {
-                    console.log('✅ User authenticated, going to dashboard.html');
-                    window.location.href = '/dashboard.html';
-                } else {
-                    console.log('❌ User not authenticated, redirecting to login with redirect=dashboard.html');
-                    window.location.href = '/login-improved.html?redirect=dashboard.html';
-                }
-            } catch (error) {
-                console.error('❌ Auth check failed:', error);
-                console.log('Redirecting to login with redirect=dashboard.html (fallback)');
-                window.location.href = '/login-improved.html?redirect=dashboard.html';
-            }
+        // Navigate to dashboard (seamless - server handles auth)
+        function navigateToDashboard() {
+            console.log('📋 Dashboard button clicked - navigating to dashboard');
+            window.location.href = '/dashboard.html';
         }
 
         // Add event listeners when page loads

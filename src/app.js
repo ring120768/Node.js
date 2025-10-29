@@ -149,6 +149,55 @@ function createApp() {
     res.sendFile(path.join(__dirname, '../public/incident.html'));
   });
 
+  // Protect all incident form pages (Page 1-12)
+  app.get('/incident-form-page1.html', pageAuth, (req, res) => {
+    res.sendFile(path.join(__dirname, '../public/incident-form-page1.html'));
+  });
+
+  app.get('/incident-form-page2.html', pageAuth, (req, res) => {
+    res.sendFile(path.join(__dirname, '../public/incident-form-page2.html'));
+  });
+
+  app.get('/incident-form-page3.html', pageAuth, (req, res) => {
+    res.sendFile(path.join(__dirname, '../public/incident-form-page3.html'));
+  });
+
+  app.get('/incident-form-page4.html', pageAuth, (req, res) => {
+    res.sendFile(path.join(__dirname, '../public/incident-form-page4.html'));
+  });
+
+  app.get('/incident-form-page4a-vehicle-extended.html', pageAuth, (req, res) => {
+    res.sendFile(path.join(__dirname, '../public/incident-form-page4a-vehicle-extended.html'));
+  });
+
+  app.get('/incident-form-page5.html', pageAuth, (req, res) => {
+    res.sendFile(path.join(__dirname, '../public/incident-form-page5.html'));
+  });
+
+  app.get('/incident-form-page6.html', pageAuth, (req, res) => {
+    res.sendFile(path.join(__dirname, '../public/incident-form-page6.html'));
+  });
+
+  app.get('/incident-form-page7.html', pageAuth, (req, res) => {
+    res.sendFile(path.join(__dirname, '../public/incident-form-page7.html'));
+  });
+
+  app.get('/incident-form-page8.html', pageAuth, (req, res) => {
+    res.sendFile(path.join(__dirname, '../public/incident-form-page8.html'));
+  });
+
+  app.get('/incident-form-page9.html', pageAuth, (req, res) => {
+    res.sendFile(path.join(__dirname, '../public/incident-form-page9.html'));
+  });
+
+  app.get('/incident-form-page10.html', pageAuth, (req, res) => {
+    res.sendFile(path.join(__dirname, '../public/incident-form-page10.html'));
+  });
+
+  app.get('/incident-form-page12.html', pageAuth, (req, res) => {
+    res.sendFile(path.join(__dirname, '../public/incident-form-page12.html'));
+  });
+
   // Cache control for HTML (MUST be before express.static to work)
   // Sets aggressive cache prevention headers for all HTML files
   app.use((req, res, next) => {
