@@ -717,12 +717,12 @@
                     window.location.href = '/incident.html';
                 } else {
                     console.log('❌ User not authenticated, redirecting to login with redirect=incident.html');
-                    window.location.href = '/login.html?redirect=incident.html';
+                    window.location.href = '/login-improved.html?redirect=incident.html';
                 }
             } catch (error) {
                 console.error('❌ Auth check failed:', error);
                 console.log('Redirecting to login with redirect=incident.html (fallback)');
-                window.location.href = '/login.html?redirect=incident.html';
+                window.location.href = '/login-improved.html?redirect=incident.html';
             }
         }
 
@@ -742,12 +742,12 @@
                     window.location.href = '/dashboard.html';
                 } else {
                     console.log('❌ User not authenticated, redirecting to login with redirect=dashboard.html');
-                    window.location.href = '/login.html?redirect=dashboard.html';
+                    window.location.href = '/login-improved.html?redirect=dashboard.html';
                 }
             } catch (error) {
                 console.error('❌ Auth check failed:', error);
                 console.log('Redirecting to login with redirect=dashboard.html (fallback)');
-                window.location.href = '/login.html?redirect=dashboard.html';
+                window.location.href = '/login-improved.html?redirect=dashboard.html';
             }
         }
 
@@ -791,7 +791,7 @@
                 loginBtn.addEventListener('click', function(e) {
                     e.preventDefault();
                     console.log('🔑 Login button clicked');
-                    window.location.href = '/login.html';
+                    window.location.href = '/login-improved.html';
                 });
                 console.log('✅ Login button event listener added');
             }
@@ -840,7 +840,7 @@
                     }
                 } else if (target.matches('.auth-btn.login')) {
                     e.preventDefault();
-                    window.location.href = '/login.html';
+                    window.location.href = '/login-improved.html';
                 } else if (target.matches('.auth-btn.signup')) {
                     e.preventDefault();
                     window.location.href = '/signup-form.html';
