@@ -46,7 +46,7 @@ async function pageAuth(req, res, next) {
   try {
     // Extract session token from cookies
     const cookies = parseCookies(req);
-    const sessionToken = cookies['sb-access-token'] || cookies['sb-auth-token'];
+    const sessionToken = cookies['access_token'] || cookies['sb-access-token'] || cookies['sb-auth-token'];
 
     if (!sessionToken) {
       logger.warn('Page access denied - No session token', {
@@ -108,7 +108,7 @@ async function apiAuth(req, res, next) {
     // Fallback to cookies if no header
     if (!sessionToken) {
       const cookies = parseCookies(req);
-      sessionToken = cookies['sb-access-token'] || cookies['sb-auth-token'];
+      sessionToken = cookies['access_token'] || cookies['sb-access-token'] || cookies['sb-auth-token'];
     }
 
     if (!sessionToken) {
