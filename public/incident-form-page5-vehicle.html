@@ -442,24 +442,25 @@
 
     .btn-secondary {
       background: white;
-      color: var(--text-dark);
-      border: 2px solid var(--border);
+      color: var(--grad-start);
+      border: 2px solid var(--grad-start);
     }
 
     .btn-secondary:hover {
-      border-color: var(--accent);
-      background: rgba(53, 122, 148, 0.05);
+      border-color: var(--grad-start);
+      background: rgba(46, 106, 157, 0.1);
     }
 
     .btn-primary {
-      background: linear-gradient(135deg, var(--grad-start) 0%, var(--grad-end) 100%);
+      background: var(--grad-start);
       color: white;
-      box-shadow: 0 4px 12px rgba(46, 106, 157, 0.2);
+      box-shadow: 0 4px 12px rgba(46, 106, 157, 0.3);
     }
 
     .btn-primary:hover {
       transform: translateY(-2px);
-      box-shadow: 0 6px 16px rgba(46, 106, 157, 0.3);
+      box-shadow: 0 6px 16px rgba(46, 106, 157, 0.4);
+      background: #25547a;
     }
 
     .btn-primary:active {
