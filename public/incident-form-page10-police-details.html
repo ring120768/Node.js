@@ -7,14 +7,19 @@
   <style>
     /* Design System Variables */
     :root {
-      --grad-start: #2e6a9d;
-      --grad-end: #3776a2;
-      --accent: #357a94;
-      --accent-hover: #2c6880;
-      --bg-light: #f0ebe3;
-      --text-dark: #333;
-      --text-muted: #666;
-      --border: #d1d5db;
+      --grad-start: #0E7490;
+      --grad-end: #0c6179;
+      --accent: #0E7490;
+      --accent-hover: #0c6179;
+      --bg-light: #E8DCC4;
+      --text-dark: #1a1a1a;
+      --text-muted: #6b7280;
+      --border: #4B5563;
+      --input-bg: #CFD2D7;
+      --checkbox-bg: #F5F1E8;
+      --container-bg: #F5F1E8;
+      --button-bg: #ffffff;
+      --button-hover: rgba(14, 116, 144, 0.1);
       --success: #10b981;
       --danger: #ef4444;
       --warning: #f59e0b;
@@ -138,23 +143,23 @@
 
     .radio-option {
       flex: 1;
-      border: 2px solid #e0e0e0;
+      border: 2px solid var(--border);
       border-radius: 12px;
       padding: 16px;
       cursor: pointer;
       transition: all 0.2s ease;
       text-align: center;
-      background: white;
+      background: var(--checkbox-bg);
     }
 
     .radio-option:hover {
-      border-color: #667eea;
-      background: #f8f9ff;
+      border-color: var(--accent);
+      background: var(--button-hover);
     }
 
     .radio-option.selected {
-      border-color: #667eea;
-      background: #f0f3ff;
+      border-color: var(--accent);
+      background: rgba(14, 116, 144, 0.1);
     }
 
     .radio-option input[type="radio"] {
@@ -175,17 +180,20 @@
     textarea {
       width: 100%;
       padding: 12px;
-      border: 2px solid #e0e0e0;
+      border: 2px solid var(--border);
       border-radius: 8px;
       font-family: inherit;
       font-size: 16px;
-      transition: border-color 0.2s ease;
+      background: var(--input-bg);
+      transition: all 0.2s ease;
     }
 
     input[type="text"]:focus,
     textarea:focus {
       outline: none;
-      border-color: #667eea;
+      border-color: var(--accent);
+      box-shadow: 0 0 0 3px rgba(14, 116, 144, 0.1);
+      background: #ffffff;
     }
 
     textarea {
@@ -196,9 +204,9 @@
     .police-details-container {
       display: none;
       padding: 24px;
-      background: #f8f9ff;
+      background: var(--container-bg);
       border-radius: 12px;
-      border: 2px solid #667eea;
+      border: 2px solid var(--accent);
       margin-top: 24px;
     }
 
@@ -273,25 +281,25 @@
     }
 
     .btn-secondary {
-      background: white;
+      background: var(--button-bg);
       color: var(--grad-start);
       border: 2px solid var(--grad-start);
     }
 
     .btn-secondary:hover {
-      background: rgba(46, 106, 157, 0.1);
+      background: var(--button-hover);
     }
 
     .btn-primary {
       background: var(--grad-start);
       color: white;
-      box-shadow: 0 4px 12px rgba(46, 106, 157, 0.3);
+      box-shadow: 0 4px 12px rgba(14, 116, 144, 0.3);
     }
 
     .btn-primary:hover {
       transform: translateY(-2px);
-      box-shadow: 0 6px 16px rgba(46, 106, 157, 0.4);
-      background: #25547a;
+      box-shadow: 0 6px 16px rgba(14, 116, 144, 0.4);
+      background: var(--grad-end);
     }
 
     .btn-primary:disabled {
