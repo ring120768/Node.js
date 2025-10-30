@@ -550,14 +550,14 @@
           Do you need Medical Attention?
           <span class="required">*</span>
         </label>
-        <p class="help-text" style="margin-bottom: 12px;">Select all that apply</p>
+        <p class="help-text" style="margin-bottom: 12px;">Select one option</p>
         <div class="radio-group">
           <label>
-            <input type="checkbox" name="medical_attention_needed_yes" value="true">
+            <input type="radio" name="medical_attention_needed" value="yes" required>
             <span>Yes - I need or have received medical attention</span>
           </label>
           <label>
-            <input type="checkbox" name="medical_attention_needed_no" value="true">
+            <input type="radio" name="medical_attention_needed" value="no" required>
             <span>No - No medical attention needed</span>
           </label>
         </div>
@@ -739,13 +739,14 @@
     // Elements
     const backBtn = document.getElementById('backBtn');
     const nextBtn = document.getElementById('nextBtn');
-    const medicalAttentionYesCheckbox = document.querySelector('input[name="medical_attention_needed_yes"]');
-    const medicalAttentionNoCheckbox = document.querySelector('input[name="medical_attention_needed_no"]');
+    const medicalAttentionRadios = document.querySelectorAll('input[name="medical_attention_needed"]');
     const medicalDetailsGroup = document.getElementById('medicalDetailsGroup');
 
     // Show/hide conditional fields based on medical attention needed
     function updateMedicalFields() {
-      if (medicalAttentionYesCheckbox.checked) {
+      const selectedValue = document.querySelector('input[name="medical_attention_needed"]:checked')?.value;
+
+      if (selectedValue === 'yes') {
         medicalDetailsGroup.classList.add('show');
         // Make conditional fields required
         document.getElementById('medical_injury_details').required = true;
@@ -765,8 +766,9 @@
       }
     }
 
-    medicalAttentionYesCheckbox.addEventListener('change', updateMedicalFields);
-    medicalAttentionNoCheckbox.addEventListener('change', updateMedicalFields);
+    medicalAttentionRadios.forEach(radio => {
+      radio.addEventListener('change', updateMedicalFields);
+    });
 
     // Show/hide treatment field based on ambulance selection
     const ambulanceRadios = document.querySelectorAll('input[name="medical_ambulance_called"]');
@@ -788,16 +790,15 @@
 
     // Validate form
     function validateForm() {
-      const medicalAttentionYes = document.querySelector('input[name="medical_attention_needed_yes"]').checked;
-      const medicalAttentionNo = document.querySelector('input[name="medical_attention_needed_no"]').checked;
+      const medicalAttentionSelected = document.querySelector('input[name="medical_attention_needed"]:checked');
 
-      if (!medicalAttentionYes && !medicalAttentionNo) {
+      if (!medicalAttentionSelected) {
         alert('Please indicate whether you need medical attention.');
         return false;
       }
 
       // If medical attention needed, validate conditional fields
-      if (medicalAttentionYes) {
+      if (medicalAttentionSelected.value === 'yes') {
         const injuryDetails = document.getElementById('medical_injury_details').value.trim();
         const injurySeverity = document.getElementById('medical_injury_severity').value;
         const ambulanceCalled = document.querySelector('input[name="medical_ambulance_called"]:checked');
@@ -848,8 +849,7 @@
 
       // Build page data
       const pageData = {
-        medical_attention_needed_yes: document.querySelector('input[name="medical_attention_needed_yes"]').checked,
-        medical_attention_needed_no: document.querySelector('input[name="medical_attention_needed_no"]').checked,
+        medical_attention_needed: document.querySelector('input[name="medical_attention_needed"]:checked')?.value,
         medical_injury_details: document.getElementById('medical_injury_details').value.trim(),
         medical_injury_severity: document.getElementById('medical_injury_severity').value,
         medical_hospital_name: document.getElementById('medical_hospital_name').value.trim(),
@@ -881,14 +881,12 @@
           const data = JSON.parse(saved);
 
           // Restore medical attention
-          if (data.medical_attention_needed_yes) {
-            document.querySelector('input[name="medical_attention_needed_yes"]').checked = true;
-            medicalDetailsGroup.classList.add('show');
-            document.getElementById('medical_injury_details').required = true;
-            document.getElementById('medical_injury_severity').required = true;
-          }
-          if (data.medical_attention_needed_no) {
-            document.querySelector('input[name="medical_attention_needed_no"]').checked = true;
+          if (data.medical_attention_needed) {
+            const radio = document.querySelector(`input[name="medical_attention_needed"][value="${data.medical_attention_needed}"]`);
+            if (radio) {
+              radio.checked = true;
+              updateMedicalFields(); // Show/hide conditional fields
+            }
           }
 
           // Restore conditional fields
