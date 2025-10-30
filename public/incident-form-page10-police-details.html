@@ -475,6 +475,9 @@
           <label class="form-label">
             Were you and all passengers wearing seat belts?<span class="required">*</span>
           </label>
+          <p class="help-text" style="margin-top: 8px; margin-bottom: 12px;">
+            UK law requires seatbelts while the vehicle is moving. Legal exemptions include: parked/stationary vehicles, reversing, medical exemption certificates, licensed taxi drivers, and vehicles manufactured before 1965 without fitted belts.
+          </p>
 
           <div class="radio-group">
             <div class="radio-option" data-value="yes" data-field="seatbelts_worn">
@@ -495,7 +498,7 @@
               <span>⚠️</span>
               <span>Please explain why seatbelts were not worn - this is important legal information.</span>
             </div>
-            <textarea id="seatbelt-reason" placeholder="Please explain why seatbelts were not worn..." maxlength="500"></textarea>
+            <textarea id="seatbelt-reason" placeholder="Examples: 'Vehicle was parked and stationary when hit', 'I was reversing into a parking space', 'I have a medical exemption certificate due to [condition]', 'Vehicle is a 1962 classic car without fitted seatbelts', 'Licensed taxi driver picking up passenger'..." maxlength="500"></textarea>
             <div id="seatbelt-char-counter" class="char-counter">0 / 500 characters</div>
           </div>
         </div>
