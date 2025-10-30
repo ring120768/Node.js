@@ -387,6 +387,16 @@
       transform: translateY(0);
     }
 
+    #add-vehicle-btn:hover {
+      transform: translateY(-2px);
+      box-shadow: 0 6px 16px rgba(53, 122, 148, 0.4);
+      background: var(--accent-hover);
+    }
+
+    #add-vehicle-btn:active {
+      transform: translateY(0);
+    }
+
     .btn:disabled {
       opacity: 0.5;
       cursor: not-allowed;
@@ -743,6 +753,15 @@
         <span>💡</span>
         <span><strong>Tip:</strong> Be specific about which parts of their vehicle made contact with yours, visible damage you observed, and any fluids leaking or other effects.</span>
       </div>
+    </div>
+
+    <!-- Add Another Vehicle -->
+    <div style="margin: 32px 0; text-align: center;">
+      <button type="button" class="btn" id="add-vehicle-btn" style="background: var(--accent); color: white; padding: 16px 32px; font-size: 1rem; font-weight: 600; border-radius: 12px; border: none; cursor: pointer; display: inline-flex; align-items: center; gap: 12px; box-shadow: 0 4px 12px rgba(53, 122, 148, 0.3); transition: all 0.2s ease;">
+        <span style="font-size: 1.5rem;">➕</span>
+        <span>Add Another Vehicle</span>
+      </button>
+      <p style="margin-top: 12px; color: var(--text-muted); font-size: 0.875rem;">If there were more than 2 vehicles involved in the incident</p>
     </div>
 
     <!-- Navigation Buttons -->
@@ -1237,6 +1256,82 @@
       window.location.href = '/incident-form-page6-vehicle-images.html';
     });
 
+    // Add Another Vehicle handler
+    document.getElementById('add-vehicle-btn').addEventListener('click', () => {
+      // Save current vehicle data before adding another
+      autoSave();
+
+      // Get existing additional vehicles from sessionStorage
+      let additionalVehicles = [];
+      const stored = sessionStorage.getItem('additional_vehicles');
+      if (stored) {
+        try {
+          additionalVehicles = JSON.parse(stored);
+        } catch (e) {
+          console.error('Error parsing additional vehicles:', e);
+          additionalVehicles = [];
+        }
+      }
+
+      // Add current vehicle data to array
+      const currentVehicleData = {
+        vehicle_number: additionalVehicles.length + 2, // Vehicle 1 is user, 2 is first other, 3+ are additional
+        other_driver_name: document.getElementById('other-driver-name').value,
+        other_driver_phone: document.getElementById('other-driver-phone').value,
+        other_driver_email: document.getElementById('other-driver-email').value,
+        other_driver_address: document.getElementById('other-driver-address').value,
+        other_driver_license: document.getElementById('other-driver-license').value,
+        other_license_plate: document.getElementById('other-license-plate').value,
+        other_vehicle_make: document.getElementById('other-vehicle-make').value,
+        other_vehicle_model: document.getElementById('other-vehicle-model').value,
+        other_vehicle_color: document.getElementById('other-vehicle-color').value,
+        other_insurance_company: document.getElementById('other-insurance-company').value,
+        other_policy_number: document.getElementById('other-policy-number').value,
+        other_policy_cover: document.getElementById('other-policy-cover').value,
+        no_visible_damage: document.getElementById('no-damage-checkbox').checked,
+        other_point_of_impact: document.getElementById('other-point-of-impact').value,
+        saved_at: new Date().toISOString()
+      };
+
+      additionalVehicles.push(currentVehicleData);
+      sessionStorage.setItem('additional_vehicles', JSON.stringify(additionalVehicles));
+
+      console.log(`✅ Vehicle ${currentVehicleData.vehicle_number} saved. Total vehicles: ${additionalVehicles.length + 1}`);
+
+      // Show confirmation message
+      const vehicleNum = currentVehicleData.vehicle_number;
+      const confirmMsg = document.createElement('div');
+      confirmMsg.style.cssText = 'position: fixed; top: 80px; left: 50%; transform: translateX(-50%); background: var(--success); color: white; padding: 16px 24px; border-radius: 12px; box-shadow: 0 4px 16px rgba(0,0,0,0.2); z-index: 1000; font-weight: 600; animation: slideDown 0.3s ease;';
+      confirmMsg.innerHTML = `<span style="font-size: 1.2rem; margin-right: 8px;">✓</span> Vehicle ${vehicleNum} saved! Now add vehicle ${vehicleNum + 1}`;
+      document.body.appendChild(confirmMsg);
+
+      setTimeout(() => {
+        confirmMsg.remove();
+      }, 2000);
+
+      // Clear form for next vehicle
+      document.getElementById('other-driver-name').value = '';
+      document.getElementById('other-driver-phone').value = '';
+      document.getElementById('other-driver-email').value = '';
+      document.getElementById('other-driver-address').value = '';
+      document.getElementById('other-driver-license').value = '';
+      document.getElementById('other-license-plate').value = '';
+      document.getElementById('other-vehicle-make').value = '';
+      document.getElementById('other-vehicle-model').value = '';
+      document.getElementById('other-vehicle-color').value = '';
+      document.getElementById('other-insurance-company').value = '';
+      document.getElementById('other-policy-number').value = '';
+      document.getElementById('other-policy-cover').value = '';
+      document.getElementById('no-damage-checkbox').checked = false;
+      document.getElementById('other-point-of-impact').value = '';
+
+      // Reset validation
+      validateForm();
+
+      // Scroll to top smoothly
+      window.scrollTo({ top: 0, behavior: 'smooth' });
+    });
+
     // Auto-save on changes
     document.querySelectorAll('input, textarea, select').forEach(element => {
       element.addEventListener('change', autoSave);
@@ -1246,6 +1341,23 @@
     // Initialize
     window.addEventListener('DOMContentLoaded', () => {
       loadSavedData();
+
+      // Display count of additional vehicles if any
+      const stored = sessionStorage.getItem('additional_vehicles');
+      if (stored) {
+        try {
+          const vehicles = JSON.parse(stored);
+          if (vehicles.length > 0) {
+            const addBtn = document.getElementById('add-vehicle-btn');
+            const countBadge = document.createElement('span');
+            countBadge.style.cssText = 'background: white; color: var(--accent); padding: 4px 12px; border-radius: 20px; font-size: 0.875rem; margin-left: 8px; font-weight: 700;';
+            countBadge.textContent = `${vehicles.length + 1} vehicles recorded`;
+            addBtn.appendChild(countBadge);
+          }
+        } catch (e) {
+          console.error('Error displaying vehicle count:', e);
+        }
+      }
     });
   </script>
 
