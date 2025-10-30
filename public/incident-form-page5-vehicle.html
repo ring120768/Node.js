@@ -261,6 +261,47 @@
       font-size: 0.938rem;
     }
 
+    /* Checkbox Grid */
+    .checkbox-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
+      gap: 12px;
+    }
+
+    .checkbox-option {
+      display: flex;
+      align-items: center;
+      padding: 14px 16px;
+      border: 2px solid var(--border);
+      border-radius: 8px;
+      cursor: pointer;
+      transition: all 0.2s;
+      background: white;
+    }
+
+    .checkbox-option:hover {
+      border-color: var(--accent);
+      background: rgba(53, 122, 148, 0.02);
+    }
+
+    .checkbox-option input[type="checkbox"] {
+      width: 20px;
+      height: 20px;
+      margin-right: 12px;
+      cursor: pointer;
+      accent-color: var(--accent);
+    }
+
+    .checkbox-option input[type="checkbox"]:checked + span {
+      font-weight: 600;
+      color: var(--accent);
+    }
+
+    .checkbox-option span {
+      flex: 1;
+      font-size: 0.938rem;
+    }
+
     /* DVLA Lookup Section */
     .lookup-container {
       display: flex;
@@ -621,6 +662,101 @@
       </div>
     </div>
 
+    <!-- Point of Impact & Damage -->
+    <div class="form-section">
+      <div class="section-title">
+        <span class="section-icon">💥</span>
+        <span>Point of Impact & Damage to My Vehicle</span>
+      </div>
+
+      <div class="form-group">
+        <label class="form-label">
+          Where was your vehicle hit?
+          <span class="required">*</span>
+        </label>
+        <p class="form-hint">Select all areas that were impacted</p>
+
+        <div class="checkbox-grid">
+          <label class="checkbox-option">
+            <input type="checkbox" name="impact_point" value="front">
+            <span>Front</span>
+          </label>
+          <label class="checkbox-option">
+            <input type="checkbox" name="impact_point" value="front_driver">
+            <span>Front Driver Side</span>
+          </label>
+          <label class="checkbox-option">
+            <input type="checkbox" name="impact_point" value="front_passenger">
+            <span>Front Passenger Side</span>
+          </label>
+          <label class="checkbox-option">
+            <input type="checkbox" name="impact_point" value="driver_side">
+            <span>Driver Side</span>
+          </label>
+          <label class="checkbox-option">
+            <input type="checkbox" name="impact_point" value="passenger_side">
+            <span>Passenger Side</span>
+          </label>
+          <label class="checkbox-option">
+            <input type="checkbox" name="impact_point" value="rear_driver">
+            <span>Rear Driver Side</span>
+          </label>
+          <label class="checkbox-option">
+            <input type="checkbox" name="impact_point" value="rear_passenger">
+            <span>Rear Passenger Side</span>
+          </label>
+          <label class="checkbox-option">
+            <input type="checkbox" name="impact_point" value="rear">
+            <span>Rear</span>
+          </label>
+          <label class="checkbox-option">
+            <input type="checkbox" name="impact_point" value="roof">
+            <span>Roof</span>
+          </label>
+          <label class="checkbox-option">
+            <input type="checkbox" name="impact_point" value="undercarriage">
+            <span>Undercarriage</span>
+          </label>
+        </div>
+      </div>
+
+      <div class="form-group">
+        <label for="damage-description" class="form-label">
+          Describe the damage to your vehicle
+          <span class="required">*</span>
+        </label>
+        <p class="form-hint">Include details about dents, scratches, broken parts, etc.</p>
+        <textarea
+          id="damage-description"
+          name="damage_description"
+          rows="4"
+          placeholder="e.g., Large dent on driver door, front bumper cracked, headlight smashed, windscreen cracked on passenger side"
+          required
+        ></textarea>
+      </div>
+
+      <div class="form-group">
+        <label class="form-label">
+          Was your vehicle driveable after the accident?
+          <span class="required">*</span>
+        </label>
+
+        <div class="radio-group">
+          <div class="radio-option">
+            <input type="radio" id="driveable-yes" name="vehicle_driveable" value="yes" required>
+            <label for="driveable-yes">Yes, I drove it away</label>
+          </div>
+          <div class="radio-option">
+            <input type="radio" id="driveable-no" name="vehicle_driveable" value="no">
+            <label for="driveable-no">No, it needed to be towed</label>
+          </div>
+          <div class="radio-option">
+            <input type="radio" id="driveable-unsure" name="vehicle_driveable" value="unsure">
+            <label for="driveable-unsure">Unsure / Did not attempt</label>
+          </div>
+        </div>
+      </div>
+    </div>
 
     <!-- Navigation Buttons -->
     <div class="nav-buttons">
@@ -739,8 +875,18 @@
       const licensePlate = document.getElementById('license-plate').value.trim();
       const hasVehicleDetails = Object.keys(vehicleData).length > 0;
 
+      // Check impact points
+      const impactPoints = document.querySelectorAll('input[name="impact_point"]:checked');
+      const hasImpactPoint = impactPoints.length > 0;
+
+      // Check damage description
+      const damageDescription = document.getElementById('damage-description').value.trim();
+
+      // Check vehicle driveable
+      const vehicleDriveable = document.querySelector('input[name="vehicle_driveable"]:checked');
+
       const nextBtn = document.getElementById('next-btn');
-      nextBtn.disabled = !(usualVehicle && licensePlate && hasVehicleDetails);
+      nextBtn.disabled = !(usualVehicle && licensePlate && hasVehicleDetails && hasImpactPoint && damageDescription && vehicleDriveable);
     }
 
     // Add event listeners for form validation
@@ -748,12 +894,28 @@
       radio.addEventListener('change', validateForm);
     });
 
+    document.querySelectorAll('input[name="impact_point"]').forEach(checkbox => {
+      checkbox.addEventListener('change', validateForm);
+    });
+
+    document.getElementById('damage-description').addEventListener('input', validateForm);
+
+    document.querySelectorAll('input[name="vehicle_driveable"]').forEach(radio => {
+      radio.addEventListener('change', validateForm);
+    });
+
     // Auto-save
     function autoSave() {
+      const impactPoints = Array.from(document.querySelectorAll('input[name="impact_point"]:checked'))
+        .map(cb => cb.value);
+
       const formData = {
         usual_vehicle: document.querySelector('input[name="usual_vehicle"]:checked')?.value,
         license_plate: document.getElementById('license-plate').value,
-        vehicle_data: vehicleData
+        vehicle_data: vehicleData,
+        impact_points: impactPoints,
+        damage_description: document.getElementById('damage-description').value,
+        vehicle_driveable: document.querySelector('input[name="vehicle_driveable"]:checked')?.value
       };
 
       localStorage.setItem('page5_data', JSON.stringify(formData));
@@ -783,6 +945,25 @@
           document.getElementById('vehicle-colour').textContent = vehicleData.colour || '-';
           document.getElementById('vehicle-year').textContent = vehicleData.yearOfManufacture || '-';
           document.getElementById('vehicle-fuel').textContent = vehicleData.fuelType || '-';
+        }
+
+        // Restore impact points
+        if (data.impact_points && Array.isArray(data.impact_points)) {
+          data.impact_points.forEach(point => {
+            const checkbox = document.querySelector(`input[name="impact_point"][value="${point}"]`);
+            if (checkbox) checkbox.checked = true;
+          });
+        }
+
+        // Restore damage description
+        if (data.damage_description) {
+          document.getElementById('damage-description').value = data.damage_description;
+        }
+
+        // Restore vehicle driveable
+        if (data.vehicle_driveable) {
+          const radio = document.querySelector(`input[name="vehicle_driveable"][value="${data.vehicle_driveable}"]`);
+          if (radio) radio.checked = true;
         }
 
         validateForm();

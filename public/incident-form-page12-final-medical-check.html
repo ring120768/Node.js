@@ -559,8 +559,8 @@
           <span>Back</span>
         </button>
         <button type="button" class="btn btn-primary" id="submit-btn" disabled>
-          <span>Complete Report</span>
-          <span>✓</span>
+          <span>Next</span>
+          <span>→</span>
         </button>
       </div>
     </div>
@@ -704,11 +704,11 @@
 
         console.log('Complete incident report data:', allData);
 
-        // TODO: Submit to API endpoint
-        alert('Report Complete!\n\nNext: Submit all data to /api/incident-report/submit\n\nThis will process all 12 pages and redirect to dashboard.');
+        // Store complete data for transcription page
+        sessionStorage.setItem('complete_incident_data', JSON.stringify(allData));
 
-        // Redirect to dashboard after submission
-        // window.location.href = '/dashboard.html';
+        // Redirect to transcription status page
+        window.location.href = '/transcription-status.html';
       }
     });
 

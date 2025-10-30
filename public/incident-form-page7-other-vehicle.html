@@ -463,6 +463,22 @@
       <p>Information about the other driver and their vehicle</p>
     </div>
 
+    <!-- Helpful Information Alert -->
+    <div class="alert alert-info" style="margin-bottom: 24px;">
+      <span>ℹ️</span>
+      <div>
+        <strong>We understand this information may be difficult to obtain</strong>
+        <p style="margin-top: 4px;">Just provide what you can. You only need:</p>
+        <ul style="margin: 8px 0 0 20px; padding: 0;">
+          <li>Driver name OR license plate (whichever you have)</li>
+          <li>Brief description of damage to their vehicle (minimum 5 characters)</li>
+        </ul>
+        <p style="margin-top: 8px; font-size: 0.875rem; opacity: 0.9;">
+          All other fields are optional but recommended if available.
+        </p>
+      </div>
+    </div>
+
     <!-- Other Driver Information -->
     <div class="form-section">
       <div class="section-title">
@@ -473,14 +489,13 @@
       <div class="form-group">
         <label for="other-driver-name" class="form-label">
           Full Name
-          <span class="required">*</span>
+          <span style="color: var(--text-muted); font-size: 0.875rem;">(if known)</span>
         </label>
         <input
           type="text"
           id="other-driver-name"
           name="other_driver_name"
-          placeholder="Enter full name"
-          required
+          placeholder="Enter full name if available"
         >
       </div>
 
@@ -532,9 +547,9 @@
       <div class="form-group">
         <label for="other-license-plate" class="form-label">
           UK License Plate Number
-          <span class="required">*</span>
+          <span style="color: var(--text-muted); font-size: 0.875rem;">(if known)</span>
         </label>
-        <p class="form-hint">Enter the other vehicle's registration number</p>
+        <p class="form-hint">Enter the other vehicle's registration number if you have it</p>
 
         <div class="lookup-container">
           <input
@@ -543,7 +558,6 @@
             name="other_license_plate"
             placeholder="e.g., AB12 CDE"
             maxlength="8"
-            required
           >
           <button type="button" class="lookup-btn" id="lookup-btn">
             🔍 Look Up
@@ -700,20 +714,27 @@
       </div>
 
       <div class="form-group">
-        <label for="other-point-of-impact" class="form-label">
-          Describe where the other vehicle was hit, what parts were damaged, and the extent of damage
-          <span class="required">*</span>
+        <label class="form-label">
+          <input type="checkbox" id="no-damage-checkbox" name="no_visible_damage" style="margin-right: 8px; width: 20px; height: 20px; vertical-align: middle;">
+          <span style="vertical-align: middle;">No visible damage to the other vehicle</span>
         </label>
-        <p class="form-hint">Example: "Rear driver's side of other vehicle impacted. Their bumper was crushed, rear light cluster smashed, and rear panel dented."</p>
+      </div>
+
+      <div class="form-group" id="damage-description-group">
+        <label for="other-point-of-impact" class="form-label">
+          Describe the damage to the other vehicle
+          <span class="required" id="damage-required">*</span>
+        </label>
+        <p class="form-hint">Brief description is fine - Example: "Rear bumper damage" or "Front driver side dent"</p>
         <textarea
           id="other-point-of-impact"
           name="other_point_of_impact"
-          placeholder="Describe the point of impact and damage to the other vehicle..."
+          placeholder="Describe what you observed..."
           maxlength="1000"
           required
         ></textarea>
         <div class="char-counter">
-          <span id="other-impact-count">0</span> / 1000 characters
+          <span id="other-impact-count">0</span> / 1000 characters (minimum 5)
         </div>
       </div>
 
@@ -817,6 +838,30 @@
         otherImpactCount.style.fontWeight = '400';
       }
 
+      validateForm();
+    });
+
+    // No damage checkbox handler
+    const noDamageCheckbox = document.getElementById('no-damage-checkbox');
+    const damageDescriptionGroup = document.getElementById('damage-description-group');
+    const damageRequired = document.getElementById('damage-required');
+
+    noDamageCheckbox.addEventListener('change', () => {
+      if (noDamageCheckbox.checked) {
+        // Disable textarea and mark as optional
+        otherPointOfImpact.disabled = true;
+        otherPointOfImpact.style.opacity = '0.5';
+        otherPointOfImpact.style.cursor = 'not-allowed';
+        damageRequired.style.display = 'none';
+        otherPointOfImpact.required = false;
+      } else {
+        // Enable textarea and mark as required
+        otherPointOfImpact.disabled = false;
+        otherPointOfImpact.style.opacity = '1';
+        otherPointOfImpact.style.cursor = 'text';
+        damageRequired.style.display = 'inline';
+        otherPointOfImpact.required = true;
+      }
       validateForm();
     });
 
@@ -985,11 +1030,67 @@
     function validateForm() {
       const driverName = document.getElementById('other-driver-name').value.trim();
       const licensePlate = document.getElementById('other-license-plate').value.trim();
-      const hasVehicleDetails = Object.keys(vehicleData).length > 0;
-      const impactFilled = otherPointOfImpact.value.trim().length >= 20;
+      const noDamageChecked = document.getElementById('no-damage-checkbox').checked;
+      const impactFilled = otherPointOfImpact.value.trim().length >= 5;
 
       const nextBtn = document.getElementById('next-btn');
-      nextBtn.disabled = !(driverName && licensePlate && hasVehicleDetails && impactFilled);
+
+      // If "no damage" is checked, impact description is not required
+      const damageRequirementMet = noDamageChecked || impactFilled;
+
+      // Much more lenient - only require name OR license plate, plus damage info (or no damage checkbox)
+      const canProceed = (driverName || licensePlate) && damageRequirementMet;
+
+      nextBtn.disabled = !canProceed;
+
+      // Show helpful feedback
+      updateValidationFeedback(driverName, licensePlate, impactFilled, noDamageChecked);
+    }
+
+    function updateValidationFeedback(driverName, licensePlate, impactFilled, noDamageChecked) {
+      // Remove existing feedback
+      const existingFeedback = document.getElementById('validation-feedback');
+      if (existingFeedback) existingFeedback.remove();
+
+      // If form is valid, no feedback needed
+      const damageRequirementMet = noDamageChecked || impactFilled;
+      if ((driverName || licensePlate) && damageRequirementMet) return;
+
+      // Create feedback message
+      const feedback = document.createElement('div');
+      feedback.id = 'validation-feedback';
+      feedback.className = 'alert alert-info';
+      feedback.style.marginTop = '20px';
+
+      const missingItems = [];
+      if (!driverName && !licensePlate) {
+        missingItems.push('Either driver name OR license plate');
+      }
+      if (!damageRequirementMet) {
+        if (noDamageChecked) {
+          // Checkbox is checked but somehow still not met - shouldn't happen
+        } else {
+          const currentLength = otherPointOfImpact.value.trim().length;
+          missingItems.push(`Damage description (need ${5 - currentLength} more characters) OR check "No visible damage"`);
+        }
+      }
+
+      feedback.innerHTML = `
+        <span>ℹ️</span>
+        <div>
+          <strong>To continue, please provide:</strong>
+          <ul style="margin: 8px 0 0 20px; padding: 0;">
+            ${missingItems.map(item => `<li>${item}</li>`).join('')}
+          </ul>
+          <p style="margin-top: 8px; font-size: 0.875rem; opacity: 0.9;">
+            We understand getting all information may be difficult. Just provide what you can.
+          </p>
+        </div>
+      `;
+
+      // Insert before navigation buttons
+      const navButtons = document.querySelector('.nav-buttons');
+      navButtons.parentNode.insertBefore(feedback, navButtons);
     }
 
     // Auto-save
@@ -1005,6 +1106,7 @@
         other_policy_holder: document.getElementById('other-policy-holder').value,
         other_policy_cover: document.getElementById('other-policy-cover').value,
         other_point_of_impact: otherPointOfImpact.value,
+        no_visible_damage: noDamageCheckbox.checked,
         vehicle_data: vehicleData,
         warnings: warnings
       };
@@ -1053,6 +1155,13 @@
         if (data.other_point_of_impact) {
           otherPointOfImpact.value = data.other_point_of_impact;
           otherImpactCount.textContent = data.other_point_of_impact.length;
+        }
+
+        // Restore no damage checkbox
+        if (data.no_visible_damage) {
+          noDamageCheckbox.checked = true;
+          // Trigger change event to disable textarea
+          noDamageCheckbox.dispatchEvent(new Event('change'));
         }
 
         if (data.vehicle_data) {
