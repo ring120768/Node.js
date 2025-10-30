@@ -632,7 +632,7 @@
           </div>
         </div>
 
-        <div class="form-group">
+        <div class="form-group" id="treatment-received-group" style="display: none;">
           <label for="medical_treatment_received">
             Treatment Received
           </label>
@@ -759,14 +759,32 @@
         document.getElementById('medical_injury_details').value = '';
         document.getElementById('medical_injury_severity').value = '';
         document.getElementById('medical_hospital_name').value = '';
-        document.querySelector('input[name="medical_ambulance_called_yes"]').checked = false;
-        document.querySelector('input[name="medical_ambulance_called_no"]').checked = false;
+        const ambulanceRadios = document.querySelectorAll('input[name="medical_ambulance_called"]');
+        ambulanceRadios.forEach(radio => radio.checked = false);
         document.getElementById('medical_treatment_received').value = '';
       }
     }
 
     medicalAttentionYesCheckbox.addEventListener('change', updateMedicalFields);
     medicalAttentionNoCheckbox.addEventListener('change', updateMedicalFields);
+
+    // Show/hide treatment field based on ambulance selection
+    const ambulanceRadios = document.querySelectorAll('input[name="medical_ambulance_called"]');
+    const treatmentGroup = document.getElementById('treatment-received-group');
+
+    function updateTreatmentField() {
+      const ambulanceYes = document.querySelector('input[name="medical_ambulance_called"][value="yes"]');
+      if (ambulanceYes && ambulanceYes.checked) {
+        treatmentGroup.style.display = 'block';
+      } else {
+        treatmentGroup.style.display = 'none';
+        document.getElementById('medical_treatment_received').value = '';
+      }
+    }
+
+    ambulanceRadios.forEach(radio => {
+      radio.addEventListener('change', updateTreatmentField);
+    });
 
     // Validate form
     function validateForm() {
@@ -782,8 +800,7 @@
       if (medicalAttentionYes) {
         const injuryDetails = document.getElementById('medical_injury_details').value.trim();
         const injurySeverity = document.getElementById('medical_injury_severity').value;
-        const ambulanceYes = document.querySelector('input[name="medical_ambulance_called_yes"]').checked;
-        const ambulanceNo = document.querySelector('input[name="medical_ambulance_called_no"]').checked;
+        const ambulanceCalled = document.querySelector('input[name="medical_ambulance_called"]:checked');
 
         if (!injuryDetails) {
           alert('Please provide details of the injuries.');
@@ -797,7 +814,7 @@
           return false;
         }
 
-        if (!ambulanceYes && !ambulanceNo) {
+        if (!ambulanceCalled) {
           alert('Please indicate whether an ambulance was called.');
           return false;
         }
