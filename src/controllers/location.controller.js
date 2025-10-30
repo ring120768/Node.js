@@ -62,7 +62,6 @@ async function convertToWhat3Words(req, res) {
       nearestPlace: data.nearestPlace || null,
       country: data.country || null,
       language: data.language || 'en',
-      map: mapUrl,
       requestId: req.requestId
     });
   } catch (error) {
