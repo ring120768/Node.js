@@ -491,36 +491,19 @@
 
         <!-- Conditional: Traffic Light Status (only if "traffic_lights" selected) -->
         <div id="trafficLightStatusGroup" class="form-group" style="display: none;">
-          <label>
+          <label for="trafficLightStatus">
             What colour was the traffic light for your direction?
             <span class="required">*</span>
           </label>
-          <div class="radio-group">
-            <label>
-              <input type="radio" name="trafficLightStatus" value="green">
-              <span>Green</span>
-            </label>
-            <label>
-              <input type="radio" name="trafficLightStatus" value="amber">
-              <span>Amber</span>
-            </label>
-            <label>
-              <input type="radio" name="trafficLightStatus" value="red">
-              <span>Red</span>
-            </label>
-            <label>
-              <input type="radio" name="trafficLightStatus" value="green_filter">
-              <span>Green filter arrow (directional)</span>
-            </label>
-            <label>
-              <input type="radio" name="trafficLightStatus" value="not_working">
-              <span>Lights were not working</span>
-            </label>
-            <label>
-              <input type="radio" name="trafficLightStatus" value="not_sure">
-              <span>Not sure</span>
-            </label>
-          </div>
+          <select id="trafficLightStatus" name="trafficLightStatus">
+            <option value="">Select traffic light colour...</option>
+            <option value="green">Green</option>
+            <option value="amber">Amber</option>
+            <option value="red">Red</option>
+            <option value="green_filter">Green filter arrow (directional)</option>
+            <option value="not_working">Lights were not working</option>
+            <option value="not_sure">Not sure</option>
+          </select>
           <p class="help-text">Critical for determining liability in traffic light violations</p>
         </div>
 
@@ -560,23 +543,15 @@
               <span>Restricted by hedge, wall, or fence</span>
             </label>
             <label>
-              <input type="checkbox" name="visibilityFactors" value="restricted_by_vehicles">
-              <span>Restricted by parked vehicles</span>
-            </label>
-            <label>
               <input type="checkbox" name="visibilityFactors" value="restricted_by_bend">
               <span>Restricted by bend or corner</span>
             </label>
             <label>
-              <input type="checkbox" name="visibilityFactors" value="poor_weather">
-              <span>Poor weather (rain, fog, or snow)</span>
-            </label>
-            <label>
-              <input type="checkbox" name="visibilityFactors" value="poor_lighting">
-              <span>Dark or poor street lighting</span>
+              <input type="checkbox" name="visibilityFactors" value="sun_glare">
+              <span>Sun glare or low sun</span>
             </label>
           </div>
-          <p class="help-text">Visibility factors may affect liability determination</p>
+          <p class="help-text">Visibility factors may affect liability determination. Weather conditions and street lighting are covered in Time & Weather section (Page 3). Parked vehicles obstructing view are covered in Special Conditions below.</p>
         </div>
 
       </div>
@@ -601,6 +576,12 @@
         </div>
         <p class="help-text" style="margin-top: 8px; font-size: 0.85rem;">
           Reference guide for common road hazards
+        </p>
+      </div>
+
+      <div style="background: #e3f2fd; border-left: 4px solid #2196f3; padding: 12px 16px; margin-bottom: 20px; border-radius: 4px;">
+        <p style="margin: 0; font-size: 0.875rem; color: #1565c0;">
+          <strong>Note:</strong> Visibility issues like weather conditions, street lighting, and parked vehicles obstructing view are also captured in this section and the Junction Details above. Select all conditions that were present at the time of the accident.
         </p>
       </div>
 
@@ -694,7 +675,7 @@
     const junctionDetailsGroup = document.getElementById('junctionDetailsGroup');
     const junctionControl = document.getElementById('junctionControl');
     const trafficLightStatusGroup = document.getElementById('trafficLightStatusGroup');
-    const trafficLightRadios = document.querySelectorAll('input[name="trafficLightStatus"]');
+    const trafficLightStatus = document.getElementById('trafficLightStatus');
 
     // Show/hide junction details based on junction type selection
     junctionType.addEventListener('change', function() {
@@ -706,7 +687,7 @@
 
         // Clear junction detail fields
         junctionControl.value = '';
-        trafficLightRadios.forEach(radio => radio.checked = false);
+        trafficLightStatus.value = '';
         document.getElementById('userManoeuvre').value = '';
         document.querySelectorAll('input[name="visibilityFactors"]').forEach(cb => cb.checked = false);
 
@@ -730,15 +711,13 @@
       if (selectedControl === 'traffic_lights') {
         // Show traffic light status field
         trafficLightStatusGroup.style.display = 'block';
-        // Make one of the radio buttons required (checked on validation)
-        trafficLightRadios.forEach(radio => radio.setAttribute('required', 'required'));
+        // Make dropdown required
+        trafficLightStatus.setAttribute('required', 'required');
       } else {
         // Hide and clear traffic light status
         trafficLightStatusGroup.style.display = 'none';
-        trafficLightRadios.forEach(radio => {
-          radio.checked = false;
-          radio.removeAttribute('required');
-        });
+        trafficLightStatus.value = '';
+        trafficLightStatus.removeAttribute('required');
       }
     });
 
@@ -780,9 +759,10 @@
 
         // If traffic lights selected, validate traffic light status
         if (junctionControl === 'traffic_lights') {
-          const trafficLightStatus = document.querySelector('input[name="trafficLightStatus"]:checked');
-          if (!trafficLightStatus) {
-            alert('Please indicate what colour the traffic light was for your direction.');
+          const trafficLightStatusValue = document.getElementById('trafficLightStatus').value;
+          if (!trafficLightStatusValue) {
+            alert('Please select what colour the traffic light was for your direction.');
+            document.getElementById('trafficLightStatus').focus();
             return false;
           }
         }
@@ -975,8 +955,8 @@
         .map(cb => cb.value);
 
       // Get traffic light status if applicable
-      const trafficLightRadio = document.querySelector('input[name="trafficLightStatus"]:checked');
-      const trafficLightStatus = trafficLightRadio ? trafficLightRadio.value : null;
+      const trafficLightStatusValue = document.getElementById('trafficLightStatus').value;
+      const trafficLightStatus = trafficLightStatusValue || null;
 
       // Save data to session storage
       const pageData = {
@@ -1033,8 +1013,7 @@
 
           // Restore traffic light status
           if (data.traffic_light_status) {
-            const radioButton = document.querySelector(`input[name="trafficLightStatus"][value="${data.traffic_light_status}"]`);
-            if (radioButton) radioButton.checked = true;
+            document.getElementById('trafficLightStatus').value = data.traffic_light_status;
           }
 
           // Restore user manoeuvre
