@@ -10,14 +10,30 @@
   <style>
     /* Design System Variables */
     :root {
-      --grad-start: #2e6a9d;
-      --grad-end: #3776a2;
-      --accent: #357a94;
-      --accent-hover: #2c6880;
-      --bg-light: #f0ebe3;
-      --text-dark: #333;
-      --text-muted: #666;
-      --border: #d1d5db;
+      /* Brand Colors */
+      --grad-start: #0E7490;
+      --grad-end: #0c6179;
+      --accent: #0E7490;
+      --accent-hover: #0c6179;
+
+      /* Page Background */
+      --bg-light: #E8DCC4;
+
+      /* Text Colors */
+      --text-dark: #1a1a1a;
+      --text-muted: #6b7280;
+
+      /* Borders & Dividers */
+      --border: #4B5563;
+
+      /* Form Elements */
+      --input-bg: #CFD2D7;
+      --checkbox-bg: #F5F1E8;
+      --container-bg: #F5F1E8;
+      --button-bg: #ffffff;
+      --button-hover: rgba(14, 116, 144, 0.1);
+
+      /* Status Colors */
       --success: #10b981;
       --danger: #ef4444;
       --warning: #f59e0b;
@@ -140,7 +156,7 @@
 
     /* Form Sections */
     .form-section {
-      background: white;
+      background: var(--container-bg);
       border-radius: 12px;
       padding: 20px;
       margin-bottom: 20px;
@@ -201,7 +217,7 @@
       font-size: 1rem;
       font-family: inherit;
       transition: all 0.2s;
-      background: white;
+      background: var(--input-bg);
     }
 
     input:focus,
@@ -209,7 +225,8 @@
     textarea:focus {
       outline: none;
       border-color: var(--accent);
-      box-shadow: 0 0 0 3px rgba(53, 122, 148, 0.1);
+      box-shadow: 0 0 0 3px rgba(14, 116, 144, 0.1);
+      background: #ffffff;
     }
 
     input::placeholder,
@@ -240,12 +257,12 @@
       border-radius: 8px;
       cursor: pointer;
       transition: all 0.2s;
-      background: white;
+      background: var(--checkbox-bg);
     }
 
     .radio-option:hover {
       border-color: var(--accent);
-      background: rgba(53, 122, 148, 0.02);
+      background: var(--button-hover);
     }
 
     .radio-option input[type="radio"] {
@@ -276,12 +293,12 @@
       border-radius: 8px;
       cursor: pointer;
       transition: all 0.2s;
-      background: white;
+      background: var(--checkbox-bg);
     }
 
     .checkbox-option:hover {
       border-color: var(--accent);
-      background: rgba(53, 122, 148, 0.02);
+      background: var(--button-hover);
     }
 
     .checkbox-option input[type="checkbox"] {
@@ -331,7 +348,7 @@
 
     .lookup-btn:hover {
       transform: translateY(-1px);
-      box-shadow: 0 4px 12px rgba(46, 106, 157, 0.3);
+      box-shadow: 0 4px 12px rgba(14, 116, 144, 0.3);
     }
 
     .lookup-btn:active {
@@ -441,26 +458,26 @@
     }
 
     .btn-secondary {
-      background: white;
+      background: var(--button-bg);
       color: var(--grad-start);
       border: 2px solid var(--grad-start);
     }
 
     .btn-secondary:hover {
       border-color: var(--grad-start);
-      background: rgba(46, 106, 157, 0.1);
+      background: var(--button-hover);
     }
 
     .btn-primary {
       background: var(--grad-start);
       color: white;
-      box-shadow: 0 4px 12px rgba(46, 106, 157, 0.3);
+      box-shadow: 0 4px 12px rgba(14, 116, 144, 0.3);
     }
 
     .btn-primary:hover {
       transform: translateY(-2px);
-      box-shadow: 0 6px 16px rgba(46, 106, 157, 0.4);
-      background: #25547a;
+      box-shadow: 0 6px 16px rgba(14, 116, 144, 0.4);
+      background: var(--grad-end);
     }
 
     .btn-primary:active {
@@ -671,7 +688,7 @@
       </div>
 
       <!-- No Damage Checkbox -->
-      <div class="form-group" style="background: #f8f9fa; padding: 16px; border-radius: 8px; margin-bottom: 20px;">
+      <div class="form-group" style="background: var(--input-bg); padding: 16px; border-radius: 8px; margin-bottom: 20px;">
         <label style="display: flex; align-items: center; gap: 12px; cursor: pointer; font-weight: 600;">
           <input type="checkbox" id="no-damage-checkbox" name="no_damage" style="width: 20px; height: 20px; cursor: pointer;">
           <span>My vehicle has no visible damage</span>
@@ -770,7 +787,7 @@
       </div>
 
       <!-- Recovery Details (conditional) -->
-      <div id="recovery-details-section" class="form-section" style="display: none; margin-top: 20px; padding: 20px; background: #f8f9fa; border-radius: 8px; border: 1px solid #dee2e6;">
+      <div id="recovery-details-section" class="form-section" style="display: none; margin-top: 20px; padding: 20px; border-radius: 8px; border: 1px solid var(--border);">
         <h4 style="margin: 0 0 16px 0; color: var(--accent); font-size: 1.125rem;">🚛 Recovery Details</h4>
 
         <!-- Auto-fill Checkbox -->
