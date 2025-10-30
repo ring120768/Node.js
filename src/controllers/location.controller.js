@@ -52,6 +52,10 @@ async function convertToWhat3Words(req, res) {
         data.error?.message || 'Failed to convert coordinates');
     }
 
+    // Generate static map URL using OpenStreetMap
+    // Using staticmap.openstreetmap.de service
+    const mapUrl = `https://staticmap.openstreetmap.de/staticmap.php?center=${latitude},${longitude}&zoom=17&size=600x400&markers=${latitude},${longitude},red-pushpin`;
+
     res.json({
       success: true,
       words: data.words,
@@ -62,7 +66,7 @@ async function convertToWhat3Words(req, res) {
       nearestPlace: data.nearestPlace || null,
       country: data.country || null,
       language: data.language || 'en',
-      map: data.map || null,
+      map: mapUrl,
       requestId: req.requestId
     });
   } catch (error) {
