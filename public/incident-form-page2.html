@@ -248,7 +248,8 @@
       background: rgba(53, 122, 148, 0.15);
     }
 
-    .radio-group input[type="checkbox"] {
+    .radio-group input[type="checkbox"],
+    .radio-group input[type="radio"] {
       position: relative;
       appearance: none;
       -webkit-appearance: none;
@@ -256,13 +257,21 @@
       height: 24px;
       min-width: 24px;
       border: 2px solid var(--border);
-      border-radius: 6px;
       background: var(--checkbox-bg);
       cursor: pointer;
       transition: all 0.2s ease;
     }
 
-    .radio-group input[type="checkbox"]:checked {
+    .radio-group input[type="checkbox"] {
+      border-radius: 6px;
+    }
+
+    .radio-group input[type="radio"] {
+      border-radius: 50%;
+    }
+
+    .radio-group input[type="checkbox"]:checked,
+    .radio-group input[type="radio"]:checked {
       background: var(--success);
       border-color: var(--success);
     }
@@ -278,7 +287,20 @@
       font-weight: 700;
     }
 
-    .radio-group input[type="checkbox"]:checked + span {
+    .radio-group input[type="radio"]:checked::after {
+      content: '';
+      position: absolute;
+      top: 50%;
+      left: 50%;
+      transform: translate(-50%, -50%);
+      width: 12px;
+      height: 12px;
+      border-radius: 50%;
+      background: white;
+    }
+
+    .radio-group input[type="checkbox"]:checked + span,
+    .radio-group input[type="radio"]:checked + span {
       color: var(--accent);
       font-weight: 600;
     }
@@ -564,7 +586,7 @@
       </div>
 
       <!-- Conditional Fields (shown when medical attention needed) -->
-      <div class="conditional-group" id="medicalDetailsGroup">
+      <div class="conditional-group" id="medicalDetailsGroup" style="display: none;">
         <!-- Paramedic Support Message -->
         <div class="paramedic-section">
           <img src="/images/paramedic.png" alt="Paramedic" onerror="this.style.display='none'">
@@ -747,12 +769,12 @@
       const selectedValue = document.querySelector('input[name="medical_attention_needed"]:checked')?.value;
 
       if (selectedValue === 'yes') {
-        medicalDetailsGroup.classList.add('show');
+        medicalDetailsGroup.style.display = 'block';
         // Make conditional fields required
         document.getElementById('medical_injury_details').required = true;
         document.getElementById('medical_injury_severity').required = true;
       } else {
-        medicalDetailsGroup.classList.remove('show');
+        medicalDetailsGroup.style.display = 'none';
         // Make conditional fields optional
         document.getElementById('medical_injury_details').required = false;
         document.getElementById('medical_injury_severity').required = false;
