@@ -670,12 +670,23 @@
         <span>Point of Impact & Damage to My Vehicle</span>
       </div>
 
-      <div class="form-group">
-        <label class="form-label">
-          Where was your vehicle hit?
-          <span class="required">*</span>
+      <!-- No Damage Checkbox -->
+      <div class="form-group" style="background: #f8f9fa; padding: 16px; border-radius: 8px; margin-bottom: 20px;">
+        <label style="display: flex; align-items: center; gap: 12px; cursor: pointer; font-weight: 600;">
+          <input type="checkbox" id="no-damage-checkbox" name="no_damage" style="width: 20px; height: 20px; cursor: pointer;">
+          <span>My vehicle has no visible damage</span>
         </label>
-        <p class="form-hint">Select all areas that were impacted</p>
+        <p class="form-hint" style="margin: 8px 0 0 32px;">Check this if your vehicle was not damaged in the incident (e.g., near miss, minor contact with no marks)</p>
+      </div>
+
+      <!-- Damage Details Section (hidden when no damage checked) -->
+      <div id="damage-details-section">
+        <div class="form-group">
+          <label class="form-label">
+            Where was your vehicle hit?
+            <span class="required" id="impact-required">*</span>
+          </label>
+          <p class="form-hint">Select all areas that were impacted</p>
 
         <div class="checkbox-grid">
           <label class="checkbox-option">
@@ -818,6 +829,7 @@
           ></textarea>
         </div>
       </div>
+      </div><!-- End damage-details-section -->
     </div>
 
     <!-- Navigation Buttons -->
@@ -937,18 +949,27 @@
       const licensePlate = document.getElementById('license-plate').value.trim();
       const hasVehicleDetails = Object.keys(vehicleData).length > 0;
 
-      // Check impact points
-      const impactPoints = document.querySelectorAll('input[name="impact_point"]:checked');
-      const hasImpactPoint = impactPoints.length > 0;
+      // Check if no-damage checkbox is checked
+      const noDamageChecked = document.getElementById('no-damage-checkbox').checked;
 
-      // Check damage description
-      const damageDescription = document.getElementById('damage-description').value.trim();
+      let damageFieldsValid = true;
 
-      // Check vehicle driveable
-      const vehicleDriveable = document.querySelector('input[name="vehicle_driveable"]:checked');
+      if (!noDamageChecked) {
+        // Check impact points
+        const impactPoints = document.querySelectorAll('input[name="impact_point"]:checked');
+        const hasImpactPoint = impactPoints.length > 0;
+
+        // Check damage description
+        const damageDescription = document.getElementById('damage-description').value.trim();
+
+        // Check vehicle driveable
+        const vehicleDriveable = document.querySelector('input[name="vehicle_driveable"]:checked');
+
+        damageFieldsValid = hasImpactPoint && damageDescription && vehicleDriveable;
+      }
 
       const nextBtn = document.getElementById('next-btn');
-      nextBtn.disabled = !(usualVehicle && licensePlate && hasVehicleDetails && hasImpactPoint && damageDescription && vehicleDriveable);
+      nextBtn.disabled = !(usualVehicle && licensePlate && hasVehicleDetails && damageFieldsValid);
     }
 
     // Add event listeners for form validation
@@ -981,6 +1002,53 @@
       }
     }
 
+    // Toggle damage details section based on no-damage checkbox
+    function toggleDamageDetails() {
+      const noDamageCheckbox = document.getElementById('no-damage-checkbox');
+      const damageDetailsSection = document.getElementById('damage-details-section');
+      const impactCheckboxes = document.querySelectorAll('input[name="impact_point"]');
+      const damageDescription = document.getElementById('damage-description');
+      const driveableRadios = document.querySelectorAll('input[name="vehicle_driveable"]');
+
+      if (noDamageCheckbox.checked) {
+        // Hide damage details section
+        damageDetailsSection.style.display = 'none';
+
+        // Clear and remove required from impact checkboxes
+        impactCheckboxes.forEach(cb => {
+          cb.checked = false;
+          cb.removeAttribute('required');
+        });
+
+        // Clear and remove required from damage description
+        damageDescription.value = '';
+        damageDescription.removeAttribute('required');
+
+        // Clear and remove required from driveable radios
+        driveableRadios.forEach(radio => {
+          radio.checked = false;
+          radio.removeAttribute('required');
+        });
+
+        // Hide recovery section if visible
+        document.getElementById('recovery-details-section').style.display = 'none';
+      } else {
+        // Show damage details section
+        damageDetailsSection.style.display = 'block';
+
+        // Restore required attribute to damage description
+        damageDescription.setAttribute('required', 'required');
+
+        // Restore required to driveable radios
+        document.getElementById('driveable-yes').setAttribute('required', 'required');
+      }
+
+      validateForm();
+    }
+
+    // Add event listener for no-damage checkbox
+    document.getElementById('no-damage-checkbox').addEventListener('change', toggleDamageDetails);
+
     // Auto-save
     function autoSave() {
       const impactPoints = Array.from(document.querySelectorAll('input[name="impact_point"]:checked'))
@@ -990,6 +1058,7 @@
         usual_vehicle: document.querySelector('input[name="usual_vehicle"]:checked')?.value,
         license_plate: document.getElementById('license-plate').value,
         vehicle_data: vehicleData,
+        no_damage: document.getElementById('no-damage-checkbox').checked,
         impact_points: impactPoints,
         damage_description: document.getElementById('damage-description').value,
         vehicle_driveable: document.querySelector('input[name="vehicle_driveable"]:checked')?.value,
@@ -1015,6 +1084,12 @@
 
         if (data.license_plate) {
           document.getElementById('license-plate').value = data.license_plate;
+        }
+
+        // Restore no-damage checkbox
+        if (data.no_damage) {
+          document.getElementById('no-damage-checkbox').checked = true;
+          toggleDamageDetails(); // Hide damage section if no damage
         }
 
         if (data.vehicle_data) {
