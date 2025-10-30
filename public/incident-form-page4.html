@@ -16,14 +16,30 @@
   <style>
     /* Design System Variables */
     :root {
-      --grad-start: #2e6a9d;
-      --grad-end: #3776a2;
-      --accent: #357a94;
-      --accent-hover: #2c6880;
-      --bg-light: #f0ebe3;
+      /* Brand Colors */
+      --grad-start: #0E7490;
+      --grad-end: #0c6179;
+      --accent: #0E7490;
+      --accent-hover: #0c6179;
+      --bg-light: #E8DCC4;
+
+      /* Text */
       --text-dark: #333;
       --text-muted: #666;
-      --border: #d1d5db;
+
+      /* Borders & Dividers */
+      --border: #4B5563;
+
+      /* Buttons */
+      --button-bg: #C0C0C0;
+      --button-hover: #B0B0B0;
+
+      /* Form Elements */
+      --input-bg: #CFD2D7;
+      --checkbox-bg: #F5F1E8;
+      --container-bg: #F5F1E8;
+
+      /* Status Colors */
       --success: #10b981;
       --danger: #ef4444;
       --warning: #f59e0b;
@@ -146,7 +162,7 @@
 
     /* Form Section */
     .form-section {
-      background: white;
+      background: var(--container-bg);
       border-radius: 12px;
       padding: 24px;
       margin-bottom: 20px;
@@ -188,7 +204,8 @@
       border-radius: 8px;
       font-size: 16px;
       font-family: inherit;
-      transition: border-color 0.2s ease;
+      background: var(--input-bg);
+      transition: border-color 0.2s ease, background-color 0.2s ease;
       -webkit-appearance: none;
       appearance: none;
     }
@@ -203,7 +220,8 @@
     .form-group textarea:focus {
       outline: none;
       border-color: var(--accent);
-      box-shadow: 0 0 0 3px rgba(53, 122, 148, 0.1);
+      background: #ffffff;
+      box-shadow: 0 0 0 3px rgba(14, 116, 144, 0.1);
     }
 
     .form-group input::placeholder,
@@ -212,7 +230,7 @@
     }
 
     .form-group select {
-      background: white url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='12' viewBox='0 0 12 12'%3E%3Cpath fill='%23333' d='M6 9L1 4h10z'/%3E%3C/svg%3E") no-repeat right 16px center;
+      background: var(--input-bg) url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='12' viewBox='0 0 12 12'%3E%3Cpath fill='%23333' d='M6 9L1 4h10z'/%3E%3C/svg%3E") no-repeat right 16px center;
       padding-right: 40px;
       cursor: pointer;
     }
@@ -256,7 +274,7 @@
       cursor: pointer;
       border: 2px solid var(--border);
       border-radius: 6px;
-      background: white;
+      background: var(--checkbox-bg);
       position: relative;
       transition: all 0.2s ease;
     }
@@ -312,25 +330,25 @@
     }
 
     .btn-secondary {
-      background: white;
+      background: var(--button-bg);
       color: var(--grad-start);
       border: 2px solid var(--grad-start);
     }
 
     .btn-secondary:hover {
-      background: rgba(46, 106, 157, 0.1);
+      background: var(--button-hover);
     }
 
     .btn-primary {
       background: var(--grad-start);
       color: white;
-      box-shadow: 0 4px 12px rgba(46, 106, 157, 0.3);
+      box-shadow: 0 4px 12px rgba(14, 116, 144, 0.3);
     }
 
     .btn-primary:hover {
       transform: translateY(-2px);
-      box-shadow: 0 6px 16px rgba(46, 106, 157, 0.4);
-      background: #25547a;
+      box-shadow: 0 6px 16px rgba(14, 116, 144, 0.4);
+      background: var(--grad-end);
     }
 
     .btn-primary:active {
@@ -375,6 +393,64 @@
     #get-location-btn:disabled {
       opacity: 0.6;
       cursor: not-allowed;
+    }
+
+    /* Info and Warning Boxes */
+    .info-box {
+      padding: 12px 16px;
+      margin-bottom: 20px;
+      border-radius: 4px;
+      background: #e0f2fe;
+      border-left: 4px solid var(--accent);
+    }
+
+    .info-box p {
+      margin: 0;
+      font-size: 0.875rem;
+      color: #0c4a6e;
+    }
+
+    .info-box strong {
+      font-weight: 600;
+    }
+
+    .warning-box {
+      padding: 16px;
+      background: #fef3c7;
+      border: 1px solid var(--warning);
+      border-radius: 8px;
+      margin-bottom: 20px;
+    }
+
+    .warning-box p:first-child {
+      margin: 0;
+      color: #92400e;
+      font-weight: 500;
+    }
+
+    .warning-box p:last-child {
+      margin: 4px 0 0 0;
+      color: #78350f;
+      font-size: 0.9rem;
+    }
+
+    .hazard-placeholder {
+      display: none;
+      padding: 20px;
+      background: #fef3c7;
+      border: 2px solid var(--warning);
+      border-radius: 12px;
+      color: #856404;
+    }
+
+    .hazard-placeholder p:first-child {
+      margin: 0;
+      font-weight: 600;
+    }
+
+    .hazard-placeholder p:last-child {
+      margin: 8px 0 0 0;
+      font-size: 0.875rem;
     }
   </style>
 </head>
@@ -423,11 +499,11 @@
         <p id="what3words-status" style="margin-top: 8px; font-size: 0.9rem; color: var(--text-muted); display: none;"></p>
       </div>
 
-      <div id="what3words-unavailable" style="display: none; padding: 16px; background: #fef3c7; border: 1px solid #f59e0b; border-radius: 8px; margin-bottom: 20px;">
-        <p style="margin: 0; color: #92400e; font-weight: 500;">
+      <div id="what3words-unavailable" class="warning-box" style="display: none;">
+        <p>
           ℹ️ what3words: Not Currently Available
         </p>
-        <p style="margin: 4px 0 0 0; color: #78350f; font-size: 0.9rem;">
+        <p>
           Location services are temporarily unavailable. You can continue without providing a what3words address.
         </p>
       </div>
@@ -584,17 +660,17 @@
           style="max-width: 100%; height: auto; border-radius: 12px; border: 2px solid var(--border); box-shadow: 0 2px 8px rgba(0,0,0,0.1);"
           onerror="this.style.display='none'; document.getElementById('hazardImagePlaceholder').style.display='block';"
         >
-        <div id="hazardImagePlaceholder" style="display: none; padding: 20px; background: #fff3cd; border: 2px solid #ffc107; border-radius: 12px; color: #856404;">
-          <p style="margin: 0; font-weight: 600;">📋 Hazard Reference Image</p>
-          <p style="margin: 8px 0 0 0; font-size: 0.875rem;">Common hazards include: wet roads, ice, debris, potholes, roadworks, animals, pedestrians</p>
+        <div id="hazardImagePlaceholder" class="hazard-placeholder">
+          <p>📋 Hazard Reference Image</p>
+          <p>Common hazards include: wet roads, ice, debris, potholes, roadworks, animals, pedestrians</p>
         </div>
         <p class="help-text" style="margin-top: 8px; font-size: 0.85rem;">
           Reference guide for common road hazards
         </p>
       </div>
 
-      <div style="background: #e3f2fd; border-left: 4px solid #2196f3; padding: 12px 16px; margin-bottom: 20px; border-radius: 4px;">
-        <p style="margin: 0; font-size: 0.875rem; color: #1565c0;">
+      <div class="info-box">
+        <p>
           <strong>Note:</strong> Visibility issues like weather conditions, street lighting, and parked vehicles obstructing view are also captured in this section and the Junction Details above. Select all conditions that were present at the time of the accident.
         </p>
       </div>
