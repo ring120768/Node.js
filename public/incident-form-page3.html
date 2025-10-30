@@ -466,19 +466,6 @@
         <p class="help-text">24-hour format (e.g., 14:30)</p>
       </div>
 
-      <div class="form-group">
-        <label for="accident_location">
-          Exact Location of Accident
-          <span class="required">*</span>
-        </label>
-        <textarea
-          id="accident_location"
-          name="accident_location"
-          placeholder="Include street name, landmarks, nearby junctions, or GPS coordinates..."
-          required
-        ></textarea>
-        <p class="help-text">Be as specific as possible (e.g., "M25 Junction 15 northbound", "High Street near Tesco")</p>
-      </div>
     </div>
 
     <!-- Section 5: Weather Conditions -->
@@ -747,7 +734,6 @@
       // Required fields
       const accidentDate = document.getElementById('accident_date').value.trim();
       const accidentTime = document.getElementById('accident_time').value.trim();
-      const accidentLocation = document.getElementById('accident_location').value.trim();
 
       // Check if at least one checkbox is selected for each required group
       const roadConditionChecked = document.querySelectorAll('input[name^="road_condition_"]:checked').length > 0;
@@ -763,11 +749,6 @@
 
       if (!accidentTime) {
         alert('Please enter the time of the accident.');
-        return false;
-      }
-
-      if (!accidentLocation) {
-        alert('Please provide the location of the accident.');
         return false;
       }
 
@@ -869,7 +850,6 @@
       const pageData = {
         accident_date: document.getElementById('accident_date').value.trim(),
         accident_time: document.getElementById('accident_time').value.trim(),
-        accident_location: document.getElementById('accident_location').value.trim(),
         ...weatherConditions,
         ...roadConditions,
         ...roadTypes,
@@ -907,9 +887,6 @@
           }
           if (data.accident_time) {
             document.getElementById('accident_time').value = data.accident_time;
-          }
-          if (data.accident_location) {
-            document.getElementById('accident_location').value = data.accident_location;
           }
 
           // Restore weather conditions
