@@ -757,6 +757,67 @@
           </div>
         </div>
       </div>
+
+      <!-- Recovery Details (conditional) -->
+      <div id="recovery-details-section" class="form-section" style="display: none; margin-top: 20px; padding: 20px; background: #f8f9fa; border-radius: 8px; border: 1px solid #dee2e6;">
+        <h4 style="margin: 0 0 16px 0; color: var(--accent); font-size: 1.125rem;">🚛 Recovery Details</h4>
+
+        <div class="form-group">
+          <label for="recovery-company" class="form-label">
+            Recovery company name
+            <span style="color: var(--text-muted); font-weight: normal;">(Optional)</span>
+          </label>
+          <p class="form-hint">Name of the company or service that recovered your vehicle</p>
+          <input
+            type="text"
+            id="recovery-company"
+            name="recovery_company"
+            placeholder="e.g., AA Recovery, RAC, Green Flag, local garage"
+          />
+        </div>
+
+        <div class="form-group">
+          <label for="recovery-phone" class="form-label">
+            Recovery company phone number
+            <span style="color: var(--text-muted); font-weight: normal;">(Optional)</span>
+          </label>
+          <p class="form-hint">Contact number for the recovery service</p>
+          <input
+            type="tel"
+            id="recovery-phone"
+            name="recovery_phone"
+            placeholder="e.g., 0800 123 4567"
+          />
+        </div>
+
+        <div class="form-group">
+          <label for="recovery-location" class="form-label">
+            Where was your vehicle taken?
+            <span style="color: var(--text-muted); font-weight: normal;">(Optional)</span>
+          </label>
+          <p class="form-hint">Location where your vehicle was recovered to (e.g., garage, storage yard, home address)</p>
+          <input
+            type="text"
+            id="recovery-location"
+            name="recovery_location"
+            placeholder="e.g., ABC Motors, 123 High Street, or home address"
+          />
+        </div>
+
+        <div class="form-group">
+          <label for="recovery-notes" class="form-label">
+            Additional recovery details
+            <span style="color: var(--text-muted); font-weight: normal;">(Optional)</span>
+          </label>
+          <p class="form-hint">Any other relevant information about the recovery (e.g., cost, time taken, special handling)</p>
+          <textarea
+            id="recovery-notes"
+            name="recovery_notes"
+            rows="3"
+            placeholder="e.g., Recovery cost £150, took 2 hours to arrive, vehicle stored at garage overnight"
+          ></textarea>
+        </div>
+      </div>
     </div>
 
     <!-- Navigation Buttons -->
@@ -902,8 +963,23 @@
     document.getElementById('damage-description').addEventListener('input', validateForm);
 
     document.querySelectorAll('input[name="vehicle_driveable"]').forEach(radio => {
-      radio.addEventListener('change', validateForm);
+      radio.addEventListener('change', () => {
+        validateForm();
+        toggleRecoveryDetails();
+      });
     });
+
+    // Toggle recovery details section based on driveable status
+    function toggleRecoveryDetails() {
+      const recoverySection = document.getElementById('recovery-details-section');
+      const driveableNo = document.getElementById('driveable-no');
+
+      if (driveableNo && driveableNo.checked) {
+        recoverySection.style.display = 'block';
+      } else {
+        recoverySection.style.display = 'none';
+      }
+    }
 
     // Auto-save
     function autoSave() {
@@ -916,7 +992,11 @@
         vehicle_data: vehicleData,
         impact_points: impactPoints,
         damage_description: document.getElementById('damage-description').value,
-        vehicle_driveable: document.querySelector('input[name="vehicle_driveable"]:checked')?.value
+        vehicle_driveable: document.querySelector('input[name="vehicle_driveable"]:checked')?.value,
+        recovery_company: document.getElementById('recovery-company').value,
+        recovery_phone: document.getElementById('recovery-phone').value,
+        recovery_location: document.getElementById('recovery-location').value,
+        recovery_notes: document.getElementById('recovery-notes').value
       };
 
       localStorage.setItem('page5_data', JSON.stringify(formData));
@@ -965,6 +1045,21 @@
         if (data.vehicle_driveable) {
           const radio = document.querySelector(`input[name="vehicle_driveable"][value="${data.vehicle_driveable}"]`);
           if (radio) radio.checked = true;
+          toggleRecoveryDetails(); // Show/hide recovery section
+        }
+
+        // Restore recovery details
+        if (data.recovery_company) {
+          document.getElementById('recovery-company').value = data.recovery_company;
+        }
+        if (data.recovery_phone) {
+          document.getElementById('recovery-phone').value = data.recovery_phone;
+        }
+        if (data.recovery_location) {
+          document.getElementById('recovery-location').value = data.recovery_location;
+        }
+        if (data.recovery_notes) {
+          document.getElementById('recovery-notes').value = data.recovery_notes;
         }
 
         validateForm();
