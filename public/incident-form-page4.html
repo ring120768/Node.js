@@ -324,6 +324,24 @@
         opacity: 0.8;
       }
     }
+
+    /* Secondary Button */
+    .btn-secondary {
+      background: var(--bg-light);
+      color: var(--accent);
+      border: 2px solid var(--accent);
+      font-weight: 600;
+    }
+
+    .btn-secondary:hover {
+      background: var(--accent);
+      color: white;
+    }
+
+    .btn-secondary:disabled {
+      opacity: 0.6;
+      cursor: not-allowed;
+    }
   </style>
 </head>
 <body>
@@ -365,19 +383,33 @@
         <p class="help-text">Include street names, postcode, landmarks, or motorway junctions</p>
       </div>
 
-      <div class="form-group">
+      <div class="form-group" id="what3words-group">
         <label for="what3words">
           what3words address
-          <span class="required">*</span>
         </label>
-        <input
-          type="text"
-          id="what3words"
-          name="what3words"
-          required
-          placeholder="e.g. ///filled.count.soap"
-        >
-        <p class="help-text">Enter the 3 word address (find it at <a href="https://what3words.com" target="_blank" style="color: var(--accent);">what3words.com</a> or use your what3words app)</p>
+        <div style="display: flex; gap: 8px; align-items: flex-start;">
+          <input
+            type="text"
+            id="what3words"
+            name="what3words"
+            placeholder="e.g. ///filled.count.soap"
+            style="flex: 1;"
+          >
+          <button type="button" id="get-location-btn" class="btn btn-secondary" style="white-space: nowrap; padding: 12px 16px;">
+            📍 Get My Location
+          </button>
+        </div>
+        <p class="help-text" id="what3words-help">Click "Get My Location" to auto-populate, or manually enter the 3 word address from <a href="https://what3words.com" target="_blank" style="color: var(--accent);">what3words.com</a></p>
+        <p id="what3words-status" style="margin-top: 8px; font-size: 0.9rem; color: var(--text-muted); display: none;"></p>
+      </div>
+
+      <div id="what3words-unavailable" style="display: none; padding: 16px; background: #fef3c7; border: 1px solid #f59e0b; border-radius: 8px; margin-bottom: 20px;">
+        <p style="margin: 0; color: #92400e; font-weight: 500;">
+          ℹ️ what3words: Not Currently Available
+        </p>
+        <p style="margin: 4px 0 0 0; color: #78350f; font-size: 0.9rem;">
+          Location services are temporarily unavailable. You can continue without providing a what3words address.
+        </p>
       </div>
 
       <div class="form-group">
@@ -517,16 +549,13 @@
         return false;
       }
 
-      if (!what3words) {
-        alert('Please provide the what3words address. You can find it at what3words.com or use the what3words app.');
-        return false;
-      }
-
-      // Validate what3words format (3 words separated by dots, optional ///)
-      const w3wPattern = /^(\/\/\/)?[\w-]+\.[\w-]+\.[\w-]+$/;
-      if (!w3wPattern.test(what3words)) {
-        alert('Please enter a valid what3words address (e.g. ///filled.count.soap)');
-        return false;
+      // what3words is now optional, but if provided, validate format
+      if (what3words) {
+        const w3wPattern = /^(\/\/\/)?[\w-]+\.[\w-]+\.[\w-]+$/;
+        if (!w3wPattern.test(what3words)) {
+          alert('Please enter a valid what3words address (e.g. ///filled.count.soap)');
+          return false;
+        }
       }
 
       if (!junctionType) {
@@ -535,6 +564,97 @@
       }
 
       return true;
+    }
+
+    // Get location and auto-populate what3words
+    const getLocationBtn = document.getElementById('get-location-btn');
+    const what3wordsInput = document.getElementById('what3words');
+    const what3wordsStatus = document.getElementById('what3words-status');
+    const what3wordsGroup = document.getElementById('what3words-group');
+    const what3wordsUnavailable = document.getElementById('what3words-unavailable');
+
+    getLocationBtn.addEventListener('click', async function() {
+      // Check if geolocation is supported
+      if (!navigator.geolocation) {
+        showWhat3WordsUnavailable('Geolocation is not supported by your browser.');
+        return;
+      }
+
+      // Disable button and show loading
+      getLocationBtn.disabled = true;
+      getLocationBtn.textContent = '🔄 Getting location...';
+      what3wordsStatus.style.display = 'block';
+      what3wordsStatus.style.color = 'var(--text-muted)';
+      what3wordsStatus.textContent = 'Requesting your location...';
+
+      try {
+        // Get current position
+        const position = await new Promise((resolve, reject) => {
+          navigator.geolocation.getCurrentPosition(resolve, reject, {
+            enableHighAccuracy: true,
+            timeout: 10000,
+            maximumAge: 0
+          });
+        });
+
+        const { latitude, longitude } = position.coords;
+        what3wordsStatus.textContent = `Location found (${latitude.toFixed(4)}, ${longitude.toFixed(4)}). Converting to what3words...`;
+
+        // Call API to convert to what3words
+        const response = await fetch(`/api/location/convert?lat=${latitude}&lng=${longitude}`);
+        const data = await response.json();
+
+        if (data.success && data.words) {
+          // Auto-populate what3words field
+          what3wordsInput.value = `///${data.words}`;
+          what3wordsStatus.style.color = 'var(--success)';
+          what3wordsStatus.textContent = `✓ Location found: ///${data.words}`;
+
+          // Reset button
+          getLocationBtn.disabled = false;
+          getLocationBtn.textContent = '📍 Get My Location';
+
+          // Hide status after 3 seconds
+          setTimeout(() => {
+            what3wordsStatus.style.display = 'none';
+          }, 3000);
+        } else {
+          // API returned error or no words
+          showWhat3WordsUnavailable(data.message || 'Unable to convert location to what3words.');
+        }
+      } catch (error) {
+        console.error('Location error:', error);
+
+        if (error.code === 1) {
+          // Permission denied
+          showWhat3WordsUnavailable('Location permission denied. Please enable location access in your browser settings.');
+        } else if (error.code === 2) {
+          // Position unavailable
+          showWhat3WordsUnavailable('Location unavailable. Please check your device settings.');
+        } else if (error.code === 3) {
+          // Timeout
+          showWhat3WordsUnavailable('Location request timed out. Please try again.');
+        } else if (error.message && error.message.includes('fetch')) {
+          // API error
+          showWhat3WordsUnavailable('Location service temporarily unavailable.');
+        } else {
+          showWhat3WordsUnavailable('Unable to get your location.');
+        }
+      }
+    });
+
+    function showWhat3WordsUnavailable(message) {
+      // Hide the what3words input group
+      what3wordsGroup.style.display = 'none';
+
+      // Show unavailable message
+      what3wordsUnavailable.style.display = 'block';
+
+      // Update the message if provided
+      if (message) {
+        const messageP = what3wordsUnavailable.querySelector('p:last-child');
+        messageP.textContent = message;
+      }
     }
 
     // Save and proceed
