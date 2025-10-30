@@ -639,6 +639,22 @@
           <span>None of these apply</span>
         </label>
       </div>
+
+      <!-- Additional Hazards Text Field -->
+      <div class="form-group" style="margin-top: 20px;">
+        <label for="additionalHazards">
+          Additional hazards or conditions
+          <span style="color: var(--text-muted); font-weight: normal;">(Optional)</span>
+        </label>
+        <textarea
+          id="additionalHazards"
+          name="additionalHazards"
+          rows="3"
+          placeholder="Describe any other hazards, road conditions, or circumstances not covered above..."
+          style="width: 100%; padding: 12px; border: 1px solid var(--border); border-radius: 8px; font-family: inherit; font-size: 1rem; resize: vertical;"
+        ></textarea>
+        <p class="help-text">Include any additional details about road conditions, hazards, or circumstances that might be relevant to the accident.</p>
+      </div>
     </div>
 
     <!-- Navigation -->
@@ -973,6 +989,7 @@
         user_manoeuvre: document.getElementById('userManoeuvre').value,
         visibility_factors: selectedVisibilityFactors,
         special_conditions: selectedConditions,
+        additional_hazards: document.getElementById('additionalHazards').value.trim(),
         completed_at: new Date().toISOString()
       };
 
@@ -1039,6 +1056,11 @@
               const checkbox = document.querySelector(`input[name="specialConditions"][value="${condition}"]`);
               if (checkbox) checkbox.checked = true;
             });
+          }
+
+          // Restore additional hazards text
+          if (data.additional_hazards) {
+            document.getElementById('additionalHazards').value = data.additional_hazards;
           }
 
           console.log('✅ Page 4 data restored');
