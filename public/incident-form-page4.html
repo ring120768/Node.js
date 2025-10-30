@@ -587,12 +587,18 @@
       <h3>⚠️ Special Road Conditions & Hazards</h3>
 
       <!-- Hazard Reference Image -->
-      <div style="margin-bottom: 20px; text-align: center;">
+      <div id="hazardImageContainer" style="margin-bottom: 20px; text-align: center;">
         <img
+          id="hazardReferenceImage"
           src="/images/hazard-labeled-image.png"
           alt="Road hazards reference guide"
           style="max-width: 100%; height: auto; border-radius: 12px; border: 2px solid var(--border); box-shadow: 0 2px 8px rgba(0,0,0,0.1);"
+          onerror="this.style.display='none'; document.getElementById('hazardImagePlaceholder').style.display='block';"
         >
+        <div id="hazardImagePlaceholder" style="display: none; padding: 20px; background: #fff3cd; border: 2px solid #ffc107; border-radius: 12px; color: #856404;">
+          <p style="margin: 0; font-weight: 600;">📋 Hazard Reference Image</p>
+          <p style="margin: 8px 0 0 0; font-size: 0.875rem;">Common hazards include: wet roads, ice, debris, potholes, roadworks, animals, pedestrians</p>
+        </div>
         <p class="help-text" style="margin-top: 8px; font-size: 0.85rem;">
           Reference guide for common road hazards
         </p>
