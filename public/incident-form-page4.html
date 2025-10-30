@@ -628,17 +628,49 @@
           const mapContainer = document.getElementById('location-map-container');
           mapContainer.style.display = 'block';
 
-          // Auto-populate location description with nearestPlace and coordinates
+          // Auto-populate location description with detailed address
           const locationTextarea = document.getElementById('location');
           if (locationTextarea && !locationTextarea.value.trim()) {
             let locationDescription = '';
-            if (data.nearestPlace) {
+
+            // Build street address from components
+            if (data.address) {
+              const addr = data.address;
+
+              // Street address line
+              let streetLine = '';
+              if (addr.houseNumber) streetLine += addr.houseNumber + ' ';
+              if (addr.road) streetLine += addr.road;
+              if (streetLine) locationDescription += streetLine.trim() + '\n';
+
+              // City/Town line
+              let cityLine = '';
+              if (addr.suburb) cityLine += addr.suburb + ', ';
+              if (addr.city) cityLine += addr.city;
+              if (cityLine) locationDescription += cityLine.trim() + '\n';
+
+              // County and postcode line
+              let countyLine = '';
+              if (addr.county) countyLine += addr.county;
+              if (addr.postcode) {
+                countyLine += (countyLine ? ', ' : '') + addr.postcode;
+              }
+              if (countyLine) locationDescription += countyLine.trim() + '\n';
+
+              // Country
+              if (data.country) {
+                locationDescription += data.country + '\n';
+              }
+            } else if (data.nearestPlace) {
+              // Fallback to basic info if detailed address unavailable
               locationDescription = data.nearestPlace;
+              if (data.country) {
+                locationDescription += `, ${data.country}`;
+              }
+              locationDescription += '\n';
             }
-            if (data.country) {
-              locationDescription += `, ${data.country}`;
-            }
-            locationDescription += `\n\nCoordinates: ${latitude.toFixed(6)}, ${longitude.toFixed(6)}`;
+
+            locationDescription += `\nCoordinates: ${latitude.toFixed(6)}, ${longitude.toFixed(6)}`;
             locationDescription += `\nwhat3words: ///${data.words}`;
             locationTextarea.value = locationDescription;
           }
