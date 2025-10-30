@@ -568,37 +568,6 @@
           <p class="help-text">Your manoeuvre at the time of impact</p>
         </div>
 
-        <!-- Visibility Factors (Optional) -->
-        <div class="form-group">
-          <label>
-            Were there any visibility issues?
-            <span style="color: var(--text-muted); font-weight: normal;">(Optional - select all that apply)</span>
-          </label>
-          <div class="checkbox-group">
-            <label>
-              <input type="checkbox" name="visibilityFactors" value="clear_visibility">
-              <span>Clear visibility - no issues</span>
-            </label>
-            <label>
-              <input type="checkbox" name="visibilityFactors" value="restricted_by_structure">
-              <span>Restricted by hedge, wall, or fence</span>
-            </label>
-            <label>
-              <input type="checkbox" name="visibilityFactors" value="restricted_by_bend">
-              <span>Restricted by bend or corner</span>
-            </label>
-            <label>
-              <input type="checkbox" name="visibilityFactors" value="large_vehicle">
-              <span>Large vehicle obstructing view (lorry, bus, van)</span>
-            </label>
-            <label>
-              <input type="checkbox" name="visibilityFactors" value="sun_glare">
-              <span>Sun glare or low sun</span>
-            </label>
-          </div>
-          <p class="help-text">Visibility factors may affect liability determination. Weather conditions and street lighting are covered in Time & Weather section (Page 3). Parked vehicles obstructing view are covered in Special Conditions below.</p>
-        </div>
-
       </div>
     </div>
 
@@ -679,6 +648,37 @@
           <input type="checkbox" name="specialConditions" value="none">
           <span>None of these apply</span>
         </label>
+      </div>
+
+      <!-- Visibility Issues -->
+      <div class="form-group" style="margin-top: 24px; padding-top: 24px; border-top: 2px dashed var(--border);">
+        <label style="font-weight: 600; color: var(--accent); font-size: 1.05rem;">
+          👁️ Visibility Issues
+          <span style="color: var(--text-muted); font-weight: normal; font-size: 0.9rem;">(Optional - select all that apply)</span>
+        </label>
+        <div class="checkbox-group">
+          <label>
+            <input type="checkbox" name="visibilityFactors" value="clear_visibility">
+            <span>Clear visibility - no issues</span>
+          </label>
+          <label>
+            <input type="checkbox" name="visibilityFactors" value="restricted_by_structure">
+            <span>Restricted by hedge, wall, or fence</span>
+          </label>
+          <label>
+            <input type="checkbox" name="visibilityFactors" value="restricted_by_bend">
+            <span>Restricted by bend or corner</span>
+          </label>
+          <label>
+            <input type="checkbox" name="visibilityFactors" value="large_vehicle">
+            <span>Large vehicle obstructing view (lorry, bus, van)</span>
+          </label>
+          <label>
+            <input type="checkbox" name="visibilityFactors" value="sun_glare">
+            <span>Sun glare or low sun</span>
+          </label>
+        </div>
+        <p class="help-text">Visibility factors may affect liability determination. Weather conditions and street lighting are covered in Time & Weather section (Page 3).</p>
       </div>
 
       <!-- Additional Hazards Text Field -->
