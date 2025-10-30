@@ -453,6 +453,7 @@
         </label>
         <select id="junctionType" name="junctionType" required>
           <option value="">Select junction type...</option>
+          <option value="straight_road">Straight road (not at junction)</option>
           <option value="not_junction">Not at or near a junction</option>
           <option value="t_junction">T-junction</option>
           <option value="crossroads">Crossroads (4-way junction)</option>
@@ -584,6 +585,19 @@
     <!-- Special Conditions -->
     <div class="form-section">
       <h3>⚠️ Special Road Conditions & Hazards</h3>
+
+      <!-- Hazard Reference Image -->
+      <div style="margin-bottom: 20px; text-align: center;">
+        <img
+          src="/images/hazard-labeled-image.png"
+          alt="Road hazards reference guide"
+          style="max-width: 100%; height: auto; border-radius: 12px; border: 2px solid var(--border); box-shadow: 0 2px 8px rgba(0,0,0,0.1);"
+        >
+        <p class="help-text" style="margin-top: 8px; font-size: 0.85rem;">
+          Reference guide for common road hazards
+        </p>
+      </div>
+
       <p class="help-text" style="margin-bottom: 16px;">
         Select any that apply:
       </p>
@@ -680,8 +694,8 @@
     junctionType.addEventListener('change', function() {
       const selectedType = this.value;
 
-      if (selectedType === 'not_junction' || selectedType === '') {
-        // Hide all junction details if not at a junction
+      if (selectedType === 'not_junction' || selectedType === 'straight_road' || selectedType === '') {
+        // Hide all junction details if not at a junction or on straight road
         junctionDetailsGroup.style.display = 'none';
 
         // Clear junction detail fields
