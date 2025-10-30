@@ -5,19 +5,24 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
   <meta name="apple-mobile-web-app-capable" content="yes">
   <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
-  <title>Medical Assessment - Page 3 of 12</title>
+  <title>Accident Details - Page 3 of 12</title>
 
   <style>
     /* Design System Variables */
     :root {
-      --grad-start: #2e6a9d;
-      --grad-end: #3776a2;
-      --accent: #357a94;
-      --accent-hover: #2c6880;
-      --bg-light: #f0ebe3;
+      --grad-start: #0E7490;
+      --grad-end: #0c6179;
+      --accent: #0E7490;
+      --accent-hover: #0c6179;
+      --bg-light: #E8DCC4;
       --text-dark: #333;
       --text-muted: #666;
-      --border: #d1d5db;
+      --border: #4B5563;
+      --button-bg: #C0C0C0;
+      --button-hover: #B0B0B0;
+      --input-bg: #CFD2D7;
+      --checkbox-bg: #F5F1E8;
+      --container-bg: #F5F1E8;
       --success: #10b981;
       --danger: #ef4444;
       --warning: #f59e0b;
@@ -140,7 +145,7 @@
 
     /* Form Section */
     .form-section {
-      background: white;
+      background: var(--container-bg);
       border-radius: 12px;
       padding: 24px;
       margin-bottom: 20px;
@@ -160,12 +165,50 @@
       margin-bottom: 20px;
     }
 
+    .form-group:last-child {
+      margin-bottom: 0;
+    }
+
     .form-group label {
       display: block;
       font-weight: 600;
       color: var(--text-dark);
       margin-bottom: 8px;
       font-size: 0.938rem;
+    }
+
+    .form-group label .required {
+      color: var(--danger);
+      margin-left: 4px;
+    }
+
+    .form-group input[type="text"],
+    .form-group input[type="date"],
+    .form-group input[type="time"],
+    .form-group input[type="number"],
+    .form-group select,
+    .form-group textarea {
+      width: 100%;
+      padding: 14px 16px;
+      border: 2px solid var(--border);
+      border-radius: 8px;
+      font-size: 16px;
+      font-family: inherit;
+      background: var(--input-bg);
+      transition: all 0.2s ease;
+    }
+
+    .form-group input:focus,
+    .form-group select:focus,
+    .form-group textarea:focus {
+      outline: none;
+      border-color: var(--accent);
+      box-shadow: 0 0 0 3px rgba(53, 122, 148, 0.1);
+    }
+
+    .form-group textarea {
+      min-height: 100px;
+      resize: vertical;
     }
 
     .form-group .help-text {
@@ -178,105 +221,122 @@
     .checkbox-group {
       display: flex;
       flex-direction: column;
-      gap: 12px;
+      gap: 10px;
     }
 
-    .checkbox-group label {
+    .checkbox-item {
       display: flex;
       align-items: center;
       gap: 12px;
-      padding: 14px 16px;
+      padding: 12px 16px;
       border: 2px solid var(--border);
       border-radius: 8px;
+      background: var(--input-bg);
       cursor: pointer;
       transition: all 0.2s ease;
+    }
+
+    .checkbox-item:hover {
+      border-color: var(--accent);
+      background: rgba(53, 122, 148, 0.15);
+    }
+
+    .checkbox-item input[type="checkbox"] {
+      position: relative;
+      appearance: none;
+      -webkit-appearance: none;
+      width: 24px;
+      height: 24px;
+      min-width: 24px;
+      border: 2px solid var(--border);
+      border-radius: 6px;
+      background: var(--checkbox-bg);
+      cursor: pointer;
+      transition: all 0.2s ease;
+    }
+
+    .checkbox-item input[type="checkbox"]:checked {
+      background: var(--success);
+      border-color: var(--success);
+    }
+
+    .checkbox-item input[type="checkbox"]:checked::after {
+      content: '✓';
+      position: absolute;
+      top: 50%;
+      left: 50%;
+      transform: translate(-50%, -50%);
+      color: white;
+      font-size: 16px;
+      font-weight: 700;
+    }
+
+    .checkbox-item label {
+      flex: 1;
+      cursor: pointer;
+      margin: 0;
       font-weight: 500;
     }
 
-    .checkbox-group label:hover {
-      border-color: var(--accent);
-      background: rgba(53, 122, 148, 0.05);
-    }
-
-    .checkbox-group input[type="checkbox"] {
-      width: 22px;
-      height: 22px;
-      min-width: 22px;
-      cursor: pointer;
-      accent-color: var(--accent);
-    }
-
-    .checkbox-group input[type="checkbox"]:checked + span {
-      color: var(--accent);
-      font-weight: 600;
-    }
-
-    /* Radio Group */
+    /* Radio Group - Now styled like checkboxes for better UX */
     .radio-group {
       display: flex;
       flex-direction: column;
-      gap: 12px;
+      gap: 10px;
     }
 
     .radio-group label {
       display: flex;
       align-items: center;
-      gap: 10px;
+      gap: 12px;
       padding: 12px 16px;
       border: 2px solid var(--border);
       border-radius: 8px;
+      background: var(--input-bg);
       cursor: pointer;
       transition: all 0.2s ease;
       font-weight: 500;
+      margin-bottom: 0;
     }
 
     .radio-group label:hover {
       border-color: var(--accent);
-      background: rgba(53, 122, 148, 0.05);
+      background: rgba(53, 122, 148, 0.15);
     }
 
-    .radio-group input[type="radio"] {
-      width: 20px;
-      height: 20px;
-      min-width: 20px;
+    .radio-group input[type="checkbox"] {
+      position: relative;
+      appearance: none;
+      -webkit-appearance: none;
+      width: 24px;
+      height: 24px;
+      min-width: 24px;
+      border: 2px solid var(--border);
+      border-radius: 6px;
+      background: var(--checkbox-bg);
       cursor: pointer;
-      accent-color: var(--accent);
+      transition: all 0.2s ease;
     }
 
-    .radio-group input[type="radio"]:checked + span {
+    .radio-group input[type="checkbox"]:checked {
+      background: var(--success);
+      border-color: var(--success);
+    }
+
+    .radio-group input[type="checkbox"]:checked::after {
+      content: '✓';
+      position: absolute;
+      top: 50%;
+      left: 50%;
+      transform: translate(-50%, -50%);
+      color: white;
+      font-size: 16px;
+      font-weight: 700;
+    }
+
+    .radio-group input[type="checkbox"]:checked + span {
       color: var(--accent);
       font-weight: 600;
-    }
-
-    /* Conditional Field */
-    .conditional-field {
-      margin-top: 16px;
-      padding: 16px;
-      background: rgba(53, 122, 148, 0.05);
-      border-left: 4px solid var(--accent);
-      border-radius: 8px;
-      display: none;
-    }
-
-    .conditional-field.show {
-      display: block;
-    }
-
-    .conditional-field textarea {
-      width: 100%;
-      padding: 14px 16px;
-      border: 2px solid var(--border);
-      border-radius: 8px;
-      font-size: 16px;
-      font-family: inherit;
-      min-height: 100px;
-      resize: vertical;
-    }
-
-    .conditional-field textarea:focus {
-      outline: none;
-      border-color: var(--accent);
-      box-shadow: 0 0 0 3px rgba(53, 122, 148, 0.1);
     }
 
     /* Navigation Buttons */
@@ -305,23 +365,25 @@
 
     .btn-secondary {
       background: white;
-      color: var(--accent);
-      border: 2px solid var(--accent);
+      color: var(--text-dark);
+      border: 2px solid var(--border);
     }
 
     .btn-secondary:hover {
-      background: rgba(53, 122, 148, 0.1);
+      background: #f5f5f5;
     }
 
     .btn-primary {
-      background: linear-gradient(135deg, var(--accent) 0%, var(--accent-hover) 100%);
-      color: white;
-      box-shadow: 0 4px 12px rgba(53, 122, 148, 0.3);
+      background: var(--button-bg);
+      color: var(--text-dark);
+      border: 2px solid var(--border);
+      box-shadow: 0 4px 12px rgba(75, 85, 99, 0.2);
     }
 
     .btn-primary:hover {
+      background: var(--button-hover);
       transform: translateY(-2px);
-      box-shadow: 0 6px 16px rgba(53, 122, 148, 0.4);
+      box-shadow: 0 6px 16px rgba(75, 85, 99, 0.3);
     }
 
     .btn-primary:active {
@@ -368,181 +430,299 @@
   <!-- Main Content -->
   <div class="container">
     <div class="page-header">
-      <h2>🩺 Medical Questionnaire</h2>
-      <p>Please answer all medical questions as specified by our medical consultant</p>
+      <h2>📅 Accident Details</h2>
+      <p>When and where did the accident occur?</p>
     </div>
 
-    <!-- Medical Attention Needed -->
+    <!-- Section 4: Accident Date & Time -->
     <div class="form-section">
-      <h3>🚑 Medical Attention</h3>
+      <h3>🕐 Date & Time</h3>
 
       <div class="form-group">
-        <label>
-          Do you need Medical Attention?
+        <label for="accident_date">
+          Date of Accident
           <span class="required">*</span>
-        </label>
-        <div class="radio-group">
-          <label>
-            <input type="radio" name="medicalAttentionNeeded" value="yes" required>
-            <span>Yes</span>
-          </label>
-          <label>
-            <input type="radio" name="medicalAttentionNeeded" value="no" required>
-            <span>No</span>
-          </label>
-        </div>
-      </div>
-
-      <!-- Conditional: Injury Details -->
-      <div class="conditional-field" id="injuryDetailsField">
-        <label for="injuryDetails">
-          Please provide Details of any injuries:
-          <span class="required">*</span>
-        </label>
-        <p class="help-text" style="margin-bottom: 8px;">
-          Describe your injuries in detail
-        </p>
-        <textarea
-          id="injuryDetails"
-          name="injuryDetails"
-          placeholder="Please describe your injuries in detail..."
-        ></textarea>
-      </div>
-    </div>
-
-    <!-- Injury Severity -->
-    <div class="form-section">
-      <h3>⚕️ Severity of Injuries</h3>
-
-      <div class="form-group">
-        <label>
-          Rate the severity of your injuries
-          <span class="required">*</span>
-        </label>
-        <div class="radio-group">
-          <label>
-            <input type="radio" name="injurySeverity" value="1" required>
-            <span>1 - Minor (cuts, bruises)</span>
-          </label>
-          <label>
-            <input type="radio" name="injurySeverity" value="2" required>
-            <span>2 - Mild (minor pain, discomfort)</span>
-          </label>
-          <label>
-            <input type="radio" name="injurySeverity" value="3" required>
-            <span>3 - Moderate (significant pain)</span>
-          </label>
-          <label>
-            <input type="radio" name="injurySeverity" value="4" required>
-            <span>4 - Serious (severe pain, restricted movement)</span>
-          </label>
-          <label>
-            <input type="radio" name="injurySeverity" value="5" required>
-            <span>5 - Severe (life-threatening, immediate care needed)</span>
-          </label>
-        </div>
-      </div>
-    </div>
-
-    <!-- Hospital/Medical Center -->
-    <div class="form-section">
-      <h3>🏥 Medical Facility</h3>
-
-      <div class="form-group">
-        <label for="hospitalName">
-          Hospital or Medical Center Name (if applicable)
         </label>
         <input
-          type="text"
-          id="hospitalName"
-          name="hospitalName"
-          placeholder="Name of hospital or medical center"
+          type="date"
+          id="accident_date"
+          name="accident_date"
+          required
         >
-        <p class="help-text">Leave blank if no hospital visit</p>
+        <p class="help-text">Select the date the accident occurred</p>
       </div>
 
       <div class="form-group">
-        <label>
-          Ambulance Called?
+        <label for="accident_time">
+          Time of Accident
           <span class="required">*</span>
         </label>
-        <div class="radio-group">
-          <label>
-            <input type="radio" name="ambulanceCalled" value="yes" required>
-            <span>Yes</span>
-          </label>
-          <label>
-            <input type="radio" name="ambulanceCalled" value="no" required>
-            <span>No</span>
-          </label>
-        </div>
+        <input
+          type="time"
+          id="accident_time"
+          name="accident_time"
+          required
+        >
+        <p class="help-text">24-hour format (e.g., 14:30)</p>
       </div>
 
       <div class="form-group">
-        <label for="treatmentReceived">
-          Treatment Received
+        <label for="accident_location">
+          Exact Location of Accident
+          <span class="required">*</span>
         </label>
         <textarea
-          id="treatmentReceived"
-          name="treatmentReceived"
-          placeholder="Details of any treatment or medication administered"
+          id="accident_location"
+          name="accident_location"
+          placeholder="Include street name, landmarks, nearby junctions, or GPS coordinates..."
+          required
         ></textarea>
-        <p class="help-text">Describe any treatment, medication, or medical procedures</p>
+        <p class="help-text">Be as specific as possible (e.g., "M25 Junction 15 northbound", "High Street near Tesco")</p>
       </div>
     </div>
 
-    <!-- Medical Symptoms (Exact list from medical consultant) -->
+    <!-- Section 5: Weather Conditions -->
     <div class="form-section">
-      <h3>💢 Medical Symptoms</h3>
+      <h3>🌤️ Weather Conditions</h3>
       <p class="help-text" style="margin-bottom: 16px;">
-        What symptoms are you experiencing? (Select all that apply)
+        What were the weather conditions at the time of the accident? (Select all that apply)
       </p>
 
       <div class="checkbox-group">
+        <div class="checkbox-item">
+          <input type="checkbox" id="weather_clear" name="weather_clear" value="true">
+          <label for="weather_clear">Clear</label>
+        </div>
+        <div class="checkbox-item">
+          <input type="checkbox" id="weather_cloudy" name="weather_cloudy" value="true">
+          <label for="weather_cloudy">Cloudy</label>
+        </div>
+        <div class="checkbox-item">
+          <input type="checkbox" id="weather_raining" name="weather_raining" value="true">
+          <label for="weather_raining">Raining</label>
+        </div>
+        <div class="checkbox-item">
+          <input type="checkbox" id="weather_heavy_rain" name="weather_heavy_rain" value="true">
+          <label for="weather_heavy_rain">Heavy Rain</label>
+        </div>
+        <div class="checkbox-item">
+          <input type="checkbox" id="weather_drizzle" name="weather_drizzle" value="true">
+          <label for="weather_drizzle">Drizzle</label>
+        </div>
+        <div class="checkbox-item">
+          <input type="checkbox" id="weather_fog" name="weather_fog" value="true">
+          <label for="weather_fog">Fog</label>
+        </div>
+        <div class="checkbox-item">
+          <input type="checkbox" id="weather_snow" name="weather_snow" value="true">
+          <label for="weather_snow">Snow</label>
+        </div>
+        <div class="checkbox-item">
+          <input type="checkbox" id="weather_ice" name="weather_ice" value="true">
+          <label for="weather_ice">Ice</label>
+        </div>
+        <div class="checkbox-item">
+          <input type="checkbox" id="weather_windy" name="weather_windy" value="true">
+          <label for="weather_windy">Windy</label>
+        </div>
+        <div class="checkbox-item">
+          <input type="checkbox" id="weather_hail" name="weather_hail" value="true">
+          <label for="weather_hail">Hail</label>
+        </div>
+        <div class="checkbox-item">
+          <input type="checkbox" id="weather_thunder_lightning" name="weather_thunder_lightning" value="true">
+          <label for="weather_thunder_lightning">Thunder/Lightning</label>
+        </div>
+        <div class="checkbox-item">
+          <input type="checkbox" id="weather_other" name="weather_other" value="true">
+          <label for="weather_other">Other Conditions</label>
+        </div>
+      </div>
+    </div>
+
+    <!-- Section 6: Road Conditions -->
+    <div class="form-section">
+      <h3>🛣️ Road Conditions</h3>
+
+      <div class="form-group">
         <label>
-          <input type="checkbox" name="symptoms" value="headache">
-          <span>Headache</span>
+          Road Surface Condition
+          <span class="required">*</span>
         </label>
+        <p class="help-text" style="margin-bottom: 12px;">Select all that apply</p>
+        <div class="radio-group">
+          <label>
+            <input type="checkbox" name="road_condition_dry" value="true">
+            <span>Dry</span>
+          </label>
+          <label>
+            <input type="checkbox" name="road_condition_wet" value="true">
+            <span>Wet</span>
+          </label>
+          <label>
+            <input type="checkbox" name="road_condition_icy" value="true">
+            <span>Icy</span>
+          </label>
+          <label>
+            <input type="checkbox" name="road_condition_snow_covered" value="true">
+            <span>Snow-covered</span>
+          </label>
+          <label>
+            <input type="checkbox" name="road_condition_loose_surface" value="true">
+            <span>Loose surface (gravel, debris)</span>
+          </label>
+          <label>
+            <input type="checkbox" name="road_condition_other" value="true">
+            <span>Other</span>
+          </label>
+        </div>
+      </div>
+
+      <div class="form-group">
         <label>
-          <input type="checkbox" name="symptoms" value="dizziness">
-          <span>Dizziness</span>
+          Road Type
+          <span class="required">*</span>
         </label>
+        <p class="help-text" style="margin-bottom: 12px;">Select all that apply</p>
+        <div class="radio-group">
+          <label>
+            <input type="checkbox" name="road_type_motorway" value="true">
+            <span>Motorway</span>
+          </label>
+          <label>
+            <input type="checkbox" name="road_type_a_road" value="true">
+            <span>A-road</span>
+          </label>
+          <label>
+            <input type="checkbox" name="road_type_b_road" value="true">
+            <span>B-road</span>
+          </label>
+          <label>
+            <input type="checkbox" name="road_type_urban_street" value="true">
+            <span>Urban street</span>
+          </label>
+          <label>
+            <input type="checkbox" name="road_type_rural_road" value="true">
+            <span>Rural road</span>
+          </label>
+          <label>
+            <input type="checkbox" name="road_type_car_park" value="true">
+            <span>Car park</span>
+          </label>
+          <label>
+            <input type="checkbox" name="road_type_other" value="true">
+            <span>Other</span>
+          </label>
+        </div>
+      </div>
+
+      <div class="form-group">
+        <label for="speed_limit">
+          Speed Limit (mph)
+        </label>
+        <select
+          id="speed_limit"
+          name="speed_limit"
+        >
+          <option value="">Select speed limit</option>
+          <option value="20">20 mph</option>
+          <option value="30">30 mph</option>
+          <option value="40">40 mph</option>
+          <option value="50">50 mph</option>
+          <option value="60">60 mph</option>
+          <option value="70">70 mph</option>
+          <option value="unknown">Unknown</option>
+        </select>
+        <p class="help-text">Select the posted speed limit</p>
+      </div>
+
+      <div class="form-group">
+        <label for="your_speed">
+          Your Estimated Speed (mph)
+        </label>
+        <input
+          type="number"
+          id="your_speed"
+          name="your_speed"
+          placeholder="e.g., 30"
+          min="0"
+          max="150"
+        >
+        <p class="help-text">Your approximate speed at the time of the accident</p>
+      </div>
+
+      <div class="form-group">
         <label>
-          <input type="checkbox" name="symptoms" value="nausea">
-          <span>Nausea</span>
+          Traffic Conditions
+          <span class="required">*</span>
         </label>
+        <p class="help-text" style="margin-bottom: 12px;">Select all that apply</p>
+        <div class="radio-group">
+          <label>
+            <input type="checkbox" name="traffic_conditions_heavy" value="true">
+            <span>Heavy</span>
+          </label>
+          <label>
+            <input type="checkbox" name="traffic_conditions_moderate" value="true">
+            <span>Moderate</span>
+          </label>
+          <label>
+            <input type="checkbox" name="traffic_conditions_light" value="true">
+            <span>Light</span>
+          </label>
+          <label>
+            <input type="checkbox" name="traffic_conditions_no_traffic" value="true">
+            <span>No traffic</span>
+          </label>
+        </div>
+      </div>
+
+      <div class="form-group">
         <label>
-          <input type="checkbox" name="symptoms" value="back_pain">
-          <span>Back Pain</span>
+          Visibility
+          <span class="required">*</span>
         </label>
+        <p class="help-text" style="margin-bottom: 12px;">Select all that apply</p>
+        <div class="radio-group">
+          <label>
+            <input type="checkbox" name="visibility_good" value="true">
+            <span>Good</span>
+          </label>
+          <label>
+            <input type="checkbox" name="visibility_poor" value="true">
+            <span>Poor</span>
+          </label>
+          <label>
+            <input type="checkbox" name="visibility_very_poor" value="true">
+            <span>Very poor</span>
+          </label>
+          <label>
+            <input type="checkbox" name="visibility_severely_restricted" value="true">
+            <span>Severely restricted</span>
+          </label>
+        </div>
+      </div>
+
+      <div class="form-group">
         <label>
-          <input type="checkbox" name="symptoms" value="neck_pain">
-          <span>Neck Pain</span>
+          Were road markings visible?
+          <span class="required">*</span>
         </label>
-        <label>
-          <input type="checkbox" name="symptoms" value="chest_pain">
-          <span>Chest Pain</span>
-        </label>
-        <label>
-          <input type="checkbox" name="symptoms" value="abdominal_pain">
-          <span>Abdominal Pain</span>
-        </label>
-        <label>
-          <input type="checkbox" name="symptoms" value="difficulty_breathing">
-          <span>Difficulty Breathing</span>
-        </label>
-        <label>
-          <input type="checkbox" name="symptoms" value="bleeding">
-          <span>Bleeding</span>
-        </label>
-        <label>
-          <input type="checkbox" name="symptoms" value="loss_of_consciousness">
-          <span>Loss of Consciousness</span>
-        </label>
-        <label>
-          <input type="checkbox" name="symptoms" value="other">
-          <span>Other Symptoms</span>
-        </label>
+        <p class="help-text" style="margin-bottom: 12px;">Select all that apply</p>
+        <div class="radio-group">
+          <label>
+            <input type="checkbox" name="road_markings_visible_yes" value="true">
+            <span>Yes</span>
+          </label>
+          <label>
+            <input type="checkbox" name="road_markings_visible_no" value="true">
+            <span>No</span>
+          </label>
+          <label>
+            <input type="checkbox" name="road_markings_visible_partially" value="true">
+            <span>Partially visible</span>
+          </label>
+        </div>
       </div>
     </div>
 
@@ -561,46 +741,58 @@
     // Elements
     const backBtn = document.getElementById('backBtn');
     const nextBtn = document.getElementById('nextBtn');
-    const medicalAttentionNeededRadios = document.querySelectorAll('input[name="medicalAttentionNeeded"]');
-    const injuryDetailsField = document.getElementById('injuryDetailsField');
-
-    // Show/hide injury details based on medical attention selection
-    medicalAttentionNeededRadios.forEach(radio => {
-      radio.addEventListener('change', function() {
-        if (this.value === 'yes') {
-          injuryDetailsField.classList.add('show');
-        } else {
-          injuryDetailsField.classList.remove('show');
-        }
-      });
-    });
 
     // Validate form
     function validateForm() {
-      const medicalAttentionNeeded = document.querySelector('input[name="medicalAttentionNeeded"]:checked');
-      const injurySeverity = document.querySelector('input[name="injurySeverity"]:checked');
-      const ambulanceCalled = document.querySelector('input[name="ambulanceCalled"]:checked');
+      // Required fields
+      const accidentDate = document.getElementById('accident_date').value.trim();
+      const accidentTime = document.getElementById('accident_time').value.trim();
+      const accidentLocation = document.getElementById('accident_location').value.trim();
 
-      if (!medicalAttentionNeeded) {
-        alert('Please indicate whether you need medical attention.');
+      // Check if at least one checkbox is selected for each required group
+      const roadConditionChecked = document.querySelectorAll('input[name^="road_condition_"]:checked').length > 0;
+      const roadTypeChecked = document.querySelectorAll('input[name^="road_type_"]:checked').length > 0;
+      const trafficConditionsChecked = document.querySelectorAll('input[name^="traffic_conditions_"]:checked').length > 0;
+      const visibilityChecked = document.querySelectorAll('input[name^="visibility_"]:checked').length > 0;
+      const roadMarkingsChecked = document.querySelectorAll('input[name^="road_markings_visible_"]:checked').length > 0;
+
+      if (!accidentDate) {
+        alert('Please select the date of the accident.');
         return false;
       }
 
-      if (medicalAttentionNeeded.value === 'yes') {
-        const injuryDetails = document.getElementById('injuryDetails').value.trim();
-        if (!injuryDetails) {
-          alert('Please provide details of your injuries.');
-          return false;
-        }
-      }
-
-      if (!injurySeverity) {
-        alert('Please rate the severity of your injuries.');
+      if (!accidentTime) {
+        alert('Please enter the time of the accident.');
         return false;
       }
 
-      if (!ambulanceCalled) {
-        alert('Please indicate whether an ambulance was called.');
+      if (!accidentLocation) {
+        alert('Please provide the location of the accident.');
+        return false;
+      }
+
+      if (!roadConditionChecked) {
+        alert('Please select at least one road surface condition.');
+        return false;
+      }
+
+      if (!roadTypeChecked) {
+        alert('Please select at least one road type.');
+        return false;
+      }
+
+      if (!trafficConditionsChecked) {
+        alert('Please select at least one traffic condition.');
+        return false;
+      }
+
+      if (!visibilityChecked) {
+        alert('Please select at least one visibility condition.');
+        return false;
+      }
+
+      if (!roadMarkingsChecked) {
+        alert('Please indicate if road markings were visible.');
         return false;
       }
 
@@ -613,19 +805,79 @@
         return;
       }
 
-      // Get selected symptoms
-      const selectedSymptoms = Array.from(document.querySelectorAll('input[name="symptoms"]:checked'))
-        .map(cb => cb.value);
+      // Collect weather conditions
+      const weatherConditions = {
+        weather_clear: document.getElementById('weather_clear').checked,
+        weather_cloudy: document.getElementById('weather_cloudy').checked,
+        weather_raining: document.getElementById('weather_raining').checked,
+        weather_heavy_rain: document.getElementById('weather_heavy_rain').checked,
+        weather_drizzle: document.getElementById('weather_drizzle').checked,
+        weather_fog: document.getElementById('weather_fog').checked,
+        weather_snow: document.getElementById('weather_snow').checked,
+        weather_ice: document.getElementById('weather_ice').checked,
+        weather_windy: document.getElementById('weather_windy').checked,
+        weather_hail: document.getElementById('weather_hail').checked,
+        weather_thunder_lightning: document.getElementById('weather_thunder_lightning').checked,
+        weather_other: document.getElementById('weather_other').checked
+      };
+
+      // Collect road conditions (checkboxes)
+      const roadConditions = {
+        road_condition_dry: document.querySelector('input[name="road_condition_dry"]').checked,
+        road_condition_wet: document.querySelector('input[name="road_condition_wet"]').checked,
+        road_condition_icy: document.querySelector('input[name="road_condition_icy"]').checked,
+        road_condition_snow_covered: document.querySelector('input[name="road_condition_snow_covered"]').checked,
+        road_condition_loose_surface: document.querySelector('input[name="road_condition_loose_surface"]').checked,
+        road_condition_other: document.querySelector('input[name="road_condition_other"]').checked
+      };
+
+      // Collect road types (checkboxes)
+      const roadTypes = {
+        road_type_motorway: document.querySelector('input[name="road_type_motorway"]').checked,
+        road_type_a_road: document.querySelector('input[name="road_type_a_road"]').checked,
+        road_type_b_road: document.querySelector('input[name="road_type_b_road"]').checked,
+        road_type_urban_street: document.querySelector('input[name="road_type_urban_street"]').checked,
+        road_type_rural_road: document.querySelector('input[name="road_type_rural_road"]').checked,
+        road_type_car_park: document.querySelector('input[name="road_type_car_park"]').checked,
+        road_type_other: document.querySelector('input[name="road_type_other"]').checked
+      };
+
+      // Collect traffic conditions (checkboxes)
+      const trafficConditions = {
+        traffic_conditions_heavy: document.querySelector('input[name="traffic_conditions_heavy"]').checked,
+        traffic_conditions_moderate: document.querySelector('input[name="traffic_conditions_moderate"]').checked,
+        traffic_conditions_light: document.querySelector('input[name="traffic_conditions_light"]').checked,
+        traffic_conditions_no_traffic: document.querySelector('input[name="traffic_conditions_no_traffic"]').checked
+      };
+
+      // Collect visibility (checkboxes)
+      const visibility = {
+        visibility_good: document.querySelector('input[name="visibility_good"]').checked,
+        visibility_poor: document.querySelector('input[name="visibility_poor"]').checked,
+        visibility_very_poor: document.querySelector('input[name="visibility_very_poor"]').checked,
+        visibility_severely_restricted: document.querySelector('input[name="visibility_severely_restricted"]').checked
+      };
+
+      // Collect road markings visibility (checkboxes)
+      const roadMarkings = {
+        road_markings_visible_yes: document.querySelector('input[name="road_markings_visible_yes"]').checked,
+        road_markings_visible_no: document.querySelector('input[name="road_markings_visible_no"]').checked,
+        road_markings_visible_partially: document.querySelector('input[name="road_markings_visible_partially"]').checked
+      };
 
       // Save data to session storage
       const pageData = {
-        medical_attention_needed: document.querySelector('input[name="medicalAttentionNeeded"]:checked').value,
-        medical_injury_details: document.getElementById('injuryDetails').value.trim(),
-        medical_injury_severity: document.querySelector('input[name="injurySeverity"]:checked').value,
-        medical_hospital_name: document.getElementById('hospitalName').value.trim(),
-        medical_ambulance_called: document.querySelector('input[name="ambulanceCalled"]:checked').value,
-        medical_treatment_received: document.getElementById('treatmentReceived').value.trim(),
-        medical_symptoms: selectedSymptoms,
+        accident_date: document.getElementById('accident_date').value.trim(),
+        accident_time: document.getElementById('accident_time').value.trim(),
+        accident_location: document.getElementById('accident_location').value.trim(),
+        ...weatherConditions,
+        ...roadConditions,
+        ...roadTypes,
+        speed_limit: document.getElementById('speed_limit').value.trim(),
+        your_speed: document.getElementById('your_speed').value.trim(),
+        ...trafficConditions,
+        ...visibility,
+        ...roadMarkings,
         completed_at: new Date().toISOString()
       };
 
@@ -649,51 +901,94 @@
         try {
           const data = JSON.parse(saved);
 
-          // Restore medical attention needed
-          if (data.medical_attention_needed) {
-            const radio = document.querySelector(`input[name="medicalAttentionNeeded"][value="${data.medical_attention_needed}"]`);
-            if (radio) {
-              radio.checked = true;
-              if (data.medical_attention_needed === 'yes') {
-                injuryDetailsField.classList.add('show');
-              }
-            }
+          // Restore date & time
+          if (data.accident_date) {
+            document.getElementById('accident_date').value = data.accident_date;
+          }
+          if (data.accident_time) {
+            document.getElementById('accident_time').value = data.accident_time;
+          }
+          if (data.accident_location) {
+            document.getElementById('accident_location').value = data.accident_location;
           }
 
-          // Restore injury details
-          if (data.medical_injury_details) {
-            document.getElementById('injuryDetails').value = data.medical_injury_details;
-          }
-
-          // Restore injury severity
-          if (data.medical_injury_severity) {
-            const radio = document.querySelector(`input[name="injurySeverity"][value="${data.medical_injury_severity}"]`);
-            if (radio) radio.checked = true;
-          }
-
-          // Restore hospital name
-          if (data.medical_hospital_name) {
-            document.getElementById('hospitalName').value = data.medical_hospital_name;
-          }
-
-          // Restore ambulance called
-          if (data.medical_ambulance_called) {
-            const radio = document.querySelector(`input[name="ambulanceCalled"][value="${data.medical_ambulance_called}"]`);
-            if (radio) radio.checked = true;
-          }
-
-          // Restore treatment received
-          if (data.medical_treatment_received) {
-            document.getElementById('treatmentReceived').value = data.medical_treatment_received;
-          }
-
-          // Restore symptoms
-          if (data.medical_symptoms && Array.isArray(data.medical_symptoms)) {
-            data.medical_symptoms.forEach(symptom => {
-              const checkbox = document.querySelector(`input[name="symptoms"][value="${symptom}"]`);
+          // Restore weather conditions
+          const weatherFields = [
+            'weather_clear', 'weather_cloudy', 'weather_raining', 'weather_heavy_rain',
+            'weather_drizzle', 'weather_fog', 'weather_snow', 'weather_ice',
+            'weather_windy', 'weather_hail', 'weather_thunder_lightning', 'weather_other'
+          ];
+          weatherFields.forEach(field => {
+            if (data[field]) {
+              const checkbox = document.getElementById(field);
               if (checkbox) checkbox.checked = true;
-            });
+            }
+          });
+
+          // Restore road conditions (checkboxes)
+          const roadConditionFields = [
+            'road_condition_dry', 'road_condition_wet', 'road_condition_icy',
+            'road_condition_snow_covered', 'road_condition_loose_surface', 'road_condition_other'
+          ];
+          roadConditionFields.forEach(field => {
+            if (data[field]) {
+              const checkbox = document.querySelector(`input[name="${field}"]`);
+              if (checkbox) checkbox.checked = true;
+            }
+          });
+
+          // Restore road types (checkboxes)
+          const roadTypeFields = [
+            'road_type_motorway', 'road_type_a_road', 'road_type_b_road',
+            'road_type_urban_street', 'road_type_rural_road', 'road_type_car_park', 'road_type_other'
+          ];
+          roadTypeFields.forEach(field => {
+            if (data[field]) {
+              const checkbox = document.querySelector(`input[name="${field}"]`);
+              if (checkbox) checkbox.checked = true;
+            }
+          });
+
+          if (data.speed_limit) {
+            document.getElementById('speed_limit').value = data.speed_limit;
           }
+          if (data.your_speed) {
+            document.getElementById('your_speed').value = data.your_speed;
+          }
+
+          // Restore traffic conditions (checkboxes)
+          const trafficFields = [
+            'traffic_conditions_heavy', 'traffic_conditions_moderate',
+            'traffic_conditions_light', 'traffic_conditions_no_traffic'
+          ];
+          trafficFields.forEach(field => {
+            if (data[field]) {
+              const checkbox = document.querySelector(`input[name="${field}"]`);
+              if (checkbox) checkbox.checked = true;
+            }
+          });
+
+          // Restore visibility (checkboxes)
+          const visibilityFields = [
+            'visibility_good', 'visibility_poor', 'visibility_very_poor', 'visibility_severely_restricted'
+          ];
+          visibilityFields.forEach(field => {
+            if (data[field]) {
+              const checkbox = document.querySelector(`input[name="${field}"]`);
+              if (checkbox) checkbox.checked = true;
+            }
+          });
+
+          // Restore road markings (checkboxes)
+          const roadMarkingsFields = [
+            'road_markings_visible_yes', 'road_markings_visible_no', 'road_markings_visible_partially'
+          ];
+          roadMarkingsFields.forEach(field => {
+            if (data[field]) {
+              const checkbox = document.querySelector(`input[name="${field}"]`);
+              if (checkbox) checkbox.checked = true;
+            }
+          });
 
           console.log('✅ Page 3 data restored');
         } catch (e) {
@@ -702,7 +997,7 @@
       }
     });
 
-    console.log('📋 Incident Form - Page 3: Medical Questionnaire loaded (medical consultant specifications)');
+    console.log('📋 Incident Form - Page 3: Accident Details loaded');
   </script>
 </body>
 </html>

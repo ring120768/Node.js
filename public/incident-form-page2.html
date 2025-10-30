@@ -5,19 +5,24 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
   <meta name="apple-mobile-web-app-capable" content="yes">
   <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
-  <title>Safety Check & Basic Info - Page 2 of 12</title>
+  <title>Medical Information - Page 2 of 12</title>
 
   <style>
     /* Design System Variables */
     :root {
-      --grad-start: #2e6a9d;
-      --grad-end: #3776a2;
-      --accent: #357a94;
-      --accent-hover: #2c6880;
-      --bg-light: #f0ebe3;
+      --grad-start: #0E7490;
+      --grad-end: #0c6179;
+      --accent: #0E7490;
+      --accent-hover: #0c6179;
+      --bg-light: #E8DCC4;
       --text-dark: #333;
       --text-muted: #666;
-      --border: #d1d5db;
+      --border: #4B5563;
+      --button-bg: #C0C0C0;
+      --button-hover: #B0B0B0;
+      --input-bg: #CFD2D7;
+      --checkbox-bg: #F5F1E8;
+      --container-bg: #F5F1E8;
       --success: #10b981;
       --danger: #ef4444;
       --warning: #f59e0b;
@@ -138,48 +143,9 @@
       font-size: 0.938rem;
     }
 
-    /* Emergency Banner */
-    .emergency-banner {
-      background: linear-gradient(135deg, var(--danger) 0%, #dc2626 100%);
-      border-radius: 12px;
-      padding: 20px;
-      margin-bottom: 24px;
-      color: white;
-      display: none;
-      animation: slideDown 0.3s ease-out;
-    }
-
-    .emergency-banner.show {
-      display: block;
-    }
-
-    @keyframes slideDown {
-      from {
-        opacity: 0;
-        transform: translateY(-20px);
-      }
-      to {
-        opacity: 1;
-        transform: translateY(0);
-      }
-    }
-
-    .emergency-banner h3 {
-      font-size: 1.25rem;
-      margin-bottom: 12px;
-      display: flex;
-      align-items: center;
-      gap: 10px;
-    }
-
-    .emergency-banner p {
-      font-size: 0.938rem;
-      line-height: 1.6;
-    }
-
     /* Form Section */
     .form-section {
-      background: white;
+      background: var(--container-bg);
       border-radius: 12px;
       padding: 24px;
       margin-bottom: 20px;
@@ -213,26 +179,35 @@
     }
 
     .form-group input,
-    .form-group select {
+    .form-group select,
+    .form-group textarea {
       width: 100%;
       padding: 14px 16px;
       border: 2px solid var(--border);
       border-radius: 8px;
       font-size: 16px;
       font-family: inherit;
+      background: var(--input-bg);
       transition: border-color 0.2s ease;
       -webkit-appearance: none;
       appearance: none;
     }
 
+    .form-group textarea {
+      min-height: 120px;
+      resize: vertical;
+    }
+
     .form-group input:focus,
-    .form-group select:focus {
+    .form-group select:focus,
+    .form-group textarea:focus {
       outline: none;
       border-color: var(--accent);
       box-shadow: 0 0 0 3px rgba(53, 122, 148, 0.1);
     }
 
-    .form-group input::placeholder {
+    .form-group input::placeholder,
+    .form-group textarea::placeholder {
       color: #999;
     }
 
@@ -248,20 +223,21 @@
       margin-top: 6px;
     }
 
-    /* Radio Group */
+    /* Radio Group - Now styled like checkboxes for better UX */
     .radio-group {
       display: flex;
       flex-direction: column;
-      gap: 12px;
+      gap: 10px;
     }
 
     .radio-group label {
       display: flex;
       align-items: center;
-      gap: 10px;
+      gap: 12px;
       padding: 12px 16px;
       border: 2px solid var(--border);
       border-radius: 8px;
+      background: var(--input-bg);
       cursor: pointer;
       transition: all 0.2s ease;
       font-weight: 500;
@@ -269,10 +245,69 @@
 
     .radio-group label:hover {
       border-color: var(--accent);
-      background: rgba(53, 122, 148, 0.05);
+      background: rgba(53, 122, 148, 0.15);
     }
 
-    .radio-group input[type="radio"] {
+    .radio-group input[type="checkbox"] {
+      position: relative;
+      appearance: none;
+      -webkit-appearance: none;
+      width: 24px;
+      height: 24px;
+      min-width: 24px;
+      border: 2px solid var(--border);
+      border-radius: 6px;
+      background: var(--checkbox-bg);
+      cursor: pointer;
+      transition: all 0.2s ease;
+    }
+
+    .radio-group input[type="checkbox"]:checked {
+      background: var(--success);
+      border-color: var(--success);
+    }
+
+    .radio-group input[type="checkbox"]:checked::after {
+      content: '✓';
+      position: absolute;
+      top: 50%;
+      left: 50%;
+      transform: translate(-50%, -50%);
+      color: white;
+      font-size: 16px;
+      font-weight: 700;
+    }
+
+    .radio-group input[type="checkbox"]:checked + span {
+      color: var(--accent);
+      font-weight: 600;
+    }
+
+    /* Checkbox Group */
+    .checkbox-group {
+      display: flex;
+      flex-direction: column;
+      gap: 10px;
+    }
+
+    .checkbox-item {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+      padding: 12px 16px;
+      border: 2px solid var(--border);
+      border-radius: 8px;
+      background: var(--input-bg);
+      cursor: pointer;
+      transition: all 0.2s ease;
+    }
+
+    .checkbox-item:hover {
+      border-color: var(--accent);
+      background: rgba(53, 122, 148, 0.15);
+    }
+
+    .checkbox-item input[type="checkbox"] {
       width: 20px;
       height: 20px;
       min-width: 20px;
@@ -280,9 +315,95 @@
       accent-color: var(--accent);
     }
 
-    .radio-group input[type="radio"]:checked + span {
+    .checkbox-item label {
+      margin: 0;
+      cursor: pointer;
+      font-weight: 500;
+      flex: 1;
+    }
+
+    .checkbox-item input[type="checkbox"]:checked ~ label {
       color: var(--accent);
       font-weight: 600;
+    }
+
+    /* Custom Checkbox Styling with Green Tick */
+    .checkbox-item input[type="checkbox"] {
+      position: relative;
+      appearance: none;
+      -webkit-appearance: none;
+      width: 24px;
+      height: 24px;
+      border: 2px solid var(--border);
+      border-radius: 6px;
+      background: var(--checkbox-bg);
+      cursor: pointer;
+      transition: all 0.2s ease;
+    }
+
+    .checkbox-item input[type="checkbox"]:checked {
+      background: var(--success);
+      border-color: var(--success);
+    }
+
+    .checkbox-item input[type="checkbox"]:checked::after {
+      content: '✓';
+      position: absolute;
+      top: 50%;
+      left: 50%;
+      transform: translate(-50%, -50%);
+      color: white;
+      font-size: 16px;
+      font-weight: 700;
+    }
+
+    /* Paramedic Image Section */
+    .paramedic-section {
+      display: flex;
+      align-items: center;
+      gap: 20px;
+      padding: 20px;
+      background: linear-gradient(135deg, rgba(16, 185, 129, 0.1) 0%, rgba(16, 185, 129, 0.05) 100%);
+      border-radius: 12px;
+      border-left: 4px solid var(--success);
+      margin-top: 20px;
+      animation: slideIn 0.4s ease-out;
+    }
+
+    @keyframes slideIn {
+      from {
+        opacity: 0;
+        transform: translateX(-20px);
+      }
+      to {
+        opacity: 1;
+        transform: translateX(0);
+      }
+    }
+
+    .paramedic-section img {
+      width: 120px;
+      height: 120px;
+      border-radius: 12px;
+      object-fit: cover;
+      box-shadow: 0 4px 12px rgba(0,0,0,0.1);
+    }
+
+    .paramedic-section .message {
+      flex: 1;
+    }
+
+    .paramedic-section .message h4 {
+      color: var(--success);
+      font-size: 1.125rem;
+      margin-bottom: 8px;
+      font-weight: 600;
+    }
+
+    .paramedic-section .message p {
+      color: var(--text-dark);
+      font-size: 0.938rem;
+      line-height: 1.6;
     }
 
     /* Navigation Buttons */
@@ -311,23 +432,25 @@
 
     .btn-secondary {
       background: white;
-      color: var(--accent);
-      border: 2px solid var(--accent);
+      color: var(--text-dark);
+      border: 2px solid var(--border);
     }
 
     .btn-secondary:hover {
-      background: rgba(53, 122, 148, 0.1);
+      background: #f5f5f5;
     }
 
     .btn-primary {
-      background: linear-gradient(135deg, var(--accent) 0%, var(--accent-hover) 100%);
-      color: white;
-      box-shadow: 0 4px 12px rgba(53, 122, 148, 0.3);
+      background: var(--button-bg);
+      color: var(--text-dark);
+      border: 2px solid var(--border);
+      box-shadow: 0 4px 12px rgba(75, 85, 99, 0.2);
     }
 
     .btn-primary:hover {
+      background: var(--button-hover);
       transform: translateY(-2px);
-      box-shadow: 0 6px 16px rgba(53, 122, 148, 0.4);
+      box-shadow: 0 6px 16px rgba(75, 85, 99, 0.3);
     }
 
     .btn-primary:active {
@@ -338,6 +461,30 @@
       opacity: 0.5;
       cursor: not-allowed;
       transform: none;
+    }
+
+    /* Conditional Fields */
+    .conditional-group {
+      display: none;
+      margin-top: 16px;
+      padding-top: 16px;
+      border-top: 2px dashed var(--border);
+    }
+
+    .conditional-group.show {
+      display: block;
+      animation: slideDown 0.3s ease-out;
+    }
+
+    @keyframes slideDown {
+      from {
+        opacity: 0;
+        transform: translateY(-10px);
+      }
+      to {
+        opacity: 1;
+        transform: translateY(0);
+      }
     }
 
     /* Mobile Optimizations */
@@ -353,6 +500,16 @@
       .form-section {
         padding: 20px 16px;
       }
+
+      .paramedic-section {
+        flex-direction: column;
+        text-align: center;
+      }
+
+      .paramedic-section img {
+        width: 100px;
+        height: 100px;
+      }
     }
 
     /* Touch Feedback */
@@ -367,9 +524,9 @@
   <!-- Sticky Banner -->
   <div class="banner">
     <div class="brand">
-      <img src="/images/car-crash-lawyer-ai-80.webp" alt="Logo" class="logo">
+      <img src="/images/car-crash-lawyer-ai-80.webp" alt="Car Crash Lawyer AI" class="logo">
       <h1>Car Crash Lawyer AI</h1>
-      <p class="tagline">Legal Incident Report</p>
+      <p class="tagline">Your Legal First Responder</p>
     </div>
     <div class="progress-container">
       <div class="progress-bar"></div>
@@ -380,161 +537,191 @@
   <!-- Main Content -->
   <div class="container">
     <div class="page-header">
-      <h2>🚑 Safety Check & Basic Information</h2>
-      <p>Please provide your personal details and when the accident occurred</p>
+      <h2>🏥 Medical Information</h2>
+      <p>Help us understand any injuries or medical attention required</p>
     </div>
 
-    <!-- Emergency Banner (shown conditionally) -->
-    <div class="emergency-banner" id="emergencyBanner">
-      <h3>
-        <span style="font-size: 2rem;">🚨</span>
-        Emergency Situation Detected
-      </h3>
-      <p>
-        If you or anyone else is injured or in danger, please stop completing this form
-        and call <strong>999</strong> immediately. This form is not a substitute for
-        emergency medical attention.
-      </p>
-    </div>
-
-    <!-- Safety Status -->
+    <!-- Section 2: Medical Information -->
     <div class="form-section">
-      <h3>🛡️ Safety Status</h3>
+      <h3>🚑 Medical Attention</h3>
+
       <div class="form-group">
         <label>
-          Is everyone safe right now?
+          Do you need Medical Attention?
           <span class="required">*</span>
         </label>
+        <p class="help-text" style="margin-bottom: 12px;">Select all that apply</p>
         <div class="radio-group">
           <label>
-            <input type="radio" name="safetyStatus" value="all_safe" required>
-            <span>✅ Everyone is safe</span>
+            <input type="checkbox" name="medical_attention_needed_yes" value="true">
+            <span>Yes - I need or have received medical attention</span>
           </label>
           <label>
-            <input type="radio" name="safetyStatus" value="injured" required>
-            <span>🩹 Someone is injured but not life-threatening</span>
-          </label>
-          <label>
-            <input type="radio" name="safetyStatus" value="danger" required>
-            <span>🚨 Emergency - someone needs immediate help</span>
+            <input type="checkbox" name="medical_attention_needed_no" value="true">
+            <span>No - No medical attention needed</span>
           </label>
         </div>
-        <p class="help-text">If this is an emergency, call 999 immediately</p>
+      </div>
+
+      <!-- Conditional Fields (shown when medical attention needed) -->
+      <div class="conditional-group" id="medicalDetailsGroup">
+        <!-- Paramedic Support Message -->
+        <div class="paramedic-section">
+          <img src="/images/paramedic.png" alt="Paramedic" onerror="this.style.display='none'">
+          <div class="message">
+            <h4>✓ Medical Support Available</h4>
+            <p>We understand you need medical attention. Please provide accurate details below so we can ensure you receive proper care and support for your claim.</p>
+          </div>
+        </div>
+
+        <div class="form-group">
+          <label for="medical_injury_details">
+            Please provide Details of any injuries:
+            <span class="required">*</span>
+          </label>
+          <textarea
+            id="medical_injury_details"
+            name="medical_injury_details"
+            placeholder="Describe the injuries sustained (e.g., whiplash, bruising, cuts, broken bones, etc.)"
+          ></textarea>
+          <p class="help-text">Be as specific as possible about the location and nature of injuries</p>
+        </div>
+
+        <div class="form-group">
+          <label for="medical_injury_severity">
+            Severity of Injuries
+            <span class="required">*</span>
+          </label>
+          <select id="medical_injury_severity" name="medical_injury_severity">
+            <option value="">Select severity level</option>
+            <option value="minor">Minor - No treatment needed</option>
+            <option value="moderate">Moderate - Treatment recommended</option>
+            <option value="serious">Serious - Medical attention required</option>
+            <option value="severe">Severe - Immediate medical attention required</option>
+            <option value="critical">Critical - Life-threatening</option>
+          </select>
+        </div>
+
+        <div class="form-group">
+          <label for="medical_hospital_name">
+            Hospital or Medical Center Name
+          </label>
+          <input
+            type="text"
+            id="medical_hospital_name"
+            name="medical_hospital_name"
+            placeholder="e.g., Royal London Hospital, NHS Walk-in Centre"
+          >
+          <p class="help-text">Optional - If you attended or plan to attend</p>
+        </div>
+
+        <div class="form-group">
+          <label>
+            Ambulance Called?
+            <span class="required">*</span>
+          </label>
+          <p class="help-text" style="margin-bottom: 12px;">Select all that apply</p>
+          <div class="radio-group">
+            <label>
+              <input type="checkbox" name="medical_ambulance_called_yes" value="true">
+              <span>Yes - Ambulance was called</span>
+            </label>
+            <label>
+              <input type="checkbox" name="medical_ambulance_called_no" value="true">
+              <span>No - No ambulance called</span>
+            </label>
+          </div>
+        </div>
+
+        <div class="form-group">
+          <label for="medical_treatment_received">
+            Treatment Received
+          </label>
+          <textarea
+            id="medical_treatment_received"
+            name="medical_treatment_received"
+            placeholder="Describe any treatment or medication administered (e.g., painkillers, X-rays, stitches, etc.)"
+          ></textarea>
+          <p class="help-text">Include any first aid, paramedic care, or hospital treatment</p>
+        </div>
       </div>
     </div>
 
-    <!-- Personal Information -->
+    <!-- Section 3: Medical Symptoms -->
     <div class="form-section">
-      <h3>👤 Your Details</h3>
+      <h3>🩺 Are you Suffering with any of the Following?</h3>
+      <p style="margin-bottom: 8px; color: var(--danger); font-size: 1rem; font-weight: 700;">
+        Very Very Important (select all appropriate)!
+      </p>
+      <p style="margin-bottom: 16px; color: var(--text-muted); font-size: 0.938rem;">
+        Please be completely honest.*
+      </p>
 
-      <div class="form-group">
-        <label for="fullName">
-          Full Name
-          <span class="required">*</span>
-        </label>
-        <input
-          type="text"
-          id="fullName"
-          name="fullName"
-          required
-          placeholder="e.g. John Smith"
-          autocomplete="name"
-        >
-      </div>
+      <div class="checkbox-group">
+        <div class="checkbox-item">
+          <input type="checkbox" id="symptom_chest_pain" name="medical_symptom_chest_pain" value="true">
+          <label for="symptom_chest_pain">Chest Pain</label>
+        </div>
 
-      <div class="form-group">
-        <label for="dateOfBirth">
-          Date of Birth
-          <span class="required">*</span>
-        </label>
-        <input
-          type="date"
-          id="dateOfBirth"
-          name="dateOfBirth"
-          required
-          max=""
-        >
-        <p class="help-text">Format: DD/MM/YYYY</p>
-      </div>
+        <div class="checkbox-item">
+          <input type="checkbox" id="symptom_uncontrolled_bleeding" name="medical_symptom_uncontrolled_bleeding" value="true">
+          <label for="symptom_uncontrolled_bleeding">Uncontrolled Bleeding</label>
+        </div>
 
-      <div class="form-group">
-        <label for="phone">
-          Phone Number
-          <span class="required">*</span>
-        </label>
-        <input
-          type="tel"
-          id="phone"
-          name="phone"
-          required
-          placeholder="+44 7700 900000"
-          autocomplete="tel"
-        >
-        <p class="help-text">Include country code (+44 for UK)</p>
-      </div>
+        <div class="checkbox-item">
+          <input type="checkbox" id="symptom_breathlessness" name="medical_symptom_breathlessness" value="true">
+          <label for="symptom_breathlessness">Breathlessness</label>
+        </div>
 
-      <div class="form-group">
-        <label for="email">
-          Email Address
-          <span class="required">*</span>
-        </label>
-        <input
-          type="email"
-          id="email"
-          name="email"
-          required
-          placeholder="your@email.com"
-          autocomplete="email"
-        >
-      </div>
+        <div class="checkbox-item">
+          <input type="checkbox" id="symptom_limb_weakness" name="medical_symptom_limb_weakness" value="true">
+          <label for="symptom_limb_weakness">Limb Weakness or changes in sensation</label>
+        </div>
 
-      <div class="form-group">
-        <label for="address">
-          Home Address
-          <span class="required">*</span>
-        </label>
-        <input
-          type="text"
-          id="address"
-          name="address"
-          required
-          placeholder="123 Main Street, London, SW1A 1AA"
-          autocomplete="street-address"
-        >
-      </div>
-    </div>
+        <div class="checkbox-item">
+          <input type="checkbox" id="symptom_dizziness" name="medical_symptom_dizziness" value="true">
+          <label for="symptom_dizziness">Dizziness</label>
+        </div>
 
-    <!-- Accident Date/Time -->
-    <div class="form-section">
-      <h3>📅 When Did This Happen?</h3>
+        <div class="checkbox-item">
+          <input type="checkbox" id="symptom_loss_of_consciousness" name="medical_symptom_loss_of_consciousness" value="true">
+          <label for="symptom_loss_of_consciousness">Loss of Consciousness</label>
+        </div>
 
-      <div class="form-group">
-        <label for="accidentDate">
-          Date of Accident
-          <span class="required">*</span>
-        </label>
-        <input
-          type="date"
-          id="accidentDate"
-          name="accidentDate"
-          required
-          max=""
-        >
-        <p class="help-text">The date the accident occurred</p>
-      </div>
+        <div class="checkbox-item">
+          <input type="checkbox" id="symptom_severe_headache" name="medical_symptom_severe_headache" value="true">
+          <label for="symptom_severe_headache">Severe Headache</label>
+        </div>
 
-      <div class="form-group">
-        <label for="accidentTime">
-          Time of Accident
-          <span class="required">*</span>
-        </label>
-        <input
-          type="time"
-          id="accidentTime"
-          name="accidentTime"
-          required
-        >
-        <p class="help-text">Approximate time (24-hour format)</p>
+        <div class="checkbox-item">
+          <input type="checkbox" id="symptom_change_in_vision" name="medical_symptom_change_in_vision" value="true">
+          <label for="symptom_change_in_vision">Change in Vision</label>
+        </div>
+
+        <div class="checkbox-item">
+          <input type="checkbox" id="symptom_abdominal_pain" name="medical_symptom_abdominal_pain" value="true">
+          <label for="symptom_abdominal_pain">Abdominal Pain</label>
+        </div>
+
+        <div class="checkbox-item">
+          <input type="checkbox" id="symptom_abdominal_bruising" name="medical_symptom_abdominal_bruising" value="true">
+          <label for="symptom_abdominal_bruising">Abdominal Bruising</label>
+        </div>
+
+        <div class="checkbox-item">
+          <input type="checkbox" id="symptom_limb_pain_mobility" name="medical_symptom_limb_pain_mobility" value="true">
+          <label for="symptom_limb_pain_mobility">Limb pain that's impeding mobility</label>
+        </div>
+
+        <div class="checkbox-item">
+          <input type="checkbox" id="symptom_life_threatening" name="medical_symptom_life_threatening" value="true">
+          <label for="symptom_life_threatening">Any other concerns that a life or limb threatening injury has occurred</label>
+        </div>
+
+        <div class="checkbox-item">
+          <input type="checkbox" id="symptom_none" name="medical_symptom_none" value="true">
+          <label for="symptom_none">None of these I feel fine and am ready to continue</label>
+        </div>
       </div>
     </div>
 
@@ -551,55 +738,70 @@
 
   <script>
     // Elements
-    const form = document.querySelector('.container');
     const backBtn = document.getElementById('backBtn');
     const nextBtn = document.getElementById('nextBtn');
-    const emergencyBanner = document.getElementById('emergencyBanner');
-    const safetyRadios = document.querySelectorAll('input[name="safetyStatus"]');
+    const medicalAttentionYesCheckbox = document.querySelector('input[name="medical_attention_needed_yes"]');
+    const medicalAttentionNoCheckbox = document.querySelector('input[name="medical_attention_needed_no"]');
+    const medicalDetailsGroup = document.getElementById('medicalDetailsGroup');
 
-    // Set max date for DOB and accident date (today)
-    const today = new Date().toISOString().split('T')[0];
-    document.getElementById('dateOfBirth').setAttribute('max', today);
-    document.getElementById('accidentDate').setAttribute('max', today);
+    // Show/hide conditional fields based on medical attention needed
+    function updateMedicalFields() {
+      if (medicalAttentionYesCheckbox.checked) {
+        medicalDetailsGroup.classList.add('show');
+        // Make conditional fields required
+        document.getElementById('medical_injury_details').required = true;
+        document.getElementById('medical_injury_severity').required = true;
+      } else {
+        medicalDetailsGroup.classList.remove('show');
+        // Make conditional fields optional
+        document.getElementById('medical_injury_details').required = false;
+        document.getElementById('medical_injury_severity').required = false;
+        // Clear conditional field values
+        document.getElementById('medical_injury_details').value = '';
+        document.getElementById('medical_injury_severity').value = '';
+        document.getElementById('medical_hospital_name').value = '';
+        document.querySelector('input[name="medical_ambulance_called_yes"]').checked = false;
+        document.querySelector('input[name="medical_ambulance_called_no"]').checked = false;
+        document.getElementById('medical_treatment_received').value = '';
+      }
+    }
 
-    // Show emergency banner if injured or danger selected
-    safetyRadios.forEach(radio => {
-      radio.addEventListener('change', function() {
-        if (this.value === 'injured' || this.value === 'danger') {
-          emergencyBanner.classList.add('show');
-          window.scrollTo({ top: 0, behavior: 'smooth' });
-        } else {
-          emergencyBanner.classList.remove('show');
-        }
-      });
-    });
+    medicalAttentionYesCheckbox.addEventListener('change', updateMedicalFields);
+    medicalAttentionNoCheckbox.addEventListener('change', updateMedicalFields);
 
     // Validate form
     function validateForm() {
-      const safetyStatus = document.querySelector('input[name="safetyStatus"]:checked');
-      const fullName = document.getElementById('fullName').value.trim();
-      const dateOfBirth = document.getElementById('dateOfBirth').value;
-      const phone = document.getElementById('phone').value.trim();
-      const email = document.getElementById('email').value.trim();
-      const address = document.getElementById('address').value.trim();
-      const accidentDate = document.getElementById('accidentDate').value;
-      const accidentTime = document.getElementById('accidentTime').value;
+      const medicalAttentionYes = document.querySelector('input[name="medical_attention_needed_yes"]').checked;
+      const medicalAttentionNo = document.querySelector('input[name="medical_attention_needed_no"]').checked;
 
-      if (!safetyStatus) {
-        alert('Please select your current safety status.');
+      if (!medicalAttentionYes && !medicalAttentionNo) {
+        alert('Please indicate whether you need medical attention.');
         return false;
       }
 
-      if (!fullName || !dateOfBirth || !phone || !email || !address || !accidentDate || !accidentTime) {
-        alert('Please complete all required fields.');
-        return false;
-      }
+      // If medical attention needed, validate conditional fields
+      if (medicalAttentionYes) {
+        const injuryDetails = document.getElementById('medical_injury_details').value.trim();
+        const injurySeverity = document.getElementById('medical_injury_severity').value;
+        const ambulanceYes = document.querySelector('input[name="medical_ambulance_called_yes"]').checked;
+        const ambulanceNo = document.querySelector('input[name="medical_ambulance_called_no"]').checked;
 
-      // Basic email validation
-      const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
-      if (!emailRegex.test(email)) {
-        alert('Please enter a valid email address.');
-        return false;
+        if (!injuryDetails) {
+          alert('Please provide details of the injuries.');
+          document.getElementById('medical_injury_details').focus();
+          return false;
+        }
+
+        if (!injurySeverity) {
+          alert('Please select the severity of injuries.');
+          document.getElementById('medical_injury_severity').focus();
+          return false;
+        }
+
+        if (!ambulanceYes && !ambulanceNo) {
+          alert('Please indicate whether an ambulance was called.');
+          return false;
+        }
       }
 
       return true;
@@ -611,16 +813,34 @@
         return;
       }
 
-      // Save data to session storage
+      // Collect symptoms (checkboxes)
+      const symptoms = {
+        medical_symptom_chest_pain: document.getElementById('symptom_chest_pain').checked,
+        medical_symptom_uncontrolled_bleeding: document.getElementById('symptom_uncontrolled_bleeding').checked,
+        medical_symptom_breathlessness: document.getElementById('symptom_breathlessness').checked,
+        medical_symptom_limb_weakness: document.getElementById('symptom_limb_weakness').checked,
+        medical_symptom_dizziness: document.getElementById('symptom_dizziness').checked,
+        medical_symptom_loss_of_consciousness: document.getElementById('symptom_loss_of_consciousness').checked,
+        medical_symptom_severe_headache: document.getElementById('symptom_severe_headache').checked,
+        medical_symptom_change_in_vision: document.getElementById('symptom_change_in_vision').checked,
+        medical_symptom_abdominal_pain: document.getElementById('symptom_abdominal_pain').checked,
+        medical_symptom_abdominal_bruising: document.getElementById('symptom_abdominal_bruising').checked,
+        medical_symptom_limb_pain_mobility: document.getElementById('symptom_limb_pain_mobility').checked,
+        medical_symptom_life_threatening: document.getElementById('symptom_life_threatening').checked,
+        medical_symptom_none: document.getElementById('symptom_none').checked
+      };
+
+      // Build page data
       const pageData = {
-        safety_status: document.querySelector('input[name="safetyStatus"]:checked').value,
-        full_name: document.getElementById('fullName').value.trim(),
-        date_of_birth: document.getElementById('dateOfBirth').value,
-        phone: document.getElementById('phone').value.trim(),
-        email: document.getElementById('email').value.trim().toLowerCase(),
-        address: document.getElementById('address').value.trim(),
-        accident_date: document.getElementById('accidentDate').value,
-        accident_time: document.getElementById('accidentTime').value,
+        medical_attention_needed_yes: document.querySelector('input[name="medical_attention_needed_yes"]').checked,
+        medical_attention_needed_no: document.querySelector('input[name="medical_attention_needed_no"]').checked,
+        medical_injury_details: document.getElementById('medical_injury_details').value.trim(),
+        medical_injury_severity: document.getElementById('medical_injury_severity').value,
+        medical_hospital_name: document.getElementById('medical_hospital_name').value.trim(),
+        medical_ambulance_called_yes: document.querySelector('input[name="medical_ambulance_called_yes"]').checked,
+        medical_ambulance_called_no: document.querySelector('input[name="medical_ambulance_called_no"]').checked,
+        medical_treatment_received: document.getElementById('medical_treatment_received').value.trim(),
+        ...symptoms,
         completed_at: new Date().toISOString()
       };
 
@@ -644,27 +864,43 @@
         try {
           const data = JSON.parse(saved);
 
-          // Restore safety status
-          if (data.safety_status) {
-            const radio = document.querySelector(`input[name="safetyStatus"][value="${data.safety_status}"]`);
-            if (radio) {
-              radio.checked = true;
-              if (data.safety_status === 'injured' || data.safety_status === 'danger') {
-                emergencyBanner.classList.add('show');
-              }
-            }
+          // Restore medical attention
+          if (data.medical_attention_needed_yes) {
+            document.querySelector('input[name="medical_attention_needed_yes"]').checked = true;
+            medicalDetailsGroup.classList.add('show');
+            document.getElementById('medical_injury_details').required = true;
+            document.getElementById('medical_injury_severity').required = true;
+          }
+          if (data.medical_attention_needed_no) {
+            document.querySelector('input[name="medical_attention_needed_no"]').checked = true;
           }
 
-          // Restore personal details
-          if (data.full_name) document.getElementById('fullName').value = data.full_name;
-          if (data.date_of_birth) document.getElementById('dateOfBirth').value = data.date_of_birth;
-          if (data.phone) document.getElementById('phone').value = data.phone;
-          if (data.email) document.getElementById('email').value = data.email;
-          if (data.address) document.getElementById('address').value = data.address;
+          // Restore conditional fields
+          if (data.medical_injury_details) document.getElementById('medical_injury_details').value = data.medical_injury_details;
+          if (data.medical_injury_severity) document.getElementById('medical_injury_severity').value = data.medical_injury_severity;
+          if (data.medical_hospital_name) document.getElementById('medical_hospital_name').value = data.medical_hospital_name;
+          if (data.medical_ambulance_called_yes) {
+            document.querySelector('input[name="medical_ambulance_called_yes"]').checked = true;
+          }
+          if (data.medical_ambulance_called_no) {
+            document.querySelector('input[name="medical_ambulance_called_no"]').checked = true;
+          }
+          if (data.medical_treatment_received) document.getElementById('medical_treatment_received').value = data.medical_treatment_received;
 
-          // Restore accident date/time
-          if (data.accident_date) document.getElementById('accidentDate').value = data.accident_date;
-          if (data.accident_time) document.getElementById('accidentTime').value = data.accident_time;
+          // Restore symptoms
+          if (data.medical_symptom_chest_pain) document.getElementById('symptom_chest_pain').checked = true;
+          if (data.medical_symptom_uncontrolled_bleeding) document.getElementById('symptom_uncontrolled_bleeding').checked = true;
+          if (data.medical_symptom_breathlessness) document.getElementById('symptom_breathlessness').checked = true;
+          if (data.medical_symptom_limb_weakness) document.getElementById('symptom_limb_weakness').checked = true;
+          if (data.medical_symptom_dizziness) document.getElementById('symptom_dizziness').checked = true;
+          if (data.medical_symptom_loss_of_consciousness) document.getElementById('symptom_loss_of_consciousness').checked = true;
+          if (data.medical_symptom_severe_headache) document.getElementById('symptom_severe_headache').checked = true;
+          if (data.medical_symptom_change_in_vision) document.getElementById('symptom_change_in_vision').checked = true;
+          if (data.medical_symptom_abdominal_pain) document.getElementById('symptom_abdominal_pain').checked = true;
+          if (data.medical_symptom_abdominal_bruising) document.getElementById('symptom_abdominal_bruising').checked = true;
+          if (data.medical_symptom_limb_pain_mobility) document.getElementById('symptom_limb_pain_mobility').checked = true;
+          if (data.medical_symptom_life_threatening) document.getElementById('symptom_life_threatening').checked = true;
+          if (data.medical_symptom_none) document.getElementById('symptom_none').checked = true;
 
           console.log('✅ Page 2 data restored');
         } catch (e) {
@@ -673,7 +909,7 @@
       }
     });
 
-    console.log('📋 Incident Form - Page 2: Safety Check & Basic Info loaded');
+    console.log('📋 Incident Form - Page 2: Medical Information loaded');
   </script>
 </body>
 </html>
