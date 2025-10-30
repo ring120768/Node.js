@@ -331,6 +331,98 @@
       color: #4338ca;
       border: 1px solid rgba(99, 102, 241, 0.2);
     }
+
+    /* Hover Tooltip for Add Image Button */
+    .btn-with-tooltip {
+      position: relative;
+    }
+
+    .hover-tooltip {
+      position: absolute;
+      bottom: calc(100% + 12px);
+      left: 50%;
+      transform: translateX(-50%);
+      background: white;
+      border: 2px solid var(--accent);
+      border-radius: 12px;
+      padding: 16px;
+      box-shadow: 0 8px 24px rgba(0, 0, 0, 0.15);
+      opacity: 0;
+      visibility: hidden;
+      transition: all 0.3s ease;
+      pointer-events: none;
+      z-index: 100;
+      min-width: 320px;
+      max-width: 90vw;
+    }
+
+    .btn-with-tooltip:hover .hover-tooltip {
+      opacity: 1;
+      visibility: visible;
+      bottom: calc(100% + 16px);
+    }
+
+    .tooltip-content {
+      display: flex;
+      align-items: center;
+      gap: 16px;
+    }
+
+    .tooltip-image {
+      width: 80px;
+      height: 80px;
+      object-fit: contain;
+      flex-shrink: 0;
+    }
+
+    .tooltip-text {
+      flex: 1;
+    }
+
+    .tooltip-title {
+      font-weight: 600;
+      color: var(--accent);
+      margin-bottom: 6px;
+      font-size: 0.938rem;
+      display: flex;
+      align-items: center;
+      gap: 6px;
+    }
+
+    .tooltip-description {
+      font-size: 0.813rem;
+      color: var(--text-dark);
+      line-height: 1.5;
+      margin: 0;
+    }
+
+    /* Tooltip arrow */
+    .hover-tooltip::after {
+      content: '';
+      position: absolute;
+      top: 100%;
+      left: 50%;
+      transform: translateX(-50%);
+      border: 8px solid transparent;
+      border-top-color: var(--accent);
+    }
+
+    /* Mobile adjustments */
+    @media (max-width: 480px) {
+      .hover-tooltip {
+        min-width: 280px;
+        padding: 12px;
+      }
+
+      .tooltip-image {
+        width: 60px;
+        height: 60px;
+      }
+
+      .tooltip-content {
+        gap: 12px;
+      }
+    }
   </style>
 </head>
 <body>
@@ -382,11 +474,27 @@
         <div id="images-container" style="display: flex; flex-direction: column; gap: 12px; margin-bottom: 16px;">
         </div>
 
-        <button type="button" id="add-image-btn" class="btn btn-secondary" style="width: 100%;">
-          <span>📷</span>
-          <span>Add Image</span>
-          <span id="image-count">(0/5)</span>
-        </button>
+        <div class="btn-with-tooltip" style="width: 100%;">
+          <button type="button" id="add-image-btn" class="btn btn-secondary" style="width: 100%;">
+            <span>📷</span>
+            <span>Add Image</span>
+            <span id="image-count">(0/5)</span>
+          </button>
+
+          <!-- Hover Tooltip -->
+          <div class="hover-tooltip">
+            <div class="tooltip-content">
+              <img src="/images/Driving Licence.png" alt="Driving Licence" class="tooltip-image">
+              <div class="tooltip-text">
+                <div class="tooltip-title">
+                  <span>💡</span>
+                  <span>Pro Tip</span>
+                </div>
+                <p class="tooltip-description">If the other driver is cooperative, politely ask to photograph their driving licence. You can say: <strong>"My app is requesting this documentation"</strong></p>
+              </div>
+            </div>
+          </div>
+        </div>
       </div>
     </div>
 
