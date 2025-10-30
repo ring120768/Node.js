@@ -291,6 +291,16 @@
       transform: none;
     }
 
+    #add-witness-btn:hover {
+      transform: translateY(-2px);
+      box-shadow: 0 6px 16px rgba(53, 122, 148, 0.4);
+      background: var(--accent-hover);
+    }
+
+    #add-witness-btn:active {
+      transform: translateY(0);
+    }
+
     @media (max-width: 768px) {
       body {
         padding: 0;
@@ -412,7 +422,16 @@
       <!-- Additional witness note -->
       <div class="alert alert-info">
         <span>💡</span>
-        <span><strong>Note:</strong> If there were multiple witnesses, you can add additional witnesses after submission from the dashboard. Focus on the primary witness here.</span>
+        <span><strong>Note:</strong> If there were multiple witnesses, you can add them using the button below.</span>
+      </div>
+
+      <!-- Add Another Witness Button -->
+      <div id="add-witness-container" style="margin: 32px 0; text-align: center; display: none;">
+        <button type="button" id="add-witness-btn" style="background: var(--accent); color: white; padding: 16px 32px; font-size: 1rem; font-weight: 600; border-radius: 12px; border: none; cursor: pointer; display: inline-flex; align-items: center; gap: 12px; box-shadow: 0 4px 12px rgba(53, 122, 148, 0.3); transition: all 0.2s ease;">
+          <span style="font-size: 1.5rem;">➕</span>
+          <span>Add Another Witness</span>
+        </button>
+        <p style="margin-top: 12px; color: var(--text-muted); font-size: 0.875rem;">If there were multiple witnesses to the incident</p>
       </div>
 
       <!-- Navigation -->
@@ -469,8 +488,11 @@
         // Show/hide witness details
         if (value === 'yes') {
           witnessDetailsContainer.classList.add('visible');
+          // Show add witness button
+          document.getElementById('add-witness-container').style.display = 'block';
         } else {
           witnessDetailsContainer.classList.remove('visible');
+          document.getElementById('add-witness-container').style.display = 'none';
           // Clear all witness fields
           witnessNameInput.value = '';
           witnessPhoneInput.value = '';
@@ -580,6 +602,67 @@
         console.error('Error loading data:', error);
       }
     }
+
+    // Add Another Witness handler
+    document.getElementById('add-witness-btn').addEventListener('click', () => {
+      // Get existing additional witnesses
+      let additionalWitnesses = [];
+      const stored = sessionStorage.getItem('additional_witnesses');
+      if (stored) {
+        try {
+          additionalWitnesses = JSON.parse(stored);
+        } catch (e) {
+          console.error('Error parsing additional witnesses:', e);
+          additionalWitnesses = [];
+        }
+      }
+
+      // Save current witness data
+      const currentWitnessData = {
+        witness_number: additionalWitnesses.length + 2, // Witness 1 is primary, 2+ are additional
+        witness_name: witnessNameInput.value,
+        witness_phone: witnessPhoneInput.value,
+        witness_email: witnessEmailInput.value,
+        witness_statement: witnessStatementTextarea.value,
+        saved_at: new Date().toISOString()
+      };
+
+      additionalWitnesses.push(currentWitnessData);
+      sessionStorage.setItem('additional_witnesses', JSON.stringify(additionalWitnesses));
+
+      console.log(`✅ Witness ${currentWitnessData.witness_number} saved. Total witnesses: ${additionalWitnesses.length + 1}`);
+
+      // Show confirmation message
+      const witnessNum = currentWitnessData.witness_number;
+      const confirmMsg = document.createElement('div');
+      confirmMsg.style.cssText = 'position: fixed; top: 80px; left: 50%; transform: translateX(-50%); background: var(--success); color: white; padding: 16px 24px; border-radius: 12px; box-shadow: 0 4px 16px rgba(0,0,0,0.2); z-index: 1000; font-weight: 600;';
+      confirmMsg.innerHTML = `<span style="font-size: 1.2rem; margin-right: 8px;">✓</span> Witness ${witnessNum} saved! Now add witness ${witnessNum + 1}`;
+      document.body.appendChild(confirmMsg);
+
+      setTimeout(() => {
+        confirmMsg.remove();
+      }, 2000);
+
+      // Clear form for next witness
+      witnessNameInput.value = '';
+      witnessPhoneInput.value = '';
+      witnessEmailInput.value = '';
+      witnessStatementTextarea.value = '';
+      statementCharCounter.textContent = '0 / 1000 characters';
+
+      // Reset validation
+      validateForm();
+
+      // Update button text to show count
+      const addBtn = document.getElementById('add-witness-btn');
+      const existingBadge = addBtn.querySelector('span:last-child');
+      if (existingBadge.textContent === 'Add Another Witness') {
+        existingBadge.textContent = `Add Witness ${witnessNum + 1}`;
+      }
+
+      // Scroll to top smoothly
+      window.scrollTo({ top: 0, behavior: 'smooth' });
+    });
 
     // Navigation
     document.getElementById('back-btn').addEventListener('click', () => {
