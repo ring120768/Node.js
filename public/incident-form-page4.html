@@ -245,15 +245,42 @@
     }
 
     .checkbox-group input[type="checkbox"] {
-      width: 22px;
-      height: 22px;
-      min-width: 22px;
+      appearance: none;
+      -webkit-appearance: none;
+      width: 24px;
+      height: 24px;
+      min-width: 24px;
       cursor: pointer;
-      accent-color: var(--accent);
+      border: 2px solid var(--border);
+      border-radius: 6px;
+      background: white;
+      position: relative;
+      transition: all 0.2s ease;
+    }
+
+    .checkbox-group input[type="checkbox"]:hover {
+      border-color: var(--success);
+    }
+
+    .checkbox-group input[type="checkbox"]:checked {
+      background: var(--success);
+      border-color: var(--success);
+    }
+
+    .checkbox-group input[type="checkbox"]:checked::after {
+      content: '✓';
+      position: absolute;
+      top: 50%;
+      left: 50%;
+      transform: translate(-50%, -50%);
+      color: white;
+      font-size: 16px;
+      font-weight: bold;
+      line-height: 1;
     }
 
     .checkbox-group input[type="checkbox"]:checked + span {
-      color: var(--accent);
+      color: var(--success);
       font-weight: 600;
     }
 
