@@ -443,24 +443,141 @@
 
     <!-- Junction Information -->
     <div class="form-section">
-      <h3>🔀 Junction / Intersection</h3>
+      <h3>🔀 Junction / Intersection Details</h3>
 
+      <!-- Primary: Was it at a junction? -->
       <div class="form-group">
         <label for="junctionType">
-          Type of junction
+          What type of junction was it?
           <span class="required">*</span>
         </label>
         <select id="junctionType" name="junctionType" required>
           <option value="">Select junction type...</option>
           <option value="not_junction">Not at or near a junction</option>
-          <option value="roundabout">Roundabout</option>
-          <option value="mini_roundabout">Mini-roundabout</option>
-          <option value="t_junction">T-junction or Y-junction</option>
-          <option value="crossroads">Crossroads</option>
-          <option value="slip_road">Slip road / on-ramp / off-ramp</option>
-          <option value="traffic_lights">Traffic lights</option>
-          <option value="other">Other junction type</option>
+          <option value="t_junction">T-junction</option>
+          <option value="crossroads">Crossroads (4-way junction)</option>
+          <option value="y_junction">Y-junction</option>
+          <option value="staggered_junction">Staggered junction</option>
+          <option value="roundabout">Roundabout (single-lane)</option>
+          <option value="mini_roundabout">Mini roundabout</option>
+          <option value="multi_lane_roundabout">Multi-lane roundabout</option>
+          <option value="slip_road">Slip road (motorway entry/exit)</option>
+          <option value="box_junction">Box junction (yellow hatched area)</option>
+          <option value="not_sure">Not sure</option>
         </select>
+        <p class="help-text">Select the junction type that best describes the location</p>
+      </div>
+
+      <!-- Conditional: Junction Details (only if NOT "not_junction") -->
+      <div id="junctionDetailsGroup" style="display: none;">
+
+        <!-- Junction Control -->
+        <div class="form-group">
+          <label for="junctionControl">
+            What controlled this junction?
+            <span class="required">*</span>
+          </label>
+          <select id="junctionControl" name="junctionControl">
+            <option value="">Select control type...</option>
+            <option value="traffic_lights">Traffic lights</option>
+            <option value="stop_sign">Stop sign</option>
+            <option value="give_way_sign">Give Way sign or road markings</option>
+            <option value="uncontrolled">Uncontrolled (no signs or markings)</option>
+            <option value="not_sure">Not sure</option>
+          </select>
+          <p class="help-text">This helps determine right-of-way and liability</p>
+        </div>
+
+        <!-- Conditional: Traffic Light Status (only if "traffic_lights" selected) -->
+        <div id="trafficLightStatusGroup" class="form-group" style="display: none;">
+          <label>
+            What colour was the traffic light for your direction?
+            <span class="required">*</span>
+          </label>
+          <div class="radio-group">
+            <label>
+              <input type="radio" name="trafficLightStatus" value="green">
+              <span>Green</span>
+            </label>
+            <label>
+              <input type="radio" name="trafficLightStatus" value="amber">
+              <span>Amber</span>
+            </label>
+            <label>
+              <input type="radio" name="trafficLightStatus" value="red">
+              <span>Red</span>
+            </label>
+            <label>
+              <input type="radio" name="trafficLightStatus" value="green_filter">
+              <span>Green filter arrow (directional)</span>
+            </label>
+            <label>
+              <input type="radio" name="trafficLightStatus" value="not_working">
+              <span>Lights were not working</span>
+            </label>
+            <label>
+              <input type="radio" name="trafficLightStatus" value="not_sure">
+              <span>Not sure</span>
+            </label>
+          </div>
+          <p class="help-text">Critical for determining liability in traffic light violations</p>
+        </div>
+
+        <!-- User Manoeuvre -->
+        <div class="form-group">
+          <label for="userManoeuvre">
+            What were you doing when the collision occurred?
+            <span class="required">*</span>
+          </label>
+          <select id="userManoeuvre" name="userManoeuvre">
+            <option value="">Select your manoeuvre...</option>
+            <option value="going_straight">Going straight ahead</option>
+            <option value="turning_left">Turning left</option>
+            <option value="turning_right">Turning right</option>
+            <option value="waiting_to_turn_right">Waiting to turn right (in junction)</option>
+            <option value="waiting_at_line">Waiting at stop/give way line</option>
+            <option value="entering_from_minor">Entering junction from minor road</option>
+            <option value="already_in_junction">Already in junction when hit</option>
+            <option value="other">Other (describe in notes below)</option>
+          </select>
+          <p class="help-text">Your manoeuvre at the time of impact</p>
+        </div>
+
+        <!-- Visibility Factors (Optional) -->
+        <div class="form-group">
+          <label>
+            Were there any visibility issues?
+            <span style="color: var(--text-muted); font-weight: normal;">(Optional - select all that apply)</span>
+          </label>
+          <div class="checkbox-group">
+            <label>
+              <input type="checkbox" name="visibilityFactors" value="clear_visibility">
+              <span>Clear visibility - no issues</span>
+            </label>
+            <label>
+              <input type="checkbox" name="visibilityFactors" value="restricted_by_structure">
+              <span>Restricted by hedge, wall, or fence</span>
+            </label>
+            <label>
+              <input type="checkbox" name="visibilityFactors" value="restricted_by_vehicles">
+              <span>Restricted by parked vehicles</span>
+            </label>
+            <label>
+              <input type="checkbox" name="visibilityFactors" value="restricted_by_bend">
+              <span>Restricted by bend or corner</span>
+            </label>
+            <label>
+              <input type="checkbox" name="visibilityFactors" value="poor_weather">
+              <span>Poor weather (rain, fog, or snow)</span>
+            </label>
+            <label>
+              <input type="checkbox" name="visibilityFactors" value="poor_lighting">
+              <span>Dark or poor street lighting</span>
+            </label>
+          </div>
+          <p class="help-text">Visibility factors may affect liability determination</p>
+        </div>
+
       </div>
     </div>
 
@@ -552,6 +669,59 @@
       });
     });
 
+    // Progressive Disclosure: Junction Details
+    const junctionType = document.getElementById('junctionType');
+    const junctionDetailsGroup = document.getElementById('junctionDetailsGroup');
+    const junctionControl = document.getElementById('junctionControl');
+    const trafficLightStatusGroup = document.getElementById('trafficLightStatusGroup');
+    const trafficLightRadios = document.querySelectorAll('input[name="trafficLightStatus"]');
+
+    // Show/hide junction details based on junction type selection
+    junctionType.addEventListener('change', function() {
+      const selectedType = this.value;
+
+      if (selectedType === 'not_junction' || selectedType === '') {
+        // Hide all junction details if not at a junction
+        junctionDetailsGroup.style.display = 'none';
+
+        // Clear junction detail fields
+        junctionControl.value = '';
+        trafficLightRadios.forEach(radio => radio.checked = false);
+        document.getElementById('userManoeuvre').value = '';
+        document.querySelectorAll('input[name="visibilityFactors"]').forEach(cb => cb.checked = false);
+
+        // Remove required attributes when hidden
+        junctionControl.removeAttribute('required');
+        document.getElementById('userManoeuvre').removeAttribute('required');
+      } else {
+        // Show junction details for any junction type
+        junctionDetailsGroup.style.display = 'block';
+
+        // Add required attributes
+        junctionControl.setAttribute('required', 'required');
+        document.getElementById('userManoeuvre').setAttribute('required', 'required');
+      }
+    });
+
+    // Show/hide traffic light status based on junction control selection
+    junctionControl.addEventListener('change', function() {
+      const selectedControl = this.value;
+
+      if (selectedControl === 'traffic_lights') {
+        // Show traffic light status field
+        trafficLightStatusGroup.style.display = 'block';
+        // Make one of the radio buttons required (checked on validation)
+        trafficLightRadios.forEach(radio => radio.setAttribute('required', 'required'));
+      } else {
+        // Hide and clear traffic light status
+        trafficLightStatusGroup.style.display = 'none';
+        trafficLightRadios.forEach(radio => {
+          radio.checked = false;
+          radio.removeAttribute('required');
+        });
+      }
+    });
+
     // Validate form
     function validateForm() {
       const location = document.getElementById('location').value.trim();
@@ -575,6 +745,33 @@
       if (!junctionType) {
         alert('Please select the junction type.');
         return false;
+      }
+
+      // Validate junction details if at a junction
+      if (junctionType !== 'not_junction' && junctionType !== '') {
+        const junctionControl = document.getElementById('junctionControl').value;
+        const userManoeuvre = document.getElementById('userManoeuvre').value;
+
+        if (!junctionControl) {
+          alert('Please select what controlled the junction.');
+          document.getElementById('junctionControl').focus();
+          return false;
+        }
+
+        // If traffic lights selected, validate traffic light status
+        if (junctionControl === 'traffic_lights') {
+          const trafficLightStatus = document.querySelector('input[name="trafficLightStatus"]:checked');
+          if (!trafficLightStatus) {
+            alert('Please indicate what colour the traffic light was for your direction.');
+            return false;
+          }
+        }
+
+        if (!userManoeuvre) {
+          alert('Please select what you were doing when the collision occurred.');
+          document.getElementById('userManoeuvre').focus();
+          return false;
+        }
       }
 
       return true;
@@ -753,12 +950,24 @@
       const selectedConditions = Array.from(document.querySelectorAll('input[name="specialConditions"]:checked'))
         .map(cb => cb.value);
 
+      // Get selected visibility factors
+      const selectedVisibilityFactors = Array.from(document.querySelectorAll('input[name="visibilityFactors"]:checked'))
+        .map(cb => cb.value);
+
+      // Get traffic light status if applicable
+      const trafficLightRadio = document.querySelector('input[name="trafficLightStatus"]:checked');
+      const trafficLightStatus = trafficLightRadio ? trafficLightRadio.value : null;
+
       // Save data to session storage
       const pageData = {
         location: document.getElementById('location').value.trim(),
         what3words: document.getElementById('what3words').value.trim(),
         nearest_landmark: document.getElementById('nearestLandmark').value.trim(),
         junction_type: document.getElementById('junctionType').value,
+        junction_control: document.getElementById('junctionControl').value,
+        traffic_light_status: trafficLightStatus,
+        user_manoeuvre: document.getElementById('userManoeuvre').value,
+        visibility_factors: selectedVisibilityFactors,
         special_conditions: selectedConditions,
         completed_at: new Date().toISOString()
       };
@@ -788,8 +997,38 @@
           if (data.what3words) document.getElementById('what3words').value = data.what3words;
           if (data.nearest_landmark) document.getElementById('nearestLandmark').value = data.nearest_landmark;
 
-          // Restore junction
-          if (data.junction_type) document.getElementById('junctionType').value = data.junction_type;
+          // Restore junction type and trigger progressive disclosure
+          if (data.junction_type) {
+            document.getElementById('junctionType').value = data.junction_type;
+            // Trigger change event to show/hide junction details
+            junctionType.dispatchEvent(new Event('change'));
+          }
+
+          // Restore junction control and trigger progressive disclosure
+          if (data.junction_control) {
+            document.getElementById('junctionControl').value = data.junction_control;
+            // Trigger change event to show/hide traffic light status
+            junctionControl.dispatchEvent(new Event('change'));
+          }
+
+          // Restore traffic light status
+          if (data.traffic_light_status) {
+            const radioButton = document.querySelector(`input[name="trafficLightStatus"][value="${data.traffic_light_status}"]`);
+            if (radioButton) radioButton.checked = true;
+          }
+
+          // Restore user manoeuvre
+          if (data.user_manoeuvre) {
+            document.getElementById('userManoeuvre').value = data.user_manoeuvre;
+          }
+
+          // Restore visibility factors
+          if (data.visibility_factors && Array.isArray(data.visibility_factors)) {
+            data.visibility_factors.forEach(factor => {
+              const checkbox = document.querySelector(`input[name="visibilityFactors"][value="${factor}"]`);
+              if (checkbox) checkbox.checked = true;
+            });
+          }
 
           // Restore special conditions
           if (data.special_conditions && Array.isArray(data.special_conditions)) {
