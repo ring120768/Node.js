@@ -307,13 +307,6 @@
         let userId = null;
         let incidentId = null;
 
-        // Toggle consent checkbox and button state
-        function toggleConsent() {
-            const checkbox = document.getElementById('consentCheckbox');
-            checkbox.checked = !checkbox.checked;
-            updateSubmitButton();
-        }
-
         function updateSubmitButton() {
             const checkbox = document.getElementById('consentCheckbox');
             const submitBtn = document.getElementById('submitBtn');
@@ -467,8 +460,21 @@
             init();
 
             // Event listeners for CSP compliance (no inline onclick)
-            document.getElementById('consentCheckbox').addEventListener('change', updateSubmitButton);
-            document.getElementById('consentCheckboxWrapper').addEventListener('click', toggleConsent);
+            const checkbox = document.getElementById('consentCheckbox');
+            const wrapper = document.getElementById('consentCheckboxWrapper');
+
+            // Update button when checkbox changes
+            checkbox.addEventListener('change', updateSubmitButton);
+
+            // Allow clicking wrapper to toggle checkbox, but prevent double-toggle
+            wrapper.addEventListener('click', (e) => {
+                // Only toggle if clicking the wrapper itself, not the checkbox
+                if (e.target !== checkbox) {
+                    checkbox.checked = !checkbox.checked;
+                    updateSubmitButton();
+                }
+            });
+
             document.getElementById('backBtn').addEventListener('click', goBack);
             document.getElementById('submitBtn').addEventListener('click', submitDeclaration);
         });
