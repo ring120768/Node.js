@@ -1,0 +1,101 @@
+<!DOCTYPE html>
+<html lang="en-GB">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Page 6: Visibility Conditions - PDF Mockup</title>
+  <link rel="stylesheet" href="pdf-styles.css">
+</head>
+<body>
+  <!-- Navigation -->
+  <div class="navigation no-print">
+    <h2>PDF Mockup Preview</h2>
+    <a href="index.html">← All Pages</a>
+    <a href="page-05-road-type-traffic.html">← Page 5</a>
+    <a href="page-06-visibility.html" class="current">Page 6</a>
+    <a href="page-07-junction-infrastructure.html">Page 7 →</a>
+  </div>
+
+  <!-- PDF Page -->
+  <div class="pdf-page">
+    <!-- Header -->
+    <div class="pdf-header">
+      <img src="../images/logo.png" alt="Logo" class="header-logo">
+      <div class="header-title">
+        <h1>CAR CRASH LAWYER AI</h1>
+        <p>Incident Report</p>
+      </div>
+      <div class="header-page-number">Page 6 of 17</div>
+    </div>
+
+    <!-- Content -->
+    <div class="pdf-content">
+      <!-- Section 1: Visibility Levels -->
+      <section class="section">
+        <h2 class="section-title">Visibility Level (Select One)</h2>
+
+        <div class="checkbox-group single-column">
+          <div class="checkbox-item">
+            <div class="checkbox-box"></div>
+            <span class="checkbox-label">Good visibility</span>
+          </div>
+          <div class="checkbox-item">
+            <div class="checkbox-box"></div>
+            <span class="checkbox-label">Poor visibility</span>
+          </div>
+          <div class="checkbox-item">
+            <div class="checkbox-box"></div>
+            <span class="checkbox-label">Very poor visibility</span>
+          </div>
+          <div class="checkbox-item">
+            <div class="checkbox-box"></div>
+            <span class="checkbox-label">Severely restricted visibility</span>
+          </div>
+        </div>
+        <span class="field-help">visibility_* (4 checkboxes stored as array: visibility_levels[])</span>
+      </section>
+
+      <!-- Section 2: Road Markings Visibility -->
+      <section class="section">
+        <h2 class="section-title">Road Markings Visibility (Select One)</h2>
+
+        <div class="checkbox-group single-column">
+          <div class="checkbox-item">
+            <div class="checkbox-box"></div>
+            <span class="checkbox-label">Markings clearly visible</span>
+          </div>
+          <div class="checkbox-item">
+            <div class="checkbox-box"></div>
+            <span class="checkbox-label">Markings partially visible</span>
+          </div>
+          <div class="checkbox-item">
+            <div class="checkbox-box"></div>
+            <span class="checkbox-label">Markings not visible</span>
+          </div>
+        </div>
+        <span class="field-help">road_markings_visible_* (3 checkboxes)</span>
+      </section>
+
+      <!-- Section 3: Additional Visibility Factors -->
+      <section class="section">
+        <h2 class="section-title">Additional Visibility Factors</h2>
+
+        <div class="field-group">
+          <label class="field-label">Other Factors Affecting Visibility</label>
+          <textarea class="field-textarea" placeholder="e.g. Sun glare, dust, smoke, obstructions, condensation on windscreen"></textarea>
+          <span class="field-help">visibilityFactors</span>
+        </div>
+      </section>
+    </div>
+
+    <!-- Footer -->
+    <div class="pdf-footer">
+      <p class="footer-text">
+        Confidential Legal Document - Car Crash Lawyer AI<br>
+        For legal purposes only. Do not distribute without authorization.
+      </p>
+      <img src="../images/car-crash-lawyer-ai-450.webp" alt="Car Crash Lawyer AI" class="footer-logo">
+    </div>
+  </div>
+</body>
+</html>

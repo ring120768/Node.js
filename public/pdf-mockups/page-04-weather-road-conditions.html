@@ -1,0 +1,149 @@
+<!DOCTYPE html>
+<html lang="en-GB">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Page 4: Weather & Road Conditions - PDF Mockup</title>
+  <link rel="stylesheet" href="pdf-styles.css">
+</head>
+<body>
+  <!-- Navigation -->
+  <div class="navigation no-print">
+    <h2>PDF Mockup Preview</h2>
+    <a href="index.html">← All Pages</a>
+    <a href="page-03-vehicle-damage.html">← Page 3</a>
+    <a href="page-04-weather-road-conditions.html" class="current">Page 4</a>
+    <a href="page-05-road-type-traffic.html">Page 5 →</a>
+  </div>
+
+  <!-- PDF Page -->
+  <div class="pdf-page">
+    <!-- Header -->
+    <div class="pdf-header">
+      <img src="../images/logo.png" alt="Logo" class="header-logo">
+      <div class="header-title">
+        <h1>CAR CRASH LAWYER AI</h1>
+        <p>Incident Report</p>
+      </div>
+      <div class="header-page-number">Page 4 of 17</div>
+    </div>
+
+    <!-- Content -->
+    <div class="pdf-content">
+      <!-- Section 1: Weather Conditions -->
+      <section class="section">
+        <h2 class="section-title">Weather Conditions (Select All That Apply)</h2>
+
+        <div class="checkbox-group">
+          <div class="checkbox-item">
+            <div class="checkbox-box"></div>
+            <span class="checkbox-label">Clear</span>
+          </div>
+          <div class="checkbox-item">
+            <div class="checkbox-box"></div>
+            <span class="checkbox-label">Cloudy</span>
+          </div>
+          <div class="checkbox-item">
+            <div class="checkbox-box"></div>
+            <span class="checkbox-label">Bright sunlight</span>
+          </div>
+          <div class="checkbox-item">
+            <div class="checkbox-box"></div>
+            <span class="checkbox-label">Raining</span>
+          </div>
+          <div class="checkbox-item">
+            <div class="checkbox-box"></div>
+            <span class="checkbox-label">Drizzle</span>
+          </div>
+          <div class="checkbox-item">
+            <div class="checkbox-box"></div>
+            <span class="checkbox-label">Heavy rain</span>
+          </div>
+          <div class="checkbox-item">
+            <div class="checkbox-box"></div>
+            <span class="checkbox-label">Fog</span>
+          </div>
+          <div class="checkbox-item">
+            <div class="checkbox-box"></div>
+            <span class="checkbox-label">Snow</span>
+          </div>
+          <div class="checkbox-item">
+            <div class="checkbox-box"></div>
+            <span class="checkbox-label">Ice</span>
+          </div>
+          <div class="checkbox-item">
+            <div class="checkbox-box"></div>
+            <span class="checkbox-label">Hail</span>
+          </div>
+          <div class="checkbox-item">
+            <div class="checkbox-box"></div>
+            <span class="checkbox-label">Windy</span>
+          </div>
+          <div class="checkbox-item">
+            <div class="checkbox-box"></div>
+            <span class="checkbox-label">Thunder/Lightning</span>
+          </div>
+          <div class="checkbox-item">
+            <div class="checkbox-box"></div>
+            <span class="checkbox-label">Other weather</span>
+          </div>
+        </div>
+        <span class="field-help">weather_* (14 checkboxes stored as array: weather_conditions[])</span>
+      </section>
+
+      <!-- Section 2: Road Surface Conditions -->
+      <section class="section">
+        <h2 class="section-title">Road Surface Conditions (Select All That Apply)</h2>
+
+        <div class="checkbox-group">
+          <div class="checkbox-item">
+            <div class="checkbox-box"></div>
+            <span class="checkbox-label">Dry</span>
+          </div>
+          <div class="checkbox-item">
+            <div class="checkbox-box"></div>
+            <span class="checkbox-label">Wet</span>
+          </div>
+          <div class="checkbox-item">
+            <div class="checkbox-box"></div>
+            <span class="checkbox-label">Icy</span>
+          </div>
+          <div class="checkbox-item">
+            <div class="checkbox-box"></div>
+            <span class="checkbox-label">Snow covered</span>
+          </div>
+          <div class="checkbox-item">
+            <div class="checkbox-box"></div>
+            <span class="checkbox-label">Loose surface (gravel, mud)</span>
+          </div>
+          <div class="checkbox-item">
+            <div class="checkbox-box"></div>
+            <span class="checkbox-label">Other condition</span>
+          </div>
+        </div>
+        <span class="field-help">road_condition_* (6 checkboxes stored as array: road_conditions[])</span>
+      </section>
+
+      <!-- Section 3: Special Conditions -->
+      <section class="section">
+        <h2 class="section-title">Special Road Conditions</h2>
+
+        <div class="field-group">
+          <label class="field-label">Additional Hazards or Special Conditions</label>
+          <textarea class="field-textarea" placeholder="e.g. Oil spill, debris on road, road works, flooding"></textarea>
+          <span class="field-help">specialConditions</span>
+        </div>
+      </section>
+    </div>
+
+    <!-- Footer -->
+    <div class="pdf-footer">
+      <p class="footer-text">
+        Confidential Legal Document - Car Crash Lawyer AI<br>
+        For legal purposes only. Do not distribute without authorization.
+      </p>
+      <img src="../images/car-crash-lawyer-ai-450.webp" alt="Car Crash Lawyer AI" class="footer-logo">
+    </div>
+  </div>
+</body>
+</html>

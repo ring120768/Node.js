@@ -1,0 +1,152 @@
+<!DOCTYPE html>
+<html lang="en-GB">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Page 3: Vehicle Damage - PDF Mockup</title>
+  <link rel="stylesheet" href="pdf-styles.css">
+</head>
+<body>
+  <!-- Navigation -->
+  <div class="navigation no-print">
+    <h2>PDF Mockup Preview</h2>
+    <a href="index.html">← All Pages</a>
+    <a href="page-02-medical-assessment.html">← Page 2</a>
+    <a href="page-03-vehicle-damage.html" class="current">Page 3</a>
+    <a href="page-04-weather-road-conditions.html">Page 4 →</a>
+  </div>
+
+  <!-- PDF Page -->
+  <div class="pdf-page">
+    <!-- Header -->
+    <div class="pdf-header">
+      <img src="../images/logo.png" alt="Logo" class="header-logo">
+      <div class="header-title">
+        <h1>CAR CRASH LAWYER AI</h1>
+        <p>Incident Report</p>
+      </div>
+      <div class="header-page-number">Page 3 of 17</div>
+    </div>
+
+    <!-- Content -->
+    <div class="pdf-content">
+      <!-- Section 1: Vehicle Damage Assessment -->
+      <section class="section">
+        <h2 class="section-title">Vehicle Damage Assessment</h2>
+
+        <div class="checkbox-group single-column mb-medium">
+          <div class="checkbox-item">
+            <div class="checkbox-box"></div>
+            <span class="checkbox-label">No damage</span>
+          </div>
+          <div class="checkbox-item">
+            <div class="checkbox-box"></div>
+            <span class="checkbox-label">No visible damage</span>
+          </div>
+        </div>
+        <span class="field-help">no_damage, no_visible_damage</span>
+
+        <div class="field-group">
+          <label class="field-label">Description of Damage</label>
+          <textarea class="field-textarea large" placeholder="Describe damage to your vehicle in detail"></textarea>
+          <span class="field-help">damage_description</span>
+        </div>
+
+        <div class="field-group">
+          <label class="field-label required">Point of Impact on Your Vehicle</label>
+          <div class="radio-group vertical">
+            <div class="radio-item">
+              <div class="radio-circle"></div>
+              <span class="radio-label">Front</span>
+            </div>
+            <div class="radio-item">
+              <div class="radio-circle"></div>
+              <span class="radio-label">Rear</span>
+            </div>
+            <div class="radio-item">
+              <div class="radio-circle"></div>
+              <span class="radio-label">Driver Side</span>
+            </div>
+            <div class="radio-item">
+              <div class="radio-circle"></div>
+              <span class="radio-label">Passenger Side</span>
+            </div>
+            <div class="radio-item">
+              <div class="radio-circle"></div>
+              <span class="radio-label">Multiple Points</span>
+            </div>
+          </div>
+          <span class="field-help">impact_point</span>
+        </div>
+      </section>
+
+      <!-- Section 2: Safety Features -->
+      <section class="section">
+        <h2 class="section-title">Safety Features</h2>
+
+        <div class="field-group">
+          <label class="field-label required">Were airbags deployed?</label>
+          <div class="radio-group">
+            <div class="radio-item">
+              <div class="radio-circle"></div>
+              <span class="radio-label">Yes</span>
+            </div>
+            <div class="radio-item">
+              <div class="radio-circle"></div>
+              <span class="radio-label">No</span>
+            </div>
+            <div class="radio-item">
+              <div class="radio-circle"></div>
+              <span class="radio-label">N/A (no airbags)</span>
+            </div>
+          </div>
+          <span class="field-help">airbags_deployed</span>
+        </div>
+
+        <div class="field-group">
+          <label class="field-label required">Were seatbelts worn?</label>
+          <div class="radio-group">
+            <div class="radio-item">
+              <div class="radio-circle"></div>
+              <span class="radio-label">Yes</span>
+            </div>
+            <div class="radio-item">
+              <div class="radio-circle"></div>
+              <span class="radio-label">No</span>
+            </div>
+          </div>
+          <span class="field-help">seatbelts_worn</span>
+        </div>
+
+        <div class="field-group">
+          <label class="field-label required">Is your vehicle driveable?</label>
+          <div class="radio-group">
+            <div class="radio-item">
+              <div class="radio-circle"></div>
+              <span class="radio-label">Yes</span>
+            </div>
+            <div class="radio-item">
+              <div class="radio-circle"></div>
+              <span class="radio-label">No</span>
+            </div>
+            <div class="radio-item">
+              <div class="radio-circle"></div>
+              <span class="radio-label">Unknown</span>
+            </div>
+          </div>
+          <span class="field-help">vehicle_driveable</span>
+        </div>
+      </section>
+    </div>
+
+    <!-- Footer -->
+    <div class="pdf-footer">
+      <p class="footer-text">
+        Confidential Legal Document - Car Crash Lawyer AI<br>
+        For legal purposes only. Do not distribute without authorization.
+      </p>
+      <img src="../images/car-crash-lawyer-ai-450.webp" alt="Car Crash Lawyer AI" class="footer-logo">
+    </div>
+  </div>
+</body>
+</html>

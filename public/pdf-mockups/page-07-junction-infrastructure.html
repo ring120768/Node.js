@@ -1,0 +1,98 @@
+<!DOCTYPE html>
+<html lang="en-GB">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Page 7: Junction & Road Infrastructure - PDF Mockup</title>
+  <link rel="stylesheet" href="pdf-styles.css">
+</head>
+<body>
+  <!-- Navigation -->
+  <div class="navigation no-print">
+    <h2>PDF Mockup Preview</h2>
+    <a href="index.html">← All Pages</a>
+    <a href="page-06-visibility.html">← Page 6</a>
+    <a href="page-07-junction-infrastructure.html" class="current">Page 7</a>
+    <a href="page-08-accident-narrative.html">Page 8 →</a>
+  </div>
+
+  <!-- PDF Page -->
+  <div class="pdf-page">
+    <!-- Header -->
+    <div class="pdf-header">
+      <img src="../images/logo.png" alt="Logo" class="header-logo">
+      <div class="header-title">
+        <h1>CAR CRASH LAWYER AI</h1>
+        <p>Incident Report</p>
+      </div>
+      <div class="header-page-number">Page 7 of 17</div>
+    </div>
+
+    <!-- Content -->
+    <div class="pdf-content">
+      <!-- Section 1: Junction Information -->
+      <section class="section">
+        <h2 class="section-title">Junction & Road Infrastructure</h2>
+
+        <div class="field-group">
+          <label class="field-label">Junction Type</label>
+          <select class="field-dropdown">
+            <option value="">Select junction type...</option>
+            <option value="none">Not at a junction</option>
+            <option value="t-junction">T-junction</option>
+            <option value="crossroads">Crossroads</option>
+            <option value="roundabout">Roundabout</option>
+            <option value="mini-roundabout">Mini roundabout</option>
+            <option value="slip-road">Slip road/merge</option>
+            <option value="other">Other</option>
+          </select>
+          <span class="field-help">junctionType</span>
+        </div>
+
+        <div class="field-group">
+          <label class="field-label">Junction Control</label>
+          <select class="field-dropdown">
+            <option value="">Select control type...</option>
+            <option value="none">None</option>
+            <option value="traffic-lights">Traffic lights</option>
+            <option value="give-way">Give way signs</option>
+            <option value="stop-sign">Stop sign</option>
+            <option value="police-control">Police control</option>
+            <option value="other">Other</option>
+          </select>
+          <span class="field-help">junctionControl</span>
+        </div>
+
+        <div class="field-group">
+          <label class="field-label">Traffic Light Status (if applicable)</label>
+          <select class="field-dropdown">
+            <option value="">Select status...</option>
+            <option value="n/a">N/A</option>
+            <option value="green">Green</option>
+            <option value="amber">Amber</option>
+            <option value="red">Red</option>
+            <option value="unknown">Unknown/Can't remember</option>
+            <option value="not-working">Not working</option>
+          </select>
+          <span class="field-help">trafficLightStatus</span>
+        </div>
+
+        <div class="field-group">
+          <label class="field-label">Additional Hazards</label>
+          <textarea class="field-textarea" placeholder="e.g. Blind corner, parked cars obscuring view, pedestrian crossing"></textarea>
+          <span class="field-help">additionalHazards</span>
+        </div>
+      </section>
+    </div>
+
+    <!-- Footer -->
+    <div class="pdf-footer">
+      <p class="footer-text">
+        Confidential Legal Document - Car Crash Lawyer AI<br>
+        For legal purposes only. Do not distribute without authorization.
+      </p>
+      <img src="../images/car-crash-lawyer-ai-450.webp" alt="Car Crash Lawyer AI" class="footer-logo">
+    </div>
+  </div>
+</body>
+</html>

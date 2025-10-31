@@ -1,0 +1,154 @@
+<!DOCTYPE html>
+<html lang="en-GB">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Page 9: Other Vehicle Information - PDF Mockup</title>
+  <link rel="stylesheet" href="pdf-styles.css">
+</head>
+<body>
+  <!-- Navigation -->
+  <div class="navigation no-print">
+    <h2>PDF Mockup Preview</h2>
+    <a href="index.html">← All Pages</a>
+    <a href="page-08-accident-narrative.html">← Page 8</a>
+    <a href="page-09-other-vehicle.html" class="current">Page 9</a>
+    <a href="page-10-police-recovery.html">Page 10 →</a>
+  </div>
+
+  <!-- PDF Page -->
+  <div class="pdf-page">
+    <!-- Header -->
+    <div class="pdf-header">
+      <img src="../images/logo.png" alt="Logo" class="header-logo">
+      <div class="header-title">
+        <h1>CAR CRASH LAWYER AI</h1>
+        <p>Incident Report</p>
+      </div>
+      <div class="header-page-number">Page 9 of 17</div>
+    </div>
+
+    <!-- Content -->
+    <div class="pdf-content">
+      <!-- Section 1: Other Driver Details -->
+      <section class="section">
+        <h2 class="section-title">Other Driver Information</h2>
+
+        <div class="field-group">
+          <label class="field-label">Other Driver's Name</label>
+          <input type="text" class="field-input" placeholder="Full name" value="">
+          <span class="field-help">other_driver_name</span>
+        </div>
+
+        <div class="field-row">
+          <div class="field-group">
+            <label class="field-label">Other Driver's Email</label>
+            <input type="text" class="field-input" placeholder="email@example.com" value="">
+            <span class="field-help">other_driver_email</span>
+          </div>
+
+          <div class="field-group">
+            <label class="field-label">Other Driver's Phone</label>
+            <input type="text" class="field-input" placeholder="+44 7700 900000" value="">
+            <span class="field-help">other_driver_phone</span>
+          </div>
+        </div>
+
+        <div class="field-group">
+          <label class="field-label">Other Driver's License Number</label>
+          <input type="text" class="field-input" placeholder="UK driving license number" value="">
+          <span class="field-help">other_driver_license</span>
+        </div>
+      </section>
+
+      <!-- Section 2: Other Vehicle Details -->
+      <section class="section">
+        <h2 class="section-title">Other Vehicle Information</h2>
+
+        <div class="field-group">
+          <label class="field-label required">Other Vehicle Registration</label>
+          <input type="text" class="field-input medium" placeholder="e.g. AB12 CDE" value="">
+          <span class="field-help">other_license_plate</span>
+        </div>
+
+        <div class="field-group">
+          <label class="field-label">Point of Impact on Other Vehicle</label>
+          <div class="radio-group vertical">
+            <div class="radio-item">
+              <div class="radio-circle"></div>
+              <span class="radio-label">Front</span>
+            </div>
+            <div class="radio-item">
+              <div class="radio-circle"></div>
+              <span class="radio-label">Rear</span>
+            </div>
+            <div class="radio-item">
+              <div class="radio-circle"></div>
+              <span class="radio-label">Driver Side</span>
+            </div>
+            <div class="radio-item">
+              <div class="radio-circle"></div>
+              <span class="radio-label">Passenger Side</span>
+            </div>
+            <div class="radio-item">
+              <div class="radio-circle"></div>
+              <span class="radio-label">Multiple Points</span>
+            </div>
+            <div class="radio-item">
+              <div class="radio-circle"></div>
+              <span class="radio-label">Unknown</span>
+            </div>
+          </div>
+          <span class="field-help">other_point_of_impact</span>
+        </div>
+      </section>
+
+      <!-- Section 3: Other Driver's Insurance -->
+      <section class="section">
+        <h2 class="section-title">Other Driver's Insurance Information</h2>
+
+        <div class="field-group">
+          <label class="field-label">Insurance Company</label>
+          <input type="text" class="field-input" placeholder="e.g. Admiral, Aviva, Direct Line" value="">
+          <span class="field-help">other_insurance_company</span>
+        </div>
+
+        <div class="field-group">
+          <label class="field-label">Policy Holder Name</label>
+          <input type="text" class="field-input" placeholder="Name on policy" value="">
+          <span class="field-help">other_policy_holder</span>
+        </div>
+
+        <div class="field-row">
+          <div class="field-group">
+            <label class="field-label">Policy Number</label>
+            <input type="text" class="field-input" placeholder="Insurance policy number" value="">
+            <span class="field-help">other_policy_number</span>
+          </div>
+
+          <div class="field-group">
+            <label class="field-label">Type of Cover</label>
+            <select class="field-dropdown">
+              <option value="">Select cover type...</option>
+              <option value="comprehensive">Comprehensive</option>
+              <option value="third-party-fire-theft">Third Party, Fire & Theft</option>
+              <option value="third-party-only">Third Party Only</option>
+              <option value="unknown">Unknown</option>
+            </select>
+            <span class="field-help">other_policy_cover</span>
+          </div>
+        </div>
+      </section>
+    </div>
+
+    <!-- Footer -->
+    <div class="pdf-footer">
+      <p class="footer-text">
+        Confidential Legal Document - Car Crash Lawyer AI<br>
+        For legal purposes only. Do not distribute without authorization.
+      </p>
+      <img src="../images/car-crash-lawyer-ai-450.webp" alt="Car Crash Lawyer AI" class="footer-logo">
+    </div>
+  </div>
+</body>
+</html>
