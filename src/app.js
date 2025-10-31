@@ -198,6 +198,14 @@ function createApp() {
     res.sendFile(path.join(__dirname, '../public/incident-form-page12.html'));
   });
 
+  app.get('/report-complete.html', pageAuth, (req, res) => {
+    res.sendFile(path.join(__dirname, '../public/report-complete.html'));
+  });
+
+  app.get('/declaration.html', pageAuth, (req, res) => {
+    res.sendFile(path.join(__dirname, '../public/declaration.html'));
+  });
+
   // Cache control for HTML (MUST be before express.static to work)
   // Sets aggressive cache prevention headers for all HTML files
   app.use((req, res, next) => {

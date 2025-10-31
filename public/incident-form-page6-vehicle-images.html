@@ -343,11 +343,79 @@
       border: 1px solid rgba(99, 102, 241, 0.2);
     }
 
+    /* Hover Tooltip */
+    .btn-with-tooltip {
+      position: relative;
+      width: 100%;
+    }
+
+    .hover-tooltip {
+      position: absolute;
+      bottom: calc(100% + 12px);
+      left: 50%;
+      transform: translateX(-50%);
+      background: white;
+      border: 2px solid var(--accent);
+      border-radius: 12px;
+      padding: 16px;
+      box-shadow: 0 8px 24px rgba(0, 0, 0, 0.15);
+      opacity: 0;
+      visibility: hidden;
+      transition: all 0.3s ease;
+      z-index: 100;
+      width: 280px;
+      max-width: 90vw;
+      pointer-events: none;
+    }
+
+    .btn-with-tooltip:hover .hover-tooltip {
+      opacity: 1;
+      visibility: visible;
+      bottom: calc(100% + 16px);
+    }
+
+    .hover-tooltip-content {
+      display: flex;
+      flex-direction: column;
+      gap: 8px;
+    }
+
+    .hover-tooltip-title {
+      font-weight: 700;
+      color: var(--accent);
+      font-size: 0.875rem;
+      display: flex;
+      align-items: center;
+      gap: 6px;
+    }
+
+    .hover-tooltip-text {
+      font-size: 0.813rem;
+      color: var(--text-dark);
+      line-height: 1.5;
+    }
+
+    .hover-tooltip-arrow {
+      position: absolute;
+      bottom: -8px;
+      left: 50%;
+      transform: translateX(-50%);
+      width: 0;
+      height: 0;
+      border-left: 8px solid transparent;
+      border-right: 8px solid transparent;
+      border-top: 8px solid var(--accent);
+    }
+
     /* Mobile Responsive */
     @media (max-width: 640px) {
       .image-card-thumbnail {
         width: 60px;
         height: 60px;
+      }
+
+      .hover-tooltip {
+        width: 260px;
       }
     }
   </style>
@@ -407,12 +475,28 @@
           <!-- Uploaded images will appear here -->
         </div>
 
-        <!-- Add Damage Photo Button -->
-        <button type="button" id="add-image-btn" class="btn btn-secondary" style="width: 100%;">
-          <span>📷</span>
-          <span>Add Damage Photo</span>
-          <span id="image-count">(0/5)</span>
-        </button>
+        <!-- Add Damage Photo Button with Tooltip -->
+        <div class="btn-with-tooltip">
+          <button type="button" id="add-image-btn" class="btn btn-secondary">
+            <span>📷</span>
+            <span>Add Damage Photo</span>
+            <span id="image-count">(0/5)</span>
+          </button>
+
+          <!-- Hover Tooltip -->
+          <div class="hover-tooltip">
+            <div class="hover-tooltip-content">
+              <div class="hover-tooltip-title">
+                <span>💡</span>
+                <span>Pro Tip</span>
+              </div>
+              <div class="hover-tooltip-text">
+                If there is no damage, please take a photo to confirm this.
+              </div>
+            </div>
+            <div class="hover-tooltip-arrow"></div>
+          </div>
+        </div>
       </div>
     </div>
 

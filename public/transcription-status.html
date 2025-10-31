@@ -1086,6 +1086,70 @@
         }
 
         /* Responsive Design */
+        /* Hover Tooltip for Manual Typing Button */
+        .btn-with-tooltip {
+            position: relative;
+            display: inline-block;
+        }
+
+        .hover-tooltip {
+            position: absolute;
+            bottom: calc(100% + 12px);
+            left: 50%;
+            transform: translateX(-50%);
+            background: white;
+            border: 2px solid #2196F3;
+            border-radius: 12px;
+            padding: 16px;
+            box-shadow: 0 8px 24px rgba(0, 0, 0, 0.15);
+            opacity: 0;
+            visibility: hidden;
+            transition: all 0.3s ease;
+            z-index: 100;
+            width: 280px;
+            max-width: 90vw;
+            pointer-events: none;
+        }
+
+        .btn-with-tooltip:hover .hover-tooltip {
+            opacity: 1;
+            visibility: visible;
+            bottom: calc(100% + 16px);
+        }
+
+        .hover-tooltip-content {
+            display: flex;
+            flex-direction: column;
+            gap: 8px;
+        }
+
+        .hover-tooltip-title {
+            font-weight: 700;
+            color: #2196F3;
+            font-size: 0.875rem;
+            display: flex;
+            align-items: center;
+            gap: 6px;
+        }
+
+        .hover-tooltip-text {
+            font-size: 0.813rem;
+            color: #333;
+            line-height: 1.5;
+        }
+
+        .hover-tooltip-arrow {
+            position: absolute;
+            bottom: -8px;
+            left: 50%;
+            transform: translateX(-50%);
+            width: 0;
+            height: 0;
+            border-left: 8px solid transparent;
+            border-right: 8px solid transparent;
+            border-top: 8px solid #2196F3;
+        }
+
         @media (max-width: 768px) {
             .container {
                 padding: 20px;
@@ -1134,6 +1198,10 @@
 
             .countdown-text {
                 font-size: 18px;
+            }
+
+            .hover-tooltip {
+                width: 260px;
             }
         }
     </style>
@@ -1295,6 +1363,29 @@
             <button id="retryButton" class="btn" style="display: none;">
                 🔄 Record Again
             </button>
+        </div>
+
+        <!-- Manual Typing Button with Tooltip -->
+        <div style="text-align: center; margin: 20px 0;">
+            <div class="btn-with-tooltip">
+                <button id="typeOwnAccountBtn" class="btn" style="background: #6366f1; color: white;">
+                    ✍️ Type Your Own Account
+                </button>
+
+                <!-- Hover Tooltip -->
+                <div class="hover-tooltip">
+                    <div class="hover-tooltip-content">
+                        <div class="hover-tooltip-title">
+                            <span>💡</span>
+                            <span>Pro Tip</span>
+                        </div>
+                        <div class="hover-tooltip-text">
+                            if AI not available please manually type your own record of events!
+                        </div>
+                    </div>
+                    <div class="hover-tooltip-arrow"></div>
+                </div>
+            </div>
         </div>
 
         <!-- Audio Playback -->
@@ -2838,6 +2929,11 @@ Continue with: What happened immediately after impact? Any injuries you noticed?
             document.getElementById('clearDraftBtn').addEventListener('click', clearDraft);
             document.getElementById('saveAndContinueBtn').addEventListener('click', saveAndContinue);
             document.getElementById('securityBadge').addEventListener('click', openSecurityModal);
+
+            // Type Your Own Account button - switches to Transcription tab
+            document.getElementById('typeOwnAccountBtn').addEventListener('click', () => {
+                switchTab('transcription');
+            });
 
             // Tab navigation event listeners (CSP compliant)
             document.querySelectorAll('.tab-button').forEach(button => {

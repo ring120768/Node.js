@@ -477,8 +477,12 @@
 
       <div class="checkbox-group">
         <div class="checkbox-item">
+          <input type="checkbox" id="weather_bright_sunlight" name="weather_bright_sunlight" value="true">
+          <label for="weather_bright_sunlight">Bright Sunlight</label>
+        </div>
+        <div class="checkbox-item">
           <input type="checkbox" id="weather_clear" name="weather_clear" value="true">
-          <label for="weather_clear">Clear</label>
+          <label for="weather_clear">Clear and Dry</label>
         </div>
         <div class="checkbox-item">
           <input type="checkbox" id="weather_cloudy" name="weather_cloudy" value="true">
@@ -498,7 +502,7 @@
         </div>
         <div class="checkbox-item">
           <input type="checkbox" id="weather_fog" name="weather_fog" value="true">
-          <label for="weather_fog">Fog</label>
+          <label for="weather_fog">Fog or Poor Visibility</label>
         </div>
         <div class="checkbox-item">
           <input type="checkbox" id="weather_snow" name="weather_snow" value="true">
@@ -788,6 +792,7 @@
 
       // Collect weather conditions
       const weatherConditions = {
+        weather_bright_sunlight: document.getElementById('weather_bright_sunlight').checked,
         weather_clear: document.getElementById('weather_clear').checked,
         weather_cloudy: document.getElementById('weather_cloudy').checked,
         weather_raining: document.getElementById('weather_raining').checked,
@@ -891,7 +896,7 @@
 
           // Restore weather conditions
           const weatherFields = [
-            'weather_clear', 'weather_cloudy', 'weather_raining', 'weather_heavy_rain',
+            'weather_bright_sunlight', 'weather_clear', 'weather_cloudy', 'weather_raining', 'weather_heavy_rain',
             'weather_drizzle', 'weather_fog', 'weather_snow', 'weather_ice',
             'weather_windy', 'weather_hail', 'weather_thunder_lightning', 'weather_other'
           ];
