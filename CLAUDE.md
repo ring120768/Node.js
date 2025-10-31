@@ -648,6 +648,271 @@ index.js            # HTTP server + WebSocket initialization + graceful shutdown
 
 ---
 
+## MCP Tools & Sub-Agents
+
+**IMPORTANT:** You have access to powerful MCP (Model Context Protocol) servers and 37 specialized sub-agents. Use them intelligently based on the task at hand.
+
+### Available MCP Servers
+
+#### 🔍 Perplexity MCP - Web Research & Current Information
+
+**When to use:**
+- Researching current events, trends, or breaking news
+- Getting multiple perspectives on topics
+- Fact-checking and verification
+- Questions about "latest", "current", "trending"
+
+**Available tools:**
+- `perplexity_search` - Quick web search with ranked results
+- `perplexity_ask` - Conversational AI with real-time search
+- `perplexity_research` - Deep comprehensive research
+- `perplexity_reason` - Advanced reasoning for complex problems
+
+**Example use cases:**
+- "What are the latest UK fintech regulations in 2025?"
+- "Research best practices for Node.js security"
+
+#### 🕷️ Firecrawl MCP - Web Scraping & Data Extraction
+
+**When to use:**
+- Extracting structured data from specific websites
+- Building datasets from multiple web pages
+- Need clean, structured, LLM-ready data
+
+**Available tools:**
+- `firecrawl_scrape` - Single URL extraction with markdown output
+- `firecrawl_batch_scrape` - Multiple URLs efficiently
+- `firecrawl_map` - Discover all URLs on a website
+- `firecrawl_search` - Search web and extract from results
+- `firecrawl_crawl` - Deep website crawling with depth control
+- `firecrawl_extract` - LLM-powered structured extraction with schema
+
+**Example use cases:**
+- "Extract all documentation pages from stripe.com/docs"
+- "Scrape competitor pricing models"
+
+#### 📚 Ref MCP - Documentation Search (Token-Efficient)
+
+**When to use:**
+- Looking up API documentation
+- Finding library/framework documentation
+- Getting code examples from official docs
+- Want to minimize token costs on documentation
+
+**Available tools:**
+- `ref_search_documentation` - Search technical docs intelligently
+- `ref_read_url` - Fetch specific documentation pages
+
+**Key advantages:**
+- 85% token reduction vs. traditional web scraping
+- Session-aware filtering (never repeats results)
+
+**Example use cases:**
+- "Use ref to find Supabase RLS documentation"
+- "Search ref for Express.js middleware best practices"
+
+#### ⚡ Zapier MCP - App Integration & Automation
+
+**When to use:**
+- Automating tasks across multiple apps
+- Sending emails, messages, or notifications
+- Creating, updating, or searching records in business apps
+- Need to take real actions (not just research)
+
+**Available connections:** 8,000+ apps including Gmail, Outlook, Google Calendar, Slack, Asana, GitHub, etc.
+
+**Example use cases:**
+- "Send an email via Gmail with the bug report"
+- "Create a Google Calendar event for deployment"
+- "Add a row to Google Sheet with test results"
+
+### 37 Specialized Sub-Agents
+
+**What they are:** AI agents with deep expertise in specific domains, located at `~/.claude/agents/lst97/`
+
+**When to use:** Complex multi-domain tasks, specialized expertise needed, code reviews, or when you need expert-level guidance.
+
+#### 🏗️ Development Agents (14 agents)
+
+- `frontend-developer` - React, responsive layouts, state management
+- `react-pro` - Expert React with hooks & performance optimization
+- `nextjs-pro` - Next.js SSR/SSG specialist
+- `ui-designer` / `ux-designer` - Creative UI/UX design
+- `backend-architect` - RESTful APIs, microservices, schemas
+- `full-stack-developer` - End-to-end web applications
+- `typescript-pro` - Advanced TypeScript development
+- `python-pro` - Idiomatic Python with optimizations
+- `golang-pro` - Go with goroutines & channels
+- `mobile-developer` - React Native/Flutter apps
+- `electron-pro` - Desktop applications
+- `dx-optimizer` - Developer experience & tooling
+- `legacy-modernizer` - Refactor legacy codebases
+
+#### 🤖 Data & AI Agents (8 agents)
+
+- `ai-engineer` - AI/ML integrations
+- `ml-engineer` - Machine learning models
+- `data-engineer` - Data pipelines & ETL
+- `data-scientist` - Analytics & modeling
+- `prompt-engineer` - LLM prompt optimization
+- `postgres-pro` - PostgreSQL expert (⭐ **USE FOR THIS PROJECT**)
+- `database-optimizer` - DB performance tuning
+- `graphql-architect` - GraphQL API design
+
+#### 🏗️ Infrastructure Agents (5 agents)
+
+- `cloud-architect` - Cloud infrastructure design
+- `deployment-engineer` - CI/CD & deployments
+- `devops-incident-responder` - DevOps incidents
+- `incident-responder` - General incident response
+- `performance-engineer` - Performance optimization
+
+#### ✅ Quality & Testing Agents (5 agents)
+
+- `code-reviewer` - Code quality reviews (⭐ **USE PROACTIVELY**)
+- `architect-review` - Architecture reviews
+- `debugger` - Bug investigation & fixes
+- `qa-expert` - Quality assurance
+- `test-automator` - Test automation
+
+#### 🔒 Security Agent (1 agent)
+
+- `security-auditor` - Security audits & vulnerability scanning (⭐ **USE FOR AUDITS**)
+
+#### 📚 Documentation Agents (2 agents)
+
+- `api-documenter` - API documentation
+- `documentation-expert` - General documentation
+
+#### 🎯 Meta Agent (1 agent)
+
+- `agent-organizer` - **THE ORCHESTRATOR** - coordinates multiple agents for complex tasks
+
+### Intelligent Tool Selection Strategy
+
+**Decision Framework:**
+
+**Research Question → Use Perplexity**
+- "What's the latest..."
+- "Compare different approaches..."
+- Need synthesized insights from multiple sources
+
+**Data Extraction → Use Firecrawl**
+- "Extract data from..."
+- "Scrape all..."
+- Need structured, machine-readable output
+
+**Technical Documentation → Use Ref**
+- "Look up [API/library] documentation"
+- "Find code examples for..."
+- Need accurate technical reference
+
+**Take Action in Apps → Use Zapier**
+- "Send an email to..."
+- "Create a calendar event..."
+- Need to actually DO something (not just research)
+
+**Complex Development Tasks → Use Sub-Agents**
+- "Refactor this component..."
+- "Review my code for security issues..."
+- "Optimize this database query..."
+- Need expert-level guidance or multi-domain coordination
+
+### Combined Workflows (Maximum Power!)
+
+**Workflow 1: Research → Extract → Analyze**
+```
+1. Perplexity: Research UK GDPR best practices
+2. Firecrawl: Extract examples from ICO website
+3. Analyze: Apply to project and create checklist
+```
+
+**Workflow 2: Expert Development**
+```
+1. Backend-Architect: Design API endpoint structure
+2. Postgres-Pro: Optimize database queries and RLS policies
+3. Security-Auditor: Review for vulnerabilities
+4. Code-Reviewer: Final quality check
+5. Documentation-Expert: Generate docs
+```
+
+**Workflow 3: Documentation → Implementation**
+```
+1. Ref: Look up Supabase Auth documentation
+2. Implement: Write authentication code
+3. Test-Automator: Generate test cases
+4. Code-Reviewer: Review implementation
+```
+
+### Agentive Design Patterns
+
+**Pattern 1: Proactive Agent Use**
+- Use `code-reviewer` IMMEDIATELY after writing significant code
+- Use `security-auditor` for any auth/security changes
+- Use `postgres-pro` for any database schema changes
+- Use `architect-review` after structural changes
+
+**Pattern 2: Agent Orchestration**
+- For complex tasks spanning multiple domains, start with `agent-organizer`
+- Let it coordinate specialized agents automatically
+- Example: "Build authentication system" → organizer delegates to backend-architect, security-auditor, postgres-pro, test-automator
+
+**Pattern 3: Iterative Refinement**
+- Initial implementation (you)
+- Code review (code-reviewer agent)
+- Security audit (security-auditor agent)
+- Performance optimization (performance-engineer agent)
+- Documentation (documentation-expert agent)
+
+### Prompt Engineering Lifecycle
+
+**1. Context Gathering**
+- Understand requirements, constraints, existing code
+- Use Ref/Firecrawl to gather technical documentation
+- Use Perplexity for research if needed
+
+**2. Planning**
+- Break down complex tasks
+- Identify which agents/tools to use
+- Create execution plan
+
+**3. Implementation**
+- Write working code
+- Use specialized agents for domain expertise
+- Test as you build
+
+**4. Validation**
+- Use test-automator for test generation
+- Use code-reviewer for quality check
+- Use security-auditor for security review
+
+**5. Documentation**
+- Use documentation-expert for comprehensive docs
+- Update CLAUDE.md with new patterns
+- Create test scripts for validation
+
+**6. Refinement**
+- Performance optimization (performance-engineer)
+- Architecture review (architect-review)
+- Final polish
+
+### Quick Reference: Tool & Agent Selection
+
+**Need current info/research?** → 🔍 Perplexity
+**Need data extraction?** → 🕷️ Firecrawl
+**Need technical docs?** → 📚 Ref
+**Need to take action?** → ⚡ Zapier
+**Need expert development?** → 🤖 Sub-Agents (37 specialists)
+
+**For this project specifically:**
+- **Supabase queries** → `postgres-pro` agent
+- **Security reviews** → `security-auditor` agent
+- **Code reviews** → `code-reviewer` agent (use proactively!)
+- **Backend APIs** → `backend-architect` agent
+- **Complex tasks** → `agent-organizer` (orchestrator)
+
+---
+
 ## Permissions Policy
 
 ### ✅ Auto-Execute (No Confirmation Needed)
@@ -686,12 +951,3 @@ index.js            # HTTP server + WebSocket initialization + graceful shutdown
 **Last Updated:** 2025-10-29
 **Version:** 2.0.1
 **Maintained By:** Claude Code
-
----
-
-## Quick Reference Links
-
-- **Full Documentation:** See README.md, ARCHITECTURE.md
-- **Slash Commands:** Use `/start` at session start, `/status` to check services
-- **Field Mapping:** ADOBE_FORM_FILLING_GUIDE.md (150+ PDF fields)
-- **Testing:** MANUAL_TESTING_GUIDE.md
