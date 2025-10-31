@@ -2567,6 +2567,11 @@ Continue with: What happened immediately after impact? Any injuries you noticed?
                 return;
             }
 
+            // Combine narrative and transcription (prioritize narrative)
+            const combinedStatement = narrativeText.trim()
+                ? narrativeText.trim()
+                : transcriptionText.trim();
+
             try {
                 showStatus('Saving your statement...', 'info');
 
@@ -2578,7 +2583,7 @@ Continue with: What happened immediately after impact? Any injuries you noticed?
                     body: JSON.stringify({
                         userId: userId,
                         incidentId: currentIncidentId,
-                        personalStatement: text
+                        personalStatement: combinedStatement
                     }),
                     credentials: 'include'
                 });
