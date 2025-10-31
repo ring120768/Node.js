@@ -2597,9 +2597,9 @@ Continue with: What happened immediately after impact? Any injuries you noticed?
                     // Clear auto-save draft since we're moving to next page
                     localStorage.removeItem('transcriptionDraft');
 
-                    // Redirect to report completion page to add witnesses/vehicles
+                    // Redirect to declaration page
                     setTimeout(() => {
-                        window.location.href = '/report-complete.html';
+                        window.location.href = '/declaration.html';
                     }, 1500);
                 } else {
                     throw new Error(result.error || 'Failed to save statement');

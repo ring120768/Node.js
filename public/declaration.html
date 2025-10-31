@@ -441,12 +441,12 @@
                 // Clear temporary data
                 sessionStorage.setItem('declarationAccepted', 'true');
 
-                // Redirect to dashboard after declaration completed
-                console.log('✅ Declaration accepted, redirecting to dashboard');
+                // Redirect to report complete page after declaration
+                console.log('✅ Declaration accepted, redirecting to report complete');
 
                 const redirectUrl = userId
-                    ? `/dashboard.html?user_id=${userId}`
-                    : '/dashboard.html';
+                    ? `/report-complete.html?user_id=${userId}`
+                    : '/report-complete.html';
 
                 window.location.href = redirectUrl;
 
@@ -456,8 +456,8 @@
                 // Even if API fails, allow user to continue (graceful degradation)
                 sessionStorage.setItem('declarationAccepted', 'true');
                 const fallbackUrl = userId
-                    ? `/dashboard.html?user_id=${userId}`
-                    : '/dashboard.html';
+                    ? `/report-complete.html?user_id=${userId}`
+                    : '/report-complete.html';
                 window.location.href = fallbackUrl;
             }
         }
