@@ -3,6 +3,69 @@
 **Purpose:** Manual field creation in Adobe Acrobat Pro using MASTER_PDF_FIELD_LIST.csv
 **Your Workflow:** Create fields → Upload PDF → I verify field names → Test/Iterate
 
+**Updated**: 2025-11-01 - Added pages 1-3 for personal information (24 new fields)
+**Total Fields**: 146 (was 125, added 24 user signup fields, renumbered incident pages)
+
+---
+
+## 🆕 NEW: Pages 1-3 Personal Information
+
+**Added**: 24 fields from user_signup table for personal info, vehicle, insurance
+
+### Page 1: Personal Information (10 fields)
+
+**Fields to create:**
+```
+user_first_name (Text)
+user_last_name (Text)
+user_dob (Text) - ⭐ NEW FIELD - Date of Birth in DD/MM/YYYY format
+user_email (Text)
+user_mobile (Text)
+user_address_line1 (Text)
+user_address_line2 (Text) - Optional
+user_city (Text)
+user_postcode (Text)
+user_country (Text)
+```
+
+**Layout suggestion:** Standard form layout with labels on left, text fields on right.
+
+**DOB Field** ⚠️ IMPORTANT:
+- Field type: **TEXT** (not Date type)
+- Format will be DD/MM/YYYY (e.g., 15/03/1990)
+- Code handles conversion from database YYYY-MM-DD format
+- User must be 16+ years old (validated during signup)
+
+### Page 2: Vehicle & Insurance (10 fields)
+
+**Fields to create:**
+```
+user_driving_license (Text)
+user_car_registration (Text)
+user_vehicle_make (Text)
+user_vehicle_model (Text)
+user_vehicle_colour (Text)
+user_insurance_company (Text)
+user_policy_number (Text)
+user_policy_holder (Text)
+user_cover_type (Text) - e.g., "Fully Comprehensive"
+```
+
+### Page 3: Emergency & Recovery (4 fields)
+
+**Fields to create:**
+```
+user_emergency_contact (Text or Textarea) - Multi-line recommended
+user_recovery_company (Text)
+user_recovery_number (Text)
+user_recovery_email (Text)
+```
+
+**Emergency Contact Format:**
+- Stored as pipe-delimited: "Name | Phone | Email | Company"
+- You may want a multi-line text field to display this nicely
+- Or create 4 separate sub-fields if preferred
+
 ---
 
 ## Quick Answers to Your Concerns
@@ -15,10 +78,10 @@
 1. Open `MASTER_PDF_FIELD_LIST.csv`
 2. Filter by `Field_Type = Checkbox`
 3. You'll see:
-   - Page 2: 11 medical symptom checkboxes
-   - Page 4: 11 weather condition checkboxes
-   - Page 5: 4 junction type checkboxes
-   - Page 6: 5 special condition checkboxes
+   - Page 5: 11 medical symptom checkboxes (was page 2)
+   - Page 7: 11 weather condition checkboxes (was page 4)
+   - Page 8: 4 junction type checkboxes (was page 5)
+   - Page 9: 5 special condition checkboxes (was page 6)
 4. Create each checkbox in Adobe Acrobat with EXACT field names from CSV
 5. I'll verify all 31 checkboxes present when you upload PDF
 
@@ -32,10 +95,10 @@
 
 **Strategy:**
 
-**Pages 9-10 (Main):** "Other Vehicle 1" - Always shows first vehicle
-**Page 18 (Overflow):** "Additional Vehicles" - Table format for vehicles 2, 3, 4, etc.
+**Pages 12-13 (Main):** "Other Vehicle 1" - Always shows first vehicle (was pages 9-10)
+**Page 21 (Overflow):** "Additional Vehicles" - Table format for vehicles 2-5 (was page 18)
 
-**Page 18 Layout Suggestion:**
+**Page 21 Layout Suggestion:**
 
 ```
 ┌────────────────────────────────────────────────────────────────┐
@@ -51,7 +114,7 @@
 └─────────┴────────────┴─────────────┴──────────┴────────────────┘
 ```
 
-**Field Names for Page 18:**
+**Field Names for Page 21:**
 
 ```csv
 Page,PDF_Field_Name,Field_Type,Notes
@@ -68,9 +131,9 @@ Page,PDF_Field_Name,Field_Type,Notes
 (repeat for vehicles 4, 5)
 ```
 
-**In Code:** I'll check `incident_other_vehicles` count. If > 1, populate Page 18 and add note to Page 9: "See Page 18 for additional vehicles"
+**In Code:** I'll check `incident_other_vehicles` count. If > 1, populate Page 21 and add note to Page 12: "See Page 21 for additional vehicles"
 
-**Same Strategy for Witnesses:** Create Page 19 overflow table if needed.
+**Same Strategy for Witnesses:** Create Page 22 overflow table if needed.
 
 ---
 
