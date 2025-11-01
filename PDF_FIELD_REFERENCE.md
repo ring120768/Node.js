@@ -1,8 +1,9 @@
-# PDF Field Reference - All 99 Fields Organized by Section
+# PDF Field Reference - All 98 Fields Organized by Section
 
 **Purpose**: Field list for manual PDF template creation in Adobe Express/Acrobat Pro
-**Total Fields**: 99 fields across 17 pages
+**Total Fields**: 98 fields across 17 pages (removed Ice, replaced Other with Dusk)
 **Date**: 2025-10-31
+**Last Updated**: 2025-10-31 (Weather conditions updated)
 
 ---
 
@@ -73,9 +74,9 @@
 
 ---
 
-## PAGE 4: WEATHER & ROAD CONDITIONS (20 checkboxes)
+## PAGE 4: WEATHER & ROAD CONDITIONS (19 checkboxes)
 
-### Weather Conditions (14 checkboxes - stored as array)
+### Weather Conditions (13 checkboxes - stored as array)
 - `weather_clear` - Checkbox
 - `weather_cloudy` - Checkbox
 - `weather_bright_sunlight` - Checkbox
@@ -84,12 +85,10 @@
 - `weather_heavy_rain` - Checkbox
 - `weather_fog` - Checkbox
 - `weather_snow` - Checkbox
-- `weather_ice` - Checkbox
 - `weather_hail` - Checkbox
 - `weather_windy` - Checkbox
 - `weather_thunder_lightning` - Checkbox
-- `weather_other` - Checkbox
-- `weather_unknown` - Checkbox
+- `weather_dusk` - Checkbox
 
 ### Road Surface Conditions (6 checkboxes - stored as array)
 - `road_surface_dry` - Checkbox
@@ -97,21 +96,20 @@
 - `road_surface_icy` - Checkbox
 - `road_surface_snow_covered` - Checkbox
 - `road_surface_loose_surface` - Checkbox
-- `road_surface_other` - Checkbox
+- `road_surface_slush` - Checkbox
 
 ---
 
 ## PAGE 5: ROAD TYPE & TRAFFIC (11 fields)
 
-### Road Classification (7 radio options)
-- `road_type` - Radio group:
-  - Motorway
-  - Dual carriageway
-  - Single carriageway
-  - Roundabout
-  - Urban street
-  - Rural road
-  - Other
+### Road Classification (7 checkboxes - stored as array)
+- `road_type_motorway` - Checkbox
+- `road_type_a_road` - Checkbox
+- `road_type_b_road` - Checkbox
+- `road_type_urban_street` - Checkbox
+- `road_type_rural_road` - Checkbox
+- `road_type_car_park` - Checkbox
+- `road_type_private_road` - Checkbox
 
 ### Traffic Density (4 radio options)
 - `traffic_density` - Radio group:
@@ -140,7 +138,7 @@
   - Not visible
   - No markings present
 
-### Additional Visibility Factors
+### Visibility Impaired
 - `visibility_factor_rain` - Checkbox
 - `visibility_factor_fog` - Checkbox
 - `visibility_factor_snow` - Checkbox
@@ -351,11 +349,11 @@ DD/MM/YYYY format for accident date, declaration date, generated date
 ### Time Inputs (3 fields)
 HH:MM 24-hour format for accident time, declaration time, generated time
 
-### Radio Groups (16 fields)
+### Radio Groups (15 fields)
 Single-selection options (Yes/No, severity levels, etc.)
 
-### Checkboxes (32 fields)
-Multi-selection options (symptoms, weather, visibility, hazards)
+### Checkboxes (38 fields)
+Multi-selection options (symptoms, weather, visibility, hazards, road types)
 
 ### Dropdowns (2 fields)
 Select from predefined lists (junction type, your manoeuvre)
@@ -377,13 +375,14 @@ Metadata populated by system (report date, time, UUID)
 Checkboxes stored as arrays to reduce column count:
 
 - `medical_symptoms[]` (14 checkboxes → 1 array column)
-- `weather_conditions[]` (14 checkboxes → 1 array column)
+- `weather_conditions[]` (13 checkboxes → 1 array column)
 - `road_surface_conditions[]` (6 checkboxes → 1 array column)
+- `road_types[]` (7 checkboxes → 1 array column)
 - `visibility_factors[]` (6 checkboxes → 1 array column)
 - `hazards[]` (3 checkboxes → 1 array column)
 - `damage_impact_points[]` (2 checkboxes → 1 array column)
 
-**Total Column Reduction**: 45 checkbox columns → 6 array columns (saves 39 database columns)
+**Total Column Reduction**: 51 checkbox columns → 7 array columns (saves 44 database columns)
 
 ---
 
@@ -420,7 +419,11 @@ Checkboxes stored as arrays to reduce column count:
 
 ---
 
-**Document Version**: 1.0
+**Document Version**: 1.3
 **Last Updated**: 2025-10-31
-**Total Fields**: 99 across 17 pages
+**Total Fields**: 98 across 17 pages
+**Changes**:
+- Removed "Ice" from weather conditions, replaced "Other weather" with "Dusk"
+- Replaced "Other condition" with "Slush" in road surface conditions
+- Replaced "Other road type" with "Private Road" in road classification
 **Ready for**: Adobe Express template creation + Acrobat Pro form field addition

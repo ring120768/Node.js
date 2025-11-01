@@ -1,0 +1,124 @@
+Page,PDF_Field_Name,Field_Type,Database_Column,Database_Table,Required,Notes
+1,accident_date,Date,when_did_the_accident_happen,incident_reports,Yes,Format: DD/MM/YYYY
+1,accident_time,Time,what_time_did_the_accident_happen,incident_reports,Yes,Format: HH:MM (24-hour)
+1,accident_location,Text,where_exactly_did_this_happen,incident_reports,Yes,Full address or description
+1,your_speed,Text,direction_and_speed,incident_reports,No,Extract speed from direction_and_speed field
+1,your_license_plate,Text,license_plate_number,incident_reports,Yes,UK registration number
+1,your_vehicle_make,Text,make_of_car,incident_reports,Yes,E.g. Ford
+1,your_vehicle_model,Text,model_of_car,incident_reports,Yes,E.g. Focus
+1,road_type,Dropdown,road_type,incident_reports,No,"Options: Motorway, A Road, B Road, Urban, Rural"
+1,speed_limit,Dropdown,speed_limit,incident_reports,No,"Options: 20, 30, 40, 50, 60, 70 mph"
+2,medical_feeling,Text,medical_how_are_you_feeling,incident_reports,No,How user feels after accident
+2,medical_attention_received,Text,medical_attention,incident_reports,No,"Yes/No, who provided care"
+2,medical_provider,Text,medical_attention_from_who,incident_reports,No,E.g. Paramedic/GP/A&E
+2,further_medical_needed,Text,further_medical_attention,incident_reports,No,Do they need more care
+2,are_you_safe,Text,are_you_safe,incident_reports,No,Current safety status
+2,safety_check_completed,Text,six_point_safety_check,incident_reports,No,Safety checklist result
+2,medical_chest_pain,Checkbox,medical_chest_pain,incident_reports,No,Symptom: Chest pain
+2,medical_breathlessness,Checkbox,medical_breathlessness,incident_reports,No,Symptom: Breathing difficulty
+2,medical_abdominal_bruising,Checkbox,medical_abdominal_bruising,incident_reports,No,Symptom: Abdominal bruising
+2,medical_uncontrolled_bleeding,Checkbox,medical_uncontrolled_bleeding,incident_reports,No,Symptom: Uncontrolled bleeding
+2,medical_severe_headache,Checkbox,medical_severe_headache,incident_reports,No,Symptom: Severe headache
+2,medical_vision_changes,Checkbox,medical_change_in_vision,incident_reports,No,Symptom: Vision changes
+2,medical_abdominal_pain,Checkbox,medical_abdominal_pain,incident_reports,No,Symptom: Abdominal pain
+2,medical_limb_pain,Checkbox,medical_limb_pain,incident_reports,No,Symptom: Limb pain
+2,medical_limb_weakness,Checkbox,medical_limb_weakness,incident_reports,No,Symptom: Limb weakness
+2,medical_loss_consciousness,Checkbox,medical_loss_of_consciousness,incident_reports,No,Symptom: Loss of consciousness
+2,medical_none,Checkbox,medical_none_of_these,incident_reports,No,No symptoms (exclusive with others)
+3,damage_description,Textarea,damage_to_your_vehicle,incident_reports,No,Description of damage to your vehicle
+3,damage_location,Textarea,impact,incident_reports,No,Where on vehicle was impact
+3,airbags_deployed,Radio,airbags_deployed,incident_reports,No,"Options: Yes, No, Unknown"
+3,seatbelts_worn,Radio,wearing_seatbelts,incident_reports,No,"Options: Yes, No"
+3,seatbelt_reason,Text,reason_no_seatbelts,incident_reports,No,Why seatbelts not worn (if applicable)
+3,prior_damage,Textarea,any_damage_prior,incident_reports,No,Pre-existing damage before accident
+4,weather_clear_dry,Checkbox,weather_clear_and_dry,incident_reports,No,Weather: Clear and dry
+4,weather_overcast,Checkbox,weather_overcast,incident_reports,No,Weather: Overcast
+4,weather_light_rain,Checkbox,weather_light_rain,incident_reports,No,Weather: Light rain
+4,weather_heavy_rain,Checkbox,weather_heavy_rain,incident_reports,No,Weather: Heavy rain
+4,weather_fog,Checkbox,weather_fog,incident_reports,No,Weather: Fog
+4,weather_snow,Checkbox,weather_snow,incident_reports,No,Weather: Snowing
+4,weather_snow_on_road,Checkbox,weather_snow_on_road,incident_reports,No,Weather: Snow on road
+4,weather_wet_road,Checkbox,weather_wet_road,incident_reports,No,Weather: Wet road surface
+4,weather_bright_daylight,Checkbox,weather_bright_daylight,incident_reports,No,Weather: Bright daylight
+4,weather_dusk,Checkbox,weather_dusk,incident_reports,No,Weather: Dusk/twilight
+4,weather_street_lights,Checkbox,weather_street_lights,incident_reports,No,Weather: Street lights on
+5,junction_roundabout,Checkbox,junction_information_roundabout,incident_reports,No,Junction type: Roundabout
+5,junction_t_junction,Checkbox,junction_information_t_junction,incident_reports,No,Junction type: T-junction
+5,junction_traffic_lights,Checkbox,junction_information_traffic_lights,incident_reports,No,Junction type: Traffic lights
+5,junction_crossroads,Checkbox,junction_information_crossroads,incident_reports,No,Junction type: Crossroads
+5,junction_other,Text,junction_information,incident_reports,No,Other junction type (text description)
+6,special_animals,Checkbox,special_conditions_animals,incident_reports,No,Special condition: Animals on road
+6,special_roadworks,Checkbox,special_conditions_roadworks,incident_reports,No,Special condition: Roadworks
+6,special_defective_road,Checkbox,special_conditions_defective_road,incident_reports,No,Special condition: Defective road
+6,special_oil_spills,Checkbox,special_conditions_oil_spills,incident_reports,No,Special condition: Oil spills
+6,special_workman,Checkbox,special_conditions_workman,incident_reports,No,Special condition: Workman present
+6,special_other,Text,special_conditions,incident_reports,No,Other special conditions (text)
+8,detailed_account,Textarea,detailed_account_of_what_happened,incident_reports,Yes,Full narrative of what happened (large field)
+9,other_driver_name,Text,driver_name,incident_other_vehicles,No,Other driver's name
+9,other_driver_phone,Text,driver_phone,incident_other_vehicles,No,Other driver's phone number
+9,other_driver_address,Textarea,driver_address,incident_other_vehicles,No,Other driver's address
+9,other_license_plate,Text,vehicle_license_plate,incident_other_vehicles,No,Other vehicle license plate
+9,other_vehicle_make,Text,vehicle_make,incident_other_vehicles,No,Other vehicle make (from DVLA if available)
+9,other_vehicle_model,Text,vehicle_model,incident_other_vehicles,No,Other vehicle model (from DVLA if available)
+9,other_vehicle_color,Text,vehicle_color,incident_other_vehicles,No,Other vehicle color (from DVLA if available)
+10,other_insurance_company,Text,insurance_company,incident_other_vehicles,No,Other driver's insurance company
+10,other_policy_number,Text,policy_number,incident_other_vehicles,No,Other driver's policy number
+10,other_damage,Textarea,other_damage_accident,incident_reports,No,Damage to other vehicle
+10,other_prior_damage,Textarea,other_damage_prior,incident_reports,No,Pre-existing damage on other vehicle
+11,police_attended,Radio,did_police_attend,incident_reports,No,"Options: Yes, No"
+11,police_reference,Text,accident_reference_number,incident_reports,No,Police incident reference number
+11,officer_badge,Text,police_officer_badge_number,incident_reports,No,Officer badge/collar number
+11,officer_name,Text,police_officers_name,incident_reports,No,Officer's name
+11,police_force,Text,police_force_details,incident_reports,No,Police force name (e.g. Metropolitan Police)
+12,your_breath_test,Radio,breath_test,incident_reports,No,"Options: Passed, Failed, Refused, Not tested"
+12,other_breath_test,Radio,other_breath_test,incident_reports,No,"Other driver's breath test result"
+12,witnesses_present,Radio,any_witness,incident_reports,No,"Options: Yes, No"
+12,witness_details,Textarea,witness_contact_information,incident_reports,No,"Witness contact info (or formatted from incident_witnesses table)"
+13,scene_overview_1,Image,file_url_scene_overview,incident_reports,No,Scene overview photo 1
+13,scene_overview_2,Image,file_url_scene_overview_1,incident_reports,No,Scene overview photo 2
+14,other_vehicle_photo_1,Image,file_url_other_vehicle,incident_reports,No,Other vehicle photo 1
+14,other_vehicle_photo_2,Image,file_url_other_vehicle_1,incident_reports,No,Other vehicle photo 2
+14,your_damage_1,Image,file_url_vehicle_damage,incident_reports,No,Your vehicle damage photo 1
+14,your_damage_2,Image,file_url_vehicle_damage_1,incident_reports,No,Your vehicle damage photo 2
+14,your_damage_3,Image,file_url_vehicle_damage_2,incident_reports,No,Your vehicle damage photo 3
+15,what3words_location,Image,file_url_what3words,incident_reports,No,what3words location screenshot
+15,general_docs_1,Image,file_url_documents,incident_reports,No,General documents photo 1
+15,general_docs_2,Image,file_url_documents_1,incident_reports,No,General documents photo 2
+15,audio_recording,Text,file_url_record_detailed_account_of_what_happened,incident_reports,No,"Audio/video recording URL (show as link, not embed)"
+16,ai_model_used,Text,ai_model_used,incident_reports,No,"AI model identifier (e.g. 'openai:gpt-4o-2024-08-06')"
+16,ai_narrative_text,Textarea,ai_narrative_text,incident_reports,No,AI-generated chronological factual account (2000-2500 words - LARGE field)
+17,user_full_name,Text,COMPUTED,user_signup,No,"Computed from user_signup.name + ' ' + user_signup.surname"
+17,signature_date,Date,COMPUTED,N/A,No,Current date at PDF generation (DD/MM/YYYY)
+17,declaration_accepted,Checkbox,STATIC,N/A,No,Static checkbox for user to sign (not stored in DB)
+18,vehicle2_license_plate,Text,vehicle_license_plate,incident_other_vehicles,No,2nd vehicle license plate (overflow page)
+18,vehicle2_make_model,Text,COMPUTED,incident_other_vehicles,No,"2nd vehicle: vehicle_make + ' ' + vehicle_model"
+18,vehicle2_driver_name,Text,driver_name,incident_other_vehicles,No,2nd vehicle driver name
+18,vehicle2_phone,Text,driver_phone,incident_other_vehicles,No,2nd vehicle driver phone
+18,vehicle2_insurance,Text,insurance_company,incident_other_vehicles,No,2nd vehicle insurance company
+18,vehicle3_license_plate,Text,vehicle_license_plate,incident_other_vehicles,No,3rd vehicle license plate (overflow page)
+18,vehicle3_make_model,Text,COMPUTED,incident_other_vehicles,No,"3rd vehicle: vehicle_make + ' ' + vehicle_model"
+18,vehicle3_driver_name,Text,driver_name,incident_other_vehicles,No,3rd vehicle driver name
+18,vehicle3_phone,Text,driver_phone,incident_other_vehicles,No,3rd vehicle driver phone
+18,vehicle3_insurance,Text,insurance_company,incident_other_vehicles,No,3rd vehicle insurance company
+18,vehicle4_license_plate,Text,vehicle_license_plate,incident_other_vehicles,No,4th vehicle license plate (overflow page)
+18,vehicle4_make_model,Text,COMPUTED,incident_other_vehicles,No,"4th vehicle: vehicle_make + ' ' + vehicle_model"
+18,vehicle4_driver_name,Text,driver_name,incident_other_vehicles,No,4th vehicle driver name
+18,vehicle4_phone,Text,driver_phone,incident_other_vehicles,No,4th vehicle driver phone
+18,vehicle4_insurance,Text,insurance_company,incident_other_vehicles,No,4th vehicle insurance company
+18,vehicle5_license_plate,Text,vehicle_license_plate,incident_other_vehicles,No,5th vehicle license plate (overflow page)
+18,vehicle5_make_model,Text,COMPUTED,incident_other_vehicles,No,"5th vehicle: vehicle_make + ' ' + vehicle_model"
+18,vehicle5_driver_name,Text,driver_name,incident_other_vehicles,No,5th vehicle driver name
+18,vehicle5_phone,Text,driver_phone,incident_other_vehicles,No,5th vehicle driver phone
+18,vehicle5_insurance,Text,insurance_company,incident_other_vehicles,No,5th vehicle insurance company
+19,witness2_name,Text,witness_name,incident_witnesses,No,2nd witness name (overflow page)
+19,witness2_phone,Text,witness_phone,incident_witnesses,No,2nd witness phone
+19,witness2_address,Textarea,witness_address,incident_witnesses,No,2nd witness address
+19,witness2_statement,Textarea,witness_statement,incident_witnesses,No,2nd witness statement
+19,witness3_name,Text,witness_name,incident_witnesses,No,3rd witness name (overflow page)
+19,witness3_phone,Text,witness_phone,incident_witnesses,No,3rd witness phone
+19,witness3_address,Textarea,witness_address,incident_witnesses,No,3rd witness address
+19,witness3_statement,Textarea,witness_statement,incident_witnesses,No,3rd witness statement
+19,witness4_name,Text,witness_name,incident_witnesses,No,4th witness name (overflow page)
+19,witness4_phone,Text,witness_phone,incident_witnesses,No,4th witness phone
+19,witness4_address,Textarea,witness_address,incident_witnesses,No,4th witness address
+19,witness4_statement,Textarea,witness_statement,incident_witnesses,No,4th witness statement

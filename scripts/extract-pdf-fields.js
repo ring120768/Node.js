@@ -1,14 +1,23 @@
+#!/usr/bin/env node
+
 /**
- * Extract PDF Form Fields
+ * PDF Field Extractor
  *
- * Extracts all form field names, types, and page numbers from PDF templates
- * Uses Adobe PDF Services API
+ * Automatically extracts all form field names from a fillable PDF
+ * and generates a structured JSON file for mapping to database/code.
+ *
+ * Usage:
+ *   node scripts/extract-pdf-fields.js
+ *   node scripts/extract-pdf-fields.js /path/to/custom.pdf
+ *
+ * Output:
+ *   - field-list.json (complete field inventory)
+ *   - Console summary with statistics
  */
 
-const PDFServicesSdk = require('@adobe/pdfservices-node-sdk');
+const { PDFDocument } = require('pdf-lib');
 const fs = require('fs');
 const path = require('path');
-const { PDFParse: pdfParse } = require('pdf-parse');
 
 const logger = {
   info: (msg) => console.log(`\x1b[34mℹ\x1b[0m ${msg}`),
@@ -18,209 +27,187 @@ const logger = {
   header: (msg) => console.log(`\n${'═'.repeat(70)}\n${msg}\n${'═'.repeat(70)}`),
 };
 
+// Default PDF path (user's completed fillable PDF)
+const DEFAULT_PDF_PATH = '/Users/ianring/Ian.ring Dropbox/Ian Ring/Car Crash Lawyer/PDFco/App ready/PDF fillabe/Final PDF/Car-Crash-Lawyer-AI-incident-report.pdf';
+
+// Output file path
+const OUTPUT_PATH = path.join(__dirname, '../field-list.json');
+
 /**
- * Extract form fields from a PDF file
+ * Extract all form fields from PDF
  * @param {string} pdfPath - Path to PDF file
  * @returns {Promise<Array>} Array of field objects
  */
 async function extractPdfFields(pdfPath) {
+  logger.info(`Reading PDF: ${pdfPath}`);
+
   try {
-    logger.info(`Reading PDF: ${pdfPath}`);
+    const pdfBytes = fs.readFileSync(pdfPath);
+    const pdfDoc = await PDFDocument.load(pdfBytes);
+    const form = pdfDoc.getForm();
 
-    // Check if credentials file exists
-    const credentialsPath = path.join(__dirname, '../credentials/pdfservices-api-credentials.json');
+    const fields = form.getFields();
+    logger.success(`Found ${fields.length} total form fields\n`);
 
-    if (!fs.existsSync(credentialsPath)) {
-      logger.warn('Adobe PDF Services credentials not found');
-      logger.info('Falling back to manual field extraction...');
-      return extractFieldsManually(pdfPath);
-    }
+    const fieldData = fields.map((field, index) => {
+      const fieldName = field.getName();
+      const fieldType = field.constructor.name;
 
-    // Adobe PDF Services approach
-    const credentials = PDFServicesSdk.Credentials
-      .serviceAccountCredentialsBuilder()
-      .fromFile(credentialsPath)
-      .build();
+      // Extract additional properties based on field type
+      let properties = {
+        name: fieldName,
+        type: fieldType,
+        index: index + 1
+      };
 
-    const executionContext = PDFServicesSdk.ExecutionContext.create(credentials);
-    const extractPdfOperation = PDFServicesSdk.ExtractPDF.Operation.createNew();
-
-    const input = PDFServicesSdk.FileRef.createFromLocalFile(pdfPath);
-    extractPdfOperation.setInput(input);
-
-    // Extract form fields and structure
-    extractPdfOperation.setOptions(
-      PDFServicesSdk.ExtractPDF.options.ExtractPdfOptions.createNew()
-        .addElementsToExtract(PDFServicesSdk.ExtractPDF.options.ExtractElementType.TEXT)
-    );
-
-    logger.info('Extracting PDF structure...');
-    const result = await extractPdfOperation.execute(executionContext);
-
-    const outputPath = path.join(__dirname, '../output/pdf-extraction.zip');
-    await result.saveAsFile(outputPath);
-
-    logger.success('PDF extracted successfully');
-
-    // Parse the extracted JSON
-    const extractedData = parseExtractedPdf(outputPath);
-    return extractedData;
-
-  } catch (error) {
-    logger.error(`Adobe PDF Services failed: ${error.message}`);
-    logger.info('Falling back to manual extraction...');
-    return extractFieldsManually(pdfPath);
-  }
-}
-
-/**
- * Manual field extraction (fallback method)
- * Uses pdf-parse library to extract text and infer structure
- */
-async function extractFieldsManually(pdfPath) {
-  try {
-    const dataBuffer = fs.readFileSync(pdfPath);
-
-    // pdf-parse v2 API: instantiate class with data buffer
-    const parser = new pdfParse({ data: dataBuffer });
-    const result = await parser.getText();
-
-    logger.info(`PDF has ${result.info.numpages} pages`);
-    logger.info('Note: Manual extraction provides limited field information');
-
-    // Extract form field patterns from text
-    const fields = [];
-    const lines = result.text.split('\n');
-
-    // Look for common form field patterns
-    lines.forEach((line, index) => {
-      // Pattern: Label followed by underscores or boxes
-      const fieldPattern = /([A-Za-z\s]+):\s*_{3,}|([A-Za-z\s]+):\s*\[[\s_]+\]/g;
-      const matches = line.matchAll(fieldPattern);
-
-      for (const match of matches) {
-        const label = (match[1] || match[2]).trim();
-        if (label && label.length > 2) {
-          fields.push({
-            name: label.toLowerCase().replace(/\s+/g, '_'),
-            type: 'text',
-            page: Math.ceil((index / lines.length) * result.info.numpages),
-            inferred: true
-          });
+      // Add type-specific properties
+      try {
+        if (fieldType === 'PDFTextField') {
+          const textField = field;
+          properties.multiline = textField.isMultiline();
+          properties.maxLength = textField.getMaxLength();
+          properties.alignment = textField.getAlignment();
+        } else if (fieldType === 'PDFCheckBox') {
+          // Checkbox fields
+          properties.checked = false; // Default state
+        } else if (fieldType === 'PDFRadioGroup') {
+          // Radio button groups
+          properties.options = field.getOptions();
+        } else if (fieldType === 'PDFDropdown') {
+          // Dropdown fields
+          properties.options = field.getOptions();
         }
+      } catch (error) {
+        // Some properties may not be available - that's okay
       }
+
+      return properties;
     });
 
-    logger.success(`Extracted ${fields.length} potential form fields (inferred)`);
-    return fields;
+    return fieldData;
 
   } catch (error) {
-    logger.error(`Manual extraction failed: ${error.message}`);
-    return [];
+    logger.error(`Error reading PDF: ${error.message}`);
+    throw error;
   }
 }
 
 /**
- * Parse extracted PDF data
+ * Categorize fields by type
+ * @param {Array} fields - Field data array
+ * @returns {Object} Categorized field statistics
  */
-function parseExtractedPdf(zipPath) {
-  // TODO: Unzip and parse the JSON structure
-  // For now, return empty array
-  logger.warn('PDF parsing not fully implemented - needs unzip logic');
-  return [];
+function categorizeFields(fields) {
+  const stats = {
+    total: fields.length,
+    byType: {},
+    multiline: 0,
+    checkboxes: 0,
+    dropdowns: 0,
+    radioGroups: 0,
+    textFields: 0
+  };
+
+  fields.forEach(field => {
+    // Count by type
+    stats.byType[field.type] = (stats.byType[field.type] || 0) + 1;
+
+    // Count specific categories
+    if (field.type === 'PDFTextField') {
+      stats.textFields++;
+      if (field.multiline) stats.multiline++;
+    } else if (field.type === 'PDFCheckBox') {
+      stats.checkboxes++;
+    } else if (field.type === 'PDFDropdown') {
+      stats.dropdowns++;
+    } else if (field.type === 'PDFRadioGroup') {
+      stats.radioGroups++;
+    }
+  });
+
+  return stats;
 }
 
 /**
- * Analyze PDF template and create field mapping
+ * Print field statistics
+ * @param {Object} stats - Field statistics
  */
-async function analyzePdfTemplate() {
-  logger.header('PDF TEMPLATE FIELD EXTRACTION');
-
-  const templates = [
-    {
-      name: 'Incident Report',
-      path: path.join(__dirname, '../pdf-templates/Car-Crash-Lawyer-AI-Incident-Report.pdf'),
-      outputFile: 'incident-pdf-fields.json'
-    },
-    {
-      name: 'Witness/Vehicle Template',
-      path: path.join(__dirname, '../pdf-templates/Car-Crash-Lawyer-AI-Witness-Vehicle-Template.pdf'),
-      outputFile: 'witness-vehicle-pdf-fields.json'
-    }
-  ];
-
-  const allResults = {};
-
-  for (const template of templates) {
-    logger.header(`Analyzing: ${template.name}`);
-
-    if (!fs.existsSync(template.path)) {
-      logger.error(`File not found: ${template.path}`);
-      continue;
-    }
-
-    const fields = await extractPdfFields(template.path);
-    allResults[template.name] = fields;
-
-    // Save results
-    const outputPath = path.join(__dirname, '../output', template.outputFile);
-    fs.mkdirSync(path.dirname(outputPath), { recursive: true });
-    fs.writeFileSync(outputPath, JSON.stringify(fields, null, 2));
-
-    logger.success(`Results saved to: ${outputPath}`);
-    logger.info(`Found ${fields.length} fields`);
-  }
-
-  // Compare with HTML fields
-  logger.header('COMPARING WITH HTML FORM FIELDS');
-
-  const htmlFieldsPath = '/tmp/html-field-list.txt';
-  if (fs.existsSync(htmlFieldsPath)) {
-    const htmlFields = fs.readFileSync(htmlFieldsPath, 'utf-8')
-      .split('\n')
-      .filter(f => f.trim());
-
-    logger.info(`HTML form has ${htmlFields.length} fields`);
-
-    const incidentFields = allResults['Incident Report'] || [];
-    const pdfFieldNames = incidentFields.map(f => f.name);
-
-    const missing = htmlFields.filter(hf => !pdfFieldNames.includes(hf));
-
-    if (missing.length > 0) {
-      logger.warn(`${missing.length} HTML fields NOT in PDF template:`);
-      missing.slice(0, 20).forEach(f => logger.info(`  - ${f}`));
-      if (missing.length > 20) {
-        logger.info(`  ... and ${missing.length - 20} more`);
-      }
-
-      // Save missing fields
-      const missingPath = path.join(__dirname, '../output/missing-pdf-fields.txt');
-      fs.writeFileSync(missingPath, missing.join('\n'));
-      logger.success(`Missing fields list saved to: ${missingPath}`);
-    } else {
-      logger.success('All HTML fields are present in PDF!');
-    }
-  } else {
-    logger.warn('HTML field list not found at /tmp/html-field-list.txt');
-  }
-
-  logger.header('EXTRACTION COMPLETE');
-  return allResults;
+function printStats(stats) {
+  console.log('\n📊 Field Statistics:\n');
+  console.log(`Total Fields: ${stats.total}`);
+  console.log(`Text Fields: ${stats.textFields}`);
+  console.log(`  - Multiline: ${stats.multiline}`);
+  console.log(`  - Single line: ${stats.textFields - stats.multiline}`);
+  console.log(`Checkboxes: ${stats.checkboxes}`);
+  console.log(`Dropdowns: ${stats.dropdowns}`);
+  console.log(`Radio Groups: ${stats.radioGroups}`);
+  console.log('\nBreakdown by PDF Type:');
+  Object.entries(stats.byType).forEach(([type, count]) => {
+    console.log(`  ${type}: ${count}`);
+  });
 }
 
-// Run extraction
-if (require.main === module) {
-  analyzePdfTemplate()
-    .then(() => {
-      logger.success('PDF template analysis complete!');
-      process.exit(0);
-    })
-    .catch(error => {
-      logger.error(`Fatal error: ${error.message}`);
-      console.error(error);
+/**
+ * Save field data to JSON file
+ * @param {Array} fields - Field data
+ * @param {string} outputPath - Output file path
+ */
+function saveFieldList(fields, outputPath) {
+  const output = {
+    extracted_at: new Date().toISOString(),
+    total_fields: fields.length,
+    pdf_path: process.argv[2] || DEFAULT_PDF_PATH,
+    fields: fields
+  };
+
+  fs.writeFileSync(outputPath, JSON.stringify(output, null, 2));
+  logger.success(`Saved field list to: ${outputPath}`);
+}
+
+/**
+ * Main execution
+ */
+async function main() {
+  try {
+    // Get PDF path from command line or use default
+    const pdfPath = process.argv[2] || DEFAULT_PDF_PATH;
+
+    // Check if file exists
+    if (!fs.existsSync(pdfPath)) {
+      logger.error(`PDF file not found: ${pdfPath}`);
+      console.log('\nUsage: node scripts/extract-pdf-fields.js [path-to-pdf]');
+      console.log(`\nDefault path: ${DEFAULT_PDF_PATH}\n`);
       process.exit(1);
-    });
+    }
+
+    logger.header('🚀 PDF FIELD EXTRACTOR');
+
+    // Extract fields
+    const fields = await extractPdfFields(pdfPath);
+
+    // Categorize and display stats
+    const stats = categorizeFields(fields);
+    printStats(stats);
+
+    // Save to file
+    saveFieldList(fields, OUTPUT_PATH);
+
+    console.log('\n✅ Extraction complete!\n');
+    console.log('Next steps:');
+    console.log('1. Review field-list.json');
+    console.log('2. Run: node scripts/generate-mapping-code.js');
+    console.log('3. Review generated database schema and mapping code\n');
+
+  } catch (error) {
+    logger.error(`Fatal error: ${error.message}`);
+    console.error(error);
+    process.exit(1);
+  }
 }
 
-module.exports = { extractPdfFields, analyzePdfTemplate };
+// Run if called directly
+if (require.main === module) {
+  main();
+}
+
+module.exports = { extractPdfFields, categorizeFields };

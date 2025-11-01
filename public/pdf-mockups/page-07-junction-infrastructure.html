@@ -34,11 +34,15 @@
       <section class="section">
         <h2 class="section-title">Junction & Road Infrastructure</h2>
 
+        <p class="field-help" style="margin-bottom: 15pt; padding: 10pt; background: var(--cream-gray); border-radius: 4pt;">
+          <strong>Conditional Logic:</strong> If road type is "Straight road" or "Not at a junction" is selected, skip remaining junction fields (mark as N/A).
+        </p>
+
         <div class="field-group">
           <label class="field-label">Junction Type</label>
           <select class="field-dropdown">
             <option value="">Select junction type...</option>
-            <option value="none">Not at a junction</option>
+            <option value="none">Not at a junction (straight road)</option>
             <option value="t-junction">T-junction</option>
             <option value="crossroads">Crossroads</option>
             <option value="roundabout">Roundabout</option>
