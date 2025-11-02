@@ -1,0 +1,42 @@
+[
+  {
+    "index": 1,
+    "name": "witness_name_3",
+    "type": "PDFTextField"
+  },
+  {
+    "index": 2,
+    "name": "witness_mobile_number_3",
+    "type": "PDFTextField"
+  },
+  {
+    "index": 3,
+    "name": "witness_email_address_3",
+    "type": "PDFTextField"
+  },
+  {
+    "index": 4,
+    "name": "witness_name_4",
+    "type": "PDFTextField"
+  },
+  {
+    "index": 5,
+    "name": "witness_mobile_number_4",
+    "type": "PDFTextField"
+  },
+  {
+    "index": 6,
+    "name": "witness_email_address_4",
+    "type": "PDFTextField"
+  },
+  {
+    "index": 7,
+    "name": "witness_statement_3",
+    "type": "PDFTextField"
+  },
+  {
+    "index": 8,
+    "name": "witness_statement_4",
+    "type": "PDFTextField"
+  }
+]
