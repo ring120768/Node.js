@@ -1,213 +1,187 @@
 #!/usr/bin/env node
 
 /**
- * PDF Field Extractor
+ * Extract all form field names from the PDF template
  *
- * Automatically extracts all form field names from a fillable PDF
- * and generates a structured JSON file for mapping to database/code.
+ * This script reads the main PDF template and extracts:
+ * - Field names
+ * - Field types (text, checkbox, radio, dropdown)
+ * - Default values (if any)
  *
- * Usage:
- *   node scripts/extract-pdf-fields.js
- *   node scripts/extract-pdf-fields.js /path/to/custom.pdf
- *
- * Output:
- *   - field-list.json (complete field inventory)
- *   - Console summary with statistics
+ * Output: CSV file with all field details for mapping analysis
  */
 
-const { PDFDocument } = require('pdf-lib');
 const fs = require('fs');
 const path = require('path');
+const { PDFDocument } = require('pdf-lib');
 
-const logger = {
-  info: (msg) => console.log(`\x1b[34mℹ\x1b[0m ${msg}`),
-  success: (msg) => console.log(`\x1b[32m✓\x1b[0m ${msg}`),
-  warn: (msg) => console.log(`\x1b[33m⚠\x1b[0m ${msg}`),
-  error: (msg) => console.log(`\x1b[31m✗\x1b[0m ${msg}`),
-  header: (msg) => console.log(`\n${'═'.repeat(70)}\n${msg}\n${'═'.repeat(70)}`),
+// ANSI colors for output
+const colors = {
+  reset: '\x1b[0m',
+  green: '\x1b[32m',
+  red: '\x1b[31m',
+  yellow: '\x1b[33m',
+  blue: '\x1b[34m',
+  cyan: '\x1b[36m'
 };
 
-// Default PDF path (user's completed fillable PDF)
-const DEFAULT_PDF_PATH = '/Users/ianring/Ian.ring Dropbox/Ian Ring/Car Crash Lawyer/PDFco/App ready/PDF fillabe/Final PDF/Car-Crash-Lawyer-AI-incident-report.pdf';
+function log(message, color = 'reset') {
+  console.log(`${colors[color]}${message}${colors.reset}`);
+}
 
-// Output file path
-const OUTPUT_PATH = path.join(__dirname, '../field-list.json');
+async function extractPdfFields() {
+  log('\n========================================', 'cyan');
+  log('  PDF Form Field Extractor', 'cyan');
+  log('========================================\n', 'cyan');
 
-/**
- * Extract all form fields from PDF
- * @param {string} pdfPath - Path to PDF file
- * @returns {Promise<Array>} Array of field objects
- */
-async function extractPdfFields(pdfPath) {
-  logger.info(`Reading PDF: ${pdfPath}`);
+  // Path to the main PDF template
+  const pdfPath = '/Users/ianring/Ian.ring Dropbox/Ian Ring/Car Crash Lawyer/PDFco/App ready/PDF fillabe/Final PDF/Car-Crash-Lawyer-AI-Incident-Report-Main.pdf';
+
+  log('📄 Loading PDF template...', 'blue');
+  log(`   ${pdfPath}\n`, 'cyan');
 
   try {
+    // Read the PDF file
     const pdfBytes = fs.readFileSync(pdfPath);
     const pdfDoc = await PDFDocument.load(pdfBytes);
+
+    log('✅ PDF loaded successfully\n', 'green');
+
+    // Get the form
     const form = pdfDoc.getForm();
-
     const fields = form.getFields();
-    logger.success(`Found ${fields.length} total form fields\n`);
 
-    const fieldData = fields.map((field, index) => {
-      const fieldName = field.getName();
-      const fieldType = field.constructor.name;
+    log(`📊 Found ${fields.length} form fields\n`, 'blue');
 
-      // Extract additional properties based on field type
-      let properties = {
-        name: fieldName,
-        type: fieldType,
-        index: index + 1
-      };
+    // Extract field information
+    const fieldData = [];
+    let textFieldCount = 0;
+    let checkboxCount = 0;
+    let radioCount = 0;
+    let dropdownCount = 0;
+    let otherCount = 0;
 
-      // Add type-specific properties
-      try {
-        if (fieldType === 'PDFTextField') {
-          const textField = field;
-          properties.multiline = textField.isMultiline();
-          properties.maxLength = textField.getMaxLength();
-          properties.alignment = textField.getAlignment();
-        } else if (fieldType === 'PDFCheckBox') {
-          // Checkbox fields
-          properties.checked = false; // Default state
-        } else if (fieldType === 'PDFRadioGroup') {
-          // Radio button groups
-          properties.options = field.getOptions();
-        } else if (fieldType === 'PDFDropdown') {
-          // Dropdown fields
-          properties.options = field.getOptions();
+    fields.forEach(field => {
+      const name = field.getName();
+      let type = 'Unknown';
+      let defaultValue = '';
+
+      // Determine field type
+      const constructor = field.constructor.name;
+
+      if (constructor.includes('TextField')) {
+        type = 'Text';
+        textFieldCount++;
+        try {
+          defaultValue = field.getText() || '';
+        } catch (e) {
+          defaultValue = '';
         }
-      } catch (error) {
-        // Some properties may not be available - that's okay
+      } else if (constructor.includes('CheckBox')) {
+        type = 'Checkbox';
+        checkboxCount++;
+        try {
+          defaultValue = field.isChecked() ? 'Yes' : 'No';
+        } catch (e) {
+          defaultValue = '';
+        }
+      } else if (constructor.includes('RadioGroup')) {
+        type = 'Radio';
+        radioCount++;
+        try {
+          defaultValue = field.getSelected() || '';
+        } catch (e) {
+          defaultValue = '';
+        }
+      } else if (constructor.includes('Dropdown')) {
+        type = 'Dropdown';
+        dropdownCount++;
+        try {
+          defaultValue = field.getSelected().join(', ') || '';
+        } catch (e) {
+          defaultValue = '';
+        }
+      } else {
+        type = constructor;
+        otherCount++;
       }
 
-      return properties;
+      fieldData.push({
+        name,
+        type,
+        defaultValue: defaultValue.toString().replace(/,/g, ';') // Escape commas for CSV
+      });
     });
 
-    return fieldData;
+    // Sort by field name
+    fieldData.sort((a, b) => a.name.localeCompare(b.name));
 
-  } catch (error) {
-    logger.error(`Error reading PDF: ${error.message}`);
-    throw error;
-  }
-}
-
-/**
- * Categorize fields by type
- * @param {Array} fields - Field data array
- * @returns {Object} Categorized field statistics
- */
-function categorizeFields(fields) {
-  const stats = {
-    total: fields.length,
-    byType: {},
-    multiline: 0,
-    checkboxes: 0,
-    dropdowns: 0,
-    radioGroups: 0,
-    textFields: 0
-  };
-
-  fields.forEach(field => {
-    // Count by type
-    stats.byType[field.type] = (stats.byType[field.type] || 0) + 1;
-
-    // Count specific categories
-    if (field.type === 'PDFTextField') {
-      stats.textFields++;
-      if (field.multiline) stats.multiline++;
-    } else if (field.type === 'PDFCheckBox') {
-      stats.checkboxes++;
-    } else if (field.type === 'PDFDropdown') {
-      stats.dropdowns++;
-    } else if (field.type === 'PDFRadioGroup') {
-      stats.radioGroups++;
-    }
-  });
-
-  return stats;
-}
-
-/**
- * Print field statistics
- * @param {Object} stats - Field statistics
- */
-function printStats(stats) {
-  console.log('\n📊 Field Statistics:\n');
-  console.log(`Total Fields: ${stats.total}`);
-  console.log(`Text Fields: ${stats.textFields}`);
-  console.log(`  - Multiline: ${stats.multiline}`);
-  console.log(`  - Single line: ${stats.textFields - stats.multiline}`);
-  console.log(`Checkboxes: ${stats.checkboxes}`);
-  console.log(`Dropdowns: ${stats.dropdowns}`);
-  console.log(`Radio Groups: ${stats.radioGroups}`);
-  console.log('\nBreakdown by PDF Type:');
-  Object.entries(stats.byType).forEach(([type, count]) => {
-    console.log(`  ${type}: ${count}`);
-  });
-}
-
-/**
- * Save field data to JSON file
- * @param {Array} fields - Field data
- * @param {string} outputPath - Output file path
- */
-function saveFieldList(fields, outputPath) {
-  const output = {
-    extracted_at: new Date().toISOString(),
-    total_fields: fields.length,
-    pdf_path: process.argv[2] || DEFAULT_PDF_PATH,
-    fields: fields
-  };
-
-  fs.writeFileSync(outputPath, JSON.stringify(output, null, 2));
-  logger.success(`Saved field list to: ${outputPath}`);
-}
-
-/**
- * Main execution
- */
-async function main() {
-  try {
-    // Get PDF path from command line or use default
-    const pdfPath = process.argv[2] || DEFAULT_PDF_PATH;
-
-    // Check if file exists
-    if (!fs.existsSync(pdfPath)) {
-      logger.error(`PDF file not found: ${pdfPath}`);
-      console.log('\nUsage: node scripts/extract-pdf-fields.js [path-to-pdf]');
-      console.log(`\nDefault path: ${DEFAULT_PDF_PATH}\n`);
-      process.exit(1);
-    }
-
-    logger.header('🚀 PDF FIELD EXTRACTOR');
-
-    // Extract fields
-    const fields = await extractPdfFields(pdfPath);
-
-    // Categorize and display stats
-    const stats = categorizeFields(fields);
-    printStats(stats);
+    // Generate CSV content
+    const csvHeader = 'Field Name,Field Type,Default Value\n';
+    const csvRows = fieldData.map(field =>
+      `"${field.name}","${field.type}","${field.defaultValue}"`
+    ).join('\n');
+    const csvContent = csvHeader + csvRows;
 
     // Save to file
-    saveFieldList(fields, OUTPUT_PATH);
+    const outputPath = path.join(__dirname, '..', 'EXTRACTED_PDF_FIELDS.csv');
+    fs.writeFileSync(outputPath, csvContent, 'utf8');
 
-    console.log('\n✅ Extraction complete!\n');
-    console.log('Next steps:');
-    console.log('1. Review field-list.json');
-    console.log('2. Run: node scripts/generate-mapping-code.js');
-    console.log('3. Review generated database schema and mapping code\n');
+    // Display summary
+    log('========================================', 'cyan');
+    log('  Field Type Summary', 'cyan');
+    log('========================================\n', 'cyan');
+
+    log(`📝 Text Fields:     ${textFieldCount}`, 'green');
+    log(`☑️  Checkboxes:      ${checkboxCount}`, 'green');
+    log(`🔘 Radio Buttons:   ${radioCount}`, 'green');
+    log(`📋 Dropdowns:       ${dropdownCount}`, 'green');
+    if (otherCount > 0) {
+      log(`❓ Other:           ${otherCount}`, 'yellow');
+    }
+    log(`\n📊 Total Fields:    ${fields.length}`, 'blue');
+
+    log('\n========================================', 'cyan');
+    log('  Output Saved', 'cyan');
+    log('========================================\n', 'cyan');
+
+    log(`✅ CSV file created:`, 'green');
+    log(`   ${outputPath}\n`, 'cyan');
+
+    // Show first 10 fields as preview
+    log('📋 First 10 fields:', 'blue');
+    fieldData.slice(0, 10).forEach((field, i) => {
+      log(`   ${i + 1}. ${field.name} (${field.type})`, 'cyan');
+    });
+
+    if (fieldData.length > 10) {
+      log(`   ... and ${fieldData.length - 10} more\n`, 'yellow');
+    }
+
+    log('\n💡 Next Steps:', 'yellow');
+    log('   1. Open EXTRACTED_PDF_FIELDS.csv to see all fields', 'yellow');
+    log('   2. Compare against lib/pdfGenerator.js field mappings', 'yellow');
+    log('   3. Identify unmapped fields', 'yellow');
+    log('   4. Update pdfGenerator.js with correct field names\n', 'yellow');
 
   } catch (error) {
-    logger.error(`Fatal error: ${error.message}`);
+    log('\n❌ Error extracting fields:', 'red');
     console.error(error);
+
+    log('\n💡 Troubleshooting:', 'yellow');
+    log('   → Check PDF path is correct', 'yellow');
+    log('   → Ensure PDF is a valid form document', 'yellow');
+    log('   → Verify PDF is not corrupted or encrypted\n', 'yellow');
+
     process.exit(1);
   }
 }
 
-// Run if called directly
-if (require.main === module) {
-  main();
-}
-
-module.exports = { extractPdfFields, categorizeFields };
+// Run extraction
+extractPdfFields()
+  .then(() => process.exit(0))
+  .catch(error => {
+    log('\n❌ Unexpected error:', 'red');
+    console.error(error);
+    process.exit(1);
+  });
