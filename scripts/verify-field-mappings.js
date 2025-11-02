@@ -59,13 +59,40 @@ function verifyMappings() {
       name: 'Witness 2: email (FIXED)',
       pattern: /setFieldText\(['"]witness_email_address_2['"],\s*witness2\.witness_2_email/,
       description: 'Maps witness2.witness_2_email to PDF field witness_email_address_2 (was witness_email_2)'
+    },
+
+    // Phase 2: PDF field name corrections (5 high-confidence fuzzy matches)
+    {
+      name: 'Weather: hail (hyphen fix)',
+      pattern: /checkField\(['"]weather-hail['"],\s*incident\.weather_hail/,
+      description: 'Fixed: weather_hail → weather-hail (PDF uses hyphen, not underscore)'
+    },
+    {
+      name: 'Visibility: poor (typo)',
+      pattern: /checkField\(['"]visability_poor['"],\s*incident\.visibility_poor/,
+      description: 'Fixed: visibility_poor → visability_poor (PDF has actual typo - missing "i")'
+    },
+    {
+      name: 'Visibility: very poor (typo)',
+      pattern: /checkField\(['"]visability_very_poor['"],\s*incident\.visibility_very_poor/,
+      description: 'Fixed: visibility_very_poor → visability_very_poor (PDF has actual typo - missing "i")'
+    },
+    {
+      name: 'Vehicle: colour (US spelling)',
+      pattern: /setFieldText\(['"]vehicle_found_color['"],\s*incident\.dvla_vehicle_color/,
+      description: 'Fixed: vehicle_found_colour → vehicle_found_color (PDF uses US spelling)'
+    },
+    {
+      name: 'Police: officer name (singular)',
+      pattern: /setFieldText\(['"]police_officer_name['"],\s*incident\.police_officer_name/,
+      description: 'Fixed: police_officers_name → police_officer_name (PDF uses singular)'
     }
   ];
 
   let passed = 0;
   let failed = 0;
 
-  log('Checking Phase 1 Fixes:\n', 'blue');
+  log('Checking Phase 1 & 2 Fixes:\n', 'blue');
 
   checks.forEach(check => {
     const found = check.pattern.test(code);
@@ -99,11 +126,13 @@ function verifyMappings() {
   }
 
   if (passed === checks.length && failed === 0) {
-    log('\n🎉 All Phase 1 fixes verified successfully!\n', 'green');
+    log('\n🎉 All Phase 1 & 2 fixes verified successfully!\n', 'green');
+    log('Phase 1: User data + Witness 1 + Witness 2 email (8 fields)', 'cyan');
+    log('Phase 2: PDF field name corrections (5 fields)\n', 'cyan');
     log('Next steps:', 'cyan');
     log('  1. Test with real data: node test-form-filling.js [user-uuid]', 'cyan');
-    log('  2. Check generated PDF for new fields', 'cyan');
-    log('  3. Verify witness and user data appears correctly\n', 'cyan');
+    log('  2. Check generated PDF for all corrected fields', 'cyan');
+    log('  3. Verify witness, user, and condition data appears correctly\n', 'cyan');
   } else {
     log('\n⚠️  Some fixes may not be complete. Review output above.\n', 'yellow');
   }
