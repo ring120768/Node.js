@@ -1,9 +1,9 @@
 # PAGE FOUR (LOCATION & JUNCTION) - Complete Analysis
 
 **Date:** 2025-01-03
-**Status:** 🔍 ANALYSIS IN PROGRESS
+**Status:** ✅ 100% RECONCILED
 **HTML Field Names:** 10
-**Actual Data Points:** 24+
+**Actual Data Points:** 25+
 **Your CSV:** "Page 4 Location (21)"
 
 ---
@@ -85,6 +85,7 @@
 9. `narrow_road` - Narrow road or single-track
 10. `pot_holes_road_defects` - Pot holes and road defects
 11. `oil_spills` - Oil spills on road surface
+12. `animals_in_road` - Animals in road
 
 ### Section 4: Visibility Issues (1 field name, 5 values)
 
@@ -326,16 +327,16 @@ HTML separates "visibility factors" from "special conditions" but PDF combines t
 
 ### Issue 4: PDF Has Extra Fields Not in HTML
 PDF has special conditions not captured in HTML form:
-- oil_spills
-- defective_road
-- pot_holes
-- animals
+- ✅ oil_spills - ADDED to HTML
+- defective_road (maps to pot_holes_road_defects)
+- ✅ pot_holes - ADDED to HTML as pot_holes_road_defects
+- ✅ animals - ADDED to HTML as animals_in_road
 
-**Impact:** LOW - PDF more comprehensive, but HTML form doesn't collect this data
+**Impact:** LOW - Most fields now mapped
 
 **Solution:**
-- Add these checkboxes to HTML form? OR
-- Leave as future enhancement
+- ✅ Added oil_spills, pot_holes_road_defects, and animals_in_road checkboxes to HTML
+- defective_road maps to pot_holes_road_defects (broader category)
 
 ---
 
