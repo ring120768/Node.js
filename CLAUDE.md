@@ -42,109 +42,6 @@ node test-what3words.js                 # Test what3words API integration
 
 ---
 
-## Design System - Color Palette
-
-**Purpose**: Consistent, accessible color scheme optimized for users in stressful situations (accident victims).
-
-### Primary Colors
-
-| Color Name | Hex Code | Usage | Notes |
-|------------|----------|-------|-------|
-| **Deep Teal** | `#0E7490` | Header gradient start, accent color, links | Primary brand color |
-| **Deep Teal Dark** | `#0c6179` | Header gradient end, hover states | Darker shade for depth |
-| **Warm Beige** | `#E8DCC4` | Page background | Soft, calming neutral |
-| **Dark Gray** | `#4B5563` | Borders, dividers | Strong contrast for definition |
-
-### Form Elements
-
-| Color Name | Hex Code | Usage | Notes |
-|------------|----------|-------|-------|
-| **Steel Gray** | `#CFD2D7` | Input field backgrounds (text, date, time, textarea) | Subtle, readable |
-| **Cream Gray** | `#F5F1E8` | Form section containers, checkbox backgrounds | Warm neutral |
-| **Silver** | `#C0C0C0` | Button backgrounds | Standard buttons |
-| **Silver Hover** | `#B0B0B0` | Button hover state | Slightly darker |
-
-### Status & Feedback Colors
-
-| Color Name | Hex Code | Usage | Notes |
-|------------|----------|-------|-------|
-| **Success Green** | `#10b981` | Checked checkboxes, success states | Positive feedback |
-| **Danger Red** | `#ef4444` | Error states, warnings | Alert color |
-| **Warning Orange** | `#f59e0b` | Caution states | Medium priority alerts |
-
-### Text Colors
-
-| Color Name | Hex Code | Usage | Notes |
-|------------|----------|-------|-------|
-| **Text Dark** | `#333333` | Primary text, headings | High contrast |
-| **Text Muted** | `#666666` | Help text, secondary information | Lower emphasis |
-| **White** | `#FFFFFF` | Text on dark backgrounds, icons | Maximum contrast |
-
-### CSS Variables (Standard Implementation)
-
-```css
-:root {
-  /* Brand Colors */
-  --grad-start: #0E7490;
-  --grad-end: #0c6179;
-  --accent: #0E7490;
-  --accent-hover: #0c6179;
-  --bg-light: #E8DCC4;
-
-  /* Text */
-  --text-dark: #333;
-  --text-muted: #666;
-
-  /* Borders & Dividers */
-  --border: #4B5563;
-
-  /* Buttons */
-  --button-bg: #C0C0C0;
-  --button-hover: #B0B0B0;
-
-  /* Form Elements */
-  --input-bg: #CFD2D7;          /* Input field interiors */
-  --checkbox-bg: #F5F1E8;        /* Checkbox backgrounds */
-  --container-bg: #F5F1E8;       /* Form section containers */
-
-  /* Status Colors */
-  --success: #10b981;
-  --danger: #ef4444;
-  --warning: #f59e0b;
-}
-```
-
-### Design Rationale
-
-**Why These Colors?**
-- **Warm neutrals** (Beige, Cream Gray) create a calming environment for stressed users
-- **Steel Gray inputs** provide subtle contrast without harsh brightness
-- **Deep Teal** is professional yet approachable for legal context
-- **Dark borders** (#4B5563) provide clear visual structure without being overwhelming
-
-**Accessibility Rating**: 🏆 **A+ (92/100)**
-- **WCAG 2.1 AA**: 95% compliant ✅
-- **WCAG 2.1 AAA**: 70% compliant ⭐
-- **Color Blind Friendly**: Excellent (95/100)
-- **Cognitive Load**: Excellent (90/100) - optimized for stressed users
-
-**Accessibility Notes**:
-- Primary text exceeds AAA standards (7:1+ contrast ratios)
-- Text Dark (#333) on all backgrounds: 7.2:1 to 9.1:1 contrast
-- Status colors supplemented with icons/text for color-blind users
-- Soft backgrounds reduce eye strain for teary-eyed users
-- Large touch targets (44x44px minimum)
-- Keyboard navigation fully supported
-- Form data persists via session storage
-
-**Known Issues**:
-- Text Muted (#666) on Steel Gray (#CFD2D7): 3.9:1 (use for large text only)
-- Deep Teal links on Beige: 4.0:1 (always underline, or use for headings)
-
-**Last Updated**: 2025-10-30 (Medical consultant UX improvements)
-
----
-
 ## Critical Architecture Patterns
 
 ### 1. Server-Side Page Authentication (Security Wall)
@@ -399,10 +296,50 @@ await supabase
 | Table | Purpose | Primary Key | Critical Fields |
 |-------|---------|-------------|-----------------|
 | `user_signup` | Personal info, vehicle, insurance | `create_user_id` (UUID) | `email`, `gdpr_consent` |
-| `incident_reports` | Accident details (131+ columns) | `id` | `create_user_id` (indexed) |
+| `incident_reports` | Accident details (160+ columns) | `id` | `create_user_id` (indexed) |
+| `incident_other_vehicles` | Other vehicles involved (65+ columns) | `id` | `create_user_id`, `vehicle_index` |
+| `incident_witnesses` | Witness information (30+ columns) | `id` | `create_user_id`, `witness_index` |
 | `user_documents` | Images, processing status | `id` | `status`, `retry_count`, `public_url` |
 | `temp_uploads` | Temporary uploads (24hr expiry) | `id` | `session_id`, `created_at` |
 | `ai_transcription` | OpenAI Whisper transcripts | `id` | `create_user_id`, `transcript_text` |
+
+### Recent Schema Changes (2025-10-30 to 2025-11-03)
+
+**Migration context:** Transitioning from Typeform (160+ fields) to in-house HTML forms (99+ fields).
+
+**Major additions:**
+- 64 new fields across multiple tables for medical details, safety conditions, legal declarations
+- TEXT[] array columns for multi-select checkboxes (medical symptoms, weather conditions, road features)
+- New tables: `incident_other_vehicles`, `incident_witnesses` (normalized from incident_reports)
+
+**Critical migrations:**
+- `001_add_new_pdf_fields.sql` - Added 25 single-value columns
+- `002_add_missing_ui_fields.sql` - Added medical/safety arrays
+- `006_add_page_four_columns.sql` - Added vehicle damage/conditions columns
+- See `/migrations` folder for complete migration history with rollback scripts
+
+**Migration pattern:**
+```sql
+-- All migrations follow this pattern:
+BEGIN;
+  -- 1. Add columns with safe defaults
+  ALTER TABLE incident_reports ADD COLUMN IF NOT EXISTS new_field TEXT;
+
+  -- 2. Add helpful comments
+  COMMENT ON COLUMN incident_reports.new_field IS 'Description from HTML form';
+
+  -- 3. Log the change
+  DO $$
+  BEGIN
+    RAISE NOTICE 'Migration complete: added new_field column';
+  END $$;
+COMMIT;
+```
+
+**Field mapping documentation:**
+- `COMPREHENSIVE_FIELD_MAPPING_PLAN.md` - Complete 64-field analysis
+- `SCHEMA_ANALYSIS_SUMMARY.md` - Current schema state
+- Use `/db` slash command for live schema
 
 ---
 
@@ -593,42 +530,49 @@ node test-what3words.js                 # Test what3words API
   /components       # Reusable UI components
   /js               # Utilities, initializers
   /css              # Styling (design-system.css)
-  *.html            # Page templates
+  *.html            # Page templates (incident-form-page1.html through page9.html)
 
 /lib
   /services         # Shared services (email, GDPR)
   /data             # Database queries (dataFetcher.js)
   /generators       # Email templates, PDF utilities
 
+/migrations         # Database migrations (numbered, with rollbacks)
+/scripts            # Utility scripts (field extraction, testing, analysis)
+
 index.js            # HTTP server + WebSocket initialization + graceful shutdown
 ```
 
 ---
 
-## Development Philosophy
+## Recent Work Context (2025-10-30 to 2025-11-03)
 
-**Default Behavior:** Just do it. Action over asking for routine development work.
+### Audit Preparation Project
 
-**Code Quality:**
-- Clarity > Cleverness
-- Working > "Perfect"
-- Solve today's problem, not hypothetical futures
+**Goal:** Transition from Typeform to in-house HTML forms while maintaining data integrity.
 
-**Workflow:**
-1. Plan before coding
-2. Small iterations (≤200 lines per diff)
-3. Test everything (include run instructions)
-4. Integrate, don't duplicate (add to existing files)
+**Status:** Field mapping analysis complete (see `COMPREHENSIVE_FIELD_MAPPING_PLAN.md`)
 
-**Anti-Patterns to Avoid:**
-- ❌ "Production-ready code" (over-engineering trigger)
-- ❌ "Enterprise-grade solution" (unnecessary complexity)
-- ❌ "Future-proof implementation" (solving imaginary problems)
+**Key Deliverables:**
+1. **Field Analysis:** 99 HTML fields → 64 new DB fields identified
+2. **Migration Plan:** 7-phase SQL rollout with rollback safety
+3. **Testing Strategy:** 5-phase validation plan
+4. **Documentation:** Complete field mapping, schema analysis
 
-**Use instead:**
-- ✅ "Working code that does X"
-- ✅ "Implementation handling cases: A, B, C"
-- ✅ "Here's a validation script to test it"
+**Critical Scripts:**
+- `scripts/extract-all-ui-fields.js` - Extract fields from HTML forms
+- `scripts/analyze-schema.js` - Analyze database schema
+- `scripts/verify-field-mappings.js` - Validate field mappings
+- `node test-form-filling.js [uuid]` - Test PDF generation with new fields
+
+**Next Steps:**
+1. Run migrations in development environment
+2. Update controllers to handle new fields
+3. Update PDF mapping for new fields
+4. Test end-to-end data flow
+5. Staged production rollout
+
+**Branch:** `feat/audit-prep`
 
 ---
 
@@ -648,306 +592,7 @@ index.js            # HTTP server + WebSocket initialization + graceful shutdown
 
 ---
 
-## MCP Tools & Sub-Agents
-
-**IMPORTANT:** You have access to powerful MCP (Model Context Protocol) servers and 37 specialized sub-agents. Use them intelligently based on the task at hand.
-
-### Available MCP Servers
-
-#### 🔍 Perplexity MCP - Web Research & Current Information
-
-**When to use:**
-- Researching current events, trends, or breaking news
-- Getting multiple perspectives on topics
-- Fact-checking and verification
-- Questions about "latest", "current", "trending"
-
-**Available tools:**
-- `perplexity_search` - Quick web search with ranked results
-- `perplexity_ask` - Conversational AI with real-time search
-- `perplexity_research` - Deep comprehensive research
-- `perplexity_reason` - Advanced reasoning for complex problems
-
-**Example use cases:**
-- "What are the latest UK fintech regulations in 2025?"
-- "Research best practices for Node.js security"
-
-#### 🕷️ Firecrawl MCP - Web Scraping & Data Extraction
-
-**When to use:**
-- Extracting structured data from specific websites
-- Building datasets from multiple web pages
-- Need clean, structured, LLM-ready data
-
-**Available tools:**
-- `firecrawl_scrape` - Single URL extraction with markdown output
-- `firecrawl_batch_scrape` - Multiple URLs efficiently
-- `firecrawl_map` - Discover all URLs on a website
-- `firecrawl_search` - Search web and extract from results
-- `firecrawl_crawl` - Deep website crawling with depth control
-- `firecrawl_extract` - LLM-powered structured extraction with schema
-
-**Example use cases:**
-- "Extract all documentation pages from stripe.com/docs"
-- "Scrape competitor pricing models"
-
-#### 📚 Ref MCP - Documentation Search (Token-Efficient)
-
-**When to use:**
-- Looking up API documentation
-- Finding library/framework documentation
-- Getting code examples from official docs
-- Want to minimize token costs on documentation
-
-**Available tools:**
-- `ref_search_documentation` - Search technical docs intelligently
-- `ref_read_url` - Fetch specific documentation pages
-
-**Key advantages:**
-- 85% token reduction vs. traditional web scraping
-- Session-aware filtering (never repeats results)
-
-**Example use cases:**
-- "Use ref to find Supabase RLS documentation"
-- "Search ref for Express.js middleware best practices"
-
-#### ⚡ Zapier MCP - App Integration & Automation
-
-**When to use:**
-- Automating tasks across multiple apps
-- Sending emails, messages, or notifications
-- Creating, updating, or searching records in business apps
-- Need to take real actions (not just research)
-
-**Available connections:** 8,000+ apps including Gmail, Outlook, Google Calendar, Slack, Asana, GitHub, etc.
-
-**Example use cases:**
-- "Send an email via Gmail with the bug report"
-- "Create a Google Calendar event for deployment"
-- "Add a row to Google Sheet with test results"
-
-### 37 Specialized Sub-Agents
-
-**What they are:** AI agents with deep expertise in specific domains, located at `~/.claude/agents/lst97/`
-
-**When to use:** Complex multi-domain tasks, specialized expertise needed, code reviews, or when you need expert-level guidance.
-
-#### 🏗️ Development Agents (14 agents)
-
-- `frontend-developer` - React, responsive layouts, state management
-- `react-pro` - Expert React with hooks & performance optimization
-- `nextjs-pro` - Next.js SSR/SSG specialist
-- `ui-designer` / `ux-designer` - Creative UI/UX design
-- `backend-architect` - RESTful APIs, microservices, schemas
-- `full-stack-developer` - End-to-end web applications
-- `typescript-pro` - Advanced TypeScript development
-- `python-pro` - Idiomatic Python with optimizations
-- `golang-pro` - Go with goroutines & channels
-- `mobile-developer` - React Native/Flutter apps
-- `electron-pro` - Desktop applications
-- `dx-optimizer` - Developer experience & tooling
-- `legacy-modernizer` - Refactor legacy codebases
-
-#### 🤖 Data & AI Agents (8 agents)
-
-- `ai-engineer` - AI/ML integrations
-- `ml-engineer` - Machine learning models
-- `data-engineer` - Data pipelines & ETL
-- `data-scientist` - Analytics & modeling
-- `prompt-engineer` - LLM prompt optimization
-- `postgres-pro` - PostgreSQL expert (⭐ **USE FOR THIS PROJECT**)
-- `database-optimizer` - DB performance tuning
-- `graphql-architect` - GraphQL API design
-
-#### 🏗️ Infrastructure Agents (5 agents)
-
-- `cloud-architect` - Cloud infrastructure design
-- `deployment-engineer` - CI/CD & deployments
-- `devops-incident-responder` - DevOps incidents
-- `incident-responder` - General incident response
-- `performance-engineer` - Performance optimization
-
-#### ✅ Quality & Testing Agents (5 agents)
-
-- `code-reviewer` - Code quality reviews (⭐ **USE PROACTIVELY**)
-- `architect-review` - Architecture reviews
-- `debugger` - Bug investigation & fixes
-- `qa-expert` - Quality assurance
-- `test-automator` - Test automation
-
-#### 🔒 Security Agent (1 agent)
-
-- `security-auditor` - Security audits & vulnerability scanning (⭐ **USE FOR AUDITS**)
-
-#### 📚 Documentation Agents (2 agents)
-
-- `api-documenter` - API documentation
-- `documentation-expert` - General documentation
-
-#### 🎯 Meta Agent (1 agent)
-
-- `agent-organizer` - **THE ORCHESTRATOR** - coordinates multiple agents for complex tasks
-
-### Intelligent Tool Selection Strategy
-
-**Decision Framework:**
-
-**Research Question → Use Perplexity**
-- "What's the latest..."
-- "Compare different approaches..."
-- Need synthesized insights from multiple sources
-
-**Data Extraction → Use Firecrawl**
-- "Extract data from..."
-- "Scrape all..."
-- Need structured, machine-readable output
-
-**Technical Documentation → Use Ref**
-- "Look up [API/library] documentation"
-- "Find code examples for..."
-- Need accurate technical reference
-
-**Take Action in Apps → Use Zapier**
-- "Send an email to..."
-- "Create a calendar event..."
-- Need to actually DO something (not just research)
-
-**Complex Development Tasks → Use Sub-Agents**
-- "Refactor this component..."
-- "Review my code for security issues..."
-- "Optimize this database query..."
-- Need expert-level guidance or multi-domain coordination
-
-### Combined Workflows (Maximum Power!)
-
-**Workflow 1: Research → Extract → Analyze**
-```
-1. Perplexity: Research UK GDPR best practices
-2. Firecrawl: Extract examples from ICO website
-3. Analyze: Apply to project and create checklist
-```
-
-**Workflow 2: Expert Development**
-```
-1. Backend-Architect: Design API endpoint structure
-2. Postgres-Pro: Optimize database queries and RLS policies
-3. Security-Auditor: Review for vulnerabilities
-4. Code-Reviewer: Final quality check
-5. Documentation-Expert: Generate docs
-```
-
-**Workflow 3: Documentation → Implementation**
-```
-1. Ref: Look up Supabase Auth documentation
-2. Implement: Write authentication code
-3. Test-Automator: Generate test cases
-4. Code-Reviewer: Review implementation
-```
-
-### Agentive Design Patterns
-
-**Pattern 1: Proactive Agent Use**
-- Use `code-reviewer` IMMEDIATELY after writing significant code
-- Use `security-auditor` for any auth/security changes
-- Use `postgres-pro` for any database schema changes
-- Use `architect-review` after structural changes
-
-**Pattern 2: Agent Orchestration**
-- For complex tasks spanning multiple domains, start with `agent-organizer`
-- Let it coordinate specialized agents automatically
-- Example: "Build authentication system" → organizer delegates to backend-architect, security-auditor, postgres-pro, test-automator
-
-**Pattern 3: Iterative Refinement**
-- Initial implementation (you)
-- Code review (code-reviewer agent)
-- Security audit (security-auditor agent)
-- Performance optimization (performance-engineer agent)
-- Documentation (documentation-expert agent)
-
-### Prompt Engineering Lifecycle
-
-**1. Context Gathering**
-- Understand requirements, constraints, existing code
-- Use Ref/Firecrawl to gather technical documentation
-- Use Perplexity for research if needed
-
-**2. Planning**
-- Break down complex tasks
-- Identify which agents/tools to use
-- Create execution plan
-
-**3. Implementation**
-- Write working code
-- Use specialized agents for domain expertise
-- Test as you build
-
-**4. Validation**
-- Use test-automator for test generation
-- Use code-reviewer for quality check
-- Use security-auditor for security review
-
-**5. Documentation**
-- Use documentation-expert for comprehensive docs
-- Update CLAUDE.md with new patterns
-- Create test scripts for validation
-
-**6. Refinement**
-- Performance optimization (performance-engineer)
-- Architecture review (architect-review)
-- Final polish
-
-### Quick Reference: Tool & Agent Selection
-
-**Need current info/research?** → 🔍 Perplexity
-**Need data extraction?** → 🕷️ Firecrawl
-**Need technical docs?** → 📚 Ref
-**Need to take action?** → ⚡ Zapier
-**Need expert development?** → 🤖 Sub-Agents (37 specialists)
-
-**For this project specifically:**
-- **Supabase queries** → `postgres-pro` agent
-- **Security reviews** → `security-auditor` agent
-- **Code reviews** → `code-reviewer` agent (use proactively!)
-- **Backend APIs** → `backend-architect` agent
-- **Complex tasks** → `agent-organizer` (orchestrator)
-
----
-
-## Permissions Policy
-
-### ✅ Auto-Execute (No Confirmation Needed)
-
-**Development work:**
-- Create, edit, delete, rename files
-- Write/modify JavaScript, HTML, CSS, Node.js code
-- Install packages, create configs
-- Fix bugs, implement features, refactor code
-
-**Database (Development):**
-- Query development database
-- Create/modify tables and schemas (dev environment)
-- Set up RLS policies (dev environment)
-
-**Git operations:**
-- Commit to development/feature branches
-- Create branches and pull requests
-
-**MCP Tools (Pre-approved):**
-- All web searches (Perplexity, Firecrawl, Ref)
-- Documentation lookups
-- Single URL scraping
-
-### ⚠️ Ask First
-
-- Production database changes (INSERT, UPDATE, DELETE on prod)
-- Pushing to main/master branch
-- Deleting multiple files or tables (>3 items)
-- Bulk operations (>10 records)
-- Security or RLS policy changes in production
-- Large-scale web scraping (cost implications)
-
----
-
-**Last Updated:** 2025-10-29
+**Last Updated:** 2025-11-03
 **Version:** 2.0.1
+**Current Branch:** feat/audit-prep
 **Maintained By:** Claude Code
