@@ -770,93 +770,37 @@
           <span class="required">*</span>
         </label>
 
-        <div class="radio-group">
-          <div class="radio-option">
-            <input type="radio" id="driveable-yes" name="vehicle_driveable" value="yes" required>
-            <label for="driveable-yes">Yes, I drove it away</label>
+        <div class="checkbox-grid" data-exclusive="vehicle-driveable">
+          <div class="checkbox-option">
+            <input
+              type="checkbox"
+              id="driveable-yes"
+              name="vehicle_driveable"
+              value="yes"
+              onchange="exclusiveCheck(this, 'vehicle-driveable')"
+              style="width: 20px; height: 20px; cursor: pointer;">
+            <label for="driveable-yes">✅ Yes, I drove it away</label>
           </div>
-          <div class="radio-option">
-            <input type="radio" id="driveable-no" name="vehicle_driveable" value="no">
-            <label for="driveable-no">No, it needed to be towed</label>
+          <div class="checkbox-option">
+            <input
+              type="checkbox"
+              id="driveable-no"
+              name="vehicle_driveable"
+              value="no"
+              onchange="exclusiveCheck(this, 'vehicle-driveable')"
+              style="width: 20px; height: 20px; cursor: pointer;">
+            <label for="driveable-no">🚛 No, it needed to be towed</label>
           </div>
-          <div class="radio-option">
-            <input type="radio" id="driveable-unsure" name="vehicle_driveable" value="unsure">
-            <label for="driveable-unsure">Unsure / Did not attempt</label>
+          <div class="checkbox-option">
+            <input
+              type="checkbox"
+              id="driveable-unsure"
+              name="vehicle_driveable"
+              value="unsure"
+              onchange="exclusiveCheck(this, 'vehicle-driveable')"
+              style="width: 20px; height: 20px; cursor: pointer;">
+            <label for="driveable-unsure">🤷 Unsure / Did not attempt</label>
           </div>
-        </div>
-      </div>
-
-      <!-- Recovery Details (conditional) -->
-      <div id="recovery-details-section" class="form-section" style="display: none; margin-top: 20px; padding: 20px; border-radius: 8px; border: 1px solid var(--border);">
-        <h4 style="margin: 0 0 16px 0; color: var(--accent); font-size: 1.125rem;">🚛 Recovery Details</h4>
-
-        <!-- Auto-fill Checkbox -->
-        <div style="background: #e3f2fd; border-left: 4px solid #2196f3; padding: 12px 16px; margin-bottom: 20px; border-radius: 4px;">
-          <label style="display: flex; align-items: center; gap: 12px; cursor: pointer; margin: 0;">
-            <input type="checkbox" id="use-saved-recovery" style="width: 20px; height: 20px; cursor: pointer;">
-            <span style="font-weight: 600; color: #1565c0;">
-              Use my saved recovery service details
-            </span>
-          </label>
-          <p style="margin: 8px 0 0 32px; font-size: 0.875rem; color: #1565c0;" id="saved-recovery-info">
-            Loading your saved details...
-          </p>
-        </div>
-
-        <div class="form-group">
-          <label for="recovery-company" class="form-label">
-            Recovery company name
-            <span style="color: var(--text-muted); font-weight: normal;">(Optional)</span>
-          </label>
-          <p class="form-hint">Name of the company or service that recovered your vehicle</p>
-          <input
-            type="text"
-            id="recovery-company"
-            name="recovery_company"
-            placeholder="e.g., AA Recovery, RAC, Green Flag, local garage"
-          />
-        </div>
-
-        <div class="form-group">
-          <label for="recovery-phone" class="form-label">
-            Recovery company phone number
-            <span style="color: var(--text-muted); font-weight: normal;">(Optional)</span>
-          </label>
-          <p class="form-hint">Contact number for the recovery service</p>
-          <input
-            type="tel"
-            id="recovery-phone"
-            name="recovery_phone"
-            placeholder="e.g., 0800 123 4567"
-          />
-        </div>
-
-        <div class="form-group">
-          <label for="recovery-location" class="form-label">
-            Where was your vehicle taken?
-            <span style="color: var(--text-muted); font-weight: normal;">(Optional)</span>
-          </label>
-          <p class="form-hint">Location where your vehicle was recovered to (e.g., garage, storage yard, home address)</p>
-          <input
-            type="text"
-            id="recovery-location"
-            name="recovery_location"
-            placeholder="e.g., ABC Motors, 123 High Street, or home address"
-          />
-        </div>
-
-        <div class="form-group">
-          <label for="recovery-notes" class="form-label">
-            Additional recovery details
-            <span style="color: var(--text-muted); font-weight: normal;">(Optional)</span>
-          </label>
-          <p class="form-hint">Any other relevant information about the recovery (e.g., cost, time taken, special handling)</p>
-          <textarea
-            id="recovery-notes"
-            name="recovery_notes"
-            rows="3"
-            placeholder="e.g., Recovery cost £150, took 2 hours to arrive, vehicle stored at garage overnight"
-          ></textarea>
         </div>
       </div>
       </div><!-- End damage-details-section -->
@@ -973,6 +917,17 @@
       }
     });
 
+    // Mutual exclusivity for checkboxes (UX Design Pattern)
+    function exclusiveCheck(checkbox, groupName) {
+      if (checkbox.checked) {
+        document.querySelectorAll(`[data-exclusive="${groupName}"] input[type="checkbox"]`)
+          .forEach(cb => {
+            if (cb !== checkbox) cb.checked = false;
+          });
+      }
+      validateForm();
+    }
+
     // Form Validation
     function validateForm() {
       const usualVehicle = document.querySelector('input[name="usual_vehicle"]:checked');
@@ -992,7 +947,7 @@
         // Check damage description
         const damageDescription = document.getElementById('damage-description').value.trim();
 
-        // Check vehicle driveable
+        // Check vehicle driveable (now checkboxes)
         const vehicleDriveable = document.querySelector('input[name="vehicle_driveable"]:checked');
 
         damageFieldsValid = hasImpactPoint && damageDescription && vehicleDriveable;
@@ -1013,24 +968,7 @@
 
     document.getElementById('damage-description').addEventListener('input', validateForm);
 
-    document.querySelectorAll('input[name="vehicle_driveable"]').forEach(radio => {
-      radio.addEventListener('change', () => {
-        validateForm();
-        toggleRecoveryDetails();
-      });
-    });
-
-    // Toggle recovery details section based on driveable status
-    function toggleRecoveryDetails() {
-      const recoverySection = document.getElementById('recovery-details-section');
-      const driveableNo = document.getElementById('driveable-no');
-
-      if (driveableNo && driveableNo.checked) {
-        recoverySection.style.display = 'block';
-      } else {
-        recoverySection.style.display = 'none';
-      }
-    }
+    // Note: vehicle_driveable validation now handled by exclusiveCheck() function
 
     // Toggle damage details section based on no-damage checkbox
     function toggleDamageDetails() {
@@ -1038,7 +976,7 @@
       const damageDetailsSection = document.getElementById('damage-details-section');
       const impactCheckboxes = document.querySelectorAll('input[name="impact_point"]');
       const damageDescription = document.getElementById('damage-description');
-      const driveableRadios = document.querySelectorAll('input[name="vehicle_driveable"]');
+      const driveableCheckboxes = document.querySelectorAll('input[name="vehicle_driveable"]');
 
       if (noDamageCheckbox.checked) {
         // Hide damage details section
@@ -1054,23 +992,16 @@
         damageDescription.value = '';
         damageDescription.removeAttribute('required');
 
-        // Clear and remove required from driveable radios
-        driveableRadios.forEach(radio => {
-          radio.checked = false;
-          radio.removeAttribute('required');
+        // Clear driveable checkboxes
+        driveableCheckboxes.forEach(checkbox => {
+          checkbox.checked = false;
         });
-
-        // Hide recovery section if visible
-        document.getElementById('recovery-details-section').style.display = 'none';
       } else {
         // Show damage details section
         damageDetailsSection.style.display = 'block';
 
         // Restore required attribute to damage description
         damageDescription.setAttribute('required', 'required');
-
-        // Restore required to driveable radios
-        document.getElementById('driveable-yes').setAttribute('required', 'required');
       }
 
       validateForm();
@@ -1078,97 +1009,6 @@
 
     // Add event listener for no-damage checkbox
     document.getElementById('no-damage-checkbox').addEventListener('change', toggleDamageDetails);
-
-    // Auto-fill recovery details from user profile
-    async function loadUserRecoveryDetails() {
-      const savedRecoveryInfo = document.getElementById('saved-recovery-info');
-
-      try {
-        // First check sessionStorage for user profile data
-        const userSignupData = sessionStorage.getItem('user_signup');
-
-        if (userSignupData) {
-          const userData = JSON.parse(userSignupData);
-
-          if (userData.recovery_company || userData.recovery_breakdown_number) {
-            // User has saved recovery details
-            const company = userData.recovery_company || 'Not specified';
-            const phone = userData.recovery_breakdown_number || 'Not specified';
-
-            savedRecoveryInfo.innerHTML = `
-              <strong>Company:</strong> ${company}<br>
-              <strong>Phone:</strong> ${phone}
-            `;
-            savedRecoveryInfo.style.color = '#1565c0';
-
-            return {
-              company: userData.recovery_company,
-              phone: userData.recovery_breakdown_number
-            };
-          } else {
-            // No saved recovery details
-            savedRecoveryInfo.textContent = 'No saved recovery service found. You can enter details manually below.';
-            savedRecoveryInfo.style.color = '#666';
-            return null;
-          }
-        } else {
-          // No user data in sessionStorage
-          savedRecoveryInfo.textContent = 'No saved recovery service found. You can enter details manually below.';
-          savedRecoveryInfo.style.color = '#666';
-          return null;
-        }
-      } catch (error) {
-        console.error('Error loading user recovery details:', error);
-        savedRecoveryInfo.textContent = 'Unable to load saved details. You can enter them manually below.';
-        savedRecoveryInfo.style.color = '#ff6b6b';
-        return null;
-      }
-    }
-
-    // Handle use-saved-recovery checkbox
-    document.getElementById('use-saved-recovery').addEventListener('change', async function() {
-      const recoveryCompanyInput = document.getElementById('recovery-company');
-      const recoveryPhoneInput = document.getElementById('recovery-phone');
-
-      if (this.checked) {
-        // Fetch and auto-fill saved recovery details
-        const savedDetails = await loadUserRecoveryDetails();
-
-        if (savedDetails) {
-          if (savedDetails.company) {
-            recoveryCompanyInput.value = savedDetails.company;
-          }
-          if (savedDetails.phone) {
-            recoveryPhoneInput.value = savedDetails.phone;
-          }
-
-          // Trigger auto-save
-          autoSave();
-        } else {
-          // No saved details, uncheck the box
-          this.checked = false;
-        }
-      } else {
-        // Clear the auto-filled fields when unchecked
-        // Only clear if they match the saved values
-        const savedDetails = await loadUserRecoveryDetails();
-
-        if (savedDetails) {
-          if (recoveryCompanyInput.value === savedDetails.company) {
-            recoveryCompanyInput.value = '';
-          }
-          if (recoveryPhoneInput.value === savedDetails.phone) {
-            recoveryPhoneInput.value = '';
-          }
-
-          // Trigger auto-save
-          autoSave();
-        }
-      }
-    });
-
-    // Load recovery details info on page load (don't auto-fill until checkbox clicked)
-    loadUserRecoveryDetails();
 
     // Auto-save
     function autoSave() {
@@ -1235,9 +1075,8 @@
 
         // Restore vehicle driveable
         if (data.vehicle_driveable) {
-          const radio = document.querySelector(`input[name="vehicle_driveable"][value="${data.vehicle_driveable}"]`);
-          if (radio) radio.checked = true;
-          toggleRecoveryDetails(); // Show/hide recovery section
+          const checkbox = document.querySelector(`input[name="vehicle_driveable"][value="${data.vehicle_driveable}"]`);
+          if (checkbox) checkbox.checked = true;
         }
 
         validateForm();
