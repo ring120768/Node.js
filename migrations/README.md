@@ -6,7 +6,12 @@ This directory contains SQL migration scripts for the Car Crash Lawyer AI databa
 
 Migrations are numbered sequentially and should be run in order:
 - `001_add_new_pdf_fields.sql` - Adds fields for revised PDF (207 fields)
-- `001_add_new_pdf_fields_rollback.sql` - Rollback for migration 001
+- `002_rename_visibility_column.sql` - Rename visibility_severely_restricted → visibility_street_lights
+- `003_add_your_speed_column.sql` - Add your_speed field for user estimated speed
+- `004_rename_road_type_column.sql` - Rename road_type_other → road_type_private_road
+- `005_add_user_documents_columns.sql` - Add incident_report_id and download_url to user_documents
+
+Each migration has a corresponding `*_rollback.sql` file for reverting changes.
 
 ## Migration 001: Add New PDF Fields
 
@@ -45,6 +50,111 @@ Migrations are numbered sequentially and should be run in order:
 2. **idx_other_vehicles_export** - Find exported vehicles quickly
 3. **idx_incident_reports_mot_expiry** - MOT expiry date queries
 4. **idx_incident_reports_tax_due** - Tax due date queries
+
+---
+
+## Migration 002: Rename Visibility Column
+
+**Date**: 2025-11-03
+**Purpose**: Rename `visibility_severely_restricted` to `visibility_street_lights` for clarity
+
+### Changes
+
+**incident_reports** (column rename):
+- `visibility_severely_restricted` → `visibility_street_lights`
+
+### Why This Change
+
+- HTML form (Page Three) uses `visibility_street_lights` for checkbox
+- Old name `visibility_severely_restricted` was generic and unclear
+- New name matches UI and is more descriptive (street lights present/on)
+
+### Impact
+
+- No data loss (column rename only)
+- Improves code clarity and HTML-to-database mapping
+
+---
+
+## Migration 003: Add Your Speed Column
+
+**Date**: 2025-11-03
+**Purpose**: Add column to store user's estimated speed at time of accident
+
+### Changes
+
+**incident_reports** (+1 column):
+- `your_speed` TEXT - User estimated speed in MPH
+
+### Index Added
+
+- **idx_incident_reports_your_speed** - Speed queries (optional, for analytics)
+
+### Why This Change
+
+- HTML form (Page Three) has `your_speed` text input field
+- Database had no column to store this data
+- Critical for accident reconstruction and liability assessment
+
+### Impact
+
+- No data loss (new column only)
+- Existing records will have NULL for this field
+
+---
+
+## Migration 004: Rename Road Type Column
+
+**Date**: 2025-11-03
+**Purpose**: Rename `road_type_other` to `road_type_private_road` for UK legal specificity
+
+### Changes
+
+**incident_reports** (column rename):
+- `road_type_other` → `road_type_private_road`
+
+### Why This Change
+
+- HTML form (Page Three) uses `road_type_private_road` checkbox
+- Generic "other" doesn't capture UK legal importance
+- Private roads have different liability rules in UK law
+- More specific naming improves data quality
+
+### Impact
+
+- No data loss (column rename only)
+- Better alignment with UK legal requirements
+
+---
+
+## Migration 005: Add User Documents Columns
+
+**Date**: 2025-11-03
+**Purpose**: Link user documents to incident reports and add permanent download URLs
+
+### Changes
+
+**user_documents** (+2 columns):
+- `incident_report_id` UUID - Foreign key to `incident_reports(id)`
+- `download_url` TEXT - Permanent API URL for document access
+
+### Indexes Added
+
+1. **idx_user_documents_incident_report** - Queries by incident report
+2. **idx_user_documents_user_incident** - Combined user + incident queries
+
+### Why This Change
+
+- Location photos (Page 4a) need to be linked to incident reports
+- Existing `signed_url` expires after 1-24 hours
+- Need permanent API URLs that generate fresh signed URLs on demand
+- Enables proper document retrieval for PDF generation
+
+### Impact
+
+- No data loss (new columns only)
+- Existing `user_documents` records will have NULL for `incident_report_id` (signup documents)
+- Enables LocationPhotoService implementation for permanent storage
 
 ---
 
