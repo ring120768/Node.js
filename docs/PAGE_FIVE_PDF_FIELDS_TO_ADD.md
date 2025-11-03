@@ -8,7 +8,7 @@
 
 ## PDF Fields That Need To Be Added (5 total)
 
-### 1. usual_vehicle (Radio Button Group - 2 options)
+### 1. usual_vehicle (CheckBox Group - 2 checkboxes)
 
 **HTML Source** (incident-form-page5-vehicle.html, lines 559-583):
 ```html
@@ -22,21 +22,24 @@
 </div>
 ```
 
+**⚠️ UX NOTE**: HTML currently uses radio buttons, but **checkboxes are preferred** for visibility and ease of use (especially for stressed users). PDF should use CheckBox fields to align with overall UX philosophy.
+
 **Database Column**: `incident_reports.usual_vehicle` (will be TEXT after Migration 008)
 
 **PDF Field Specification**:
-- **Type**: Radio Button Group (2 buttons)
+- **Type**: CheckBox (2 separate checkboxes, mutually exclusive)
 - **Suggested Field Names**:
-  - `usual_vehicle_yes` (CheckBox or RadioButton)
-  - `usual_vehicle_no` (CheckBox or RadioButton)
+  - `usual_vehicle_yes` (CheckBox) - "Yes, my usual vehicle"
+  - `usual_vehicle_no` (CheckBox) - "No, a different vehicle"
 - **Data Source**: `usual_vehicle` column (values: "yes" or "no")
 - **Mapping Logic**:
   ```javascript
-  if (usual_vehicle === "yes") check usual_vehicle_yes
-  if (usual_vehicle === "no") check usual_vehicle_no
+  pdfFields.usual_vehicle_yes = (data.usual_vehicle === "yes");
+  pdfFields.usual_vehicle_no = (data.usual_vehicle === "no");
   ```
 - **Location in PDF**: Suggest near "Your Vehicle Details" section (near existing vehicle_found_* fields)
 - **Priority**: MEDIUM (helpful context, not critical for claim)
+- **Design Note**: Use CheckBox (☐) not RadioButton (○) - easier to see for stressed users
 
 ---
 
