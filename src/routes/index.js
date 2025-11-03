@@ -31,6 +31,7 @@ const dvlaRoutes = require('./dvla.routes'); // NEW: DVLA vehicle lookup (fronte
 const signupRoutes = require('./signup.routes'); // NEW: User signup form submission
 const imageUploadRoutes = require('./imageUpload.routes'); // NEW: Post-signup image upload
 const tempImageUploadRoutes = require('./tempImageUpload.routes'); // NEW: Immediate temp upload for mobile
+const incidentFormRoutes = require('./incidentForm.routes'); // NEW: Multi-page incident form submission
 
 // GitHub webhooks are mounted in app.js via webhook.routes.js (not imported here)
 const locationRoutes = require('./location.routes');
@@ -334,6 +335,7 @@ router.use('/api/witnesses', witnessesRoutes); // NEW: Witnesses management
 router.use('/api/other-vehicles', vehiclesRoutes); // NEW: Other vehicles with DVLA integration
 router.use('/api/dvla', dvlaRoutes); // NEW: DVLA vehicle lookup (frontend-friendly GET endpoints)
 router.use('/api/signup', signupRoutes); // NEW: User signup form submission (custom HTML form)
+router.use('/api/incident-form', incidentFormRoutes); // NEW: Multi-page incident form submission (Pages 1-12)
 // Note: Webhook routes are mounted directly in app.js for raw body handling
 // GitHub webhooks are mounted in app.js via webhook.routes.js (not here)
 router.use('/api/location', locationRoutes);
