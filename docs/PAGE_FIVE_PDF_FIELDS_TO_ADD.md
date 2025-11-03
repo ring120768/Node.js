@@ -72,7 +72,7 @@
 
 ---
 
-### 3. recovery_phone (Text Field - Phone Number)
+### 3. incident_recovery_phone (Text Field - Phone Number)
 
 **HTML Source** (incident-form-page5-vehicle.html, lines 824-832):
 ```html
@@ -87,20 +87,22 @@
 
 **Database Column**: `incident_reports.recovery_phone` (TEXT)
 
+**⚠️ NAMING NOTE**: Prefixed with `incident_` to avoid collision with user_signup fields and clearly indicate this is incident-specific recovery data (not membership info).
+
 **PDF Field Specification**:
 - **Type**: TextField (single line)
-- **Suggested Field Name**: `recovery_phone_number`
+- **Suggested Field Name**: `incident_recovery_phone`
 - **Data Source**: `recovery_phone` column
 - **Format**: UK phone number (supports: 0800 123 4567, +44 800 123 4567, (0800) 123-4567)
 - **Mapping Logic**: Direct copy
-- **Location in PDF**: Group with `recovery_company` (currently at index 15)
+- **Location in PDF**: Group with `incident_recovery_company`
 - **Priority**: HIGH - Evidence chain (who to contact for vehicle recovery details)
 
 **Example**: "0800 887 766" (AA), "+44 800 828 282" (RAC)
 
 ---
 
-### 4. recovery_location (Text Field - Address/Location)
+### 4. incident_recovery_location (Text Field - Address/Location)
 
 **HTML Source** (incident-form-page5-vehicle.html, lines 834-842):
 ```html
@@ -114,19 +116,21 @@
 
 **Database Column**: `incident_reports.recovery_location` (TEXT)
 
+**⚠️ NAMING NOTE**: Prefixed with `incident_` for consistency with other incident recovery fields.
+
 **PDF Field Specification**:
 - **Type**: TextField (single line, or multi-line if space allows)
-- **Suggested Field Name**: `recovery_destination` or `vehicle_taken_to`
+- **Suggested Field Name**: `incident_recovery_location`
 - **Data Source**: `recovery_location` column
 - **Mapping Logic**: Direct copy
-- **Location in PDF**: Group with `recovery_company` and `recovery_phone`
+- **Location in PDF**: Group with `incident_recovery_company` and `incident_recovery_phone`
 - **Priority**: 🔴 CRITICAL - Evidence chain (where vehicle is located for inspection)
 
 **Example**: "ABC Motors, 123 High Street, London, SW1A 1AA" or "Home address: 45 Oak Lane, Manchester M1 2AB"
 
 ---
 
-### 5. recovery_notes (Text Area - Multi-line)
+### 5. incident_recovery_notes (Text Area - Multi-line)
 
 **HTML Source** (incident-form-page5-vehicle.html, lines 844-862):
 ```html
@@ -140,12 +144,14 @@
 
 **Database Column**: `incident_reports.recovery_notes` (TEXT)
 
+**⚠️ NAMING NOTE**: Prefixed with `incident_` for consistency with other incident recovery fields.
+
 **PDF Field Specification**:
 - **Type**: TextField (Multi-line)
-- **Suggested Field Name**: `recovery_additional_notes` or `recovery_details`
+- **Suggested Field Name**: `incident_recovery_notes`
 - **Data Source**: `recovery_notes` column (free text)
 - **Mapping Logic**: Direct copy
-- **Location in PDF**: Group with other recovery fields
+- **Location in PDF**: Group with other incident recovery fields
 - **Size**: Medium text box (3-4 lines)
 - **Priority**: MEDIUM-HIGH - Contextual evidence (timing, condition, special circumstances)
 
@@ -158,14 +164,16 @@
 
 | # | PDF Field Name (suggested) | Type | DB Column | Priority | Notes |
 |---|---------------------------|------|-----------|----------|-------|
-| 1 | `usual_vehicle_yes` | CheckBox | `usual_vehicle` | MEDIUM | 2-button radio group |
+| 1 | `usual_vehicle_yes` | CheckBox | `usual_vehicle` | MEDIUM | 2-button checkbox group |
 | 1 | `usual_vehicle_no` | CheckBox | `usual_vehicle` | MEDIUM | (part of same group) |
 | 2 | `damage_description_text` | TextField (multi) | `damage_to_your_vehicle` | 🔴 CRITICAL | User's damage narrative |
-| 3 | `recovery_phone_number` | TextField | `recovery_phone` | HIGH | Contact for recovery company |
-| 4 | `recovery_destination` | TextField | `recovery_location` | 🔴 CRITICAL | Where vehicle is now |
-| 5 | `recovery_additional_notes` | TextField (multi) | `recovery_notes` | MEDIUM-HIGH | Recovery circumstances |
+| 3 | `incident_recovery_phone` | TextField | `recovery_phone` | HIGH | Prefixed to avoid collision |
+| 4 | `incident_recovery_location` | TextField | `recovery_location` | 🔴 CRITICAL | Prefixed to avoid collision |
+| 5 | `incident_recovery_notes` | TextField (multi) | `recovery_notes` | MEDIUM-HIGH | Prefixed to avoid collision |
 
 **Total**: 6 PDF form fields to add (usual_vehicle counts as 2 checkboxes)
+
+**⚠️ CRITICAL NOTE**: Recovery fields prefixed with `incident_` to avoid collision with existing `recovery_company` (Index 15) from user_signup table (Page 1 membership info). See `PDF_FIELD_NAME_COLLISIONS_REPORT.md` for details.
 
 ---
 
@@ -198,17 +206,30 @@
 └─────────────────────────────────────────────┘
 ```
 
-**Section: Recovery Details** (near existing recovery_company at index 15)
+**Section: Recovery Details** (separate from user_signup recovery fields)
 ```
-[Existing: recovery_company - Index 15]
-[NEW: recovery_phone_number] ___________________
-[NEW: recovery_destination] ____________________
-[NEW: recovery_additional_notes]
+⚠️ NOTE: Existing recovery_company (Index 15) is from user_signup (Page 1 - membership)
+         New fields below are incident-specific (Page 5 - actual recovery used)
+
+[Existing: recovery_company - Index 15] ← USER'S MEMBERSHIP (AA/RAC from Page 1)
+
+[NEW: incident_recovery_phone] ← ACTUAL RECOVERY PHONE (Page 5)
+[NEW: incident_recovery_location] ← WHERE VEHICLE TAKEN (Page 5)
+[NEW: incident_recovery_notes] ← RECOVERY DETAILS (Page 5)
 ┌─────────────────────────────────────────────┐
 │                                             │
 │                                             │
 │                                             │
 └─────────────────────────────────────────────┘
+```
+
+**Alternative**: If you prefer to clarify the existing field too, consider renaming:
+```
+[RENAMED: recovery_membership - Index 15] ← USER'S MEMBERSHIP (was recovery_company)
+[NEW: incident_recovery_company] ← ACTUAL COMPANY USED
+[NEW: incident_recovery_phone] ← PHONE
+[NEW: incident_recovery_location] ← LOCATION
+[NEW: incident_recovery_notes] ← NOTES
 ```
 
 ---
