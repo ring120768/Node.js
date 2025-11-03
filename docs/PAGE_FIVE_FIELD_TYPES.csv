@@ -1,0 +1,26 @@
+UI Field,HTML Field Name,Database Column,Database Table,Data Type,Notes
+Were you driving your usual vehicle?,,usual_vehicle,incident_reports,text,"Values: 'yes' or 'no' (Migration 008 changed from BOOLEAN to TEXT)"
+UK Vehicle License Plate,vehicle_license_plate,dvla_lookup_reg,incident_reports,text,User enters license plate for DVLA lookup
+DVLA Vehicle Make (auto-populated),,dvla_vehicle_lookup_make,incident_reports,text,Auto-populated from DVLA API or manual entry fallback
+DVLA Vehicle Model (auto-populated),,dvla_vehicle_lookup_model,incident_reports,text,Auto-populated from DVLA API or manual entry fallback
+DVLA Vehicle Colour (auto-populated),,dvla_vehicle_lookup_color,incident_reports,text,Auto-populated from DVLA API or manual entry fallback
+DVLA Vehicle Year (auto-populated),,dvla_vehicle_lookup_year,incident_reports,text,Auto-populated from DVLA API or manual entry fallback
+DVLA Vehicle Fuel Type (auto-populated),,dvla_vehicle_lookup_fuel_type,incident_reports,text,Auto-populated from DVLA API or manual entry fallback
+DVLA MOT Status (auto-populated),,dvla_vehicle_lookup_mot_status,incident_reports,text,Auto-populated from DVLA API or manual entry fallback
+DVLA MOT Expiry (auto-populated),,dvla_vehicle_lookup_mot_expiry,incident_reports,text,Auto-populated from DVLA API or manual entry fallback
+DVLA Tax Status (auto-populated),,dvla_vehicle_lookup_tax_status,incident_reports,text,Auto-populated from DVLA API or manual entry fallback
+DVLA Tax Due Date (auto-populated),,dvla_vehicle_lookup_tax_due_date,incident_reports,text,Auto-populated from DVLA API or manual entry fallback
+DVLA Insurance Status (auto-populated),,dvla_vehicle_lookup_insurance_status,incident_reports,text,Auto-populated from DVLA API or manual entry fallback
+My vehicle has no visible damage,no_damage,no_damage,incident_reports,boolean,Checkbox - if checked hides damage section
+Point of Impact - Front,impact_point[],impact_point,incident_reports,text[],"Array of impact points (Migration 008 changed from TEXT to TEXT[])"
+Point of Impact - Front Driver Side,impact_point[],impact_point,incident_reports,text[],"Array of impact points (Migration 008 changed from TEXT to TEXT[])"
+Point of Impact - Front Passenger Side,impact_point[],impact_point,incident_reports,text[],"Array of impact points (Migration 008 changed from TEXT to TEXT[])"
+Point of Impact - Driver Side,impact_point[],impact_point,incident_reports,text[],"Array of impact points (Migration 008 changed from TEXT to TEXT[])"
+Point of Impact - Passenger Side,impact_point[],impact_point,incident_reports,text[],"Array of impact points (Migration 008 changed from TEXT to TEXT[])"
+Point of Impact - Rear Driver Side,impact_point[],impact_point,incident_reports,text[],"Array of impact points (Migration 008 changed from TEXT to TEXT[])"
+Point of Impact - Rear Passenger Side,impact_point[],impact_point,incident_reports,text[],"Array of impact points (Migration 008 changed from TEXT to TEXT[])"
+Point of Impact - Rear,impact_point[],impact_point,incident_reports,text[],"Array of impact points (Migration 008 changed from TEXT to TEXT[])"
+Point of Impact - Roof,impact_point[],impact_point,incident_reports,text[],"Array of impact points (Migration 008 changed from TEXT to TEXT[])"
+Point of Impact - Undercarriage,impact_point[],impact_point,incident_reports,text[],"Array of impact points (Migration 008 changed from TEXT to TEXT[])"
+Describe damage to your vehicle,damage_description,damage_to_your_vehicle,incident_reports,text,Textarea - user's narrative description of damage
+Was your vehicle driveable?,,vehicle_driveable,incident_reports,text,"Values: 'yes', 'no', 'unsure' (Migration 008 changed from BOOLEAN to TEXT)"

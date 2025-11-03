@@ -1177,16 +1177,12 @@
 
       const formData = {
         usual_vehicle: document.querySelector('input[name="usual_vehicle"]:checked')?.value,
-        license_plate: document.getElementById('license-plate').value,
-        vehicle_data: vehicleData,
+        dvla_lookup_reg: document.getElementById('license-plate').value,
+        dvla_vehicle_data: vehicleData, // Contains dvla_vehicle_lookup_* fields
         no_damage: document.getElementById('no-damage-checkbox').checked,
         impact_points: impactPoints,
-        damage_description: document.getElementById('damage-description').value,
-        vehicle_driveable: document.querySelector('input[name="vehicle_driveable"]:checked')?.value,
-        recovery_company: document.getElementById('recovery-company').value,
-        recovery_phone: document.getElementById('recovery-phone').value,
-        recovery_location: document.getElementById('recovery-location').value,
-        recovery_notes: document.getElementById('recovery-notes').value
+        damage_to_your_vehicle: document.getElementById('damage-description').value,
+        vehicle_driveable: document.querySelector('input[name="vehicle_driveable"]:checked')?.value
       };
 
       localStorage.setItem('page5_data', JSON.stringify(formData));
@@ -1203,8 +1199,8 @@
           document.querySelector(`input[name="usual_vehicle"][value="${data.usual_vehicle}"]`).checked = true;
         }
 
-        if (data.license_plate) {
-          document.getElementById('license-plate').value = data.license_plate;
+        if (data.dvla_lookup_reg || data.license_plate) {
+          document.getElementById('license-plate').value = data.dvla_lookup_reg || data.license_plate;
         }
 
         // Restore no-damage checkbox
@@ -1213,8 +1209,8 @@
           toggleDamageDetails(); // Hide damage section if no damage
         }
 
-        if (data.vehicle_data) {
-          vehicleData = data.vehicle_data;
+        if (data.dvla_vehicle_data || data.vehicle_data) {
+          vehicleData = data.dvla_vehicle_data || data.vehicle_data;
           // Re-display vehicle details
           document.getElementById('vehicle-details').style.display = 'block';
           document.getElementById('vehicle-make').textContent = vehicleData.make || '-';
@@ -1233,8 +1229,8 @@
         }
 
         // Restore damage description
-        if (data.damage_description) {
-          document.getElementById('damage-description').value = data.damage_description;
+        if (data.damage_to_your_vehicle || data.damage_description) {
+          document.getElementById('damage-description').value = data.damage_to_your_vehicle || data.damage_description;
         }
 
         // Restore vehicle driveable
@@ -1242,20 +1238,6 @@
           const radio = document.querySelector(`input[name="vehicle_driveable"][value="${data.vehicle_driveable}"]`);
           if (radio) radio.checked = true;
           toggleRecoveryDetails(); // Show/hide recovery section
-        }
-
-        // Restore recovery details
-        if (data.recovery_company) {
-          document.getElementById('recovery-company').value = data.recovery_company;
-        }
-        if (data.recovery_phone) {
-          document.getElementById('recovery-phone').value = data.recovery_phone;
-        }
-        if (data.recovery_location) {
-          document.getElementById('recovery-location').value = data.recovery_location;
-        }
-        if (data.recovery_notes) {
-          document.getElementById('recovery-notes').value = data.recovery_notes;
         }
 
         validateForm();
