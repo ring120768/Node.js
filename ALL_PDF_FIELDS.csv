@@ -207,6 +207,8 @@ Template,Field Name,Field Type,Default Value
 "Main Incident Report","date_of_birth","TextField",""
 "Main Incident Report","emergency_contact_name","TextField",""
 "Main Incident Report","emergency_contact_number","TextField",""
+"Main Incident Report","medical_symptom_dizziness","CheckBox","No"
+"Main Incident Report","medical_symptom_life _threatening","CheckBox","No"
 "Other Vehicle 1","other_driver_mobile_1","TextField",""
 "Other Vehicle 1","other_driver_name_1","TextField",""
 "Other Vehicle 1","other_driver_email_1","TextField",""

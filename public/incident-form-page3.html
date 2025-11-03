@@ -688,8 +688,8 @@
             <span>Very poor</span>
           </label>
           <label>
-            <input type="checkbox" name="visibility_severely_restricted" value="true">
-            <span>Severely restricted</span>
+            <input type="checkbox" name="visibility_street_lights" value="true">
+            <span>Street lights</span>
           </label>
         </div>
       </div>
@@ -841,7 +841,7 @@
         visibility_good: document.querySelector('input[name="visibility_good"]').checked,
         visibility_poor: document.querySelector('input[name="visibility_poor"]').checked,
         visibility_very_poor: document.querySelector('input[name="visibility_very_poor"]').checked,
-        visibility_severely_restricted: document.querySelector('input[name="visibility_severely_restricted"]').checked
+        visibility_street_lights: document.querySelector('input[name="visibility_street_lights"]').checked
       };
 
       // Collect road markings visibility (checkboxes)
@@ -952,7 +952,7 @@
 
           // Restore visibility (checkboxes)
           const visibilityFields = [
-            'visibility_good', 'visibility_poor', 'visibility_very_poor', 'visibility_severely_restricted'
+            'visibility_good', 'visibility_poor', 'visibility_very_poor', 'visibility_street_lights'
           ];
           visibilityFields.forEach(field => {
             if (data[field]) {
