@@ -246,12 +246,37 @@ function buildIncidentData(userId, formData) {
     junction_type: page4.junction_type || null,
     traffic_controls: page4.traffic_controls || null,
 
-    // Page 5: Your Vehicle
-    your_vehicle_make: page5.vehicle_make || null,
-    your_vehicle_model: page5.vehicle_model || null,
-    your_vehicle_color: page5.vehicle_color || null,
-    your_vehicle_registration: page5.vehicle_registration || null,
-    your_vehicle_year: page5.vehicle_year || null,
+    // Page 5: Your Vehicle Details
+    // Usual vehicle
+    usual_vehicle: page5.usual_vehicle || null,
+
+    // DVLA Lookup
+    dvla_lookup_reg: page5.dvla_lookup_reg || null,
+    dvla_vehicle_lookup_make: page5.dvla_vehicle_data?.make || null,
+    dvla_vehicle_lookup_model: page5.dvla_vehicle_data?.model || null,
+    dvla_vehicle_lookup_color: page5.dvla_vehicle_data?.colour || null,
+    dvla_vehicle_lookup_year: page5.dvla_vehicle_data?.yearOfManufacture || null,
+    dvla_vehicle_lookup_fuel_type: page5.dvla_vehicle_data?.fuelType || null,
+    dvla_vehicle_lookup_mot_status: page5.dvla_vehicle_data?.motStatus || null,
+    dvla_vehicle_lookup_mot_expiry: page5.dvla_vehicle_data?.motExpiryDate || null,
+    dvla_vehicle_lookup_tax_status: page5.dvla_vehicle_data?.taxStatus || null,
+    dvla_vehicle_lookup_tax_due_date: page5.dvla_vehicle_data?.taxDueDate || null,
+    dvla_vehicle_lookup_insurance_status: page5.dvla_vehicle_data?.insuranceStatus || null,
+
+    // Damage
+    no_damage: page5.no_damage || false,
+    damage_to_your_vehicle: page5.damage_to_your_vehicle || null,
+    impact_point: page5.impact_points || [], // PostgreSQL TEXT[] array
+
+    // Driveability
+    vehicle_driveable: page5.vehicle_driveable || null,
+
+    // Legacy fields (if still needed for backward compatibility)
+    your_vehicle_make: page5.vehicle_make || page5.dvla_vehicle_data?.make || null,
+    your_vehicle_model: page5.vehicle_model || page5.dvla_vehicle_data?.model || null,
+    your_vehicle_color: page5.vehicle_color || page5.dvla_vehicle_data?.colour || null,
+    your_vehicle_registration: page5.vehicle_registration || page5.dvla_lookup_reg || null,
+    your_vehicle_year: page5.vehicle_year || page5.dvla_vehicle_data?.yearOfManufacture || null,
 
     // Page 7: Other Vehicle
     other_vehicle_make: page7.other_vehicle_make || null,

@@ -274,14 +274,58 @@ class AdobePdfFormFillerService {
     setFieldText('accident_description', incident.describe_what_happened);
 
     // ========================================
-    // PAGE 7: Your Vehicle Information
+    // PAGE 5 (NEW): Your Vehicle Details (DVLA, Damage, Driveability)
+    // ========================================
+
+    // 1. Usual Vehicle (2 checkboxes from 1 TEXT field)
+    checkField('usual_vehicle_yes', incident.usual_vehicle === 'yes');
+    checkField('usual_vehicle_no', incident.usual_vehicle === 'no');
+
+    // 2. DVLA Lookup Registration
+    setFieldText('dvla_lookup_reg', incident.dvla_lookup_reg);
+
+    // 3. DVLA Vehicle Data (10 text fields)
+    setFieldText('dvla_vehicle_lookup_make', incident.dvla_vehicle_lookup_make);
+    setFieldText('dvla_vehicle_lookup_model', incident.dvla_vehicle_lookup_model);
+    setFieldText('dvla_vehicle_lookup_color', incident.dvla_vehicle_lookup_color);
+    setFieldText('dvla_vehicle_lookup_year', incident.dvla_vehicle_lookup_year);
+    setFieldText('dvla_vehicle_lookup_fuel_type', incident.dvla_vehicle_lookup_fuel_type);
+    setFieldText('dvla_vehicle_lookup_mot_status', incident.dvla_vehicle_lookup_mot_status);
+    setFieldText('dvla_vehicle_lookup_mot_expiry', incident.dvla_vehicle_lookup_mot_expiry);
+    setFieldText('dvla_vehicle_lookup_tax_status', incident.dvla_vehicle_lookup_tax_status);
+    setFieldText('dvla_vehicle_lookup_tax_due_date', incident.dvla_vehicle_lookup_tax_due_date);
+    setFieldText('dvla_vehicle_lookup_insurance_status', incident.dvla_vehicle_lookup_insurance_status);
+
+    // 4. Impact Points (10 checkboxes from TEXT[] array)
+    const impactPoints = incident.impact_point || [];
+    checkField('impact_point_front', impactPoints.includes('front'));
+    checkField('impact_point_front_driver', impactPoints.includes('front_driver'));
+    checkField('impact_point_front_passenger', impactPoints.includes('front_passenger'));
+    checkField('impact_point_driver_side', impactPoints.includes('driver_side'));
+    checkField('impact_point_passenger_side', impactPoints.includes('passenger_side'));
+    checkField('impact_point_rear_driver', impactPoints.includes('rear_driver'));
+    checkField('impact_point_rear_passenger', impactPoints.includes('rear_passenger'));
+    checkField('impact_point_rear', impactPoints.includes('rear'));
+    checkField('impact_point_roof', impactPoints.includes('roof'));
+    checkField('impact_point_undercarriage', impactPoints.includes('undercarriage'));
+
+    // 5. Damage Description
+    setFieldText('damage_to_your_vehicle', incident.damage_to_your_vehicle);
+
+    // 6. Vehicle Driveability (3 mutually exclusive checkboxes from 1 TEXT field)
+    checkField('vehicle_driveable_yes', incident.vehicle_driveable === 'yes');
+    checkField('vehicle_driveable_no', incident.vehicle_driveable === 'no');
+    checkField('vehicle_driveable_unsure', incident.vehicle_driveable === 'unsure');
+
+    // ========================================
+    // PAGE 7 (LEGACY): Your Vehicle Information
     // ========================================
     setFieldText('driving_usual', incident.driving_usual_vehicle);
     setFieldText('make_of_car', incident.make_of_car);
     setFieldText('model_of_car', incident.model_of_car);
     setFieldText('your_license_plate', incident.license_plate_incident);
     setFieldText('direction_speed', incident.direction_of_travel_and_estimated_speed);
-    setFieldText('impact_point', incident.impact_point);
+    setFieldText('impact_point', incident.impact_point); // Legacy single text field
     setFieldText('damage_caused', incident.damage_caused_by_accident);
     setFieldText('damage_prior', incident.damage_prior_to_accident);
 
