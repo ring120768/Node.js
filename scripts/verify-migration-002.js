@@ -62,10 +62,10 @@ async function verifyMigration() {
       // Location (6)
       'location',
       'what3words',
-      'nearestLandmark',
+      'nearestlandmark',  // PostgreSQL converts to lowercase
       // Junction (4)
-      'junctionType',
-      'junctionControl',
+      'junctiontype',     // PostgreSQL converts to lowercase
+      'junctioncontrol',  // PostgreSQL converts to lowercase
       // Vehicle (7)
       'your_speed',
       'impact_point',
