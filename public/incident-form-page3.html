@@ -524,10 +524,6 @@
           <input type="checkbox" id="weather_thunder_lightning" name="weather_thunder_lightning" value="true">
           <label for="weather_thunder_lightning">Thunder/Lightning</label>
         </div>
-        <div class="checkbox-item">
-          <input type="checkbox" id="weather_other" name="weather_other" value="true">
-          <label for="weather_other">Other Conditions</label>
-        </div>
       </div>
     </div>
 
@@ -803,8 +799,7 @@
         weather_ice: document.getElementById('weather_ice').checked,
         weather_windy: document.getElementById('weather_windy').checked,
         weather_hail: document.getElementById('weather_hail').checked,
-        weather_thunder_lightning: document.getElementById('weather_thunder_lightning').checked,
-        weather_other: document.getElementById('weather_other').checked
+        weather_thunder_lightning: document.getElementById('weather_thunder_lightning').checked
       };
 
       // Collect road conditions (checkboxes)
@@ -898,7 +893,7 @@
           const weatherFields = [
             'weather_bright_sunlight', 'weather_clear', 'weather_cloudy', 'weather_raining', 'weather_heavy_rain',
             'weather_drizzle', 'weather_fog', 'weather_snow', 'weather_ice',
-            'weather_windy', 'weather_hail', 'weather_thunder_lightning', 'weather_other'
+            'weather_windy', 'weather_hail', 'weather_thunder_lightning'
           ];
           weatherFields.forEach(field => {
             if (data[field]) {
