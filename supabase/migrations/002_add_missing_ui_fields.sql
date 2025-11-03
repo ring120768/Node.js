@@ -80,12 +80,19 @@ ADD COLUMN IF NOT EXISTS road_markings_visible_yes BOOLEAN DEFAULT FALSE,
 ADD COLUMN IF NOT EXISTS road_markings_visible_partially BOOLEAN DEFAULT FALSE,
 ADD COLUMN IF NOT EXISTS road_markings_visible_no BOOLEAN DEFAULT FALSE;
 
--- Add CHECK constraint for radio button behavior
-ALTER TABLE incident_reports
-ADD CONSTRAINT check_single_road_marking
-CHECK (
-  (road_markings_visible_yes::int + road_markings_visible_partially::int + road_markings_visible_no::int) <= 1
-);
+-- Add CHECK constraint for radio button behavior (if not exists)
+DO $$
+BEGIN
+  IF NOT EXISTS (
+    SELECT 1 FROM pg_constraint WHERE conname = 'check_single_road_marking'
+  ) THEN
+    ALTER TABLE incident_reports
+    ADD CONSTRAINT check_single_road_marking
+    CHECK (
+      (road_markings_visible_yes::int + road_markings_visible_partially::int + road_markings_visible_no::int) <= 1
+    );
+  END IF;
+END $$;
 
 COMMENT ON CONSTRAINT check_single_road_marking ON incident_reports IS 'Only one road marking visibility option can be selected';
 
@@ -103,14 +110,21 @@ ADD COLUMN IF NOT EXISTS road_type_rural_road BOOLEAN DEFAULT FALSE,
 ADD COLUMN IF NOT EXISTS road_type_car_park BOOLEAN DEFAULT FALSE,
 ADD COLUMN IF NOT EXISTS road_type_other BOOLEAN DEFAULT FALSE;
 
--- Add CHECK constraint for radio button behavior
-ALTER TABLE incident_reports
-ADD CONSTRAINT check_single_road_type
-CHECK (
-  (road_type_motorway::int + road_type_a_road::int + road_type_b_road::int +
-   road_type_urban_street::int + road_type_rural_road::int +
-   road_type_car_park::int + road_type_other::int) <= 1
-);
+-- Add CHECK constraint for radio button behavior (if not exists)
+DO $$
+BEGIN
+  IF NOT EXISTS (
+    SELECT 1 FROM pg_constraint WHERE conname = 'check_single_road_type'
+  ) THEN
+    ALTER TABLE incident_reports
+    ADD CONSTRAINT check_single_road_type
+    CHECK (
+      (road_type_motorway::int + road_type_a_road::int + road_type_b_road::int +
+       road_type_urban_street::int + road_type_rural_road::int +
+       road_type_car_park::int + road_type_other::int) <= 1
+    );
+  END IF;
+END $$;
 
 -- ========================================
 -- TRAFFIC CONDITIONS (4 fields)
@@ -123,13 +137,20 @@ ADD COLUMN IF NOT EXISTS traffic_conditions_light BOOLEAN DEFAULT FALSE,
 ADD COLUMN IF NOT EXISTS traffic_conditions_moderate BOOLEAN DEFAULT FALSE,
 ADD COLUMN IF NOT EXISTS traffic_conditions_heavy BOOLEAN DEFAULT FALSE;
 
--- Add CHECK constraint for radio button behavior
-ALTER TABLE incident_reports
-ADD CONSTRAINT check_single_traffic_condition_new
-CHECK (
-  (traffic_conditions_no_traffic::int + traffic_conditions_light::int +
-   traffic_conditions_moderate::int + traffic_conditions_heavy::int) <= 1
-);
+-- Add CHECK constraint for radio button behavior (if not exists)
+DO $$
+BEGIN
+  IF NOT EXISTS (
+    SELECT 1 FROM pg_constraint WHERE conname = 'check_single_traffic_condition_new'
+  ) THEN
+    ALTER TABLE incident_reports
+    ADD CONSTRAINT check_single_traffic_condition_new
+    CHECK (
+      (traffic_conditions_no_traffic::int + traffic_conditions_light::int +
+       traffic_conditions_moderate::int + traffic_conditions_heavy::int) <= 1
+    );
+  END IF;
+END $$;
 
 -- ========================================
 -- WEATHER CONDITIONS (6 fields)
