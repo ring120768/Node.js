@@ -563,8 +563,8 @@
             <span>Loose surface (gravel, debris)</span>
           </label>
           <label>
-            <input type="checkbox" name="road_condition_other" value="true">
-            <span>Other</span>
+            <input type="checkbox" name="road_condition_slush_on_road" value="true">
+            <span>Slush on road</span>
           </label>
         </div>
       </div>
@@ -601,8 +601,8 @@
             <span>Car park</span>
           </label>
           <label>
-            <input type="checkbox" name="road_type_other" value="true">
-            <span>Other</span>
+            <input type="checkbox" name="road_type_private_road" value="true">
+            <span>Private road</span>
           </label>
         </div>
       </div>
@@ -814,7 +814,7 @@
         road_condition_icy: document.querySelector('input[name="road_condition_icy"]').checked,
         road_condition_snow_covered: document.querySelector('input[name="road_condition_snow_covered"]').checked,
         road_condition_loose_surface: document.querySelector('input[name="road_condition_loose_surface"]').checked,
-        road_condition_other: document.querySelector('input[name="road_condition_other"]').checked
+        road_condition_slush_on_road: document.querySelector('input[name="road_condition_slush_on_road"]').checked
       };
 
       // Collect road types (checkboxes)
@@ -825,7 +825,7 @@
         road_type_urban_street: document.querySelector('input[name="road_type_urban_street"]').checked,
         road_type_rural_road: document.querySelector('input[name="road_type_rural_road"]').checked,
         road_type_car_park: document.querySelector('input[name="road_type_car_park"]').checked,
-        road_type_other: document.querySelector('input[name="road_type_other"]').checked
+        road_type_private_road: document.querySelector('input[name="road_type_private_road"]').checked
       };
 
       // Collect traffic conditions (checkboxes)
@@ -910,7 +910,7 @@
           // Restore road conditions (checkboxes)
           const roadConditionFields = [
             'road_condition_dry', 'road_condition_wet', 'road_condition_icy',
-            'road_condition_snow_covered', 'road_condition_loose_surface', 'road_condition_other'
+            'road_condition_snow_covered', 'road_condition_loose_surface', 'road_condition_slush_on_road'
           ];
           roadConditionFields.forEach(field => {
             if (data[field]) {
@@ -922,7 +922,7 @@
           // Restore road types (checkboxes)
           const roadTypeFields = [
             'road_type_motorway', 'road_type_a_road', 'road_type_b_road',
-            'road_type_urban_street', 'road_type_rural_road', 'road_type_car_park', 'road_type_other'
+            'road_type_urban_street', 'road_type_rural_road', 'road_type_car_park', 'road_type_private_road'
           ];
           roadTypeFields.forEach(field => {
             if (data[field]) {

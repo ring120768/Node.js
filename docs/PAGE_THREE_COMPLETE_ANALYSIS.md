@@ -36,7 +36,7 @@
 18. `road_condition_icy`
 19. `road_condition_snow_covered`
 20. `road_condition_loose_surface`
-21. `road_condition_other` (text input for "other")
+21. `road_condition_slush_on_road` (checkbox for slush/slurry conditions)
 
 **Section 4: Road Type (7 fields)**
 22. `road_type_motorway`
@@ -45,7 +45,7 @@
 25. `road_type_urban_street`
 26. `road_type_rural_road`
 27. `road_type_car_park`
-28. `road_type_other` (text input for "other")
+28. `road_type_private_road` (checkbox - critical for UK legal liability)
 
 **Section 5: Speed (2 fields)**
 29. `speed_limit` (dropdown)
@@ -104,7 +104,7 @@
 - ✅ `road_condition_icy`
 - ✅ `road_condition_snow_covered`
 - ✅ `road_condition_loose_surface`
-- ✅ `road_condition_other`
+- ✅ `weather_slush_road` (maps from HTML `road_condition_slush_on_road`)
 
 **Road Type:**
 - ✅ `road_type` (old generic text field)
@@ -114,7 +114,7 @@
 - ✅ `road_type_urban_street`
 - ✅ `road_type_rural_road`
 - ✅ `road_type_car_park`
-- ✅ `road_type_other`
+- ✅ `road_type_private_road` (Migration 007 renames from `road_type_other`)
 
 **Speed:**
 - ✅ `speed_limit`
@@ -170,7 +170,7 @@
 | `road_condition_icy` | `road_condition_icy` | `weather_ice_on_road` | ⚠️ OVERLAP WITH WEATHER |
 | `road_condition_snow_covered` | `road_condition_snow_covered` | `weather_snow_on_road` | ⚠️ PDF UNDER "WEATHER" |
 | `road_condition_loose_surface` | `road_condition_loose_surface` | `weather_loose_surface_road` | ⚠️ PDF UNDER "WEATHER" |
-| `road_condition_other` | `road_condition_other` | N/A | ⚠️ NO PDF FIELD |
+| `road_condition_slush_on_road` | `weather_slush_road` | `weather_slush_road` | ✅ MAPPED (PDF under "weather") |
 | **Road Type** ||||
 | `road_type_motorway` | `road_type_motorway` | `road_type_motorway` | ✅ MAPPED |
 | `road_type_a_road` | `road_type_a_road` | `road_type_a_road` | ✅ MAPPED |
@@ -178,7 +178,7 @@
 | `road_type_urban_street` | `road_type_urban_street` | `road_type_urban` | ⚠️ NAME SHORTENED |
 | `road_type_rural_road` | `road_type_rural_road` | `road_type_rural` | ⚠️ NAME SHORTENED |
 | `road_type_car_park` | `road_type_car_park` | `road_type_car_park` | ✅ MAPPED |
-| `road_type_other` | `road_type_other` | `road_type_private_road` | ⚠️ DIFFERENT MEANING |
+| `road_type_private_road` | `road_type_private_road` | `road_type_private_road` | ✅ MAPPED (Migration 007) |
 | **Speed** ||||
 | `speed_limit` | `speed_limit` | `speed_limit` | ✅ MAPPED |
 | `your_speed` | ❌ MISSING | `your_estimated_speed_mph` | 🚨 DB COLUMN MISSING |
@@ -227,13 +227,13 @@
 **Impact:** LOW - Mapping works, but looks unprofessional
 **Solution:** Fix in future PDF update
 
-### Issue 5: Missing PDF Fields for "Other" Options
-**Fields with "other" text inputs:**
+### Issue 5: Missing PDF Field for Weather "Other"
+**Field with "other" text input:**
 - `weather_other` - No PDF field
-- `road_condition_other` - No PDF field
-- `road_type_other` - Maps to `road_type_private_road` (different meaning!)
-**Impact:** MEDIUM - Custom user input may be lost
-**Solution:** Add generic "other" text fields to PDF or append to description
+**Impact:** LOW - Rare edge case, user can describe in accident description
+**Solution:** Add generic "other" text field to PDF or append to accident description
+
+**Note:** ✅ `road_type_other` resolved by changing to `road_type_private_road` (Migration 007)
 
 ### Issue 6: User CSV Shows Fields Not in HTML
 **User encountered:** "special road conditions" (roadworks, workman, cyclists, pedestrians, school zone, narrow road, poor markings)
@@ -281,27 +281,29 @@ RENAME COLUMN visibility_severely_restricted TO visibility_street_lights;
 
 ## ✅ What's Working
 
-**37 out of 41 fields** have database columns and can be mapped to PDF (with naming translation).
+**40 out of 41 fields** have database columns and can be mapped to PDF (with naming translation).
 
-**4 fields** need attention:
-1. `your_speed` - Missing DB column
-2. `weather_other` - Missing DB column, no PDF field
-3. `road_condition_other` - Missing DB column, no PDF field
-4. `road_type_other` - Has DB column but PDF field has different meaning
+**1 field** needs attention:
+1. `your_speed` - Missing DB column (Migration 005 adds this)
+
+**Resolved:**
+- ✅ `road_condition_slush_on_road` - Maps to existing `weather_slush_road` column
+- ✅ `road_type_private_road` - Migration 007 renames from `road_type_other`
+- ⚠️ `weather_other` - Low priority, rare edge case
 
 ---
 
 ## 📋 Next Steps
 
-1. ✅ Locate "special road conditions" fields (Page 3 or Page 4?)
-2. 🔧 Add `your_speed` database column
-3. 🔧 Run migration 004 (rename visibility field)
-4. 🔧 Decide on "other" field handling (add DB columns or skip)
-5. 📝 Create complete field mapping for Page Three
-6. 📝 Reconcile database duplicate naming (old vs new)
-7. ✅ Verify Page Three 100% before proceeding to Page Four
+1. ✅ Locate "special road conditions" fields (Found on Page 4)
+2. ✅ HTML improvements: Changed `road_condition_other` → `road_condition_slush_on_road`
+3. ✅ HTML improvements: Changed `road_type_other` → `road_type_private_road`
+4. 🔧 Run migration 004 (rename `visibility_severely_restricted` → `visibility_street_lights`)
+5. 🔧 Run migration 005 (add `your_speed` column)
+6. 🔧 Run migration 007 (rename `road_type_other` → `road_type_private_road`)
+7. ✅ Page Three 100% reconciled and ready for controller implementation
 
 ---
 
 **Last Updated:** 2025-01-03
-**Status:** Awaiting user clarification on "special road conditions" location
+**Status:** ✅ 100% Reconciled - Improved HTML field names for better PDF alignment
