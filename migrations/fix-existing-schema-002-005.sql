@@ -52,7 +52,10 @@ END $$;
 COMMENT ON COLUMN incident_reports.visibility_street_lights IS
 'Whether street lights were present/on at accident scene (Page Three visibility section)';
 
-RAISE NOTICE '✅ Migration 002 complete';
+DO $$
+BEGIN
+    RAISE NOTICE '✅ Migration 002 complete';
+END $$;
 
 -- ═════════════════════════════════════════════════════════════════════════
 -- Migration 003: Add Your Speed Column (SKIP - already exists)
@@ -136,7 +139,10 @@ END $$;
 COMMENT ON COLUMN incident_reports.road_type_private_road IS
 'Whether accident occurred on private road (important for UK liability - Page Three road type section)';
 
-RAISE NOTICE '✅ Migration 004 complete';
+DO $$
+BEGIN
+    RAISE NOTICE '✅ Migration 004 complete';
+END $$;
 
 -- ═════════════════════════════════════════════════════════════════════════
 -- Migration 005: Add User Documents Columns (NEW - for image storage)
