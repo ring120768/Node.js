@@ -544,13 +544,13 @@
       </div>
 
       <div class="form-group">
-        <label for="nearestLandmark">
+        <label for="nearestlandmark">
           Nearest landmark or notable feature
         </label>
         <input
           type="text"
-          id="nearestLandmark"
-          name="nearestLandmark"
+          id="nearestlandmark"
+          name="nearestlandmark"
           placeholder="e.g. Tesco Metro, Red Lion pub, Shell petrol station"
         >
         <p class="help-text">Helps emergency services and investigators find the exact location</p>
@@ -564,11 +564,11 @@
 
       <!-- Primary: Was it at a junction? -->
       <div class="form-group">
-        <label for="junctionType">
+        <label for="junctiontype">
           What type of junction was it?
           <span class="required">*</span>
         </label>
-        <select id="junctionType" name="junctionType" required>
+        <select id="junctiontype" name="junctiontype" required>
           <option value="">Select junction type...</option>
           <option value="straight_road">Straight road (not at junction)</option>
           <option value="not_junction">Not at or near a junction</option>
@@ -591,11 +591,11 @@
 
         <!-- Junction Control -->
         <div class="form-group">
-          <label for="junctionControl">
+          <label for="junctioncontrol">
             What controlled this junction?
             <span class="required">*</span>
           </label>
-          <select id="junctionControl" name="junctionControl">
+          <select id="junctioncontrol" name="junctioncontrol">
             <option value="">Select control type...</option>
             <option value="traffic_lights">Traffic lights</option>
             <option value="stop_sign">Stop sign</option>
@@ -607,12 +607,12 @@
         </div>
 
         <!-- Conditional: Traffic Light Status (only if "traffic_lights" selected) -->
-        <div id="trafficLightStatusGroup" class="form-group" style="display: none;">
-          <label for="trafficLightStatus">
+        <div id="trafficlightstatusgroup" class="form-group" style="display: none;">
+          <label for="trafficlightstatus">
             What colour was the traffic light for your direction?
             <span class="required">*</span>
           </label>
-          <select id="trafficLightStatus" name="trafficLightStatus">
+          <select id="trafficlightstatus" name="trafficlightstatus">
             <option value="">Select traffic light colour...</option>
             <option value="green">Green</option>
             <option value="amber">Amber</option>
@@ -626,11 +626,11 @@
 
         <!-- User Manoeuvre -->
         <div class="form-group">
-          <label for="userManoeuvre">
+          <label for="usermanoeuvre">
             What were you doing when the collision occurred?
             <span class="required">*</span>
           </label>
-          <select id="userManoeuvre" name="userManoeuvre">
+          <select id="usermanoeuvre" name="usermanoeuvre">
             <option value="">Select your manoeuvre...</option>
             <option value="going_straight">Going straight ahead</option>
             <option value="turning_left">Turning left</option>
@@ -681,47 +681,47 @@
 
       <div class="checkbox-group">
         <label>
-          <input type="checkbox" name="specialConditions" value="roadworks">
+          <input type="checkbox" name="specialconditions" value="roadworks">
           <span>Roadworks or construction</span>
         </label>
         <label>
-          <input type="checkbox" name="specialConditions" value="workmen_in_road">
+          <input type="checkbox" name="specialconditions" value="workmen_in_road">
           <span>Workmen in road</span>
         </label>
         <label>
-          <input type="checkbox" name="specialConditions" value="cyclists_in_road">
+          <input type="checkbox" name="specialconditions" value="cyclists_in_road">
           <span>Cyclists in road</span>
         </label>
         <label>
-          <input type="checkbox" name="specialConditions" value="pedestrians_in_road">
+          <input type="checkbox" name="specialconditions" value="pedestrians_in_road">
           <span>Pedestrians in road</span>
         </label>
         <label>
-          <input type="checkbox" name="specialConditions" value="traffic_calming">
+          <input type="checkbox" name="specialconditions" value="traffic_calming">
           <span>Traffic calming measures (speed bumps, chicanes)</span>
         </label>
         <label>
-          <input type="checkbox" name="specialConditions" value="parked_vehicles">
+          <input type="checkbox" name="specialconditions" value="parked_vehicles">
           <span>Parked vehicles obstructing view</span>
         </label>
         <label>
-          <input type="checkbox" name="specialConditions" value="pedestrian_crossing">
+          <input type="checkbox" name="specialconditions" value="pedestrian_crossing">
           <span>Near pedestrian crossing</span>
         </label>
         <label>
-          <input type="checkbox" name="specialConditions" value="school_zone">
+          <input type="checkbox" name="specialconditions" value="school_zone">
           <span>School zone or playground area</span>
         </label>
         <label>
-          <input type="checkbox" name="specialConditions" value="narrow_road">
+          <input type="checkbox" name="specialconditions" value="narrow_road">
           <span>Narrow road or single-track</span>
         </label>
         <label>
-          <input type="checkbox" name="specialConditions" value="poor_signage">
+          <input type="checkbox" name="specialconditions" value="poor_signage">
           <span>Poor road markings or signage</span>
         </label>
         <label>
-          <input type="checkbox" name="specialConditions" value="none">
+          <input type="checkbox" name="specialconditions" value="none">
           <span>None of these apply</span>
         </label>
       </div>
@@ -734,23 +734,23 @@
         </label>
         <div class="checkbox-group">
           <label>
-            <input type="checkbox" name="visibilityFactors" value="clear_visibility">
+            <input type="checkbox" name="visibilityfactors" value="clear_visibility">
             <span>Clear visibility - no issues</span>
           </label>
           <label>
-            <input type="checkbox" name="visibilityFactors" value="restricted_by_structure">
+            <input type="checkbox" name="visibilityfactors" value="restricted_by_structure">
             <span>Restricted by hedge, wall, or fence</span>
           </label>
           <label>
-            <input type="checkbox" name="visibilityFactors" value="restricted_by_bend">
+            <input type="checkbox" name="visibilityfactors" value="restricted_by_bend">
             <span>Restricted by bend or corner</span>
           </label>
           <label>
-            <input type="checkbox" name="visibilityFactors" value="large_vehicle">
+            <input type="checkbox" name="visibilityfactors" value="large_vehicle">
             <span>Large vehicle obstructing view (lorry, bus, van)</span>
           </label>
           <label>
-            <input type="checkbox" name="visibilityFactors" value="sun_glare">
+            <input type="checkbox" name="visibilityfactors" value="sun_glare">
             <span>Sun glare or low sun</span>
           </label>
         </div>
@@ -759,13 +759,13 @@
 
       <!-- Additional Hazards Text Field -->
       <div class="form-group" style="margin-top: 20px;">
-        <label for="additionalHazards">
+        <label for="additionalhazards">
           Additional hazards or conditions
           <span style="color: var(--text-muted); font-weight: normal;">(Optional)</span>
         </label>
         <textarea
-          id="additionalHazards"
-          name="additionalHazards"
+          id="additionalhazards"
+          name="additionalhazards"
           rows="3"
           placeholder="Describe any other hazards, road conditions, or circumstances not covered above..."
           style="width: 100%; padding: 12px; border: 1px solid var(--border); border-radius: 8px; font-family: inherit; font-size: 1rem; resize: vertical;"
@@ -790,7 +790,7 @@
     const backBtn = document.getElementById('backBtn');
     const nextBtn = document.getElementById('nextBtn');
     const noneCheckbox = document.querySelector('input[value="none"]');
-    const specialConditionsCheckboxes = document.querySelectorAll('input[name="specialConditions"]:not([value="none"])');
+    const specialConditionsCheckboxes = document.querySelectorAll('input[name="specialconditions"]:not([value="none"])');
 
     // "None" checkbox logic (exclusive with other conditions)
     noneCheckbox.addEventListener('change', function() {
@@ -808,11 +808,11 @@
     });
 
     // Progressive Disclosure: Junction Details
-    const junctionType = document.getElementById('junctionType');
+    const junctionType = document.getElementById('junctiontype');
     const junctionDetailsGroup = document.getElementById('junctionDetailsGroup');
-    const junctionControl = document.getElementById('junctionControl');
-    const trafficLightStatusGroup = document.getElementById('trafficLightStatusGroup');
-    const trafficLightStatus = document.getElementById('trafficLightStatus');
+    const junctionControl = document.getElementById('junctioncontrol');
+    const trafficlightstatusgroup = document.getElementById('trafficlightstatusgroup');
+    const trafficLightStatus = document.getElementById('trafficlightstatus');
 
     // Show/hide junction details based on junction type selection
     junctionType.addEventListener('change', function() {
@@ -825,19 +825,19 @@
         // Clear junction detail fields
         junctionControl.value = '';
         trafficLightStatus.value = '';
-        document.getElementById('userManoeuvre').value = '';
-        document.querySelectorAll('input[name="visibilityFactors"]').forEach(cb => cb.checked = false);
+        document.getElementById('usermanoeuvre').value = '';
+        document.querySelectorAll('input[name="visibilityfactors"]').forEach(cb => cb.checked = false);
 
         // Remove required attributes when hidden
         junctionControl.removeAttribute('required');
-        document.getElementById('userManoeuvre').removeAttribute('required');
+        document.getElementById('usermanoeuvre').removeAttribute('required');
       } else {
         // Show junction details for any junction type
         junctionDetailsGroup.style.display = 'block';
 
         // Add required attributes
         junctionControl.setAttribute('required', 'required');
-        document.getElementById('userManoeuvre').setAttribute('required', 'required');
+        document.getElementById('usermanoeuvre').setAttribute('required', 'required');
       }
     });
 
@@ -847,12 +847,12 @@
 
       if (selectedControl === 'traffic_lights') {
         // Show traffic light status field
-        trafficLightStatusGroup.style.display = 'block';
+        trafficlightstatusgroup.style.display = 'block';
         // Make dropdown required
         trafficLightStatus.setAttribute('required', 'required');
       } else {
         // Hide and clear traffic light status
-        trafficLightStatusGroup.style.display = 'none';
+        trafficlightstatusgroup.style.display = 'none';
         trafficLightStatus.value = '';
         trafficLightStatus.removeAttribute('required');
       }
@@ -862,7 +862,7 @@
     function validateForm() {
       const location = document.getElementById('location').value.trim();
       const what3words = document.getElementById('what3words').value.trim();
-      const junctionType = document.getElementById('junctionType').value;
+      const junctionType = document.getElementById('junctiontype').value;
 
       if (!location) {
         alert('Please provide the accident location.');
@@ -885,28 +885,28 @@
 
       // Validate junction details if at a junction
       if (junctionType !== 'not_junction' && junctionType !== '') {
-        const junctionControl = document.getElementById('junctionControl').value;
-        const userManoeuvre = document.getElementById('userManoeuvre').value;
+        const junctionControl = document.getElementById('junctioncontrol').value;
+        const userManoeuvre = document.getElementById('usermanoeuvre').value;
 
         if (!junctionControl) {
           alert('Please select what controlled the junction.');
-          document.getElementById('junctionControl').focus();
+          document.getElementById('junctioncontrol').focus();
           return false;
         }
 
         // If traffic lights selected, validate traffic light status
         if (junctionControl === 'traffic_lights') {
-          const trafficLightStatusValue = document.getElementById('trafficLightStatus').value;
+          const trafficLightStatusValue = document.getElementById('trafficlightstatus').value;
           if (!trafficLightStatusValue) {
             alert('Please select what colour the traffic light was for your direction.');
-            document.getElementById('trafficLightStatus').focus();
+            document.getElementById('trafficlightstatus').focus();
             return false;
           }
         }
 
         if (!userManoeuvre) {
           alert('Please select what you were doing when the collision occurred.');
-          document.getElementById('userManoeuvre').focus();
+          document.getElementById('usermanoeuvre').focus();
           return false;
         }
       }
@@ -1155,29 +1155,29 @@
       }
 
       // Get selected special conditions
-      const selectedConditions = Array.from(document.querySelectorAll('input[name="specialConditions"]:checked'))
+      const selectedConditions = Array.from(document.querySelectorAll('input[name="specialconditions"]:checked'))
         .map(cb => cb.value);
 
       // Get selected visibility factors
-      const selectedVisibilityFactors = Array.from(document.querySelectorAll('input[name="visibilityFactors"]:checked'))
+      const selectedVisibilityFactors = Array.from(document.querySelectorAll('input[name="visibilityfactors"]:checked'))
         .map(cb => cb.value);
 
       // Get traffic light status if applicable
-      const trafficLightStatusValue = document.getElementById('trafficLightStatus').value;
+      const trafficLightStatusValue = document.getElementById('trafficlightstatus').value;
       const trafficLightStatus = trafficLightStatusValue || null;
 
       // Save data to session storage
       const pageData = {
         location: document.getElementById('location').value.trim(),
         what3words: document.getElementById('what3words').value.trim(),
-        nearest_landmark: document.getElementById('nearestLandmark').value.trim(),
-        junction_type: document.getElementById('junctionType').value,
-        junction_control: document.getElementById('junctionControl').value,
+        nearest_landmark: document.getElementById('nearestlandmark').value.trim(),
+        junction_type: document.getElementById('junctiontype').value,
+        junction_control: document.getElementById('junctioncontrol').value,
         traffic_light_status: trafficLightStatus,
-        user_manoeuvre: document.getElementById('userManoeuvre').value,
+        user_manoeuvre: document.getElementById('usermanoeuvre').value,
         visibility_factors: selectedVisibilityFactors,
         special_conditions: selectedConditions,
-        additional_hazards: document.getElementById('additionalHazards').value.trim(),
+        additional_hazards: document.getElementById('additionalhazards').value.trim(),
         completed_at: new Date().toISOString()
       };
 
@@ -1204,36 +1204,36 @@
           // Restore location
           if (data.location) document.getElementById('location').value = data.location;
           if (data.what3words) document.getElementById('what3words').value = data.what3words;
-          if (data.nearest_landmark) document.getElementById('nearestLandmark').value = data.nearest_landmark;
+          if (data.nearest_landmark) document.getElementById('nearestlandmark').value = data.nearest_landmark;
 
           // Restore junction type and trigger progressive disclosure
           if (data.junction_type) {
-            document.getElementById('junctionType').value = data.junction_type;
+            document.getElementById('junctiontype').value = data.junction_type;
             // Trigger change event to show/hide junction details
             junctionType.dispatchEvent(new Event('change'));
           }
 
           // Restore junction control and trigger progressive disclosure
           if (data.junction_control) {
-            document.getElementById('junctionControl').value = data.junction_control;
+            document.getElementById('junctioncontrol').value = data.junction_control;
             // Trigger change event to show/hide traffic light status
             junctionControl.dispatchEvent(new Event('change'));
           }
 
           // Restore traffic light status
           if (data.traffic_light_status) {
-            document.getElementById('trafficLightStatus').value = data.traffic_light_status;
+            document.getElementById('trafficlightstatus').value = data.traffic_light_status;
           }
 
           // Restore user manoeuvre
           if (data.user_manoeuvre) {
-            document.getElementById('userManoeuvre').value = data.user_manoeuvre;
+            document.getElementById('usermanoeuvre').value = data.user_manoeuvre;
           }
 
           // Restore visibility factors
           if (data.visibility_factors && Array.isArray(data.visibility_factors)) {
             data.visibility_factors.forEach(factor => {
-              const checkbox = document.querySelector(`input[name="visibilityFactors"][value="${factor}"]`);
+              const checkbox = document.querySelector(`input[name="visibilityfactors"][value="${factor}"]`);
               if (checkbox) checkbox.checked = true;
             });
           }
@@ -1241,14 +1241,14 @@
           // Restore special conditions
           if (data.special_conditions && Array.isArray(data.special_conditions)) {
             data.special_conditions.forEach(condition => {
-              const checkbox = document.querySelector(`input[name="specialConditions"][value="${condition}"]`);
+              const checkbox = document.querySelector(`input[name="specialconditions"][value="${condition}"]`);
               if (checkbox) checkbox.checked = true;
             });
           }
 
           // Restore additional hazards text
           if (data.additional_hazards) {
-            document.getElementById('additionalHazards').value = data.additional_hazards;
+            document.getElementById('additionalhazards').value = data.additional_hazards;
           }
 
           console.log('✅ Page 4 data restored');
