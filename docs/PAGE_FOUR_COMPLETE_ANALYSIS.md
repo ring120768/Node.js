@@ -83,8 +83,8 @@
 7. `pedestrian_crossing` - Near pedestrian crossing
 8. `school_zone` - School zone or playground area
 9. `narrow_road` - Narrow road or single-track
-10. `poor_signage` - Poor road markings or signage
-11. `none` - None of these apply (exclusive with others)
+10. `pot_holes_road_defects` - Pot holes and road defects
+11. `oil_spills` - Oil spills on road surface
 
 ### Section 4: Visibility Issues (1 field name, 5 values)
 
@@ -140,7 +140,7 @@ additionalhazards TEXT
 
 **Controller Example:**
 ```javascript
-specialconditions: ['roadworks', 'narrow_road', 'none'],
+specialconditions: ['roadworks', 'narrow_road', 'pot_holes_road_defects'],
 visibilityfactors: ['sun_glare']
 ```
 
@@ -174,8 +174,8 @@ special_condition_parked_vehicles BOOLEAN,
 special_condition_pedestrian_crossing BOOLEAN,
 special_condition_school_zone BOOLEAN,
 special_condition_narrow_road BOOLEAN,
-special_condition_poor_signage BOOLEAN,
-special_condition_none BOOLEAN,
+special_condition_pot_holes_road_defects BOOLEAN,
+special_condition_oil_spills BOOLEAN,
 
 -- Visibility Factors (5 individual booleans)
 visibility_factor_clear BOOLEAN,
@@ -254,14 +254,12 @@ Database currently has:
 | `pedestrian_crossing` | `special_conditions_pedestrian_crossing` | ✅ MAPPED |
 | `school_zone` | `special_conditions_school` | ✅ MAPPED |
 | `narrow_road` | `special_conditions_narrow_road` | ✅ MAPPED |
-| `poor_signage` | ❓ No exact match | ⚠️ POSSIBLY UNMAPPED |
-| `none` | `special_conditions_none_of_these` | ✅ MAPPED |
+| `pot_holes_road_defects` | `special_conditions_pot_holes` | ✅ MAPPED |
+| `oil_spills` | `special_conditions_oil_spills` | ✅ MAPPED |
 
 **PDF has additional special conditions NOT in HTML:**
-- `special_conditions_oil_spills`
-- `special_conditions_defective_road`
-- `special_conditions_pot_holes`
-- `special_conditions_hedgerow`
+- `special_conditions_defective_road` (now covered by `pot_holes_road_defects`)
+- `special_conditions_hedgerow` (mapped from `visibilityfactors: restricted_by_structure`)
 - `special_conditions_animals`
 
 ### Visibility Factors (Checkbox Array → Individual PDF Checkboxes?)
@@ -316,7 +314,6 @@ HTML separates "visibility factors" from "special conditions" but PDF combines t
 
 ### Issue 3: Missing PDF Fields for HTML Checkboxes
 - `parked_vehicles` - No clear PDF mapping
-- `poor_signage` - No clear PDF mapping
 - `restricted_by_bend` - No clear PDF mapping
 - `clear_visibility` - No clear PDF mapping
 
@@ -476,7 +473,8 @@ const pageFourData = {
   special_conditions_pedestrian_crossing: data.specialconditions?.includes('pedestrian_crossing') ? 'Yes' : 'No',
   special_conditions_school: data.specialconditions?.includes('school_zone') ? 'Yes' : 'No',
   special_conditions_narrow_road: data.specialconditions?.includes('narrow_road') ? 'Yes' : 'No',
-  special_conditions_none_of_these: data.specialconditions?.includes('none') ? 'Yes' : 'No',
+  special_conditions_pot_holes: data.specialconditions?.includes('pot_holes_road_defects') ? 'Yes' : 'No',
+  special_conditions_oil_spills: data.specialconditions?.includes('oil_spills') ? 'Yes' : 'No',
 
   // Visibility Factors - Map to special_conditions in PDF
   special_conditions_hedgerow: data.visibilityfactors?.includes('restricted_by_structure') ? 'Yes' : 'No',
@@ -497,15 +495,12 @@ const pageFourData = {
 
 **HTML fields with no PDF mapping:**
 - `parked_vehicles` (special condition)
-- `poor_signage` (special condition)
 - `restricted_by_bend` (visibility factor)
 - `clear_visibility` (visibility factor)
 - `usermanoeuvre` (junction detail)
 
 **PDF fields with no HTML input:**
-- `special_conditions_oil_spills`
-- `special_conditions_defective_road`
-- `special_conditions_pot_holes`
+- `special_conditions_defective_road` (now covered by `pot_holes_road_defects`)
 - `special_conditions_animals`
 
 ---

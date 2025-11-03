@@ -717,12 +717,12 @@
           <span>Narrow road or single-track</span>
         </label>
         <label>
-          <input type="checkbox" name="specialconditions" value="poor_signage">
-          <span>Poor road markings or signage</span>
+          <input type="checkbox" name="specialconditions" value="pot_holes_road_defects">
+          <span>Pot holes and road defects</span>
         </label>
         <label>
-          <input type="checkbox" name="specialconditions" value="none">
-          <span>None of these apply</span>
+          <input type="checkbox" name="specialconditions" value="oil_spills">
+          <span>Oil spills</span>
         </label>
       </div>
 
@@ -789,23 +789,6 @@
     // Elements
     const backBtn = document.getElementById('backBtn');
     const nextBtn = document.getElementById('nextBtn');
-    const noneCheckbox = document.querySelector('input[value="none"]');
-    const specialConditionsCheckboxes = document.querySelectorAll('input[name="specialconditions"]:not([value="none"])');
-
-    // "None" checkbox logic (exclusive with other conditions)
-    noneCheckbox.addEventListener('change', function() {
-      if (this.checked) {
-        specialConditionsCheckboxes.forEach(cb => cb.checked = false);
-      }
-    });
-
-    specialConditionsCheckboxes.forEach(checkbox => {
-      checkbox.addEventListener('change', function() {
-        if (this.checked) {
-          noneCheckbox.checked = false;
-        }
-      });
-    });
 
     // Progressive Disclosure: Junction Details
     const junctionType = document.getElementById('junctiontype');

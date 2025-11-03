@@ -108,8 +108,8 @@
 7. `pedestrian_crossing` → PDF: `special_conditions_pedestrian_crossing`
 8. `school_zone` → PDF: `special_conditions_school`
 9. `narrow_road` → PDF: `special_conditions_narrow_road`
-10. `poor_signage` → PDF: ⚠️ NO PDF FIELD
-11. `none` → PDF: `special_conditions_none_of_these`
+10. `pot_holes_road_defects` → PDF: `special_conditions_pot_holes`
+11. `oil_spills` → PDF: `special_conditions_oil_spills`
 
 **Database Storage Example:**
 ```json
@@ -143,7 +143,8 @@ special_conditions_traffic_calming: data.specialconditions?.includes('traffic_ca
 special_conditions_pedestrian_crossing: data.specialconditions?.includes('pedestrian_crossing') ? 'Yes' : 'No',
 special_conditions_school: data.specialconditions?.includes('school_zone') ? 'Yes' : 'No',
 special_conditions_narrow_road: data.specialconditions?.includes('narrow_road') ? 'Yes' : 'No',
-special_conditions_none_of_these: data.specialconditions?.includes('none') ? 'Yes' : 'No'
+special_conditions_pot_holes: data.specialconditions?.includes('pot_holes_road_defects') ? 'Yes' : 'No',
+special_conditions_oil_spills: data.specialconditions?.includes('oil_spills') ? 'Yes' : 'No'
 ```
 
 ---
@@ -403,9 +404,9 @@ function mapPageFourToPdf(data) {
     special_conditions_pedestrian_crossing: data.specialconditions?.includes('pedestrian_crossing') ? 'Yes' : 'No',
     special_conditions_school: data.specialconditions?.includes('school_zone') ? 'Yes' : 'No',
     special_conditions_narrow_road: data.specialconditions?.includes('narrow_road') ? 'Yes' : 'No',
-    special_conditions_none_of_these: data.specialconditions?.includes('none') ? 'Yes' : 'No',
+    special_conditions_pot_holes: data.specialconditions?.includes('pot_holes_road_defects') ? 'Yes' : 'No',
+    special_conditions_oil_spills: data.specialconditions?.includes('oil_spills') ? 'Yes' : 'No',
     // parked_vehicles: No PDF field available
-    // poor_signage: No PDF field available
 
     // Visibility factors (Section 4)
     // Map to special_conditions_* PDF fields (cross-category mapping)
@@ -427,28 +428,26 @@ module.exports = { mapPageFourToPdf };
 
 ## ⚠️ Known Unmapped Fields
 
-### HTML → No PDF Mapping (5 selections)
+### HTML → No PDF Mapping (4 selections)
 
 | HTML Field | Reason | Impact | Solution |
 |------------|--------|--------|----------|
 | `specialconditions: 'parked_vehicles'` | No PDF field | MEDIUM | Add to PDF or map to closest field |
-| `specialconditions: 'poor_signage'` | No PDF field | MEDIUM | Add to PDF or map to closest field |
 | `visibilityfactors: 'clear_visibility'` | Positive state, rarely marked | LOW | Optional - could skip |
 | `visibilityfactors: 'restricted_by_bend'` | No PDF field | MEDIUM | Add to PDF or use additional_hazards |
 | `usermanoeuvre` | No PDF field | HIGH | Add to PDF (important for liability) |
 
-**Recommendation:** Add these 5 selections to PDF template or append to `special_conditions_additional_hazards` text field with prefix like "User also noted: [selections]"
+**Recommendation:** Add these 4 selections to PDF template or append to `special_conditions_additional_hazards` text field with prefix like "User also noted: [selections]"
 
-### PDF → No HTML Input (4 checkboxes)
+### PDF → No HTML Input (1 checkbox)
 
 | PDF Field | Reason | Impact | Solution |
 |-----------|--------|--------|----------|
-| `special_conditions_oil_spills` | Not in HTML checkboxes | LOW | User can describe in additional_hazards |
-| `special_conditions_defective_road` | Not in HTML checkboxes | LOW | User can describe in additional_hazards |
-| `special_conditions_pot_holes` | Not in HTML checkboxes | LOW | User can describe in additional_hazards |
 | `special_conditions_animals` | Not in HTML checkboxes | MEDIUM | Add to HTML form |
 
 **Recommendation:** Add "Animals in road" checkbox to HTML form (common UK hazard: deer, livestock, etc.)
+
+**Note:** ✅ `pot_holes_road_defects` and `oil_spills` now added to HTML form, fully mapping to PDF fields!
 
 ---
 
@@ -515,12 +514,13 @@ module.exports = { mapPageFourToPdf };
 
 **Database Coverage:** 10/10 columns (after Migration 006)
 
-**PDF Coverage:** 19/24 selections mapped (5 HTML selections have no PDF fields)
+**PDF Coverage:** 21/24 selections mapped (4 HTML selections have no PDF fields)
 
 **Critical Findings:**
 - ✅ All user inputs will be saved to database
 - ✅ Array storage approach is clean and scalable
-- ⚠️ 5 selections need PDF fields added or fallback mapping
+- ✅ Improved PDF mapping: Added `pot_holes_road_defects` and `oil_spills` (formerly unmapped)
+- ⚠️ 4 selections still need PDF fields added or fallback mapping
 - ✅ Progressive disclosure logic validated (conditional required fields)
 
 **Zero Data Loss:** Achieved after Migration 006 ✅
