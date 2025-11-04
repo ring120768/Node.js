@@ -100,7 +100,34 @@ async function submitIncidentForm(req, res) {
       userId
     });
 
-    // 3. Finalize location photos if present (Page 4a)
+    // 3. Finalize map screenshot if present (Page 4)
+    let mapScreenshotResults = null;
+    if (formData.page4?.session_id && formData.page4?.map_screenshot_captured) {
+      try {
+        mapScreenshotResults = await locationPhotoService.finalizePhotosByType(
+          userId,
+          incident.id,
+          formData.page4.session_id,
+          'map_screenshot',           // field_name in temp_uploads
+          'location-map',              // storage category
+          'location_map_screenshot'    // document_type in user_documents
+        );
+
+        logger.info('Map screenshot finalized', {
+          incidentId: incident.id,
+          photoCount: mapScreenshotResults.successCount,
+          errors: mapScreenshotResults.errorCount
+        });
+      } catch (photoError) {
+        logger.error('Failed to finalize map screenshot (non-critical)', {
+          incidentId: incident.id,
+          error: photoError.message
+        });
+        // Don't fail the submission - photos can be re-processed
+      }
+    }
+
+    // 4. Finalize location photos if present (Page 4a)
     let photoResults = null;
     if (formData.page4a?.session_id) {
       try {
@@ -124,7 +151,7 @@ async function submitIncidentForm(req, res) {
       }
     }
 
-    // 4. Finalize vehicle damage photos if present (Page 6)
+    // 5. Finalize vehicle damage photos if present (Page 6)
     let vehiclePhotoResults = null;
     if (formData.page6?.session_id) {
       try {
@@ -148,12 +175,17 @@ async function submitIncidentForm(req, res) {
       }
     }
 
-    // 5. Return success
+    // 6. Return success
     return res.status(201).json({
       success: true,
       data: {
         incident_id: incident.id,
         created_at: incident.created_at,
+        map_screenshots: mapScreenshotResults ? {
+          finalized: mapScreenshotResults.successCount,
+          failed: mapScreenshotResults.errorCount,
+          photos: mapScreenshotResults.photos
+        } : null,
         location_photos: photoResults ? {
           finalized: photoResults.successCount,
           failed: photoResults.errorCount,

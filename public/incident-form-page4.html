@@ -790,6 +790,12 @@
   </div>
 
   <script>
+    // Initialize temp session ID for screenshot uploads (shared across all form pages)
+    if (!localStorage.getItem('temp_session_id')) {
+      localStorage.setItem('temp_session_id', crypto.randomUUID());
+      console.log('✅ Created new temp session ID:', localStorage.getItem('temp_session_id'));
+    }
+
     // Elements
     const backBtn = document.getElementById('backBtn');
     const nextBtn = document.getElementById('nextBtn');
@@ -1097,25 +1103,41 @@
             canvas.toBlob(resolve, 'image/png', 0.95);
           });
 
-          // Create a data URL for preview
-          const dataUrl = canvas.toDataURL('image/png', 0.95);
-
-          // Store in sessionStorage
-          sessionStorage.setItem('map_screenshot', dataUrl);
-
-          // Success message
-          mapScreenshotStatus.innerHTML = '✅ Map screenshot captured! <span style="font-weight: 600;">(Saved)</span>';
-          mapScreenshotStatus.style.color = 'var(--success)';
-
-          // Update button
-          captureMapBtn.disabled = false;
-          captureMapBtn.innerHTML = '<span style="font-size: 1.2rem;">✓</span><span>Screenshot Captured</span>';
-          captureMapBtn.style.background = 'var(--success)';
-
           console.log('✅ Map screenshot captured:', {
             size: mapScreenshotBlob.size,
             type: mapScreenshotBlob.type
           });
+
+          // Upload immediately to Supabase temp storage
+          mapScreenshotStatus.textContent = 'Uploading screenshot...';
+          mapScreenshotStatus.style.color = 'var(--accent)';
+
+          const formData = new FormData();
+          formData.append('file', mapScreenshotBlob, `map-screenshot-${Date.now()}.png`);
+          formData.append('field_name', 'map_screenshot');
+          formData.append('temp_session_id', localStorage.getItem('temp_session_id') || crypto.randomUUID());
+
+          const uploadResponse = await fetch('/api/images/temp-upload', {
+            method: 'POST',
+            body: formData,
+            credentials: 'include'
+          });
+
+          if (!uploadResponse.ok) {
+            throw new Error(`Upload failed: ${uploadResponse.status} ${uploadResponse.statusText}`);
+          }
+
+          const uploadResult = await uploadResponse.json();
+          console.log('✅ Screenshot uploaded to Supabase:', uploadResult);
+
+          // Success message
+          mapScreenshotStatus.innerHTML = '✅ Map screenshot saved to Supabase! <span style="font-weight: 600;">(Uploaded)</span>';
+          mapScreenshotStatus.style.color = 'var(--success)';
+
+          // Update button
+          captureMapBtn.disabled = false;
+          captureMapBtn.innerHTML = '<span style="font-size: 1.2rem;">✓</span><span>Screenshot Uploaded</span>';
+          captureMapBtn.style.background = 'var(--success)';
 
           // Hide success message after 5 seconds
           setTimeout(() => {
@@ -1123,14 +1145,27 @@
           }, 5000);
 
         } catch (error) {
-          console.error('Screenshot capture error:', error);
+          console.error('Screenshot capture/upload error:', error);
 
-          mapScreenshotStatus.textContent = '❌ Failed to capture screenshot. Please try again.';
-          mapScreenshotStatus.style.color = 'var(--error)';
+          // Provide specific error message
+          let errorMessage = '❌ Failed to save screenshot. ';
+          if (!navigator.onLine) {
+            errorMessage += 'Please check your internet connection.';
+          } else if (error.message.includes('Failed to fetch')) {
+            errorMessage += 'Network error. Please check your connection and try again.';
+          } else if (error.message.includes('413')) {
+            errorMessage += 'Screenshot file is too large.';
+          } else {
+            errorMessage += 'Please try again or contact support if the problem persists.';
+          }
+
+          mapScreenshotStatus.textContent = errorMessage;
+          mapScreenshotStatus.style.color = 'var(--danger)';
 
           // Reset button
           captureMapBtn.disabled = false;
           captureMapBtn.innerHTML = '<span style="font-size: 1.2rem;">📸</span><span>Capture Map Screenshot</span>';
+          captureMapBtn.style.background = '';
         }
       });
     }
@@ -1153,6 +1188,10 @@
       const trafficLightStatusValue = document.getElementById('trafficlightstatus').value;
       const trafficLightStatus = trafficLightStatusValue || null;
 
+      // Check if map screenshot was captured and uploaded
+      const mapScreenshotCaptured = (captureMapBtn &&
+        captureMapBtn.innerHTML.includes('Screenshot Uploaded'));
+
       // Save data to session storage
       const pageData = {
         location: document.getElementById('location').value.trim(),
@@ -1165,6 +1204,8 @@
         visibility_factors: selectedVisibilityFactors,
         special_conditions: selectedConditions,
         additional_hazards: document.getElementById('additionalhazards').value.trim(),
+        session_id: localStorage.getItem('temp_session_id'),  // For photo finalization
+        map_screenshot_captured: mapScreenshotCaptured,        // Flag for backend
         completed_at: new Date().toISOString()
       };
 
