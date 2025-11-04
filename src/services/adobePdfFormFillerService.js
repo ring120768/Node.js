@@ -381,11 +381,40 @@ class AdobePdfFormFillerService {
     checkField('other_breath_test', incident.other_breath_test === 'Yes');
 
     // ========================================
-    // PAGE 10: Additional Info & Witnesses
+    // PAGE 9: Witnesses (2 witnesses max on this page)
+    // ========================================
+    // Map first 2 witnesses from incident_witnesses table to page 9 fields
+    const hasWitnesses = data.witnesses && data.witnesses.length > 0;
+
+    checkField('any_witness', hasWitnesses);
+    checkField('any_witness_no', !hasWitnesses);
+
+    // Witness 1 (if exists)
+    if (data.witnesses && data.witnesses[0]) {
+      const witness1 = data.witnesses[0];
+      setFieldText('witness_name', witness1.witness_name || '');
+      setFieldText('witness_mobile_number', witness1.witness_phone || '');
+      setFieldText('witness_email_address', witness1.witness_email || '');
+      setFieldText('witness_statement', witness1.witness_statement || '');
+      // Note: witness_address is NOT in PDF, so it's not mapped
+    }
+
+    // Witness 2 (if exists)
+    if (data.witnesses && data.witnesses[1]) {
+      const witness2 = data.witnesses[1];
+      setFieldText('witness_name_2', witness2.witness_name || '');
+      setFieldText('witness_mobile_number_2', witness2.witness_phone || '');
+      setFieldText('witness_email_address_2', witness2.witness_email || '');
+      setFieldText('witness_statement_2', witness2.witness_statement || '');
+      // Note: witness_address is NOT in PDF, so it's not mapped
+    }
+
+    // Note: Witnesses 3+ will be added as separate pages via appendWitnessPages()
+
+    // ========================================
+    // PAGE 10: Additional Info
     // ========================================
     setFieldText('anything_else', incident.anything_else_important);
-    checkField('witness_present', incident.witness_present === 'Yes');
-    setFieldText('witness_info', incident.witness_information);
     checkField('call_recovery', incident.call_recovery === 'Yes');
     checkField('upgrade_premium', incident.upgrade_to_premium === 'Yes');
 
