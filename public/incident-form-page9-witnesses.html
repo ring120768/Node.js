@@ -412,15 +412,6 @@
           <input type="email" id="witness-email" placeholder="e.g., john.smith@email.com">
         </div>
 
-        <!-- Witness Address -->
-        <div class="form-group">
-          <label class="form-label" for="witness-address">
-            Witness Address
-          </label>
-          <p class="form-hint">Physical or postal address (optional but helpful for legal proceedings)</p>
-          <input type="text" id="witness-address" placeholder="e.g., 123 High Street, London, SW1A 1AA">
-        </div>
-
         <!-- What They Saw -->
         <div class="form-group">
           <label class="form-label" for="witness-statement">
@@ -480,7 +471,6 @@
     const witnessNameInput = document.getElementById('witness-name');
     const witnessPhoneInput = document.getElementById('witness-phone');
     const witnessEmailInput = document.getElementById('witness-email');
-    const witnessAddressInput = document.getElementById('witness-address');
     const witnessStatementTextarea = document.getElementById('witness-statement');
     const statementCharCounter = document.getElementById('statement-char-counter');
     const nextBtn = document.getElementById('next-btn');
@@ -515,7 +505,6 @@
           witnessNameInput.value = '';
           witnessPhoneInput.value = '';
           witnessEmailInput.value = '';
-          witnessAddressInput.value = '';
           witnessStatementTextarea.value = '';
           statementCharCounter.textContent = '0 / 1000 characters';
         }
@@ -545,7 +534,7 @@
     });
 
     // Save on all input changes
-    [witnessNameInput, witnessPhoneInput, witnessEmailInput, witnessAddressInput].forEach(input => {
+    [witnessNameInput, witnessPhoneInput, witnessEmailInput].forEach(input => {
       input.addEventListener('input', () => {
         validateForm();
         saveData();
@@ -581,7 +570,6 @@
         witness_name: witnessesPresent === 'yes' ? witnessNameInput.value.trim() : null,
         witness_mobile_number: witnessesPresent === 'yes' ? witnessPhoneInput.value.trim() : null,
         witness_email_address: witnessesPresent === 'yes' ? witnessEmailInput.value.trim() : null,
-        witness_address: witnessesPresent === 'yes' ? witnessAddressInput.value.trim() : null,
         witness_statement: witnessesPresent === 'yes' ? witnessStatementTextarea.value.trim() : null
       };
 
@@ -622,7 +610,6 @@
         if (data.witness_name) witnessNameInput.value = data.witness_name;
         if (data.witness_mobile_number) witnessPhoneInput.value = data.witness_mobile_number;
         if (data.witness_email_address) witnessEmailInput.value = data.witness_email_address;
-        if (data.witness_address) witnessAddressInput.value = data.witness_address;
         if (data.witness_statement) {
           witnessStatementTextarea.value = data.witness_statement;
           const length = data.witness_statement.length;
@@ -655,7 +642,6 @@
         witness_name: witnessNameInput.value,
         witness_mobile_number: witnessPhoneInput.value,
         witness_email_address: witnessEmailInput.value,
-        witness_address: witnessAddressInput.value,
         witness_statement: witnessStatementTextarea.value,
         saved_at: new Date().toISOString()
       };
@@ -680,7 +666,6 @@
       witnessNameInput.value = '';
       witnessPhoneInput.value = '';
       witnessEmailInput.value = '';
-      witnessAddressInput.value = '';
       witnessStatementTextarea.value = '';
       statementCharCounter.textContent = '0 / 1000 characters';
 

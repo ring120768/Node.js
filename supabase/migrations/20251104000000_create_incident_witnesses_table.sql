@@ -21,8 +21,8 @@ CREATE TABLE IF NOT EXISTS public.incident_witnesses (
 
   -- Witness contact details
   witness_name TEXT NOT NULL,
-  witness_phone TEXT,
-  witness_email TEXT,
+  witness_mobile_number TEXT,
+  witness_email_address TEXT,
   witness_address TEXT,
 
   -- Witness statement
@@ -125,10 +125,10 @@ COMMENT ON COLUMN public.incident_witnesses.witness_number IS
 COMMENT ON COLUMN public.incident_witnesses.witness_name IS
 'Full name of the witness (required)';
 
-COMMENT ON COLUMN public.incident_witnesses.witness_phone IS
-'Contact phone number (optional)';
+COMMENT ON COLUMN public.incident_witnesses.witness_mobile_number IS
+'Contact mobile phone number (optional)';
 
-COMMENT ON COLUMN public.incident_witnesses.witness_email IS
+COMMENT ON COLUMN public.incident_witnesses.witness_email_address IS
 'Contact email address (optional)';
 
 COMMENT ON COLUMN public.incident_witnesses.witness_address IS

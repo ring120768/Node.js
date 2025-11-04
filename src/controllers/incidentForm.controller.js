@@ -279,7 +279,6 @@ async function submitIncidentForm(req, res) {
             witness_name: page9.witness_name,
             witness_mobile_number: page9.witness_mobile_number || null,
             witness_email_address: page9.witness_email_address || null,
-            witness_address: page9.witness_address || null,
             witness_statement: page9.witness_statement
           });
         }
@@ -295,7 +294,6 @@ async function submitIncidentForm(req, res) {
                 witness_name: witness.witness_name,
                 witness_mobile_number: witness.witness_mobile_number || null,
                 witness_email_address: witness.witness_email_address || null,
-                witness_address: witness.witness_address || null,
                 witness_statement: witness.witness_statement
               });
             }

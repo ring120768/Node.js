@@ -2,7 +2,7 @@
  * Test Page 9 (Witnesses) Field Mapping
  *
  * Validates:
- * - Frontend collects all witness fields including witness_address
+ * - Frontend collects all witness fields (name, phone, email, statement)
  * - Backend saves witnesses to incident_witnesses table
  * - Multiple witnesses are handled correctly
  * - PDF service queries incident_witnesses table
@@ -41,19 +41,11 @@ console.log('\n📝 1. Frontend Field Collection\n');
 const htmlPath = path.join(__dirname, '../public/incident-form-page9-witnesses.html');
 const htmlContent = fs.readFileSync(htmlPath, 'utf8');
 
-// Check witness_address field exists
-test(
-  'witness_address input field exists in HTML',
-  htmlContent.includes('id="witness-address"'),
-  'Found: <input id="witness-address">'
-);
-
 // Check all required witness fields exist
 const requiredFields = [
   'witness-name',
   'witness-phone',
   'witness-email',
-  'witness-address',
   'witness-statement'
 ];
 
@@ -64,52 +56,6 @@ requiredFields.forEach(fieldId => {
     `Found: <input/textarea id="${fieldId}">`
   );
 });
-
-// Check witness_address is in DOM references
-test(
-  'witness_address has DOM reference',
-  htmlContent.includes('witnessAddressInput') &&
-  htmlContent.includes('getElementById(\'witness-address\')'),
-  'Found: const witnessAddressInput = document.getElementById(\'witness-address\')'
-);
-
-// Check witness_address is in saveData() function
-test(
-  'witness_address included in saveData()',
-  htmlContent.includes('witness_address:') &&
-  htmlContent.includes('witnessAddressInput.value'),
-  'Found: witness_address: witnessesPresent === \'yes\' ? witnessAddressInput.value.trim() : null'
-);
-
-// Check witness_address is in loadData() function
-test(
-  'witness_address included in loadData()',
-  htmlContent.includes('if (data.witness_address)') &&
-  htmlContent.includes('witnessAddressInput.value = data.witness_address'),
-  'Found: if (data.witness_address) witnessAddressInput.value = data.witness_address'
-);
-
-// Check witness_address is in input event listeners
-test(
-  'witness_address in input event listeners',
-  /\[.*witnessNameInput.*witnessAddressInput.*\]\.forEach/.test(htmlContent),
-  'Found: witnessAddressInput in input event listeners array'
-);
-
-// Check witness_address is cleared when "No" selected
-test(
-  'witness_address cleared when no witnesses',
-  /witnessAddressInput\.value = ''/.test(htmlContent),
-  'Found: witnessAddressInput.value = \'\' in clearing logic'
-);
-
-// Check witness_address in "Add Another Witness" handler
-test(
-  'witness_address in add witness handler',
-  htmlContent.includes('witness_address:') &&
-  htmlContent.includes('currentWitnessData'),
-  'Found: witness_address in currentWitnessData object'
-);
 
 // Check additional_witnesses included in saveData
 test(
@@ -128,13 +74,12 @@ console.log('\n🔧 2. Backend Controller\n');
 const controllerPath = path.join(__dirname, '../src/controllers/incidentForm.controller.js');
 const controllerContent = fs.readFileSync(controllerPath, 'utf8');
 
-// Check buildIncidentData doesn't have non-existent witness columns
+// Check buildIncidentData has correct witness fields (boolean flags only)
 test(
-  'buildIncidentData removes non-existent witness columns',
-  !controllerContent.match(/witness_name:.*page9\.witness_name/) &&
-  !controllerContent.match(/witness_phone:.*page9\.witness_phone/) &&
-  !controllerContent.match(/witness_address:.*page9\.witness_address/),
-  'Confirmed: witness_name, witness_phone, witness_address NOT in buildIncidentData'
+  'buildIncidentData has witnesses_present and any_witness flags',
+  controllerContent.includes('witnesses_present: page9.witnesses_present') &&
+  controllerContent.includes('any_witness: page9.witnesses_present === \'yes\''),
+  'Confirmed: buildIncidentData has witnesses_present and any_witness boolean flags'
 );
 
 // Check buildIncidentData has correct witness fields
@@ -164,9 +109,8 @@ const witnessFields = [
   'create_user_id',
   'witness_number',
   'witness_name',
-  'witness_phone',
-  'witness_email',
-  'witness_address',
+  'witness_mobile_number',
+  'witness_email_address',
   'witness_statement'
 ];
 
@@ -264,8 +208,8 @@ if (fs.existsSync(migrationPath1)) {
     'create_user_id UUID',
     'witness_number INTEGER',
     'witness_name TEXT',
-    'witness_phone TEXT',
-    'witness_email TEXT',
+    'witness_mobile_number TEXT',
+    'witness_email_address TEXT',
     'witness_address TEXT',
     'witness_statement TEXT',
     'created_at TIMESTAMP',
@@ -323,6 +267,7 @@ if (fs.existsSync(migrationPath1)) {
 console.log('\n🔗 5. Field Mapping Consistency\n');
 
 // Frontend → Backend → Database mapping
+// Note: witness_address exists in DB but is no longer collected from frontend
 const fieldMappings = [
   {
     frontend: 'witnessNameInput.value',
@@ -331,18 +276,13 @@ const fieldMappings = [
   },
   {
     frontend: 'witnessPhoneInput.value',
-    backend: 'witness_phone',
-    database: 'witness_phone TEXT'
+    backend: 'witness_mobile_number',
+    database: 'witness_mobile_number TEXT'
   },
   {
     frontend: 'witnessEmailInput.value',
-    backend: 'witness_email',
-    database: 'witness_email TEXT'
-  },
-  {
-    frontend: 'witnessAddressInput.value',
-    backend: 'witness_address',
-    database: 'witness_address TEXT'
+    backend: 'witness_email_address',
+    database: 'witness_email_address TEXT'
   },
   {
     frontend: 'witnessStatementTextarea.value',
@@ -380,7 +320,7 @@ console.log(`📈 Success Rate: ${percentage}%\n`);
 
 if (failed === 0) {
   console.log('🎉 ALL TESTS PASSED! Page 9 witness field mapping is correctly implemented.\n');
-  console.log('✅ Frontend collects all witness fields including witness_address');
+  console.log('✅ Frontend collects witness fields (name, phone, email, statement)');
   console.log('✅ Backend saves witnesses to incident_witnesses table');
   console.log('✅ Multiple witnesses handled via witness_number');
   console.log('✅ PDF service queries incident_witnesses correctly');
