@@ -642,6 +642,57 @@
         <span>⚠️</span>
         <span id="lookup-error-message">Vehicle not found. Please check the registration number.</span>
       </div>
+
+      <!-- Manual Entry Fallback (appears when DVLA fails) -->
+      <div id="manual-entry-section" style="display: none;" class="manual-entry">
+        <button type="button" class="secondary-btn" id="manual-entry-btn">
+          ✍️ Can't find vehicle? Enter details manually
+        </button>
+
+        <!-- Manual Entry Form (hidden until clicked) -->
+        <div id="manual-entry-form" style="display: none; margin-top: 16px;">
+          <div class="alert alert-info" style="margin-bottom: 16px;">
+            <span>ℹ️</span>
+            <span>Please enter your vehicle details manually. Fill in as much information as you have.</span>
+          </div>
+
+          <div class="form-group">
+            <label for="manual-make">Make *</label>
+            <input type="text" id="manual-make" placeholder="e.g., BMW, Toyota, Ford" required>
+          </div>
+
+          <div class="form-group">
+            <label for="manual-model">Model *</label>
+            <input type="text" id="manual-model" placeholder="e.g., 3 Series, Corolla, Focus" required>
+          </div>
+
+          <div class="form-group">
+            <label for="manual-colour">Colour *</label>
+            <input type="text" id="manual-colour" placeholder="e.g., Blue, Red, Silver" required>
+          </div>
+
+          <div class="form-group">
+            <label for="manual-year">Year of Manufacture *</label>
+            <input type="number" id="manual-year" placeholder="e.g., 2020" min="1900" max="2025" required>
+          </div>
+
+          <div class="form-group">
+            <label for="manual-fuel">Fuel Type</label>
+            <select id="manual-fuel">
+              <option value="">Select fuel type...</option>
+              <option value="Petrol">Petrol</option>
+              <option value="Diesel">Diesel</option>
+              <option value="Electric">Electric</option>
+              <option value="Hybrid">Hybrid</option>
+              <option value="Other">Other</option>
+            </select>
+          </div>
+
+          <button type="button" class="primary-btn" id="save-manual-entry-btn">
+            ✅ Save Vehicle Details
+          </button>
+        </div>
+      </div>
     </div>
 
     <!-- MOT & Tax Status (from DVLA) -->
@@ -911,10 +962,76 @@
         console.error('DVLA lookup error:', error);
         document.getElementById('lookup-error-message').textContent = error.message || 'Failed to look up vehicle. Please try again.';
         lookupError.style.display = 'flex';
+
+        // Show manual entry option
+        document.getElementById('manual-entry-section').style.display = 'block';
       } finally {
         lookupBtn.disabled = false;
         lookupBtn.textContent = '🔍 Look Up';
       }
+    });
+
+    // Manual Entry Button - Show manual entry form
+    document.getElementById('manual-entry-btn').addEventListener('click', function() {
+      document.getElementById('manual-entry-form').style.display = 'block';
+      this.style.display = 'none'; // Hide the button after clicking
+    });
+
+    // Save Manual Entry - Populate vehicleData and show details
+    document.getElementById('save-manual-entry-btn').addEventListener('click', function() {
+      const make = document.getElementById('manual-make').value.trim();
+      const model = document.getElementById('manual-model').value.trim();
+      const colour = document.getElementById('manual-colour').value.trim();
+      const year = document.getElementById('manual-year').value.trim();
+      const fuel = document.getElementById('manual-fuel').value;
+
+      // Validation
+      if (!make || !model || !colour || !year) {
+        alert('Please fill in all required fields (Make, Model, Colour, Year)');
+        return;
+      }
+
+      // Populate vehicleData object (same structure as DVLA response)
+      vehicleData = {
+        make: make,
+        model: model,
+        colour: colour,
+        yearOfManufacture: year,
+        fuelType: fuel || 'Unknown',
+        motStatus: 'Unknown (Manual Entry)',
+        motExpiryDate: 'Not Available',
+        taxStatus: 'Unknown (Manual Entry)',
+        taxDueDate: 'Not Available',
+        insuranceStatus: 'Unknown (Manual Entry)',
+        source: 'manual_entry' // Flag to indicate manual entry
+      };
+
+      // Display vehicle details
+      document.getElementById('vehicle-make').textContent = make;
+      document.getElementById('vehicle-model').textContent = model;
+      document.getElementById('vehicle-colour').textContent = colour;
+      document.getElementById('vehicle-year').textContent = year;
+      document.getElementById('vehicle-fuel').textContent = fuel || 'Unknown';
+
+      // Show vehicle details section
+      const vehicleDetails = document.getElementById('vehicle-details');
+      vehicleDetails.querySelector('h3').textContent = '✅ Vehicle Details (Manual Entry)';
+      vehicleDetails.style.display = 'block';
+
+      // Hide manual entry form
+      document.getElementById('manual-entry-form').style.display = 'none';
+      document.getElementById('manual-entry-section').style.display = 'none';
+
+      // Hide error message
+      document.getElementById('lookup-error').style.display = 'none';
+
+      // Enable form validation (Next button)
+      validateForm();
+
+      // Auto-save
+      autoSave();
+
+      console.log('Manual vehicle entry saved:', vehicleData);
     });
 
     // Mutual exclusivity for checkboxes (UX Design Pattern)
