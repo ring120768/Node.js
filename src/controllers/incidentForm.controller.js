@@ -356,11 +356,17 @@ function buildIncidentData(userId, formData) {
     witness_phone: page9.witness_phone || null,
     witness_address: page9.witness_address || null,
 
-    // Page 10: Police Details
+    // Page 10: Police Details & Safety Equipment
     police_attended: page10.police_attended === 'yes',
-    police_reference_number: page10.police_reference_number || null,
-    police_station: page10.police_station || null,
-    police_officer_name: page10.police_officer_name || null,
+    accident_ref_number: page10.accident_ref_number || null,  // Police CAD/reference number
+    police_force: page10.police_force || null,                // Police force name
+    officer_name: page10.officer_name || null,                // Officer's name
+    officer_badge: page10.officer_badge || null,              // Officer's badge/collar number
+    user_breath_test: page10.user_breath_test || null,        // User's breath test result
+    other_breath_test: page10.other_breath_test || null,      // Other driver's breath test
+    airbags_deployed: page10.airbags_deployed === 'yes',      // Were airbags deployed (boolean)
+    seatbelts_worn: page10.seatbelts_worn === 'yes',          // Were seatbelts worn (boolean)
+    seatbelt_reason: page10.seatbelts_worn === 'no' ? page10.seatbelt_reason : null,  // Reason if not worn
 
     // Page 12: Final Medical Check
     medical_ongoing_pain: page12.medical_ongoing_pain === 'yes',

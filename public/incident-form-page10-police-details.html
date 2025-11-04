@@ -631,11 +631,12 @@
   <script>
     console.log('Page 10: Police & Safety - Initializing');
 
-    // Get session ID
-    if (!sessionStorage.getItem('temp_session_id')) {
-      sessionStorage.setItem('temp_session_id', crypto.randomUUID());
+    // Initialize temp session ID for any potential file uploads (shared across all form pages)
+    if (!localStorage.getItem('temp_session_id')) {
+      localStorage.setItem('temp_session_id', crypto.randomUUID());
+      console.log('✅ Created new temp session ID:', localStorage.getItem('temp_session_id'));
     }
-    console.log('Session ID:', sessionStorage.getItem('temp_session_id'));
+    console.log('Session ID:', localStorage.getItem('temp_session_id'));
 
     // State
     let policeAttended = null;
