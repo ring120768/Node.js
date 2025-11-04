@@ -542,6 +542,21 @@
       imageInput.click();
     });
 
+    // Get field name based on slot number
+    function getFieldNameForSlot(slotIndex) {
+      // Slot 0 (1st image) → other_vehicle_photo_1 (maps to file_url_other_vehicle)
+      // Slot 1 (2nd image) → other_vehicle_photo_2 (maps to file_url_other_vehicle_1)
+      // Slots 2-4 (images 3-5) → other_damage_photo_3/4/5 (user_documents only)
+      const fieldNames = [
+        'other_vehicle_photo_1',
+        'other_vehicle_photo_2',
+        'other_damage_photo_3',
+        'other_damage_photo_4',
+        'other_damage_photo_5'
+      ];
+      return fieldNames[slotIndex] || 'other_damage_photo';
+    }
+
     // Handle file selection
     imageInput.addEventListener('change', async (e) => {
       const file = e.target.files[0];
@@ -549,11 +564,16 @@
 
       console.log('File selected:', file.name, file.size, 'bytes');
 
+      // Determine field name based on current slot
+      const currentSlot = uploadedImages.length;
+      const fieldName = getFieldNameForSlot(currentSlot);
+      console.log(`📸 Uploading to slot ${currentSlot + 1}/5 with field_name: ${fieldName}`);
+
       // Upload immediately to prevent mobile file handle expiration
       try {
         const formData = new FormData();
         formData.append('file', file);
-        formData.append('field_name', 'other_damage_photo');  // Required by backend
+        formData.append('field_name', fieldName);  // Specific field name per slot
         formData.append('temp_session_id', sessionStorage.getItem('temp_session_id') || crypto.randomUUID());
 
         const response = await fetch('/api/images/temp-upload', {
@@ -578,7 +598,8 @@
           path: result.tempPath,
           blobUrl: blobUrl,
           fileName: file.name,
-          fileSize: formatFileSize(file.size)
+          fileSize: formatFileSize(file.size),
+          fieldName: fieldName  // Store field name for this image
         };
 
         uploadedImages.push(imageObj);
@@ -588,11 +609,17 @@
         card.className = 'image-card';
         card.dataset.index = uploadedImages.length - 1;
 
+        // Create label based on field name
+        const fieldLabel = fieldName.includes('vehicle_photo')
+          ? `🚗 Vehicle Photo ${fieldName.slice(-1)}`
+          : `📄 Other Damage ${fieldName.slice(-1)}`;
+
         card.innerHTML = `
           <img src="${blobUrl}" alt="${file.name}" class="image-card-thumbnail">
           <div class="image-card-info">
             <div class="image-card-name">${file.name}</div>
             <div class="image-card-size">${imageObj.fileSize}</div>
+            <div style="font-size: 0.75rem; color: var(--accent); font-weight: 600; margin-top: 4px;">${fieldLabel}</div>
           </div>
           <button type="button" class="image-card-remove" data-index="${uploadedImages.length - 1}">×</button>
         `;
@@ -634,11 +661,17 @@
         card.className = 'image-card';
         card.dataset.index = idx;
 
+        // Create label based on field name
+        const fieldLabel = imageObj.fieldName && imageObj.fieldName.includes('vehicle_photo')
+          ? `🚗 Vehicle Photo ${imageObj.fieldName.slice(-1)}`
+          : `📄 Other Damage ${imageObj.fieldName ? imageObj.fieldName.slice(-1) : idx + 1}`;
+
         card.innerHTML = `
           <img src="${imageObj.blobUrl}" alt="${imageObj.fileName}" class="image-card-thumbnail">
           <div class="image-card-info">
             <div class="image-card-name">${imageObj.fileName}</div>
             <div class="image-card-size">${imageObj.fileSize}</div>
+            <div style="font-size: 0.75rem; color: var(--accent); font-weight: 600; margin-top: 4px;">${fieldLabel}</div>
           </div>
           <button type="button" class="image-card-remove" data-index="${idx}">×</button>
         `;
@@ -668,7 +701,8 @@
         other_damage_images: uploadedImages.map(img => ({
           path: img.path,
           fileName: img.fileName,
-          fileSize: img.fileSize
+          fileSize: img.fileSize,
+          fieldName: img.fieldName  // Save field name with each image
         }))
       };
 
@@ -692,6 +726,11 @@
             card.className = 'image-card';
             card.dataset.index = index;
 
+            // Create label based on field name
+            const fieldLabel = imageObj.fieldName && imageObj.fieldName.includes('vehicle_photo')
+              ? `🚗 Vehicle Photo ${imageObj.fieldName.slice(-1)}`
+              : `📄 Other Damage ${imageObj.fieldName ? imageObj.fieldName.slice(-1) : index + 1}`;
+
             // Show placeholder icon since blob URLs don't persist
             card.innerHTML = `
               <div class="image-card-thumbnail" style="background: #f3f4f6; display: flex; align-items: center; justify-content: center; color: #9ca3af; font-size: 2rem;">
@@ -700,6 +739,7 @@
               <div class="image-card-info">
                 <div class="image-card-name">${imageObj.fileName}</div>
                 <div class="image-card-size">${imageObj.fileSize}</div>
+                <div style="font-size: 0.75rem; color: var(--accent); font-weight: 600; margin-top: 4px;">${fieldLabel}</div>
               </div>
               <button type="button" class="image-card-remove" data-index="${index}">×</button>
             `;

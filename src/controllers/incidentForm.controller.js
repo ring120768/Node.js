@@ -175,7 +175,166 @@ async function submitIncidentForm(req, res) {
       }
     }
 
-    // 6. Return success
+    // 6. Finalize other vehicle photos if present (Page 8)
+    let otherVehiclePhotoResults = null;
+    if (formData.page8?.session_id) {
+      try {
+        // Page 8 uses 5 different field names:
+        // - other_vehicle_photo_1 → file_url_other_vehicle (DB column)
+        // - other_vehicle_photo_2 → file_url_other_vehicle_1 (DB column)
+        // - other_damage_photo_3/4/5 → user_documents only (no DB columns)
+        const fieldNames = [
+          'other_vehicle_photo_1',
+          'other_vehicle_photo_2',
+          'other_damage_photo_3',
+          'other_damage_photo_4',
+          'other_damage_photo_5'
+        ];
+
+        const allPhotos = [];
+        let successCount = 0;
+        let errorCount = 0;
+
+        // Process each field name
+        for (const fieldName of fieldNames) {
+          const result = await locationPhotoService.finalizePhotosByType(
+            userId,
+            incident.id,
+            formData.page8.session_id,
+            fieldName,
+            'other-vehicle',
+            'other_vehicle_photo'
+          );
+
+          if (result.success && result.photos.length > 0) {
+            allPhotos.push(...result.photos);
+            successCount += result.successCount;
+          }
+          if (result.errorCount > 0) {
+            errorCount += result.errorCount;
+          }
+        }
+
+        otherVehiclePhotoResults = {
+          success: successCount > 0,
+          photos: allPhotos,
+          totalProcessed: allPhotos.length,
+          successCount,
+          errorCount
+        };
+
+        // Update incident_reports with first 2 photo URLs (if available)
+        if (allPhotos.length > 0) {
+          const updateData = {};
+          if (allPhotos[0]) updateData.file_url_other_vehicle = allPhotos[0].downloadUrl;
+          if (allPhotos[1]) updateData.file_url_other_vehicle_1 = allPhotos[1].downloadUrl;
+
+          if (Object.keys(updateData).length > 0) {
+            const { error: updateError } = await supabase
+              .from('incident_reports')
+              .update(updateData)
+              .eq('id', incident.id);
+
+            if (updateError) {
+              logger.error('Failed to update incident_reports with other vehicle photo URLs', {
+                incidentId: incident.id,
+                error: updateError.message
+              });
+            } else {
+              logger.info('Updated incident_reports with other vehicle photo URLs', {
+                incidentId: incident.id,
+                photoCount: Object.keys(updateData).length
+              });
+            }
+          }
+        }
+
+        logger.info('Other vehicle photos finalized', {
+          incidentId: incident.id,
+          photoCount: successCount,
+          errors: errorCount
+        });
+      } catch (photoError) {
+        logger.error('Failed to finalize other vehicle photos (non-critical)', {
+          incidentId: incident.id,
+          error: photoError.message
+        });
+        // Don't fail the submission - photos can be re-processed
+      }
+    }
+
+    // 7. Save witnesses to incident_witnesses table (Page 9)
+    let witnessResults = null;
+    if (formData.page9?.witnesses_present === 'yes') {
+      try {
+        const witnesses = [];
+        const page9 = formData.page9;
+
+        // Primary witness (witness 1)
+        if (page9.witness_name && page9.witness_statement) {
+          witnesses.push({
+            incident_report_id: incident.id,
+            create_user_id: userId,
+            witness_number: 1,
+            witness_name: page9.witness_name,
+            witness_phone: page9.witness_phone || null,
+            witness_email: page9.witness_email || null,
+            witness_address: page9.witness_address || null,
+            witness_statement: page9.witness_statement
+          });
+        }
+
+        // Additional witnesses from sessionStorage (witness 2, 3, 4, etc.)
+        if (page9.additional_witnesses && Array.isArray(page9.additional_witnesses)) {
+          page9.additional_witnesses.forEach((witness, index) => {
+            if (witness.witness_name && witness.witness_statement) {
+              witnesses.push({
+                incident_report_id: incident.id,
+                create_user_id: userId,
+                witness_number: index + 2, // Start from 2 (witness 1 is primary)
+                witness_name: witness.witness_name,
+                witness_phone: witness.witness_phone || null,
+                witness_email: witness.witness_email || null,
+                witness_address: witness.witness_address || null,
+                witness_statement: witness.witness_statement
+              });
+            }
+          });
+        }
+
+        // Insert all witnesses
+        if (witnesses.length > 0) {
+          const { data: insertedWitnesses, error: witnessError } = await supabase
+            .from('incident_witnesses')
+            .insert(witnesses)
+            .select();
+
+          if (witnessError) {
+            logger.error('Failed to insert witnesses (non-critical)', {
+              incidentId: incident.id,
+              error: witnessError.message
+            });
+          } else {
+            witnessResults = {
+              successCount: insertedWitnesses.length,
+              witnesses: insertedWitnesses
+            };
+            logger.info('Witnesses saved successfully', {
+              incidentId: incident.id,
+              witnessCount: insertedWitnesses.length
+            });
+          }
+        }
+      } catch (witnessError) {
+        logger.error('Failed to save witnesses (non-critical)', {
+          incidentId: incident.id,
+          error: witnessError.message
+        });
+        // Don't fail the submission - witnesses can be added later
+      }
+    }
+
+    // 8. Return success
     return res.status(201).json({
       success: true,
       data: {
@@ -195,6 +354,15 @@ async function submitIncidentForm(req, res) {
           finalized: vehiclePhotoResults.successCount,
           failed: vehiclePhotoResults.errorCount,
           photos: vehiclePhotoResults.photos
+        } : null,
+        other_vehicle_photos: otherVehiclePhotoResults ? {
+          finalized: otherVehiclePhotoResults.successCount,
+          failed: otherVehiclePhotoResults.errorCount,
+          photos: otherVehiclePhotoResults.photos
+        } : null,
+        witnesses: witnessResults ? {
+          saved: witnessResults.successCount,
+          witnesses: witnessResults.witnesses
         } : null
       },
       message: 'Incident report submitted successfully'
@@ -369,11 +537,9 @@ function buildIncidentData(userId, formData) {
     no_visible_damage: page7.no_visible_damage || false,
     describe_damage_to_vehicle: page7.describe_damage_to_vehicle || null,
 
-    // Page 9: Witnesses
-    witness_present: page9.witness_present === 'yes',
-    witness_name: page9.witness_name || null,
-    witness_phone: page9.witness_phone || null,
-    witness_address: page9.witness_address || null,
+    // Page 9: Witnesses (boolean flags only - witness details saved to incident_witnesses table)
+    witnesses_present: page9.witnesses_present || null,
+    any_witness: page9.witnesses_present === 'yes',
 
     // Page 10: Police Details & Safety Equipment
     police_attended: page10.police_attended === 'yes',
