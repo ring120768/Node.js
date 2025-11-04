@@ -273,9 +273,8 @@ async function submitIncidentForm(req, res) {
         // Primary witness (witness 1)
         if (page9.witness_name && page9.witness_statement) {
           witnesses.push({
-            incident_report_id: incident.id,
+            incident_id: incident.id,  // Using incident_id (current schema)
             create_user_id: userId,
-            witness_number: 1,
             witness_name: page9.witness_name,
             witness_phone: page9.witness_phone || null,
             witness_email: page9.witness_email || null,
@@ -289,9 +288,8 @@ async function submitIncidentForm(req, res) {
           page9.additional_witnesses.forEach((witness, index) => {
             if (witness.witness_name && witness.witness_statement) {
               witnesses.push({
-                incident_report_id: incident.id,
+                incident_id: incident.id,  // Using incident_id (current schema)
                 create_user_id: userId,
-                witness_number: index + 2, // Start from 2 (witness 1 is primary)
                 witness_name: witness.witness_name,
                 witness_phone: witness.witness_phone || null,
                 witness_email: witness.witness_email || null,
