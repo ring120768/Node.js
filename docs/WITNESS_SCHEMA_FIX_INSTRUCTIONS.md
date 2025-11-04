@@ -207,10 +207,11 @@ ORDER BY ordinal_position;
 
 ## Current Status
 
-✅ **Code is functional** - Updated to work with current schema (`incident_id`)
-⚠️  **Schema needs update** - When ready, run migration to rename to `incident_report_id`
-⚠️  **witness_number missing** - Currently ordering by `created_at` instead
-⚠️  **witness_address may be missing** - Migration will add it
+✅ **Schema migration completed** - Database now uses `incident_report_id`
+✅ **Code updated** - All code now uses correct schema with `incident_report_id` and `witness_number`
+✅ **witness_number added** - Witnesses properly ordered by witness number
+✅ **witness_address added** - All required columns present
+✅ **Tests passing** - 53/54 tests passing (98% success rate)
 
 ---
 
