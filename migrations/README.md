@@ -2,17 +2,29 @@
 
 ## Current Status
 
-Based on schema analysis (`node scripts/analyze-page7-schema.js`):
+Based on schema analysis (`node scripts/analyze-page7-schema.js` and `node scripts/check-duplicate-columns.js`):
 
-### ✅ Already Correct (5 fields)
-These fields were already renamed in a previous migration:
-- `other_drivers_insurance_company` ✅
-- `other_drivers_policy_number` ✅
-- `other_drivers_policy_holder_name` ✅
-- `other_drivers_policy_cover_type` ✅
-- `other_vehicle_registration` ✅
+### ✅ Migrations Completed
 
-### ➕ Need to Add (16 fields)
+**Step 1 (DONE):** `page7-add-missing-fields.sql` added 16 fields:
+- ✅ 4 driver information fields
+- ✅ 10 DVLA lookup fields
+- ✅ 2 damage description fields
+
+**Step 2 (PENDING):** Clean up duplicate column
+
+### ⚠️ Issue Found: Duplicate Column
+
+Both old and new columns exist:
+- `other_insurance_company` (old, needs to be dropped)
+- `other_drivers_insurance_company` (new, correct)
+
+The other 3 insurance fields are clean:
+- ✅ `other_drivers_policy_number` (only new exists)
+- ✅ `other_drivers_policy_holder_name` (only new exists)
+- ✅ `other_drivers_policy_cover_type` (only new exists)
+
+### ➕ Already Added (16 fields - DONE)
 
 **Driver Information (4 fields):**
 - `other_full_name`
@@ -36,17 +48,15 @@ These fields were already renamed in a previous migration:
 - `no_visible_damage`
 - `describe_damage_to_vehicle`
 
-## Migration File to Use
+## Migration to Run NOW
 
-**Use this file:** `page7-add-missing-fields.sql`
+**Use this file:** `page7-cleanup-duplicate-column.sql`
 
 This migration:
-- ✅ Only adds the 16 missing fields
-- ✅ Skips the 4 insurance field renames (already done)
-- ✅ Skips vehicle_registration (already exists)
-- ✅ Uses `IF NOT EXISTS` for safety
+- ✅ Migrates data from old to new column (safe data preservation)
+- ✅ Drops old duplicate column `other_insurance_company`
 - ✅ Wrapped in transaction (BEGIN/COMMIT)
-- ✅ Includes rollback script
+- ✅ Includes rollback script (but cannot restore data after drop!)
 - ✅ Includes verification query
 
 ## How to Run
@@ -57,20 +67,30 @@ This migration:
 3. Click "SQL Editor" in left sidebar
 
 ### Step 2: Execute Migration
-1. Copy entire contents of `page7-add-missing-fields.sql`
+1. Copy entire contents of `page7-cleanup-duplicate-column.sql`
 2. Paste into SQL Editor
 3. Click "Run" button
 
 ### Step 3: Verify Success
-Run the verification script:
 
+**Check for duplicates:**
+```bash
+node scripts/check-duplicate-columns.js
+```
+
+**Expected result:**
+```
+✅ No duplicate columns found.
+```
+
+**Verify schema:**
 ```bash
 node scripts/analyze-page7-schema.js
 ```
 
 **Expected result:**
 ```
-✅ Already correct: 21  (5 old + 16 new)
+✅ Already correct: 21
 🔄 Need to rename: 0
 ➕ Need to add: 0
 ```
@@ -87,11 +107,20 @@ node scripts/test-page7-fields.js
 ❌ Failed: 0
 ```
 
-## Rollback (if needed)
+## Diagnostic Scripts
 
-If you need to undo this migration, the rollback script is included at the bottom of `page7-add-missing-fields.sql`.
+- `scripts/check-duplicate-columns.js` - Detects old/new column duplicates
+- `scripts/analyze-page7-schema.js` - Checks field mapping status
+- `scripts/test-page7-fields.js` - Tests HTML/JavaScript field references
 
-## Files
+## Migration Files
 
-- `page7-add-missing-fields.sql` - **USE THIS** (16 fields to add)
-- `page7-field-updates.sql` - OLD (included renames that are already done)
+### ✅ Already Applied
+- `page7-add-missing-fields.sql` - Added 16 new fields (DONE)
+
+### 📋 To Apply Now
+- `page7-cleanup-duplicate-column.sql` - **RUN THIS** (clean up duplicate)
+
+### 📚 Archive
+- `page7-field-updates.sql` - OLD (included renames already done in earlier migration)
+- `page7-rename-insurance-company.sql` - SKIP (would fail, both columns exist)
