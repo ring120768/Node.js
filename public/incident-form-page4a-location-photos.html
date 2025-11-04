@@ -400,7 +400,7 @@
         <p class="form-hint">Add up to 3 images showing the location, road conditions, or relevant scene details.</p>
 
         <!-- Hidden file input -->
-        <input type="file" id="scene-image-input" accept="image/*" capture="environment" style="display: none;">
+        <input type="file" id="scene-image-input" accept="image/jpeg,image/jpg,image/png,image/heic,image/heif,image/webp" style="display: none;">
 
         <!-- Images Container -->
         <div id="scene-images-container" style="display: flex; flex-direction: column; gap: 12px; margin-bottom: 16px;">
@@ -564,7 +564,20 @@
 
       } catch (error) {
         console.error('Scene image upload error:', error);
-        alert(`Failed to upload scene image. Please try again.`);
+
+        // Provide more helpful error message
+        let errorMessage = 'Failed to upload location photo. ';
+        if (!navigator.onLine) {
+          errorMessage += 'Please check your internet connection.';
+        } else if (error.message.includes('Failed to fetch')) {
+          errorMessage += 'Network error. Please check your connection and try again.';
+        } else if (error.message.includes('413')) {
+          errorMessage += 'Image file is too large. Please use a smaller image.';
+        } else {
+          errorMessage += 'Please try again or contact support if the problem persists.';
+        }
+
+        alert(errorMessage);
       }
 
       // Reset input for next selection
