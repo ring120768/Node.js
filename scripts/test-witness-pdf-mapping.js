@@ -65,12 +65,12 @@ const tests = [
     check: () => serviceCode.includes('data.witnesses[0]') && serviceCode.includes('data.witnesses[1]')
   },
   {
-    name: 'Maps witness_phone to witness_mobile_number',
-    check: () => serviceCode.includes('witness1.witness_phone') && serviceCode.includes("witness_mobile_number'")
+    name: 'Database and PDF field names match perfectly',
+    check: () => serviceCode.includes('witness1.witness_mobile_number') && serviceCode.includes("witness_mobile_number'")
   },
   {
-    name: 'Maps witness_email to witness_email_address',
-    check: () => serviceCode.includes('witness1.witness_email') && serviceCode.includes("witness_email_address'")
+    name: 'Database and PDF field names match perfectly (email)',
+    check: () => serviceCode.includes('witness1.witness_email_address') && serviceCode.includes("witness_email_address'")
   },
   {
     name: 'Comment about witness_address not in PDF',

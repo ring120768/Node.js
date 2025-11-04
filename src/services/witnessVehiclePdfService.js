@@ -61,8 +61,8 @@ class WitnessVehiclePdfService {
       this.setFieldValue(form, 'User ID', userId || '');
       this.setFieldValue(form, 'Witness Name', witnessData.witness_name || '');
       this.setFieldValue(form, 'Witness Address', witnessData.witness_address || '');
-      this.setFieldValue(form, 'Witness Mobile', witnessData.witness_phone || '');
-      this.setFieldValue(form, 'Witness Email', witnessData.witness_email || '');
+      this.setFieldValue(form, 'Witness Mobile', witnessData.witness_mobile_number || '');
+      this.setFieldValue(form, 'Witness Email', witnessData.witness_email_address || '');
       this.setFieldValue(form, 'Witness Statement', witnessData.witness_statement || '');
 
       // Flatten form to prevent editing

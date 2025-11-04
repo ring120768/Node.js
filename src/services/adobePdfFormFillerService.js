@@ -393,8 +393,8 @@ class AdobePdfFormFillerService {
     if (data.witnesses && data.witnesses[0]) {
       const witness1 = data.witnesses[0];
       setFieldText('witness_name', witness1.witness_name || '');
-      setFieldText('witness_mobile_number', witness1.witness_phone || '');
-      setFieldText('witness_email_address', witness1.witness_email || '');
+      setFieldText('witness_mobile_number', witness1.witness_mobile_number || '');
+      setFieldText('witness_email_address', witness1.witness_email_address || '');
       setFieldText('witness_statement', witness1.witness_statement || '');
       // Note: witness_address is NOT in PDF, so it's not mapped
     }
@@ -403,8 +403,8 @@ class AdobePdfFormFillerService {
     if (data.witnesses && data.witnesses[1]) {
       const witness2 = data.witnesses[1];
       setFieldText('witness_name_2', witness2.witness_name || '');
-      setFieldText('witness_mobile_number_2', witness2.witness_phone || '');
-      setFieldText('witness_email_address_2', witness2.witness_email || '');
+      setFieldText('witness_mobile_number_2', witness2.witness_mobile_number || '');
+      setFieldText('witness_email_address_2', witness2.witness_email_address || '');
       setFieldText('witness_statement_2', witness2.witness_statement || '');
       // Note: witness_address is NOT in PDF, so it's not mapped
     }
@@ -547,8 +547,8 @@ class AdobePdfFormFillerService {
         this.setFieldValue(form, 'User ID', userId || '');
         this.setFieldValue(form, 'Witness Name', witness.witness_name || '');
         this.setFieldValue(form, 'Witness Address', witness.witness_address || '');
-        this.setFieldValue(form, 'Witness Mobile', witness.witness_phone || '');
-        this.setFieldValue(form, 'Witness Email', witness.witness_email || '');
+        this.setFieldValue(form, 'Witness Mobile', witness.witness_mobile_number || '');
+        this.setFieldValue(form, 'Witness Email', witness.witness_email_address || '');
         this.setFieldValue(form, 'Witness Statement', witness.witness_statement || '');
       }
 

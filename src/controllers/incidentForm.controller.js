@@ -277,8 +277,8 @@ async function submitIncidentForm(req, res) {
             create_user_id: userId,
             witness_number: 1,
             witness_name: page9.witness_name,
-            witness_phone: page9.witness_phone || null,
-            witness_email: page9.witness_email || null,
+            witness_mobile_number: page9.witness_mobile_number || null,
+            witness_email_address: page9.witness_email_address || null,
             witness_address: page9.witness_address || null,
             witness_statement: page9.witness_statement
           });
@@ -293,8 +293,8 @@ async function submitIncidentForm(req, res) {
                 create_user_id: userId,
                 witness_number: index + 2,  // Witness 2, 3, 4, etc.
                 witness_name: witness.witness_name,
-                witness_phone: witness.witness_phone || null,
-                witness_email: witness.witness_email || null,
+                witness_mobile_number: witness.witness_mobile_number || null,
+                witness_email_address: witness.witness_email_address || null,
                 witness_address: witness.witness_address || null,
                 witness_statement: witness.witness_statement
               });

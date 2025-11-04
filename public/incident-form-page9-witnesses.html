@@ -579,8 +579,8 @@
       const data = {
         witnesses_present: witnessesPresent,
         witness_name: witnessesPresent === 'yes' ? witnessNameInput.value.trim() : null,
-        witness_phone: witnessesPresent === 'yes' ? witnessPhoneInput.value.trim() : null,
-        witness_email: witnessesPresent === 'yes' ? witnessEmailInput.value.trim() : null,
+        witness_mobile_number: witnessesPresent === 'yes' ? witnessPhoneInput.value.trim() : null,
+        witness_email_address: witnessesPresent === 'yes' ? witnessEmailInput.value.trim() : null,
         witness_address: witnessesPresent === 'yes' ? witnessAddressInput.value.trim() : null,
         witness_statement: witnessesPresent === 'yes' ? witnessStatementTextarea.value.trim() : null
       };
@@ -620,8 +620,8 @@
 
         // Restore witness details
         if (data.witness_name) witnessNameInput.value = data.witness_name;
-        if (data.witness_phone) witnessPhoneInput.value = data.witness_phone;
-        if (data.witness_email) witnessEmailInput.value = data.witness_email;
+        if (data.witness_mobile_number) witnessPhoneInput.value = data.witness_mobile_number;
+        if (data.witness_email_address) witnessEmailInput.value = data.witness_email_address;
         if (data.witness_address) witnessAddressInput.value = data.witness_address;
         if (data.witness_statement) {
           witnessStatementTextarea.value = data.witness_statement;
@@ -653,8 +653,8 @@
       const currentWitnessData = {
         witness_number: additionalWitnesses.length + 2, // Witness 1 is primary, 2+ are additional
         witness_name: witnessNameInput.value,
-        witness_phone: witnessPhoneInput.value,
-        witness_email: witnessEmailInput.value,
+        witness_mobile_number: witnessPhoneInput.value,
+        witness_email_address: witnessEmailInput.value,
         witness_address: witnessAddressInput.value,
         witness_statement: witnessStatementTextarea.value,
         saved_at: new Date().toISOString()

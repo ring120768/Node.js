@@ -21,8 +21,8 @@ Page 9 of the main PDF (`Car-Crash-Lawyer-AI-incident-report-main.pdf`) has buil
 | Database Field | PDF Field | Notes |
 |---------------|-----------|-------|
 | `data.witnesses[0].witness_name` | `witness_name` | Full name |
-| `data.witnesses[0].witness_phone` | `witness_mobile_number` | Phone/mobile |
-| `data.witnesses[0].witness_email` | `witness_email_address` | Email address |
+| `data.witnesses[0].witness_mobile_number` | `witness_mobile_number` | **Matches perfectly** ✅ |
+| `data.witnesses[0].witness_email_address` | `witness_email_address` | **Matches perfectly** ✅ |
 | `data.witnesses[0].witness_statement` | `witness_statement` | Statement text |
 | `data.witnesses[0].witness_address` | ❌ Not in PDF | Collected but not mapped |
 
@@ -31,8 +31,8 @@ Page 9 of the main PDF (`Car-Crash-Lawyer-AI-incident-report-main.pdf`) has buil
 | Database Field | PDF Field | Notes |
 |---------------|-----------|-------|
 | `data.witnesses[1].witness_name` | `witness_name_2` | Full name |
-| `data.witnesses[1].witness_phone` | `witness_mobile_number_2` | Phone/mobile |
-| `data.witnesses[1].witness_email` | `witness_email_address_2` | Email address |
+| `data.witnesses[1].witness_mobile_number` | `witness_mobile_number_2` | **Matches perfectly** ✅ |
+| `data.witnesses[1].witness_email_address` | `witness_email_address_2` | **Matches perfectly** ✅ |
 | `data.witnesses[1].witness_statement` | `witness_statement_2` | Statement text |
 | `data.witnesses[1].witness_address` | ❌ Not in PDF | Collected but not mapped |
 
@@ -138,6 +138,9 @@ node scripts/test-witness-pdf-mapping.js
 |------|--------|--------|
 | 2025-11-04 | Initial mapping created | Claude Code |
 | 2025-11-04 | Database schema migrated to `incident_report_id` | Claude Code |
+| 2025-11-04 | **Database columns renamed to match PDF exactly** | Claude Code |
+| 2025-11-04 | `witness_phone` → `witness_mobile_number` | Claude Code |
+| 2025-11-04 | `witness_email` → `witness_email_address` | Claude Code |
 | 2025-11-04 | Documentation created | Claude Code |
 
 ---
