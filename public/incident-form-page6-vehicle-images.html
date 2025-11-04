@@ -554,7 +554,7 @@
         const formData = new FormData();
         formData.append('file', file);
         formData.append('field_name', 'vehicle_damage_photo');  // Required by backend
-        formData.append('temp_session_id', sessionStorage.getItem('temp_session_id') || crypto.randomUUID());
+        formData.append('temp_session_id', localStorage.getItem('temp_session_id') || crypto.randomUUID());
 
         const response = await fetch('/api/images/temp-upload', {
           method: 'POST',
@@ -682,6 +682,7 @@
     // Auto-save
     function autoSave() {
       const formData = {
+        session_id: localStorage.getItem('temp_session_id'), // Required for backend to find temp uploads
         uploaded_images: uploadedImages.map(img => ({
           path: img.path,
           fileName: img.fileName,
@@ -759,10 +760,10 @@
     // Initialize
     window.addEventListener('DOMContentLoaded', () => {
       // Create or reuse session ID for temp uploads
-      if (!sessionStorage.getItem('temp_session_id')) {
-        sessionStorage.setItem('temp_session_id', crypto.randomUUID());
+      if (!localStorage.getItem('temp_session_id')) {
+        localStorage.setItem('temp_session_id', crypto.randomUUID());
       }
-      console.log('Session ID:', sessionStorage.getItem('temp_session_id'));
+      console.log('Session ID:', localStorage.getItem('temp_session_id'));
 
       loadSavedData();
     });

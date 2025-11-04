@@ -33,27 +33,33 @@ class LocationPhotoService {
   }
 
   /**
-   * Finalize location photos: Move from temp storage to permanent
+   * Generic photo finalization - works for any photo type
    *
    * @param {string} userId - User UUID
    * @param {string} incidentReportId - Incident report UUID
    * @param {string} sessionId - Temp session ID from localStorage
+   * @param {string} fieldName - Field name from temp_uploads (e.g., 'scene_photo', 'vehicle_damage_photo')
+   * @param {string} category - Storage category (e.g., 'location-photos', 'vehicle-damage')
+   * @param {string} documentType - Document type for user_documents table (e.g., 'location_photo', 'vehicle_damage_photo')
    * @returns {Promise<{success: boolean, photos: Array, error?: string}>}
    */
-  async finalizePhotos(userId, incidentReportId, sessionId) {
+  async finalizePhotosByType(userId, incidentReportId, sessionId, fieldName, category, documentType) {
     try {
-      logger.info('Finalizing location photos', {
+      logger.info('Finalizing photos by type', {
         userId,
         incidentReportId,
-        sessionId
+        sessionId,
+        fieldName,
+        category,
+        documentType
       });
 
-      // 1. Get temp uploads for this session (scene photos only)
+      // 1. Get temp uploads for this session and field type
       const { data: tempUploads, error: fetchError } = await this.supabase
         .from('temp_uploads')
         .select('*')
         .eq('session_id', sessionId)
-        .eq('field_name', 'scene_photo')
+        .eq('field_name', fieldName)
         .eq('claimed', false)
         .order('uploaded_at', { ascending: true });
 
@@ -63,7 +69,7 @@ class LocationPhotoService {
       }
 
       if (!tempUploads || tempUploads.length === 0) {
-        logger.warn('No temp uploads found for session', { sessionId });
+        logger.warn('No temp uploads found for session', { sessionId, fieldName });
         return {
           success: true,
           photos: [],
@@ -83,8 +89,8 @@ class LocationPhotoService {
           const ext = path.extname(upload.storage_path);
           const photoNumber = index + 1;
 
-          // Generate permanent path
-          const permanentPath = `users/${userId}/incident-reports/${incidentReportId}/location-photos/scene_photo_${photoNumber}${ext}`;
+          // Generate permanent path using provided category
+          const permanentPath = `users/${userId}/incident-reports/${incidentReportId}/${category}/${fieldName}_${photoNumber}${ext}`;
 
           // Move file in storage
           const moveResult = await this.movePhoto(
@@ -100,14 +106,16 @@ class LocationPhotoService {
             continue;
           }
 
-          // Create user_documents record
-          const document = await this.createDocumentRecord({
+          // Create user_documents record with provided document type
+          const document = await this.createDocumentRecordGeneric({
             userId,
             incidentReportId,
-            storageePath: permanentPath,
+            storagePath: permanentPath,
             fileSize: upload.file_size,
             mimeType: upload.mime_type,
-            photoNumber
+            documentType,
+            photoNumber,
+            source: `page_${fieldName}_photos`
           });
 
           if (!document) {
@@ -132,7 +140,7 @@ class LocationPhotoService {
 
           finalizedPhotos.push({
             id: document.id,
-            storageePath: permanentPath,
+            storagePath: permanentPath,
             downloadUrl: downloadUrl,
             photoNumber: photoNumber,
             fileSize: upload.file_size,
@@ -171,16 +179,17 @@ class LocationPhotoService {
         logger.warn('Some photos failed to finalize', { errors });
       }
 
-      logger.info('Location photos finalization complete', result);
+      logger.info('Photo finalization complete', result);
 
       return result;
 
     } catch (error) {
-      logger.error('Location photo finalization failed', {
+      logger.error('Photo finalization failed', {
         error: error.message,
         userId,
         incidentReportId,
-        sessionId
+        sessionId,
+        fieldName
       });
 
       return {
@@ -190,6 +199,49 @@ class LocationPhotoService {
       };
     }
   }
+
+  /**
+   * Finalize location photos: Move from temp storage to permanent
+   * (Backward compatibility wrapper for Page 4a)
+   *
+   * @param {string} userId - User UUID
+   * @param {string} incidentReportId - Incident report UUID
+   * @param {string} sessionId - Temp session ID from localStorage
+   * @returns {Promise<{success: boolean, photos: Array, error?: string}>}
+   */
+  async finalizePhotos(userId, incidentReportId, sessionId) {
+    // Call generic method with scene_photo parameters
+    return this.finalizePhotosByType(
+      userId,
+      incidentReportId,
+      sessionId,
+      'scene_photo',
+      'location-photos',
+      'location_photo'
+    );
+  }
+
+  /**
+   * Finalize vehicle damage photos: Move from temp storage to permanent
+   * (For Page 6 - Your Vehicle Damage Photos)
+   *
+   * @param {string} userId - User UUID
+   * @param {string} incidentReportId - Incident report UUID
+   * @param {string} sessionId - Temp session ID from localStorage
+   * @returns {Promise<{success: boolean, photos: Array, error?: string}>}
+   */
+  async finalizeVehicleDamagePhotos(userId, incidentReportId, sessionId) {
+    // Call generic method with vehicle_damage_photo parameters
+    return this.finalizePhotosByType(
+      userId,
+      incidentReportId,
+      sessionId,
+      'vehicle_damage_photo',
+      'vehicle-damage',
+      'vehicle_damage_photo'
+    );
+  }
+
 
   /**
    * Move photo from temp storage to permanent location
@@ -228,18 +280,20 @@ class LocationPhotoService {
   }
 
   /**
-   * Create user_documents record for permanent photo
+   * Create user_documents record (generic version for any photo type)
    *
    * @param {Object} params - Document parameters
    * @returns {Promise<Object|null>} Document record or null
    */
-  async createDocumentRecord({
+  async createDocumentRecordGeneric({
     userId,
     incidentReportId,
-    storageePath,
+    storagePath,
     fileSize,
     mimeType,
-    photoNumber
+    documentType,
+    photoNumber,
+    source
   }) {
     try {
       const { data, error } = await this.supabase
@@ -247,14 +301,14 @@ class LocationPhotoService {
         .insert({
           create_user_id: userId,
           incident_report_id: incidentReportId,
-          document_type: 'location_photo',
-          storage_path: storageePath,
+          document_type: documentType,
+          storage_path: storagePath,
           file_size: fileSize,
           mime_type: mimeType,
           status: 'completed',
           metadata: {
             photo_number: photoNumber,
-            source: 'page_4a_location_photos'
+            source: source
           }
         })
         .select()
@@ -264,12 +318,13 @@ class LocationPhotoService {
         logger.error('Failed to create document record', {
           error: error.message,
           userId,
-          incidentReportId
+          incidentReportId,
+          documentType
         });
         return null;
       }
 
-      logger.info('Document record created', { documentId: data.id });
+      logger.info('Document record created', { documentId: data.id, documentType });
       return data;
 
     } catch (error) {
@@ -278,6 +333,33 @@ class LocationPhotoService {
       });
       return null;
     }
+  }
+
+  /**
+   * Create user_documents record for permanent photo
+   * (Backward compatibility wrapper)
+   *
+   * @param {Object} params - Document parameters
+   * @returns {Promise<Object|null>} Document record or null
+   */
+  async createDocumentRecord({
+    userId,
+    incidentReportId,
+    storagePath,
+    fileSize,
+    mimeType,
+    photoNumber
+  }) {
+    return this.createDocumentRecordGeneric({
+      userId,
+      incidentReportId,
+      storagePath,
+      fileSize,
+      mimeType,
+      documentType: 'location_photo',
+      photoNumber,
+      source: 'page_4a_location_photos'
+    });
   }
 
   /**

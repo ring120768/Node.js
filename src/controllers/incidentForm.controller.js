@@ -100,7 +100,7 @@ async function submitIncidentForm(req, res) {
       userId
     });
 
-    // 3. Finalize location photos if present
+    // 3. Finalize location photos if present (Page 4a)
     let photoResults = null;
     if (formData.page4a?.session_id) {
       try {
@@ -124,16 +124,45 @@ async function submitIncidentForm(req, res) {
       }
     }
 
-    // 4. Return success
+    // 4. Finalize vehicle damage photos if present (Page 6)
+    let vehiclePhotoResults = null;
+    if (formData.page6?.session_id) {
+      try {
+        vehiclePhotoResults = await locationPhotoService.finalizeVehicleDamagePhotos(
+          userId,
+          incident.id,
+          formData.page6.session_id
+        );
+
+        logger.info('Vehicle damage photos finalized', {
+          incidentId: incident.id,
+          photoCount: vehiclePhotoResults.successCount,
+          errors: vehiclePhotoResults.errorCount
+        });
+      } catch (photoError) {
+        logger.error('Failed to finalize vehicle damage photos (non-critical)', {
+          incidentId: incident.id,
+          error: photoError.message
+        });
+        // Don't fail the submission - photos can be re-processed
+      }
+    }
+
+    // 5. Return success
     return res.status(201).json({
       success: true,
       data: {
         incident_id: incident.id,
         created_at: incident.created_at,
-        photos: photoResults ? {
+        location_photos: photoResults ? {
           finalized: photoResults.successCount,
           failed: photoResults.errorCount,
           photos: photoResults.photos
+        } : null,
+        vehicle_damage_photos: vehiclePhotoResults ? {
+          finalized: vehiclePhotoResults.successCount,
+          failed: vehiclePhotoResults.errorCount,
+          photos: vehiclePhotoResults.photos
         } : null
       },
       message: 'Incident report submitted successfully'
