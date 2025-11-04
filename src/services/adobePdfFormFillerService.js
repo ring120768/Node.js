@@ -330,19 +330,40 @@ class AdobePdfFormFillerService {
     setFieldText('damage_prior', incident.damage_prior_to_accident);
 
     // ========================================
-    // PAGE 8: Other Vehicles Involved
+    // PAGE 8: Other Vehicles Involved (Page 7 HTML Form)
     // ========================================
     checkField('other_vehicles', incident.other_vehicles_involved === 'Yes');
-    setFieldText('other_driver_name', incident.other_driver_name);
-    setFieldText('other_driver_number', incident.other_driver_number);
-    setFieldText('other_driver_address', incident.other_driver_address);
-    setFieldText('other_make', incident.other_make_of_vehicle);
-    setFieldText('other_model', incident.other_model_of_vehicle);
-    setFieldText('other_license', incident.other_vehicle_license_plate);
-    setFieldText('other_policy_number', incident.other_policy_number);
-    setFieldText('other_insurance', incident.other_insurance_company);
-    setFieldText('other_cover_type', incident.other_policy_cover_type);
-    setFieldText('other_policy_holder', incident.other_policy_holder);
+
+    // Driver information (renamed fields)
+    setFieldText('other_driver_name', incident.other_full_name || incident.other_driver_name); // Backward compat
+    setFieldText('other_driver_number', incident.other_contact_number || incident.other_driver_number); // Backward compat
+    setFieldText('other_driver_email', incident.other_email_address);
+    setFieldText('other_driver_license', incident.other_driving_license_number);
+
+    // Vehicle registration and DVLA data
+    setFieldText('other_license', incident.other_vehicle_registration);
+    setFieldText('other_make', incident.other_vehicle_look_up_make || incident.other_make_of_vehicle); // Fallback to old field
+    setFieldText('other_model', incident.other_vehicle_look_up_model || incident.other_model_of_vehicle); // Fallback to old field
+    setFieldText('other_color', incident.other_vehicle_look_up_colour);
+    setFieldText('other_year', incident.other_vehicle_look_up_year);
+    setFieldText('other_fuel_type', incident.other_vehicle_look_up_fuel_type);
+
+    // Vehicle status (DVLA data)
+    setFieldText('other_mot_status', incident.other_vehicle_look_up_mot_status);
+    setFieldText('other_mot_expiry', incident.other_vehicle_look_up_mot_expiry_date);
+    setFieldText('other_tax_status', incident.other_vehicle_look_up_tax_status);
+    setFieldText('other_tax_due', incident.other_vehicle_look_up_tax_due_date);
+    setFieldText('other_insurance_status', incident.other_vehicle_look_up_insurance_status);
+
+    // Insurance information (renamed fields)
+    setFieldText('other_insurance', incident.other_drivers_insurance_company || incident.other_insurance_company); // Backward compat
+    setFieldText('other_policy_number', incident.other_drivers_policy_number || incident.other_policy_number); // Backward compat
+    setFieldText('other_policy_holder', incident.other_drivers_policy_holder_name || incident.other_policy_holder); // Backward compat
+    setFieldText('other_cover_type', incident.other_drivers_policy_cover_type || incident.other_policy_cover); // Backward compat
+
+    // Damage information
+    checkField('no_visible_damage', incident.no_visible_damage === true);
+    setFieldText('other_damage_description', incident.describe_damage_to_vehicle);
 
     // ========================================
     // PAGE 9: Damage to Other Vehicles & Police

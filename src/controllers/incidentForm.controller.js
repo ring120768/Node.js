@@ -339,16 +339,35 @@ function buildIncidentData(userId, formData) {
     your_vehicle_registration: page5.vehicle_registration || page5.dvla_lookup_reg || null,
     your_vehicle_year: page5.vehicle_year || page5.dvla_vehicle_data?.yearOfManufacture || null,
 
-    // Page 7: Other Vehicle
-    other_vehicle_make: page7.other_vehicle_make || null,
-    other_vehicle_model: page7.other_vehicle_model || null,
-    other_vehicle_color: page7.other_vehicle_color || null,
-    other_vehicle_registration: page7.other_vehicle_registration || null,
+    // Page 7: Other Driver & Vehicle
+    // Driver information
+    other_full_name: page7.other_full_name || null,
+    other_contact_number: page7.other_contact_number || null,
+    other_email_address: page7.other_email_address || null,
+    other_driving_license_number: page7.other_driving_license_number || null,
 
-    other_driver_name: page7.other_driver_name || null,
-    other_driver_phone: page7.other_driver_phone || null,
-    other_driver_address: page7.other_driver_address || null,
-    other_driver_insurance: page7.other_driver_insurance || null,
+    // Vehicle registration and DVLA lookup data
+    other_vehicle_registration: page7.other_vehicle_registration || null,
+    other_vehicle_look_up_make: page7.other_vehicle_look_up_make || null,
+    other_vehicle_look_up_model: page7.other_vehicle_look_up_model || null,
+    other_vehicle_look_up_colour: page7.other_vehicle_look_up_colour || null,
+    other_vehicle_look_up_year: page7.other_vehicle_look_up_year || null,
+    other_vehicle_look_up_fuel_type: page7.other_vehicle_look_up_fuel_type || null,
+    other_vehicle_look_up_mot_status: page7.other_vehicle_look_up_mot_status || null,
+    other_vehicle_look_up_mot_expiry_date: page7.other_vehicle_look_up_mot_expiry_date || null,
+    other_vehicle_look_up_tax_status: page7.other_vehicle_look_up_tax_status || null,
+    other_vehicle_look_up_tax_due_date: page7.other_vehicle_look_up_tax_due_date || null,
+    other_vehicle_look_up_insurance_status: page7.other_vehicle_look_up_insurance_status || null,
+
+    // Insurance information
+    other_drivers_insurance_company: page7.other_drivers_insurance_company || null,
+    other_drivers_policy_number: page7.other_drivers_policy_number || null,
+    other_drivers_policy_holder_name: page7.other_drivers_policy_holder_name || null,
+    other_drivers_policy_cover_type: page7.other_drivers_policy_cover_type || null,
+
+    // Damage information
+    no_visible_damage: page7.no_visible_damage || false,
+    describe_damage_to_vehicle: page7.describe_damage_to_vehicle || null,
 
     // Page 9: Witnesses
     witness_present: page9.witness_present === 'yes',
