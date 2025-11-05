@@ -35,4 +35,18 @@ router.get('/contacts/:userId', emergencyController.getEmergencyContacts);
  */
 router.post('/log-call', emergencyController.logEmergencyCall);
 
+/**
+ * Save Emergency Audio Recording (AI Eavesdropper)
+ * POST /api/emergency/audio
+ * Body: { userId, incidentId?, audioUrl?, transcriptionText, recordedAt? }
+ */
+router.post('/audio', emergencyController.saveEmergencyAudio);
+
+/**
+ * Get Emergency Audio Recordings
+ * GET /api/emergency/audio/:userId
+ * Query params: incidentId? (optional filter)
+ */
+router.get('/audio/:userId', emergencyController.getEmergencyAudio);
+
 module.exports = router;
