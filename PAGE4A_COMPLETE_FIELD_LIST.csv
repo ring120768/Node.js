@@ -1,0 +1,7 @@
+Field_Number,Field_Name,HTML_Type,Input_Name,Supabase_Table,Supabase_Column,Data_Type,Required,Default_Value,Category,Generated_By_JS,Mapped_To_DB,Notes
+1,scene_images,File Input (Multiple),scene-image-input,user_documents,storage_path,TEXT,No,NULL (Empty Array),Location Photos,No,✅ YES,"Array of up to 3 location photos - Uploaded to temp storage immediately, moved to permanent on form submission"
+2,scene_image_path_1,N/A (Derived),N/A,user_documents,storage_path,TEXT,No,NULL,Location Photos,Yes,✅ YES,"First location photo path - Extracted from scene_images array"
+3,scene_image_path_2,N/A (Derived),N/A,user_documents,storage_path,TEXT,No,NULL,Location Photos,Yes,✅ YES,"Second location photo path - Extracted from scene_images array"
+4,scene_image_path_3,N/A (Derived),N/A,user_documents,storage_path,TEXT,No,NULL,Location Photos,Yes,✅ YES,"Third location photo path - Extracted from scene_images array"
+5,temp_session_id,N/A (localStorage),N/A,temp_uploads,session_id,UUID,Yes,NULL,System,Yes,✅ YES,"Temp session ID for photo finalization - From localStorage"
+6,page_completed,N/A (Generated),N/A,N/A,N/A,TIMESTAMP,No,NULL,System,Yes,No (localStorage only),"JavaScript-generated timestamp - localStorage only, not sent to database"
