@@ -307,13 +307,6 @@
         let userId = null;
         let incidentId = null;
 
-        // Toggle consent checkbox and button state
-        function toggleConsent() {
-            const checkbox = document.getElementById('consentCheckbox');
-            checkbox.checked = !checkbox.checked;
-            updateSubmitButton();
-        }
-
         function updateSubmitButton() {
             const checkbox = document.getElementById('consentCheckbox');
             const submitBtn = document.getElementById('submitBtn');
@@ -441,12 +434,12 @@
                 // Clear temporary data
                 sessionStorage.setItem('declarationAccepted', 'true');
 
-                // Redirect to dashboard after declaration completed
-                console.log('✅ Declaration accepted, redirecting to dashboard');
+                // Redirect to report complete page after declaration
+                console.log('✅ Declaration accepted, redirecting to report complete');
 
                 const redirectUrl = userId
-                    ? `/dashboard.html?user_id=${userId}`
-                    : '/dashboard.html';
+                    ? `/report-complete.html?user_id=${userId}`
+                    : '/report-complete.html';
 
                 window.location.href = redirectUrl;
 
@@ -456,8 +449,8 @@
                 // Even if API fails, allow user to continue (graceful degradation)
                 sessionStorage.setItem('declarationAccepted', 'true');
                 const fallbackUrl = userId
-                    ? `/dashboard.html?user_id=${userId}`
-                    : '/dashboard.html';
+                    ? `/report-complete.html?user_id=${userId}`
+                    : '/report-complete.html';
                 window.location.href = fallbackUrl;
             }
         }
@@ -467,8 +460,21 @@
             init();
 
             // Event listeners for CSP compliance (no inline onclick)
-            document.getElementById('consentCheckbox').addEventListener('change', updateSubmitButton);
-            document.getElementById('consentCheckboxWrapper').addEventListener('click', toggleConsent);
+            const checkbox = document.getElementById('consentCheckbox');
+            const wrapper = document.getElementById('consentCheckboxWrapper');
+
+            // Update button when checkbox changes
+            checkbox.addEventListener('change', updateSubmitButton);
+
+            // Allow clicking wrapper to toggle checkbox, but prevent double-toggle
+            wrapper.addEventListener('click', (e) => {
+                // Only toggle if clicking the wrapper itself, not the checkbox
+                if (e.target !== checkbox) {
+                    checkbox.checked = !checkbox.checked;
+                    updateSubmitButton();
+                }
+            });
+
             document.getElementById('backBtn').addEventListener('click', goBack);
             document.getElementById('submitBtn').addEventListener('click', submitDeclaration);
         });

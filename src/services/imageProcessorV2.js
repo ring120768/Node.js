@@ -18,13 +18,37 @@ const logger = require('../utils/logger');
 const config = require('../config');
 
 class ImageProcessorV2 {
-  constructor(supabaseClient) {
+  constructor(supabaseClient, websocketService = null) {
     if (!supabaseClient) {
       throw new Error('Supabase client is required for ImageProcessorV2');
     }
     this.supabase = supabaseClient;
+    this.websocketService = websocketService;
     this.initialized = true;
     logger.info('✅ ImageProcessorV2 service initialized with user_documents support');
+  }
+
+  /**
+   * Emit WebSocket update for image processing
+   * @param {string} userId - User ID
+   * @param {string} type - Message type
+   * @param {Object} data - Update data
+   */
+  emitWebSocketUpdate(userId, type, data) {
+    if (this.websocketService && this.websocketService.broadcastImageProcessingUpdate) {
+      try {
+        this.websocketService.broadcastImageProcessingUpdate(userId, {
+          type,
+          ...data
+        });
+      } catch (error) {
+        logger.warn('Failed to emit WebSocket update', {
+          error: error.message,
+          userId,
+          type
+        });
+      }
+    }
   }
 
   /**
@@ -551,6 +575,13 @@ class ImageProcessorV2 {
         associatedWith
       });
 
+      // Emit WebSocket: Image processing started
+      this.emitWebSocketUpdate(userId, config.constants.WS_MESSAGE_TYPES.IMAGE_PROCESSING_STARTED, {
+        documentId,
+        documentType: imageType,
+        status: 'pending'
+      });
+
       // Step 2: Download image from Typeform
       const { buffer, contentType, fileName, fileSize } = await this.downloadFromUrl(
         typeformUrl,
@@ -591,8 +622,10 @@ class ImageProcessorV2 {
         documentId
       );
 
-      // Step 5: Generate signed URL
-      const signedUrl = await this.getSignedUrl(fullStoragePath, 86400); // 24 hours
+      // Step 5: Generate signed URL (12 months expiry to match subscription period)
+      const signedUrlExpirySeconds = 31536000; // 365 days (12 months)
+      const signedUrl = await this.getSignedUrl(fullStoragePath, signedUrlExpirySeconds);
+      const signedUrlExpiresAt = new Date(Date.now() + (signedUrlExpirySeconds * 1000));
 
       // Step 6: Mark as completed
       const processingEndTime = Date.now();
@@ -601,7 +634,9 @@ class ImageProcessorV2 {
 
       await this.updateDocumentRecord(documentId, {
         status: 'completed',
-        public_url: signedUrl,
+        public_url: signedUrl, // Keep for backwards compatibility
+        signed_url: signedUrl, // NEW: Store in signed_url field for PDF generation
+        signed_url_expires_at: signedUrlExpiresAt.toISOString(), // NEW: Track expiry
         processing_completed_at: new Date().toISOString(),
         processing_duration_ms: processingDuration
       });
@@ -613,6 +648,15 @@ class ImageProcessorV2 {
         storagePath: fullStoragePath,
         processingDuration: `${processingDuration}ms`,
         checksum: checksum.substring(0, 16) + '...'
+      });
+
+      // Emit WebSocket: Image processed successfully
+      this.emitWebSocketUpdate(userId, config.constants.WS_MESSAGE_TYPES.IMAGE_PROCESSED, {
+        documentId,
+        documentType: imageType,
+        status: 'completed',
+        signedUrl,
+        processingDuration
       });
 
       return {
@@ -639,6 +683,14 @@ class ImageProcessorV2 {
             status: 'failed',
             error_message: error.message,
             error_code: 'PROCESSING_ERROR'
+          });
+
+          // Emit WebSocket: Image processing failed
+          this.emitWebSocketUpdate(userId, config.constants.WS_MESSAGE_TYPES.IMAGE_PROCESSING_FAILED, {
+            documentId,
+            documentType: imageType,
+            status: 'failed',
+            error: error.message
           });
         } catch (updateError) {
           logger.error('Failed to update document status to failed', {

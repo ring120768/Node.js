@@ -274,31 +274,96 @@ class AdobePdfFormFillerService {
     setFieldText('accident_description', incident.describe_what_happened);
 
     // ========================================
-    // PAGE 7: Your Vehicle Information
+    // PAGE 5 (NEW): Your Vehicle Details (DVLA, Damage, Driveability)
+    // ========================================
+
+    // 1. Usual Vehicle (2 checkboxes from 1 TEXT field)
+    checkField('usual_vehicle_yes', incident.usual_vehicle === 'yes');
+    checkField('usual_vehicle_no', incident.usual_vehicle === 'no');
+
+    // 2. DVLA Lookup Registration
+    setFieldText('dvla_lookup_reg', incident.dvla_lookup_reg);
+
+    // 3. DVLA Vehicle Data (10 text fields)
+    setFieldText('dvla_vehicle_lookup_make', incident.dvla_vehicle_lookup_make);
+    setFieldText('dvla_vehicle_lookup_model', incident.dvla_vehicle_lookup_model);
+    setFieldText('dvla_vehicle_lookup_color', incident.dvla_vehicle_lookup_color);
+    setFieldText('dvla_vehicle_lookup_year', incident.dvla_vehicle_lookup_year);
+    setFieldText('dvla_vehicle_lookup_fuel_type', incident.dvla_vehicle_lookup_fuel_type);
+    setFieldText('dvla_vehicle_lookup_mot_status', incident.dvla_vehicle_lookup_mot_status);
+    setFieldText('dvla_vehicle_lookup_mot_expiry', incident.dvla_vehicle_lookup_mot_expiry);
+    setFieldText('dvla_vehicle_lookup_tax_status', incident.dvla_vehicle_lookup_tax_status);
+    setFieldText('dvla_vehicle_lookup_tax_due_date', incident.dvla_vehicle_lookup_tax_due_date);
+    setFieldText('dvla_vehicle_lookup_insurance_status', incident.dvla_vehicle_lookup_insurance_status);
+
+    // 4. Impact Points (10 checkboxes from TEXT[] array)
+    const impactPoints = incident.impact_point || [];
+    checkField('impact_point_front', impactPoints.includes('front'));
+    checkField('impact_point_front_driver', impactPoints.includes('front_driver'));
+    checkField('impact_point_front_passenger', impactPoints.includes('front_passenger'));
+    checkField('impact_point_driver_side', impactPoints.includes('driver_side'));
+    checkField('impact_point_passenger_side', impactPoints.includes('passenger_side'));
+    checkField('impact_point_rear_driver', impactPoints.includes('rear_driver'));
+    checkField('impact_point_rear_passenger', impactPoints.includes('rear_passenger'));
+    checkField('impact_point_rear', impactPoints.includes('rear'));
+    checkField('impact_point_roof', impactPoints.includes('roof'));
+    checkField('impact_point_undercarriage', impactPoints.includes('undercarriage'));
+
+    // 5. Damage Description
+    setFieldText('damage_to_your_vehicle', incident.damage_to_your_vehicle);
+
+    // 6. Vehicle Driveability (3 mutually exclusive checkboxes from 1 TEXT field)
+    checkField('vehicle_driveable_yes', incident.vehicle_driveable === 'yes');
+    checkField('vehicle_driveable_no', incident.vehicle_driveable === 'no');
+    checkField('vehicle_driveable_unsure', incident.vehicle_driveable === 'unsure');
+
+    // ========================================
+    // PAGE 7 (LEGACY): Your Vehicle Information
     // ========================================
     setFieldText('driving_usual', incident.driving_usual_vehicle);
     setFieldText('make_of_car', incident.make_of_car);
     setFieldText('model_of_car', incident.model_of_car);
     setFieldText('your_license_plate', incident.license_plate_incident);
     setFieldText('direction_speed', incident.direction_of_travel_and_estimated_speed);
-    setFieldText('impact_point', incident.impact_point);
+    setFieldText('impact_point', incident.impact_point); // Legacy single text field
     setFieldText('damage_caused', incident.damage_caused_by_accident);
     setFieldText('damage_prior', incident.damage_prior_to_accident);
 
     // ========================================
-    // PAGE 8: Other Vehicles Involved
+    // PAGE 8: Other Vehicles Involved (Page 7 HTML Form)
     // ========================================
     checkField('other_vehicles', incident.other_vehicles_involved === 'Yes');
-    setFieldText('other_driver_name', incident.other_driver_name);
-    setFieldText('other_driver_number', incident.other_driver_number);
-    setFieldText('other_driver_address', incident.other_driver_address);
-    setFieldText('other_make', incident.other_make_of_vehicle);
-    setFieldText('other_model', incident.other_model_of_vehicle);
-    setFieldText('other_license', incident.other_vehicle_license_plate);
-    setFieldText('other_policy_number', incident.other_policy_number);
-    setFieldText('other_insurance', incident.other_insurance_company);
-    setFieldText('other_cover_type', incident.other_policy_cover_type);
-    setFieldText('other_policy_holder', incident.other_policy_holder);
+
+    // Driver information (renamed fields)
+    setFieldText('other_driver_name', incident.other_full_name || incident.other_driver_name); // Backward compat
+    setFieldText('other_driver_number', incident.other_contact_number || incident.other_driver_number); // Backward compat
+    setFieldText('other_driver_email', incident.other_email_address);
+    setFieldText('other_driver_license', incident.other_driving_license_number);
+
+    // Vehicle registration and DVLA data
+    setFieldText('other_license', incident.other_vehicle_registration);
+    setFieldText('other_make', incident.other_vehicle_look_up_make || incident.other_make_of_vehicle); // Fallback to old field
+    setFieldText('other_model', incident.other_vehicle_look_up_model || incident.other_model_of_vehicle); // Fallback to old field
+    setFieldText('other_color', incident.other_vehicle_look_up_colour);
+    setFieldText('other_year', incident.other_vehicle_look_up_year);
+    setFieldText('other_fuel_type', incident.other_vehicle_look_up_fuel_type);
+
+    // Vehicle status (DVLA data)
+    setFieldText('other_mot_status', incident.other_vehicle_look_up_mot_status);
+    setFieldText('other_mot_expiry', incident.other_vehicle_look_up_mot_expiry_date);
+    setFieldText('other_tax_status', incident.other_vehicle_look_up_tax_status);
+    setFieldText('other_tax_due', incident.other_vehicle_look_up_tax_due_date);
+    setFieldText('other_insurance_status', incident.other_vehicle_look_up_insurance_status);
+
+    // Insurance information (renamed fields)
+    setFieldText('other_insurance', incident.other_drivers_insurance_company || incident.other_insurance_company); // Backward compat
+    setFieldText('other_policy_number', incident.other_drivers_policy_number || incident.other_policy_number); // Backward compat
+    setFieldText('other_policy_holder', incident.other_drivers_policy_holder_name || incident.other_policy_holder); // Backward compat
+    setFieldText('other_cover_type', incident.other_drivers_policy_cover_type || incident.other_policy_cover); // Backward compat
+
+    // Damage information
+    checkField('no_visible_damage', incident.no_visible_damage === true);
+    setFieldText('other_damage_description', incident.describe_damage_to_vehicle);
 
     // ========================================
     // PAGE 9: Damage to Other Vehicles & Police
@@ -316,11 +381,40 @@ class AdobePdfFormFillerService {
     checkField('other_breath_test', incident.other_breath_test === 'Yes');
 
     // ========================================
-    // PAGE 10: Additional Info & Witnesses
+    // PAGE 9: Witnesses (2 witnesses max on this page)
+    // ========================================
+    // Map first 2 witnesses from incident_witnesses table to page 9 fields
+    const hasWitnesses = data.witnesses && data.witnesses.length > 0;
+
+    checkField('any_witness', hasWitnesses);
+    checkField('any_witness_no', !hasWitnesses);
+
+    // Witness 1 (if exists)
+    if (data.witnesses && data.witnesses[0]) {
+      const witness1 = data.witnesses[0];
+      setFieldText('witness_name', witness1.witness_name || '');
+      setFieldText('witness_mobile_number', witness1.witness_mobile_number || '');
+      setFieldText('witness_email_address', witness1.witness_email_address || '');
+      setFieldText('witness_statement', witness1.witness_statement || '');
+      // Note: witness_address is NOT in PDF, so it's not mapped
+    }
+
+    // Witness 2 (if exists)
+    if (data.witnesses && data.witnesses[1]) {
+      const witness2 = data.witnesses[1];
+      setFieldText('witness_name_2', witness2.witness_name || '');
+      setFieldText('witness_mobile_number_2', witness2.witness_mobile_number || '');
+      setFieldText('witness_email_address_2', witness2.witness_email_address || '');
+      setFieldText('witness_statement_2', witness2.witness_statement || '');
+      // Note: witness_address is NOT in PDF, so it's not mapped
+    }
+
+    // Note: Witnesses 3+ will be added as separate pages via appendWitnessPages()
+
+    // ========================================
+    // PAGE 10: Additional Info
     // ========================================
     setFieldText('anything_else', incident.anything_else_important);
-    checkField('witness_present', incident.witness_present === 'Yes');
-    setFieldText('witness_info', incident.witness_information);
     checkField('call_recovery', incident.call_recovery === 'Yes');
     checkField('upgrade_premium', incident.upgrade_to_premium === 'Yes');
 
@@ -453,8 +547,8 @@ class AdobePdfFormFillerService {
         this.setFieldValue(form, 'User ID', userId || '');
         this.setFieldValue(form, 'Witness Name', witness.witness_name || '');
         this.setFieldValue(form, 'Witness Address', witness.witness_address || '');
-        this.setFieldValue(form, 'Witness Mobile', witness.witness_phone || '');
-        this.setFieldValue(form, 'Witness Email', witness.witness_email || '');
+        this.setFieldValue(form, 'Witness Mobile', witness.witness_mobile_number || '');
+        this.setFieldValue(form, 'Witness Email', witness.witness_email_address || '');
         this.setFieldValue(form, 'Witness Statement', witness.witness_statement || '');
       }
 

@@ -381,7 +381,7 @@
 
             <div class="voice-controls">
                 <button class="voice-btn" id="voiceBtn">
-                    🎤 AI Listening
+                    🎤 AI Eavesdropper
                 </button>
                 <label for="dashCamInput" class="record-btn" style="margin: 0; display: flex; flex-direction: column; align-items: center; justify-content: center; line-height: 1.3;">
                     <span>📹 Dash Cam</span>
@@ -861,9 +861,9 @@
 
                         mediaRecorder.start();
                         isRecording = true;
-                        this.textContent = '⏹️ Stop Listening';
+                        this.textContent = '⏹️ Stop Recording';
                         this.classList.add('listening');
-                        voiceStatus.textContent = 'AI Listening... Speak clearly about the incident.';
+                        voiceStatus.textContent = 'AI Eavesdropper active... Recording evidence.';
                         voiceStatus.classList.add('active');
 
                         // Auto-stop after 2 minutes
@@ -875,7 +875,7 @@
 
                     } catch (error) {
                         console.error('Microphone access error:', error);
-                        alert('Microphone access is required for AI listening. Please check your browser permissions.');
+                        alert('Microphone access is required for AI Eavesdropper. Please check your browser permissions.');
                     }
                 } else {
                     stopRecording();
@@ -906,7 +906,7 @@
                 isRecording = false;
 
                 const voiceBtn = document.getElementById('voiceBtn');
-                voiceBtn.textContent = '🎤 AI Listening';
+                voiceBtn.textContent = '🎤 AI Eavesdropper';
                 voiceBtn.classList.remove('listening');
 
                 const voiceStatus = document.getElementById('voiceStatus');
@@ -937,6 +937,9 @@
                     voiceTranscription = data.text;
                     voiceStatus.textContent = 'Audio transcribed successfully!';
                     console.log('Transcription received:', voiceTranscription);
+
+                    // Save emergency audio to database
+                    await saveEmergencyAudioToDatabase(voiceTranscription);
                 } else {
                     voiceStatus.textContent = 'Transcription failed. Audio saved for manual review.';
                     console.error('Whisper API error:', response.status);
@@ -944,6 +947,46 @@
             } catch (error) {
                 console.error('Whisper transcription error:', error);
                 document.getElementById('voiceStatus').textContent = 'Transcription unavailable. Audio saved.';
+            }
+        }
+
+        // Save emergency audio recording to database
+        async function saveEmergencyAudioToDatabase(transcriptionText) {
+            if (!transcriptionText || !userData) {
+                console.warn('Missing required data for saving emergency audio');
+                return;
+            }
+
+            try {
+                const userId = userData.id || userData.uid;
+
+                const response = await fetch('/api/emergency/audio', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json'
+                    },
+                    body: JSON.stringify({
+                        userId: userId,
+                        incidentId: null, // Will be linked when incident is created
+                        transcriptionText: transcriptionText,
+                        recordedAt: new Date().toISOString()
+                    }),
+                    credentials: 'include'
+                });
+
+                if (response.ok) {
+                    const data = await response.json();
+                    console.log('Emergency audio saved to database:', data.recordingId);
+
+                    // Store recording ID for later use
+                    sessionStorage.setItem('emergencyAudioRecordingId', data.recordingId);
+
+                    document.getElementById('voiceStatus').textContent = '✅ Evidence recorded and saved securely!';
+                } else {
+                    console.error('Failed to save emergency audio:', response.status);
+                }
+            } catch (error) {
+                console.error('Error saving emergency audio:', error);
             }
         }
 

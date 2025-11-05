@@ -190,7 +190,28 @@ async function transcribeAudio(req, res) {
       error: error.message,
       stack: error.stack
     });
-    sendError(res, 500, 'Transcription failed', 'TRANSCRIPTION_ERROR');
+
+    // Handle specific OpenAI errors
+    if (error.status === 429 || error.code === 'insufficient_quota') {
+      return sendError(
+        res,
+        503,
+        'OpenAI API quota exceeded. Please check your billing details at https://platform.openai.com/account/billing',
+        'OPENAI_QUOTA_EXCEEDED'
+      );
+    }
+
+    if (error.status === 401 || error.code === 'invalid_api_key') {
+      return sendError(
+        res,
+        500,
+        'OpenAI API key is invalid. Please check your environment configuration.',
+        'OPENAI_AUTH_ERROR'
+      );
+    }
+
+    // Generic transcription error
+    sendError(res, 500, 'Transcription failed: ' + (error.message || 'Unknown error'), 'TRANSCRIPTION_ERROR');
   }
 }
 

@@ -1,0 +1,831 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Police & Safety Information - Incident Report</title>
+  <style>
+    /* Design System Variables */
+    :root {
+      --grad-start: #0E7490;
+      --grad-end: #0c6179;
+      --accent: #0E7490;
+      --accent-hover: #0c6179;
+      --bg-light: #E8DCC4;
+      --text-dark: #1a1a1a;
+      --text-muted: #6b7280;
+      --border: #4B5563;
+      --input-bg: #CFD2D7;
+      --checkbox-bg: #F5F1E8;
+      --container-bg: #F5F1E8;
+      --button-bg: #ffffff;
+      --button-hover: rgba(14, 116, 144, 0.1);
+      --success: #10b981;
+      --danger: #ef4444;
+      --warning: #f59e0b;
+    }
+
+    /* Reset & Base */
+    * {
+      margin: 0;
+      padding: 0;
+      box-sizing: border-box;
+      -webkit-tap-highlight-color: transparent;
+    }
+
+    html {
+      font-size: 16px;
+      -webkit-text-size-adjust: 100%;
+    }
+
+    body {
+      font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, Cantarell, sans-serif;
+      background: var(--bg-light);
+      color: var(--text-dark);
+      line-height: 1.6;
+      overflow-x: hidden;
+      padding-bottom: env(safe-area-inset-bottom, 20px);
+    }
+
+    .container {
+      max-width: 800px;
+      margin: 0 auto;
+      background: white;
+      border-radius: 16px;
+      box-shadow: 0 20px 60px rgba(0,0,0,0.3);
+      overflow: hidden;
+    }
+
+    .header {
+      background: linear-gradient(135deg, var(--grad-start) 0%, var(--grad-end) 100%);
+      color: white;
+      padding: 30px;
+      text-align: center;
+    }
+
+    .header h1 {
+      font-size: 28px;
+      margin-bottom: 10px;
+    }
+
+    .progress-container {
+      background: rgba(255,255,255,0.2);
+      border-radius: 10px;
+      height: 8px;
+      margin-top: 20px;
+      overflow: hidden;
+    }
+
+    .progress-bar {
+      background: white;
+      height: 100%;
+      border-radius: 10px;
+      transition: width 0.3s ease;
+      width: 83.33%; /* Page 10 of 12 = 83.33% */
+    }
+
+    .content {
+      padding: 40px;
+    }
+
+    .form-section {
+      margin-bottom: 32px;
+    }
+
+    .section-title {
+      font-size: 20px;
+      color: var(--accent);
+      margin-bottom: 8px;
+      display: flex;
+      align-items: center;
+      gap: 8px;
+    }
+
+    .section-icon {
+      font-size: 24px;
+    }
+
+    .section-description {
+      color: #666;
+      font-size: 14px;
+      margin-bottom: 24px;
+      line-height: 1.6;
+    }
+
+    .form-group {
+      margin-bottom: 24px;
+    }
+
+    .form-label {
+      display: block;
+      font-weight: 600;
+      margin-bottom: 8px;
+      color: #333;
+    }
+
+    .form-hint {
+      font-size: 14px;
+      color: #666;
+      margin-top: 4px;
+      line-height: 1.5;
+    }
+
+    .required {
+      color: #e74c3c;
+      margin-left: 4px;
+    }
+
+    .radio-group {
+      display: flex;
+      gap: 16px;
+      margin-top: 12px;
+    }
+
+    .radio-option {
+      flex: 1;
+      border: 2px solid var(--border);
+      border-radius: 12px;
+      padding: 16px;
+      cursor: pointer;
+      transition: all 0.2s ease;
+      text-align: center;
+      background: var(--checkbox-bg);
+    }
+
+    .radio-option:hover {
+      border-color: var(--accent);
+      background: var(--button-hover);
+    }
+
+    .radio-option.selected {
+      border-color: var(--accent);
+      background: rgba(14, 116, 144, 0.1);
+    }
+
+    .radio-option input[type="radio"] {
+      display: none;
+    }
+
+    .radio-option-icon {
+      font-size: 32px;
+      margin-bottom: 8px;
+    }
+
+    .radio-option-label {
+      font-weight: 600;
+      color: #333;
+    }
+
+    input[type="text"],
+    textarea {
+      width: 100%;
+      padding: 12px;
+      border: 2px solid var(--border);
+      border-radius: 8px;
+      font-family: inherit;
+      font-size: 16px;
+      background: var(--input-bg);
+      transition: all 0.2s ease;
+    }
+
+    input[type="text"]:focus,
+    textarea:focus {
+      outline: none;
+      border-color: var(--accent);
+      box-shadow: 0 0 0 3px rgba(14, 116, 144, 0.1);
+      background: #ffffff;
+    }
+
+    textarea {
+      resize: vertical;
+      min-height: 100px;
+    }
+
+    .police-details-container {
+      display: none;
+      padding: 24px;
+      background: var(--container-bg);
+      border-radius: 12px;
+      border: 2px solid var(--accent);
+      margin-top: 24px;
+    }
+
+    .police-details-container.visible {
+      display: block;
+    }
+
+    .safety-section {
+      padding: 24px;
+      background: #fff9e6;
+      border-radius: 12px;
+      border: 2px solid #ffc107;
+      margin-top: 24px;
+    }
+
+    .seatbelt-explanation {
+      display: none;
+      margin-top: 16px;
+    }
+
+    .seatbelt-explanation.visible {
+      display: block;
+    }
+
+    .alert {
+      padding: 16px;
+      border-radius: 8px;
+      margin-bottom: 24px;
+      display: flex;
+      align-items: flex-start;
+      gap: 12px;
+    }
+
+    .alert-info {
+      background: #e3f2fd;
+      border-left: 4px solid #2196f3;
+      color: #1976d2;
+    }
+
+    .alert-warning {
+      background: #fff3cd;
+      border-left: 4px solid #ffc107;
+      color: #856404;
+    }
+
+    .char-counter {
+      text-align: right;
+      font-size: 12px;
+      color: #666;
+      margin-top: 4px;
+    }
+
+    .navigation {
+      display: flex;
+      gap: 16px;
+      margin-top: 32px;
+    }
+
+    .btn {
+      flex: 1;
+      padding: 16px 32px;
+      border: none;
+      border-radius: 8px;
+      font-size: 16px;
+      font-weight: 600;
+      cursor: pointer;
+      transition: all 0.2s ease;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: 8px;
+    }
+
+    .btn-secondary {
+      background: var(--button-bg);
+      color: var(--grad-start);
+      border: 2px solid var(--grad-start);
+    }
+
+    .btn-secondary:hover {
+      background: var(--button-hover);
+    }
+
+    .btn-primary {
+      background: var(--grad-start);
+      color: white;
+      box-shadow: 0 4px 12px rgba(14, 116, 144, 0.3);
+    }
+
+    .btn-primary:hover {
+      transform: translateY(-2px);
+      box-shadow: 0 6px 16px rgba(14, 116, 144, 0.4);
+      background: var(--grad-end);
+    }
+
+    .btn-primary:disabled {
+      opacity: 0.5;
+      cursor: not-allowed;
+      transform: none;
+    }
+
+    /* Hover Tooltip */
+    .radio-with-tooltip {
+      position: relative;
+    }
+
+    .hover-tooltip {
+      position: absolute;
+      bottom: calc(100% + 12px);
+      left: 50%;
+      transform: translateX(-50%);
+      background: white;
+      border: 2px solid var(--accent);
+      border-radius: 12px;
+      padding: 16px;
+      box-shadow: 0 8px 24px rgba(0, 0, 0, 0.15);
+      opacity: 0;
+      visibility: hidden;
+      transition: all 0.3s ease;
+      z-index: 100;
+      min-width: 320px;
+      max-width: 400px;
+    }
+
+    .radio-with-tooltip:hover .hover-tooltip {
+      opacity: 1;
+      visibility: visible;
+      bottom: calc(100% + 16px);
+    }
+
+    .tooltip-content {
+      display: flex;
+      flex-direction: column;
+      gap: 12px;
+    }
+
+    .tooltip-title {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      font-weight: 600;
+      color: var(--accent);
+      font-size: 16px;
+    }
+
+    .tooltip-description {
+      color: #4a5568;
+      font-size: 14px;
+      line-height: 1.6;
+      margin: 0;
+    }
+
+    .tooltip-examples {
+      background: #f7fafc;
+      border-radius: 8px;
+      padding: 12px;
+      margin-top: 4px;
+    }
+
+    .tooltip-examples-title {
+      font-weight: 600;
+      color: #2d3748;
+      font-size: 13px;
+      margin-bottom: 8px;
+    }
+
+    .tooltip-examples ul {
+      margin: 0;
+      padding-left: 20px;
+      color: #4a5568;
+      font-size: 13px;
+      line-height: 1.8;
+    }
+
+    .tooltip-examples li {
+      margin-bottom: 4px;
+    }
+
+    @media (max-width: 768px) {
+      body {
+        padding: 0;
+      }
+
+      .container {
+        border-radius: 0;
+      }
+
+      .content {
+        padding: 24px;
+      }
+
+      .header {
+        padding: 24px;
+      }
+
+      .header h1 {
+        font-size: 24px;
+      }
+
+      .radio-group {
+        flex-direction: column;
+      }
+
+      .hover-tooltip {
+        min-width: 280px;
+        max-width: 90vw;
+      }
+    }
+  </style>
+</head>
+<body>
+  <div class="container">
+    <div class="header">
+      <h1>Police & Safety Information</h1>
+      <p>Page 10 of 12: Almost Done!</p>
+      <div class="progress-container">
+        <div class="progress-bar"></div>
+      </div>
+    </div>
+
+    <div class="content">
+
+      <!-- SECTION 1: Police Attendance -->
+      <div class="form-section">
+        <div class="section-title" style="justify-content: center;">
+          <span class="section-icon">🚓</span>
+          <span>Police Attendance</span>
+        </div>
+
+        <div style="text-align: center; margin: 20px 0;">
+          <img src="/images/policeman.png" alt="Police Officer" style="width: 400px; height: 400px; object-fit: contain; max-width: 100%;">
+        </div>
+
+        <div class="form-group">
+          <label class="form-label">
+            Did police attend the scene?<span class="required">*</span>
+          </label>
+          <p class="form-hint">Select whether police officers came to the accident scene.</p>
+
+          <div class="radio-group">
+            <div class="radio-option" data-value="yes" data-field="police_attended">
+              <input type="radio" name="police_attended" value="yes" id="police-yes">
+              <div class="radio-option-icon">✅</div>
+              <div class="radio-option-label">Yes</div>
+            </div>
+            <div class="radio-option" data-value="no" data-field="police_attended">
+              <input type="radio" name="police_attended" value="no" id="police-no">
+              <div class="radio-option-icon">❌</div>
+              <div class="radio-option-label">No</div>
+            </div>
+          </div>
+        </div>
+
+        <!-- Police Details (conditional) -->
+        <div id="police-details-container" class="police-details-container">
+          <div class="alert alert-warning">
+            <span>⚠️</span>
+            <span>Please provide as much detail as possible. All fields are optional if you don't have the information.</span>
+          </div>
+
+          <div class="form-group">
+            <label class="form-label" for="accident-ref">
+              Accident Reference Number
+            </label>
+            <p class="form-hint">Unique identifier from police force (also called incident number)</p>
+            <input type="text" id="accident-ref" placeholder="e.g., CAD123456 or Inc/2025/001234">
+          </div>
+
+          <div class="form-group">
+            <label class="form-label" for="police-force">
+              Police Force
+            </label>
+            <p class="form-hint">Which police force attended</p>
+            <input type="text" id="police-force" placeholder="e.g., Thames Valley Police, Metropolitan Police">
+          </div>
+
+          <div class="form-group">
+            <label class="form-label" for="officer-name">
+              Officer's Name
+            </label>
+            <input type="text" id="officer-name" placeholder="e.g., PC John Smith">
+          </div>
+
+          <div class="form-group">
+            <label class="form-label" for="officer-badge">
+              Officer's Badge/Collar Number
+            </label>
+            <input type="text" id="officer-badge" placeholder="e.g., 12345">
+          </div>
+
+          <div class="form-group">
+            <label class="form-label" for="user-breath-test">
+              Your Breath Test Result
+            </label>
+            <p class="form-hint">If a breath test was conducted, select the result</p>
+            <select id="user-breath-test">
+              <option value="">-- Select result --</option>
+              <option value="not_tested">Not tested</option>
+              <option value="negative_0mg">Negative (0 mg)</option>
+              <option value="below_limit">Below legal limit (under 35 μg/100ml)</option>
+              <option value="at_limit">At legal limit (35 μg/100ml)</option>
+              <option value="above_limit">Above legal limit (over 35 μg/100ml)</option>
+              <option value="refused">Refused to take test</option>
+              <option value="unable">Unable to provide sample</option>
+            </select>
+          </div>
+
+          <div class="form-group">
+            <label class="form-label" for="other-breath-test">
+              Other Driver's Breath Test Result
+            </label>
+            <p class="form-hint">If known</p>
+            <select id="other-breath-test">
+              <option value="">-- Select result --</option>
+              <option value="unknown">Unknown / Not witnessed</option>
+              <option value="not_tested">Not tested</option>
+              <option value="negative_0mg">Negative (0 mg)</option>
+              <option value="below_limit">Below legal limit (under 35 μg/100ml)</option>
+              <option value="at_limit">At legal limit (35 μg/100ml)</option>
+              <option value="above_limit">Above legal limit (over 35 μg/100ml)</option>
+              <option value="refused">Refused to take test</option>
+              <option value="arrested">Driver was arrested</option>
+            </select>
+          </div>
+        </div>
+      </div>
+
+      <!-- SECTION 2: Safety Equipment -->
+      <div class="form-section safety-section">
+        <div class="section-title">
+          <span class="section-icon">🛡️</span>
+          <span>Safety Equipment</span>
+        </div>
+        <p class="section-description">Critical evidence for your case - please answer accurately.</p>
+
+        <div class="form-group">
+          <label class="form-label">
+            Were the airbags deployed in your vehicle?<span class="required">*</span>
+          </label>
+
+          <div class="radio-group">
+            <div class="radio-option" data-value="yes" data-field="airbags_deployed">
+              <input type="radio" name="airbags_deployed" value="yes" id="airbags-yes">
+              <div class="radio-option-icon">💨</div>
+              <div class="radio-option-label">Yes</div>
+            </div>
+            <div class="radio-option" data-value="no" data-field="airbags_deployed">
+              <input type="radio" name="airbags_deployed" value="no" id="airbags-no">
+              <div class="radio-option-icon">🚫</div>
+              <div class="radio-option-label">No</div>
+            </div>
+          </div>
+        </div>
+
+        <div class="form-group">
+          <label class="form-label">
+            Were you and all passengers wearing seat belts?<span class="required">*</span>
+          </label>
+          <p class="help-text" style="margin-top: 8px; margin-bottom: 12px;">
+            UK law requires seatbelts while the vehicle is moving. Legal exemptions include: parked/stationary vehicles, reversing, medical exemption certificates, licensed taxi drivers, and vehicles manufactured before 1965 without fitted belts.
+          </p>
+
+          <div class="radio-group">
+            <div class="radio-option" data-value="yes" data-field="seatbelts_worn">
+              <input type="radio" name="seatbelts_worn" value="yes" id="seatbelts-yes">
+              <div class="radio-option-icon">✅</div>
+              <div class="radio-option-label">Yes</div>
+            </div>
+            <div class="radio-option radio-with-tooltip" data-value="no" data-field="seatbelts_worn">
+              <input type="radio" name="seatbelts_worn" value="no" id="seatbelts-no">
+              <div class="radio-option-icon">❌</div>
+              <div class="radio-option-label">No</div>
+
+              <div class="hover-tooltip">
+                <div class="tooltip-content">
+                  <div class="tooltip-title">
+                    <span>💡</span>
+                    <span>Pro Tip</span>
+                  </div>
+                  <p class="tooltip-description">UK law requires seatbelts while moving. Common legal exemptions:</p>
+                  <div class="tooltip-examples">
+                    <div class="tooltip-examples-title">Valid Reasons:</div>
+                    <ul>
+                      <li>Vehicle was parked/stationary when hit</li>
+                      <li>Reversing into a parking space</li>
+                      <li>Medical exemption certificate</li>
+                      <li>Licensed taxi driver picking up passenger</li>
+                      <li>Vehicle manufactured before 1965 (no fitted belts)</li>
+                    </ul>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <!-- Seatbelt Explanation (conditional) -->
+          <div id="seatbelt-explanation" class="seatbelt-explanation">
+            <div class="alert alert-warning">
+              <span>⚠️</span>
+              <span>Please explain why seatbelts were not worn - this is important legal information.</span>
+            </div>
+            <textarea id="seatbelt-reason" placeholder="Please explain the reason why seatbelts were not worn..." maxlength="500"></textarea>
+            <div id="seatbelt-char-counter" class="char-counter">0 / 500 characters</div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Navigation -->
+      <div class="navigation">
+        <button type="button" class="btn btn-secondary" id="back-btn">
+          <span>←</span>
+          <span>Back</span>
+        </button>
+        <button type="button" class="btn btn-primary" id="next-btn" disabled>
+          <span>Next</span>
+          <span>→</span>
+        </button>
+      </div>
+    </div>
+  </div>
+
+  <script>
+    console.log('Page 10: Police & Safety - Initializing');
+
+    // Initialize temp session ID for any potential file uploads (shared across all form pages)
+    if (!localStorage.getItem('temp_session_id')) {
+      localStorage.setItem('temp_session_id', crypto.randomUUID());
+      console.log('✅ Created new temp session ID:', localStorage.getItem('temp_session_id'));
+    }
+    console.log('Session ID:', localStorage.getItem('temp_session_id'));
+
+    // State
+    let policeAttended = null;
+    let airbagsDeployed = null;
+    let seatbeltsWorn = null;
+
+    // DOM elements
+    const policeDetailsContainer = document.getElementById('police-details-container');
+    const seatbeltExplanation = document.getElementById('seatbelt-explanation');
+    const seatbeltReasonTextarea = document.getElementById('seatbelt-reason');
+    const seatbeltCharCounter = document.getElementById('seatbelt-char-counter');
+    const nextBtn = document.getElementById('next-btn');
+
+    // Radio button handling
+    const radioOptions = document.querySelectorAll('.radio-option');
+    radioOptions.forEach(option => {
+      option.addEventListener('click', () => {
+        const value = option.dataset.value;
+        const field = option.dataset.field;
+        const radio = option.querySelector('input[type="radio"]');
+
+        // Deselect others in same group
+        document.querySelectorAll(`.radio-option[data-field="${field}"]`).forEach(opt => {
+          opt.classList.remove('selected');
+        });
+
+        // Select clicked
+        option.classList.add('selected');
+        radio.checked = true;
+
+        // Update state
+        if (field === 'police_attended') {
+          policeAttended = value;
+          console.log('Police attended:', policeAttended);
+
+          if (value === 'yes') {
+            policeDetailsContainer.classList.add('visible');
+          } else {
+            policeDetailsContainer.classList.remove('visible');
+            // Clear police fields
+            document.getElementById('accident-ref').value = '';
+            document.getElementById('police-force').value = '';
+            document.getElementById('officer-name').value = '';
+            document.getElementById('officer-badge').value = '';
+            document.getElementById('user-breath-test').value = '';
+            document.getElementById('other-breath-test').value = '';
+          }
+        } else if (field === 'airbags_deployed') {
+          airbagsDeployed = value;
+          console.log('Airbags deployed:', airbagsDeployed);
+        } else if (field === 'seatbelts_worn') {
+          seatbeltsWorn = value;
+          console.log('Seatbelts worn:', seatbeltsWorn);
+
+          if (value === 'no') {
+            seatbeltExplanation.classList.add('visible');
+          } else {
+            seatbeltExplanation.classList.remove('visible');
+            seatbeltReasonTextarea.value = '';
+          }
+        }
+
+        validateForm();
+        saveData();
+      });
+    });
+
+    // Character counter for seatbelt reason
+    seatbeltReasonTextarea.addEventListener('input', () => {
+      const length = seatbeltReasonTextarea.value.length;
+      seatbeltCharCounter.textContent = `${length} / 500 characters`;
+      validateForm();
+      saveData();
+    });
+
+    // Save all input changes
+    ['accident-ref', 'police-force', 'officer-name', 'officer-badge', 'user-breath-test', 'other-breath-test'].forEach(id => {
+      document.getElementById(id).addEventListener('input', () => {
+        saveData();
+      });
+    });
+
+    // Form validation
+    function validateForm() {
+      let isValid = false;
+
+      // Required fields
+      const hasPoliceAnswer = policeAttended !== null;
+      const hasAirbagsAnswer = airbagsDeployed !== null;
+      const hasSeatbeltsAnswer = seatbeltsWorn !== null;
+
+      if (hasPoliceAnswer && hasAirbagsAnswer && hasSeatbeltsAnswer) {
+        // If seatbelts not worn, explanation required
+        if (seatbeltsWorn === 'no') {
+          const reason = seatbeltReasonTextarea.value.trim();
+          isValid = reason.length > 5; // At least 5 characters
+        } else {
+          isValid = true;
+        }
+      }
+
+      nextBtn.disabled = !isValid;
+      console.log('Form valid:', isValid);
+    }
+
+    // Save data to localStorage
+    function saveData() {
+      const data = {
+        police_attended: policeAttended,
+        accident_ref_number: document.getElementById('accident-ref').value.trim() || null,
+        police_force: document.getElementById('police-force').value.trim() || null,
+        officer_name: document.getElementById('officer-name').value.trim() || null,
+        officer_badge: document.getElementById('officer-badge').value.trim() || null,
+        user_breath_test: document.getElementById('user-breath-test').value.trim() || null,
+        other_breath_test: document.getElementById('other-breath-test').value.trim() || null,
+        airbags_deployed: airbagsDeployed,
+        seatbelts_worn: seatbeltsWorn,
+        seatbelt_reason: seatbeltsWorn === 'no' ? seatbeltReasonTextarea.value.trim() : null
+      };
+
+      localStorage.setItem('page10_data', JSON.stringify(data));
+      console.log('Page 10 data saved:', data);
+    }
+
+    // Load existing data
+    function loadData() {
+      const saved = localStorage.getItem('page10_data');
+      if (!saved) return;
+
+      try {
+        const data = JSON.parse(saved);
+        console.log('Loading saved data:', data);
+
+        // Restore police attended
+        if (data.police_attended) {
+          policeAttended = data.police_attended;
+          const option = document.querySelector(`.radio-option[data-field="police_attended"][data-value="${data.police_attended}"]`);
+          if (option) option.click();
+        }
+
+        // Restore police details
+        if (data.accident_ref_number) document.getElementById('accident-ref').value = data.accident_ref_number;
+        if (data.police_force) document.getElementById('police-force').value = data.police_force;
+        if (data.officer_name) document.getElementById('officer-name').value = data.officer_name;
+        if (data.officer_badge) document.getElementById('officer-badge').value = data.officer_badge;
+        if (data.user_breath_test) document.getElementById('user-breath-test').value = data.user_breath_test;
+        if (data.other_breath_test) document.getElementById('other-breath-test').value = data.other_breath_test;
+
+        // Restore airbags
+        if (data.airbags_deployed) {
+          airbagsDeployed = data.airbags_deployed;
+          const option = document.querySelector(`.radio-option[data-field="airbags_deployed"][data-value="${data.airbags_deployed}"]`);
+          if (option) option.click();
+        }
+
+        // Restore seatbelts
+        if (data.seatbelts_worn) {
+          seatbeltsWorn = data.seatbelts_worn;
+          const option = document.querySelector(`.radio-option[data-field="seatbelts_worn"][data-value="${data.seatbelts_worn}"]`);
+          if (option) option.click();
+        }
+
+        // Restore seatbelt reason
+        if (data.seatbelt_reason) {
+          seatbeltReasonTextarea.value = data.seatbelt_reason;
+          seatbeltCharCounter.textContent = `${data.seatbelt_reason.length} / 500 characters`;
+        }
+
+        validateForm();
+      } catch (error) {
+        console.error('Error loading data:', error);
+      }
+    }
+
+    // Navigation
+    document.getElementById('back-btn').addEventListener('click', () => {
+      console.log('Back button clicked - returning to Page 9');
+      window.location.href = '/incident-form-page9-witnesses.html';
+    });
+
+    document.getElementById('next-btn').addEventListener('click', () => {
+      console.log('Next button clicked - proceeding to Page 12 (Final Medical Check)');
+      saveData();
+      window.location.href = '/incident-form-page12-final-medical-check.html';
+    });
+
+    // Initialize
+    loadData();
+    console.log('Page 10 initialization complete');
+  </script>
+</body>
+</html>

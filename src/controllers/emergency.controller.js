@@ -289,9 +289,162 @@ async function logEmergencyCall(req, res) {
   }
 }
 
+/**
+ * Save Emergency Audio Recording (AI Eavesdropper)
+ * POST /api/emergency/audio
+ * Body: { userId, incidentId, audioFile, transcriptionText, recordedAt }
+ */
+async function saveEmergencyAudio(req, res) {
+  if (!supabase) {
+    return sendError(res, 503, 'Service not configured', 'SERVICE_UNAVAILABLE');
+  }
+
+  try {
+    const { userId, incidentId, audioUrl, transcriptionText, recordedAt } = req.body;
+
+    if (!userId) {
+      return sendError(res, 400, 'User ID required', 'MISSING_USER_ID');
+    }
+
+    if (!transcriptionText) {
+      return sendError(res, 400, 'Transcription text required', 'MISSING_TRANSCRIPTION');
+    }
+
+    logger.info('Saving emergency audio recording', {
+      userId,
+      incidentId,
+      hasTranscription: !!transcriptionText,
+      recordedAt
+    });
+
+    // Save to ai_listening_transcripts table
+    const { data, error } = await supabase
+      .from('ai_listening_transcripts')
+      .insert({
+        create_user_id: userId,
+        incident_id: incidentId || null,
+        audio_url: audioUrl || null,
+        transcription_text: transcriptionText,
+        recorded_at: recordedAt || new Date().toISOString(),
+        created_at: new Date().toISOString(),
+        updated_at: new Date().toISOString()
+      })
+      .select()
+      .single();
+
+    if (error) {
+      logger.error('Failed to save emergency audio', error);
+      return sendError(res, 500, 'Failed to save emergency recording', 'SAVE_FAILED');
+    }
+
+    // Log GDPR activity
+    await gdprService.logActivity(userId, 'EMERGENCY_AUDIO_SAVED', {
+      recording_id: data.id,
+      incident_id: incidentId,
+      has_audio_file: !!audioUrl
+    }, req);
+
+    logger.success('Emergency audio saved successfully', {
+      recordingId: data.id,
+      userId
+    });
+
+    res.json({
+      success: true,
+      message: 'Emergency recording saved successfully',
+      recordingId: data.id,
+      timestamp: new Date().toISOString(),
+      requestId: req.requestId
+    });
+
+  } catch (error) {
+    logger.error('Error saving emergency audio', error);
+    sendError(res, 500, 'Failed to save emergency recording', 'INTERNAL_ERROR');
+  }
+}
+
+/**
+ * Get Emergency Audio Recordings
+ * GET /api/emergency/audio/:userId
+ */
+async function getEmergencyAudio(req, res) {
+  if (!supabase) {
+    return sendError(res, 503, 'Service not configured', 'SERVICE_UNAVAILABLE');
+  }
+
+  try {
+    const { userId } = req.params;
+    const { incidentId } = req.query;
+
+    const validation = validateUserId(userId);
+    if (!validation.valid) {
+      return sendError(res, 400, validation.error, 'INVALID_USER_ID');
+    }
+
+    logger.info('Fetching emergency audio recordings', { userId, incidentId });
+
+    let query = supabase
+      .from('ai_listening_transcripts')
+      .select('*')
+      .eq('create_user_id', userId)
+      .order('recorded_at', { ascending: false });
+
+    // Filter by incident if provided
+    if (incidentId) {
+      query = query.eq('incident_id', incidentId);
+    }
+
+    const { data, error } = await query;
+
+    if (error) {
+      logger.error('Error fetching emergency audio', error);
+      return sendError(res, 500, 'Failed to fetch recordings', 'FETCH_FAILED');
+    }
+
+    // Generate fresh signed URLs for audio files
+    const recordingsWithUrls = await Promise.all(
+      (data || []).map(async (recording) => {
+        if (recording.audio_storage_path) {
+          const { data: signedData, error: signedError } = await supabase.storage
+            .from('incident-audio')
+            .createSignedUrl(recording.audio_storage_path, 31536000); // 365 days
+
+          if (signedData && !signedError) {
+            recording.audio_url = signedData.signedUrl;
+          }
+        }
+        return recording;
+      })
+    );
+
+    await gdprService.logActivity(userId, 'EMERGENCY_AUDIO_ACCESSED', {
+      count: recordingsWithUrls.length,
+      incident_id: incidentId
+    }, req);
+
+    logger.info('Emergency audio recordings retrieved', {
+      userId,
+      count: recordingsWithUrls.length
+    });
+
+    res.json({
+      success: true,
+      recordings: recordingsWithUrls,
+      count: recordingsWithUrls.length,
+      requestId: req.requestId
+    });
+
+  } catch (error) {
+    logger.error('Error in get emergency audio endpoint', error);
+    sendError(res, 500, 'Failed to fetch recordings', 'INTERNAL_ERROR');
+  }
+}
+
 module.exports = {
   getEmergencyContact,
   updateEmergencyContact,
   getEmergencyContacts,
-  logEmergencyCall
+  logEmergencyCall,
+  saveEmergencyAudio,
+  getEmergencyAudio
 };

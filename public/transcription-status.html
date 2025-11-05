@@ -1086,6 +1086,70 @@
         }
 
         /* Responsive Design */
+        /* Hover Tooltip for Manual Typing Button */
+        .btn-with-tooltip {
+            position: relative;
+            display: inline-block;
+        }
+
+        .hover-tooltip {
+            position: absolute;
+            bottom: calc(100% + 12px);
+            left: 50%;
+            transform: translateX(-50%);
+            background: white;
+            border: 2px solid #2196F3;
+            border-radius: 12px;
+            padding: 16px;
+            box-shadow: 0 8px 24px rgba(0, 0, 0, 0.15);
+            opacity: 0;
+            visibility: hidden;
+            transition: all 0.3s ease;
+            z-index: 100;
+            width: 280px;
+            max-width: 90vw;
+            pointer-events: none;
+        }
+
+        .btn-with-tooltip:hover .hover-tooltip {
+            opacity: 1;
+            visibility: visible;
+            bottom: calc(100% + 16px);
+        }
+
+        .hover-tooltip-content {
+            display: flex;
+            flex-direction: column;
+            gap: 8px;
+        }
+
+        .hover-tooltip-title {
+            font-weight: 700;
+            color: #2196F3;
+            font-size: 0.875rem;
+            display: flex;
+            align-items: center;
+            gap: 6px;
+        }
+
+        .hover-tooltip-text {
+            font-size: 0.813rem;
+            color: #333;
+            line-height: 1.5;
+        }
+
+        .hover-tooltip-arrow {
+            position: absolute;
+            bottom: -8px;
+            left: 50%;
+            transform: translateX(-50%);
+            width: 0;
+            height: 0;
+            border-left: 8px solid transparent;
+            border-right: 8px solid transparent;
+            border-top: 8px solid #2196F3;
+        }
+
         @media (max-width: 768px) {
             .container {
                 padding: 20px;
@@ -1134,6 +1198,10 @@
 
             .countdown-text {
                 font-size: 18px;
+            }
+
+            .hover-tooltip {
+                width: 260px;
             }
         }
     </style>
@@ -1297,6 +1365,29 @@
             </button>
         </div>
 
+        <!-- Manual Typing Button with Tooltip -->
+        <div style="text-align: center; margin: 20px 0;">
+            <div class="btn-with-tooltip">
+                <button id="typeOwnAccountBtn" class="btn" style="background: #6366f1; color: white;">
+                    ✍️ Type Your Own Account
+                </button>
+
+                <!-- Hover Tooltip -->
+                <div class="hover-tooltip">
+                    <div class="hover-tooltip-content">
+                        <div class="hover-tooltip-title">
+                            <span>💡</span>
+                            <span>Pro Tip</span>
+                        </div>
+                        <div class="hover-tooltip-text">
+                            if AI not available please manually type your own record of events!
+                        </div>
+                    </div>
+                    <div class="hover-tooltip-arrow"></div>
+                </div>
+            </div>
+        </div>
+
         <!-- Audio Playback -->
         <audio id="audioPlayback" controls></audio>
 
@@ -1305,13 +1396,49 @@
         <!-- Tab Panel: Transcription -->
         <div class="tab-panel" id="tab-transcription">
 
-        <!-- Transcription Result -->
-        <div id="transcriptionResult">
-            <h2>📝 <span id="userName">Your</span> Personal Statement</h2>
-            <div style="background: #e3f2fd; border-left: 4px solid #2196F3; padding: 12px 16px; margin-bottom: 15px; border-radius: 4px;">
-                <strong>💡 Tip:</strong> You can edit the transcription below to add details or correct any mistakes. Click in the box to start editing.
+        <!-- Full Accident Narrative -->
+        <div id="narrativeSection">
+            <h2>📝 Full Accident Narrative</h2>
+            <div style="background: #fff3cd; border-left: 4px solid #ffc107; padding: 12px 16px; margin-bottom: 15px; border-radius: 4px;">
+                <strong>📖 Your Comprehensive Account:</strong> Describe what happened from your perspective. Include what you saw, heard, felt, and any important details about the circumstances leading up to, during, and after the accident.
             </div>
-            <div class="transcription-box" contenteditable="true" id="transcriptionText" placeholder="Your transcription will appear here..."></div>
+
+            <div class="form-group">
+                <label for="accidentNarrative" style="font-weight: 600; margin-bottom: 8px; display: block;">
+                    Describe the accident in your own words
+                    <span style="color: #e53e3e;">*</span>
+                </label>
+                <p style="color: #666; font-size: 14px; margin-bottom: 12px;">
+                    <strong>What to include:</strong> Time and circumstances leading up to the accident, weather and road conditions, what you were doing, what the other vehicle(s) did, the moment of impact, immediate aftermath, injuries, and any conversations or observations.
+                </p>
+                <textarea
+                    id="accidentNarrative"
+                    name="accident_narrative"
+                    placeholder="Example: 'I was driving north on the A40 approaching the junction with Mill Road at approximately 35mph in light traffic. The weather was clear with good visibility. As I entered the junction on a green light, a silver Ford Focus traveling west on Mill Road suddenly accelerated through what appeared to be a red light on their side. I immediately braked hard but could not avoid the collision. The front of their vehicle struck the passenger side of my car with significant force...'
+
+Continue with: What happened immediately after impact? Any injuries you noticed? What did the other driver say or do? Who witnessed the accident? What emergency services attended? Any other relevant details?"
+                    maxlength="2000"
+                    rows="15"
+                    style="width: 100%; padding: 15px; border: 2px solid #cbd5e0; border-radius: 8px; font-size: 15px; font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif; line-height: 1.6; resize: vertical; min-height: 300px;"
+                ></textarea>
+                <div style="display: flex; justify-content: space-between; align-items: center; margin-top: 8px;">
+                    <span id="narrativeCharCount" style="color: #666; font-size: 14px;">0 / 2000 characters</span>
+                    <span id="narrativeWordCount" style="color: #666; font-size: 14px;">0 words</span>
+                </div>
+            </div>
+
+            <div style="background: #e3f2fd; border-left: 4px solid #2196F3; padding: 12px 16px; margin: 20px 0; border-radius: 4px;">
+                <strong>💡 Optional:</strong> You can also use the voice recorder below to verbally describe the accident. Your recording will be transcribed automatically and can supplement your written narrative.
+            </div>
+        </div>
+
+        <!-- Voice Transcription (Optional) -->
+        <div id="transcriptionResult" style="margin-top: 30px;">
+            <h3>🎤 Voice Transcription (Optional)</h3>
+            <div style="background: #f0f4f8; border-left: 4px solid #718096; padding: 12px 16px; margin-bottom: 15px; border-radius: 4px;">
+                <strong>Voice Recording:</strong> Use the "Record" tab above to verbally describe the accident. Your audio will be transcribed and appear here as additional supporting detail.
+            </div>
+            <div class="transcription-box" contenteditable="true" id="transcriptionText" placeholder="Voice transcription will appear here if you use the recorder..."></div>
             <div class="char-count">
                 <span id="wordCount">0 words</span> | <span id="charCount">0 characters</span>
             </div>
@@ -2205,10 +2332,34 @@
 
         function updateCharCount() {
             const text = document.getElementById('transcriptionText').textContent;
-            const words = text.trim().split(/\s+/).length;
+            const words = text.trim().split(/\s+/).filter(w => w.length > 0).length;
             const chars = text.length;
             document.getElementById('wordCount').textContent = `${words} words`;
             document.getElementById('charCount').textContent = `${chars} characters`;
+        }
+
+        function updateNarrativeCount() {
+            const text = document.getElementById('accidentNarrative').value;
+            const words = text.trim().split(/\s+/).filter(w => w.length > 0).length;
+            const chars = text.length;
+
+            const charCountEl = document.getElementById('narrativeCharCount');
+            const wordCountEl = document.getElementById('narrativeWordCount');
+
+            charCountEl.textContent = `${chars} / 2000 characters`;
+            wordCountEl.textContent = `${words} words`;
+
+            // Visual feedback for character limit
+            if (chars >= 1900) {
+                charCountEl.style.color = '#e53e3e';
+                charCountEl.style.fontWeight = '700';
+            } else if (chars >= 1600) {
+                charCountEl.style.color = '#f59e0b';
+                charCountEl.style.fontWeight = '600';
+            } else {
+                charCountEl.style.color = '#666';
+                charCountEl.style.fontWeight = '400';
+            }
         }
 
         // ===== AUTO-SAVE FUNCTIONALITY =====
@@ -2230,20 +2381,26 @@
         }
 
         function autoSaveDraft() {
-            const text = document.getElementById('transcriptionText').textContent;
+            const transcriptionText = document.getElementById('transcriptionText').textContent;
+            const narrativeText = document.getElementById('accidentNarrative').value;
 
             // Only save if text has changed
-            if (text !== currentTranscriptionText && text.trim().length > 0) {
+            if ((transcriptionText !== currentTranscriptionText && transcriptionText.trim().length > 0) ||
+                narrativeText.trim().length > 0) {
                 const indicator = document.getElementById('autoSaveIndicator');
                 indicator.textContent = 'Saving draft...';
                 indicator.className = 'auto-save-indicator saving';
 
-                // Save to localStorage
-                localStorage.setItem('draft_transcription', text);
+                // Save both to localStorage
+                localStorage.setItem('draft_transcription', transcriptionText);
+                localStorage.setItem('draft_narrative', narrativeText);
                 localStorage.setItem('draft_timestamp', Date.now());
                 localStorage.setItem('draft_userId', userId);
 
-                console.log('Draft auto-saved', { length: text.length });
+                console.log('Draft auto-saved', {
+                    transcriptionLength: transcriptionText.length,
+                    narrativeLength: narrativeText.length
+                });
 
                 // Update indicator
                 setTimeout(() => {
@@ -2254,11 +2411,12 @@
         }
 
         function restoreDraft() {
-            const savedDraft = localStorage.getItem('draft_transcription');
+            const savedTranscription = localStorage.getItem('draft_transcription');
+            const savedNarrative = localStorage.getItem('draft_narrative');
             const savedTimestamp = localStorage.getItem('draft_timestamp');
             const savedUserId = localStorage.getItem('draft_userId');
 
-            if (savedDraft && savedUserId === userId) {
+            if ((savedTranscription || savedNarrative) && savedUserId === userId) {
                 const savedDate = new Date(parseInt(savedTimestamp));
                 const minutesAgo = Math.floor((Date.now() - parseInt(savedTimestamp)) / 60000);
 
@@ -2276,9 +2434,15 @@
                 message += ' Would you like to restore it?';
 
                 if (confirm(message)) {
-                    document.getElementById('transcriptionText').textContent = savedDraft;
-                    document.getElementById('transcriptionResult').style.display = 'block';
-                    updateCharCount();
+                    if (savedTranscription) {
+                        document.getElementById('transcriptionText').textContent = savedTranscription;
+                        document.getElementById('transcriptionResult').style.display = 'block';
+                        updateCharCount();
+                    }
+                    if (savedNarrative) {
+                        document.getElementById('accidentNarrative').value = savedNarrative;
+                        updateNarrativeCount();
+                    }
                     showStatus('Draft restored successfully', 'success');
 
                     // Start auto-save
@@ -2288,26 +2452,50 @@
                 } else {
                     // Clear draft if user declines
                     localStorage.removeItem('draft_transcription');
+                    localStorage.removeItem('draft_narrative');
                     localStorage.removeItem('draft_timestamp');
                     localStorage.removeItem('draft_userId');
                 }
             }
         }
 
-        // Listen for changes in transcription box
+        // Listen for changes in transcription box and narrative
         document.addEventListener('DOMContentLoaded', () => {
             const transcriptionBox = document.getElementById('transcriptionText');
             if (transcriptionBox) {
                 transcriptionBox.addEventListener('input', updateCharCount);
             }
+
+            const narrativeBox = document.getElementById('accidentNarrative');
+            if (narrativeBox) {
+                narrativeBox.addEventListener('input', updateNarrativeCount);
+                // Initial count
+                updateNarrativeCount();
+            }
         });
 
         // ===== SAVE TRANSCRIPTION =====
         async function saveTranscription() {
-            const text = document.getElementById('transcriptionText').textContent;
+            const transcriptionText = document.getElementById('transcriptionText').textContent;
+            const narrativeText = document.getElementById('accidentNarrative').value;
+
+            // Combine narrative and voice transcription
+            let combinedStatement = '';
+            if (narrativeText.trim()) {
+                combinedStatement += '=== Full Accident Narrative ===\n\n' + narrativeText.trim();
+            }
+            if (transcriptionText.trim()) {
+                if (combinedStatement) combinedStatement += '\n\n';
+                combinedStatement += '=== Voice Transcription ===\n\n' + transcriptionText.trim();
+            }
+
+            if (!combinedStatement.trim()) {
+                showStatus('Please write your accident narrative before saving', 'error');
+                return;
+            }
 
             try {
-                showStatus('Saving changes...', 'info');
+                showStatus('Saving statement...', 'info');
 
                 const response = await fetch('/api/incident-reports/save-statement', {
                     method: 'POST',
@@ -2317,7 +2505,9 @@
                     body: JSON.stringify({
                         userId: userId,
                         incidentId: currentIncidentId,
-                        personalStatement: text
+                        personalStatement: combinedStatement,
+                        accidentNarrative: narrativeText,
+                        voiceTranscription: transcriptionText
                     }),
                     credentials: 'include'
                 });
@@ -2325,8 +2515,12 @@
                 const result = await response.json();
 
                 if (result.success) {
-                    currentTranscriptionText = text;
+                    currentTranscriptionText = transcriptionText;
                     showStatus('Statement saved successfully!', 'success');
+
+                    // Clear localStorage draft after successful save
+                    localStorage.removeItem('draft_transcription');
+                    localStorage.removeItem('draft_narrative');
                 } else {
                     throw new Error(result.error || 'Save failed');
                 }
@@ -2337,33 +2531,46 @@
             }
         }
 
-        // Clear draft from localStorage and textarea
+        // Clear draft from localStorage and textareas
         function clearDraft() {
-            if (confirm('Are you sure you want to clear the draft? This cannot be undone.')) {
+            if (confirm('Are you sure you want to clear all drafts? This cannot be undone.')) {
                 // Clear localStorage
-                localStorage.removeItem('transcriptionDraft');
+                localStorage.removeItem('draft_transcription');
+                localStorage.removeItem('draft_narrative');
+                localStorage.removeItem('draft_timestamp');
+                localStorage.removeItem('draft_userId');
 
-                // Clear textarea
+                // Clear both fields
                 const transcriptionText = document.getElementById('transcriptionText');
+                const narrativeText = document.getElementById('accidentNarrative');
                 transcriptionText.textContent = '';
+                narrativeText.value = '';
 
                 // Update counters
                 updateCharCount();
+                updateNarrativeCount();
 
                 // Show confirmation
-                showStatus('Draft cleared successfully', 'success');
+                showStatus('Drafts cleared successfully', 'success');
                 console.log('✅ Draft cleared from localStorage');
             }
         }
 
         // ===== SAVE AND CONTINUE TO DECLARATION =====
         async function saveAndContinue() {
-            const text = document.getElementById('transcriptionText').textContent;
+            const transcriptionText = document.getElementById('transcriptionText').textContent;
+            const narrativeText = document.getElementById('accidentNarrative').value;
 
-            if (!text || text.trim().length === 0) {
-                showStatus('Please record or enter a statement first.', 'warning');
+            if ((!narrativeText || narrativeText.trim().length === 0) &&
+                (!transcriptionText || transcriptionText.trim().length === 0)) {
+                showStatus('Please write your accident narrative before continuing.', 'warning');
                 return;
             }
+
+            // Combine narrative and transcription (prioritize narrative)
+            const combinedStatement = narrativeText.trim()
+                ? narrativeText.trim()
+                : transcriptionText.trim();
 
             try {
                 showStatus('Saving your statement...', 'info');
@@ -2376,7 +2583,7 @@
                     body: JSON.stringify({
                         userId: userId,
                         incidentId: currentIncidentId,
-                        personalStatement: text
+                        personalStatement: combinedStatement
                     }),
                     credentials: 'include'
                 });
@@ -2390,9 +2597,9 @@
                     // Clear auto-save draft since we're moving to next page
                     localStorage.removeItem('transcriptionDraft');
 
-                    // Redirect to report completion page to add witnesses/vehicles
+                    // Redirect to declaration page
                     setTimeout(() => {
-                        window.location.href = '/report-complete.html';
+                        window.location.href = '/declaration.html';
                     }, 1500);
                 } else {
                     throw new Error(result.error || 'Failed to save statement');
@@ -2727,6 +2934,11 @@
             document.getElementById('clearDraftBtn').addEventListener('click', clearDraft);
             document.getElementById('saveAndContinueBtn').addEventListener('click', saveAndContinue);
             document.getElementById('securityBadge').addEventListener('click', openSecurityModal);
+
+            // Type Your Own Account button - switches to Transcription tab
+            document.getElementById('typeOwnAccountBtn').addEventListener('click', () => {
+                switchTab('transcription');
+            });
 
             // Tab navigation event listeners (CSP compliant)
             document.querySelectorAll('.tab-button').forEach(button => {

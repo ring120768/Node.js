@@ -9,6 +9,7 @@ const logger = require('../utils/logger');
 const { createClient } = require('@supabase/supabase-js');
 const config = require('../config');
 const ImageProcessorV2 = require('../services/imageProcessorV2');
+const gdprService = require('../services/gdprService');
 
 // Note: Images are now uploaded immediately when selected (temp upload pattern)
 // No multer needed - we receive JSON with temp paths instead of multipart/form-data
@@ -135,30 +136,37 @@ async function submitSignup(req, res) {
 
     const userSignupData = {
       create_user_id: userId,
-      first_name: formData.first_name,
-      last_name: formData.last_name,
+      name: formData.first_name, // Map form → DB
+      surname: formData.last_name, // Map form → DB
       email: formData.email.toLowerCase(),
-      mobile_number: formData.mobile_number,
+      mobile: formData.mobile_number, // Map form → DB
       date_of_birth: convertDateFormat(formData.date_of_birth), // Convert DD/MM/YYYY to YYYY-MM-DD
-      address_line_1: formData.address_line_1,
-      address_line_2: formData.address_line_2 || null,
-      city: formData.city,
-      county: formData.county || null,
+      street_address: formData.address_line_1, // Map form → DB
+      street_address_optional: formData.address_line_2 || null, // Map form → DB
+      town: formData.city, // Map form → DB
+      country: formData.country || 'United Kingdom', // Default to UK
       postcode: formData.postcode.toUpperCase(),
       car_registration_number: formData.car_registration_number.toUpperCase(),
       driving_license_number: formData.driving_license_number.toUpperCase(),
       insurance_company: formData.insurance_company,
       policy_number: formData.policy_number.toUpperCase(),
       policy_holder: formData.policy_holder,
-      policy_cover: formData.cover_type, // "Fully Comprehensive", etc.
+      cover_type: formData.cover_type, // "Fully Comprehensive", etc.
       recovery_company: formData.recovery_company || null,
       recovery_breakdown_number: formData.recovery_breakdown_number || null,
-      recovery_breakdown_email: formData.recovery_breakdown_email || null,
-      emergency_contact_first_name: formData.emergency_contact_first_name,
-      emergency_contact_last_name: formData.emergency_contact_last_name,
-      emergency_contact_phone: formData.emergency_contact_phone,
-      emergency_contact_email: formData.emergency_contact_email.toLowerCase(),
-      emergency_contact_company: formData.emergency_contact_company || null,
+      recovery_breakdown_email: formData.recovery_breakdown_email ? formData.recovery_breakdown_email.toLowerCase() : null,
+      // Combine emergency contact into pipe-delimited format: "FirstName LastName | Phone | Email | Company"
+      emergency_contact: [
+        `${formData.emergency_contact_first_name} ${formData.emergency_contact_last_name}`,
+        formData.emergency_contact_phone,
+        formData.emergency_contact_email.toLowerCase(),
+        formData.emergency_contact_company || ''
+      ].join(' | '),
+      // DVLA vehicle info (populated from DVLA lookup on Page 5)
+      vehicle_make: formData.dvla_make || null,
+      vehicle_model: formData.dvla_model || null,
+      vehicle_colour: formData.dvla_colour || null,
+      vehicle_condition: formData.vehicle_condition || null, // User's declaration of vehicle condition
       gdpr_consent: true,
       images_status: uploadedImages.length === 5 ? 'complete' : 'partial', // Track image upload status
       missing_images: missingImages.length > 0 ? missingImages : null, // Store which images are missing
@@ -178,6 +186,26 @@ async function submitSignup(req, res) {
     }
 
     logger.success('✅ User record created:', userId);
+
+    // ===== 1.5. Create GDPR audit log for account creation =====
+    try {
+      await gdprService.logActivity(
+        userId,
+        'ACCOUNT_CREATED',
+        {
+          method: 'custom_signup_form',
+          email: formData.email,
+          hasImages: uploadedImages.length > 0,
+          imagesComplete: uploadedImages.length === 5,
+          dvlaVerified: formData.dvla_verified === 'true'
+        },
+        req
+      );
+      logger.info('✅ GDPR audit log created for signup');
+    } catch (gdprError) {
+      // Non-fatal - don't block signup if audit log fails
+      logger.warn('⚠️ Failed to create GDPR audit log (non-fatal):', gdprError.message);
+    }
 
     // ===== 2. Insert dvla_vehicle_info_new record (if DVLA data present) =====
     if (formData.dvla_verified === 'true' && formData.make && formData.model) {

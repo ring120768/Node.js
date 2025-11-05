@@ -1,0 +1,2 @@
+Public URL: https://kctlcmbjmhcfoobmkfrs.supabase.co/storage/v1/object/public/user-documents/screenshots/what3words-map-1761693087066.png
+Path: screenshots/what3words-map-1761693087066.png

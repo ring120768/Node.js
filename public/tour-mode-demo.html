@@ -1,0 +1,344 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Tour Mode Demo - Car Crash Lawyer AI</title>
+
+  <!-- Tour Mode CSS -->
+  <link rel="stylesheet" href="/assets/tour-mode.css">
+
+  <!-- Demo page styling -->
+  <style>
+    * {
+      margin: 0;
+      padding: 0;
+      box-sizing: border-box;
+    }
+
+    body {
+      font-family: system-ui, -apple-system, sans-serif;
+      background: linear-gradient(135deg, #0E7490 0%, #0c6179 100%);
+      min-height: 100vh;
+      padding: 40px 20px;
+    }
+
+    .demo-container {
+      max-width: 1200px;
+      margin: 0 auto;
+      background: white;
+      border-radius: 16px;
+      padding: 40px;
+      box-shadow: 0 20px 60px rgba(0, 0, 0, 0.3);
+    }
+
+    h1 {
+      color: #0E7490;
+      margin-bottom: 12px;
+      font-size: 32px;
+    }
+
+    .subtitle {
+      color: #666;
+      margin-bottom: 32px;
+      font-size: 18px;
+    }
+
+    .demo-controls {
+      margin-bottom: 40px;
+      padding: 24px;
+      background: #F5F1E8;
+      border-radius: 12px;
+      border: 2px solid #E8DCC4;
+    }
+
+    .demo-controls h2 {
+      color: #333;
+      margin-bottom: 16px;
+      font-size: 20px;
+    }
+
+    .demo-controls p {
+      color: #666;
+      margin-bottom: 16px;
+      line-height: 1.6;
+    }
+
+    button {
+      background: #0E7490;
+      color: white;
+      border: none;
+      padding: 14px 28px;
+      border-radius: 8px;
+      font-size: 16px;
+      font-weight: 600;
+      cursor: pointer;
+      transition: all 0.2s;
+      box-shadow: 0 2px 8px rgba(14, 116, 144, 0.3);
+    }
+
+    button:hover {
+      background: #0c6179;
+      transform: translateY(-2px);
+      box-shadow: 0 4px 12px rgba(14, 116, 144, 0.4);
+    }
+
+    button:active {
+      transform: translateY(0);
+    }
+
+    .app-demo {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 24px;
+      margin-bottom: 40px;
+    }
+
+    @media (max-width: 768px) {
+      .app-demo {
+        grid-template-columns: 1fr;
+      }
+    }
+
+    .demo-card {
+      padding: 24px;
+      background: #CFD2D7;
+      border-radius: 12px;
+      border: 2px solid #4B5563;
+    }
+
+    .demo-card h3 {
+      color: #333;
+      margin-bottom: 12px;
+      font-size: 18px;
+    }
+
+    .demo-card p {
+      color: #666;
+      line-height: 1.5;
+      margin-bottom: 16px;
+    }
+
+    .demo-card .demo-input {
+      width: 100%;
+      padding: 12px;
+      border: 2px solid #4B5563;
+      border-radius: 8px;
+      font-size: 14px;
+      margin-bottom: 12px;
+    }
+
+    .demo-card .demo-button {
+      background: #C0C0C0;
+      color: #333;
+      padding: 10px 20px;
+      font-size: 14px;
+    }
+
+    .demo-card .demo-button:hover {
+      background: #B0B0B0;
+    }
+
+    #summaryPanel {
+      grid-column: 1 / -1;
+      background: #E8DCC4;
+    }
+
+    .info-box {
+      background: #F0F9FF;
+      border-left: 4px solid #0E7490;
+      padding: 16px 20px;
+      margin-bottom: 24px;
+      border-radius: 4px;
+    }
+
+    .info-box h4 {
+      color: #0E7490;
+      margin-bottom: 8px;
+      font-size: 16px;
+    }
+
+    .info-box p {
+      color: #333;
+      line-height: 1.6;
+      margin: 0;
+    }
+
+    .info-box code {
+      background: #E8DCC4;
+      padding: 2px 6px;
+      border-radius: 4px;
+      font-family: 'Courier New', monospace;
+      font-size: 14px;
+    }
+
+    .code-block {
+      background: #1e1e1e;
+      color: #d4d4d4;
+      padding: 20px;
+      border-radius: 8px;
+      overflow-x: auto;
+      margin: 16px 0;
+      font-family: 'Courier New', monospace;
+      font-size: 14px;
+      line-height: 1.6;
+    }
+
+    .code-block .comment {
+      color: #6A9955;
+    }
+
+    .code-block .tag {
+      color: #569CD6;
+    }
+
+    .code-block .attr {
+      color: #9CDCFE;
+    }
+
+    .code-block .string {
+      color: #CE9178;
+    }
+  </style>
+</head>
+<body>
+  <div class="demo-container">
+    <h1>🎬 Tour Mode Demo</h1>
+    <p class="subtitle">Hands-free spotlight demo system for Car Crash Lawyer AI</p>
+
+    <!-- Demo Controls -->
+    <div class="demo-controls">
+      <h2>Try the Demo</h2>
+      <p>Click the button below to activate Tour Mode. The system will automatically guide you through the key features with a moving spotlight, animated cursor, and timed captions.</p>
+      <button id="playDemo" onclick="activateDemoMode()">🎥 Watch Demo</button>
+    </div>
+
+    <!-- Info Box -->
+    <div class="info-box">
+      <h4>ℹ️ How It Works</h4>
+      <p>Tour Mode activates when <code>?demo=1</code> is in the URL. It highlights key elements, moves a fake cursor, and displays timed captions explaining each feature. No user interaction required!</p>
+    </div>
+
+    <!-- Demo App UI (Tour targets) -->
+    <div class="app-demo">
+      <!-- Start Button -->
+      <div class="demo-card">
+        <h3>1. Start Incident Report</h3>
+        <p>Begin documenting your accident with our guided wizard.</p>
+        <button id="startButton" class="demo-button">Start Report</button>
+      </div>
+
+      <!-- Location Field -->
+      <div class="demo-card">
+        <h3>2. Capture Location</h3>
+        <p>Auto-populated using what3words precision.</p>
+        <input id="w3wField" type="text" class="demo-input" placeholder="///filled.count.soap" readonly>
+      </div>
+
+      <!-- Upload Photos -->
+      <div class="demo-card">
+        <h3>3. Upload Evidence</h3>
+        <p>Add scene photos for your insurance claim.</p>
+        <button id="uploadPhotosBtn" class="demo-button">📸 Add Photos</button>
+      </div>
+
+      <!-- Export PDF -->
+      <div class="demo-card">
+        <h3>5. Export Report</h3>
+        <p>Download a compliant PDF for your insurer.</p>
+        <button id="exportPdfBtn" class="demo-button">📄 Export PDF</button>
+      </div>
+
+      <!-- AI Summary Panel -->
+      <div id="summaryPanel" class="demo-card">
+        <h3>4. AI Legal Summary</h3>
+        <p>Our AI generates a plain-English summary of your incident in legal format, ready for submission to insurance companies and solicitors.</p>
+        <div style="background: white; padding: 16px; border-radius: 8px; margin-top: 12px; color: #666; font-size: 14px; line-height: 1.6;">
+          <strong>Sample Summary:</strong><br>
+          "On 15th March 2025 at approximately 14:30, the claimant's vehicle was stationary at traffic lights when struck from behind by another vehicle traveling at estimated speed of 25mph..."
+        </div>
+      </div>
+    </div>
+
+    <!-- Integration Guide -->
+    <div style="margin-top: 40px; padding-top: 40px; border-top: 2px solid #E8DCC4;">
+      <h2 style="color: #0E7490; margin-bottom: 20px;">📚 Integration Guide</h2>
+
+      <h3 style="color: #333; margin-bottom: 12px;">1. Add to your HTML page:</h3>
+      <div class="code-block">
+<span class="comment">&lt;!-- In your &lt;head&gt; --&gt;</span>
+<span class="tag">&lt;link</span> <span class="attr">rel</span>=<span class="string">"stylesheet"</span> <span class="attr">href</span>=<span class="string">"/assets/tour-mode.css"</span><span class="tag">&gt;</span>
+
+<span class="comment">&lt;!-- Optional: Define custom tour steps (before loading script) --&gt;</span>
+<span class="tag">&lt;script&gt;</span>
+  window.TOUR_STEPS = [
+    { sel: '#startButton', text: 'Tap "Start Report" to begin.', dwell: 1400, radius: 150 },
+    { sel: '#w3wField', text: 'Location auto-captured.', dwell: 1600, radius: 160 }
+  ];
+<span class="tag">&lt;/script&gt;</span>
+
+<span class="comment">&lt;!-- Load tour script with defer --&gt;</span>
+<span class="tag">&lt;script</span> <span class="attr">defer</span> <span class="attr">src</span>=<span class="string">"/assets/tour-mode.js"</span><span class="tag">&gt;&lt;/script&gt;</span>
+      </div>
+
+      <h3 style="color: #333; margin-bottom: 12px; margin-top: 24px;">2. Add a "Watch Demo" button:</h3>
+      <div class="code-block">
+<span class="tag">&lt;button</span> <span class="attr">id</span>=<span class="string">"playDemo"</span> <span class="attr">onclick</span>=<span class="string">"activateDemoMode()"</span><span class="tag">&gt;</span>Watch Demo<span class="tag">&lt;/button&gt;</span>
+
+<span class="tag">&lt;script&gt;</span>
+  function activateDemoMode() {
+    <span class="comment">// Add ?demo=1 to URL</span>
+    const url = new URL(window.location);
+    url.searchParams.set('demo', '1');
+    window.location.href = url.toString();
+  }
+<span class="tag">&lt;/script&gt;</span>
+      </div>
+
+      <h3 style="color: #333; margin-bottom: 12px; margin-top: 24px;">3. Theming (edit CSS variables):</h3>
+      <div class="code-block">
+:root {
+  --tour-overlay-bg: rgba(0, 0, 0, 0.55);
+  --tour-caption-bg: #ffffff;
+  --tour-caption-fg: #111111;
+  --tour-shadow: 0 10px 30px rgba(0, 0, 0, 0.2);
+  --tour-font: system-ui, sans-serif;
+  --tour-radius: 12px;
+  --tour-cursor-color: #0E7490;
+}
+      </div>
+
+      <h3 style="color: #333; margin-bottom: 12px; margin-top: 24px;">4. Tour Step Properties:</h3>
+      <div class="info-box" style="margin-top: 12px;">
+        <p style="margin-bottom: 12px;"><strong>sel</strong> (required): CSS selector for target element</p>
+        <p style="margin-bottom: 12px;"><strong>text</strong> (required): Caption text to display</p>
+        <p style="margin-bottom: 12px;"><strong>dwell</strong> (required): Time in milliseconds to show this step</p>
+        <p><strong>radius</strong> (optional): Spotlight radius in pixels (default: 150)</p>
+      </div>
+    </div>
+  </div>
+
+  <!-- Tour Mode Configuration -->
+  <script>
+    // Optional: Define custom tour steps
+    // If not defined, tour-mode.js will use built-in defaults
+    window.TOUR_STEPS = [
+      { sel: '#startButton',     text: 'Tap "Start Report" to begin an incident.', dwell: 1400, radius: 150 },
+      { sel: '#w3wField',        text: 'Location is auto-captured with what3words.', dwell: 1600, radius: 160 },
+      { sel: '#uploadPhotosBtn', text: 'Add scene photos—clear shots help insurers.', dwell: 1600, radius: 150 },
+      { sel: '#summaryPanel',    text: 'AI drafts a plain-English legal summary.', dwell: 1800, radius: 170 },
+      { sel: '#exportPdfBtn',    text: 'Export a compliant PDF for your insurer.', dwell: 1800, radius: 150 }
+    ];
+
+    // Function to activate demo mode
+    function activateDemoMode() {
+      const url = new URL(window.location);
+      url.searchParams.set('demo', '1');
+      window.location.href = url.toString();
+    }
+  </script>
+
+  <!-- Tour Mode Script (loads only if ?demo=1 is present) -->
+  <script defer src="/assets/tour-mode.js"></script>
+</body>
+</html>

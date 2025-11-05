@@ -7,6 +7,10 @@
     <title>Demo - Car Crash Lawyer AI</title>
     <link href="https://cdn.jsdelivr.net/npm/tailwindcss@2.2.19/dist/tailwind.min.css" rel="stylesheet">
     <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
+
+    <!-- Driver.js for Interactive Tour -->
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/driver.js@1.3.1/dist/driver.css"/>
+
     <style>
         body {
             font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
@@ -144,6 +148,88 @@
         }
 
         .hide { display: none; }
+
+        /* Custom Driver.js Styling */
+        .driver-popover {
+            background: white;
+            border-radius: 12px;
+            box-shadow: 0 12px 40px rgba(0, 0, 0, 0.25);
+            max-width: 400px;
+        }
+
+        .driver-popover-title {
+            font-size: 1.3rem;
+            font-weight: bold;
+            color: #667eea;
+            margin-bottom: 8px;
+        }
+
+        .driver-popover-description {
+            font-size: 1rem;
+            line-height: 1.6;
+            color: #333;
+        }
+
+        .driver-popover-footer {
+            display: flex;
+            justify-content: space-between;
+            gap: 10px;
+            margin-top: 20px;
+        }
+
+        .driver-popover-footer button {
+            padding: 10px 20px;
+            border-radius: 8px;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.3s ease;
+        }
+
+        .driver-popover-prev-btn {
+            background: #e0e7ff;
+            color: #667eea;
+            border: none;
+        }
+
+        .driver-popover-next-btn {
+            background: #667eea;
+            color: white;
+            border: none;
+        }
+
+        .driver-popover-close-btn {
+            position: absolute;
+            top: 12px;
+            right: 12px;
+            background: transparent;
+            border: none;
+            font-size: 24px;
+            color: #999;
+            cursor: pointer;
+        }
+
+        /* Tour Start Button */
+        .tour-btn {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white !important;
+            font-weight: bold;
+            padding: 8px 16px !important;
+            border-radius: 8px;
+            display: flex;
+            align-items: center;
+            gap: 6px;
+            animation: pulse 2s ease-in-out infinite;
+        }
+
+        @keyframes pulse {
+            0%, 100% { transform: scale(1); }
+            50% { transform: scale(1.05); }
+        }
+
+        .tour-btn:hover {
+            background: linear-gradient(135deg, #764ba2 0%, #667eea 100%) !important;
+            transform: translateY(-1px) !important;
+        }
     </style>
     <link rel="stylesheet" href="/css/mascot.css"></head>
 <body class="min-h-screen">
@@ -151,6 +237,10 @@
     <div class="nav">
         <button onclick="window.history.back()">← Back</button>
         <a href="index.html">🏠 Home</a>
+        <button id="startTourBtn" class="tour-btn">
+            <span>🎯</span>
+            <span>Start Tour</span>
+        </button>
     </div>
 
     <div class="container mx-auto max-w-4xl p-4">
@@ -226,6 +316,7 @@
 
     <!-- Scripts -->
     <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/driver.js@1.3.1/dist/driver.js.iife.js"></script>
     <script>
         let map, marker, accuracyCircle, userLocation = null;
 
@@ -354,6 +445,87 @@
             console.log('Continue to Demo Form clicked');
             showTypeform();
         };
+
+        // ========================================
+        // DRIVER.JS INTERACTIVE TOUR
+        // ========================================
+
+        // Initialize Driver.js
+        const driver = window.driver.js.driver({
+            showProgress: true,
+            showButtons: ['next', 'previous', 'close'],
+            steps: [
+                {
+                    element: '.glass-effect',
+                    popover: {
+                        title: '🚗 Welcome to Car Crash Lawyer AI',
+                        description: 'Experience the fastest, most accurate way to document road traffic incidents in the UK. This demo showcases our AI-powered system that helps accident victims complete legal reports in minutes, not hours.',
+                        side: "bottom",
+                        align: 'center'
+                    }
+                },
+                {
+                    element: '#findMeBtn',
+                    popover: {
+                        title: '📍 Precise Location Capture',
+                        description: '<strong>GPS-accurate incident location</strong><br><br>Our system captures your exact location with meter-level precision using GPS technology. This includes:<br>• Latitude & Longitude coordinates<br>• what3words address (unique 3-word location)<br>• Full street address<br>• Interactive map visualization<br><br>Why it matters: Precise location is crucial for insurance claims and legal proceedings.',
+                        side: "bottom",
+                        align: 'center'
+                    }
+                },
+                {
+                    element: '.demo-notice',
+                    popover: {
+                        title: '⚠️ Safe Demo Environment',
+                        description: 'This is a demonstration environment. No actual incident reports will be filed. Feel free to explore all features without concern - your data is for testing purposes only.',
+                        side: "bottom",
+                        align: 'center'
+                    }
+                },
+                {
+                    element: '#continueToFormBtn',
+                    popover: {
+                        title: '📝 Comprehensive Incident Form',
+                        description: '<strong>Guided legal documentation</strong><br><br>Our intelligent form collects all necessary information:<br>• Personal details & insurance info<br>• Accident circumstances & timeline<br>• Vehicle damage documentation<br>• Witness information<br>• Weather & road conditions<br>• Photo evidence<br><br>The form adapts to your answers and ensures completeness.',
+                        side: "top",
+                        align: 'center'
+                    }
+                },
+                {
+                    popover: {
+                        title: '🤖 AI-Powered Features',
+                        description: '<strong>Why Car Crash Lawyer AI is revolutionary:</strong><br><br>✅ <strong>Speed:</strong> Complete reports in 5-10 minutes<br>✅ <strong>Accuracy:</strong> AI validates all information<br>✅ <strong>Evidence:</strong> Photo uploads with instant storage<br>✅ <strong>Legal Compliance:</strong> UK GDPR & data protection<br>✅ <strong>Professional Output:</strong> 17-page legal PDF report<br>✅ <strong>Free Service:</strong> No hidden costs<br><br>Trusted by accident victims across the UK 🇬🇧',
+                        side: "center",
+                        align: 'center'
+                    }
+                },
+                {
+                    element: '#actionSection',
+                    popover: {
+                        title: '🎯 Ready to Try?',
+                        description: '<strong>Experience it yourself:</strong><br><br>1. Click "Find Me" to capture your current location<br>2. Review the GPS data and what3words address<br>3. Click "Continue to Demo Form" to complete the incident report<br><br>The entire process takes less than 10 minutes!<br><br>Click "Close" to explore the demo at your own pace.',
+                        side: "bottom",
+                        align: 'center'
+                    }
+                }
+            ],
+            onDestroyStarted: () => {
+                driver.destroy();
+            },
+        });
+
+        // Start tour button handler
+        document.getElementById('startTourBtn').addEventListener('click', () => {
+            driver.drive();
+        });
+
+        // Auto-start tour on first visit (using localStorage)
+        if (!localStorage.getItem('demoTourCompleted')) {
+            setTimeout(() => {
+                driver.drive();
+                localStorage.setItem('demoTourCompleted', 'true');
+            }, 1000); // 1 second delay to let page load
+        }
     </script>
     <script src="/js/mascot.js"></script></body>
 </html>

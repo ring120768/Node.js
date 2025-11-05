@@ -1,0 +1,786 @@
+<!DOCTYPE html>
+<html lang="en-GB">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+  <meta name="apple-mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+  <title>Vehicle Images - Page 6 of 10</title>
+
+  <style>
+    /* Design System Variables */
+    :root {
+      /* Brand Colors */
+      --grad-start: #0E7490;
+      --grad-end: #0c6179;
+      --accent: #0E7490;
+      --accent-hover: #0c6179;
+
+      /* Page Background */
+      --bg-light: #E8DCC4;
+
+      /* Text Colors */
+      --text-dark: #1a1a1a;
+      --text-muted: #6b7280;
+
+      /* Borders & Dividers */
+      --border: #4B5563;
+
+      /* Form Elements */
+      --input-bg: #CFD2D7;
+      --checkbox-bg: #F5F1E8;
+      --container-bg: #F5F1E8;
+      --button-bg: #ffffff;
+      --button-hover: rgba(14, 116, 144, 0.1);
+
+      /* Status Colors */
+      --success: #10b981;
+      --danger: #ef4444;
+      --warning: #f59e0b;
+    }
+
+    /* Reset & Base */
+    * {
+      margin: 0;
+      padding: 0;
+      box-sizing: border-box;
+      -webkit-tap-highlight-color: transparent;
+    }
+
+    html {
+      font-size: 16px;
+      -webkit-text-size-adjust: 100%;
+    }
+
+    body {
+      font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, Cantarell, sans-serif;
+      background: var(--bg-light);
+      color: var(--text-dark);
+      line-height: 1.6;
+      overflow-x: hidden;
+      padding-bottom: env(safe-area-inset-bottom, 20px);
+    }
+
+    /* Sticky Banner */
+    .banner {
+      background: linear-gradient(135deg, var(--grad-start) 0%, var(--grad-end) 100%);
+      padding: 20px 16px;
+      position: sticky;
+      top: 0;
+      z-index: 200;
+      box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+    }
+
+    @supports (padding-top: env(safe-area-inset-top)) {
+      .banner {
+        padding-top: max(20px, env(safe-area-inset-top));
+      }
+    }
+
+    .brand {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      text-align: center;
+      gap: 12px;
+    }
+
+    .brand .logo {
+      width: 80px;
+      height: 80px;
+      border-radius: 12px;
+      box-shadow: 0 4px 12px rgba(0,0,0,0.15);
+    }
+
+    .brand h1 {
+      font-size: 1.25rem;
+      font-weight: 700;
+      color: white;
+      text-shadow: 0 2px 4px rgba(0,0,0,0.1);
+    }
+
+    .brand .tagline {
+      font-size: 0.875rem;
+      color: rgba(255,255,255,0.95);
+      font-weight: 500;
+    }
+
+    /* Progress Bar */
+    .progress-container {
+      margin-top: 16px;
+      background: rgba(255,255,255,0.2);
+      border-radius: 20px;
+      height: 8px;
+      overflow: hidden;
+      backdrop-filter: blur(8px);
+    }
+
+    .progress-bar {
+      height: 100%;
+      background: white;
+      border-radius: 20px;
+      transition: width 0.3s ease;
+      width: 60%; /* Page 6 of 10 */
+    }
+
+    .progress-label {
+      text-align: center;
+      color: white;
+      font-size: 0.75rem;
+      margin-top: 8px;
+      font-weight: 600;
+    }
+
+    /* Main Container */
+    .container {
+      max-width: 600px;
+      margin: 0 auto;
+      padding: 24px 16px;
+    }
+
+    .page-header {
+      text-align: center;
+      margin-bottom: 32px;
+    }
+
+    .page-header h2 {
+      font-size: 1.5rem;
+      color: var(--text-dark);
+      margin-bottom: 8px;
+    }
+
+    .page-header p {
+      color: var(--text-muted);
+      font-size: 0.938rem;
+    }
+
+    /* Form Sections */
+    .form-section {
+      background: var(--container-bg);
+      border-radius: 12px;
+      padding: 20px;
+      margin-bottom: 20px;
+      box-shadow: 0 2px 8px rgba(0,0,0,0.05);
+    }
+
+    .section-title {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      font-size: 1.125rem;
+      font-weight: 600;
+      color: var(--text-dark);
+      margin-bottom: 16px;
+    }
+
+    .section-icon {
+      font-size: 1.5rem;
+    }
+
+    /* Form Groups */
+    .form-group {
+      margin-bottom: 20px;
+    }
+
+    .form-group:last-child {
+      margin-bottom: 0;
+    }
+
+    .form-label {
+      display: block;
+      font-weight: 600;
+      color: var(--text-dark);
+      margin-bottom: 8px;
+      font-size: 0.938rem;
+    }
+
+    .required {
+      color: var(--danger);
+    }
+
+    .form-hint {
+      font-size: 0.813rem;
+      color: var(--text-muted);
+      margin-bottom: 12px;
+      line-height: 1.5;
+    }
+
+    /* Image Card Styles */
+    .image-card {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+      padding: 12px;
+      background: var(--input-bg);
+      border: 2px solid var(--border);
+      border-radius: 12px;
+      transition: all 0.2s;
+    }
+
+    .image-card:hover {
+      border-color: var(--accent);
+      box-shadow: 0 2px 8px rgba(0,0,0,0.05);
+    }
+
+    .image-card-thumbnail {
+      width: 80px;
+      height: 80px;
+      border-radius: 8px;
+      object-fit: cover;
+      flex-shrink: 0;
+    }
+
+    .image-card-info {
+      flex: 1;
+      min-width: 0;
+    }
+
+    .image-card-name {
+      font-weight: 600;
+      color: var(--text-dark);
+      font-size: 0.938rem;
+      white-space: nowrap;
+      overflow: hidden;
+      text-overflow: ellipsis;
+    }
+
+    .image-card-size {
+      font-size: 0.813rem;
+      color: var(--text-muted);
+      margin-top: 4px;
+    }
+
+    .image-card-remove {
+      width: 36px;
+      height: 36px;
+      background: var(--danger);
+      color: white;
+      border: none;
+      border-radius: 8px;
+      cursor: pointer;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 1.25rem;
+      flex-shrink: 0;
+      transition: all 0.2s;
+    }
+
+    .image-card-remove:hover {
+      background: #dc2626;
+      transform: scale(1.05);
+    }
+
+    /* Navigation Buttons */
+    .nav-buttons {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 12px;
+      margin-top: 32px;
+    }
+
+    .btn {
+      padding: 16px 24px;
+      border-radius: 12px;
+      font-weight: 600;
+      font-size: 1rem;
+      cursor: pointer;
+      transition: all 0.2s;
+      border: none;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: 8px;
+    }
+
+    .btn-secondary {
+      background: var(--button-bg);
+      color: var(--grad-start);
+      border: 2px solid var(--grad-start);
+    }
+
+    .btn-secondary:hover {
+      border-color: var(--grad-start);
+      background: var(--button-hover);
+    }
+
+    .btn-primary {
+      background: var(--grad-start);
+      color: white;
+      box-shadow: 0 4px 12px rgba(14, 116, 144, 0.3);
+    }
+
+    .btn-primary:hover {
+      transform: translateY(-2px);
+      box-shadow: 0 6px 16px rgba(14, 116, 144, 0.4);
+      background: var(--grad-end);
+    }
+
+    .btn-primary:active {
+      transform: translateY(0);
+    }
+
+    .btn:disabled {
+      opacity: 0.5;
+      cursor: not-allowed;
+      transform: none;
+    }
+
+    /* Alert Messages */
+    .alert {
+      padding: 12px 16px;
+      border-radius: 8px;
+      margin-bottom: 16px;
+      display: flex;
+      align-items: flex-start;
+      gap: 10px;
+      font-size: 0.875rem;
+    }
+
+    .alert-info {
+      background: rgba(99, 102, 241, 0.1);
+      color: #4338ca;
+      border: 1px solid rgba(99, 102, 241, 0.2);
+    }
+
+    /* Hover Tooltip */
+    .btn-with-tooltip {
+      position: relative;
+      width: 100%;
+    }
+
+    .hover-tooltip {
+      position: absolute;
+      bottom: calc(100% + 12px);
+      left: 50%;
+      transform: translateX(-50%);
+      background: white;
+      border: 2px solid var(--accent);
+      border-radius: 12px;
+      padding: 16px;
+      box-shadow: 0 8px 24px rgba(0, 0, 0, 0.15);
+      opacity: 0;
+      visibility: hidden;
+      transition: all 0.3s ease;
+      z-index: 100;
+      width: 280px;
+      max-width: 90vw;
+      pointer-events: none;
+    }
+
+    .btn-with-tooltip:hover .hover-tooltip {
+      opacity: 1;
+      visibility: visible;
+      bottom: calc(100% + 16px);
+    }
+
+    .hover-tooltip-content {
+      display: flex;
+      flex-direction: column;
+      gap: 8px;
+    }
+
+    .hover-tooltip-title {
+      font-weight: 700;
+      color: var(--accent);
+      font-size: 0.875rem;
+      display: flex;
+      align-items: center;
+      gap: 6px;
+    }
+
+    .hover-tooltip-text {
+      font-size: 0.813rem;
+      color: var(--text-dark);
+      line-height: 1.5;
+    }
+
+    .hover-tooltip-arrow {
+      position: absolute;
+      bottom: -8px;
+      left: 50%;
+      transform: translateX(-50%);
+      width: 0;
+      height: 0;
+      border-left: 8px solid transparent;
+      border-right: 8px solid transparent;
+      border-top: 8px solid var(--accent);
+    }
+
+    /* Mobile Responsive */
+    @media (max-width: 640px) {
+      .image-card-thumbnail {
+        width: 60px;
+        height: 60px;
+      }
+
+      .hover-tooltip {
+        width: 260px;
+      }
+    }
+  </style>
+</head>
+<body>
+
+  <!-- Sticky Banner -->
+  <div class="banner">
+    <div class="brand">
+      <img src="/images/logo.png" alt="Car Crash Lawyer AI Logo" class="logo">
+      <h1>Incident Report</h1>
+      <p class="tagline">Page 6 of 10: Vehicle Images</p>
+    </div>
+
+    <div class="progress-container">
+      <div class="progress-bar"></div>
+    </div>
+    <div class="progress-label">60% Complete</div>
+  </div>
+
+  <!-- Main Container -->
+  <div class="container">
+
+    <div class="page-header">
+      <h2>Your Vehicle Damage</h2>
+      <p>Upload clear photos showing the damage to YOUR vehicle only</p>
+    </div>
+
+    <!-- Vehicle Damage Photos -->
+    <div class="form-section">
+      <div class="section-title">
+        <span class="section-icon">🚗</span>
+        <span>Your Vehicle Damage Photos</span>
+      </div>
+
+      <div style="text-align: center; margin: 20px 0;">
+        <img src="/images/Camera.png" alt="Camera" style="width: 400px; height: 400px; object-fit: contain; max-width: 100%;">
+      </div>
+
+      <div class="alert alert-info">
+        <span>ℹ️</span>
+        <span>Upload photos showing damage to YOUR vehicle only. Include all damaged areas, scratches, dents, or broken parts. Maximum 5 images. <strong>If there is no damage, please take a photo to confirm this.</strong></span>
+      </div>
+
+      <div class="form-group">
+        <label class="form-label">
+          Upload damage photos
+          <span class="required">*</span>
+        </label>
+        <p class="form-hint">At least one photo of YOUR vehicle damage is required. You can add up to 5 images.</p>
+
+        <!-- Hidden file input -->
+        <input type="file" id="image-input" accept="image/jpeg,image/jpg,image/png,image/heic,image/heif,image/webp" style="display: none;">
+
+        <!-- Images Container -->
+        <div id="images-container" style="display: flex; flex-direction: column; gap: 12px; margin-bottom: 16px;">
+          <!-- Uploaded images will appear here -->
+        </div>
+
+        <!-- Add Damage Photo Button with Tooltip -->
+        <div class="btn-with-tooltip">
+          <button type="button" id="add-image-btn" class="btn btn-secondary">
+            <span>📷</span>
+            <span>Add Damage Photo</span>
+            <span id="image-count">(0/5)</span>
+          </button>
+
+          <!-- Hover Tooltip -->
+          <div class="hover-tooltip">
+            <div class="hover-tooltip-content">
+              <div class="hover-tooltip-title">
+                <span>💡</span>
+                <span>Pro Tip</span>
+              </div>
+              <div class="hover-tooltip-text">
+                If there is no damage, please take a photo to confirm this.
+              </div>
+            </div>
+            <div class="hover-tooltip-arrow"></div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Navigation Buttons -->
+    <div class="nav-buttons">
+      <button type="button" class="btn btn-secondary" id="back-btn">
+        <span>←</span>
+        <span>Back</span>
+      </button>
+      <button type="button" class="btn btn-primary" id="next-btn" disabled>
+        <span>Next</span>
+        <span>→</span>
+      </button>
+    </div>
+
+  </div>
+
+  <script>
+    // Page state
+    let uploadedImages = []; // Array of uploaded image objects
+    const MAX_IMAGES = 5; // Maximum 5 vehicle damage images
+
+    // Elements
+    const imageInput = document.getElementById('image-input');
+    const addImageBtn = document.getElementById('add-image-btn');
+    const imagesContainer = document.getElementById('images-container');
+    const imageCountSpan = document.getElementById('image-count');
+    const nextBtn = document.getElementById('next-btn');
+
+    // Add Image Button Click
+    addImageBtn.addEventListener('click', () => {
+      console.log('Add Image button clicked, current count:', uploadedImages.length);
+      if (uploadedImages.length < MAX_IMAGES) {
+        console.log('Opening file picker...');
+        imageInput.click();
+      } else {
+        console.log('Maximum images reached');
+        alert(`Maximum ${MAX_IMAGES} images allowed`);
+      }
+    });
+
+    // File Input Change Handler
+    imageInput.addEventListener('change', async (e) => {
+      const file = e.target.files[0];
+      if (!file) return;
+
+      // Check image limit
+      if (uploadedImages.length >= MAX_IMAGES) {
+        alert(`Maximum ${MAX_IMAGES} images allowed`);
+        return;
+      }
+
+      // Upload to server immediately (mobile-friendly)
+      try {
+        const formData = new FormData();
+        formData.append('file', file);
+        formData.append('field_name', 'vehicle_damage_photo');  // Required by backend
+        formData.append('temp_session_id', localStorage.getItem('temp_session_id') || crypto.randomUUID());
+
+        const response = await fetch('/api/images/temp-upload', {
+          method: 'POST',
+          body: formData,
+          credentials: 'include'
+        });
+
+        const data = await response.json();
+
+        if (response.ok) {
+          // Create image object
+          const imageObj = {
+            path: data.path,
+            fileName: file.name,
+            fileSize: formatFileSize(file.size),
+            preview: URL.createObjectURL(file)
+          };
+
+          uploadedImages.push(imageObj);
+          console.log(`✅ Image uploaded:`, data.path);
+
+          // Add image card to UI
+          addImageCard(imageObj, uploadedImages.length - 1);
+
+          // Update UI
+          updateImageCount();
+          validateForm();
+          autoSave();
+
+        } else {
+          throw new Error(data.error || 'Upload failed');
+        }
+
+      } catch (error) {
+        console.error('Upload error:', error);
+
+        // Provide more helpful error message
+        let errorMessage = 'Failed to upload image. ';
+        if (!navigator.onLine) {
+          errorMessage += 'Please check your internet connection.';
+        } else if (error.message.includes('Failed to fetch')) {
+          errorMessage += 'Network error. Please check your connection and try again.';
+        } else if (error.message.includes('413')) {
+          errorMessage += 'Image file is too large. Please use a smaller image.';
+        } else {
+          errorMessage += 'Please try again or contact support if the problem persists.';
+        }
+
+        alert(errorMessage);
+      }
+
+      // Reset input for next selection
+      imageInput.value = '';
+    });
+
+    // Add Image Card to UI
+    function addImageCard(imageObj, index) {
+      const card = document.createElement('div');
+      card.className = 'image-card';
+      card.dataset.index = index;
+
+      card.innerHTML = `
+        <img src="${imageObj.preview}" alt="${imageObj.fileName}" class="image-card-thumbnail">
+        <div class="image-card-info">
+          <div class="image-card-name">${imageObj.fileName}</div>
+          <div class="image-card-size">${imageObj.fileSize}</div>
+        </div>
+        <button type="button" class="image-card-remove" data-index="${index}">×</button>
+      `;
+
+      // Add remove button handler
+      card.querySelector('.image-card-remove').addEventListener('click', (e) => {
+        const idx = parseInt(e.target.dataset.index);
+        removeImage(idx);
+      });
+
+      imagesContainer.appendChild(card);
+    }
+
+    // Remove Image
+    function removeImage(index) {
+      // Revoke object URL to free memory
+      if (uploadedImages[index].preview) {
+        URL.revokeObjectURL(uploadedImages[index].preview);
+      }
+
+      // Remove from array
+      uploadedImages.splice(index, 1);
+
+      // Rebuild UI (to update indices)
+      rebuildImageCards();
+
+      // Update UI
+      updateImageCount();
+      validateForm();
+      autoSave();
+    }
+
+    // Rebuild All Image Cards (after removal)
+    function rebuildImageCards() {
+      imagesContainer.innerHTML = '';
+      uploadedImages.forEach((imageObj, index) => {
+        addImageCard(imageObj, index);
+      });
+    }
+
+    // Update Image Counter
+    function updateImageCount() {
+      imageCountSpan.textContent = `(${uploadedImages.length}/${MAX_IMAGES})`;
+
+      // Disable Add Image button if max reached
+      if (uploadedImages.length >= MAX_IMAGES) {
+        addImageBtn.disabled = true;
+        addImageBtn.style.opacity = '0.5';
+        addImageBtn.style.cursor = 'not-allowed';
+      } else {
+        addImageBtn.disabled = false;
+        addImageBtn.style.opacity = '1';
+        addImageBtn.style.cursor = 'pointer';
+      }
+    }
+
+    // Form Validation
+    function validateForm() {
+      // Enable Next button if at least 1 image uploaded
+      nextBtn.disabled = uploadedImages.length === 0;
+    }
+
+    // Format File Size
+    function formatFileSize(bytes) {
+      if (bytes === 0) return '0 Bytes';
+      const k = 1024;
+      const sizes = ['Bytes', 'KB', 'MB', 'GB'];
+      const i = Math.floor(Math.log(bytes) / Math.log(k));
+      return Math.round(bytes / Math.pow(k, i) * 100) / 100 + ' ' + sizes[i];
+    }
+
+    // Auto-save
+    function autoSave() {
+      const formData = {
+        session_id: localStorage.getItem('temp_session_id'), // Required for backend to find temp uploads
+        uploaded_images: uploadedImages.map(img => ({
+          path: img.path,
+          fileName: img.fileName,
+          fileSize: img.fileSize
+        }))
+      };
+
+      localStorage.setItem('page6_data', JSON.stringify(formData));
+      console.log('Page 6 data saved:', formData);
+    }
+
+    // Load saved data
+    function loadSavedData() {
+      const saved = localStorage.getItem('page6_data');
+      if (saved) {
+        const data = JSON.parse(saved);
+
+        if (data.uploaded_images && data.uploaded_images.length > 0) {
+          // Note: Cannot restore preview URLs (object URLs are session-specific)
+          // User would need to re-upload images if page is refreshed
+          // For production, consider fetching thumbnails from server
+
+          uploadedImages = data.uploaded_images.map(img => ({
+            ...img,
+            preview: null  // Preview URLs cannot be restored
+          }));
+
+          // Rebuild cards without preview images
+          uploadedImages.forEach((imageObj, index) => {
+            const card = document.createElement('div');
+            card.className = 'image-card';
+            card.dataset.index = index;
+
+            card.innerHTML = `
+              <div class="image-card-thumbnail" style="background: var(--border); display: flex; align-items: center; justify-content: center; color: var(--text-muted);">📷</div>
+              <div class="image-card-info">
+                <div class="image-card-name">${imageObj.fileName}</div>
+                <div class="image-card-size">${imageObj.fileSize}</div>
+              </div>
+              <button type="button" class="image-card-remove" data-index="${index}">×</button>
+            `;
+
+            card.querySelector('.image-card-remove').addEventListener('click', (e) => {
+              const idx = parseInt(e.target.dataset.index);
+              removeImage(idx);
+            });
+
+            imagesContainer.appendChild(card);
+          });
+
+          updateImageCount();
+          validateForm();
+        }
+      }
+    }
+
+    // Navigation
+    document.getElementById('back-btn').addEventListener('click', () => {
+      autoSave();
+      window.location.href = '/incident-form-page5-vehicle.html';
+    });
+
+    nextBtn.addEventListener('click', () => {
+      autoSave();
+      window.location.href = '/incident-form-page7-other-vehicle.html';
+    });
+
+    // Auto-save on image uploads (every 5 seconds)
+    setInterval(() => {
+      if (uploadedImages.length > 0) {
+        autoSave();
+      }
+    }, 5000);
+
+    // Initialize
+    window.addEventListener('DOMContentLoaded', () => {
+      // Create or reuse session ID for temp uploads
+      if (!localStorage.getItem('temp_session_id')) {
+        localStorage.setItem('temp_session_id', crypto.randomUUID());
+      }
+      console.log('Session ID:', localStorage.getItem('temp_session_id'));
+
+      loadSavedData();
+    });
+  </script>
+
+</body>
+</html>

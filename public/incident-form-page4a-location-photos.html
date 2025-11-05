@@ -1,0 +1,686 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Incident Report - Location Photos | Car Crash Lawyer AI</title>
+  <style>
+    :root {
+      /* Brand Colors - Design System */
+      --grad-start: #0E7490;
+      --grad-end: #0c6179;
+      --accent: #0E7490;
+      --accent-hover: #0c6179;
+
+      /* Page Background */
+      --page-bg: #E8DCC4;
+      --bg-light: #E8DCC4;
+
+      /* Text Colors */
+      --text-dark: #1a1a1a;
+      --text-light: #7a7a7a;
+      --text-muted: #6b7280;
+
+      /* Borders & Dividers */
+      --border: #4B5563;
+
+      /* Form Elements */
+      --input-bg: #CFD2D7;
+      --checkbox-bg: #F5F1E8;
+      --container-bg: #F5F1E8;
+      --button-bg: #ffffff;
+      --button-hover: rgba(14, 116, 144, 0.1);
+
+      /* Status Colors */
+      --success: #10b981;
+      --danger: #ef4444;
+      --warning: #f59e0b;
+      --warning-red: #e53e3e;
+      --warning-bg: #fff5f5;
+      --warning-border: #fc8181;
+    }
+
+    * {
+      margin: 0;
+      padding: 0;
+      box-sizing: border-box;
+    }
+
+    html, body {
+      font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, Cantarell, 'Helvetica Neue', Arial, sans-serif;
+      background: var(--page-bg);
+      color: var(--text-dark);
+      min-height: 100%;
+      overflow-x: hidden;
+    }
+
+    /* Top gradient banner - matches signup */
+    .banner {
+      background: linear-gradient(135deg, var(--grad-start) 0%, var(--grad-end) 100%);
+      color: #ffffff;
+      padding: 24px 20px 20px;
+      position: sticky;
+      top: 0;
+      z-index: 200;
+      overflow: hidden;
+      box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+    }
+
+    .brand {
+      max-width: 1040px;
+      margin: 0 auto;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      text-align: center;
+      gap: 12px;
+    }
+
+    .brand .logo {
+      width: 80px;
+      height: 80px;
+      border-radius: 12px;
+    }
+
+    .brand .title-wrap h1 {
+      font-size: 32px;
+      line-height: 1.1;
+      margin: 0;
+      font-weight: 700;
+    }
+
+    .brand .title-wrap p.sub {
+      margin: 4px 0 4px;
+      font-size: 16px;
+      opacity: 0.95;
+    }
+
+    .brand .title-wrap p.tag {
+      margin: 4px 0 0;
+      font-size: 18px;
+      font-weight: 700;
+      letter-spacing: .2px;
+    }
+
+    /* Progress bar - matches signup */
+    .progress-container {
+      background: white;
+      border-bottom: 1px solid #e5e5e5;
+      padding: 12px 20px;
+      position: sticky;
+      top: 0;
+      z-index: 100;
+      box-shadow: 0 1px 3px rgba(0,0,0,0.05);
+    }
+
+    .progress-wrapper {
+      max-width: 840px;
+      margin: 0 auto;
+    }
+
+    .progress-bar {
+      width: 100%;
+      height: 8px;
+      background: #e5e5e5;
+      border-radius: 99px;
+      overflow: hidden;
+      position: relative;
+    }
+
+    .progress-fill {
+      height: 100%;
+      background: linear-gradient(90deg, var(--grad-start), var(--grad-end));
+      border-radius: 99px;
+      transition: width 0.4s cubic-bezier(0.4, 0, 0.2, 1);
+      width: 50%; /* Page 4a of 9 (midway through page 4 sequence) */
+    }
+
+    .progress-label {
+      text-align: center;
+      margin-top: 8px;
+      font-size: 14px;
+      font-weight: 600;
+      color: var(--text-light);
+    }
+
+    /* Main content area */
+    .content-wrapper {
+      max-width: 840px;
+      margin: 0 auto;
+      padding: 0 20px 40px;
+    }
+
+    /* Form Section */
+    .form-section {
+      background: var(--container-bg);
+      border-radius: 12px;
+      padding: 30px;
+      margin: 30px 0;
+      box-shadow: 0 2px 8px rgba(0,0,0,0.08);
+    }
+
+    .section-title {
+      font-size: 22px;
+      font-weight: 700;
+      color: var(--text-dark);
+      margin-bottom: 20px;
+      display: flex;
+      align-items: center;
+      gap: 12px;
+      padding-bottom: 12px;
+      border-bottom: 2px solid #e5e5e5;
+    }
+
+    .section-icon {
+      font-size: 28px;
+    }
+
+    /* Alert boxes */
+    .alert {
+      padding: 14px 16px;
+      border-radius: 8px;
+      display: flex;
+      align-items: flex-start;
+      gap: 12px;
+      margin-bottom: 20px;
+      font-size: 15px;
+      line-height: 1.6;
+    }
+
+    .alert-info {
+      background: #e6f3ff;
+      border: 1px solid #99d3ff;
+      color: #004085;
+    }
+
+    /* Form elements */
+    .form-group {
+      margin-bottom: 24px;
+    }
+
+    .form-label {
+      display: block;
+      font-weight: 600;
+      color: var(--text-dark);
+      margin-bottom: 8px;
+      font-size: 16px;
+    }
+
+    .form-hint {
+      font-size: 14px;
+      color: var(--text-light);
+      margin-bottom: 12px;
+      line-height: 1.5;
+    }
+
+    /* Image upload card */
+    .image-card {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+      padding: 12px;
+      background: var(--input-bg);
+      border: 2px solid var(--border);
+      border-radius: 8px;
+      position: relative;
+    }
+
+    .image-card-thumbnail {
+      width: 80px;
+      height: 80px;
+      object-fit: cover;
+      border-radius: 6px;
+      background: #e5e5e5;
+      flex-shrink: 0;
+    }
+
+    .image-card-info {
+      flex: 1;
+      min-width: 0;
+    }
+
+    .image-card-name {
+      font-weight: 600;
+      color: var(--text-dark);
+      font-size: 15px;
+      margin-bottom: 4px;
+      white-space: nowrap;
+      overflow: hidden;
+      text-overflow: ellipsis;
+    }
+
+    .image-card-size {
+      font-size: 13px;
+      color: var(--text-light);
+    }
+
+    .image-card-remove {
+      position: absolute;
+      top: 8px;
+      right: 8px;
+      width: 28px;
+      height: 28px;
+      border-radius: 50%;
+      border: 2px solid var(--warning-red);
+      background: white;
+      color: var(--warning-red);
+      font-size: 20px;
+      font-weight: 700;
+      cursor: pointer;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      line-height: 1;
+      transition: all 0.2s;
+      padding: 0;
+    }
+
+    .image-card-remove:hover {
+      background: var(--warning-red);
+      color: white;
+    }
+
+    /* Navigation buttons */
+    .nav-buttons {
+      display: flex;
+      gap: 12px;
+      margin-top: 30px;
+      padding-top: 24px;
+      border-top: 2px solid #e5e5e5;
+    }
+
+    .btn {
+      padding: 14px 28px;
+      border: none;
+      border-radius: 8px;
+      font-size: 16px;
+      font-weight: 600;
+      cursor: pointer;
+      transition: all 0.2s;
+      flex: 1;
+      font-family: inherit;
+    }
+
+    .btn-secondary {
+      background: var(--button-bg);
+      color: var(--grad-start);
+      border: 2px solid var(--grad-start);
+    }
+
+    .btn-secondary:hover {
+      background: var(--button-hover);
+    }
+
+    .btn-primary {
+      background: var(--grad-start);
+      color: white;
+      box-shadow: 0 4px 12px rgba(14, 116, 144, 0.3);
+    }
+
+    .btn-primary:hover:not(:disabled) {
+      transform: translateY(-2px);
+      box-shadow: 0 6px 16px rgba(14, 116, 144, 0.4);
+      background: var(--grad-end);
+    }
+
+    .btn-primary:disabled {
+      opacity: 0.5;
+      cursor: not-allowed;
+      transform: none;
+    }
+
+    /* Responsive */
+    @media (max-width: 640px) {
+      .brand .logo {
+        width: 56px;
+        height: 56px;
+      }
+
+      .brand .title-wrap h1 {
+        font-size: 24px;
+      }
+
+      .brand .title-wrap p.tag {
+        font-size: 15px;
+      }
+
+      .form-section {
+        padding: 20px;
+      }
+    }
+  </style>
+</head>
+<body>
+
+  <!-- Top Banner - matches signup -->
+  <div class="banner">
+    <div class="brand">
+      <img src="/images/logo.png" alt="Car Crash Lawyer AI Logo" class="logo">
+      <div class="title-wrap">
+        <h1>Car Crash Lawyer AI</h1>
+        <p class="sub">Your Legal First Responder</p>
+        <p class="tag">The Only App EVERY Motorist SHOULD Have!</p>
+      </div>
+    </div>
+  </div>
+
+  <!-- Progress Bar -->
+  <div class="progress-container">
+    <div class="progress-wrapper">
+      <div class="progress-bar">
+        <div class="progress-fill"></div>
+      </div>
+      <div class="progress-label">Page 4a of 9 — Location Photos</div>
+    </div>
+  </div>
+
+  <!-- Main Content -->
+  <div class="content-wrapper">
+
+    <!-- Location Photos Section -->
+    <div class="form-section">
+      <div class="section-title">
+        <span class="section-icon">📍</span>
+        <span>Location Photos</span>
+      </div>
+
+      <div style="text-align: center; margin: 20px 0;">
+        <img src="/images/Camera.png" alt="Camera" style="width: 400px; height: 400px; object-fit: contain; max-width: 100%;">
+      </div>
+
+      <div class="alert alert-info">
+        <span>ℹ️</span>
+        <span>Upload photos of the accident location, road layout, signage, or any relevant visual context. Maximum 3 images.</span>
+      </div>
+
+      <div class="form-group">
+        <label class="form-label">
+          Upload location photos (optional)
+        </label>
+        <p class="form-hint">Add up to 3 images showing the location, road conditions, or relevant scene details.</p>
+
+        <!-- Hidden file input -->
+        <input type="file" id="scene-image-input" accept="image/jpeg,image/jpg,image/png,image/heic,image/heif,image/webp" style="display: none;">
+
+        <!-- Images Container -->
+        <div id="scene-images-container" style="display: flex; flex-direction: column; gap: 12px; margin-bottom: 16px;">
+          <!-- Uploaded images will appear here -->
+        </div>
+
+        <!-- Add Image Button -->
+        <button type="button" id="add-scene-image-btn" class="btn btn-secondary" style="width: 100%;">
+          <span>📷</span>
+          <span>Add Location Photo</span>
+          <span id="scene-image-count">(0/3)</span>
+        </button>
+      </div>
+    </div>
+
+    <!-- Navigation Buttons -->
+    <div class="nav-buttons">
+      <button type="button" class="btn btn-secondary" id="backBtn">
+        ← Back
+      </button>
+      <button type="button" class="btn btn-primary" id="nextBtn">
+        Continue to Vehicle Details →
+      </button>
+    </div>
+
+  </div>
+
+  <script>
+    // ============================================================================
+    // SCENE IMAGE UPLOAD FUNCTIONALITY
+    // ============================================================================
+
+    // Scene Image Upload Elements
+    const sceneImageInput = document.getElementById('scene-image-input');
+    const addSceneImageBtn = document.getElementById('add-scene-image-btn');
+    const sceneImagesContainer = document.getElementById('scene-images-container');
+    const sceneImageCountSpan = document.getElementById('scene-image-count');
+    let uploadedSceneImages = [];
+    const MAX_SCENE_IMAGES = 3;
+
+    // Navigation buttons
+    const backBtn = document.getElementById('backBtn');
+    const nextBtn = document.getElementById('nextBtn');
+
+    // Load saved data from localStorage
+    function loadSavedData() {
+      const saved = localStorage.getItem('page4a_data');
+      if (saved) {
+        try {
+          const data = JSON.parse(saved);
+
+          // Restore scene images (without preview - show filename/size only)
+          if (data.scene_images && Array.isArray(data.scene_images)) {
+            uploadedSceneImages = data.scene_images;
+
+            // Rebuild image cards (without preview images - just show file info)
+            sceneImagesContainer.innerHTML = '';
+            uploadedSceneImages.forEach((imageObj, index) => {
+              const card = document.createElement('div');
+              card.className = 'image-card';
+              card.dataset.index = index;
+
+              card.innerHTML = `
+                <div class="image-card-thumbnail" style="background: var(--input-bg); display: flex; align-items: center; justify-content: center; color: var(--text-muted); font-size: 2rem;">
+                  📷
+                </div>
+                <div class="image-card-info">
+                  <div class="image-card-name">${imageObj.fileName}</div>
+                  <div class="image-card-size">${imageObj.fileSize}</div>
+                </div>
+                <button type="button" class="image-card-remove" data-index="${index}">×</button>
+              `;
+
+              card.querySelector('.image-card-remove').addEventListener('click', (e) => {
+                const idx = parseInt(e.target.dataset.index);
+                removeSceneImage(idx);
+              });
+
+              sceneImagesContainer.appendChild(card);
+            });
+
+            updateSceneImageCount();
+          }
+
+        } catch (e) {
+          console.error('Error loading saved data:', e);
+        }
+      }
+    }
+
+    // Save data to localStorage
+    function saveData() {
+      const page4aData = {
+        scene_images: uploadedSceneImages.map(img => ({
+          path: img.path,
+          fileName: img.fileName,
+          fileSize: img.fileSize
+        })),
+        page_completed: new Date().toISOString()
+      };
+
+      localStorage.setItem('page4a_data', JSON.stringify(page4aData));
+      console.log('✅ Page 4a data saved:', page4aData);
+    }
+
+    // Add Scene Image Button Click Handler
+    addSceneImageBtn.addEventListener('click', () => {
+      if (uploadedSceneImages.length < MAX_SCENE_IMAGES) {
+        sceneImageInput.click();
+      }
+    });
+
+    // Scene Image Input Change Handler
+    sceneImageInput.addEventListener('change', async (e) => {
+      const file = e.target.files[0];
+      if (!file) return;
+
+      // Check image limit
+      if (uploadedSceneImages.length >= MAX_SCENE_IMAGES) {
+        alert('Maximum 3 images allowed');
+        return;
+      }
+
+      // Upload to server immediately (mobile-friendly)
+      try {
+        const formData = new FormData();
+        formData.append('file', file);
+        formData.append('field_name', 'scene_photo');  // Required by backend
+        formData.append('temp_session_id', localStorage.getItem('temp_session_id') || crypto.randomUUID());
+
+        const response = await fetch('/api/images/temp-upload', {
+          method: 'POST',
+          body: formData,
+          credentials: 'include'
+        });
+
+        const data = await response.json();
+
+        if (response.ok) {
+          // Create image object
+          const imageObj = {
+            path: data.path,
+            fileName: file.name,
+            fileSize: formatFileSize(file.size),
+            preview: URL.createObjectURL(file)
+          };
+
+          uploadedSceneImages.push(imageObj);
+          console.log(`✅ Scene image uploaded:`, data.path);
+
+          // Add image card to UI
+          addSceneImageCard(imageObj, uploadedSceneImages.length - 1);
+
+          // Update UI
+          updateSceneImageCount();
+          saveData();
+
+        } else {
+          throw new Error(data.error || 'Upload failed');
+        }
+
+      } catch (error) {
+        console.error('Scene image upload error:', error);
+
+        // Provide more helpful error message
+        let errorMessage = 'Failed to upload location photo. ';
+        if (!navigator.onLine) {
+          errorMessage += 'Please check your internet connection.';
+        } else if (error.message.includes('Failed to fetch')) {
+          errorMessage += 'Network error. Please check your connection and try again.';
+        } else if (error.message.includes('413')) {
+          errorMessage += 'Image file is too large. Please use a smaller image.';
+        } else {
+          errorMessage += 'Please try again or contact support if the problem persists.';
+        }
+
+        alert(errorMessage);
+      }
+
+      // Reset input for next selection
+      sceneImageInput.value = '';
+    });
+
+    // Add Scene Image Card to UI
+    function addSceneImageCard(imageObj, index) {
+      const card = document.createElement('div');
+      card.className = 'image-card';
+      card.dataset.index = index;
+
+      card.innerHTML = `
+        <img src="${imageObj.preview}" alt="${imageObj.fileName}" class="image-card-thumbnail">
+        <div class="image-card-info">
+          <div class="image-card-name">${imageObj.fileName}</div>
+          <div class="image-card-size">${imageObj.fileSize}</div>
+        </div>
+        <button type="button" class="image-card-remove" data-index="${index}">×</button>
+      `;
+
+      // Add remove button handler
+      card.querySelector('.image-card-remove').addEventListener('click', (e) => {
+        const idx = parseInt(e.target.dataset.index);
+        removeSceneImage(idx);
+      });
+
+      sceneImagesContainer.appendChild(card);
+    }
+
+    // Remove Scene Image
+    function removeSceneImage(index) {
+      // Revoke object URL to free memory
+      if (uploadedSceneImages[index].preview) {
+        URL.revokeObjectURL(uploadedSceneImages[index].preview);
+      }
+
+      // Remove from array
+      uploadedSceneImages.splice(index, 1);
+
+      // Rebuild UI (to update indices)
+      rebuildSceneImageCards();
+
+      // Update UI
+      updateSceneImageCount();
+      saveData();
+    }
+
+    // Rebuild All Scene Image Cards (after removal)
+    function rebuildSceneImageCards() {
+      sceneImagesContainer.innerHTML = '';
+      uploadedSceneImages.forEach((imageObj, index) => {
+        addSceneImageCard(imageObj, index);
+      });
+    }
+
+    // Update Scene Image Counter
+    function updateSceneImageCount() {
+      sceneImageCountSpan.textContent = `(${uploadedSceneImages.length}/${MAX_SCENE_IMAGES})`;
+
+      // Disable Add Image button if max reached
+      if (uploadedSceneImages.length >= MAX_SCENE_IMAGES) {
+        addSceneImageBtn.disabled = true;
+        addSceneImageBtn.style.opacity = '0.5';
+        addSceneImageBtn.style.cursor = 'not-allowed';
+      } else {
+        addSceneImageBtn.disabled = false;
+        addSceneImageBtn.style.opacity = '1';
+        addSceneImageBtn.style.cursor = 'pointer';
+      }
+    }
+
+    // Format File Size
+    function formatFileSize(bytes) {
+      if (bytes === 0) return '0 Bytes';
+      const k = 1024;
+      const sizes = ['Bytes', 'KB', 'MB', 'GB'];
+      const i = Math.floor(Math.log(bytes) / Math.log(k));
+      return Math.round(bytes / Math.pow(k, i) * 100) / 100 + ' ' + sizes[i];
+    }
+
+    // ============================================================================
+    // END SCENE IMAGE UPLOAD FUNCTIONALITY
+    // ============================================================================
+
+    // Navigation
+    backBtn.addEventListener('click', function() {
+      saveData();
+      window.location.href = '/incident-form-page4.html';
+    });
+
+    nextBtn.addEventListener('click', function() {
+      saveData();
+      window.location.href = '/incident-form-page5-vehicle.html';
+    });
+
+    // Load saved data on page load
+    window.addEventListener('DOMContentLoaded', function() {
+      loadSavedData();
+      updateSceneImageCount();
+      console.log('Page 4a loaded');
+    });
+  </script>
+
+</body>
+</html>

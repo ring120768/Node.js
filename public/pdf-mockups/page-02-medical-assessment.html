@@ -1,0 +1,203 @@
+<!DOCTYPE html>
+<html lang="en-GB">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Page 2: Medical Assessment - PDF Mockup</title>
+  <link rel="stylesheet" href="pdf-styles.css">
+</head>
+<body>
+  <!-- Navigation (hidden in print) -->
+  <div class="navigation no-print">
+    <h2>PDF Mockup Preview</h2>
+    <a href="index.html">← All Pages</a>
+    <a href="page-01-incident-overview.html">Page 1</a>
+    <a href="page-02-medical-assessment.html" class="current">Page 2</a>
+    <a href="page-03-vehicle-damage.html">Page 3</a>
+    <a href="page-04-weather-road-conditions.html">Page 4</a>
+    <a href="page-05-road-type-traffic.html">Page 5</a>
+    <a href="page-06-visibility.html">Page 6</a>
+  </div>
+
+  <!-- PDF Page -->
+  <div class="pdf-page">
+    <!-- Header -->
+    <div class="pdf-header">
+      <img src="../images/logo.png" alt="Logo" class="header-logo">
+      <div class="header-title">
+        <h1>CAR CRASH LAWYER AI</h1>
+        <p>Incident Report</p>
+      </div>
+      <div class="header-page-number">Page 2 of 17</div>
+    </div>
+
+    <!-- Content -->
+    <div class="pdf-content">
+      <!-- Section 1: Medical Attention -->
+      <section class="section">
+        <h2 class="section-title">Medical Attention</h2>
+
+        <div class="field-group">
+          <label class="field-label required">Did you need medical attention?</label>
+          <div class="radio-group">
+            <div class="radio-item">
+              <div class="radio-circle"></div>
+              <span class="radio-label">Yes</span>
+            </div>
+            <div class="radio-item">
+              <div class="radio-circle"></div>
+              <span class="radio-label">No</span>
+            </div>
+          </div>
+          <span class="field-help">medical_attention_needed</span>
+        </div>
+
+        <div class="field-group">
+          <label class="field-label required">Was an ambulance called?</label>
+          <div class="radio-group">
+            <div class="radio-item">
+              <div class="radio-circle"></div>
+              <span class="radio-label">Yes</span>
+            </div>
+            <div class="radio-item">
+              <div class="radio-circle"></div>
+              <span class="radio-label">No</span>
+            </div>
+            <div class="radio-item">
+              <div class="radio-circle"></div>
+              <span class="radio-label">N/A</span>
+            </div>
+          </div>
+          <span class="field-help">medical_ambulance_called</span>
+        </div>
+
+        <div class="field-group">
+          <label class="field-label">Hospital Name (if attended)</label>
+          <input type="text" class="field-input" placeholder="e.g. Royal London Hospital" value="">
+          <span class="field-help">medical_hospital_name</span>
+        </div>
+
+        <div class="field-group">
+          <label class="field-label required">Injury Severity</label>
+          <div class="radio-group vertical">
+            <div class="radio-item">
+              <div class="radio-circle"></div>
+              <span class="radio-label">None</span>
+            </div>
+            <div class="radio-item">
+              <div class="radio-circle"></div>
+              <span class="radio-label">Minor (cuts, bruises)</span>
+            </div>
+            <div class="radio-item">
+              <div class="radio-circle"></div>
+              <span class="radio-label">Moderate (sprains, deeper cuts)</span>
+            </div>
+            <div class="radio-item">
+              <div class="radio-circle"></div>
+              <span class="radio-label">Severe (fractures, significant injuries)</span>
+            </div>
+            <div class="radio-item">
+              <div class="radio-circle"></div>
+              <span class="radio-label">Life-threatening</span>
+            </div>
+          </div>
+          <span class="field-help">medical_injury_severity</span>
+        </div>
+      </section>
+
+      <!-- Section 2: Medical Symptoms -->
+      <section class="section">
+        <h2 class="section-title">Medical Symptoms (Select All That Apply)</h2>
+
+        <div class="checkbox-group">
+          <div class="checkbox-item">
+            <div class="checkbox-box"></div>
+            <span class="checkbox-label">No symptoms</span>
+          </div>
+          <div class="checkbox-item">
+            <div class="checkbox-box"></div>
+            <span class="checkbox-label">Severe headache</span>
+          </div>
+          <div class="checkbox-item">
+            <div class="checkbox-box"></div>
+            <span class="checkbox-label">Dizziness</span>
+          </div>
+          <div class="checkbox-item">
+            <div class="checkbox-box"></div>
+            <span class="checkbox-label">Loss of consciousness</span>
+          </div>
+          <div class="checkbox-item">
+            <div class="checkbox-box"></div>
+            <span class="checkbox-label">Chest pain</span>
+          </div>
+          <div class="checkbox-item">
+            <div class="checkbox-box"></div>
+            <span class="checkbox-label">Breathlessness</span>
+          </div>
+          <div class="checkbox-item">
+            <div class="checkbox-box"></div>
+            <span class="checkbox-label">Abdominal pain</span>
+          </div>
+          <div class="checkbox-item">
+            <div class="checkbox-box"></div>
+            <span class="checkbox-label">Abdominal bruising</span>
+          </div>
+          <div class="checkbox-item">
+            <div class="checkbox-box"></div>
+            <span class="checkbox-label">Limb pain/mobility issues</span>
+          </div>
+          <div class="checkbox-item">
+            <div class="checkbox-box"></div>
+            <span class="checkbox-label">Limb weakness</span>
+          </div>
+          <div class="checkbox-item">
+            <div class="checkbox-box"></div>
+            <span class="checkbox-label">Change in vision</span>
+          </div>
+          <div class="checkbox-item">
+            <div class="checkbox-box"></div>
+            <span class="checkbox-label">Uncontrolled bleeding</span>
+          </div>
+          <div class="checkbox-item">
+            <div class="checkbox-box"></div>
+            <span class="checkbox-label">Life-threatening symptoms</span>
+          </div>
+        </div>
+        <span class="field-help">medical_symptom_* (14 checkboxes stored as array)</span>
+      </section>
+
+      <!-- Section 3: Injury Details -->
+      <section class="section">
+        <h2 class="section-title">Injury & Treatment Details</h2>
+
+        <div class="field-group">
+          <label class="field-label">Description of Injuries</label>
+          <textarea class="field-textarea" placeholder="Describe any injuries sustained"></textarea>
+          <span class="field-help">medical_injury_details</span>
+        </div>
+
+        <div class="field-group">
+          <label class="field-label">Treatment Received</label>
+          <textarea class="field-textarea small" placeholder="Describe treatment provided"></textarea>
+          <span class="field-help">medical_treatment_received</span>
+        </div>
+
+        <div class="field-group">
+          <label class="field-label">Overall Feeling After Incident</label>
+          <textarea class="field-textarea small" placeholder="How are you feeling now?"></textarea>
+          <span class="field-help">final_feeling</span>
+        </div>
+      </section>
+    </div>
+
+    <!-- Footer -->
+    <div class="pdf-footer">
+      <p class="footer-text">
+        Confidential Legal Document - Car Crash Lawyer AI<br>
+        For legal purposes only. Do not distribute without authorization.
+      </p>
+      <img src="../images/car-crash-lawyer-ai-450.webp" alt="Car Crash Lawyer AI" class="footer-logo">
+    </div>
+  </div>
+</body>
+</html>

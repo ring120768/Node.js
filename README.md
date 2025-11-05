@@ -14,6 +14,7 @@ Car Crash Lawyer AI is a comprehensive Node.js web application that helps UK car
 
 ### Key Features
 
+- **Server-Side Security** - Page authentication middleware protects sensitive content
 - **Automated Data Collection** - Typeform integration with webhook processing
 - **Audio Transcription** - OpenAI Whisper API for personal statements
 - **AI Analysis** - Automated accident summary generation
@@ -99,6 +100,32 @@ npm test
 ```
 
 Server will be available at: `http://localhost:5000`
+
+---
+
+## 🔒 Security Architecture
+
+### Page Authentication (Security Wall)
+
+The application implements server-side authentication for protected pages:
+
+**Protected Pages:**
+- `/dashboard.html` - User dashboard with personal data
+- `/transcription-status.html` - Audio transcription status
+- `/incident.html` - Incident report details
+
+**How it works:**
+1. Middleware (`src/middleware/pageAuth.js`) intercepts requests
+2. Extracts session token from cookies (sb-access-token)
+3. Verifies token with Supabase Auth API
+4. Returns 401 if invalid/missing, serves file if valid
+
+**Testing:**
+```bash
+node test-security-wall.js
+```
+
+See [CLAUDE.md](CLAUDE.md#page-protection-pattern) for implementation details.
 
 ---
 
@@ -454,7 +481,7 @@ For technical support or questions:
 
 ---
 
-**Last Updated:** 2025-10-18
+**Last Updated:** 2025-10-28
 **Version:** 2.1.0
 
 Made with ❤️ for UK accident victims
