@@ -1,0 +1,210 @@
+Field_Number,Category,Field_Name_HTML,Supabase_Table,Supabase_Column,Data_Type,Field_Type,Required,Notes
+1,System,create_user_id,user_signup,create_user_id,UUID,Hidden,Yes,Primary key - from auth_user_id or token
+2,System,form_id,user_signup,form_id,TEXT,Hidden,Yes,Typeform form ID (b03aFxEO or WvM2ejru)
+3,System,product_id,user_signup,product_id,TEXT,Hidden,No,Product identifier (car_crash_lawyer_ai)
+4,System,auth_code,user_signup,auth_code,TEXT,Hidden,No,Server-minted nonce for security
+5,Personal,name,user_signup,name,TEXT,Text Input,Yes,First name
+6,Personal,surname,user_signup,surname,TEXT,Text Input,Yes,Last name
+7,Personal,email,user_signup,email,TEXT,Email Input,Yes,Email address (normalized to lowercase)
+8,Personal,mobile,user_signup,mobile,TEXT,Phone Input,Yes,Mobile phone number
+9,Address,street_address,user_signup,street_address,TEXT,Text Input,Yes,Street address line 1
+10,Address,street_address_optional,user_signup,street_address_optional,TEXT,Text Input,No,Street address line 2
+11,Address,town,user_signup,town,TEXT,Text Input,Yes,City/Town
+12,Address,postcode,user_signup,postcode,TEXT,Text Input,Yes,UK postcode
+13,Address,country,user_signup,country,TEXT,Text Input,Yes,Country
+14,Vehicle,driving_license_number,user_signup,driving_license_number,TEXT,Text Input,Yes,UK driving license number
+15,Vehicle,car_registration_number,user_signup,car_registration_number,TEXT,Text Input,Yes,Vehicle registration/license plate
+16,Vehicle,vehicle_make,user_signup,vehicle_make,TEXT,Text Input,Yes,Vehicle manufacturer
+17,Vehicle,vehicle_model,user_signup,vehicle_model,TEXT,Text Input,Yes,Vehicle model
+18,Vehicle,vehicle_colour,user_signup,vehicle_colour,TEXT,Text Input,Yes,Vehicle color
+19,Vehicle,vehicle_condition,user_signup,vehicle_condition,TEXT,Textarea,No,Vehicle condition description
+20,Emergency,emergency_contact,user_signup,emergency_contact,TEXT,Composite,Yes,"Pipe-delimited: Name | Phone | Email | Company"
+21,Recovery,recovery_company,user_signup,recovery_company,TEXT,Text Input,No,Recovery company name
+22,Recovery,recovery_breakdown_number,user_signup,recovery_breakdown_number,TEXT,Phone Input,No,Recovery phone number
+23,Recovery,recovery_breakdown_email,user_signup,recovery_breakdown_email,TEXT,Email Input,No,Recovery email (normalized to lowercase)
+24,Insurance,insurance_company,user_signup,insurance_company,TEXT,Text Input,Yes,Insurance company name
+25,Insurance,policy_number,user_signup,policy_number,TEXT,Text Input,Yes,Insurance policy number
+26,Insurance,policy_holder,user_signup,policy_holder,TEXT,Text Input,Yes,Policy holder name
+27,Insurance,cover_type,user_signup,cover_type,TEXT,Text Input,Yes,Coverage type
+28,Compliance,gdpr_consent,user_signup,gdpr_consent,BOOLEAN,Checkbox,Yes,GDPR consent checkbox
+29,System,sign_up_date,user_signup,created_at,TIMESTAMP,Auto,Yes,Account creation timestamp
+30,Image,driving_license_picture,user_signup,driving_license_picture,TEXT,File Upload,No,Driving license photo URL
+31,Image,vehicle_picture_front,user_signup,vehicle_picture_front,TEXT,File Upload,No,Front vehicle photo URL
+32,Image,vehicle_picture_driver_side,user_signup,vehicle_picture_driver_side,TEXT,File Upload,No,Driver side photo URL
+33,Image,vehicle_picture_passenger_side,user_signup,vehicle_picture_passenger_side,TEXT,File Upload,No,Passenger side photo URL
+34,Image,vehicle_picture_back,user_signup,vehicle_picture_back,TEXT,File Upload,No,Back vehicle photo URL
+35,Medical,medical_how_are_you_feeling,incident_reports,medical_how_are_you_feeling,TEXT,Textarea,No,Self-assessment of condition
+36,Medical,medical_attention,incident_reports,medical_attention,TEXT,Radio,No,Received medical care?
+37,Medical,medical_attention_from_who,incident_reports,medical_attention_from_who,TEXT,Text Input,No,Medical provider details
+38,Medical,further_medical_attention,incident_reports,further_medical_attention,TEXT,Radio,No,Need additional care?
+39,Safety,are_you_safe,incident_reports,are_you_safe,TEXT,Radio,No,Current safety status
+40,Safety,six_point_safety_check,incident_reports,six_point_safety_check,TEXT,Radio,No,Completed safety checklist?
+41,Medical Symptom,medical_chest_pain,incident_reports,medical_chest_pain,BOOLEAN,Checkbox,No,Chest pain present
+42,Medical Symptom,medical_breathlessness,incident_reports,medical_breathlessness,BOOLEAN,Checkbox,No,Breathing difficulty
+43,Medical Symptom,medical_abdominal_bruising,incident_reports,medical_abdominal_bruising,BOOLEAN,Checkbox,No,Abdominal bruising
+44,Medical Symptom,medical_uncontrolled_bleeding,incident_reports,medical_uncontrolled_bleeding,BOOLEAN,Checkbox,No,Uncontrolled bleeding
+45,Medical Symptom,medical_severe_headache,incident_reports,medical_severe_headache,BOOLEAN,Checkbox,No,Severe headache
+46,Medical Symptom,medical_change_in_vision,incident_reports,medical_change_in_vision,BOOLEAN,Checkbox,No,Vision changes
+47,Medical Symptom,medical_abdominal_pain,incident_reports,medical_abdominal_pain,BOOLEAN,Checkbox,No,Abdominal pain
+48,Medical Symptom,medical_limb_pain,incident_reports,medical_limb_pain,BOOLEAN,Checkbox,No,Limb pain
+49,Medical Symptom,medical_limb_weakness,incident_reports,medical_limb_weakness,BOOLEAN,Checkbox,No,Limb weakness
+50,Medical Symptom,medical_loss_of_consciousness,incident_reports,medical_loss_of_consciousness,BOOLEAN,Checkbox,No,Loss of consciousness
+51,Medical Symptom,medical_none_of_these,incident_reports,medical_none_of_these,BOOLEAN,Checkbox,No,No symptoms
+52,Accident,when_did_the_accident_happen,incident_reports,when_did_the_accident_happen,DATE,Date Input,Yes,Accident date
+53,Accident,what_time_did_the_accident_happen,incident_reports,what_time_did_the_accident_happen,TIME,Time Input,Yes,Accident time
+54,Accident,where_exactly_did_this_happen,incident_reports,where_exactly_did_this_happen,TEXT,Textarea,Yes,Accident location description
+55,Weather,weather_conditions,incident_reports,weather_conditions,TEXT,Textarea,No,General weather description
+56,Weather,weather_overcast,incident_reports,weather_overcast,BOOLEAN,Checkbox,No,Overcast conditions
+57,Weather,weather_street_lights,incident_reports,weather_street_lights,BOOLEAN,Checkbox,No,Street lights on
+58,Weather,weather_heavy_rain,incident_reports,weather_heavy_rain,BOOLEAN,Checkbox,No,Heavy rain
+59,Weather,weather_wet_road,incident_reports,weather_wet_road,BOOLEAN,Checkbox,No,Wet road surface
+60,Weather,weather_fog,incident_reports,weather_fog,BOOLEAN,Checkbox,No,Foggy conditions
+61,Weather,weather_snow_on_road,incident_reports,weather_snow_on_road,BOOLEAN,Checkbox,No,Snow on road
+62,Weather,weather_bright_daylight,incident_reports,weather_bright_daylight,BOOLEAN,Checkbox,No,Bright daylight
+63,Weather,weather_light_rain,incident_reports,weather_light_rain,BOOLEAN,Checkbox,No,Light rain
+64,Weather,weather_clear_and_dry,incident_reports,weather_clear_and_dry,BOOLEAN,Checkbox,No,Clear and dry
+65,Weather,weather_dusk,incident_reports,weather_dusk,BOOLEAN,Checkbox,No,Dusk/twilight
+66,Weather,weather_snow,incident_reports,weather_snow,BOOLEAN,Checkbox,No,Snowing
+67,Safety Equipment,wearing_seatbelts,incident_reports,wearing_seatbelts,TEXT,Radio,No,Seatbelt worn?
+68,Safety Equipment,reason_no_seatbelts,incident_reports,reason_no_seatbelts,TEXT,Text Input,No,Reason not worn
+69,Safety Equipment,airbags_deployed,incident_reports,airbags_deployed,TEXT,Radio,No,Airbags deployed?
+70,Vehicle Damage,damage_to_your_vehicle,incident_reports,damage_to_your_vehicle,TEXT,Textarea,No,Damage description
+71,Road,road_type,incident_reports,road_type,TEXT,Select,No,Type of road
+72,Road,speed_limit,incident_reports,speed_limit,TEXT,Select,No,Posted speed limit
+73,Road,junction_information,incident_reports,junction_information,TEXT,Textarea,No,Junction description
+74,Road,junction_information_roundabout,incident_reports,junction_information_roundabout,BOOLEAN,Checkbox,No,Roundabout present
+75,Road,junction_information_t_junction,incident_reports,junction_information_t_junction,BOOLEAN,Checkbox,No,T-junction
+76,Road,junction_information_traffic_lights,incident_reports,junction_information_traffic_lights,BOOLEAN,Checkbox,No,Traffic lights
+77,Road,junction_information_crossroads,incident_reports,junction_information_crossroads,BOOLEAN,Checkbox,No,Crossroads
+78,Special Condition,special_conditions,incident_reports,special_conditions,TEXT,Textarea,No,Special conditions description
+79,Special Condition,special_conditions_animals,incident_reports,special_conditions_animals,BOOLEAN,Checkbox,No,Animals present
+80,Special Condition,special_conditions_roadworks,incident_reports,special_conditions_roadworks,BOOLEAN,Checkbox,No,Roadworks
+81,Special Condition,special_conditions_defective_road,incident_reports,special_conditions_defective_road,BOOLEAN,Checkbox,No,Defective road
+82,Special Condition,special_conditions_oil_spills,incident_reports,special_conditions_oil_spills,BOOLEAN,Checkbox,No,Oil spills
+83,Special Condition,special_conditions_workman,incident_reports,special_conditions_workman,BOOLEAN,Checkbox,No,Workers present
+84,Description,detailed_account_of_what_happened,incident_reports,detailed_account_of_what_happened,TEXT,Textarea,Yes,Full accident narrative
+85,Your Vehicle,make_of_car,incident_reports,make_of_car,TEXT,Text Input,Yes,Your vehicle make
+86,Your Vehicle,model_of_car,incident_reports,model_of_car,TEXT,Text Input,Yes,Your vehicle model
+87,Your Vehicle,license_plate_number,incident_reports,license_plate_number,TEXT,Text Input,Yes,Your registration number
+88,Your Vehicle,direction_and_speed,incident_reports,direction_and_speed,TEXT,Textarea,No,Travel direction and speed
+89,Your Vehicle,impact,incident_reports,impact,TEXT,Textarea,No,Impact description
+90,Your Vehicle,damage_caused_by_accident,incident_reports,damage_caused_by_accident,TEXT,Textarea,No,New damage from accident
+91,Your Vehicle,any_damage_prior,incident_reports,any_damage_prior,TEXT,Textarea,No,Pre-existing damage
+92,Other Driver,other_drivers_name,incident_reports,other_drivers_name,TEXT,Text Input,No,Other party name
+93,Other Driver,other_drivers_number,incident_reports,other_drivers_number,TEXT,Phone Input,No,Other party phone
+94,Other Driver,other_drivers_address,incident_reports,other_drivers_address,TEXT,Textarea,No,Other party address
+95,Other Driver,other_make_of_vehicle,incident_reports,other_make_of_vehicle,TEXT,Text Input,No,Other vehicle make
+96,Other Driver,other_model_of_vehicle,incident_reports,other_model_of_vehicle,TEXT,Text Input,No,Other vehicle model
+97,Other Driver,vehicle_license_plate,incident_reports,vehicle_license_plate,TEXT,Text Input,No,Other registration number
+98,Other Driver,other_policy_number,incident_reports,other_policy_number,TEXT,Text Input,No,Other insurance policy
+99,Other Driver,other_insurance_company,incident_reports,other_insurance_company,TEXT,Text Input,No,Other insurer
+100,Other Driver,other_policy_cover,incident_reports,other_policy_cover,TEXT,Text Input,No,Other coverage type
+101,Other Driver,other_policy_holder,incident_reports,other_policy_holder,TEXT,Text Input,No,Other policy owner
+102,Other Driver,other_damage_accident,incident_reports,other_damage_accident,TEXT,Textarea,No,Other vehicle damage
+103,Other Driver,other_damage_prior,incident_reports,other_damage_prior,TEXT,Textarea,No,Other pre-existing damage
+104,Police,did_police_attend,incident_reports,did_police_attend,TEXT,Radio,No,Police attended scene?
+105,Police,accident_reference_number,incident_reports,accident_reference_number,TEXT,Text Input,No,Police reference number
+106,Police,police_officer_badge_number,incident_reports,police_officer_badge_number,TEXT,Text Input,No,Officer badge/collar number
+107,Police,police_officers_name,incident_reports,police_officers_name,TEXT,Text Input,No,Officer name
+108,Police,police_force_details,incident_reports,police_force_details,TEXT,Text Input,No,Police force name
+109,Police,breath_test,incident_reports,breath_test,TEXT,Radio,No,Your breath test result
+110,Police,other_breath_test,incident_reports,other_breath_test,TEXT,Radio,No,Other driver breath test
+111,Witness,any_witness,incident_reports,any_witness,TEXT,Radio,No,Witnesses present?
+112,Witness,witness_contact_information,incident_reports,witness_contact_information,TEXT,Textarea,No,Witness contact details
+113,Additional,anything_else,incident_reports,anything_else,TEXT,Textarea,No,Additional notes
+114,Additional,call_recovery,incident_reports,call_recovery,TEXT,Radio,No,Recovery service needed?
+115,Additional,upgrade_to_premium,incident_reports,upgrade_to_premium,TEXT,Radio,No,Premium upgrade?
+116,Image,file_url_documents,incident_reports,file_url_documents,TEXT,File Upload,No,General document upload
+117,Image,file_url_documents_1,incident_reports,file_url_documents_1,TEXT,File Upload,No,Additional document
+118,Image,file_url_record_detailed_account_of_what_happened,incident_reports,file_url_record_detailed_account_of_what_happened,TEXT,File Upload,No,Audio/video recording URL
+119,Image,file_url_what3words,incident_reports,file_url_what3words,TEXT,File Upload,No,What3words location image
+120,Image,file_url_scene_overview,incident_reports,file_url_scene_overview,TEXT,File Upload,No,Scene photo 1
+121,Image,file_url_scene_overview_1,incident_reports,file_url_scene_overview_1,TEXT,File Upload,No,Scene photo 2
+122,Image,file_url_other_vehicle,incident_reports,file_url_other_vehicle,TEXT,File Upload,No,Other vehicle photo 1
+123,Image,file_url_other_vehicle_1,incident_reports,file_url_other_vehicle_1,TEXT,File Upload,No,Other vehicle photo 2
+124,Image,file_url_vehicle_damage,incident_reports,file_url_vehicle_damage,TEXT,File Upload,No,Your damage photo 1
+125,Image,file_url_vehicle_damage_1,incident_reports,file_url_vehicle_damage_1,TEXT,File Upload,No,Your damage photo 2
+126,Image,file_url_vehicle_damage_2,incident_reports,file_url_vehicle_damage_2,TEXT,File Upload,No,Your damage photo 3
+127,AI,ai_transcription,ai_transcription,transcription,TEXT,Auto-generated,No,OpenAI Whisper transcription
+128,AI,ai_summary,ai_summary,summary,TEXT,Auto-generated,No,GPT-4 accident summary
+129,DVLA Your Vehicle,dvla_registration_number,dvla_vehicle_info_new,registration_number,TEXT,Auto-fetched,No,Your vehicle registration
+130,DVLA Your Vehicle,dvla_make,dvla_vehicle_info_new,make,TEXT,Auto-fetched,No,Your vehicle make (DVLA)
+131,DVLA Your Vehicle,dvla_model,dvla_vehicle_info_new,model,TEXT,Auto-fetched,No,Your vehicle model (DVLA)
+132,DVLA Your Vehicle,dvla_colour,dvla_vehicle_info_new,colour,TEXT,Auto-fetched,No,Your vehicle color (DVLA)
+133,DVLA Your Vehicle,dvla_year_of_manufacture,dvla_vehicle_info_new,year_of_manufacture,TEXT,Auto-fetched,No,Manufacturing year
+134,DVLA Your Vehicle,dvla_month_of_manufacture,dvla_vehicle_info_new,month_of_manufacture,TEXT,Auto-fetched,No,Manufacturing month
+135,DVLA Your Vehicle,dvla_mot_status,dvla_vehicle_info_new,mot_status,TEXT,Auto-fetched,No,MOT status
+136,DVLA Your Vehicle,dvla_mot_expiry_date,dvla_vehicle_info_new,mot_expiry_date,DATE,Auto-fetched,No,MOT expiry date
+137,DVLA Your Vehicle,dvla_tax_status,dvla_vehicle_info_new,road_tax_status,TEXT,Auto-fetched,No,Tax status
+138,DVLA Your Vehicle,dvla_tax_due_date,dvla_vehicle_info_new,tax_due_date,DATE,Auto-fetched,No,Tax due date
+139,DVLA Your Vehicle,dvla_fuel_type,dvla_vehicle_info_new,fuel_type,TEXT,Auto-fetched,No,Fuel type
+140,DVLA Your Vehicle,dvla_engine_capacity,dvla_vehicle_info_new,engine_capacity,TEXT,Auto-fetched,No,Engine capacity
+141,DVLA Your Vehicle,dvla_co2_emissions,dvla_vehicle_info_new,co2_emissions,TEXT,Auto-fetched,No,CO2 emissions
+142,DVLA Your Vehicle,dvla_wheelplan,dvla_vehicle_info_new,wheelplan,TEXT,Auto-fetched,No,Wheelplan
+143,DVLA Your Vehicle,dvla_type_approval,dvla_vehicle_info_new,type_approval,TEXT,Auto-fetched,No,Type approval
+144,DVLA Your Vehicle,dvla_revenue_weight,dvla_vehicle_info_new,revenue_weight,TEXT,Auto-fetched,No,Revenue weight
+145,DVLA Your Vehicle,dvla_date_of_last_v5c,dvla_vehicle_info_new,date_of_last_v5c_issued,DATE,Auto-fetched,No,V5C issue date
+146,DVLA Your Vehicle,dvla_marked_for_export,dvla_vehicle_info_new,marked_for_export,BOOLEAN,Auto-fetched,No,Export marker
+147,DVLA Other Vehicle,dvla_other_registration,dvla_vehicle_info_new,registration_number,TEXT,Auto-fetched,No,Other vehicle registration
+148,DVLA Other Vehicle,dvla_other_make,dvla_vehicle_info_new,make,TEXT,Auto-fetched,No,Other vehicle make
+149,DVLA Other Vehicle,dvla_other_model,dvla_vehicle_info_new,model,TEXT,Auto-fetched,No,Other vehicle model
+150,DVLA Other Vehicle,dvla_other_colour,dvla_vehicle_info_new,colour,TEXT,Auto-fetched,No,Other vehicle color
+151,DVLA Other Vehicle,dvla_other_year,dvla_vehicle_info_new,year_of_manufacture,TEXT,Auto-fetched,No,Other manufacturing year
+152,DVLA Other Vehicle,dvla_other_month,dvla_vehicle_info_new,month_of_manufacture,TEXT,Auto-fetched,No,Other manufacturing month
+153,DVLA Other Vehicle,dvla_other_mot_status,dvla_vehicle_info_new,mot_status,TEXT,Auto-fetched,No,Other MOT status
+154,DVLA Other Vehicle,dvla_other_mot_expiry,dvla_vehicle_info_new,mot_expiry_date,DATE,Auto-fetched,No,Other MOT expiry
+155,DVLA Other Vehicle,dvla_other_tax_status,dvla_vehicle_info_new,road_tax_status,TEXT,Auto-fetched,No,Other tax status
+156,DVLA Other Vehicle,dvla_other_tax_due,dvla_vehicle_info_new,tax_due_date,DATE,Auto-fetched,No,Other tax due date
+157,DVLA Other Vehicle,dvla_other_fuel_type,dvla_vehicle_info_new,fuel_type,TEXT,Auto-fetched,No,Other fuel type
+158,DVLA Other Vehicle,dvla_other_engine_capacity,dvla_vehicle_info_new,engine_capacity,TEXT,Auto-fetched,No,Other engine capacity
+159,DVLA Other Vehicle,dvla_other_co2,dvla_vehicle_info_new,co2_emissions,TEXT,Auto-fetched,No,Other CO2 emissions
+160,DVLA Other Vehicle,dvla_other_wheelplan,dvla_vehicle_info_new,wheelplan,TEXT,Auto-fetched,No,Other wheelplan
+161,DVLA Other Vehicle,dvla_other_type_approval,dvla_vehicle_info_new,type_approval,TEXT,Auto-fetched,No,Other type approval
+162,DVLA Other Vehicle,dvla_other_revenue_weight,dvla_vehicle_info_new,revenue_weight,TEXT,Auto-fetched,No,Other revenue weight
+163,DVLA Other Vehicle,dvla_other_v5c_date,dvla_vehicle_info_new,date_of_last_v5c_issued,DATE,Auto-fetched,No,Other V5C date
+164,DVLA Other Vehicle,dvla_other_export,dvla_vehicle_info_new,marked_for_export,BOOLEAN,Auto-fetched,No,Other export marker
+165,PDF Field,user_id_pdf,N/A,N/A,TEXT,PDF Only,No,User ID on PDF
+166,PDF Field,form_id_pdf,N/A,N/A,TEXT,PDF Only,No,Form ID on PDF
+167,PDF Field,submit_date_pdf,N/A,N/A,TIMESTAMP,PDF Only,No,Submission date on PDF
+168,PDF Field,safe_ready_checkbox,N/A,N/A,BOOLEAN,PDF Only,No,Safe & ready checkbox
+169,PDF Field,medical_attention_required_checkbox,N/A,N/A,BOOLEAN,PDF Only,No,Medical attention checkbox
+170,PDF Field,six_point_check_checkbox,N/A,N/A,BOOLEAN,PDF Only,No,Six-point check checkbox
+171,PDF Field,emergency_contact_made_checkbox,N/A,N/A,BOOLEAN,PDF Only,No,Emergency contact checkbox
+172,PDF Field,chest_pain_checkbox,N/A,N/A,BOOLEAN,PDF Only,No,Chest pain checkbox on PDF
+173,PDF Field,breathlessness_checkbox,N/A,N/A,BOOLEAN,PDF Only,No,Breathlessness checkbox on PDF
+174,PDF Field,abdominal_bruising_checkbox,N/A,N/A,BOOLEAN,PDF Only,No,Abdominal bruising checkbox
+175,PDF Field,severe_headache_checkbox,N/A,N/A,BOOLEAN,PDF Only,No,Severe headache checkbox
+176,PDF Field,change_vision_checkbox,N/A,N/A,BOOLEAN,PDF Only,No,Vision change checkbox
+177,PDF Field,abdominal_pain_checkbox,N/A,N/A,BOOLEAN,PDF Only,No,Abdominal pain checkbox
+178,PDF Field,limb_pain_checkbox,N/A,N/A,BOOLEAN,PDF Only,No,Limb pain checkbox on PDF
+179,PDF Field,limb_weakness_checkbox,N/A,N/A,BOOLEAN,PDF Only,No,Limb weakness checkbox
+180,PDF Field,loss_consciousness_checkbox,N/A,N/A,BOOLEAN,PDF Only,No,Loss of consciousness checkbox
+181,PDF Field,none_feel_fine_checkbox,N/A,N/A,BOOLEAN,PDF Only,No,No symptoms checkbox
+182,PDF Field,medical_conditions_summary_pdf,N/A,N/A,TEXT,PDF Only,No,Medical summary on PDF
+183,PDF Field,wearing_seatbelts_checkbox,N/A,N/A,BOOLEAN,PDF Only,No,Seatbelts checkbox
+184,PDF Field,airbags_deployed_checkbox,N/A,N/A,BOOLEAN,PDF Only,No,Airbags checkbox
+185,PDF Field,vehicle_damaged_checkbox,N/A,N/A,BOOLEAN,PDF Only,No,Vehicle damaged checkbox
+186,PDF Field,weather_overcast_checkbox,N/A,N/A,BOOLEAN,PDF Only,No,Overcast checkbox on PDF
+187,PDF Field,weather_heavy_rain_checkbox,N/A,N/A,BOOLEAN,PDF Only,No,Heavy rain checkbox
+188,PDF Field,weather_wet_road_checkbox,N/A,N/A,BOOLEAN,PDF Only,No,Wet road checkbox
+189,PDF Field,weather_fog_checkbox,N/A,N/A,BOOLEAN,PDF Only,No,Fog checkbox on PDF
+190,PDF Field,weather_street_lights_checkbox,N/A,N/A,BOOLEAN,PDF Only,No,Street lights checkbox
+191,PDF Field,weather_dusk_checkbox,N/A,N/A,BOOLEAN,PDF Only,No,Dusk checkbox on PDF
+192,PDF Field,weather_clear_dry_checkbox,N/A,N/A,BOOLEAN,PDF Only,No,Clear & dry checkbox
+193,PDF Field,weather_snow_ice_checkbox,N/A,N/A,BOOLEAN,PDF Only,No,Snow/ice checkbox
+194,PDF Field,weather_light_rain_checkbox,N/A,N/A,BOOLEAN,PDF Only,No,Light rain checkbox
+195,PDF Field,weather_bright_daylight_checkbox,N/A,N/A,BOOLEAN,PDF Only,No,Bright daylight checkbox
+196,PDF Field,weather_summary_pdf,N/A,N/A,TEXT,PDF Only,No,Weather summary on PDF
+197,PDF Field,other_vehicles_checkbox,N/A,N/A,BOOLEAN,PDF Only,No,Other vehicles checkbox
+198,PDF Field,police_attended_checkbox,N/A,N/A,BOOLEAN,PDF Only,No,Police attended checkbox
+199,PDF Field,witness_present_checkbox,N/A,N/A,BOOLEAN,PDF Only,No,Witness present checkbox
+200,PDF Field,driving_license_url_pdf,N/A,N/A,TEXT,PDF Only,No,License photo URL on PDF
+201,PDF Field,vehicle_front_url_pdf,N/A,N/A,TEXT,PDF Only,No,Front photo URL on PDF
+202,PDF Field,vehicle_driver_side_url_pdf,N/A,N/A,TEXT,PDF Only,No,Driver side URL on PDF
+203,PDF Field,vehicle_passenger_side_url_pdf,N/A,N/A,TEXT,PDF Only,No,Passenger side URL on PDF
+204,PDF Field,vehicle_back_url_pdf,N/A,N/A,TEXT,PDF Only,No,Back photo URL on PDF
+205,PDF Field,declaration_name_pdf,N/A,N/A,TEXT,PDF Only,No,Declaration name on PDF
+206,PDF Field,declaration_date_pdf,N/A,N/A,DATE,PDF Only,No,Declaration date on PDF
+207,System,created_at,Multiple,created_at,TIMESTAMP,Auto,Yes,Record creation timestamp
+208,System,updated_at,Multiple,updated_at,TIMESTAMP,Auto,Yes,Record update timestamp
+209,System,deleted_at,Multiple,deleted_at,TIMESTAMP,Auto,No,Soft delete timestamp (GDPR)
