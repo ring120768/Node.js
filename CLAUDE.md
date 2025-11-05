@@ -6,10 +6,30 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 **Car Crash Lawyer AI** is a GDPR-compliant Node.js web application that helps UK traffic accident victims complete legal incident reports. The system integrates Typeform webhooks, OpenAI transcription, Adobe PDF Services, and Supabase to generate comprehensive 17-page legal PDF reports.
 
-**Version:** 2.1.0
+**Version:** 2.0.1
 **Runtime:** Node.js >=18.18
 **Database:** Supabase (PostgreSQL)
 **Location:** UK (DD/MM/YYYY, £ GBP, British English)
+
+## Quick Reference
+
+**Start Here:**
+- First time? Run `/start` slash command
+- Check services: Run `/status` slash command
+- See database: Run `/db` slash command
+- View all docs: Run `/docs` slash command
+
+**Essential Files:**
+- `.env` - Environment variables (NEVER commit!)
+- `CLAUDE.md` - This file (project-specific guidance)
+- `.claude/claude.md` - Global coding rules (security, permissions, style)
+- `README.md` - User-facing documentation
+- `package.json` - Dependencies and scripts
+
+**File Structure Clarification:**
+- `CLAUDE.md` (this file) - Project architecture, workflows, technical details
+- `.claude/claude.md` - Global rules: permissions, coding standards, security policies
+- `.claude/commands/*.md` - Slash commands for Claude Code
 
 ## Development Commands
 
@@ -49,6 +69,46 @@ npm test -- --testNamePattern="webhook"
 # Watch mode for TDD
 npm run test:watch
 ```
+
+### Jest Unit Testing
+
+**Configuration:** `jest.config.js`
+
+**Coverage Requirements:**
+- Branches: 60%
+- Functions: 60%
+- Lines: 60%
+- Statements: 60%
+
+**Test Commands:**
+```bash
+# Run all tests with coverage
+npm test
+
+# Run specific test file
+npm test -- src/middleware/__tests__/corsConfig.test.js
+
+# Run tests matching pattern
+npm test -- --testNamePattern="webhook"
+
+# Watch mode for TDD
+npm run test:watch
+
+# Coverage report (opens in browser)
+npm test -- --coverage
+# Report available at: coverage/lcov-report/index.html
+```
+
+**Test File Locations:**
+- `src/**/__tests__/**/*.test.js` - Unit tests alongside source code
+- `*.test.js` - Integration tests
+
+**Existing Test Suites:**
+- `src/middleware/__tests__/cors.integration.test.js` - CORS integration tests
+- `src/middleware/__tests__/corsConfig.test.js` - CORS configuration tests
+- `src/middleware/__tests__/errorHandler.test.js` - Error handling tests
+- `src/middleware/__tests__/validation.test.js` - Input validation tests
+- `src/middleware/__tests__/webhookAuth.test.js` - Webhook authentication tests
 
 ## Architecture Overview
 
@@ -102,6 +162,45 @@ POST /api/transcription/transcribe → transcription.controller.js
   → GPT-4 summary generation
   → WebSocket broadcast to frontend
 ```
+
+### Real-time Updates (WebSocket)
+
+**Module:** `src/websocket/` (or `src/websocket.js`)
+
+The application uses WebSocket (ws library) for real-time updates during:
+- Audio transcription progress
+- AI analysis status
+- PDF generation progress
+- Image processing status
+
+**Client Connection:**
+```javascript
+// Frontend connects to WebSocket
+const ws = new WebSocket('ws://localhost:5000');
+
+ws.onmessage = (event) => {
+  const data = JSON.parse(event.data);
+  console.log('Update:', data);
+};
+```
+
+**Server Broadcasting:**
+```javascript
+// Backend broadcasts updates
+const { broadcast } = require('./websocket');
+
+broadcast({
+  type: 'transcription_progress',
+  userId: createUserId,
+  status: 'processing',
+  progress: 75
+});
+```
+
+**Use Cases:**
+- Real-time transcription status on `/transcription-status.html`
+- Live PDF generation progress
+- Background image processing updates
 
 ### Key Architectural Patterns
 
@@ -210,6 +309,37 @@ try {
 /pdf-templates/     # Car-Crash-Lawyer-AI-Incident-Report.pdf (150+ fields)
 /credentials/       # Adobe credentials (NOT in Git)
 ```
+
+### Middleware Stack
+
+**Order matters!** Middleware is applied in this sequence (see `src/app.js`):
+
+1. **Trust Proxy** - Required for Replit/Heroku deployments
+2. **Raw Body Capture** - For webhook signature verification (MUST be before JSON parsing)
+3. **JSON/URL Encoded Parsers** - Body parsing with 50MB limit
+4. **Security** - Helmet, CORS, compression, request ID, timeout
+5. **Cookie Parser** - Session management
+6. **Morgan** - HTTP request logging
+7. **Request Logger** - Custom request/response logging
+8. **Rate Limiting** - Applied per-route (apiLimiter or strictLimiter)
+9. **GDPR Middleware** - Tracking and consent validation
+10. **Auth Middleware** - JWT validation, session management (route-specific)
+11. **Routes** - Application endpoints
+12. **Error Handler** - Centralized error handling
+13. **404 Handler** - Not found responses
+
+**Available Middleware:**
+- `src/middleware/auth.js` - JWT validation
+- `src/middleware/authMiddleware.js` - Advanced auth with refresh tokens
+- `src/middleware/authorization.js` - Role-based access control
+- `src/middleware/corsConfig.js` - CORS configuration
+- `src/middleware/errorHandler.js` - Error handling
+- `src/middleware/gdpr.js` - GDPR compliance tracking
+- `src/middleware/rateLimit.js` - Rate limiting
+- `src/middleware/requestLogger.js` - Request/response logging
+- `src/middleware/security.js` - Helmet, compression, timeouts
+- `src/middleware/validation.js` - Input validation helpers
+- `src/middleware/webhookAuth.js` - Webhook signature verification
 
 ## Common Development Scenarios
 
@@ -484,6 +614,88 @@ REQUEST_TIMEOUT=30000               # 30 seconds
 APP_URL=https://your-domain.com
 ```
 
+### Environment-Specific Configuration
+
+**Development:**
+```bash
+NODE_ENV=development
+PORT=5000
+CRON_ENABLED=false  # Disable in dev to prevent auto-deletions
+TZ=Europe/London
+```
+
+**Production:**
+```bash
+NODE_ENV=production
+PORT=5000
+CRON_ENABLED=true   # Enable scheduled tasks
+REQUEST_TIMEOUT=30000
+TZ=Europe/London
+```
+
+**Replit-Specific:**
+- Server must bind to `0.0.0.0` (not `localhost`)
+- Use `trust proxy: true` in Express
+- CORS must allow Replit preview URLs
+- See `REPLIT-TESTING-GUIDE.md` for deployment details
+
+## Scheduled Tasks (Cron Jobs)
+
+The application uses `node-cron` via `src/services/cronManager.js` to manage automated tasks.
+
+**Schedule Overview:**
+```bash
+# Daily Tasks (GMT/BST - Europe/London timezone)
+1:00 AM  - Backup incidents to S3
+1:30 AM  - Backup accounts to S3
+2:00 AM  - Auto-delete expired incidents
+2:30 AM  - Auto-delete expired accounts
+3:00 AM  - Process subscription renewals
+9:00 AM  - Send incident deletion warnings
+9:30 AM  - Send subscription renewal warnings
+
+# Monthly Tasks
+4:00 AM (1st of month) - Cleanup old S3 backups
+```
+
+**Configuration:**
+```bash
+# Enable/disable cron jobs (enabled by default)
+CRON_ENABLED=true
+
+# Timezone (defaults to Europe/London)
+TZ=Europe/London
+```
+
+**Manual Testing:**
+```bash
+# Dry run (preview without executing)
+node scripts/auto-delete-expired-incidents.js --dry-run
+node scripts/auto-delete-expired-accounts.js --dry-run
+node scripts/backup-incidents-to-s3.js --dry-run
+node scripts/backup-accounts-to-s3.js --dry-run
+
+# Check cron status via API (if implemented)
+GET /api/cron/status  # Returns list of scheduled jobs
+```
+
+**Important Notes:**
+- Backups run BEFORE deletions (safety measure)
+- All scripts support `--dry-run` flag for testing
+- Cron jobs use service role key (bypass RLS)
+- Logs are written to stdout and application logs
+- Jobs are timezone-aware (Europe/London by default)
+
+**Cron Job Files:**
+- `scripts/backup-incidents-to-s3.js` - Backup incidents before deletion
+- `scripts/backup-accounts-to-s3.js` - Backup accounts before deletion
+- `scripts/auto-delete-expired-incidents.js` - Delete incidents after retention period
+- `scripts/auto-delete-expired-accounts.js` - Delete accounts after retention period
+- `scripts/process-subscription-renewals.js` - Process subscription renewals
+- `scripts/send-incident-deletion-warnings.js` - Send 30-day deletion warnings
+- `scripts/send-subscription-warnings.js` - Send subscription renewal reminders
+- `scripts/cleanup-old-backups.js` - Remove old S3 backups (monthly)
+
 ## Testing Strategy
 
 ### PDF Generation Tests
@@ -690,6 +902,37 @@ node scripts/test-supabase-client.js
 - Using anon key instead of service role key (webhooks need service role)
 - RLS policy blocking query (check policy conditions)
 - Network timeout (increase timeout in client config)
+
+### Rate Limiting Details
+
+**Configuration:** `src/middleware/rateLimit.js`
+
+**Two Tiers:**
+
+1. **API Limiter** (General endpoints)
+   - Window: 15 minutes
+   - Max requests: 100 per IP
+   - Applies to: All `/api/*` endpoints
+   - Exemptions: `/health`, `/webhooks/*`
+
+2. **Strict Limiter** (Sensitive operations)
+   - Window: 15 minutes
+   - Max requests: 10 per IP
+   - Applies to: Auth, signup, PDF generation, GDPR operations
+
+**Usage in Routes:**
+```javascript
+// Apply general rate limiting
+router.post('/api/some-endpoint', apiLimiter, controller.handler);
+
+// Apply strict rate limiting
+router.post('/api/auth/signup', strictLimiter, authController.signup);
+```
+
+**Production Notes:**
+- Uses `trust proxy: true` (required for Replit/Heroku)
+- Rate limit headers included in response
+- Webhooks bypass all rate limiting (signature verified instead)
 
 ## Performance Notes
 
