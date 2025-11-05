@@ -1,0 +1,21 @@
+Field_Number,Field_Name,HTML_Type,Input_Name,Supabase_Column,Data_Type,Required,Default_Value,Conditional,Generated_By_JS,Notes
+1,medical_attention_needed,Radio,medical_attention_needed,medical_attention_needed,BOOLEAN,Yes,NULL,No,No,"Primary question - converted to boolean (yes=TRUE, no=FALSE)"
+2,medical_injury_details,Textarea,medical_injury_details,medical_injury_details,TEXT,Conditional,NULL,Yes (medical_attention_needed=yes),No,Details of injuries sustained
+3,medical_injury_severity,Select,medical_injury_severity,medical_injury_severity,TEXT,Conditional,NULL,Yes (medical_attention_needed=yes),No,"Severity level (minor, moderate, serious, severe, critical)"
+4,medical_hospital_name,Text Input,medical_hospital_name,medical_hospital_name,TEXT,No,NULL,Yes (medical_attention_needed=yes),No,Hospital or medical center name (optional)
+5,medical_ambulance_called,Radio,medical_ambulance_called,medical_ambulance_called,BOOLEAN,Conditional,NULL,Yes (medical_attention_needed=yes),No,"Whether ambulance was called (yes=TRUE, no=FALSE)"
+6,medical_treatment_received,Textarea,medical_treatment_received,medical_treatment_received,TEXT,No,NULL,Yes (medical_ambulance_called=yes),No,Description of treatment received
+7,medical_symptom_chest_pain,Checkbox,medical_symptom_chest_pain,medical_symptom_chest_pain,BOOLEAN,No,FALSE,No,No,Chest pain symptom
+8,medical_symptom_uncontrolled_bleeding,Checkbox,medical_symptom_uncontrolled_bleeding,medical_symptom_uncontrolled_bleeding,BOOLEAN,No,FALSE,No,No,Uncontrolled bleeding symptom
+9,medical_symptom_breathlessness,Checkbox,medical_symptom_breathlessness,medical_symptom_breathlessness,BOOLEAN,No,FALSE,No,No,Breathlessness symptom
+10,medical_symptom_limb_weakness,Checkbox,medical_symptom_limb_weakness,medical_symptom_limb_weakness,BOOLEAN,No,FALSE,No,No,Limb weakness or changes in sensation
+11,medical_symptom_dizziness,Checkbox,medical_symptom_dizziness,medical_symptom_dizziness,BOOLEAN,No,FALSE,No,No,Dizziness symptom
+12,medical_symptom_loss_of_consciousness,Checkbox,medical_symptom_loss_of_consciousness,medical_symptom_loss_of_consciousness,BOOLEAN,No,FALSE,No,No,Loss of consciousness symptom
+13,medical_symptom_severe_headache,Checkbox,medical_symptom_severe_headache,medical_symptom_severe_headache,BOOLEAN,No,FALSE,No,No,Severe headache symptom
+14,medical_symptom_change_in_vision,Checkbox,medical_symptom_change_in_vision,medical_symptom_change_in_vision,BOOLEAN,No,FALSE,No,No,Change in vision symptom
+15,medical_symptom_abdominal_pain,Checkbox,medical_symptom_abdominal_pain,medical_symptom_abdominal_pain,BOOLEAN,No,FALSE,No,No,Abdominal pain symptom
+16,medical_symptom_abdominal_bruising,Checkbox,medical_symptom_abdominal_bruising,medical_symptom_abdominal_bruising,BOOLEAN,No,FALSE,No,No,Abdominal bruising symptom
+17,medical_symptom_limb_pain_mobility,Checkbox,medical_symptom_limb_pain_mobility,medical_symptom_limb_pain_mobility,BOOLEAN,No,FALSE,No,No,Limb pain impeding mobility
+18,medical_symptom_life_threatening,Checkbox,medical_symptom_life_threatening,medical_symptom_life_threatening,BOOLEAN,No,FALSE,No,No,Life or limb threatening injury concerns
+19,medical_symptom_none,Checkbox,medical_symptom_none,medical_symptom_none,BOOLEAN,No,FALSE,No,No,No symptoms - feel fine
+20,completed_at,N/A (Generated),N/A,N/A,TIMESTAMP,No,NULL,No,Yes,"JavaScript-generated timestamp (new Date().toISOString())"
