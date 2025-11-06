@@ -27,6 +27,7 @@ const userDocumentsRoutes = require('./userDocuments.routes'); // NEW: User docu
 const imageProxyRoutes = require('./imageProxy.routes'); // NEW: Image proxy for authenticated access
 const witnessesRoutes = require('./witnesses.routes'); // NEW: Witnesses management
 const vehiclesRoutes = require('./vehicles.routes'); // NEW: Other vehicles with DVLA integration
+const safetyRoutes = require('./safety.routes'); // NEW: Safety check status management
 const dvlaRoutes = require('./dvla.routes'); // NEW: DVLA vehicle lookup (frontend-friendly)
 const signupRoutes = require('./signup.routes'); // NEW: User signup form submission
 const imageUploadRoutes = require('./imageUpload.routes'); // NEW: Post-signup image upload
@@ -272,6 +273,7 @@ router.get('/system-status', async (req, res) => {
                 <li><code>/api/auth/*</code> - Authentication</li>
                 <li><code>/api/signup/*</code> - User signup (custom form)</li>
                 <li><code>/api/profile/*</code> - User profile management</li>
+                <li><code>/api/safety-status/*</code> - Safety check assessment</li>
                 <li><code>/api/transcription/*</code> - Audio transcription</li>
                 <li><code>/api/gdpr/*</code> - GDPR compliance</li>
                 <li><code>/api/emergency/*</code> - Emergency contacts</li>
@@ -334,6 +336,7 @@ router.use('/api/images', imageUploadRoutes); // NEW: Post-signup image upload e
 router.use('/api/witnesses', witnessesRoutes); // NEW: Witnesses management
 router.use('/api/other-vehicles', vehiclesRoutes); // NEW: Other vehicles with DVLA integration
 router.use('/api/dvla', dvlaRoutes); // NEW: DVLA vehicle lookup (frontend-friendly GET endpoints)
+router.use('/api', safetyRoutes); // NEW: Safety check status management (/api/safety-status/*)
 router.use('/api/signup', signupRoutes); // NEW: User signup form submission (custom HTML form)
 router.use('/api/incident-form', incidentFormRoutes); // NEW: Multi-page incident form submission (Pages 1-12)
 // Note: Webhook routes are mounted directly in app.js for raw body handling
