@@ -3,13 +3,13 @@
 **Status**: ✅ **FULLY IMPLEMENTED**
 **Date**: 2025-11-06
 **Migration**: 025_add_image_url_columns.sql
-**Total Photos**: 13 across 3 pages (4a, 6, 8)
+**Total Photos**: 14 across 4 pages (4, 4a, 6, 8)
 
 ---
 
 ## 📊 Executive Summary
 
-All 13 photo upload fields across the incident report form are now fully implemented and verified in the Supabase database.
+All 14 photo upload fields across the incident report form are now fully implemented and verified in the Supabase database.
 
 **Key Achievements:**
 - ✅ Storage bucket `user-documents` exists (private, secure)
@@ -31,13 +31,14 @@ All 13 photo upload fields across the incident report form are now fully impleme
                                     │
                                     ▼
         ┌───────────────────────────────────────────────┐
-        │         IMAGE UPLOAD PAGES (4a, 6, 8)         │
+        │       IMAGE UPLOAD PAGES (4, 4a, 6, 8)        │
         │                                               │
+        │  Page 4:  1 Map Screenshot                   │
         │  Page 4a: 3 Scene Photos                     │
         │  Page 6:  5 Vehicle Damage Photos            │
         │  Page 8:  5 Other Vehicle Damage Photos      │
         │                                               │
-        │  Total: 13 Photos                             │
+        │  Total: 14 Photos                             │
         └───────────────────────────────────────────────┘
                                     │
                                     ▼
@@ -155,7 +156,7 @@ All 13 photo upload fields across the incident report form are now fully impleme
         │  │    completed, processing, failed           │
         │  │  • created_at (TIMESTAMP)                  │
         │  │                                            │
-        │  │  [13 records total: all photos tracked]    │
+        │  │  [14 records total: all photos tracked]    │
         │  └─────────────────────────────────────────   │
         │                                               │
         │  ┌─ incident_reports (QUICK ACCESS)           │
@@ -204,11 +205,12 @@ All 13 photo upload fields across the incident report form are now fully impleme
 
 | Page | Form Field Name | # Photos | Frontend Array | Backend field_name | Supabase Storage Path | user_documents.document_type | incident_reports Column | PDF Field Name |
 |------|-----------------|----------|----------------|--------------------|-----------------------|------------------------------|-------------------------|----------------|
+| **4** | Map Screenshot | 1 | `mapScreenshotCaptured` (boolean) | `map_screenshot` | `users/{user_id}/incident-reports/{incident_id}/location-map/map_screenshot_1.png` | `location_map_screenshot` | ❌ None | `map_screenshot_captured` |
 | **4a** | Scene Photos | 3 | `scene_images[]` | `scene_photo` | `users/{user_id}/incident-reports/{incident_id}/location-photos/scene_photo_{n}.jpg` | `location_photo` | ❌ None | `scene_image_path_1`, `scene_image_path_2`, `scene_image_path_3` |
 | **6** | Vehicle Damage | 5 | `uploaded_images[]` | `vehicle_damage_photo` | `users/{user_id}/incident-reports/{incident_id}/vehicle-damage/vehicle_damage_photo_{n}.jpg` | `vehicle_damage_photo` | ❌ None | `vehicle_damage_path_1`, `vehicle_damage_path_2`, `vehicle_damage_path_3`, `vehicle_damage_path_4`, `vehicle_damage_path_5` |
 | **8** | Other Vehicle Damage | 5 | `other_damage_images[]` | `other_vehicle_photo_1`, `other_vehicle_photo_2`, `other_damage_photo_3`, `other_damage_photo_4`, `other_damage_photo_5` | `users/{user_id}/incident-reports/{incident_id}/other-vehicle/other_vehicle_photo_{n}.jpg` | `other_vehicle_photo` | ✅ Photos 1-2 only:<br>`file_url_other_vehicle`<br>`file_url_other_vehicle_1` | `other_vehicle_photo_1`, `other_vehicle_photo_2`, `other_damage_photo_3`, `other_damage_photo_4`, `other_damage_photo_5` |
 
-**Total: 13 Photos** (3 + 5 + 5)
+**Total: 14 Photos** (1 + 3 + 5 + 5)
 
 ---
 
@@ -216,7 +218,7 @@ All 13 photo upload fields across the incident report form are now fully impleme
 
 ### ✅ Table: `user_documents` (Primary Source of Truth)
 
-**Purpose**: Tracks all 13 uploaded images with processing status and permanent download URLs.
+**Purpose**: Tracks all 14 uploaded images with processing status and permanent download URLs.
 
 | Column | Type | Nullable | Default | Description |
 |--------|------|----------|---------|-------------|
@@ -224,7 +226,7 @@ All 13 photo upload fields across the incident report form are now fully impleme
 | `create_user_id` | TEXT | NO | - | User who uploaded (indexed for fast queries) |
 | `incident_report_id` | UUID | YES | NULL | Links to incident_reports table |
 | `storage_path` | TEXT | YES | NULL | Full Supabase Storage path |
-| `document_type` | TEXT | NO | - | Category: `location_photo`, `vehicle_damage_photo`, `other_vehicle_photo` |
+| `document_type` | TEXT | NO | - | Category: `location_map_screenshot`, `location_photo`, `vehicle_damage_photo`, `other_vehicle_photo` |
 | `download_url` | TEXT | YES | NULL | Permanent API URL: `/api/user-documents/{uuid}/download` |
 | `status` | TEXT | NO | `pending` | Processing status: `pending`, `processing`, `completed`, `failed` |
 | `retry_count` | INTEGER | YES | 0 | Number of retry attempts |
@@ -499,8 +501,8 @@ function getCategoryFromFieldName(fieldName) {
 ```
 
 **Result:**
-- ✅ 13 files moved from `temp/` to permanent folders
-- ✅ 13 `user_documents` records created
+- ✅ 14 files moved from `temp/` to permanent folders
+- ✅ 14 `user_documents` records created
 - ✅ 2 `incident_reports` columns updated (Page 8 photos 1-2)
 - ✅ All `temp_uploads` marked as claimed
 
@@ -549,7 +551,7 @@ async function mapImageFields(incidentReportId) {
 ```
 
 **Result:**
-- ✅ 13 PDF field placeholders filled with download URLs
+- ✅ 14 PDF field placeholders filled with download URLs
 - ✅ URLs are clickable in generated PDF
 - ✅ URLs are permanent (generate fresh signed URL on-demand)
 
@@ -766,7 +768,7 @@ WHERE name = 'user-documents';
 - **Benefit**: User never loses uploaded images, even if they take hours to complete form
 
 **2. Primary Source of Truth (user_documents table)**
-- **Problem**: Need consistent way to track all 13 photos with status, retries, errors
+- **Problem**: Need consistent way to track all 14 photos with status, retries, errors
 - **Solution**: Central table with processing status for each image
 - **Benefit**: Single query to get all images, easy monitoring, GDPR compliance
 
@@ -837,7 +839,7 @@ FROM user_documents
 WHERE incident_report_id = '{incident_id}'
 ORDER BY document_type, created_at;
 
--- Expected: 13 rows with status = 'completed'
+-- Expected: 14 rows with status = 'completed'
 ```
 
 **Solutions:**
@@ -883,7 +885,7 @@ console.error('Upload failed:', error);
 ### Issue: Duplicate Image Records
 
 **Symptoms:**
-- user_documents shows 26 records instead of 13
+- user_documents shows 28 records instead of 14
 - PDF shows same image in multiple fields
 
 **Diagnosis:**
@@ -969,10 +971,10 @@ node scripts/verify-image-storage.js
 **Date**: 2025-11-06
 **Version**: 2.0.1
 **Migration**: 025 (Complete)
-**Total Photos**: 13 (3 + 5 + 5)
+**Total Photos**: 14 (1 + 3 + 5 + 5)
 **Tables**: user_documents, temp_uploads, incident_reports
 **Storage**: user-documents bucket (private, 10MB limit)
 
 ---
 
-*This document provides a complete reference for the image storage architecture. All 13 photo upload fields are fully implemented, tested, and verified in production.*
+*This document provides a complete reference for the image storage architecture. All 14 photo upload fields are fully implemented, tested, and verified in production.*
