@@ -471,19 +471,27 @@
 
         // Save data to sessionStorage
         function saveData() {
+            const allChecked = Array.from(checkboxes).every(cb => cb.checked);
+
             const data = {
-                safety_check_1: document.getElementById('check1').checked,
-                safety_check_2: document.getElementById('check2').checked,
-                safety_check_3: document.getElementById('check3').checked,
-                safety_check_4: document.getElementById('check4').checked,
-                safety_check_5: document.getElementById('check5').checked,
-                safety_check_6: document.getElementById('check6').checked,
-                all_checks_completed: Array.from(checkboxes).every(cb => cb.checked),
-                completed_at: new Date().toISOString()
+                // Individual checkbox states (for page persistence only, not saved to database)
+                check1: document.getElementById('check1').checked,
+                check2: document.getElementById('check2').checked,
+                check3: document.getElementById('check3').checked,
+                check4: document.getElementById('check4').checked,
+                check5: document.getElementById('check5').checked,
+                check6: document.getElementById('check6').checked,
+
+                // Master field (saved to database as six_point_safety_check)
+                six_point_safety_check: allChecked,
+                completed_at: allChecked ? new Date().toISOString() : null
             };
 
             sessionStorage.setItem('six_point_safety_check', JSON.stringify(data));
-            console.log('Safety check data saved to sessionStorage');
+            console.log('Safety check data saved to sessionStorage:', {
+                six_point_safety_check: allChecked,
+                completed_at: data.completed_at
+            });
         }
 
         // Load data from sessionStorage
@@ -495,12 +503,12 @@
                     console.log('Loading saved data:', data);
 
                     // Restore checkbox states
-                    document.getElementById('check1').checked = data.safety_check_1 || false;
-                    document.getElementById('check2').checked = data.safety_check_2 || false;
-                    document.getElementById('check3').checked = data.safety_check_3 || false;
-                    document.getElementById('check4').checked = data.safety_check_4 || false;
-                    document.getElementById('check5').checked = data.safety_check_5 || false;
-                    document.getElementById('check6').checked = data.safety_check_6 || false;
+                    document.getElementById('check1').checked = data.check1 || false;
+                    document.getElementById('check2').checked = data.check2 || false;
+                    document.getElementById('check3').checked = data.check3 || false;
+                    document.getElementById('check4').checked = data.check4 || false;
+                    document.getElementById('check5').checked = data.check5 || false;
+                    document.getElementById('check6').checked = data.check6 || false;
 
                     updateValidation();
                     checkForUnsafeConditions();
