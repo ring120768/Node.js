@@ -1,0 +1,9 @@
+Field_Number,Field_Name,HTML_Type,Input_Name,Supabase_Table,Supabase_Column,Data_Type,Required,Default_Value,Category,Generated_By_JS,Mapped_To_DB,Notes
+1,witnesses_present,Radio Button,witnesses_present,incident_reports,any_witness,TEXT,Yes,NULL,Witness Presence,No,⚠️ PARTIAL,"Maps to any_witness in incident_reports. Field name mismatch. Values: 'yes' or 'no'"
+2,witness_name,Text Input,witness-name,incident_witnesses,witness_name,TEXT,Conditional,NULL,Witness Details,No,✅ YES,"Required if witnesses_present='yes'. Min 3 characters. Fully mapped to incident_witnesses table"
+3,witness_mobile_number,Tel Input,witness-phone,incident_witnesses,witness_phone,TEXT,No,NULL,Witness Details,No,⚠️ PARTIAL,"Optional field. Maps to witness_phone in incident_witnesses. Field name mismatch"
+4,witness_email_address,Email Input,witness-email,incident_witnesses,witness_email,TEXT,No,NULL,Witness Details,No,✅ YES,"Optional field. Fully mapped to incident_witnesses table"
+5,witness_statement,Textarea,witness-statement,incident_witnesses,witness_statement,TEXT,Conditional,NULL,Witness Details,No,✅ YES,"Required if witnesses_present='yes'. Min 10 characters. Max 1000 characters. Fully mapped"
+6,witness_number,N/A (Generated),N/A,N/A (Multi-witness),N/A,INTEGER,Yes (Multi-witness),NULL,System,Yes,❌ NO,"Position in sequence for multiple witnesses. Witness 1 = primary, 2+ = additional. Not stored in DB"
+7,saved_at,N/A (Generated),N/A,incident_witnesses,created_at,TIMESTAMP,Yes,NOW(),System,Yes,✅ YES,"ISO timestamp when witness saved. Maps to created_at column"
+8,additional_witnesses,N/A (sessionStorage Array),N/A,incident_witnesses,Multiple Records,JSON ARRAY,No,[] (Empty Array),System,Yes,⚠️ PARTIAL,"Array of additional witnesses stored in sessionStorage. Should be saved as multiple incident_witnesses records"
