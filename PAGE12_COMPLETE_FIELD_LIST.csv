@@ -1,0 +1,4 @@
+Field_Number,Field_Name,HTML_Type,Input_Name,Supabase_Table,Supabase_Column,Data_Type,Required,Default_Value,Category,Generated_By_JS,Mapped_To_DB,Notes
+1,final_feeling,Radio Button,final_feeling,incident_reports,final_feeling,TEXT,Yes,NULL,Final Wellbeing,No,✅ YES,"Required - User's current condition: 'fine', 'shaken', 'minor_pain', 'significant_pain', or 'emergency' - Triggers conditional alerts"
+2,completed_at,N/A (Generated),N/A,N/A,N/A,TIMESTAMP,No,NULL,System,Yes,No (sessionStorage),"JavaScript-generated timestamp when page was completed (new Date().toISOString()) - Stored in sessionStorage"
+3,complete_incident_data,N/A (Merged),N/A,N/A,N/A,JSONB,No,NULL,System,Yes,No (sessionStorage),"Merged data from all 12 pages (incident_page1 through incident_page12 + incident_form_data) - Stored in sessionStorage for transcription page submission"
