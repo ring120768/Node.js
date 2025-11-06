@@ -157,7 +157,7 @@
             <button class="safety-option safe" data-status="Yes, I'm safe and can complete this form">
                 <span class="icon">✅</span>
                 <strong>Yes, I'm safe and can complete this form</strong>
-                <div class="description">Continue to incident report</div>
+                <div class="description">Continue to safety checklist</div>
             </button>
 
             <button class="safety-option emergency" data-status="The Emergency services have been called">
@@ -315,13 +315,13 @@
             // Incident data is already in sessionStorage from incident.html
             // The embedded Typeform page will read it from there
 
-            console.log('Redirecting to embedded Typeform with data:', {
+            console.log('Redirecting to six-point safety check with data:', {
                 safetyStatus: safetyStatus,
                 incidentData: incidentData
             });
 
-            // Redirect to embedded Typeform page with scroll disabled
-            window.location.href = '/typeform-incident-report.html';
+            // Redirect to six-point safety check before incident report
+            window.location.href = '/six-point-safety-check.html';
         }
 
         // Setup emergency 999 button with what3words integration
