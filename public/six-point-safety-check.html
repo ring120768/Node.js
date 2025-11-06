@@ -1,0 +1,661 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Six Point Safety Check - Car Crash Lawyer AI</title>
+    <style>
+        :root {
+            --grad-start: #0E7490;
+            --grad-end: #0c6179;
+            --accent: #0E7490;
+            --accent-hover: #0c6179;
+            --bg-light: #E8DCC4;
+            --text-dark: #1a1a1a;
+            --text-muted: #6b7280;
+            --border: #4B5563;
+            --success: #10b981;
+            --danger: #ef4444;
+            --warning: #f59e0b;
+        }
+
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, sans-serif;
+            background: var(--bg-light);
+            color: var(--text-dark);
+            line-height: 1.6;
+            min-height: 100vh;
+            padding: 20px;
+        }
+
+        .container {
+            max-width: 800px;
+            margin: 0 auto;
+            background: white;
+            border-radius: 20px;
+            box-shadow: 0 20px 60px rgba(0,0,0,0.3);
+            overflow: hidden;
+        }
+
+        .header {
+            background: linear-gradient(135deg, var(--grad-start) 0%, var(--grad-end) 100%);
+            color: white;
+            padding: 40px 30px;
+            text-align: center;
+        }
+
+        .header-icon {
+            font-size: 64px;
+            margin-bottom: 15px;
+        }
+
+        .header h1 {
+            font-size: 32px;
+            margin-bottom: 10px;
+            font-weight: 700;
+        }
+
+        .header p {
+            font-size: 18px;
+            opacity: 0.95;
+        }
+
+        .content {
+            padding: 40px 30px;
+        }
+
+        .intro-text {
+            text-align: center;
+            font-size: 18px;
+            color: var(--text-muted);
+            margin-bottom: 40px;
+            line-height: 1.8;
+        }
+
+        .safety-checklist {
+            margin-bottom: 40px;
+        }
+
+        .checklist-item {
+            display: flex;
+            align-items: flex-start;
+            gap: 15px;
+            padding: 20px;
+            margin-bottom: 15px;
+            background: #f9fafb;
+            border: 2px solid #e5e7eb;
+            border-radius: 12px;
+            transition: all 0.3s;
+            cursor: pointer;
+        }
+
+        .checklist-item:hover {
+            border-color: var(--accent);
+            background: #f0f9ff;
+        }
+
+        .checklist-item.checked {
+            border-color: var(--success);
+            background: #f0fdf4;
+        }
+
+        .checklist-item input[type="checkbox"] {
+            width: 24px;
+            height: 24px;
+            cursor: pointer;
+            margin-top: 2px;
+            accent-color: var(--success);
+        }
+
+        .checklist-label {
+            flex: 1;
+            font-size: 16px;
+            line-height: 1.6;
+            cursor: pointer;
+        }
+
+        .checklist-icon {
+            font-size: 24px;
+            margin-right: 5px;
+        }
+
+        .warning-box {
+            display: none;
+            background: #fef2f2;
+            border: 3px solid var(--danger);
+            border-radius: 12px;
+            padding: 25px;
+            margin-bottom: 30px;
+        }
+
+        .warning-box.show {
+            display: block;
+        }
+
+        .warning-box h3 {
+            color: var(--danger);
+            font-size: 20px;
+            margin-bottom: 15px;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+
+        .warning-list {
+            list-style: none;
+            margin: 15px 0;
+        }
+
+        .warning-list li {
+            padding: 10px 0 10px 35px;
+            position: relative;
+            font-size: 16px;
+            line-height: 1.6;
+        }
+
+        .warning-list li:before {
+            content: "⚠️";
+            position: absolute;
+            left: 0;
+            font-size: 20px;
+        }
+
+        .emergency-actions {
+            background: linear-gradient(135deg, #fee2e2 0%, #fecaca 100%);
+            border-radius: 12px;
+            padding: 20px;
+            margin-top: 20px;
+        }
+
+        .emergency-actions h4 {
+            color: #991b1b;
+            margin-bottom: 12px;
+            font-size: 18px;
+        }
+
+        .emergency-actions p {
+            color: #7f1d1d;
+            font-size: 15px;
+            line-height: 1.8;
+            margin-bottom: 10px;
+        }
+
+        .emergency-call-btn {
+            display: block;
+            width: 100%;
+            padding: 18px;
+            background: linear-gradient(135deg, #dc2626 0%, #b91c1c 100%);
+            color: white;
+            text-align: center;
+            border: none;
+            border-radius: 10px;
+            font-size: 18px;
+            font-weight: 700;
+            cursor: pointer;
+            margin-top: 15px;
+            transition: all 0.3s;
+        }
+
+        .emergency-call-btn:hover {
+            background: linear-gradient(135deg, #b91c1c 0%, #991b1b 100%);
+            transform: translateY(-2px);
+            box-shadow: 0 6px 20px rgba(220, 38, 38, 0.4);
+        }
+
+        .info-box {
+            background: linear-gradient(135deg, #dbeafe 0%, #bfdbfe 100%);
+            border: 2px solid #3b82f6;
+            border-radius: 12px;
+            padding: 25px;
+            margin-bottom: 30px;
+        }
+
+        .info-box h3 {
+            color: #1e40af;
+            font-size: 20px;
+            margin-bottom: 15px;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+
+        .info-box ul {
+            list-style: none;
+            margin: 0;
+        }
+
+        .info-box li {
+            padding: 8px 0 8px 30px;
+            position: relative;
+            color: #1e3a8a;
+            font-size: 15px;
+            line-height: 1.6;
+        }
+
+        .info-box li:before {
+            content: "✓";
+            position: absolute;
+            left: 0;
+            color: var(--success);
+            font-weight: bold;
+            font-size: 18px;
+        }
+
+        .safe-confirmation {
+            display: none;
+            background: linear-gradient(135deg, #d1fae5 0%, #a7f3d0 100%);
+            border: 3px solid var(--success);
+            border-radius: 12px;
+            padding: 25px;
+            margin-bottom: 30px;
+            text-align: center;
+        }
+
+        .safe-confirmation.show {
+            display: block;
+        }
+
+        .safe-confirmation h3 {
+            color: #065f46;
+            font-size: 22px;
+            margin-bottom: 12px;
+        }
+
+        .safe-confirmation p {
+            color: #047857;
+            font-size: 16px;
+            line-height: 1.8;
+        }
+
+        .validation-message {
+            display: none;
+            background: #fef2f2;
+            border: 2px solid var(--danger);
+            border-radius: 8px;
+            padding: 15px;
+            margin-bottom: 20px;
+            text-align: center;
+        }
+
+        .validation-message.show {
+            display: block;
+        }
+
+        .validation-message p {
+            color: var(--danger);
+            font-weight: 600;
+            margin: 0;
+        }
+
+        .navigation {
+            display: flex;
+            gap: 15px;
+            margin-top: 40px;
+        }
+
+        .btn {
+            flex: 1;
+            padding: 18px 30px;
+            border: none;
+            border-radius: 10px;
+            font-size: 16px;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.3s;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 8px;
+        }
+
+        .btn-secondary {
+            background: white;
+            color: var(--grad-start);
+            border: 2px solid var(--grad-start);
+        }
+
+        .btn-secondary:hover {
+            background: rgba(14, 116, 144, 0.1);
+        }
+
+        .btn-primary {
+            background: var(--grad-start);
+            color: white;
+            box-shadow: 0 4px 12px rgba(14, 116, 144, 0.3);
+        }
+
+        .btn-primary:hover:not(:disabled) {
+            transform: translateY(-2px);
+            box-shadow: 0 6px 16px rgba(14, 116, 144, 0.4);
+            background: var(--grad-end);
+        }
+
+        .btn-primary:disabled {
+            opacity: 0.5;
+            cursor: not-allowed;
+            transform: none;
+        }
+
+        @media (max-width: 768px) {
+            body {
+                padding: 10px;
+            }
+
+            .header {
+                padding: 30px 20px;
+            }
+
+            .header h1 {
+                font-size: 26px;
+            }
+
+            .content {
+                padding: 30px 20px;
+            }
+
+            .navigation {
+                flex-direction: column;
+            }
+
+            .checklist-item {
+                padding: 15px;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="header">
+            <div class="header-icon">🛡️</div>
+            <h1>QUICK SAFETY CHECK</h1>
+            <p>Let's make sure you're safe with our six point check</p>
+        </div>
+
+        <div class="content">
+            <p class="intro-text">
+                Your safety is our top priority. Please confirm each of these safety points before proceeding.
+            </p>
+
+            <!-- Safety Checklist -->
+            <div class="safety-checklist">
+                <div class="checklist-item" data-check="1">
+                    <input type="checkbox" id="check1" name="safety_check_1">
+                    <label for="check1" class="checklist-label">
+                        <span class="checklist-icon">✅</span>
+                        <strong>Are you or anyone else injured and do you need immediate medical assistance?</strong>
+                    </label>
+                </div>
+
+                <div class="checklist-item" data-check="2">
+                    <input type="checkbox" id="check2" name="safety_check_2">
+                    <label for="check2" class="checklist-label">
+                        <span class="checklist-icon">✅</span>
+                        <strong>Are you in a safe location away from moving traffic, or are you still in the carriageway?</strong>
+                    </label>
+                </div>
+
+                <div class="checklist-item" data-check="3">
+                    <input type="checkbox" id="check3" name="safety_check_3">
+                    <label for="check3" class="checklist-label">
+                        <span class="checklist-icon">✅</span>
+                        <strong>Are all vehicles involved switched off with hazard lights on, and are you wearing high-visibility clothing?</strong>
+                    </label>
+                </div>
+
+                <div class="checklist-item" data-check="4">
+                    <input type="checkbox" id="check4" name="safety_check_4">
+                    <label for="check4" class="checklist-label">
+                        <span class="checklist-icon">✅</span>
+                        <strong>Is the road blocked or partially blocked, creating a hazard for other drivers?</strong>
+                    </label>
+                </div>
+
+                <div class="checklist-item" data-check="5">
+                    <input type="checkbox" id="check5" name="safety_check_5">
+                    <label for="check5" class="checklist-label">
+                        <span class="checklist-icon">✅</span>
+                        <strong>Are there any fuel leaks, smoke, or signs of fire from any of the vehicles?</strong>
+                    </label>
+                </div>
+
+                <div class="checklist-item" data-check="6">
+                    <input type="checkbox" id="check6" name="safety_check_6">
+                    <label for="check6" class="checklist-label">
+                        <span class="checklist-icon">✅</span>
+                        <strong>Can you confirm all occupants are out of the vehicles and in a place of safety?</strong>
+                    </label>
+                </div>
+            </div>
+
+            <!-- Warning Box for Unsafe Conditions -->
+            <div class="warning-box" id="warningBox">
+                <h3>🚨 IMMEDIATE SAFETY ACTIONS REQUIRED</h3>
+                <p style="color: #991b1b; font-size: 16px; margin-bottom: 15px;">
+                    Based on your responses, please take these urgent safety measures:
+                </p>
+                <ul class="warning-list">
+                    <li><strong>If still in carriageway:</strong> Move to the hard shoulder or behind the barrier immediately</li>
+                    <li><strong>If vehicles can't move:</strong> Get out on the side away from traffic and wait behind the barrier</li>
+                    <li><strong>If on motorway:</strong> Do not attempt to retrieve items from the vehicle</li>
+                    <li><strong>Priority order:</strong> Get people to safety first, make the scene visible to other drivers, prevent secondary accidents</li>
+                </ul>
+
+                <div class="emergency-actions">
+                    <h4>⚠️ Safety Priorities:</h4>
+                    <p>✓ Get people to safety first</p>
+                    <p>✓ Make the scene visible to other drivers</p>
+                    <p>✓ Prevent secondary accidents</p>
+                    <p>✓ Only deal with vehicle recovery once people are safe</p>
+                </div>
+
+                <button class="emergency-call-btn" id="call999Btn">
+                    📞 Call 999 Emergency Services
+                </button>
+            </div>
+
+            <!-- Info Box for General Safety Tips -->
+            <div class="info-box">
+                <h3>💡 Safety Reminders</h3>
+                <ul>
+                    <li>Get people to safety first</li>
+                    <li>Make the scene visible to other drivers</li>
+                    <li>Prevent secondary accidents</li>
+                    <li>Only deal with vehicle recovery once people are safe</li>
+                </ul>
+            </div>
+
+            <!-- Safe Confirmation -->
+            <div class="safe-confirmation" id="safeConfirmation">
+                <h3>✅ Safety Checks Completed</h3>
+                <p>Thank you for confirming your safety. You may now proceed with the incident report.</p>
+            </div>
+
+            <!-- Validation Message -->
+            <div class="validation-message" id="validationMessage">
+                <p>⚠️ Please complete all six safety checks before proceeding</p>
+            </div>
+
+            <!-- Navigation -->
+            <div class="navigation">
+                <button type="button" class="btn btn-secondary" id="backBtn">
+                    <span>←</span>
+                    <span>Back</span>
+                </button>
+                <button type="button" class="btn btn-primary" id="nextBtn" disabled>
+                    <span>Continue to Report</span>
+                    <span>→</span>
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        console.log('Six Point Safety Check - Initializing');
+
+        // State
+        const checkboxes = document.querySelectorAll('input[type="checkbox"]');
+        const nextBtn = document.getElementById('nextBtn');
+        const backBtn = document.getElementById('backBtn');
+        const warningBox = document.getElementById('warningBox');
+        const safeConfirmation = document.getElementById('safeConfirmation');
+        const validationMessage = document.getElementById('validationMessage');
+        const call999Btn = document.getElementById('call999Btn');
+
+        // Check if any unsafe conditions detected
+        function checkForUnsafeConditions() {
+            // Check 1: Injuries (if someone is injured)
+            // Check 2: Still in carriageway (unsafe location)
+            // Check 4: Road blocked (hazard)
+            // Check 5: Fuel leaks/fire (immediate danger)
+
+            // For now, show warning if any specific unsafe checks are made
+            // In real implementation, you might want different logic
+            const check2 = document.getElementById('check2').checked;
+            const check5 = document.getElementById('check5').checked;
+
+            if (check2 || check5) {
+                warningBox.classList.add('show');
+            } else {
+                warningBox.classList.remove('show');
+            }
+        }
+
+        // Update validation and styling
+        function updateValidation() {
+            const allChecked = Array.from(checkboxes).every(cb => cb.checked);
+
+            if (allChecked) {
+                nextBtn.disabled = false;
+                safeConfirmation.classList.add('show');
+                validationMessage.classList.remove('show');
+            } else {
+                nextBtn.disabled = true;
+                safeConfirmation.classList.remove('show');
+            }
+
+            // Update checklist item styling
+            checkboxes.forEach(checkbox => {
+                const item = checkbox.closest('.checklist-item');
+                if (checkbox.checked) {
+                    item.classList.add('checked');
+                } else {
+                    item.classList.remove('checked');
+                }
+            });
+
+            // Check for unsafe conditions
+            checkForUnsafeConditions();
+
+            // Save state
+            saveData();
+        }
+
+        // Checkbox change handlers
+        checkboxes.forEach(checkbox => {
+            checkbox.addEventListener('change', updateValidation);
+        });
+
+        // Allow clicking entire checklist item to toggle checkbox
+        document.querySelectorAll('.checklist-item').forEach(item => {
+            item.addEventListener('click', function(e) {
+                if (e.target.type !== 'checkbox') {
+                    const checkbox = this.querySelector('input[type="checkbox"]');
+                    checkbox.checked = !checkbox.checked;
+                    updateValidation();
+                }
+            });
+        });
+
+        // Save data to sessionStorage
+        function saveData() {
+            const data = {
+                safety_check_1: document.getElementById('check1').checked,
+                safety_check_2: document.getElementById('check2').checked,
+                safety_check_3: document.getElementById('check3').checked,
+                safety_check_4: document.getElementById('check4').checked,
+                safety_check_5: document.getElementById('check5').checked,
+                safety_check_6: document.getElementById('check6').checked,
+                all_checks_completed: Array.from(checkboxes).every(cb => cb.checked),
+                completed_at: new Date().toISOString()
+            };
+
+            sessionStorage.setItem('six_point_safety_check', JSON.stringify(data));
+            console.log('Safety check data saved:', data);
+        }
+
+        // Load existing data
+        function loadData() {
+            const saved = sessionStorage.getItem('six_point_safety_check');
+            if (saved) {
+                try {
+                    const data = JSON.parse(saved);
+                    console.log('Loading saved data:', data);
+
+                    // Restore checkbox states
+                    document.getElementById('check1').checked = data.safety_check_1 || false;
+                    document.getElementById('check2').checked = data.safety_check_2 || false;
+                    document.getElementById('check3').checked = data.safety_check_3 || false;
+                    document.getElementById('check4').checked = data.safety_check_4 || false;
+                    document.getElementById('check5').checked = data.safety_check_5 || false;
+                    document.getElementById('check6').checked = data.safety_check_6 || false;
+
+                    updateValidation();
+                } catch (error) {
+                    console.error('Error loading data:', error);
+                }
+            }
+        }
+
+        // Call 999 with location
+        call999Btn.addEventListener('click', function() {
+            const incidentData = JSON.parse(sessionStorage.getItem('incidentData') || '{}');
+
+            let message = 'This will call 999 Emergency Services.';
+
+            if (incidentData.what3words) {
+                message += `\n\nYour what3words location: ///${incidentData.what3words}`;
+                message += '\n\nPlease provide this location to the operator.';
+            } else if (incidentData.location) {
+                message += `\n\nYour GPS coordinates: ${incidentData.location.lat.toFixed(6)}, ${incidentData.location.lng.toFixed(6)}`;
+                message += '\n\nPlease provide these coordinates to the operator.';
+            }
+
+            if (confirm(message)) {
+                window.location.href = 'tel:999';
+            }
+        });
+
+        // Navigation
+        backBtn.addEventListener('click', () => {
+            console.log('Back button clicked - returning to safety check');
+            window.location.href = '/safety-check.html';
+        });
+
+        nextBtn.addEventListener('click', () => {
+            const allChecked = Array.from(checkboxes).every(cb => cb.checked);
+
+            if (!allChecked) {
+                validationMessage.classList.add('show');
+                validationMessage.scrollIntoView({ behavior: 'smooth', block: 'center' });
+                return;
+            }
+
+            console.log('Next button clicked - proceeding to incident form');
+            saveData();
+
+            // Proceed to incident form page 1
+            window.location.href = '/incident-form-page1.html';
+        });
+
+        // Initialize
+        loadData();
+        console.log('Six Point Safety Check initialization complete');
+    </script>
+</body>
+</html>
