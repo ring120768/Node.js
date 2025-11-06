@@ -1,0 +1,11 @@
+Field_Number,Field_Name,HTML_Type,Input_Name,Supabase_Table,Supabase_Column,Data_Type,Required,Default_Value,Category,Generated_By_JS,Mapped_To_DB,Notes
+1,witnesses_present,Radio Button,witnesses_present,incident_reports,witnesses_present,TEXT,Yes,NULL,Witness Presence,No,✅ YES,"Required field - 'yes' or 'no' indicating if witnesses were present at the accident"
+2,witness_name,Text Input,witness-name,incident_witnesses,witness_name,TEXT,Conditional,NULL,Witness 1 Details,No,✅ YES,"First witness full name - Required if witnesses_present = 'yes' (min 3 characters)"
+3,witness_mobile_number,Tel Input,witness-phone,incident_witnesses,witness_phone,TEXT,No,NULL,Witness 1 Details,No,✅ YES,"First witness phone number - Optional but recommended (UK format)"
+4,witness_email_address,Email Input,witness-email,incident_witnesses,witness_email,TEXT,No,NULL,Witness 1 Details,No,✅ YES,"First witness email address - Optional alternative contact method"
+5,witness_statement,Textarea,witness-statement,incident_witnesses,witness_statement,TEXT,Conditional,NULL,Witness 1 Details,No,✅ YES,"What the witness saw - Required if witnesses_present = 'yes' (max 1000 chars, min 10 required)"
+6,temp_session_id,N/A (sessionStorage),N/A,N/A,N/A,UUID,No,NULL,System,Yes,No (sessionStorage),"Reused session ID from Page 6 - Shared across all pages for temp upload tracking"
+7,additional_witnesses,N/A (sessionStorage),N/A,incident_witnesses,N/A,JSONB,No,NULL,System,Yes,✅ YES,"Array of additional witnesses (witness 2, 3+) stored in sessionStorage - Each contains: witness_number, witness_name, witness_mobile_number, witness_email_address, witness_statement, saved_at"
+8,witness_number,N/A (Per Witness),N/A,incident_witnesses,witness_index,INTEGER,Yes,NULL,Witness Metadata,Yes,✅ YES,"Witness index number (1, 2, 3, etc.) - Generated for each additional witness in the array"
+9,saved_at,N/A (Per Witness),N/A,N/A,N/A,TIMESTAMP,No,NULL,System,Yes,No (sessionStorage),"Timestamp when witness was saved to sessionStorage - ISO format (e.g., '2025-01-15T14:30:00.000Z')"
+10,statement_char_counter,Display Field (span),N/A,N/A,N/A,TEXT,No,NULL,UI Feedback,Yes,No (Frontend Only),"Character count display showing current/max characters in witness statement (e.g., '250 / 1000 characters')"
