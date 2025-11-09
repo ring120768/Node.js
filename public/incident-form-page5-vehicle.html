@@ -265,11 +265,24 @@
       background: var(--button-hover);
     }
 
+    .radio-option:has(input[type="radio"]:checked) {
+      border: 3px solid var(--accent);
+      background: rgba(14, 116, 144, 0.18);
+      box-shadow: 0 4px 12px rgba(14, 116, 144, 0.25);
+      transform: scale(1.02);
+    }
+
+    .radio-option:has(input[type="radio"]:checked) label {
+      color: var(--accent);
+      font-weight: 700;
+    }
+
     .radio-option input[type="radio"] {
       width: 20px;
       height: 20px;
       margin-right: 12px;
       cursor: pointer;
+      accent-color: var(--accent);
     }
 
     .radio-option label {
