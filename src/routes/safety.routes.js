@@ -15,13 +15,17 @@ const safetyController = require('../controllers/safety.controller');
  * Update safety status for a user
  * Body: { userId, safetyStatus, areYouSafe, timestamp, location, what3words, what3wordsStoragePath, address }
  */
-router.post('/safety-status', requireAuth, safetyController.updateSafetyStatus);
+router.post('/safety-status', requireAuth, (req, res) => {
+  return safetyController.updateSafetyStatus(req, res);
+});
 
 /**
  * GET /api/safety-status/:userId
  * Get current safety status for a user
  */
-router.get('/safety-status/:userId', requireAuth, safetyController.getSafetyStatus);
+router.get('/safety-status/:userId', requireAuth, (req, res) => {
+  return safetyController.getSafetyStatus(req, res);
+});
 
 /**
  * POST /api/update-safety-status (Legacy alias)
