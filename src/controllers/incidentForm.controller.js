@@ -406,9 +406,9 @@ function buildIncidentData(userId, formData) {
   return {
     create_user_id: userId,
 
-    // Page 1: Date, Time, Location
-    incident_date: page1.incident_date || null,
-    incident_time: page1.incident_time || null,
+    // Page 1: Date, Time, Location (maps to accident_date/accident_time columns from migration 016)
+    accident_date: page1.incident_date || null,
+    accident_time: page1.incident_time || null,
     location_address: page1.location_address || null,
     location_postcode: page1.location_postcode || null,
     location_city: page1.location_city || null,
