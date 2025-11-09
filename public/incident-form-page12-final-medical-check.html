@@ -736,20 +736,26 @@
 
           console.log('✅ Incident report submitted successfully:', result);
 
-          // Store incident ID for transcription page
-          if (result.incidentId) {
-            sessionStorage.setItem('submitted_incident_id', result.incidentId);
+          // Extract incident ID from response
+          const incidentId = result.data?.incident_id;
+
+          if (!incidentId) {
+            console.error('❌ No incident_id in response:', result);
+            throw new Error('Server did not return incident ID');
           }
 
-          // Store complete data for transcription page
+          // Store incident ID for transcription page (sessionStorage + URL params)
+          sessionStorage.setItem('submitted_incident_id', incidentId);
           sessionStorage.setItem('complete_incident_data', JSON.stringify(formData));
+
+          console.log('✅ Stored incident data:', { incidentId });
 
           // Show success message briefly
           submitBtn.textContent = '✅ Report Saved!';
 
-          // Redirect to transcription status page
+          // Redirect to transcription status page WITH incident_id parameter
           setTimeout(() => {
-            window.location.href = '/transcription-status.html';
+            window.location.href = `/transcription-status.html?incident_id=${incidentId}`;
           }, 1000);
 
         } catch (error) {

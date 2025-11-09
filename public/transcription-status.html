@@ -1742,16 +1742,28 @@ Continue with: What happened immediately after impact? Any injuries you noticed?
         // ===== TYPEFORM REDIRECT HANDLER =====
         function extractTypeformParams() {
             const urlParams = new URLSearchParams(window.location.search);
-            const user_id = urlParams.get('auth_user_id') ||
-                           urlParams.get('user_id') ||
-                           urlParams.get('userId') ||
-                           urlParams.get('create_user_id');
 
-            const incident_id = urlParams.get('incident_id');
+            // Check URL params first
+            let user_id = urlParams.get('auth_user_id') ||
+                         urlParams.get('user_id') ||
+                         urlParams.get('userId') ||
+                         urlParams.get('create_user_id');
 
-            console.log('📥 URL parameters:', {
+            let incident_id = urlParams.get('incident_id');
+
+            // Fallback to sessionStorage (for page 12 submissions)
+            if (!incident_id) {
+                incident_id = sessionStorage.getItem('submitted_incident_id');
+                if (incident_id) {
+                    console.log('📦 Retrieved incident_id from sessionStorage:', incident_id);
+                }
+            }
+
+            console.log('📥 Extracted parameters:', {
                 user_id,
                 incident_id,
+                source: urlParams.get('incident_id') ? 'URL params' :
+                        sessionStorage.getItem('submitted_incident_id') ? 'sessionStorage' : 'none',
                 fullUrl: window.location.href
             });
 

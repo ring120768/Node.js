@@ -102,6 +102,21 @@ async function pageAuth(req, res, next) {
  */
 async function apiAuth(req, res, next) {
   try {
+    // LOG EVERYTHING at the start for debugging
+    const initialCookies = parseCookies(req);
+    logger.info('🔍 API auth start', {
+      path: req.path,
+      method: req.method,
+      hasAuthHeader: !!req.headers.authorization,
+      authHeaderValue: req.headers.authorization ? req.headers.authorization.substring(0, 20) + '...' : 'none',
+      rawCookieHeader: req.headers.cookie ? req.headers.cookie.substring(0, 100) + '...' : 'none',
+      parsedCookieKeys: Object.keys(initialCookies),
+      hasAccessToken: !!initialCookies['access_token'],
+      hasSbAccessToken: !!initialCookies['sb-access-token'],
+      hasSbAuthToken: !!initialCookies['sb-auth-token'],
+      accessTokenLength: initialCookies['access_token'] ? initialCookies['access_token'].length : 0
+    });
+
     // Check Authorization header first (for API calls)
     let sessionToken = req.headers.authorization?.replace('Bearer ', '');
 
@@ -109,9 +124,27 @@ async function apiAuth(req, res, next) {
     if (!sessionToken) {
       const cookies = parseCookies(req);
       sessionToken = cookies['access_token'] || cookies['sb-access-token'] || cookies['sb-auth-token'];
+
+      logger.info('API auth - using cookies', {
+        path: req.path,
+        cookieKeys: Object.keys(cookies),
+        hasAccessToken: !!cookies['access_token'],
+        tokenFound: !!sessionToken
+      });
+    } else {
+      logger.info('API auth - using Authorization header', {
+        path: req.path,
+        tokenLength: sessionToken.length
+      });
     }
 
     if (!sessionToken) {
+      logger.warn('API auth failed: No token found', {
+        path: req.path,
+        hasAuthHeader: !!req.headers.authorization,
+        cookieCount: Object.keys(parseCookies(req)).length
+      });
+
       return res.status(401).json({
         error: 'Unauthorized',
         message: 'Authentication required'
@@ -122,11 +155,23 @@ async function apiAuth(req, res, next) {
     const { data: { user }, error } = await supabase.auth.getUser(sessionToken);
 
     if (error || !user) {
+      logger.warn('API auth failed: Token validation failed', {
+        path: req.path,
+        error: error?.message,
+        hasUser: !!user
+      });
+
       return res.status(401).json({
         error: 'Unauthorized',
         message: error?.message || 'Invalid or expired session'
       });
     }
+
+    logger.info('API auth successful', {
+      userId: user.id,
+      email: user.email,
+      path: req.path
+    });
 
     // Attach user to request
     req.user = user;
