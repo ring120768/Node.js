@@ -541,6 +541,9 @@
       }
     }
   </style>
+
+  <!-- Next Button Tooltip Component -->
+  <link rel="stylesheet" href="/components/next-button-tooltip.css">
 </head>
 <body>
   <!-- Sticky Banner -->
@@ -946,6 +949,46 @@
     });
 
     console.log('📋 Incident Form - Page 2: Medical Information loaded');
+  </script>
+
+  <!-- Next Button Tooltip Component -->
+  <script src="/components/next-button-tooltip.js"></script>
+  <script>
+    // Initialize tooltip with validation logic
+    function getValidationMessages() {
+      const messages = [];
+      const medicalAttentionSelected = document.querySelector('input[name="medical_attention_needed"]:checked');
+
+      // Check main question
+      if (!medicalAttentionSelected) {
+        messages.push('Select whether you need medical attention');
+      } else if (medicalAttentionSelected.value === 'yes') {
+        // Check conditional fields
+        const injuryDetails = document.getElementById('medical_injury_details').value.trim();
+        const injurySeverity = document.getElementById('medical_injury_severity').value;
+        const ambulanceCalled = document.querySelector('input[name="medical_ambulance_called"]:checked');
+
+        if (!injuryDetails) {
+          messages.push('Provide details of your injuries');
+        }
+
+        if (!injurySeverity) {
+          messages.push('Select the severity of your injuries');
+        }
+
+        if (!ambulanceCalled) {
+          messages.push('Indicate if an ambulance was called');
+        }
+      }
+
+      return {
+        complete: messages.length === 0,
+        messages: messages
+      };
+    }
+
+    // Initialize the tooltip
+    initNextButtonTooltip(validateForm, getValidationMessages);
   </script>
 </body>
 </html>
