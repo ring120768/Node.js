@@ -363,6 +363,50 @@
       margin-top: 32px;
     }
 
+    /* Skip Section Button */
+    .skip-section-wrapper {
+      grid-column: 1 / -1;
+      text-align: center;
+      margin-bottom: 12px;
+      padding: 16px;
+      background: linear-gradient(135deg, rgba(239, 68, 68, 0.05) 0%, rgba(239, 68, 68, 0.02) 100%);
+      border-radius: 12px;
+      border: 1px dashed var(--border);
+    }
+
+    .skip-section-label {
+      display: block;
+      font-size: 0.875rem;
+      color: var(--text-muted);
+      margin-bottom: 8px;
+      font-weight: 500;
+    }
+
+    .btn-skip {
+      background: white;
+      color: var(--text-dark);
+      border: 2px solid var(--border);
+      padding: 12px 24px;
+      border-radius: 8px;
+      font-size: 0.938rem;
+      font-weight: 600;
+      cursor: pointer;
+      transition: all 0.2s;
+      display: inline-flex;
+      align-items: center;
+      gap: 8px;
+    }
+
+    .btn-skip:hover {
+      background: var(--bg-light);
+      border-color: var(--accent);
+      transform: translateY(-1px);
+    }
+
+    .btn-skip:active {
+      transform: translateY(0);
+    }
+
     .btn {
       padding: 16px 24px;
       border-radius: 12px;
@@ -782,6 +826,15 @@
     </div>
 
     <!-- Navigation Buttons -->
+    <!-- Skip Section Option -->
+    <div class="skip-section-wrapper">
+      <span class="skip-section-label">No other vehicles involved?</span>
+      <button type="button" class="btn-skip" id="skip-section-btn">
+        <span>Skip This Section</span>
+        <span>→</span>
+      </button>
+    </div>
+
     <div class="nav-buttons">
       <button type="button" class="btn btn-secondary" id="back-btn">
         <span>←</span>
@@ -1272,6 +1325,35 @@
     document.getElementById('back-btn').addEventListener('click', () => {
       autoSave();
       window.location.href = '/incident-form-page6-vehicle-images.html';
+    });
+
+    // Skip Section - No Other Vehicles Involved
+    document.getElementById('skip-section-btn').addEventListener('click', () => {
+      // Confirm user wants to skip
+      const confirmed = confirm(
+        'Are you sure?\n\n' +
+        'Clicking "OK" will skip this section and mark that no other vehicles were involved in the incident.\n\n' +
+        'You can always go back later if you need to add other vehicle information.'
+      );
+
+      if (confirmed) {
+        // Clear any existing page 7 data
+        sessionStorage.removeItem('incident_page7');
+        sessionStorage.removeItem('additional_vehicles');
+
+        // Save a flag indicating no other vehicles
+        const skipData = {
+          no_other_vehicles: true,
+          skipped_at: new Date().toISOString(),
+          completed_at: new Date().toISOString()
+        };
+        sessionStorage.setItem('incident_page7', JSON.stringify(skipData));
+
+        console.log('✅ Page 7 skipped: No other vehicles involved');
+
+        // Proceed to next page
+        window.location.href = '/incident-form-page8-other-damage-images.html';
+      }
     });
 
     // Add Another Vehicle handler

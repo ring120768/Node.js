@@ -268,6 +268,50 @@
       margin-top: 32px;
     }
 
+    /* Skip Section Button */
+    .skip-section-wrapper {
+      grid-column: 1 / -1;
+      text-align: center;
+      margin-bottom: 12px;
+      padding: 16px;
+      background: linear-gradient(135deg, rgba(239, 68, 68, 0.05) 0%, rgba(239, 68, 68, 0.02) 100%);
+      border-radius: 12px;
+      border: 1px dashed var(--border);
+    }
+
+    .skip-section-label {
+      display: block;
+      font-size: 0.875rem;
+      color: var(--text-muted);
+      margin-bottom: 8px;
+      font-weight: 500;
+    }
+
+    .btn-skip {
+      background: white;
+      color: var(--text-dark);
+      border: 2px solid var(--border);
+      padding: 12px 24px;
+      border-radius: 8px;
+      font-size: 0.938rem;
+      font-weight: 600;
+      cursor: pointer;
+      transition: all 0.2s;
+      display: inline-flex;
+      align-items: center;
+      gap: 8px;
+    }
+
+    .btn-skip:hover {
+      background: var(--bg-light);
+      border-color: var(--accent);
+      transform: translateY(-1px);
+    }
+
+    .btn-skip:active {
+      transform: translateY(0);
+    }
+
     .btn {
       padding: 16px 24px;
       border-radius: 12px;
@@ -499,6 +543,15 @@
     </div>
 
     <!-- Navigation Buttons -->
+    <!-- Skip Section Option -->
+    <div class="skip-section-wrapper">
+      <span class="skip-section-label">No damage photos to upload?</span>
+      <button type="button" class="btn-skip" id="skip-section-btn">
+        <span>Skip This Section</span>
+        <span>→</span>
+      </button>
+    </div>
+
     <div class="nav-buttons">
       <button type="button" class="btn btn-secondary" id="back-btn">
         <span>←</span>
@@ -761,6 +814,34 @@
     document.getElementById('back-btn').addEventListener('click', () => {
       autoSave();
       window.location.href = '/incident-form-page7-other-vehicle.html';
+    });
+
+    // Skip Section - No Damage Photos
+    document.getElementById('skip-section-btn').addEventListener('click', () => {
+      // Confirm user wants to skip
+      const confirmed = confirm(
+        'Are you sure?\n\n' +
+        'Clicking "OK" will skip this section and continue without uploading damage photos.\n\n' +
+        'You can always go back later if you need to add photos.'
+      );
+
+      if (confirmed) {
+        // Clear any existing page 8 data
+        sessionStorage.removeItem('incident_page8');
+
+        // Save a flag indicating no damage photos
+        const skipData = {
+          no_damage_photos: true,
+          skipped_at: new Date().toISOString(),
+          completed_at: new Date().toISOString()
+        };
+        sessionStorage.setItem('incident_page8', JSON.stringify(skipData));
+
+        console.log('✅ Page 8 skipped: No damage photos uploaded');
+
+        // Proceed to next page
+        window.location.href = '/incident-form-page9-witnesses.html';
+      }
     });
 
     document.getElementById('next-btn').addEventListener('click', () => {
