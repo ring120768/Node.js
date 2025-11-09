@@ -15,7 +15,7 @@
 
         body {
             font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif;
-            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            background: linear-gradient(135deg, #0E7490 0%, #0c6179 100%);
             min-height: 100vh;
             padding: 20px;
         }
@@ -2287,15 +2287,29 @@ Continue with: What happened immediately after impact? Any injuries you noticed?
 
                 // Show detailed error message
                 let errorMessage = 'Failed to process recording. ';
+                let isRateLimit = false;
+
                 if (error.message) {
                     errorMessage += error.message;
+                    // Check if it's a rate limit error (not a billing issue)
+                    isRateLimit = error.message.includes('rate limit') || error.message.includes('OPENAI_RATE_LIMIT');
                 } else {
                     errorMessage += 'Please try again.';
                 }
 
+                // For rate limit errors, show helpful retry message
+                if (isRateLimit) {
+                    errorMessage = '⏱️ ' + errorMessage + '\n\n💡 Tip: Wait 10-15 seconds and click "Retry Upload" below.';
+                    // Show retry button for rate limits
+                    document.getElementById('retryButton').style.display = 'inline-block';
+                    document.getElementById('recordButton').style.display = 'none';
+                } else {
+                    // For other errors, show record button
+                    document.getElementById('recordButton').style.display = 'inline-block';
+                    document.getElementById('retryButton').style.display = 'none';
+                }
+
                 showStatus(errorMessage, 'error');
-                document.getElementById('recordButton').style.display = 'inline-block';
-                document.getElementById('retryButton').style.display = 'none';
             }
         }
 

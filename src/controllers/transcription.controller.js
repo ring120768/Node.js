@@ -110,7 +110,10 @@ async function transcribeAudio(req, res) {
         status: openaiError.status,
         type: openaiError.type,
         code: openaiError.code,
-        param: openaiError.param
+        param: openaiError.param,
+        headers: openaiError.headers,
+        // Log full error for debugging
+        fullError: JSON.stringify(openaiError, null, 2)
       });
       throw openaiError; // Re-throw to be caught by outer catch
     }
@@ -192,7 +195,30 @@ async function transcribeAudio(req, res) {
     });
 
     // Handle specific OpenAI errors
-    if (error.status === 429 || error.code === 'insufficient_quota') {
+    if (error.status === 429) {
+      // Check if it's rate limiting or quota
+      const isQuotaError = error.code === 'insufficient_quota' ||
+                          (error.message && error.message.toLowerCase().includes('quota'));
+
+      if (isQuotaError) {
+        return sendError(
+          res,
+          503,
+          'OpenAI API quota exceeded. Please check your billing details at https://platform.openai.com/account/billing',
+          'OPENAI_QUOTA_EXCEEDED'
+        );
+      } else {
+        // Rate limit error (too many requests per minute)
+        return sendError(
+          res,
+          429,
+          'OpenAI API rate limit reached. Please wait a moment and try again. This is not a billing issue.',
+          'OPENAI_RATE_LIMIT'
+        );
+      }
+    }
+
+    if (error.code === 'insufficient_quota') {
       return sendError(
         res,
         503,
