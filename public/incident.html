@@ -935,13 +935,34 @@
                 if (response.ok) {
                     const data = await response.json();
                     voiceTranscription = data.text;
-                    voiceStatus.textContent = 'Audio transcribed successfully!';
+                    voiceStatus.textContent = '✅ Audio transcribed successfully!';
+                    voiceStatus.style.color = '#10b981';
+                    voiceStatus.style.fontWeight = 'bold';
                     console.log('Transcription received:', voiceTranscription);
 
                     // Save emergency audio to database
                     await saveEmergencyAudioToDatabase(voiceTranscription);
+
+                    // Auto-redirect to view transcription after 1.5 seconds with smooth transition
+                    setTimeout(() => {
+                        voiceStatus.textContent = '📝 Showing your transcription...';
+
+                        // Save transcription to sessionStorage for transcription-status.html
+                        sessionStorage.setItem('latest_transcription', voiceTranscription);
+                        sessionStorage.setItem('show_transcription_on_load', 'true');
+
+                        // Add fade-out transition to body
+                        document.body.style.transition = 'opacity 0.5s ease-out';
+                        document.body.style.opacity = '0';
+
+                        // Navigate after fade completes
+                        setTimeout(() => {
+                            window.location.href = '/transcription-status.html';
+                        }, 500);
+                    }, 1500);
                 } else {
                     voiceStatus.textContent = 'Transcription failed. Audio saved for manual review.';
+                    voiceStatus.style.color = '#ef4444';
                     console.error('Whisper API error:', response.status);
                 }
             } catch (error) {

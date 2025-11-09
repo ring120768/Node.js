@@ -18,6 +18,19 @@
             background: linear-gradient(135deg, #0E7490 0%, #0c6179 100%);
             min-height: 100vh;
             padding: 20px;
+            opacity: 1;
+            animation: fadeIn 0.6s ease-in;
+        }
+
+        @keyframes fadeIn {
+            from {
+                opacity: 0;
+                transform: translateY(10px);
+            }
+            to {
+                opacity: 1;
+                transform: translateY(0);
+            }
         }
 
         .container {
@@ -2941,6 +2954,36 @@ Continue with: What happened immediately after impact? Any injuries you noticed?
 
             // Check for saved draft
             restoreDraft();
+
+            // Auto-show transcription if redirected from incident.html
+            const shouldShowTranscription = sessionStorage.getItem('show_transcription_on_load');
+            const latestTranscription = sessionStorage.getItem('latest_transcription');
+
+            if (shouldShowTranscription === 'true' && latestTranscription) {
+                console.log('📝 Auto-showing latest transcription from incident.html');
+
+                // Show the transcription immediately with animation
+                setTimeout(() => {
+                    document.getElementById('transcriptionText').textContent = latestTranscription;
+                    document.getElementById('transcriptionResult').style.display = 'block';
+
+                    // Switch to transcription tab
+                    switchTab('transcription');
+
+                    // Scroll to transcription with smooth animation
+                    document.getElementById('transcriptionResult').scrollIntoView({
+                        behavior: 'smooth',
+                        block: 'start'
+                    });
+
+                    // Show success message
+                    showStatus('✅ Your transcription is ready! You can edit it below if needed.', 'success');
+
+                    // Clear the flags so it doesn't auto-show again on refresh
+                    sessionStorage.removeItem('show_transcription_on_load');
+                    sessionStorage.removeItem('latest_transcription');
+                }, 300); // Small delay for smooth transition
+            }
 
             // Set up event listeners
             document.getElementById('recordButton').addEventListener('click', startRecording);
