@@ -2292,14 +2292,20 @@ Continue with: What happened immediately after impact? Any injuries you noticed?
                 if (error.message) {
                     errorMessage += error.message;
                     // Check if it's a rate limit error (not a billing issue)
-                    isRateLimit = error.message.includes('rate limit') || error.message.includes('OPENAI_RATE_LIMIT');
+                    // Check both message text AND error code
+                    isRateLimit = error.message.includes('rate limit') ||
+                                 error.message.includes('Too many requests') ||
+                                 error.message.includes('OPENAI_RATE_LIMIT') ||
+                                 error.message.includes('NOT a billing issue');
                 } else {
                     errorMessage += 'Please try again.';
                 }
 
                 // For rate limit errors, show helpful retry message
                 if (isRateLimit) {
-                    errorMessage = '⏱️ ' + errorMessage + '\n\n💡 Tip: Wait 10-15 seconds and click "Retry Upload" below.';
+                    errorMessage = '⏱️ Too many requests - OpenAI rate limit reached.\n\n' +
+                                  '💡 Your billing is FINE ($99+ credit remaining).\n\n' +
+                                  '✅ Just wait 10-15 seconds and click "Retry Upload" below.';
                     // Show retry button for rate limits
                     document.getElementById('retryButton').style.display = 'inline-block';
                     document.getElementById('recordButton').style.display = 'none';

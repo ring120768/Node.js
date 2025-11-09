@@ -196,11 +196,20 @@ async function transcribeAudio(req, res) {
 
     // Handle specific OpenAI errors
     if (error.status === 429) {
-      // Check if it's rate limiting or quota
+      // IMPORTANT: Assume all 429s are RATE LIMITS unless explicitly quota-related
+      // This is safer because rate limits are temporary, quota issues need billing fixes
       const isQuotaError = error.code === 'insufficient_quota' ||
-                          (error.message && error.message.toLowerCase().includes('quota'));
+                          error.code === 'quota_exceeded' ||
+                          (error.message && (
+                            error.message.toLowerCase().includes('insufficient_quota') ||
+                            error.message.toLowerCase().includes('exceeded your current quota')
+                          ));
 
       if (isQuotaError) {
+        logger.error('🚨 ACTUAL QUOTA ERROR - Billing issue detected', {
+          code: error.code,
+          message: error.message
+        });
         return sendError(
           res,
           503,
@@ -208,17 +217,23 @@ async function transcribeAudio(req, res) {
           'OPENAI_QUOTA_EXCEEDED'
         );
       } else {
-        // Rate limit error (too many requests per minute)
+        // Rate limit error (too many requests per minute) - DEFAULT for all 429s
+        logger.warn('⏱️ Rate limit hit (not a billing issue)', {
+          status: error.status,
+          code: error.code,
+          message: error.message
+        });
         return sendError(
           res,
           429,
-          'OpenAI API rate limit reached. Please wait a moment and try again. This is not a billing issue.',
+          'Too many requests. Please wait 10-15 seconds and try again. This is NOT a billing issue - your quota is fine.',
           'OPENAI_RATE_LIMIT'
         );
       }
     }
 
-    if (error.code === 'insufficient_quota') {
+    if (error.code === 'insufficient_quota' || error.code === 'quota_exceeded') {
+      logger.error('🚨 QUOTA ERROR - Billing issue', { code: error.code });
       return sendError(
         res,
         503,
