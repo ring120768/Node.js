@@ -25,8 +25,6 @@ router.get('/safety-status/:userId', requireAuth, safetyController.getSafetyStat
  * POST /api/update-safety-status (Legacy alias)
  * Redirect to new endpoint
  */
-router.post('/update-safety-status', requireAuth, (req, res) => {
-  safetyController.updateSafetyStatus(req, res);
-});
+router.post('/update-safety-status', requireAuth, safetyController.updateSafetyStatus);
 
 module.exports = router;
