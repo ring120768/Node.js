@@ -142,6 +142,10 @@ function createApp() {
   });
 
   app.get('/transcription-status.html', pageAuth, (req, res) => {
+    // Force no-cache to ensure users get latest fixes
+    res.setHeader('Cache-Control', 'no-cache, no-store, must-revalidate, private, max-age=0');
+    res.setHeader('Pragma', 'no-cache');
+    res.setHeader('Expires', '0');
     res.sendFile(path.join(__dirname, '../public/transcription-status.html'));
   });
 
@@ -195,6 +199,10 @@ function createApp() {
   });
 
   app.get('/incident-form-page12.html', pageAuth, (req, res) => {
+    // Force no-cache to ensure users get latest fixes
+    res.setHeader('Cache-Control', 'no-cache, no-store, must-revalidate, private, max-age=0');
+    res.setHeader('Pragma', 'no-cache');
+    res.setHeader('Expires', '0');
     res.sendFile(path.join(__dirname, '../public/incident-form-page12.html'));
   });
 
