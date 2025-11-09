@@ -961,9 +961,17 @@
                         }, 500);
                     }, 1500);
                 } else {
-                    voiceStatus.textContent = 'Transcription failed. Audio saved for manual review.';
-                    voiceStatus.style.color = '#ef4444';
-                    console.error('Whisper API error:', response.status);
+                    // Parse error response to show detailed message
+                    try {
+                        const errorData = await response.json();
+                        voiceStatus.textContent = errorData.error || 'Transcription failed. Audio saved for manual review.';
+                        voiceStatus.style.color = '#ef4444';
+                        console.error('Whisper API error:', response.status, errorData);
+                    } catch (parseError) {
+                        voiceStatus.textContent = 'Transcription failed. Audio saved for manual review.';
+                        voiceStatus.style.color = '#ef4444';
+                        console.error('Whisper API error:', response.status);
+                    }
                 }
             } catch (error) {
                 console.error('Whisper transcription error:', error);
