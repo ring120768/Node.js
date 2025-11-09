@@ -12,10 +12,10 @@
 const express = require('express');
 const router = express.Router();
 const incidentFormController = require('../controllers/incidentForm.controller');
-const { authenticateToken } = require('../middleware/auth');
+const { apiAuth } = require('../middleware/pageAuth');
 
-// All endpoints require authentication
-router.use(authenticateToken);
+// All endpoints require authentication (supports both headers and cookies)
+router.use(apiAuth);
 
 /**
  * POST /api/incident-form/submit

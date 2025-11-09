@@ -617,7 +617,6 @@ function buildIncidentData(userId, formData) {
 
     // Page 9: Witnesses (boolean flags only - witness details saved to incident_witnesses table)
     witnesses_present: page9.witnesses_present || null,
-    any_witness: page9.witnesses_present === 'yes',
 
     // Page 10: Police Details & Safety Equipment
     police_attended: page10.police_attended === 'yes',
