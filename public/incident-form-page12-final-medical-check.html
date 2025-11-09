@@ -687,32 +687,81 @@
       window.location.href = '/incident-form-page10-police-details.html';
     });
 
-    submitBtn.addEventListener('click', () => {
+    submitBtn.addEventListener('click', async () => {
       if (!submitBtn.disabled) {
         autoSave();
 
-        // Merge all page data
-        const allData = {};
-        for (let i = 1; i <= 12; i++) {
-          const pageData = sessionStorage.getItem(`incident_page${i}`);
-          if (pageData) {
-            Object.assign(allData, JSON.parse(pageData));
+        // Disable button and show loading state
+        submitBtn.disabled = true;
+        submitBtn.textContent = 'Submitting Report...';
+
+        try {
+          // Gather all page data from sessionStorage
+          const formData = {};
+          for (let i = 1; i <= 12; i++) {
+            const pageData = sessionStorage.getItem(`incident_page${i}`);
+            if (pageData) {
+              formData[`page${i}`] = JSON.parse(pageData);
+            }
           }
+
+          // Also merge any form_data
+          const mergedData = sessionStorage.getItem('incident_form_data');
+          if (mergedData) {
+            const merged = JSON.parse(mergedData);
+            // Distribute merged data to appropriate pages if not already present
+            Object.keys(merged).forEach(key => {
+              if (!formData.page1) formData.page1 = {};
+              if (!formData.page1[key]) formData.page1[key] = merged[key];
+            });
+          }
+
+          console.log('Submitting complete incident report:', formData);
+
+          // Submit to backend API
+          const response = await fetch('/api/incident-form/submit', {
+            method: 'POST',
+            headers: {
+              'Content-Type': 'application/json'
+            },
+            credentials: 'include',
+            body: JSON.stringify(formData)
+          });
+
+          const result = await response.json();
+
+          if (!response.ok) {
+            throw new Error(result.error || 'Failed to submit incident report');
+          }
+
+          console.log('✅ Incident report submitted successfully:', result);
+
+          // Store incident ID for transcription page
+          if (result.incidentId) {
+            sessionStorage.setItem('submitted_incident_id', result.incidentId);
+          }
+
+          // Store complete data for transcription page
+          sessionStorage.setItem('complete_incident_data', JSON.stringify(formData));
+
+          // Show success message briefly
+          submitBtn.textContent = '✅ Report Saved!';
+
+          // Redirect to transcription status page
+          setTimeout(() => {
+            window.location.href = '/transcription-status.html';
+          }, 1000);
+
+        } catch (error) {
+          console.error('❌ Failed to submit incident report:', error);
+
+          // Show error to user
+          alert(`Failed to submit report: ${error.message}\n\nPlease try again or contact support if the problem persists.`);
+
+          // Re-enable button
+          submitBtn.disabled = false;
+          submitBtn.textContent = '📝 Submit Incident Report';
         }
-
-        // Also get the merged data
-        const mergedData = sessionStorage.getItem('incident_form_data');
-        if (mergedData) {
-          Object.assign(allData, JSON.parse(mergedData));
-        }
-
-        console.log('Complete incident report data:', allData);
-
-        // Store complete data for transcription page
-        sessionStorage.setItem('complete_incident_data', JSON.stringify(allData));
-
-        // Redirect to transcription status page
-        window.location.href = '/transcription-status.html';
       }
     });
 
