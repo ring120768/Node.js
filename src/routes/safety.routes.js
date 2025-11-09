@@ -1,6 +1,6 @@
 const express = require('express');
 const router = express.Router();
-const { requireAuth } = require('../middleware/auth');
+const { authenticateToken } = require('../middleware/auth');
 
 // Import controller functions directly to avoid timing issues
 const safetyController = require('../controllers/safety.controller');
@@ -18,7 +18,7 @@ console.log('Safety Controller Methods:', Object.keys(safetyController));
  * Update safety status for a user
  * Body: { userId, safetyStatus, areYouSafe, timestamp, location, what3words, what3wordsStoragePath, address }
  */
-router.post('/safety-status', requireAuth, (req, res) => {
+router.post('/safety-status', authenticateToken, (req, res) => {
   if (typeof safetyController.updateSafetyStatus !== 'function') {
     console.error('updateSafetyStatus is not a function:', typeof safetyController.updateSafetyStatus);
     return res.status(500).json({ error: 'Controller method not available' });
@@ -30,7 +30,7 @@ router.post('/safety-status', requireAuth, (req, res) => {
  * GET /api/safety-status/:userId
  * Get current safety status for a user
  */
-router.get('/safety-status/:userId', requireAuth, (req, res) => {
+router.get('/safety-status/:userId', authenticateToken, (req, res) => {
   if (typeof safetyController.getSafetyStatus !== 'function') {
     console.error('getSafetyStatus is not a function:', typeof safetyController.getSafetyStatus);
     return res.status(500).json({ error: 'Controller method not available' });
@@ -42,7 +42,7 @@ router.get('/safety-status/:userId', requireAuth, (req, res) => {
  * POST /api/update-safety-status (Legacy alias)
  * Redirect to new endpoint
  */
-router.post('/update-safety-status', requireAuth, (req, res) => {
+router.post('/update-safety-status', authenticateToken, (req, res) => {
   if (typeof safetyController.updateSafetyStatus !== 'function') {
     console.error('updateSafetyStatus is not a function:', typeof safetyController.updateSafetyStatus);
     return res.status(500).json({ error: 'Controller method not available' });
