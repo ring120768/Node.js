@@ -438,100 +438,180 @@ function buildIncidentData(userId, formData) {
     medical_symptom_life_threatening: page2.medical_symptom_life_threatening || false,
     medical_symptom_none: page2.medical_symptom_none || false,
 
-    // Page 3: Date/Weather/Road Conditions
+    // Page 3: Date/Time/Weather/Road Conditions (41 fields - matches migration 016)
+    accident_date: page3.accident_date || null,
+    accident_time: page3.accident_time || null,
+
+    // Weather conditions (12 checkboxes)
+    weather_bright_sunlight: page3.weather_bright_sunlight || false,
     weather_clear: page3.weather_clear || false,
-    weather_rain: page3.weather_rain || false,
-    weather_snow: page3.weather_snow || false,
+    weather_cloudy: page3.weather_cloudy || false,
+    weather_raining: page3.weather_raining || false,
+    weather_heavy_rain: page3.weather_heavy_rain || false,
+    weather_drizzle: page3.weather_drizzle || false,
     weather_fog: page3.weather_fog || false,
-    weather_wind: page3.weather_wind || false,
-    weather_ice_frost: page3.weather_ice_frost || false,
+    weather_snow: page3.weather_snow || false,
+    weather_ice: page3.weather_ice || false,
+    weather_windy: page3.weather_windy || false,
+    weather_hail: page3.weather_hail || false,
+    weather_thunder_lightning: page3.weather_thunder_lightning || false,
 
-    visibility_good: page3.visibility_good || false,
-    visibility_poor: page3.visibility_poor || false,
-    visibility_street_lights: page3.visibility_street_lights || false,
-
+    // Road conditions (6 checkboxes)
     road_condition_dry: page3.road_condition_dry || false,
     road_condition_wet: page3.road_condition_wet || false,
     road_condition_icy: page3.road_condition_icy || false,
-    road_condition_snow: page3.road_condition_snow || false,
-    road_condition_slippery: page3.road_condition_slippery || false,
-    road_condition_debris: page3.road_condition_debris || false,
-    road_condition_slush_road: page3.road_condition_slush_road || false,
+    road_condition_snow_covered: page3.road_condition_snow_covered || false,
+    road_condition_loose_surface: page3.road_condition_loose_surface || false,
+    road_condition_slush_on_road: page3.road_condition_slush_on_road || false,
 
+    // Road types (7 checkboxes)
     road_type_motorway: page3.road_type_motorway || false,
     road_type_a_road: page3.road_type_a_road || false,
     road_type_b_road: page3.road_type_b_road || false,
-    road_type_urban: page3.road_type_urban || false,
-    road_type_rural: page3.road_type_rural || false,
+    road_type_urban_street: page3.road_type_urban_street || false,
+    road_type_rural_road: page3.road_type_rural_road || false,
+    road_type_car_park: page3.road_type_car_park || false,
     road_type_private_road: page3.road_type_private_road || false,
 
-    your_speed: page3.your_speed || null,
+    // Speed fields
     speed_limit: page3.speed_limit || null,
+    your_speed: page3.your_speed || null,
 
-    // Page 4: Special Conditions
-    special_conditions: page4.special_conditions || null, // Array as JSONB or TEXT[]
+    // Traffic conditions (4 checkboxes)
+    traffic_conditions_heavy: page3.traffic_conditions_heavy || false,
+    traffic_conditions_moderate: page3.traffic_conditions_moderate || false,
+    traffic_conditions_light: page3.traffic_conditions_light || false,
+    traffic_conditions_no_traffic: page3.traffic_conditions_no_traffic || false,
+
+    // Visibility (4 checkboxes)
+    visibility_good: page3.visibility_good || false,
+    visibility_poor: page3.visibility_poor || false,
+    visibility_very_poor: page3.visibility_very_poor || false,
+    visibility_street_lights: page3.visibility_street_lights || false,
+
+    // Road markings visibility (3 checkboxes)
+    road_markings_visible_yes: page3.road_markings_visible_yes || false,
+    road_markings_visible_no: page3.road_markings_visible_no || false,
+    road_markings_visible_partially: page3.road_markings_visible_partially || false,
+
+    // Page 4: Location/Junction/Visibility/Special Conditions (30 fields - matches migrations 018 & 019)
+    // Location fields (3)
+    location: page4.location || null,
+    what3words: page4.what3words || null,
+    nearest_landmark: page4.nearest_landmark || null,
+
+    // Junction fields (4)
     junction_type: page4.junction_type || null,
-    traffic_controls: page4.traffic_controls || null,
+    junction_control: page4.junction_control || null,
+    traffic_light_status: page4.traffic_light_status || null,
+    user_manoeuvre: page4.user_manoeuvre || null,
 
-    // Page 5: Your Vehicle Details
-    // Usual vehicle
+    // Additional hazards (1)
+    additional_hazards: page4.additional_hazards || null,
+
+    // Visibility factors (5 checkboxes) - convert array to individual booleans
+    visibility_clear: (page4.visibility_factors || []).includes('clear_visibility'),
+    visibility_restricted_structure: (page4.visibility_factors || []).includes('restricted_by_structure'),
+    visibility_restricted_bend: (page4.visibility_factors || []).includes('restricted_by_bend'),
+    visibility_large_vehicle: (page4.visibility_factors || []).includes('large_vehicle'),
+    visibility_sun_glare: (page4.visibility_factors || []).includes('sun_glare'),
+
+    // Special conditions (12 checkboxes) - convert array to individual booleans
+    special_condition_roadworks: (page4.special_conditions || []).includes('roadworks'),
+    special_condition_workmen: (page4.special_conditions || []).includes('workmen_in_road'),
+    special_condition_cyclists: (page4.special_conditions || []).includes('cyclists_in_road'),
+    special_condition_pedestrians: (page4.special_conditions || []).includes('pedestrians_in_road'),
+    special_condition_traffic_calming: (page4.special_conditions || []).includes('traffic_calming'),
+    special_condition_parked_vehicles: (page4.special_conditions || []).includes('parked_vehicles'),
+    special_condition_crossing: (page4.special_conditions || []).includes('pedestrian_crossing'),
+    special_condition_school_zone: (page4.special_conditions || []).includes('school_zone'),
+    special_condition_narrow_road: (page4.special_conditions || []).includes('narrow_road'),
+    special_condition_potholes: (page4.special_conditions || []).includes('pot_holes_road_defects'),
+    special_condition_oil_spills: (page4.special_conditions || []).includes('oil_spills'),
+    special_condition_animals: (page4.special_conditions || []).includes('animals_in_road'),
+
+    // Page 5: Your Vehicle Details (29 fields - matches migration 020)
+    // Usual vehicle (1 field)
     usual_vehicle: page5.usual_vehicle || null,
 
-    // DVLA Lookup
-    dvla_lookup_reg: page5.dvla_lookup_reg || null,
-    dvla_vehicle_lookup_make: page5.dvla_vehicle_data?.make || null,
-    dvla_vehicle_lookup_model: page5.dvla_vehicle_data?.model || null,
-    dvla_vehicle_lookup_color: page5.dvla_vehicle_data?.colour || null,
-    dvla_vehicle_lookup_year: page5.dvla_vehicle_data?.yearOfManufacture || null,
-    dvla_vehicle_lookup_fuel_type: page5.dvla_vehicle_data?.fuelType || null,
-    dvla_vehicle_lookup_mot_status: page5.dvla_vehicle_data?.motStatus || null,
-    dvla_vehicle_lookup_mot_expiry: page5.dvla_vehicle_data?.motExpiryDate || null,
-    dvla_vehicle_lookup_tax_status: page5.dvla_vehicle_data?.taxStatus || null,
-    dvla_vehicle_lookup_tax_due_date: page5.dvla_vehicle_data?.taxDueDate || null,
-    dvla_vehicle_lookup_insurance_status: page5.dvla_vehicle_data?.insuranceStatus || null,
+    // DVLA Lookup Registration (1 field - migration 020 renamed to vehicle_license_plate)
+    vehicle_license_plate: page5.dvla_lookup_reg || null,
 
-    // Damage
+    // DVLA Vehicle Data (10 fields - CORRECTED column names from migration 020)
+    dvla_make: page5.dvla_vehicle_data?.make || null,
+    dvla_model: page5.dvla_vehicle_data?.model || null,
+    dvla_colour: page5.dvla_vehicle_data?.colour || null,  // British spelling
+    dvla_year: page5.dvla_vehicle_data?.yearOfManufacture || null,
+    dvla_fuel_type: page5.dvla_vehicle_data?.fuelType || null,
+    dvla_mot_status: page5.dvla_vehicle_data?.motStatus || null,
+    dvla_mot_expiry: page5.dvla_vehicle_data?.motExpiryDate || null,  // Note: column is dvla_mot_expiry (no _date)
+    dvla_tax_status: page5.dvla_vehicle_data?.taxStatus || null,
+    dvla_tax_due_date: page5.dvla_vehicle_data?.taxDueDate || null,
+    dvla_insurance_status: page5.dvla_vehicle_data?.insuranceStatus || null,
+
+    // No Damage checkbox (1 field)
     no_damage: page5.no_damage || false,
-    damage_to_your_vehicle: page5.damage_to_your_vehicle || null,
-    impact_point: page5.impact_points || [], // PostgreSQL TEXT[] array
 
-    // Driveability
+    // Damage description (1 field)
+    damage_to_your_vehicle: page5.damage_to_your_vehicle || null,
+
+    // Impact Points (10 boolean fields - convert array to individual booleans - migration 020)
+    impact_point_front: (page5.impact_points || []).includes('front'),
+    impact_point_front_driver: (page5.impact_points || []).includes('front_driver'),
+    impact_point_front_passenger: (page5.impact_points || []).includes('front_passenger'),
+    impact_point_driver_side: (page5.impact_points || []).includes('driver_side'),
+    impact_point_passenger_side: (page5.impact_points || []).includes('passenger_side'),
+    impact_point_rear_driver: (page5.impact_points || []).includes('rear_driver'),
+    impact_point_rear_passenger: (page5.impact_points || []).includes('rear_passenger'),
+    impact_point_rear: (page5.impact_points || []).includes('rear'),
+    impact_point_roof: (page5.impact_points || []).includes('roof'),
+    impact_point_undercarriage: (page5.impact_points || []).includes('undercarriage'),
+
+    // Driveability (1 field)
     vehicle_driveable: page5.vehicle_driveable || null,
 
-    // Legacy fields (if still needed for backward compatibility)
+    // Manual Entry Fallback Fields (4 fields - migration 020)
+    manual_make: page5.manual_make || null,
+    manual_model: page5.manual_model || null,
+    manual_colour: page5.manual_colour || null,
+    manual_year: page5.manual_year || null,
+
+    // Legacy fields (backward compatibility with old Typeform data - 5 fields)
     your_vehicle_make: page5.vehicle_make || page5.dvla_vehicle_data?.make || null,
     your_vehicle_model: page5.vehicle_model || page5.dvla_vehicle_data?.model || null,
     your_vehicle_color: page5.vehicle_color || page5.dvla_vehicle_data?.colour || null,
     your_vehicle_registration: page5.vehicle_registration || page5.dvla_lookup_reg || null,
     your_vehicle_year: page5.vehicle_year || page5.dvla_vehicle_data?.yearOfManufacture || null,
 
-    // Page 7: Other Driver & Vehicle
-    // Driver information
+    // Page 7: Other Driver & Vehicle (20 fields from migrations 021 + 022)
+    // Driver information (4 fields)
     other_full_name: page7.other_full_name || null,
     other_contact_number: page7.other_contact_number || null,
     other_email_address: page7.other_email_address || null,
     other_driving_license_number: page7.other_driving_license_number || null,
 
-    // Vehicle registration and DVLA lookup data
+    // Vehicle registration (1 field)
     other_vehicle_registration: page7.other_vehicle_registration || null,
-    other_vehicle_look_up_make: page7.other_vehicle_look_up_make || null,
-    other_vehicle_look_up_model: page7.other_vehicle_look_up_model || null,
-    other_vehicle_look_up_colour: page7.other_vehicle_look_up_colour || null,
-    other_vehicle_look_up_year: page7.other_vehicle_look_up_year || null,
-    other_vehicle_look_up_fuel_type: page7.other_vehicle_look_up_fuel_type || null,
-    other_vehicle_look_up_mot_status: page7.other_vehicle_look_up_mot_status || null,
-    other_vehicle_look_up_mot_expiry_date: page7.other_vehicle_look_up_mot_expiry_date || null,
-    other_vehicle_look_up_tax_status: page7.other_vehicle_look_up_tax_status || null,
-    other_vehicle_look_up_tax_due_date: page7.other_vehicle_look_up_tax_due_date || null,
-    other_vehicle_look_up_insurance_status: page7.other_vehicle_look_up_insurance_status || null,
 
-    // Insurance information
+    // DVLA lookup data (10 fields - extract from vehicle_data object, same as Page 5)
+    other_vehicle_look_up_make: page7.vehicle_data?.make || null,
+    other_vehicle_look_up_model: page7.vehicle_data?.model || null,
+    other_vehicle_look_up_colour: page7.vehicle_data?.colour || null,
+    other_vehicle_look_up_year: page7.vehicle_data?.yearOfManufacture || null,
+    other_vehicle_look_up_fuel_type: page7.vehicle_data?.fuelType || null,
+    other_vehicle_look_up_mot_status: page7.vehicle_data?.motStatus || null,
+    other_vehicle_look_up_mot_expiry_date: page7.vehicle_data?.motExpiryDate || null,
+    other_vehicle_look_up_tax_status: page7.vehicle_data?.taxStatus || null,
+    other_vehicle_look_up_tax_due_date: page7.vehicle_data?.taxDueDate || null,
+    other_vehicle_look_up_insurance_status: page7.vehicle_data?.insuranceStatus || 'Not Available',
+
+    // Insurance information (4 fields)
     other_drivers_insurance_company: page7.other_drivers_insurance_company || null,
     other_drivers_policy_number: page7.other_drivers_policy_number || null,
     other_drivers_policy_holder_name: page7.other_drivers_policy_holder_name || null,
     other_drivers_policy_cover_type: page7.other_drivers_policy_cover_type || null,
 
-    // Damage information
+    // Damage information (2 fields)
     no_visible_damage: page7.no_visible_damage || false,
     describe_damage_to_vehicle: page7.describe_damage_to_vehicle || null,
 
@@ -552,8 +632,8 @@ function buildIncidentData(userId, formData) {
     seatbelt_reason: page10.seatbelts_worn === 'no' ? page10.seatbelt_reason : null,  // Reason if not worn
 
     // Page 12: Final Medical Check
-    medical_ongoing_pain: page12.medical_ongoing_pain === 'yes',
-    medical_pain_description: page12.medical_pain_description || null,
+    final_feeling: page12.final_feeling || null,  // fine, shaken, minor_pain, significant_pain, emergency
+    form_completed_at: page12.completed_at || null,     // Timestamp when form was completed
 
     // Metadata
     submission_source: 'in_house_form',
