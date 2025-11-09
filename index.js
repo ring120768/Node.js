@@ -37,6 +37,19 @@ console.log(`🔧 [PID:${process.pid}] Starting from: ${__filename}`);
 // Environment validation
 require('dotenv').config();
 
+// TEMPORARY: Override OpenAI API key from .env file (rotated key)
+const fs = require('fs');
+const path = require('path');
+const envPath = path.join(__dirname, '.env');
+if (fs.existsSync(envPath)) {
+  const envContent = fs.readFileSync(envPath, 'utf8');
+  const match = envContent.match(/OPENAI_API_KEY=(.+)/);
+  if (match && match[1]) {
+    process.env.OPENAI_API_KEY = match[1].trim();
+    console.log('✅ Loaded updated OpenAI API key from .env');
+  }
+}
+
 // ==================== PORT DISCIPLINE ====================
 
 const PORT = Number(process.env.PORT) || 5000;
