@@ -1472,6 +1472,16 @@ Continue with: What happened immediately after impact? Any injuries you noticed?
             </p>
         </div>
 
+        <!-- Save and Continue Button - TRANSCRIPTION TAB -->
+        <div style="text-align: center; margin: 40px 0 20px 0; padding-top: 20px; border-top: 2px solid #e2e8f0;">
+            <button class="btn btn-success" id="saveAndContinueBtnTranscription" style="font-size: 18px; padding: 15px 40px;">
+                💾 Save & Continue to Declaration
+            </button>
+            <p style="color: #666; font-size: 14px; margin-top: 10px;">
+                Save your statement and continue to the legal declaration page
+            </p>
+        </div>
+
         </div> <!-- End Tab Panel: Transcription -->
 
         <!-- Tab Panel: Analysis -->
@@ -2999,6 +3009,7 @@ Continue with: What happened immediately after impact? Any injuries you noticed?
             document.getElementById('generateSummaryBtn').addEventListener('click', generateAIAnalysis);
             document.getElementById('clearDraftBtn').addEventListener('click', clearDraft);
             document.getElementById('saveAndContinueBtn').addEventListener('click', saveAndContinue);
+            document.getElementById('saveAndContinueBtnTranscription').addEventListener('click', saveAndContinue);
             document.getElementById('securityBadge').addEventListener('click', openSecurityModal);
 
             // Type Your Own Account button - switches to Transcription tab
