@@ -1,7 +1,9 @@
 const express = require('express');
 const router = express.Router();
-const safetyController = require('../controllers/safety.controller');
 const { requireAuth } = require('../middleware/auth');
+
+// Import controller functions directly to avoid timing issues
+const safetyController = require('../controllers/safety.controller');
 
 /**
  * Safety Status Routes
@@ -25,6 +27,8 @@ router.get('/safety-status/:userId', requireAuth, safetyController.getSafetyStat
  * POST /api/update-safety-status (Legacy alias)
  * Redirect to new endpoint
  */
-router.post('/update-safety-status', requireAuth, safetyController.updateSafetyStatus);
+router.post('/update-safety-status', requireAuth, (req, res) => {
+  return safetyController.updateSafetyStatus(req, res);
+});
 
 module.exports = router;
