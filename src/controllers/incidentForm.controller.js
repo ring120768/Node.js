@@ -434,6 +434,8 @@ function buildIncidentData(userId, formData) {
     medical_symptom_abdominal_pain: page2.medical_symptom_abdominal_pain || false,
     medical_symptom_abdominal_bruising: page2.medical_symptom_abdominal_bruising || false,
     medical_symptom_limb_pain_mobility: page2.medical_symptom_limb_pain_mobility || false,
+    medical_symptom_dizziness: page2.medical_symptom_dizziness || false,
+    medical_symptom_life_threatening: page2.medical_symptom_life_threatening || false,
     medical_symptom_none: page2.medical_symptom_none || false,
 
     // Page 3: Date/Time/Weather/Road Conditions (41 fields - matches migration 016)
