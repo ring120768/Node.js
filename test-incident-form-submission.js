@@ -41,8 +41,8 @@ function generateMockFormData(userId, sessionId) {
       location_address: '123 High Street',
       location_postcode: 'SW1A 1AA',
       location_city: 'London',
-      location_what3words: 'filled.count.soap',
-      incident_description: 'Test incident - rear-end collision at traffic lights'
+      location_what3words: 'filled.count.soap'
+      // Note: incident_description column does not exist in schema
     },
 
     // Page 2: Medical Information
@@ -275,7 +275,7 @@ async function testSubmission() {
       location_postcode: formData.page1.location_postcode,
       location_city: formData.page1.location_city,
       location_what3words: formData.page1.location_what3words,
-      incident_description: formData.page1.incident_description,
+      // Note: incident_description column does not exist in schema
 
       // Page 2
       medical_attention_needed: formData.page2.medical_attention_needed === 'yes',

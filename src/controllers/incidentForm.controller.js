@@ -409,10 +409,7 @@ function buildIncidentData(userId, formData) {
     // Page 1: Date, Time, Location (maps to accident_date/accident_time columns from migration 016)
     accident_date: page1.incident_date || null,
     accident_time: page1.incident_time || null,
-    location_address: page1.location_address || null,
-    location_postcode: page1.location_postcode || null,
-    location_city: page1.location_city || null,
-    location_what3words: page1.location_what3words || null,
+    // Note: location_address, location_postcode, location_city, location_what3words removed - don't exist in schema
     // Note: incident_description column removed - does not exist in schema
 
     // Page 2: Medical Information
@@ -576,12 +573,8 @@ function buildIncidentData(userId, formData) {
     manual_colour: page5.manual_colour || null,
     manual_year: page5.manual_year || null,
 
-    // Legacy fields (backward compatibility with old Typeform data - 5 fields)
-    your_vehicle_make: page5.vehicle_make || page5.dvla_vehicle_data?.make || null,
-    your_vehicle_model: page5.vehicle_model || page5.dvla_vehicle_data?.model || null,
-    your_vehicle_color: page5.vehicle_color || page5.dvla_vehicle_data?.colour || null,
-    your_vehicle_registration: page5.vehicle_registration || page5.dvla_lookup_reg || null,
-    your_vehicle_year: page5.vehicle_year || page5.dvla_vehicle_data?.yearOfManufacture || null,
+    // Note: Legacy Typeform fields removed - your_vehicle_make, your_vehicle_model, your_vehicle_color,
+    // your_vehicle_registration, your_vehicle_year don't exist in schema (use dvla_* or manual_* instead)
 
     // Page 7: Other Driver & Vehicle (20 fields from migrations 021 + 022)
     // Driver information (4 fields)
@@ -635,7 +628,7 @@ function buildIncidentData(userId, formData) {
     form_completed_at: page12.completed_at || null,     // Timestamp when form was completed
 
     // Metadata
-    submission_source: 'in_house_form',
+    // Note: submission_source removed - doesn't exist in schema
     created_at: new Date().toISOString(),
     updated_at: new Date().toISOString()
   };

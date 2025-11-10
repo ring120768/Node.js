@@ -37,16 +37,37 @@ console.log(`🔧 [PID:${process.pid}] Starting from: ${__filename}`);
 // Environment validation
 require('dotenv').config();
 
-// TEMPORARY: Override OpenAI API key from .env file (rotated key)
+// TEMPORARY: Override credentials from .env file
 const fs = require('fs');
 const path = require('path');
 const envPath = path.join(__dirname, '.env');
 if (fs.existsSync(envPath)) {
   const envContent = fs.readFileSync(envPath, 'utf8');
-  const match = envContent.match(/OPENAI_API_KEY=(.+)/);
-  if (match && match[1]) {
-    process.env.OPENAI_API_KEY = match[1].trim();
+
+  // Load OpenAI API key (rotated)
+  const openaiMatch = envContent.match(/OPENAI_API_KEY=(.+)/);
+  if (openaiMatch && openaiMatch[1]) {
+    process.env.OPENAI_API_KEY = openaiMatch[1].trim();
     console.log('✅ Loaded updated OpenAI API key from .env');
+  }
+
+  // Load Supabase credentials (if missing from Replit Secrets)
+  const supabaseUrlMatch = envContent.match(/SUPABASE_URL=(.+)/);
+  if (supabaseUrlMatch && supabaseUrlMatch[1]) {
+    process.env.SUPABASE_URL = supabaseUrlMatch[1].trim();
+  }
+
+  const supabaseKeyMatch = envContent.match(/SUPABASE_SERVICE_ROLE_KEY=(.+)/);
+  if (supabaseKeyMatch && supabaseKeyMatch[1]) {
+    process.env.SUPABASE_SERVICE_ROLE_KEY = supabaseKeyMatch[1].trim();
+    console.log('✅ Loaded Supabase credentials from .env');
+  }
+
+  // Load PORT override
+  const portMatch = envContent.match(/PORT=(.+)/);
+  if (portMatch && portMatch[1]) {
+    process.env.PORT = portMatch[1].trim();
+    console.log(`✅ Loaded PORT from .env: ${process.env.PORT}`);
   }
 }
 

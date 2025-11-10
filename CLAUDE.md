@@ -8,11 +8,13 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 ```bash
 # Development
-npm run dev              # Hot-reload development server (uses nodemon)
-npm start                # Production server
+npm run dev              # Hot-reload development server (uses nodemon, watches for changes)
+npm start                # Production server (no hot-reload)
 
 # Testing
-npm test                 # Run Jest test suite with coverage
+npm test                 # Run all Jest tests with coverage
+npm test -- path/to/test.test.js  # Run single test file
+npm run test:watch       # Run tests in watch mode (re-runs on file changes)
 npm run lint             # ESLint code linting
 npm run format           # Prettier code formatting
 
@@ -20,7 +22,7 @@ npm run format           # Prettier code formatting
 curl http://localhost:5000/api/health   # Basic health check
 curl http://localhost:5000/api/readyz   # Readiness check (with DB)
 
-# Common Test Scripts
+# Common Test Scripts (Integration Tests)
 node test-security-wall.js              # Test page authentication
 node test-adobe-pdf.js                  # Test Adobe PDF Services
 node test-form-filling.js [user-uuid]   # Test PDF generation with real data
@@ -669,16 +671,58 @@ document.addEventListener('click', (e) => {
 
 ## Testing Guidelines
 
-**All new features require tests:**
-- Unit tests for business logic
-- Integration tests for API endpoints
-- Provide clear instructions for running tests
+### Test Organization
+
+```
+/src
+  /middleware
+    /__tests__              # Middleware unit tests
+      cors.integration.test.js
+      corsConfig.test.js
+      errorHandler.test.js
+      validation.test.js
+      webhookAuth.test.js
+  /routes
+    /__tests__              # Route integration tests
+      cors-diagnostic.test.js
+```
+
+### Running Tests
 
 ```bash
-npm test                    # Run all tests with coverage
-npm run lint                # Check code quality
-npm run format              # Format code
+# Run all tests with coverage
+npm test
+
+# Run a single test file
+npm test -- src/middleware/__tests__/errorHandler.test.js
+
+# Run tests matching pattern
+npm test -- --testPathPattern=cors
+
+# Run tests in watch mode (re-runs on file changes)
+npm run test:watch
+
+# Check code quality
+npm run lint
+npm run format
 ```
+
+### Writing Tests
+
+**Unit tests** - Business logic in services/utilities:
+- Test edge cases and error conditions
+- Mock external dependencies (Supabase, APIs)
+- Keep tests focused (one assertion per test when possible)
+
+**Integration tests** - API endpoints and middleware:
+- Test complete request/response cycle
+- Use actual middleware stack when possible
+- Verify authentication, validation, error handling
+
+**Test scripts** (node test-*.js) - End-to-end verification:
+- Test external integrations (Adobe, Supabase, OpenAI)
+- Use real credentials from .env
+- Validate entire workflows (signup → PDF generation)
 
 ### Integration Test Scripts
 
@@ -707,7 +751,9 @@ node test-what3words.js                 # Test what3words API
 /src
   /controllers      # Request handlers (thin layer)
   /middleware       # Auth, CORS, error handling, validation
+    /__tests__      # Middleware unit tests (Jest)
   /routes           # Route definitions (central router in index.js)
+    /__tests__      # Route integration tests (Jest)
   /services         # Business logic (PDF, images, emails)
   /utils            # Helpers (logger, validators)
   /websocket        # Real-time updates (WebSocket server)
@@ -799,7 +845,7 @@ node scripts/reconcile-all-tables.js     # Check data integrity
 
 ---
 
-**Last Updated:** 2025-11-05
+**Last Updated:** 2025-11-10
 **Version:** 2.0.1
 **Current Branch:** feat/audit-prep
 **Maintained By:** Claude Code
