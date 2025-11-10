@@ -439,8 +439,8 @@ function buildIncidentData(userId, formData) {
     medical_symptom_none: page2.medical_symptom_none || false,
 
     // Page 3: Date/Time/Weather/Road Conditions (41 fields - matches migration 016)
-    accident_date: page3.accident_date || null,
-    accident_time: page3.accident_time || null,
+    // Note: accident_date and accident_time already set from Page 1 above (lines 410-411)
+    // Page 3 data is redundant but kept for validation consistency
 
     // Weather conditions (12 checkboxes)
     weather_bright_sunlight: page3.weather_bright_sunlight || false,
