@@ -423,20 +423,18 @@ function buildIncidentData(userId, formData) {
     medical_ambulance_called: page2.medical_ambulance_called === 'yes',
     medical_treatment_received: page2.medical_treatment_received || null,
 
-    // Medical Symptoms (Page 2)
-    medical_symptom_chest_pain: page2.medical_symptom_chest_pain || false,
-    medical_symptom_uncontrolled_bleeding: page2.medical_symptom_uncontrolled_bleeding || false,
-    medical_symptom_breathlessness: page2.medical_symptom_breathlessness || false,
-    medical_symptom_limb_weakness: page2.medical_symptom_limb_weakness || false,
-    medical_symptom_dizziness: page2.medical_symptom_dizziness || false,
-    medical_symptom_loss_of_consciousness: page2.medical_symptom_loss_of_consciousness || false,
-    medical_symptom_severe_headache: page2.medical_symptom_severe_headache || false,
-    medical_symptom_change_in_vision: page2.medical_symptom_change_in_vision || false,
-    medical_symptom_abdominal_pain: page2.medical_symptom_abdominal_pain || false,
-    medical_symptom_abdominal_bruising: page2.medical_symptom_abdominal_bruising || false,
-    medical_symptom_limb_pain_mobility: page2.medical_symptom_limb_pain_mobility || false,
-    medical_symptom_life_threatening: page2.medical_symptom_life_threatening || false,
-    medical_symptom_none: page2.medical_symptom_none || false,
+    // Medical Symptoms (Page 2) - Maps to medical_* columns from migration 013
+    medical_chest_pain: page2.medical_symptom_chest_pain || false,
+    medical_uncontrolled_bleeding: page2.medical_symptom_uncontrolled_bleeding || false,
+    medical_breathlessness: page2.medical_symptom_breathlessness || false,
+    medical_limb_weakness: page2.medical_symptom_limb_weakness || false,
+    medical_loss_of_consciousness: page2.medical_symptom_loss_of_consciousness || false,
+    medical_severe_headache: page2.medical_symptom_severe_headache || false,
+    medical_change_in_vision: page2.medical_symptom_change_in_vision || false,
+    medical_abdominal_pain: page2.medical_symptom_abdominal_pain || false,
+    medical_abdominal_bruising: page2.medical_symptom_abdominal_bruising || false,
+    medical_limb_pain: page2.medical_symptom_limb_pain_mobility || false,
+    medical_none_of_these: page2.medical_symptom_none || false,
 
     // Page 3: Date/Time/Weather/Road Conditions (41 fields - matches migration 016)
     accident_date: page3.accident_date || null,
@@ -627,8 +625,8 @@ function buildIncidentData(userId, formData) {
     user_breath_test: page10.user_breath_test || null,        // User's breath test result
     other_breath_test: page10.other_breath_test || null,      // Other driver's breath test
     airbags_deployed: page10.airbags_deployed === 'yes',      // Were airbags deployed (boolean)
-    seatbelts_worn: page10.seatbelts_worn === 'yes',          // Were seatbelts worn (boolean)
-    seatbelt_reason: page10.seatbelts_worn === 'no' ? page10.seatbelt_reason : null,  // Reason if not worn
+    wearing_seatbelts: page10.seatbelts_worn === 'yes',       // Were seatbelts worn (boolean) - maps to wearing_seatbelts column
+    why_werent_seat_belts_being_worn: page10.seatbelts_worn === 'no' ? page10.seatbelt_reason : null,  // Reason if not worn - maps to DB column
 
     // Page 12: Final Medical Check
     final_feeling: page12.final_feeling || null,  // fine, shaken, minor_pain, significant_pain, emergency
