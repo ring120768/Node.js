@@ -413,7 +413,7 @@ function buildIncidentData(userId, formData) {
     location_postcode: page1.location_postcode || null,
     location_city: page1.location_city || null,
     location_what3words: page1.location_what3words || null,
-    incident_description: page1.incident_description || null,
+    // Note: incident_description column removed - does not exist in schema
 
     // Page 2: Medical Information
     medical_attention_needed: page2.medical_attention_needed === 'yes',
