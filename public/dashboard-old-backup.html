@@ -1,0 +1,678 @@
+<!DOCTYPE html>
+<html lang="en-GB">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Dashboard - Car Crash Lawyer AI</title>
+
+  <!-- Supabase Client -->
+  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+
+  <style>
+    * {
+      margin: 0;
+      padding: 0;
+      box-sizing: border-box;
+    }
+
+    :root {
+      --primary-blue: #0B7AB0;
+      --hover-blue: #1EA1D4;
+      --success-green: #10b981;
+      --warning-yellow: #f59e0b;
+      --error-red: #ef4444;
+      --bg-gray: #f3f4f6;
+      --text-dark: #1f2937;
+      --text-gray: #6b7280;
+      --border-gray: #e5e7eb;
+    }
+
+    body {
+      font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+      background: var(--bg-gray);
+      color: var(--text-dark);
+      line-height: 1.6;
+    }
+
+    /* Navigation */
+    nav {
+      background: white;
+      border-bottom: 1px solid var(--border-gray);
+      padding: 1rem 2rem;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      position: sticky;
+      top: 0;
+      z-index: 100;
+      box-shadow: 0 1px 3px rgba(0,0,0,0.05);
+    }
+
+    .logo {
+      font-size: 1.25rem;
+      font-weight: bold;
+      color: var(--primary-blue);
+    }
+
+    .user-info {
+      display: flex;
+      align-items: center;
+      gap: 1rem;
+    }
+
+    .user-badge {
+      background: var(--primary-blue);
+      color: white;
+      padding: 0.5rem 1rem;
+      border-radius: 0.5rem;
+      font-size: 0.875rem;
+      font-weight: 600;
+    }
+
+    button {
+      background: var(--primary-blue);
+      color: white;
+      border: none;
+      padding: 0.5rem 1rem;
+      border-radius: 0.5rem;
+      cursor: pointer;
+      font-weight: 600;
+      transition: background 0.2s;
+    }
+
+    button:hover {
+      background: var(--hover-blue);
+    }
+
+    /* Main Container */
+    .container {
+      max-width: 1400px;
+      margin: 0 auto;
+      padding: 2rem;
+    }
+
+    .page-header {
+      margin-bottom: 2rem;
+    }
+
+    .page-header h1 {
+      font-size: 2rem;
+      margin-bottom: 0.5rem;
+      color: var(--text-dark);
+    }
+
+    .page-header p {
+      color: var(--text-gray);
+      font-size: 1rem;
+    }
+
+    /* Dashboard Grid */
+    .dashboard-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(320px, 1fr));
+      gap: 2rem;
+      margin-bottom: 2rem;
+    }
+
+    /* Card Component */
+    .card {
+      background: white;
+      border-radius: 1rem;
+      padding: 1.5rem;
+      box-shadow: 0 1px 3px rgba(0,0,0,0.1);
+      transition: all 0.3s;
+    }
+
+    .card:hover {
+      box-shadow: 0 4px 6px rgba(0,0,0,0.1);
+      transform: translateY(-2px);
+    }
+
+    .card-header {
+      display: flex;
+      justify-content: space-between;
+      align-items: flex-start;
+      margin-bottom: 1rem;
+    }
+
+    .card-icon {
+      font-size: 2.5rem;
+      margin-bottom: 1rem;
+    }
+
+    .card-title {
+      font-size: 1.125rem;
+      font-weight: 600;
+      color: var(--text-dark);
+      margin-bottom: 0.5rem;
+    }
+
+    .card-description {
+      font-size: 0.875rem;
+      color: var(--text-gray);
+      line-height: 1.5;
+    }
+
+    .count-badge {
+      background: var(--primary-blue);
+      color: white;
+      padding: 0.25rem 0.75rem;
+      border-radius: 1rem;
+      font-size: 0.875rem;
+      font-weight: bold;
+    }
+
+    /* Loading State */
+    .loading {
+      text-align: center;
+      padding: 3rem;
+      color: var(--text-gray);
+    }
+
+    .spinner {
+      border: 3px solid var(--border-gray);
+      border-top-color: var(--primary-blue);
+      border-radius: 50%;
+      width: 40px;
+      height: 40px;
+      animation: spin 1s linear infinite;
+      margin: 0 auto 1rem;
+    }
+
+    @keyframes spin {
+      to { transform: rotate(360deg); }
+    }
+
+    /* Error State */
+    .error {
+      background: var(--error-red);
+      color: white;
+      padding: 1rem;
+      border-radius: 0.5rem;
+      margin-bottom: 1rem;
+    }
+
+    /* Empty State */
+    .empty-state {
+      text-align: center;
+      padding: 3rem;
+      color: var(--text-gray);
+    }
+
+    .empty-state-icon {
+      font-size: 4rem;
+      opacity: 0.3;
+      margin-bottom: 1rem;
+    }
+
+    /* Responsive */
+    @media (max-width: 768px) {
+      .container {
+        padding: 1rem;
+      }
+
+      .dashboard-grid {
+        grid-template-columns: 1fr;
+      }
+
+      nav {
+        padding: 1rem;
+      }
+    }
+  </style>
+</head>
+<body>
+  <!-- Navigation -->
+  <nav>
+    <div class="logo">Car Crash Lawyer AI</div>
+    <div class="user-info">
+      <div id="userBadge" class="user-badge">Loading...</div>
+      <button id="logoutBtn" data-action="logout">Logout</button>
+    </div>
+  </nav>
+
+  <!-- Main Container -->
+  <div class="container">
+    <!-- Page Header -->
+    <div class="page-header">
+      <h1>Welcome back!</h1>
+      <p>Here's an overview of your case</p>
+    </div>
+
+    <!-- Loading State -->
+    <div id="loadingState" class="loading">
+      <div class="spinner"></div>
+      <p>Loading your dashboard...</p>
+    </div>
+
+    <!-- Error State -->
+    <div id="errorState" class="error" style="display: none;"></div>
+
+    <!-- Dashboard Content -->
+    <div id="dashboardContent" style="display: none;">
+      <!-- Dashboard sections will be populated here by JavaScript -->
+    </div>
+  </div>
+
+  <script>
+    // Initialize Supabase
+    const supabaseUrl = 'https://iyrkynzutsgyjjfdjlrz.supabase.co';
+    const supabaseAnonKey = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Iml5cmt5bnp1dHNneWpqZmRqbHJ6Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3MjgzODA5NTAsImV4cCI6MjA0Mzk1Njk1MH0.7iuIPjVnP3EXUl8eiN40mrcY9SxaVYQ0P-vTfnW8f_E';
+    const supabase = window.supabase.createClient(supabaseUrl, supabaseAnonKey);
+
+    // Global state
+    let currentUser = null;
+    let userId = null;
+
+    // Initialize dashboard
+    async function initDashboard() {
+      try {
+        console.log('🚀 Initializing dashboard...');
+
+        // Check authentication
+        const { data: { session }, error: sessionError } = await supabase.auth.getSession();
+
+        if (sessionError) {
+          console.error('❌ Session error:', sessionError);
+          redirectToLogin();
+          return;
+        }
+
+        if (!session) {
+          console.log('❌ No session found, redirecting to login');
+          redirectToLogin();
+          return;
+        }
+
+        currentUser = session.user;
+        userId = currentUser.id;
+
+        console.log('✅ User authenticated:', userId);
+        console.log('User email:', currentUser.email);
+
+        // Update UI with user info
+        updateUserBadge();
+
+        // Load dashboard data
+        await loadDashboardData();
+
+        // Hide loading, show content
+        document.getElementById('loadingState').style.display = 'none';
+        document.getElementById('dashboardContent').style.display = 'block';
+
+      } catch (error) {
+        console.error('❌ Initialization error:', error);
+        showError('Failed to initialize dashboard: ' + error.message);
+      }
+    }
+
+    // Update user badge
+    function updateUserBadge() {
+      const badge = document.getElementById('userBadge');
+      const email = currentUser.email;
+
+      // Show first part of email (before @)
+      const displayName = email.split('@')[0];
+      badge.textContent = displayName;
+    }
+
+    // Load dashboard data
+    async function loadDashboardData() {
+      console.log('📊 Loading dashboard data for user:', userId);
+
+      const content = document.getElementById('dashboardContent');
+      content.innerHTML = '<div class="dashboard-grid" id="dashboardGrid"></div>';
+      const grid = document.getElementById('dashboardGrid');
+
+      // Fetch all data in parallel
+      const [profileData, incidentData, documentsData, transcriptionData, pdfData] = await Promise.all([
+        fetchUserProfile(),
+        fetchIncidents(),
+        fetchDocuments(),
+        fetchTranscriptions(),
+        fetchPDFReports()
+      ]);
+
+      // Build dashboard sections
+      if (profileData) {
+        grid.innerHTML += createProfileCard(profileData);
+      }
+
+      if (incidentData && incidentData.length > 0) {
+        grid.innerHTML += createIncidentsCard(incidentData);
+      }
+
+      if (documentsData && documentsData.images && documentsData.images.length > 0) {
+        grid.innerHTML += createImagesCard(documentsData.images);
+      }
+
+      if (documentsData && documentsData.videos && documentsData.videos.length > 0) {
+        grid.innerHTML += createVideosCard(documentsData.videos);
+      }
+
+      if (transcriptionData && transcriptionData.length > 0) {
+        grid.innerHTML += createTranscriptionsCard(transcriptionData);
+      }
+
+      if (pdfData && pdfData.length > 0) {
+        grid.innerHTML += createPDFReportsCard(pdfData);
+      }
+
+      // If no data at all, show welcome message
+      if (grid.innerHTML === '') {
+        grid.innerHTML = createWelcomeCard();
+      }
+    }
+
+    // Fetch user profile from Supabase
+    async function fetchUserProfile() {
+      try {
+        const { data, error } = await supabase
+          .from('user_signup')
+          .select('first_name, last_name, phone, email, vehicle_registration_number, make, model, colour, created_at')
+          .eq('create_user_id', userId)
+          .single();
+
+        if (error) throw error;
+        console.log('✅ Profile loaded:', data);
+        return data;
+      } catch (error) {
+        console.error('❌ Profile fetch error:', error);
+        return null;
+      }
+    }
+
+    // Fetch incidents from API
+    async function fetchIncidents() {
+      try {
+        const response = await fetch(`/api/incident-reports?user_id=${userId}`);
+        const result = await response.json();
+
+        if (result.success) {
+          console.log('✅ Incidents loaded:', result.incidents.length);
+          return result.incidents;
+        }
+        return [];
+      } catch (error) {
+        console.error('❌ Incidents fetch error:', error);
+        return [];
+      }
+    }
+
+    // Fetch documents (images and videos)
+    async function fetchDocuments() {
+      try {
+        // Fetch images
+        const imagesResponse = await fetch(`/api/user-documents?user_id=${userId}&document_type=image&limit=50`);
+        const imagesResult = await imagesResponse.json();
+
+        // Fetch videos
+        const videosResponse = await fetch(`/api/user-documents?user_id=${userId}&document_type=video&limit=20`);
+        const videosResult = await videosResponse.json();
+
+        console.log('✅ Documents loaded - Images:', imagesResult.count, 'Videos:', videosResult.count);
+
+        return {
+          images: imagesResult.success ? imagesResult.documents : [],
+          videos: videosResult.success ? videosResult.documents : []
+        };
+      } catch (error) {
+        console.error('❌ Documents fetch error:', error);
+        return { images: [], videos: [] };
+      }
+    }
+
+    // Fetch transcriptions from API
+    async function fetchTranscriptions() {
+      try {
+        const response = await fetch(`/api/transcription/history?user_id=${userId}`);
+        const result = await response.json();
+
+        if (result.success) {
+          console.log('✅ Transcriptions loaded:', result.transcriptions.length);
+          return result.transcriptions;
+        }
+        return [];
+      } catch (error) {
+        console.error('❌ Transcriptions fetch error:', error);
+        return [];
+      }
+    }
+
+    // Fetch PDF reports from API
+    async function fetchPDFReports() {
+      try {
+        const response = await fetch(`/api/pdf/status/${userId}`);
+        const result = await response.json();
+
+        if (result.success) {
+          console.log('✅ PDF reports loaded:', result.reports.length);
+          return result.reports;
+        }
+        return [];
+      } catch (error) {
+        console.error('❌ PDF reports fetch error:', error);
+        return [];
+      }
+    }
+
+    // Create profile card HTML
+    function createProfileCard(profile) {
+      const memberSince = new Date(profile.created_at).toLocaleDateString('en-GB', {
+        day: 'numeric',
+        month: 'long',
+        year: 'numeric'
+      });
+
+      return `
+        <div class="card">
+          <div class="card-icon">👤</div>
+          <div class="card-title">Your Profile</div>
+          <div class="card-description">
+            <strong>${profile.first_name} ${profile.last_name}</strong><br>
+            ${profile.email}<br>
+            ${profile.phone || 'No phone number'}<br>
+            <br>
+            <strong>Vehicle:</strong><br>
+            ${profile.make || 'Unknown'} ${profile.model || 'Unknown'}<br>
+            ${profile.colour || 'Unknown colour'}<br>
+            Registration: ${profile.vehicle_registration_number || 'Not provided'}<br>
+            <br>
+            <small>Member since ${memberSince}</small>
+          </div>
+        </div>
+      `;
+    }
+
+    // Create incidents card HTML
+    function createIncidentsCard(incidents) {
+      const count = incidents.length;
+      const latestIncident = incidents[0];
+      const incidentDate = latestIncident.dateTime
+        ? new Date(latestIncident.dateTime).toLocaleDateString('en-GB')
+        : 'Unknown date';
+
+      return `
+        <div class="card">
+          <div class="card-header">
+            <div>
+              <div class="card-icon">🚗</div>
+              <div class="card-title">Incident Reports</div>
+            </div>
+            <span class="count-badge">${count}</span>
+          </div>
+          <div class="card-description">
+            Latest incident: ${incidentDate}<br>
+            Location: ${latestIncident.location?.address || 'Location not provided'}<br>
+            Status: <strong>${latestIncident.status || 'pending'}</strong><br>
+            ${latestIncident.policeInvolved ? '👮 Police involved' : ''}
+          </div>
+        </div>
+      `;
+    }
+
+    // Create images card HTML
+    function createImagesCard(images) {
+      const completedImages = images.filter(img => img.status === 'completed');
+      const pendingImages = images.filter(img => img.status === 'pending' || img.status === 'processing');
+
+      return `
+        <div class="card">
+          <div class="card-header">
+            <div>
+              <div class="card-icon">📷</div>
+              <div class="card-title">Images</div>
+            </div>
+            <span class="count-badge">${images.length}</span>
+          </div>
+          <div class="card-description">
+            ${completedImages.length} images ready<br>
+            ${pendingImages.length > 0 ? `${pendingImages.length} processing<br>` : ''}
+            <br>
+            <a href="#" onclick="viewImages(); return false;">View gallery →</a>
+          </div>
+        </div>
+      `;
+    }
+
+    // Create videos card HTML
+    function createVideosCard(videos) {
+      return `
+        <div class="card">
+          <div class="card-header">
+            <div>
+              <div class="card-icon">🎥</div>
+              <div class="card-title">Dashcam Footage</div>
+            </div>
+            <span class="count-badge">${videos.length}</span>
+          </div>
+          <div class="card-description">
+            ${videos.length} video${videos.length !== 1 ? 's' : ''} uploaded<br>
+            <br>
+            <a href="#" onclick="viewVideos(); return false;">View footage →</a>
+          </div>
+        </div>
+      `;
+    }
+
+    // Create transcriptions card HTML
+    function createTranscriptionsCard(transcriptions) {
+      const completed = transcriptions.filter(t => t.status === 'completed');
+      const latest = completed[0];
+      const duration = latest.duration ? `${Math.floor(latest.duration / 60)}:${(latest.duration % 60).toString().padStart(2, '0')}` : 'Unknown';
+
+      return `
+        <div class="card">
+          <div class="card-header">
+            <div>
+              <div class="card-icon">🎤</div>
+              <div class="card-title">Audio Transcriptions</div>
+            </div>
+            <span class="count-badge">${completed.length}</span>
+          </div>
+          <div class="card-description">
+            ${completed.length} transcription${completed.length !== 1 ? 's' : ''} complete<br>
+            Latest: ${duration} duration<br>
+            <br>
+            <a href="/transcription-status.html">View transcriptions →</a>
+          </div>
+        </div>
+      `;
+    }
+
+    // Create PDF reports card HTML
+    function createPDFReportsCard(reports) {
+      const latest = reports[0];
+      const generatedDate = new Date(latest.generated_at).toLocaleDateString('en-GB', {
+        day: 'numeric',
+        month: 'short',
+        year: 'numeric'
+      });
+
+      return `
+        <div class="card">
+          <div class="card-header">
+            <div>
+              <div class="card-icon">📄</div>
+              <div class="card-title">Generated Reports</div>
+            </div>
+            <span class="count-badge">${reports.length}</span>
+          </div>
+          <div class="card-description">
+            ${reports.length} report${reports.length !== 1 ? 's' : ''} generated<br>
+            Latest: ${generatedDate}<br>
+            <br>
+            <a href="${latest.pdf_url}" target="_blank">Download latest PDF →</a>
+          </div>
+        </div>
+      `;
+    }
+
+    // Create welcome card for new users
+    function createWelcomeCard() {
+      return `
+        <div class="card">
+          <div class="card-icon">👋</div>
+          <div class="card-title">Welcome to Your Dashboard</div>
+          <div class="card-description">
+            Your dashboard will populate with information as you:
+            <ul style="margin-top: 0.5rem; margin-left: 1.5rem;">
+              <li>Complete your profile</li>
+              <li>Report incidents</li>
+              <li>Upload documents and images</li>
+              <li>Record audio statements</li>
+            </ul>
+            <br>
+            Get started by completing your first incident report.
+          </div>
+        </div>
+      `;
+    }
+
+    // Placeholder functions for future implementation
+    function viewImages() {
+      alert('Image gallery view - Coming soon!');
+    }
+
+    function viewVideos() {
+      alert('Video player view - Coming soon!');
+    }
+
+    // Show error
+    function showError(message) {
+      const errorState = document.getElementById('errorState');
+      errorState.textContent = message;
+      errorState.style.display = 'block';
+      document.getElementById('loadingState').style.display = 'none';
+    }
+
+    // Redirect to login
+    function redirectToLogin() {
+      const returnUrl = encodeURIComponent(window.location.pathname + window.location.search);
+      window.location.href = `/login.html?redirect=${returnUrl}`;
+    }
+
+    // Logout handler
+    async function handleLogout() {
+      try {
+        console.log('🚪 Logging out...');
+        await supabase.auth.signOut();
+        window.location.href = '/index.html';
+      } catch (error) {
+        console.error('❌ Logout error:', error);
+        alert('Failed to logout: ' + error.message);
+      }
+    }
+
+    // Event listeners
+    document.addEventListener('click', function(e) {
+      if (e.target.getAttribute('data-action') === 'logout') {
+        handleLogout();
+      }
+    });
+
+    // Initialize on page load
+    document.addEventListener('DOMContentLoaded', initDashboard);
+  </script>
+</body>
+</html>
