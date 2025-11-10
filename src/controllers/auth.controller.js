@@ -174,6 +174,7 @@ async function signup(req, res) {
       httpOnly: true,
       secure: true, // Always true - Replit uses HTTPS
       sameSite: 'none', // Required for Replit subdomains
+      path: '/', // CRITICAL: Make cookie available site-wide for API endpoints
       maxAge: cookieMaxAge
     });
 
@@ -181,6 +182,7 @@ async function signup(req, res) {
       httpOnly: true,
       secure: true, // Always true - Replit uses HTTPS
       sameSite: 'none', // Required for Replit subdomains
+      path: '/', // CRITICAL: Make cookie available site-wide
       maxAge: cookieMaxAge
     });
 
@@ -255,6 +257,7 @@ async function login(req, res) {
       httpOnly: true,
       secure: true, // Always true - Replit uses HTTPS
       sameSite: 'none', // Required for Replit subdomains
+      path: '/', // CRITICAL: Make cookie available site-wide for API endpoints
       maxAge: cookieMaxAge
     });
 
@@ -263,6 +266,7 @@ async function login(req, res) {
       httpOnly: true,
       secure: true, // Always true - Replit uses HTTPS
       sameSite: 'none', // Required for Replit subdomains
+      path: '/', // CRITICAL: Make cookie available site-wide
       maxAge: cookieMaxAge // Same duration as access token cookie
     });
 

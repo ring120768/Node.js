@@ -718,7 +718,23 @@
 
           console.log('Submitting complete incident report:', formData);
 
+          // 🔍 DEBUGGING: Check authentication status before submission
+          console.log('🔍 Pre-submission auth check:');
+          console.log('  - Current URL:', window.location.href);
+          console.log('  - Cookies (non-httpOnly):', document.cookie);
+          console.log('  - SessionStorage keys:', Object.keys(sessionStorage));
+
+          // Test if we can reach the API at all
+          console.log('🔍 Testing API connectivity...');
+          try {
+            const healthCheck = await fetch('/api/health', { credentials: 'include' });
+            console.log('  - Health check status:', healthCheck.status);
+          } catch (healthErr) {
+            console.error('  - Health check failed:', healthErr);
+          }
+
           // Submit to backend API
+          console.log('🚀 Sending incident form submission...');
           const response = await fetch('/api/incident-form/submit', {
             method: 'POST',
             headers: {
@@ -728,7 +744,15 @@
             body: JSON.stringify(formData)
           });
 
+          console.log('📥 Response received:', {
+            status: response.status,
+            statusText: response.statusText,
+            ok: response.ok,
+            headers: Object.fromEntries(response.headers.entries())
+          });
+
           const result = await response.json();
+          console.log('📦 Response data:', result);
 
           if (!response.ok) {
             throw new Error(result.error || 'Failed to submit incident report');
