@@ -2945,6 +2945,12 @@ Continue with: What happened immediately after impact? Any injuries you noticed?
 
                 // User is authenticated! Get userId from session
                 userId = data.user.id;
+
+                // CRITICAL: Update localStorage and sessionStorage with authenticated user ID
+                // This ensures consistency between the userId variable and stored values
+                localStorage.setItem('create_user_id', userId);
+                sessionStorage.setItem('userId', userId);
+
                 console.log('✅ User authenticated:', {
                     userId,
                     email: data.user.email
