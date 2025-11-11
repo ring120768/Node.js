@@ -87,10 +87,23 @@ async function analyzeStatement(req, res) {
 
 /**
  * Generate comprehensive AI analysis using GPT
+ *
+ * IMPORTANT: This function makes 3-4 sequential OpenAI API calls:
+ * - Summary generation (~5-10s)
+ * - Quality review (~5-10s)
+ * - Combined report (~5-15s, if incident data exists)
+ * - Final review (~5-10s)
+ * Total time: 20-45+ seconds
+ *
+ * The /api/ai/* routes have a 120-second timeout configured in app.js
+ * to accommodate these long-running operations.
  */
 async function generateComprehensiveAnalysis(transcription, incidentData = null) {
   try {
+    const startTime = Date.now();
+
     // Step 1: Generate Summary and Key Points
+    logger.info('[AI Analysis] Step 1/4: Generating summary...');
     const summaryPrompt = `You are an expert legal assistant analyzing a car accident personal statement.
 
 Personal Statement:
@@ -121,8 +134,12 @@ Format as JSON:
     });
 
     const summaryData = JSON.parse(summaryResponse.choices[0].message.content);
+    logger.info('[AI Analysis] Step 1/4 complete', {
+      duration: `${((Date.now() - startTime) / 1000).toFixed(1)}s`
+    });
 
     // Step 2: Generate Quality Review
+    logger.info('[AI Analysis] Step 2/4: Generating quality review...');
     const reviewPrompt = `You are an expert legal assistant reviewing a car accident statement for completeness.
 
 Personal Statement:
@@ -153,10 +170,14 @@ Format as JSON:
     });
 
     const reviewData = JSON.parse(reviewResponse.choices[0].message.content);
+    logger.info('[AI Analysis] Step 2/4 complete', {
+      duration: `${((Date.now() - startTime) / 1000).toFixed(1)}s`
+    });
 
     // Step 3: Generate Combined Report (if incident data available)
     let combinedReport = null;
     if (incidentData) {
+      logger.info('[AI Analysis] Step 3/4: Generating combined report...');
       const combinedPrompt = `You are a legal assistant creating a comprehensive incident report.
 
 Personal Statement:
@@ -187,9 +208,15 @@ Provide the narrative in HTML format with proper paragraphs using <p> tags.`;
       });
 
       combinedReport = combinedResponse.choices[0].message.content;
+      logger.info('[AI Analysis] Step 3/4 complete', {
+        duration: `${((Date.now() - startTime) / 1000).toFixed(1)}s`
+      });
+    } else {
+      logger.info('[AI Analysis] Step 3/4: Skipped (no incident data)');
     }
 
     // Step 4: Generate Final Review with Next Steps
+    logger.info('[AI Analysis] Step 4/4: Generating final review...');
     const finalReviewPrompt = `You are a senior legal advisor reviewing a car accident case.
 
 Personal Statement:
@@ -224,6 +251,9 @@ Format as JSON:
     });
 
     const finalReviewData = JSON.parse(finalReviewResponse.choices[0].message.content);
+
+    const totalDuration = ((Date.now() - startTime) / 1000).toFixed(1);
+    logger.success(`[AI Analysis] All steps complete in ${totalDuration}s`);
 
     return {
       summary: summaryData.summary,

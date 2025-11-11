@@ -102,7 +102,13 @@ function createApp() {
   app.use(cors);
   app.use(compression);
   app.use(requestId);
-  app.use(requestTimeout(parseInt(process.env.REQUEST_TIMEOUT) || 30000));
+
+  // Conditional timeout: 120s for AI operations, 30s for others
+  app.use((req, res, next) => {
+    const isAIRoute = req.path.startsWith('/api/ai/');
+    const timeout = isAIRoute ? 120000 : (parseInt(process.env.REQUEST_TIMEOUT) || 30000);
+    return requestTimeout(timeout)(req, res, next);
+  });
 
   // HTTPS/WWW redirect middleware (bypasses webhook endpoints)
   const { httpsRedirect, wwwRedirect } = require('./middleware/security');
