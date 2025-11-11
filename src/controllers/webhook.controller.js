@@ -1104,9 +1104,6 @@ async function processIncidentReport(formResponse, requestId, imageProcessor = n
       special_conditions_workman: getAnswerByRefWithDefault(answers, 'special_conditions_workman', 'boolean', titleMap),
       special_conditions_animals: getAnswerByRefWithDefault(answers, 'special_conditions_animals', 'boolean', titleMap),
 
-      // Detailed Account
-      detailed_account_of_what_happened: getAnswerByRef(answers, 'detailed_account_of_what_happened', titleMap),
-
       // Your Vehicle Details (make_of_car and license_plate_number already extracted above in sample logging)
       model_of_car: getAnswerByRef(answers, 'model_of_car', titleMap),
       direction_and_speed: getAnswerByRef(answers, 'direction_and_speed', titleMap),
@@ -1148,7 +1145,6 @@ async function processIncidentReport(formResponse, requestId, imageProcessor = n
       // File URLs
       file_url_documents: getAnswerByRef(answers, 'file_url_documents', titleMap),
       file_url_documents_1: getAnswerByRef(answers, 'file_url_documents_1', titleMap),
-      file_url_record_detailed_account_of_what_happened: getAnswerByRef(answers, 'file_url_record_detailed_account_of_what_happened', titleMap),
       file_url_what3words: getAnswerByRef(answers, 'file_url_what3words', titleMap),
       file_url_scene_overview: getAnswerByRef(answers, 'file_url_scene_overview', titleMap),
       file_url_scene_overview_1: getAnswerByRef(answers, 'file_url_scene_overview_1', titleMap),
@@ -1168,7 +1164,6 @@ async function processIncidentReport(formResponse, requestId, imageProcessor = n
       const imageFields = {
         file_url_documents: incidentData.file_url_documents,
         file_url_documents_1: incidentData.file_url_documents_1,
-        file_url_record_detailed_account_of_what_happened: incidentData.file_url_record_detailed_account_of_what_happened,
         file_url_what3words: incidentData.file_url_what3words,
         file_url_scene_overview: incidentData.file_url_scene_overview,
         file_url_scene_overview_1: incidentData.file_url_scene_overview_1,

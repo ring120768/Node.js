@@ -280,12 +280,17 @@ async function storeAIAnalysis(userId, incidentId, transcription, analysis) {
 }
 
 /**
- * Save personal statement to incident report
+ * Save personal statement to ai_transcription table
  * POST /api/incident-reports/save-statement
  */
 async function savePersonalStatement(req, res) {
   try {
-    const { userId, incidentId, personalStatement } = req.body;
+    const { userId, incidentId, personalStatement, accidentNarrative, voiceTranscription } = req.body;
+
+    // Validate inputs
+    if (!userId) {
+      return sendError(res, 400, 'User ID is required', 'MISSING_USER_ID');
+    }
 
     if (!personalStatement || personalStatement.trim().length === 0) {
       return sendError(res, 400, 'Personal statement is required', 'MISSING_STATEMENT');
@@ -297,67 +302,132 @@ async function savePersonalStatement(req, res) {
       textLength: personalStatement.length
     });
 
-    // If we have an incident ID, update that specific incident
-    if (incidentId) {
+    // Verify user exists (check both auth.users and user_signup)
+    const { data: userData, error: userError } = await supabase
+      .from('user_signup')
+      .select('create_user_id')
+      .eq('create_user_id', userId)
+      .maybeSingle();
+
+    if (userError) {
+      logger.error('Error checking user existence', {
+        error: userError.message,
+        code: userError.code,
+        userId
+      });
+      // Continue anyway - user might be in auth.users but not user_signup yet
+    }
+
+    if (!userData) {
+      logger.warn('User not found in user_signup table, proceeding anyway', { userId });
+    }
+
+    // Check if a transcription already exists for this user/incident
+    const { data: existingData, error: checkError } = await supabase
+      .from('ai_transcription')
+      .select('id')
+      .eq('create_user_id', userId)
+      .maybeSingle(); // Use maybeSingle instead of single to handle no rows gracefully
+
+    if (checkError) {
+      logger.error('Error checking existing transcription', {
+        error: checkError.message,
+        code: checkError.code,
+        userId,
+        incidentId
+      });
+      // Continue anyway - we'll try to create a new one
+    }
+
+    // If transcription exists, update it; otherwise create new one
+    if (existingData) {
+      logger.info('Updating existing transcription', { transcriptionId: existingData.id });
+
       const { data, error } = await supabase
-        .from('incident_reports')
+        .from('ai_transcription')
         .update({
-          detailed_account_of_what_happened: personalStatement,
+          transcript_text: personalStatement,
+          narrative_text: accidentNarrative || null,
+          voice_transcription: voiceTranscription || null,
+          incident_id: incidentId || null,
           updated_at: new Date().toISOString()
         })
-        .eq('id', incidentId)
-        .eq('create_user_id', userId)
+        .eq('id', existingData.id)
         .select();
 
       if (error) {
-        logger.error('Failed to save statement', { error: error.message });
-        throw error;
+        logger.error('Failed to update statement', {
+          error: error.message,
+          code: error.code,
+          details: error.details,
+          hint: error.hint
+        });
+        throw new Error(`Database update failed: ${error.message}`);
       }
 
-      if (!data || data.length === 0) {
-        return sendError(res, 404, 'Incident report not found', 'NOT_FOUND');
-      }
-
-      logger.success('Personal statement saved', { incidentId });
+      logger.success('Personal statement updated', { transcriptionId: existingData.id });
 
       return res.json({
         success: true,
-        message: 'Personal statement saved successfully',
+        message: 'Personal statement updated successfully',
+        transcriptionId: existingData.id,
         incidentId: incidentId
       });
 
     } else {
-      // No incident ID - create a new incident report with just the statement
-      const { data, error} = await supabase
-        .from('incident_reports')
+      logger.info('Creating new transcription record');
+
+      // Create new transcription record
+      const { data, error } = await supabase
+        .from('ai_transcription')
         .insert([{
           create_user_id: userId,
-          detailed_account_of_what_happened: personalStatement,
-          date: new Date().toISOString(),
-          created_at: new Date().toISOString()
+          incident_id: incidentId || null,
+          transcript_text: personalStatement,
+          narrative_text: accidentNarrative || null,
+          voice_transcription: voiceTranscription || null,
+          created_at: new Date().toISOString(),
+          updated_at: new Date().toISOString()
         }])
         .select();
 
       if (error) {
-        logger.error('Failed to create incident with statement', { error: error.message });
-        throw error;
+        logger.error('Failed to create transcription', {
+          error: error.message,
+          code: error.code,
+          details: error.details,
+          hint: error.hint,
+          userId,
+          incidentId
+        });
+        throw new Error(`Database insert failed: ${error.message}`);
       }
 
-      logger.success('New incident created with statement', { incidentId: data[0].id });
+      if (!data || data.length === 0) {
+        throw new Error('No data returned from insert operation');
+      }
+
+      logger.success('New transcription created', { transcriptionId: data[0].id });
 
       return res.json({
         success: true,
         message: 'Personal statement saved successfully',
-        incidentId: data[0].id
+        transcriptionId: data[0].id,
+        incidentId: incidentId
       });
     }
 
   } catch (error) {
     logger.error('Save statement error', {
       error: error.message,
-      stack: error.stack
+      stack: error.stack,
+      userId: req.body?.userId,
+      incidentId: req.body?.incidentId
     });
-    sendError(res, 500, 'Failed to save statement', 'SAVE_ERROR');
+
+    // Return more detailed error message
+    const errorMessage = error.message || 'Failed to save statement';
+    sendError(res, 500, errorMessage, 'SAVE_ERROR');
   }
 }
 
