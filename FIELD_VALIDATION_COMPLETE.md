@@ -274,8 +274,51 @@ node scripts/validate-field-mappings.js
 
 1. ✅ **Field validation complete** - All non-existent fields removed
 2. ✅ **Validation script passing** - 0 critical errors
-3. ⏳ **Testing required** - User should test form submission
-4. ⏳ **Verify database insert** - Check incident_reports table after submission
+3. ✅ **Safety check requirement** - RESOLVED (test user marked as safe)
+4. ✅ **Health endpoint 404** - FIXED (corrected URL from /api/health to /health)
+5. ⏳ **Testing required** - User should test form submission
+6. ⏳ **Verify database insert** - Check incident_reports table after submission
+
+---
+
+## Additional Issue Found (2025-11-11)
+
+### Safety Check Requirement
+
+**Status:** ✅ **FIXED** for test user
+
+**Problem:** After fixing the field validation issues, form submission now fails with a different error:
+```
+Error: User must complete safety check and be marked as safe before submitting incident report
+Code: P0001 (PostgreSQL check constraint)
+```
+
+**Root Cause:**
+- Database has a BEFORE INSERT trigger on `incident_reports` table
+- Trigger checks if user has `are_you_safe = TRUE` in `user_signup` table
+- Trigger is defined in `/migrations/015_add_user_signup_safety_check.sql`
+- Trigger function: `check_user_safety_before_report()`
+
+**How Safety Check Works:**
+1. User must complete safety assessment (typically on Page 1 or separate page)
+2. Frontend calls `POST /api/safety-status` with safety status selection
+3. Safety controller (`src/controllers/safety.controller.js`) updates `user_signup` record:
+   - `are_you_safe = TRUE` if user selected "Yes, I'm safe and can complete this form" or "The Emergency services have been called"
+   - `are_you_safe = FALSE` if user selected "Call Emergency contact", "I'm injured...", "I'm in danger...", or "I'm not sure..."
+4. Only users with `are_you_safe = TRUE` can submit incident reports
+
+**Fix Applied for Test User:**
+```javascript
+// Test user (page12test@example.com) marked as safe
+are_you_safe: true
+safety_status: "Yes, I'm safe and can complete this form"
+safety_status_timestamp: 2025-11-11T10:56:00.000Z
+```
+
+**Production Solution:**
+- Safety check should be integrated into the incident form flow
+- Typically presented on Page 1 after initial date/time entry
+- Must happen BEFORE user reaches Page 12 submission
 
 ---
 
@@ -307,6 +350,10 @@ npm run dev
 
 ---
 
-**Last Updated:** 2025-11-10 21:14 GMT
-**Version:** 2.0.1
+**Last Updated:** 2025-11-11 11:00 GMT
+**Version:** 2.0.2
 **Branch:** feat/audit-prep
+
+**Changelog:**
+- 2025-11-10 21:14 - Initial field validation complete (10 fields removed)
+- 2025-11-11 11:00 - Safety check requirement discovered and fixed for test user

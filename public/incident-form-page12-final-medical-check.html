@@ -727,7 +727,7 @@
           // Test if we can reach the API at all
           console.log('🔍 Testing API connectivity...');
           try {
-            const healthCheck = await fetch('/api/health', { credentials: 'include' });
+            const healthCheck = await fetch('/health', { credentials: 'include' });
             console.log('  - Health check status:', healthCheck.status);
           } catch (healthErr) {
             console.error('  - Health check failed:', healthErr);
