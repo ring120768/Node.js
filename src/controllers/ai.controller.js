@@ -379,7 +379,6 @@ async function savePersonalStatement(req, res) {
           transcript_text: personalStatement,
           narrative_text: accidentNarrative || null,
           voice_transcription: voiceTranscription || null,
-          incident_id: incidentId || null,
           updated_at: new Date().toISOString()
         })
         .eq('id', existingData.id)
@@ -412,7 +411,6 @@ async function savePersonalStatement(req, res) {
         .from('ai_transcription')
         .insert([{
           create_user_id: userId,
-          incident_id: incidentId || null,
           transcript_text: personalStatement,
           narrative_text: accidentNarrative || null,
           voice_transcription: voiceTranscription || null,

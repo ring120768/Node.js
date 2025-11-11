@@ -183,8 +183,7 @@ function displayStartupBanner() {
   const services = {
     supabase: !!(config.supabase.url && config.supabase.serviceKey && config.supabase.anonKey),
     openai: !!(config.openai.enabled && config.openai.apiKey),
-    github_webhook: !!process.env.GITHUB_WEBHOOK_SECRET,
-    typeform_webhook: !!process.env.WEBHOOK_API_KEY
+    github_webhook: !!process.env.GITHUB_WEBHOOK_SECRET
   };
 
   const urls = process.env.REPL_SLUG && process.env.REPL_OWNER
@@ -200,7 +199,6 @@ function displayStartupBanner() {
   logger.info(`   ${services.supabase ? '✅' : '❌'} Supabase Database`);
   logger.info(`   ${services.openai ? '✅' : '❌'} OpenAI API`);
   logger.info(`   ${services.github_webhook ? '✅' : '❌'} GitHub Webhooks`);
-  logger.info(`   ${services.typeform_webhook ? '✅' : '❌'} Typeform/Zapier Webhooks`);
   logger.info('\n⚡ System Ready!');
   logger.info('='.repeat(60) + '\n');
 }

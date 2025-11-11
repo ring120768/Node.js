@@ -288,14 +288,13 @@ router.get('/system-status', async (req, res) => {
         </div>
 
         <div class="section">
-            <h3>🎣 Webhooks (✅ All Confirmed with Zapier/Typeform)</h3>
+            <h3>🎣 Webhooks</h3>
             <ul>
-                <li><code>/webhooks/user_signup</code> - ✅ User profiles</li>
-                <li><code>/webhooks/incident_reports</code> - ✅ Incident reports</li>
-                <li><code>/webhooks/demo</code> - ✅ Demo submissions</li>
-                <li><code>/webhooks/test</code> - ✅ Test endpoint</li>
-                <li><code>/webhooks/health</code> - ✅ Health check</li>
+                <li><code>/webhooks/github</code> - ✅ GitHub repository events</li>
             </ul>
+            <p style="margin-top: 10px; font-size: 12px; color: #666;">
+                Note: Typeform webhooks removed - application now uses in-house HTML forms
+            </p>
         </div>
 
         <div class="links">
@@ -436,23 +435,9 @@ router.get('/download-pdf/:userId', (req, res) => {
 
 /**
  * Legacy Webhook Endpoints
- * Redirect to new /webhooks/typeform endpoint
+ * Note: Typeform webhook redirects removed - application now uses in-house HTML forms
+ * All form submissions now go through /api/incident-form/* endpoints
  */
-router.post('/api/webhooks/signup', (req, res) => {
-  res.redirect(307, '/webhooks/typeform');
-});
-
-router.post('/api/webhooks/incident-report', (req, res) => {
-  res.redirect(307, '/webhooks/typeform');
-});
-
-router.post('/webhook/signup', (req, res) => {
-  res.redirect(307, '/webhooks/typeform');
-});
-
-router.post('/webhook/incident-report', (req, res) => {
-  res.redirect(307, '/webhooks/typeform');
-});
 
 /**
  * Legacy Debug Endpoints

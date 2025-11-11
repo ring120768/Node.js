@@ -536,11 +536,11 @@ function createApp() {
   /**
    * CRITICAL: Webhooks MUST be mounted FIRST (before other routes)
    * Raw body is captured globally via verify functions above
-   * 
+   *
    * Webhook endpoints:
-   * - POST /webhooks/typeform - Typeform form submissions
    * - POST /webhooks/github - GitHub repository events
-   * - GET  /webhooks/test - Test webhook endpoint
+   *
+   * Note: Typeform webhooks removed - application now uses in-house HTML forms
    */
   app.use('/webhooks', webhookRouter);
 
@@ -549,11 +549,8 @@ function createApp() {
     res.json({
       status: 'ok',
       github_webhook_configured: !!process.env.GITHUB_WEBHOOK_SECRET,
-      typeform_webhook_configured: !!process.env.TYPEFORM_WEBHOOK_SECRET,
       endpoints: {
-        typeform: '/webhooks/typeform',
-        github: '/webhooks/github',
-        test: '/webhooks/test'
+        github: '/webhooks/github'
       },
       raw_body_capture: 'enabled',
       timestamp: new Date().toISOString()
@@ -584,8 +581,7 @@ function createApp() {
   app.get('/readyz', (req, res) => {
     const checks = {
       supabase: supabaseEnabled,
-      env_vars: !!(process.env.SUPABASE_URL && process.env.OPENAI_API_KEY),
-      webhooks: !!(process.env.TYPEFORM_WEBHOOK_SECRET)
+      env_vars: !!(process.env.SUPABASE_URL && process.env.OPENAI_API_KEY)
     };
 
     const ready = Object.values(checks).every(Boolean);
