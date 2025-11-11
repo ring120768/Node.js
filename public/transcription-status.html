@@ -2978,7 +2978,7 @@ Continue with: What happened immediately after impact? Any injuries you noticed?
             updateNetworkStatus();
 
             // Check for saved draft
-            restoreDraft();
+            // restoreDraft(); // DISABLED: Auto-restore dialog after form submission was confusing
 
             // Auto-show transcription if redirected from incident.html
             const shouldShowTranscription = sessionStorage.getItem('show_transcription_on_load');
