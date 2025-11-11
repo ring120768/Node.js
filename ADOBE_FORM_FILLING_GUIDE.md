@@ -254,7 +254,7 @@ node test-adobe-pdf.js
 
 The fillable PDF template should be here:
 ```
-/pdf-templates/Car-Crash-Lawyer-AI-Incident-Report.pdf
+/pdf-templates/Car-Crash-Lawyer-AI-incident-report-main.pdf
 ```
 
 ✅ This has been done for you automatically!
@@ -400,7 +400,7 @@ The filled PDF is suitable for:
 `/src/controllers/pdf.controller.js` (lines 135-153)
 
 ### Template Location
-`/pdf-templates/Car-Crash-Lawyer-AI-Incident-Report.pdf`
+`/pdf-templates/Car-Crash-Lawyer-AI-incident-report-main.pdf`
 
 ### Field Mapping
 All field mappings are in the `fillFormFields()` method in `adobePdfFormFillerService.js`

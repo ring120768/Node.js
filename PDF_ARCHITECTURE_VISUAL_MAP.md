@@ -1,7 +1,7 @@
 # PDF Architecture Visual Map: Field Placement & Structure
 
 **Project**: Car Crash Lawyer AI - PDF Template Field Architecture
-**Template**: Car-Crash-Lawyer-AI-Incident-Report.pdf (17 pages, 150+ fields)
+**Template**: Car-Crash-Lawyer-AI-incident-report-main.pdf (17 pages, 150+ fields)
 **Date**: 2025-10-31
 **Purpose**: Visual guide for adding 64+ new fields to PDF template
 

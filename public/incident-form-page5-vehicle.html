@@ -1155,13 +1155,13 @@
         vehicle_driveable: document.querySelector('input[name="vehicle_driveable"]:checked')?.value
       };
 
-      localStorage.setItem('page5_data', JSON.stringify(formData));
+      sessionStorage.setItem('incident_page5', JSON.stringify(formData));
       console.log('Page 5 data saved:', formData);
     }
 
     // Load saved data
     function loadSavedData() {
-      const saved = localStorage.getItem('page5_data');
+      const saved = sessionStorage.getItem('incident_page5');
       if (saved) {
         const data = JSON.parse(saved);
 

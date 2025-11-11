@@ -596,13 +596,13 @@
         }
       }
 
-      localStorage.setItem('page9_data', JSON.stringify(data));
+      sessionStorage.setItem('incident_page9', JSON.stringify(data));
       console.log('Page 9 data saved:', data);
     }
 
     // Load existing data
     function loadData() {
-      const saved = localStorage.getItem('page9_data');
+      const saved = sessionStorage.getItem('incident_page9');
       if (!saved) return;
 
       try {

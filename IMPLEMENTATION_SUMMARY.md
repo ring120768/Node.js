@@ -11,7 +11,7 @@ You asked: *"is it possible for us to automatically fill the placeholders in the
 ## Summary of Changes
 
 ### 1. PDF Template Copied to Project
-**Location:** `/pdf-templates/Car-Crash-Lawyer-AI-Incident-Report.pdf`
+**Location:** `/pdf-templates/Car-Crash-Lawyer-AI-incident-report-main.pdf`
 
 Your professionally designed 17-page legal document is now part of your project.
 
@@ -329,7 +329,7 @@ The system has built-in reliability:
 |------|------|---------|
 | **Service** | `/src/services/adobePdfFormFillerService.js` | Main form filling service |
 | **Controller** | `/src/controllers/pdf.controller.js` | PDF generation endpoint |
-| **Template** | `/pdf-templates/Car-Crash-Lawyer-AI-Incident-Report.pdf` | Your legal PDF template |
+| **Template** | `/pdf-templates/Car-Crash-Lawyer-AI-incident-report-main.pdf` | Your legal PDF template |
 | **Test Script** | `/test-form-filling.js` | Test form filling |
 | **Credentials** | `/credentials/pdfservices-api-credentials.json` | Adobe credentials (not in Git) |
 
@@ -383,7 +383,7 @@ Adobe PDF filling failed, falling back to legacy method
 ```
 ❌ Template file not found
 ```
-**Solution:** Verify `/pdf-templates/Car-Crash-Lawyer-AI-Incident-Report.pdf` exists
+**Solution:** Verify `/pdf-templates/Car-Crash-Lawyer-AI-incident-report-main.pdf` exists
 
 **Issue:** User not found
 ```

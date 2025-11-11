@@ -17,7 +17,7 @@ class AdobePdfFormFillerService {
     this.initialized = false;
     this.credentials = null;
     this.pdfServices = null;
-    this.templatePath = path.join(__dirname, '../../pdf-templates/Car-Crash-Lawyer-AI-Incident-Report.pdf');
+    this.templatePath = path.join(__dirname, '../../pdf-templates/Car-Crash-Lawyer-AI-incident-report-main.pdf');
     this.initializeCredentials();
   }
 

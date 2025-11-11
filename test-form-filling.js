@@ -166,7 +166,7 @@ async function testFormFilling() {
       log('   → See ADOBE_SETUP_COMPLETE.md for setup', 'yellow');
     } else if (error.message.includes('template')) {
       log('   → PDF template not found', 'yellow');
-      log('   → Check /pdf-templates/Car-Crash-Lawyer-AI-Incident-Report.pdf exists', 'yellow');
+      log('   → Check /pdf-templates/Car-Crash-Lawyer-AI-incident-report-main.pdf exists', 'yellow');
     } else {
       log('   → Check server logs for detailed error messages', 'yellow');
       log('   → Verify Supabase connection is working', 'yellow');

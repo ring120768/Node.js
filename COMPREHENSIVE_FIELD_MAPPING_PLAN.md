@@ -1892,7 +1892,7 @@ async function extractPdfFields(pdfPath) {
 (async () => {
   console.log('Extracting fields from incident report PDF...');
   const incidentFields = await extractPdfFields(
-    'pdf-templates/Car-Crash-Lawyer-AI-Incident-Report.pdf'
+    'pdf-templates/Car-Crash-Lawyer-AI-incident-report-main.pdf'
   );
 
   console.log('Extracting fields from witness/vehicle PDF...');

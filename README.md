@@ -399,7 +399,7 @@ All coding standards, security requirements, and workflows are documented in [`.
 ls -la credentials/pdfservices-api-credentials.json
 
 # Check template exists
-ls -la pdf-templates/Car-Crash-Lawyer-AI-Incident-Report.pdf
+ls -la pdf-templates/Car-Crash-Lawyer-AI-incident-report-main.pdf
 
 # Test service
 node test-adobe-pdf.js

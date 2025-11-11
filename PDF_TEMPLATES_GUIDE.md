@@ -123,7 +123,7 @@ Where `X` = 2, 3, or 4
 ### Current Implementation (Single PDF)
 ```javascript
 // lib/pdfGenerator.js - Line 16
-const templatePath = path.join(process.cwd(), 'pdf-templates/Car-Crash-Lawyer-AI-Incident-Report.pdf');
+const templatePath = path.join(process.cwd(), 'pdf-templates/Car-Crash-Lawyer-AI-incident-report-main.pdf');
 ```
 
 **Status:** ⚠️ Only generates main PDF (207 fields)
@@ -260,7 +260,7 @@ id,PDFTextField,207,No,user_signup,create_user_id,footer/header,🆕 NEW,UUID tr
 ## Legacy Templates (Deprecated)
 
 **⚠️ Do Not Use:**
-- `Car-Crash-Lawyer-AI-Incident-Report.pdf` (old 146-field version)
+- `Car-Crash-Lawyer-AI-incident-report-main.pdf` (old 146-field version)
 - `Car Crash Lawyer AI Incident Report other vehicles and witness.pdf` (old template)
 - `Car-Crash-Lawyer-AI-Witness-Vehicle-Template.pdf` (old template)
 
@@ -269,7 +269,7 @@ id,PDFTextField,207,No,user_signup,create_user_id,footer/header,🆕 NEW,UUID tr
 **Action Required:** Update `lib/pdfGenerator.js` line 16 to use new template:
 ```javascript
 // OLD (deprecated)
-const templatePath = path.join(process.cwd(), 'pdf-templates/Car-Crash-Lawyer-AI-Incident-Report.pdf');
+const templatePath = path.join(process.cwd(), 'pdf-templates/Car-Crash-Lawyer-AI-incident-report-main.pdf');
 
 // NEW (207 fields)
 const templatePath = path.join(process.cwd(), 'pdf-templates/Car-Crash-Lawyer-AI-Incident-Report-Main.pdf');

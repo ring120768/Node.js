@@ -793,7 +793,7 @@ const fieldNames = {
 #### Setup (5 minutes)
 
 1. **Open Template**
-   - Open `Car-Crash-Lawyer-AI-Incident-Report.pdf` in Adobe Acrobat Pro DC
+   - Open `Car-Crash-Lawyer-AI-incident-report-main.pdf` in Adobe Acrobat Pro DC
    - File → Save As → "Car-Crash-Lawyer-AI-Incident-Report-REDESIGN.pdf"
 
 2. **Set Document Properties**

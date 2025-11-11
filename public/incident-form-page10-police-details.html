@@ -769,13 +769,13 @@
         seatbelt_reason: seatbeltsWorn === 'no' ? seatbeltReasonTextarea.value.trim() : null
       };
 
-      localStorage.setItem('page10_data', JSON.stringify(data));
+      sessionStorage.setItem('incident_page10', JSON.stringify(data));
       console.log('Page 10 data saved:', data);
     }
 
     // Load existing data
     function loadData() {
-      const saved = localStorage.getItem('page10_data');
+      const saved = sessionStorage.getItem('incident_page10');
       if (!saved) return;
 
       try {
