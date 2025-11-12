@@ -46,13 +46,28 @@ async function pageAuth(req, res, next) {
   try {
     // Extract session token from cookies
     const cookies = parseCookies(req);
+
+    // ENHANCED DEBUGGING: Log everything we receive
+    logger.info('🔍 PageAuth debug', {
+      path: req.path,
+      rawCookieHeader: req.headers.cookie ? req.headers.cookie.substring(0, 100) + '...' : 'NONE',
+      parsedCookieKeys: Object.keys(cookies),
+      hasAccessToken: !!cookies['access_token'],
+      hasSbAccessToken: !!cookies['sb-access-token'],
+      hasSbAuthToken: !!cookies['sb-auth-token'],
+      accessTokenLength: cookies['access_token'] ? cookies['access_token'].length : 0,
+      allCookieNames: Object.keys(cookies).join(', ')
+    });
+
     const sessionToken = cookies['access_token'] || cookies['sb-access-token'] || cookies['sb-auth-token'];
 
     if (!sessionToken) {
       logger.warn('Page access denied - No session token', {
         ip: req.ip,
         path: req.path,
-        userAgent: req.headers['user-agent']
+        userAgent: req.headers['user-agent'],
+        cookiesReceived: Object.keys(cookies).length,
+        cookieNames: Object.keys(cookies).join(', ')
       });
 
       // Redirect to login page (browser will follow automatically)
@@ -79,10 +94,14 @@ async function pageAuth(req, res, next) {
     req.user = user;
     req.sessionToken = sessionToken;
 
-    logger.info('Page auth successful', {
+    logger.info('✅ Page auth successful', {
       userId: user.id,
       email: user.email,
-      path: req.path
+      path: req.path,
+      tokenSource: cookies['access_token'] ? 'access_token' :
+                   cookies['sb-access-token'] ? 'sb-access-token' :
+                   'sb-auth-token',
+      tokenLength: sessionToken.length
     });
 
     next();

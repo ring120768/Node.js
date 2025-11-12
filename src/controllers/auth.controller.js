@@ -273,7 +273,15 @@ async function login(req, res) {
     logger.info('✅ Session cookies set', {
       rememberMe,
       durationDays: rememberMe ? 90 : 30,
-      hasRefreshToken: !!authResult.session.refresh_token
+      hasRefreshToken: !!authResult.session.refresh_token,
+      cookieSettings: {
+        httpOnly: true,
+        secure: true,
+        sameSite: 'none',
+        path: '/',
+        maxAge: cookieMaxAge
+      },
+      accessTokenLength: authResult.session.access_token.length
     });
 
     // Get user metadata from auth
