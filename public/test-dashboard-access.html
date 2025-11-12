@@ -1,0 +1,220 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Dashboard Access Test</title>
+    <style>
+        body {
+            font-family: monospace;
+            padding: 20px;
+            background: #f5f5f5;
+        }
+        .test-section {
+            background: white;
+            padding: 20px;
+            margin: 20px 0;
+            border-radius: 8px;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+        }
+        .test-section h2 {
+            margin-top: 0;
+            color: #333;
+        }
+        .status {
+            padding: 10px;
+            border-radius: 4px;
+            margin: 10px 0;
+        }
+        .status.success {
+            background: #d4edda;
+            color: #155724;
+        }
+        .status.error {
+            background: #f8d7da;
+            color: #721c24;
+        }
+        .status.info {
+            background: #d1ecf1;
+            color: #0c5460;
+        }
+        button {
+            padding: 12px 24px;
+            margin: 5px;
+            border: none;
+            border-radius: 6px;
+            background: #007bff;
+            color: white;
+            cursor: pointer;
+            font-size: 14px;
+        }
+        button:hover {
+            background: #0056b3;
+        }
+        pre {
+            background: #f8f9fa;
+            padding: 15px;
+            border-radius: 4px;
+            overflow-x: auto;
+            font-size: 12px;
+        }
+    </style>
+</head>
+<body>
+    <h1>🔍 Dashboard Access Diagnostic Tool</h1>
+
+    <div class="test-section">
+        <h2>1. Cookie Check</h2>
+        <div id="cookieStatus"></div>
+        <button onclick="checkCookies()">🍪 Check Cookies</button>
+    </div>
+
+    <div class="test-section">
+        <h2>2. Session Check</h2>
+        <div id="sessionStatus"></div>
+        <button onclick="checkSession()">🔐 Check Session</button>
+    </div>
+
+    <div class="test-section">
+        <h2>3. Dashboard Access</h2>
+        <div id="dashboardStatus"></div>
+        <button onclick="testDashboardAccess()">📋 Test Dashboard Access</button>
+        <button onclick="goToDashboard()">➡️ Go to Dashboard</button>
+    </div>
+
+    <div class="test-section">
+        <h2>4. Authentication Actions</h2>
+        <button onclick="goToLogin()">🔑 Go to Login</button>
+        <button onclick="goToSignup()">✨ Go to Signup</button>
+        <button onclick="goToIndex()">🏠 Go to Index</button>
+    </div>
+
+    <script>
+        function log(elementId, message, type = 'info') {
+            const element = document.getElementById(elementId);
+            const statusDiv = document.createElement('div');
+            statusDiv.className = `status ${type}`;
+            statusDiv.innerHTML = message;
+            element.appendChild(statusDiv);
+        }
+
+        function checkCookies() {
+            const cookieStatus = document.getElementById('cookieStatus');
+            cookieStatus.innerHTML = '';
+
+            const cookies = document.cookie;
+
+            if (!cookies || cookies.trim() === '') {
+                log('cookieStatus', '❌ No cookies found in browser', 'error');
+                log('cookieStatus', '<strong>Issue:</strong> No authentication cookies present<br><strong>Fix:</strong> You need to log in first', 'info');
+            } else {
+                log('cookieStatus', '✅ Cookies found:', 'success');
+
+                // Parse cookies
+                const cookieObj = {};
+                cookies.split(';').forEach(cookie => {
+                    const [name, value] = cookie.trim().split('=');
+                    cookieObj[name] = value;
+                });
+
+                log('cookieStatus', `<pre>${JSON.stringify(cookieObj, null, 2)}</pre>`, 'info');
+
+                // Check for specific auth cookies
+                if (cookieObj.access_token) {
+                    log('cookieStatus', '✅ <strong>access_token</strong> cookie found', 'success');
+                } else {
+                    log('cookieStatus', '❌ <strong>access_token</strong> cookie missing', 'error');
+                }
+
+                if (cookieObj.refresh_token) {
+                    log('cookieStatus', '✅ <strong>refresh_token</strong> cookie found', 'success');
+                } else {
+                    log('cookieStatus', '⚠️ <strong>refresh_token</strong> cookie missing', 'error');
+                }
+            }
+        }
+
+        async function checkSession() {
+            const sessionStatus = document.getElementById('sessionStatus');
+            sessionStatus.innerHTML = '';
+
+            log('sessionStatus', '🔄 Checking session with API...', 'info');
+
+            try {
+                const response = await fetch('/api/auth/session', {
+                    credentials: 'include'
+                });
+
+                const data = await response.json();
+
+                if (data.authenticated) {
+                    log('sessionStatus', '✅ <strong>Session Valid</strong>', 'success');
+                    log('sessionStatus', `<pre>${JSON.stringify(data, null, 2)}</pre>`, 'info');
+                } else {
+                    log('sessionStatus', '❌ <strong>Not Authenticated</strong>', 'error');
+                    log('sessionStatus', '<strong>Issue:</strong> Server says no valid session<br><strong>Fix:</strong> Log in via Login button below', 'info');
+                }
+            } catch (error) {
+                log('sessionStatus', `❌ <strong>Error:</strong> ${error.message}`, 'error');
+            }
+        }
+
+        async function testDashboardAccess() {
+            const dashboardStatus = document.getElementById('dashboardStatus');
+            dashboardStatus.innerHTML = '';
+
+            log('dashboardStatus', '🔄 Testing dashboard access...', 'info');
+
+            try {
+                const response = await fetch('/dashboard.html', {
+                    credentials: 'include',
+                    redirect: 'manual' // Don't follow redirects
+                });
+
+                console.log('Dashboard fetch response:', response);
+
+                if (response.type === 'opaqueredirect') {
+                    log('dashboardStatus', '↪️ <strong>Redirect Detected</strong>', 'error');
+                    log('dashboardStatus', '<strong>Issue:</strong> Server is redirecting (probably to login)<br><strong>Fix:</strong> You need to log in first', 'info');
+                } else if (response.ok) {
+                    log('dashboardStatus', '✅ <strong>Dashboard Accessible</strong>', 'success');
+                    log('dashboardStatus', 'Dashboard would load successfully. Click "Go to Dashboard" button to navigate.', 'info');
+                } else {
+                    log('dashboardStatus', `❌ <strong>Error ${response.status}</strong>`, 'error');
+                }
+            } catch (error) {
+                log('dashboardStatus', `❌ <strong>Error:</strong> ${error.message}`, 'error');
+            }
+        }
+
+        function goToDashboard() {
+            console.log('📋 Navigating to dashboard...');
+            window.location.href = '/dashboard.html';
+        }
+
+        function goToLogin() {
+            console.log('🔑 Navigating to login...');
+            window.location.href = '/login-improved.html?redirect=' + encodeURIComponent('/test-dashboard-access.html');
+        }
+
+        function goToSignup() {
+            console.log('✨ Navigating to signup...');
+            window.location.href = '/signup-auth.html';
+        }
+
+        function goToIndex() {
+            console.log('🏠 Navigating to index...');
+            window.location.href = '/index.html';
+        }
+
+        // Auto-run tests on page load
+        window.addEventListener('load', () => {
+            console.log('🧪 Dashboard Access Test Tool loaded');
+            setTimeout(() => {
+                checkCookies();
+                checkSession();
+            }, 500);
+        });
+    </script>
+</body>
+</html>

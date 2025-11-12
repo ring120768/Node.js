@@ -710,6 +710,9 @@
         // Navigate to dashboard (seamless - server handles auth)
         function navigateToDashboard() {
             console.log('📋 Dashboard button clicked - navigating to dashboard');
+            console.log('🍪 Current cookies:', document.cookie);
+            console.log('🔗 Navigating to: /dashboard.html');
+            console.log('📍 Current location:', window.location.href);
             window.location.href = '/dashboard.html';
         }
 
