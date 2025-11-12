@@ -926,10 +926,25 @@
                         Math.round(totalMinutes) + ' min';
                 }
 
-                // For now, set incidents and PDFs to 0
-                // These will be populated when we have the data
-                document.getElementById('statIncidents').textContent = '0';
-                document.getElementById('statPDFs').textContent = '0';
+                // Fetch incident reports
+                const incidentsResponse = await fetch('/api/incident-reports?limit=100', {
+                    credentials: 'include'
+                });
+
+                if (incidentsResponse.ok) {
+                    const incidentsData = await incidentsResponse.json();
+                    const totalIncidents = incidentsData.total || 0;
+                    const completedIncidents = (incidentsData.reports || []).filter(r => r.status === 'completed').length;
+
+                    document.getElementById('statIncidents').textContent = totalIncidents;
+                    document.getElementById('statIncidentsChange').textContent =
+                        completedIncidents > 0 ? `${completedIncidents} completed` : 'Ready to create';
+
+                    // For now, set PDFs count same as completed incidents
+                    document.getElementById('statPDFs').textContent = completedIncidents;
+                    document.getElementById('statPDFsStatus').textContent =
+                        completedIncidents > 0 ? `${completedIncidents} generated` : 'Ready to generate';
+                }
 
             } catch (error) {
                 console.error('Error loading stats:', error);
@@ -947,6 +962,10 @@
                 });
 
                 const transcriptsResponse = await fetch('/api/transcription/history?limit=10', {
+                    credentials: 'include'
+                });
+
+                const incidentsResponse = await fetch('/api/incident-reports?limit=10', {
                     credentials: 'include'
                 });
 
@@ -980,6 +999,29 @@
                     })));
                 }
 
+                if (incidentsResponse.ok) {
+                    const incidentsData = await incidentsResponse.json();
+                    activities.push(...(incidentsData.reports || []).map(report => {
+                        // Format location for display
+                        let locationText = report.location || 'Unknown location';
+                        if (report.what3words) {
+                            locationText += ` (${report.what3words})`;
+                        }
+
+                        return {
+                            type: 'incident',
+                            date: new Date(report.createdAt),
+                            title: 'Incident Report',
+                            description: locationText,
+                            meta: {
+                                status: report.status,
+                                date: report.accidentDate ? new Date(report.accidentDate).toLocaleDateString('en-GB') : '',
+                                plate: report.vehiclePlate || ''
+                            }
+                        };
+                    }));
+                }
+
                 // Sort by date (newest first)
                 activities.sort((a, b) => b.date - a.date);
 
@@ -1011,6 +1053,8 @@
                                     ${activity.meta.status ? `<span><span class="badge badge-${getStatusBadgeClass(activity.meta.status)}">${activity.meta.status}</span></span>` : ''}
                                     ${activity.meta.size ? `<span>📦 ${activity.meta.size}</span>` : ''}
                                     ${activity.meta.duration ? `<span>⏱ ${activity.meta.duration}</span>` : ''}
+                                    ${activity.meta.date ? `<span>📅 ${activity.meta.date}</span>` : ''}
+                                    ${activity.meta.plate ? `<span>🚗 ${activity.meta.plate}</span>` : ''}
                                 </div>
                             </div>
                         </div>

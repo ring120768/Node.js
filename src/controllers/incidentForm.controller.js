@@ -764,8 +764,99 @@ async function getIncidentReport(req, res) {
   }
 }
 
+/**
+ * List incident reports for authenticated user
+ *
+ * GET /api/incident-reports
+ *
+ * Query params:
+ * - limit: number (default 10, max 100)
+ * - offset: number (default 0)
+ *
+ * @param {Object} req - Express request
+ * @param {Object} res - Express response
+ */
+async function listIncidentReports(req, res) {
+  try {
+    const userId = req.userId; // From auth middleware
+
+    if (!userId) {
+      return res.status(401).json({
+        success: false,
+        error: 'Authentication required'
+      });
+    }
+
+    // Parse query params
+    const limit = Math.min(parseInt(req.query.limit) || 10, 100);
+    const offset = parseInt(req.query.offset) || 0;
+
+    logger.info('📋 Fetching incident reports', {
+      userId,
+      limit,
+      offset
+    });
+
+    // Fetch incident reports for this user
+    const { data: reports, error, count } = await supabase
+      .from('incident_reports')
+      .select('*', { count: 'exact' })
+      .eq('auth_user_id', userId)
+      .is('deleted_at', null)
+      .order('created_at', { ascending: false })
+      .range(offset, offset + limit - 1);
+
+    if (error) {
+      logger.error('❌ Error fetching incident reports:', error);
+      return res.status(500).json({
+        success: false,
+        error: 'Failed to fetch incident reports'
+      });
+    }
+
+    // Format response
+    const formattedReports = (reports || []).map(report => ({
+      id: report.id,
+      createdAt: report.created_at,
+      accidentDate: report.accident_date,
+      accidentTime: report.accident_time,
+      location: report.location,
+      what3words: report.what3words,
+      vehiclePlate: report.vehicle_license_plate,
+      completedAt: report.completed_at,
+      status: report.completed_at ? 'completed' : 'incomplete',
+      // Add summary fields
+      medicalAttention: report.medical_attention_needed,
+      policeAttended: report.police_attended,
+      witnessesPresent: report.witnesses_present
+    }));
+
+    logger.success('✅ Found incident reports', {
+      userId,
+      count: formattedReports.length,
+      total: count
+    });
+
+    res.json({
+      success: true,
+      reports: formattedReports,
+      total: count || 0,
+      limit,
+      offset
+    });
+
+  } catch (error) {
+    logger.error('💥 Error listing incident reports:', error);
+    res.status(500).json({
+      success: false,
+      error: 'Internal server error'
+    });
+  }
+}
+
 module.exports = {
   submitIncidentForm,
   saveProgress,
-  getIncidentReport
+  getIncidentReport,
+  listIncidentReports
 };
