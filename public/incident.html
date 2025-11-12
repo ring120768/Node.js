@@ -312,6 +312,23 @@
             to { transform: rotate(360deg); }
         }
 
+        /* Pulse highlight for Continue button after voice recording */
+        .pulse-highlight {
+            animation: pulseHighlight 2s ease-in-out 3;
+            box-shadow: 0 0 20px rgba(14, 116, 144, 0.6);
+        }
+
+        @keyframes pulseHighlight {
+            0%, 100% {
+                transform: scale(1);
+                box-shadow: 0 0 20px rgba(14, 116, 144, 0.6);
+            }
+            50% {
+                transform: scale(1.05);
+                box-shadow: 0 0 30px rgba(14, 116, 144, 0.8);
+            }
+        }
+
         .voice-status {
             text-align: center;
             padding: 10px;
@@ -943,22 +960,16 @@
                     // Save emergency audio to database
                     await saveEmergencyAudioToDatabase(voiceTranscription);
 
-                    // Auto-redirect to view transcription after 1.5 seconds with smooth transition
+                    // Show success message and enable Continue button
                     setTimeout(() => {
-                        voiceStatus.textContent = '📝 Showing your transcription...';
+                        voiceStatus.textContent = '✅ Voice recording saved! Click Continue to proceed.';
 
-                        // Save transcription to sessionStorage for transcription-status.html
-                        sessionStorage.setItem('latest_transcription', voiceTranscription);
-                        sessionStorage.setItem('show_transcription_on_load', 'true');
-
-                        // Add fade-out transition to body
-                        document.body.style.transition = 'opacity 0.5s ease-out';
-                        document.body.style.opacity = '0';
-
-                        // Navigate after fade completes
-                        setTimeout(() => {
-                            window.location.href = '/transcription-status.html';
-                        }, 500);
+                        // Enable the continue button (in case it was disabled)
+                        const continueBtn = document.getElementById('continueBtn');
+                        if (continueBtn) {
+                            continueBtn.disabled = false;
+                            continueBtn.classList.add('pulse-highlight'); // Add visual emphasis
+                        }
                     }, 1500);
                 } else {
                     // Parse error response to show detailed message
