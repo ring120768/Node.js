@@ -406,9 +406,10 @@ function buildIncidentData(userId, formData) {
   return {
     create_user_id: userId,
 
-    // Page 1: Date, Time, Location (maps to accident_date/accident_time columns from migration 016)
-    accident_date: page1.incident_date || null,
-    accident_time: page1.incident_time || null,
+    // Page 1: Date, Time, Location
+    // Note: accident_date and accident_time are on Page 3, not Page 1
+    accident_date: page3.accident_date || null,
+    accident_time: page3.accident_time || null,
     // Note: location_address, location_postcode, location_city, location_what3words removed - don't exist in schema
     // Note: incident_description column removed - does not exist in schema
 
@@ -608,8 +609,13 @@ function buildIncidentData(userId, formData) {
     no_visible_damage: page7.no_visible_damage || false,
     describe_damage_to_vehicle: page7.describe_damage_to_vehicle || null,
 
-    // Page 9: Witnesses (boolean flags only - witness details saved to incident_witnesses table)
+    // Page 9: Witnesses
     witnesses_present: page9.witnesses_present || null,
+    // Primary witness details (witness 1) - also saved in incident_reports for backward compatibility
+    witness_name: page9.witness_name || null,
+    witness_mobile_number: page9.witness_mobile_number || null,
+    witness_email_address: page9.witness_email_address || null,
+    witness_statement: page9.witness_statement || null,
 
     // Page 10: Police Details & Safety Equipment
     police_attended: page10.police_attended === 'yes',
