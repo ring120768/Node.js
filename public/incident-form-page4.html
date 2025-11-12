@@ -877,7 +877,7 @@
       }
 
       // Validate junction details if at a junction
-      if (junctionType !== 'not_junction' && junctionType !== '') {
+      if (junctionType !== 'not_junction' && junctionType !== 'straight_road' && junctionType !== '') {
         const junctionControl = document.getElementById('junctioncontrol').value;
         const userManoeuvre = document.getElementById('usermanoeuvre').value;
 

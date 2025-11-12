@@ -841,7 +841,6 @@
               id="driveable-yes"
               name="vehicle_driveable"
               value="yes"
-              onchange="exclusiveCheck(this, 'vehicle-driveable')"
               style="width: 20px; height: 20px; cursor: pointer;">
             <label for="driveable-yes">✅ Yes, I drove it away</label>
           </div>
@@ -851,7 +850,6 @@
               id="driveable-no"
               name="vehicle_driveable"
               value="no"
-              onchange="exclusiveCheck(this, 'vehicle-driveable')"
               style="width: 20px; height: 20px; cursor: pointer;">
             <label for="driveable-no">🚛 No, it needed to be towed</label>
           </div>
@@ -861,7 +859,6 @@
               id="driveable-unsure"
               name="vehicle_driveable"
               value="unsure"
-              onchange="exclusiveCheck(this, 'vehicle-driveable')"
               style="width: 20px; height: 20px; cursor: pointer;">
             <label for="driveable-unsure">🤷 Unsure / Did not attempt</label>
           </div>
@@ -1098,7 +1095,12 @@
 
     document.getElementById('damage-description').addEventListener('input', validateForm);
 
-    // Note: vehicle_driveable validation now handled by exclusiveCheck() function
+    // Add event listeners for vehicle driveable checkboxes
+    document.querySelectorAll('input[name="vehicle_driveable"]').forEach(checkbox => {
+      checkbox.addEventListener('change', function() {
+        exclusiveCheck(this, 'vehicle-driveable');
+      });
+    });
 
     // Toggle damage details section based on no-damage checkbox
     function toggleDamageDetails() {
