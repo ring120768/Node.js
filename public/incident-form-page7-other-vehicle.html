@@ -1201,13 +1201,13 @@
         warnings: warnings
       };
 
-      localStorage.setItem('page7_data', JSON.stringify(formData));
+      sessionStorage.setItem('incident_page7', JSON.stringify(formData));
       console.log('Page 7 data saved:', formData);
     }
 
     // Load saved data
     function loadSavedData() {
-      const saved = localStorage.getItem('page7_data');
+      const saved = sessionStorage.getItem('incident_page7');
       if (saved) {
         const data = JSON.parse(saved);
 
