@@ -472,16 +472,24 @@
       try {
         console.log('🚀 Initializing...');
 
-        // Check auth
-        const { data: { session }, error } = await supabase.auth.getSession();
+        // NOTE: No need to check auth here - server-side pageAuth middleware
+        // already verified authentication before serving this HTML.
+        // If this JavaScript is running, the user IS authenticated.
 
-        if (error || !session) {
-          console.log('❌ No session, redirecting to login');
-          window.location.href = '/login.html';
+        // Get user info from API (server will use session cookie)
+        const response = await fetch('/api/auth/session', {
+          credentials: 'include' // Send cookies
+        });
+
+        const sessionData = await response.json();
+
+        if (!sessionData.authenticated) {
+          console.log('❌ Not authenticated, redirecting to login');
+          window.location.href = '/login-improved.html?redirect=' + encodeURIComponent('/dashboard.html');
           return;
         }
 
-        currentUser = session.user;
+        currentUser = sessionData.user;
         userId = currentUser.id;
 
         console.log('✅ User authenticated:', userId);
