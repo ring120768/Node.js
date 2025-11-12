@@ -747,6 +747,152 @@
             text-align: center;
             color: #666;
             margin-top: 10px;
+            font-size: 15px;
+        }
+
+        /* AI Analysis Progress Indicator */
+        .ai-progress-container {
+            background: #f8f9fa;
+            border-radius: 12px;
+            padding: 20px;
+            margin: 20px 0;
+            box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+        }
+
+        .ai-progress-steps {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 15px;
+        }
+
+        .ai-step {
+            flex: 1;
+            text-align: center;
+            position: relative;
+        }
+
+        .ai-step:not(:last-child)::after {
+            content: '';
+            position: absolute;
+            top: 15px;
+            right: -50%;
+            width: 100%;
+            height: 2px;
+            background: #ddd;
+            z-index: 0;
+        }
+
+        .ai-step.active:not(:last-child)::after {
+            background: linear-gradient(90deg, #2196F3 0%, #ddd 100%);
+        }
+
+        .ai-step.complete:not(:last-child)::after {
+            background: #4CAF50;
+        }
+
+        .ai-step-circle {
+            width: 30px;
+            height: 30px;
+            border-radius: 50%;
+            background: #ddd;
+            color: #666;
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 14px;
+            font-weight: bold;
+            position: relative;
+            z-index: 1;
+            transition: all 0.3s ease;
+        }
+
+        .ai-step.active .ai-step-circle {
+            background: #2196F3;
+            color: white;
+            box-shadow: 0 0 0 4px rgba(33, 150, 243, 0.2);
+            animation: pulse 1.5s ease-in-out infinite;
+        }
+
+        .ai-step.complete .ai-step-circle {
+            background: #4CAF50;
+            color: white;
+        }
+
+        .ai-step-label {
+            font-size: 11px;
+            color: #666;
+            margin-top: 8px;
+            font-weight: 500;
+        }
+
+        .ai-step.active .ai-step-label {
+            color: #2196F3;
+            font-weight: 600;
+        }
+
+        .ai-step.complete .ai-step-label {
+            color: #4CAF50;
+        }
+
+        @keyframes pulse {
+            0%, 100% {
+                box-shadow: 0 0 0 4px rgba(33, 150, 243, 0.2);
+            }
+            50% {
+                box-shadow: 0 0 0 8px rgba(33, 150, 243, 0.1);
+            }
+        }
+
+        /* Analysis Complete Animation */
+        .analysis-complete-banner {
+            background: linear-gradient(135deg, #4CAF50, #45a049);
+            color: white;
+            padding: 20px;
+            border-radius: 12px;
+            margin: 20px 0;
+            text-align: center;
+            animation: slideInScale 0.5s ease-out;
+            box-shadow: 0 4px 15px rgba(76, 175, 80, 0.3);
+        }
+
+        .analysis-complete-banner h3 {
+            margin: 0 0 8px 0;
+            font-size: 20px;
+            color: white;
+        }
+
+        .analysis-complete-banner p {
+            margin: 0;
+            font-size: 14px;
+            opacity: 0.95;
+        }
+
+        @keyframes slideInScale {
+            0% {
+                opacity: 0;
+                transform: translateY(-20px) scale(0.95);
+            }
+            100% {
+                opacity: 1;
+                transform: translateY(0) scale(1);
+            }
+        }
+
+        /* Fade in animation for sections */
+        .fade-in {
+            animation: fadeIn 0.6s ease-out;
+        }
+
+        @keyframes fadeIn {
+            from {
+                opacity: 0;
+                transform: translateY(10px);
+            }
+            to {
+                opacity: 1;
+                transform: translateY(0);
+            }
         }
 
         /* Welcome Banner */
@@ -1545,6 +1691,36 @@ Continue with: What happened immediately after impact? Any injuries you noticed?
                     </div>
                 </div>
             </div>
+        </div>
+
+        <!-- AI Analysis Progress Indicator -->
+        <div id="aiProgressContainer" class="ai-progress-container" style="display: none;">
+            <div class="ai-progress-steps">
+                <div class="ai-step" id="aiStep1">
+                    <div class="ai-step-circle">1</div>
+                    <div class="ai-step-label">Summary</div>
+                </div>
+                <div class="ai-step" id="aiStep2">
+                    <div class="ai-step-circle">2</div>
+                    <div class="ai-step-label">Quality Review</div>
+                </div>
+                <div class="ai-step" id="aiStep3">
+                    <div class="ai-step-circle">3</div>
+                    <div class="ai-step-label">Full Report</div>
+                </div>
+                <div class="ai-step" id="aiStep4">
+                    <div class="ai-step-circle">4</div>
+                    <div class="ai-step-label">Final Review</div>
+                </div>
+            </div>
+            <div class="spinner"></div>
+            <div class="loading-text" id="aiProgressText">Initializing AI analysis...</div>
+        </div>
+
+        <!-- Analysis Complete Banner (hidden by default) -->
+        <div id="analysisCompleteBanner" class="analysis-complete-banner" style="display: none;">
+            <h3>✨ Analysis Complete!</h3>
+            <p>Your personal statement has been analyzed and reviewed.</p>
         </div>
 
         <!-- AI Summary Section -->
@@ -2681,9 +2857,43 @@ Continue with: What happened immediately after impact? Any injuries you noticed?
                 updateProgress('step-summary', 'active');
                 showStatus('Generating AI analysis...', 'info');
 
-                // Show loading spinners
-                document.getElementById('summarySection').style.display = 'block';
-                document.getElementById('summaryText').innerHTML = '<div class="spinner"></div><div class="loading-text">Analyzing your statement...</div>';
+                // Show progress indicator
+                const progressContainer = document.getElementById('aiProgressContainer');
+                const completeBanner = document.getElementById('analysisCompleteBanner');
+                progressContainer.style.display = 'block';
+                completeBanner.style.display = 'none';
+
+                // Hide analysis sections initially
+                document.getElementById('summarySection').style.display = 'none';
+                document.getElementById('reviewSection').style.display = 'none';
+                document.getElementById('combinedReportSection').style.display = 'none';
+                document.getElementById('finalReviewSection').style.display = 'none';
+
+                // Simulate progress through steps (estimate ~7s per step)
+                const progressSteps = [
+                    { step: 1, text: 'Generating summary and key points...', delay: 0 },
+                    { step: 2, text: 'Reviewing statement quality...', delay: 7000 },
+                    { step: 3, text: 'Creating comprehensive report...', delay: 14000 },
+                    { step: 4, text: 'Finalizing recommendations...', delay: 21000 }
+                ];
+
+                const progressInterval = setInterval(() => {
+                    const now = Date.now();
+                    const elapsed = now - analysisStartTime;
+
+                    for (const ps of progressSteps) {
+                        if (elapsed >= ps.delay && !progressTracking[ps.step]) {
+                            updateAIStep(ps.step, 'active', ps.text);
+                            progressTracking[ps.step] = true;
+                        }
+                    }
+                }, 500);
+
+                let analysisStartTime = Date.now();
+                let progressTracking = {};
+
+                // Start first step immediately
+                updateAIStep(1, 'active', 'Generating summary and key points...');
 
                 const response = await fetch('/api/ai/analyze-statement', {
                     method: 'POST',
@@ -2698,10 +2908,30 @@ Continue with: What happened immediately after impact? Any injuries you noticed?
                     credentials: 'include'
                 });
 
+                clearInterval(progressInterval);
+
                 const result = await response.json();
 
                 if (result.success) {
-                    displayAIAnalysis(result.analysis);
+                    // Mark all steps complete
+                    for (let i = 1; i <= 4; i++) {
+                        updateAIStep(i, 'complete');
+                    }
+
+                    // Show completion banner
+                    setTimeout(() => {
+                        progressContainer.style.display = 'none';
+                        completeBanner.style.display = 'block';
+
+                        // Display analysis with fade-in animation
+                        displayAIAnalysis(result.analysis);
+
+                        // Hide completion banner after 3 seconds
+                        setTimeout(() => {
+                            completeBanner.style.display = 'none';
+                        }, 3000);
+                    }, 500);
+
                     updateProgress('step-summary', 'complete');
                     showStatus('AI analysis complete!', 'success');
                 } else {
@@ -2711,12 +2941,39 @@ Continue with: What happened immediately after impact? Any injuries you noticed?
             } catch (error) {
                 console.error('AI analysis error:', error);
                 showStatus('Failed to generate AI analysis. Please try again.', 'error');
-                document.getElementById('summarySection').style.display = 'none';
+                document.getElementById('aiProgressContainer').style.display = 'none';
+                document.getElementById('analysisCompleteBanner').style.display = 'none';
+            }
+        }
+
+        // Helper function to update AI progress steps
+        function updateAIStep(stepNumber, status, text) {
+            const step = document.getElementById(`aiStep${stepNumber}`);
+            const progressText = document.getElementById('aiProgressText');
+
+            if (status === 'active') {
+                // Remove active from all steps
+                for (let i = 1; i <= 4; i++) {
+                    document.getElementById(`aiStep${i}`).classList.remove('active');
+                }
+                // Add active to current step
+                step.classList.add('active');
+                if (text) progressText.textContent = text;
+            } else if (status === 'complete') {
+                step.classList.remove('active');
+                step.classList.add('complete');
+                // Replace number with checkmark
+                const circle = step.querySelector('.ai-step-circle');
+                circle.textContent = '✓';
             }
         }
 
         function displayAIAnalysis(analysis) {
-            // Display Summary
+            // Display Summary with fade-in animation
+            const summarySection = document.getElementById('summarySection');
+            summarySection.style.display = 'block';
+            summarySection.classList.add('fade-in');
+
             document.getElementById('summaryText').innerHTML = analysis.summary || 'No summary available.';
 
             // Display Key Points
@@ -2730,9 +2987,11 @@ Continue with: What happened immediately after impact? Any injuries you noticed?
                 });
             }
 
-            // Display AI Review
+            // Display AI Review with fade-in animation
             if (analysis.review) {
-                document.getElementById('reviewSection').style.display = 'block';
+                const reviewSection = document.getElementById('reviewSection');
+                reviewSection.style.display = 'block';
+                reviewSection.classList.add('fade-in');
                 document.getElementById('qualityAssessment').textContent = analysis.review.quality || '';
 
                 const missingInfoDiv = document.getElementById('missingInfo');
@@ -2762,15 +3021,19 @@ Continue with: What happened immediately after impact? Any injuries you noticed?
                 }
             }
 
-            // Display Combined Report (if Typeform data available)
+            // Display Combined Report (if Typeform data available) with fade-in animation
             if (analysis.combinedReport) {
-                document.getElementById('combinedReportSection').style.display = 'block';
+                const combinedSection = document.getElementById('combinedReportSection');
+                combinedSection.style.display = 'block';
+                combinedSection.classList.add('fade-in');
                 document.getElementById('combinedReportText').innerHTML = analysis.combinedReport;
             }
 
-            // Display Final Review
+            // Display Final Review with fade-in animation
             if (analysis.finalReview) {
-                document.getElementById('finalReviewSection').style.display = 'block';
+                const finalSection = document.getElementById('finalReviewSection');
+                finalSection.style.display = 'block';
+                finalSection.classList.add('fade-in');
                 document.getElementById('completenessScore').textContent =
                     analysis.finalReview.completenessScore + '%';
 
