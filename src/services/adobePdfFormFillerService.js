@@ -105,8 +105,8 @@ class AdobePdfFormFillerService {
         await this.appendVehiclePages(pdfDoc, data.vehicles, data.metadata.create_user_id);
       }
 
-      // DEBUG: Verify fields were actually set before flattening
-      console.log('\\n🔍 Verifying fields before flattening:');
+      // DEBUG: Verify fields were actually set before saving
+      console.log('\\n🔍 Verifying fields before saving:');
       try {
         const nameField = form.getTextField('name');
         const emailField = form.getTextField('email');
@@ -116,14 +116,15 @@ class AdobePdfFormFillerService {
         console.error('  Error reading fields:', e.message);
       }
 
-      // TEMPORARY FIX: Commenting out flatten() because it was rendering field NAMES instead of VALUES
-      // Evidence: Debug shows "email field value: ian.ring@sky.com" but PDF displays "email"
-      // This leaves form editable but displays actual data correctly
-      // TODO: Investigate proper pdf-lib flatten usage or alternative rendering method
-      // form.flatten();
-      console.log('⚠️  Skipping form.flatten() - leaving form editable to preserve field values');
+      // CRITICAL: Update field appearances before saving
+      // This ensures the visual appearance of fields matches their values
+      // Without this, the PDF may show field names instead of values
+      console.log('\\n📐 Updating form field appearances...');
+      form.updateFieldAppearances();
+      console.log('✅ Field appearances updated');
 
-      // Save the filled PDF
+      // Save the filled PDF (without flattening to preserve editability)
+      console.log('\\n💾 Saving PDF with editable form fields...');
       const filledPdfBytes = await pdfDoc.save();
       const filledPdfBuffer = Buffer.from(filledPdfBytes);
 

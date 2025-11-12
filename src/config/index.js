@@ -66,6 +66,14 @@ module.exports = {
     baseUrl: 'https://uk1.ukvehicledata.co.uk/api/datapackage'
   },
 
+  // ==================== ADOBE PDF SERVICES ====================
+
+  adobe: {
+    clientId: process.env.PDF_SERVICES_CLIENT_ID,
+    clientSecret: process.env.PDF_SERVICES_CLIENT_SECRET,
+    enabled: !!(process.env.PDF_SERVICES_CLIENT_ID && process.env.PDF_SERVICES_CLIENT_SECRET)
+  },
+
   // ==================== WEBHOOKS ====================
 
   webhook: {
