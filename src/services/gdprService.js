@@ -586,54 +586,208 @@ class GDPRService {
         }
       }
 
-      // Step 2: Soft-delete database records (set deleted_at timestamp)
-      const tables = [
-        'incident_reports',
-        'user_documents',
-        'ai_transcription',
-        'ai_summary',
-        'temp_uploads'
-      ];
-
+      // Step 2: Delete database records (using table-specific logic based on actual schema)
       const deletedAt = new Date().toISOString();
 
-      for (const table of tables) {
-        try {
-          // Use service role key to bypass RLS
-          // Check all three possible user ID columns (auth_user_id, create_user_id, user_id)
-          const { data, error } = await this.supabase
-            .from(table)
-            .update({ deleted_at: deletedAt })
-            .or(`auth_user_id.eq.${userId},create_user_id.eq.${userId},user_id.eq.${userId}`)
-            .is('deleted_at', null)
-            .select('id');
+      // Table 1: incident_reports
+      // Schema: Has auth_user_id, create_user_id, user_id, deleted_at (166 columns)
+      // Action: Soft-delete using all 3 user ID columns
+      try {
+        const { data, error } = await this.supabase
+          .from('incident_reports')
+          .update({ deleted_at: deletedAt })
+          .or(`auth_user_id.eq.${userId},create_user_id.eq.${userId},user_id.eq.${userId}`)
+          .is('deleted_at', null)
+          .select('id');
 
-          deletionResults.database.push({
-            table,
-            success: !error,
-            recordsDeleted: data?.length || 0,
-            error: error?.message
-          });
+        deletionResults.database.push({
+          table: 'incident_reports',
+          success: !error,
+          recordsDeleted: data?.length || 0,
+          error: error?.message,
+          method: 'soft_delete'
+        });
 
-          if (error) {
-            logger.warn(`Failed to soft-delete records from ${table}`, {
-              userId,
-              error: error.message
-            });
-          } else {
-            logger.info(`Soft-deleted ${data?.length || 0} records from ${table}`, { userId });
-          }
-        } catch (tableError) {
-          logger.error(`Error processing table ${table}`, {
-            userId,
-            error: tableError.message
-          });
-          deletionResults.database.push({
-            table,
-            success: false,
-            error: tableError.message
-          });
+        if (error) {
+          logger.warn('Failed to soft-delete incident_reports', { userId, error: error.message });
+        } else {
+          logger.info(`Soft-deleted ${data?.length || 0} incident_reports`, { userId });
         }
+      } catch (error) {
+        logger.error('Error processing incident_reports', { userId, error: error.message });
+        deletionResults.database.push({
+          table: 'incident_reports',
+          success: false,
+          error: error.message,
+          method: 'soft_delete'
+        });
+      }
+
+      // Table 2: user_documents
+      // Schema: Only has create_user_id (not auth_user_id), has deleted_at (46 columns)
+      // Action: Soft-delete using only create_user_id
+      try {
+        const { data, error } = await this.supabase
+          .from('user_documents')
+          .update({ deleted_at: deletedAt })
+          .eq('create_user_id', userId)
+          .is('deleted_at', null)
+          .select('id');
+
+        deletionResults.database.push({
+          table: 'user_documents',
+          success: !error,
+          recordsDeleted: data?.length || 0,
+          error: error?.message,
+          method: 'soft_delete'
+        });
+
+        if (error) {
+          logger.warn('Failed to soft-delete user_documents', { userId, error: error.message });
+        } else {
+          logger.info(`Soft-deleted ${data?.length || 0} user_documents`, { userId });
+        }
+      } catch (error) {
+        logger.error('Error processing user_documents', { userId, error: error.message });
+        deletionResults.database.push({
+          table: 'user_documents',
+          success: false,
+          error: error.message,
+          method: 'soft_delete'
+        });
+      }
+
+      // Table 3: ai_transcription
+      // Schema: Has auth_user_id, create_user_id, but NO deleted_at column (11 columns)
+      // Action: Hard delete (GDPR allows deletion of AI-generated content)
+      try {
+        const { data, error } = await this.supabase
+          .from('ai_transcription')
+          .delete()
+          .or(`auth_user_id.eq.${userId},create_user_id.eq.${userId}`)
+          .select('id');
+
+        deletionResults.database.push({
+          table: 'ai_transcription',
+          success: !error,
+          recordsDeleted: data?.length || 0,
+          error: error?.message,
+          method: 'hard_delete'
+        });
+
+        if (error) {
+          logger.warn('Failed to delete ai_transcription', { userId, error: error.message });
+        } else {
+          logger.info(`Hard-deleted ${data?.length || 0} ai_transcription records`, { userId });
+        }
+      } catch (error) {
+        logger.error('Error processing ai_transcription', { userId, error: error.message });
+        deletionResults.database.push({
+          table: 'ai_transcription',
+          success: false,
+          error: error.message,
+          method: 'hard_delete'
+        });
+      }
+
+      // Table 4: ai_summary
+      // Schema: Empty table, likely no deleted_at column
+      // Action: Hard delete (AI-generated summaries)
+      try {
+        const { data, error } = await this.supabase
+          .from('ai_summary')
+          .delete()
+          .eq('create_user_id', userId)
+          .select('id');
+
+        deletionResults.database.push({
+          table: 'ai_summary',
+          success: !error,
+          recordsDeleted: data?.length || 0,
+          error: error?.message,
+          method: 'hard_delete'
+        });
+
+        if (error) {
+          logger.warn('Failed to delete ai_summary', { userId, error: error.message });
+        } else {
+          logger.info(`Hard-deleted ${data?.length || 0} ai_summary records`, { userId });
+        }
+      } catch (error) {
+        logger.error('Error processing ai_summary', { userId, error: error.message });
+        deletionResults.database.push({
+          table: 'ai_summary',
+          success: false,
+          error: error.message,
+          method: 'hard_delete'
+        });
+      }
+
+      // Table 5: temp_uploads
+      // Schema: Only has claimed_by_user_id, no deleted_at (12 columns)
+      // Action: Hard delete (temporary files, no audit trail needed)
+      try {
+        const { data, error } = await this.supabase
+          .from('temp_uploads')
+          .delete()
+          .eq('claimed_by_user_id', userId)
+          .select('id');
+
+        deletionResults.database.push({
+          table: 'temp_uploads',
+          success: !error,
+          recordsDeleted: data?.length || 0,
+          error: error?.message,
+          method: 'hard_delete'
+        });
+
+        if (error) {
+          logger.warn('Failed to delete temp_uploads', { userId, error: error.message });
+        } else {
+          logger.info(`Hard-deleted ${data?.length || 0} temp_uploads`, { userId });
+        }
+      } catch (error) {
+        logger.error('Error processing temp_uploads', { userId, error: error.message });
+        deletionResults.database.push({
+          table: 'temp_uploads',
+          success: false,
+          error: error.message,
+          method: 'hard_delete'
+        });
+      }
+
+      // Table 6: incident_images (legacy table - also needs handling)
+      // Schema: Has create_user_id, has deletion_completed instead of deleted_at
+      // Action: Soft-delete using deletion_completed field
+      try {
+        const { data, error } = await this.supabase
+          .from('incident_images')
+          .update({ deletion_completed: deletedAt })
+          .eq('create_user_id', userId)
+          .is('deletion_completed', null)
+          .select('id');
+
+        deletionResults.database.push({
+          table: 'incident_images',
+          success: !error,
+          recordsDeleted: data?.length || 0,
+          error: error?.message,
+          method: 'soft_delete'
+        });
+
+        if (error) {
+          logger.warn('Failed to soft-delete incident_images', { userId, error: error.message });
+        } else {
+          logger.info(`Soft-deleted ${data?.length || 0} incident_images`, { userId });
+        }
+      } catch (error) {
+        logger.error('Error processing incident_images', { userId, error: error.message });
+        deletionResults.database.push({
+          table: 'incident_images',
+          success: false,
+          error: error.message,
+          method: 'soft_delete'
+        });
       }
 
       // Step 3: Log completion
