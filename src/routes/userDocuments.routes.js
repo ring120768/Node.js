@@ -15,10 +15,10 @@
 const express = require('express');
 const router = express.Router();
 const userDocumentsController = require('../controllers/userDocuments.controller');
+const { apiAuth } = require('../middleware/pageAuth');
 
-// Note: In production, add proper authentication middleware
-// const { requireAuth } = require('../middleware/auth');
-// router.use(requireAuth);
+// Require authentication for all user-documents endpoints (supports cookie-based auth)
+router.use(apiAuth);
 
 /**
  * GET /api/user-documents
