@@ -131,6 +131,59 @@ router.delete('/delete-images', checkSharedKey, async (req, res) => {
 });
 
 /**
+ * Delete user data only (keeps account active) - GDPR Article 17
+ * POST /api/gdpr/delete-data
+ * Body: { userId: string }
+ * Requires authentication (API key OR user token)
+ * Users can only delete their own data
+ *
+ * This endpoint soft-deletes database records and removes storage files
+ * while preserving the auth account for future use
+ */
+router.post('/delete-data', flexibleAuth, async (req, res) => {
+  const { sendError } = require('../utils/response');
+  const logger = require('../utils/logger');
+  const gdprService = require('../services/gdprService');
+
+  try {
+    const { userId } = req.body;
+
+    if (!userId) {
+      return sendError(res, 400, 'User ID required', 'MISSING_USER_ID');
+    }
+
+    // If authenticated as user (not API key), verify they can only delete their own data
+    if (req.user && userId !== req.user.id) {
+      return sendError(res, 403, 'Forbidden: Can only delete your own data', 'FORBIDDEN');
+    }
+
+    logger.info('Data deletion requested (keeping account)', { userId });
+
+    // Delete user data only (keeps auth account)
+    const result = await gdprService.deleteUserDataOnly(userId, 'user_request');
+
+    if (!result.success) {
+      return sendError(res, 500, result.error || 'Failed to delete data', 'DELETE_FAILED');
+    }
+
+    logger.success('User data deleted successfully (account preserved)', { userId });
+
+    res.json({
+      success: true,
+      message: 'Data deleted successfully. Your account remains active.',
+      accountStatus: result.accountStatus,
+      deletedAt: result.deletedAt,
+      deletionResults: result.deletionResults,
+      requestId: req.requestId
+    });
+
+  } catch (error) {
+    logger.error('Data deletion error', error);
+    sendError(res, 500, 'Failed to delete data', 'DELETE_FAILED');
+  }
+});
+
+/**
  * Delete entire user account and all data (GDPR right to be forgotten)
  * POST /api/gdpr/delete-account
  * Body: { userId: string }

@@ -786,6 +786,14 @@
                             </div>
                         </button>
 
+                        <button class="action-btn" onclick="showDeleteDataModal()">
+                            <div class="action-icon" style="background: linear-gradient(135deg, var(--warning), #f59e0b);">🧹</div>
+                            <div class="action-content">
+                                <h3>Delete My Data</h3>
+                                <p>Clear all data, keep account</p>
+                            </div>
+                        </button>
+
                         <button class="action-btn" onclick="showDeleteModal()">
                             <div class="action-icon" style="background: linear-gradient(135deg, var(--danger), #dc2626);">🗑️</div>
                             <div class="action-content">
@@ -807,7 +815,41 @@
         </div>
     </div>
 
-    <!-- Delete Confirmation Modal -->
+    <!-- Delete Data Only Modal -->
+    <div id="deleteDataModal" class="modal">
+        <div class="modal-content">
+            <div class="modal-header">
+                <span class="modal-icon">🧹</span>
+                <h2 class="modal-title">Delete My Data</h2>
+            </div>
+            <div class="modal-body">
+                <div class="warning-box" style="background: linear-gradient(135deg, #fef3c7, #fde68a); border-color: var(--warning);">
+                    <div class="warning-title" style="color: #92400e;">🧹 Clear Your Data, Keep Your Account</div>
+                    <p style="font-size: 0.875rem; color: #92400e; margin-top: 0.5rem;">
+                        This will delete all your data while keeping your account active:
+                    </p>
+                    <ul class="warning-list" style="color: #92400e;">
+                        <li>All incident reports</li>
+                        <li>Uploaded images and documents</li>
+                        <li>Voice transcriptions</li>
+                        <li>PDF reports</li>
+                    </ul>
+                    <p style="font-size: 0.875rem; color: #92400e; margin-top: 0.75rem; font-weight: 600;">
+                        ✓ Your account will remain active for future use
+                    </p>
+                </div>
+                <p style="margin-bottom: var(--spacing-md); color: var(--text-secondary);">
+                    Consider downloading your data first. This complies with GDPR Article 17 (Right to Erasure).
+                </p>
+            </div>
+            <div class="modal-footer">
+                <button class="btn btn-ghost" onclick="hideDeleteDataModal()">Cancel</button>
+                <button class="btn" style="background: linear-gradient(135deg, var(--warning), #f59e0b); color: white;" onclick="deleteDataOnly()">Delete My Data</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Delete Account Modal -->
     <div id="deleteModal" class="modal">
         <div class="modal-content">
             <div class="modal-header">
@@ -1202,6 +1244,39 @@
             }
         }
 
+        // Delete data only (keep account)
+        async function deleteDataOnly() {
+            hideDeleteDataModal();
+
+            try {
+                const response = await fetch('/api/gdpr/delete-data', {
+                    method: 'POST',
+                    credentials: 'include',
+                    headers: {
+                        'Content-Type': 'application/json'
+                    },
+                    body: JSON.stringify({ userId })
+                });
+
+                const data = await response.json();
+
+                if (!response.ok) {
+                    throw new Error(data.error || 'Failed to delete data');
+                }
+
+                showToast('Data deleted successfully. Your account is still active.', 'success');
+
+                // Reload dashboard after 2 seconds to show empty state
+                setTimeout(() => {
+                    window.location.reload();
+                }, 2000);
+
+            } catch (error) {
+                console.error('Error deleting data:', error);
+                showToast('Failed to delete data: ' + error.message, 'error');
+            }
+        }
+
         // Modal functions
         function showDeleteModal() {
             document.getElementById('deleteModal').classList.add('active');
@@ -1209,6 +1284,14 @@
 
         function hideDeleteModal() {
             document.getElementById('deleteModal').classList.remove('active');
+        }
+
+        function showDeleteDataModal() {
+            document.getElementById('deleteDataModal').classList.add('active');
+        }
+
+        function hideDeleteDataModal() {
+            document.getElementById('deleteDataModal').classList.remove('active');
         }
 
         // Toast functions

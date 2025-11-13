@@ -495,6 +495,189 @@ class GDPRService {
   }
 
   /**
+   * Delete user data only (keeps auth account active)
+   * GDPR Article 17 - Right to Erasure (partial)
+   * Soft-deletes database records and removes storage files
+   *
+   * @param {string} userId - The user's ID
+   * @param {string} reason - Reason for deletion
+   * @returns {Promise<Object>} Deletion results
+   */
+  async deleteUserDataOnly(userId, reason = 'user_request') {
+    if (!this.enabled || !this.supabase) {
+      throw new Error('GDPR service not available');
+    }
+
+    try {
+      logger.info('Processing data-only deletion request (keeping account)', { userId, reason });
+
+      // Log the deletion request BEFORE deleting
+      await this.logActivity(userId, 'DATA_DELETION_REQUESTED', {
+        reason,
+        keepAccount: true
+      });
+
+      const deletionResults = {
+        storage: [],
+        database: [],
+        account: 'preserved'
+      };
+
+      // Step 1: Delete all storage files
+      const buckets = [
+        'incident-reports',
+        'incident-media',
+        'audio-files',
+        'transcription-data',
+        'user-documents'
+      ];
+
+      for (const bucket of buckets) {
+        try {
+          // List all files in user's folder
+          const { data: files } = await this.supabase
+            .storage
+            .from(bucket)
+            .list(userId, {
+              limit: 1000
+            });
+
+          if (files && files.length > 0) {
+            // Delete all files
+            const filePaths = files.map(file => `${userId}/${file.name}`);
+            const { error } = await this.supabase
+              .storage
+              .from(bucket)
+              .remove(filePaths);
+
+            deletionResults.storage.push({
+              bucket,
+              success: !error,
+              filesDeleted: files.length,
+              error: error?.message
+            });
+
+            if (error) {
+              logger.warn(`Failed to delete files from ${bucket}`, {
+                userId,
+                error: error.message
+              });
+            } else {
+              logger.info(`Deleted ${files.length} files from ${bucket}`, { userId });
+            }
+          } else {
+            deletionResults.storage.push({
+              bucket,
+              success: true,
+              filesDeleted: 0,
+              message: 'No files found'
+            });
+          }
+        } catch (bucketError) {
+          logger.error(`Error processing bucket ${bucket}`, {
+            userId,
+            error: bucketError.message
+          });
+          deletionResults.storage.push({
+            bucket,
+            success: false,
+            error: bucketError.message
+          });
+        }
+      }
+
+      // Step 2: Soft-delete database records (set deleted_at timestamp)
+      const tables = [
+        'incident_reports',
+        'user_documents',
+        'ai_transcription',
+        'ai_summary',
+        'temp_uploads'
+      ];
+
+      const deletedAt = new Date().toISOString();
+
+      for (const table of tables) {
+        try {
+          // Use service role key to bypass RLS
+          const { data, error } = await this.supabase
+            .from(table)
+            .update({ deleted_at: deletedAt })
+            .or(`auth_user_id.eq.${userId},create_user_id.eq.${userId}`)
+            .is('deleted_at', null)
+            .select('id');
+
+          deletionResults.database.push({
+            table,
+            success: !error,
+            recordsDeleted: data?.length || 0,
+            error: error?.message
+          });
+
+          if (error) {
+            logger.warn(`Failed to soft-delete records from ${table}`, {
+              userId,
+              error: error.message
+            });
+          } else {
+            logger.info(`Soft-deleted ${data?.length || 0} records from ${table}`, { userId });
+          }
+        } catch (tableError) {
+          logger.error(`Error processing table ${table}`, {
+            userId,
+            error: tableError.message
+          });
+          deletionResults.database.push({
+            table,
+            success: false,
+            error: tableError.message
+          });
+        }
+      }
+
+      // Step 3: Log completion
+      await this.logActivity(userId, 'DATA_DELETION_COMPLETED', {
+        reason,
+        keepAccount: true,
+        deletionResults
+      });
+
+      logger.info('Data-only deletion completed successfully', {
+        userId,
+        storageResults: deletionResults.storage.length,
+        databaseResults: deletionResults.database.length
+      });
+
+      return {
+        success: true,
+        deletionResults,
+        deletedAt,
+        accountStatus: 'preserved'
+      };
+
+    } catch (error) {
+      logger.error('Data-only deletion error', {
+        userId,
+        error: error.message,
+        stack: error.stack
+      });
+
+      // Log the failure
+      try {
+        await this.logActivity(userId, 'DATA_DELETION_FAILED', {
+          reason,
+          keepAccount: true,
+          error: error.message
+        });
+      } catch (logError) {
+        logger.error('Failed to log deletion failure', logError);
+      }
+
+      return { success: false, error: error.message };
+    }
+  }
+
+  /**
    * Enforce data retention policy
    * ✅ Uses storage-based architecture
    * Note: This is a simplified version - you may want to customize retention logic
