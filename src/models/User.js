@@ -222,7 +222,7 @@ async function getUserDataBatch(userId) {
 
     logger.info('Fetching user data batch', { userId });
 
-    // Fetch all user-related data in parallel
+    // Fetch all user-related data in parallel (excluding soft-deleted records)
     const [
       { data: user, error: userError },
       { data: incidents, error: incidentError },
@@ -233,12 +233,12 @@ async function getUserDataBatch(userId) {
       { data: emergencyCalls, error: emergencyCallError }
     ] = await Promise.all([
       supabase.from('user_signup').select('*').eq('create_user_id', userId).single(),
-      supabase.from('incident_reports').select('*').eq('create_user_id', userId),
-      supabase.from('ai_transcription').select('*').eq('create_user_id', userId),
-      supabase.from('ai_summary').select('*').eq('create_user_id', userId),
-      supabase.from('incident_images').select('*').eq('create_user_id', userId),
-      supabase.from('ai_listening_transcripts').select('*').eq('user_id', userId),
-      supabase.from('emergency_call_logs').select('*').eq('user_id', userId)
+      supabase.from('incident_reports').select('*').eq('create_user_id', userId).is('deleted_at', null),
+      supabase.from('ai_transcription').select('*').eq('create_user_id', userId).is('deleted_at', null),
+      supabase.from('ai_summary').select('*').eq('create_user_id', userId).is('deleted_at', null),
+      supabase.from('incident_images').select('*').eq('create_user_id', userId).is('deleted_at', null),
+      supabase.from('ai_listening_transcripts').select('*').eq('user_id', userId).is('deleted_at', null),
+      supabase.from('emergency_call_logs').select('*').eq('user_id', userId).is('deleted_at', null)
     ]);
 
     // Check for critical user error
