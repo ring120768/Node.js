@@ -670,10 +670,10 @@
                     <span>👤</span>
                     <span id="userEmail">Loading...</span>
                 </div>
-                <button class="btn btn-ghost" onclick="window.location.href='/incident.html'">
+                <button class="btn btn-ghost" data-action="newIncident">
                     <span>📝</span> New Report
                 </button>
-                <button class="btn btn-ghost" onclick="logout()">
+                <button class="btn btn-ghost" data-action="logout">
                     <span>🚪</span> Logout
                 </button>
             </div>
@@ -746,7 +746,7 @@
                             <span>📅</span> Recent Activity
                         </h2>
                         <div class="card-actions">
-                            <button class="btn btn-primary" onclick="window.location.href='/incident.html'">
+                            <button class="btn btn-primary" data-action="newIncident">
                                 + New Report
                             </button>
                         </div>
@@ -762,7 +762,7 @@
                         </h2>
                     </div>
                     <div class="quick-actions">
-                        <button class="action-btn" onclick="downloadData()">
+                        <button class="action-btn" data-action="downloadData">
                             <div class="action-icon">📥</div>
                             <div class="action-content">
                                 <h3>Download My Data</h3>
@@ -770,7 +770,7 @@
                             </div>
                         </button>
 
-                        <button class="action-btn" onclick="window.location.href='/incident.html'">
+                        <button class="action-btn" data-action="newIncident">
                             <div class="action-icon">📝</div>
                             <div class="action-content">
                                 <h3>New Incident Report</h3>
@@ -778,7 +778,7 @@
                             </div>
                         </button>
 
-                        <button class="action-btn" onclick="window.location.href='/transcription-status.html'">
+                        <button class="action-btn" data-action="voiceTranscription">
                             <div class="action-icon">🎤</div>
                             <div class="action-content">
                                 <h3>Voice Transcription</h3>
@@ -786,7 +786,7 @@
                             </div>
                         </button>
 
-                        <button class="action-btn" onclick="showDeleteDataModal()">
+                        <button class="action-btn" data-action="deleteData">
                             <div class="action-icon" style="background: linear-gradient(135deg, var(--warning), #f59e0b);">🧹</div>
                             <div class="action-content">
                                 <h3>Delete My Data</h3>
@@ -794,7 +794,7 @@
                             </div>
                         </button>
 
-                        <button class="action-btn" onclick="showDeleteModal()">
+                        <button class="action-btn" data-action="deleteAccount">
                             <div class="action-icon" style="background: linear-gradient(135deg, var(--danger), #dc2626);">🗑️</div>
                             <div class="action-content">
                                 <h3>Delete Account</h3>
@@ -843,8 +843,8 @@
                 </p>
             </div>
             <div class="modal-footer">
-                <button class="btn btn-ghost" onclick="hideDeleteDataModal()">Cancel</button>
-                <button class="btn" style="background: linear-gradient(135deg, var(--warning), #f59e0b); color: white;" onclick="deleteDataOnly()">Delete My Data</button>
+                <button class="btn btn-ghost" data-action="hideDeleteDataModal">Cancel</button>
+                <button class="btn" style="background: linear-gradient(135deg, var(--warning), #f59e0b); color: white;" data-action="deleteDataOnly">Delete My Data</button>
             </div>
         </div>
     </div>
@@ -875,8 +875,8 @@
                 </p>
             </div>
             <div class="modal-footer">
-                <button class="btn btn-ghost" onclick="hideDeleteModal()">Cancel</button>
-                <button class="btn btn-danger" onclick="deleteAccount()">Delete Everything</button>
+                <button class="btn btn-ghost" data-action="hideDeleteModal">Cancel</button>
+                <button class="btn btn-danger" data-action="deleteAccount">Delete Everything</button>
             </div>
         </div>
     </div>
@@ -885,7 +885,7 @@
     <div id="toast" class="toast">
         <span class="toast-icon" id="toastIcon">✓</span>
         <div class="toast-message" id="toastMessage"></div>
-        <button class="toast-close" onclick="hideToast()">×</button>
+        <button class="toast-close" data-action="hideToast">×</button>
     </div>
 
     <script>
@@ -1075,7 +1075,7 @@
                             <div class="empty-description">
                                 Get started by creating your first incident report
                             </div>
-                            <button class="btn btn-primary" onclick="window.location.href='/incident.html'">
+                            <button class="btn btn-primary" data-action="newIncident">
                                 Create Report
                             </button>
                         </div>
@@ -1355,6 +1355,47 @@
 
         // Initialize on load
         window.addEventListener('load', init);
+
+        // Event delegation for all buttons with data-action (CSP-compliant)
+        document.addEventListener('click', function(e) {
+            const button = e.target.closest('[data-action]');
+            if (!button) return;
+
+            const action = button.getAttribute('data-action');
+
+            switch(action) {
+                case 'downloadData':
+                    downloadData();
+                    break;
+                case 'newIncident':
+                    window.location.href = '/incident.html';
+                    break;
+                case 'voiceTranscription':
+                    window.location.href = '/transcription-status.html';
+                    break;
+                case 'deleteData':
+                    showDeleteDataModal();
+                    break;
+                case 'deleteAccount':
+                    showDeleteModal();
+                    break;
+                case 'logout':
+                    logout();
+                    break;
+                case 'hideDeleteDataModal':
+                    hideDeleteDataModal();
+                    break;
+                case 'hideDeleteModal':
+                    hideDeleteModal();
+                    break;
+                case 'deleteDataOnly':
+                    deleteDataOnly();
+                    break;
+                case 'hideToast':
+                    hideToast();
+                    break;
+            }
+        });
 
         // Close modal on outside click
         document.addEventListener('click', (e) => {
