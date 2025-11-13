@@ -7,7 +7,7 @@
 const express = require('express');
 const router = express.Router();
 const gdprController = require('../controllers/gdpr.controller');
-const { authenticateToken } = require('../middleware/auth');
+const { apiAuth } = require('../middleware/pageAuth');
 
 /**
  * Authentication middleware for GDPR endpoints
@@ -49,8 +49,8 @@ async function flexibleAuth(req, res, next) {
     return next();
   }
 
-  // Otherwise require user token
-  return authenticateToken(req, res, next);
+  // Otherwise require user token (from header OR cookies)
+  return apiAuth(req, res, next);
 }
 
 /**
