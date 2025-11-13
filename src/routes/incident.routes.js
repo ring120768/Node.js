@@ -5,7 +5,7 @@
 
 const express = require('express');
 const { apiLimiter } = require('../middleware/rateLimit');
-const { authenticateToken } = require('../middleware/auth');
+const { requireAuth } = require('../middleware/authMiddleware');
 
 // Import controller functions
 const {
@@ -38,7 +38,7 @@ router.use(apiLimiter);
  *   offset: number
  * }
  */
-router.get('/', authenticateToken, listIncidentReports);
+router.get('/', requireAuth, listIncidentReports);
 
 /**
  * POST /api/incident-reports/save-statement
