@@ -10,6 +10,7 @@ const logger = require('../utils/logger');
 const config = require('../config');
 const gdprService = require('../services/gdprService');
 const User = require('../models/User');
+const { sendTemplateEmail } = require('../../lib/emailService');
 
 let supabase = null;
 
@@ -254,6 +255,32 @@ async function exportData(req, res) {
         emergency_calls: userData.emergencyCalls.length
       }
     }, req);
+
+    // Send email notification
+    try {
+      await sendTemplateEmail(
+        user.email,
+        'Your Data Export is Ready - Car Crash Lawyer AI',
+        'gdpr-data-exported',
+        {
+          userName: `${user.first_name || 'User'} ${user.last_name || ''}`.trim(),
+          exportDate: new Date().toLocaleDateString('en-GB', {
+            day: '2-digit',
+            month: 'long',
+            year: 'numeric'
+          }),
+          requestId: req.requestId || 'N/A',
+          supportEmail: config.email?.supportEmail || process.env.SMTP_USER
+        }
+      );
+      logger.info('Data export email sent', { userId, email: user.email });
+    } catch (emailError) {
+      logger.error('Failed to send data export email', {
+        userId,
+        error: emailError.message
+      });
+      // Don't fail the request if email fails
+    }
 
     res.json({
       export_date: new Date().toISOString(),

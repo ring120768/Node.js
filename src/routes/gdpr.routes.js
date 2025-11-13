@@ -143,7 +143,10 @@ router.delete('/delete-images', checkSharedKey, async (req, res) => {
 router.post('/delete-data', flexibleAuth, async (req, res) => {
   const { sendError } = require('../utils/response');
   const logger = require('../utils/logger');
+  const config = require('../config');
   const gdprService = require('../services/gdprService');
+  const { sendTemplateEmail } = require('../../lib/emailService');
+  const supabase = require('../../lib/supabase');
 
   try {
     const { userId } = req.body;
@@ -159,6 +162,13 @@ router.post('/delete-data', flexibleAuth, async (req, res) => {
 
     logger.info('Data deletion requested (keeping account)', { userId });
 
+    // Get user info before deletion (for email)
+    const { data: user } = await supabase
+      .from('user_signup')
+      .select('email, first_name, last_name, subscription_end_date')
+      .eq('create_user_id', userId)
+      .single();
+
     // Delete user data only (keeps auth account)
     const result = await gdprService.deleteUserDataOnly(userId, 'user_request');
 
@@ -167,6 +177,41 @@ router.post('/delete-data', flexibleAuth, async (req, res) => {
     }
 
     logger.success('User data deleted successfully (account preserved)', { userId });
+
+    // Send email notification
+    if (user && user.email) {
+      try {
+        await sendTemplateEmail(
+          user.email,
+          'Your Data Has Been Deleted - Car Crash Lawyer AI',
+          'gdpr-data-deleted',
+          {
+            userName: `${user.first_name || 'User'} ${user.last_name || ''}`.trim(),
+            deletionDate: new Date().toLocaleDateString('en-GB', {
+              day: '2-digit',
+              month: 'long',
+              year: 'numeric'
+            }),
+            subscriptionEndDate: user.subscription_end_date
+              ? new Date(user.subscription_end_date).toLocaleDateString('en-GB', {
+                  day: '2-digit',
+                  month: 'long',
+                  year: 'numeric'
+                })
+              : 'N/A',
+            requestId: req.requestId || 'N/A',
+            supportEmail: config.email?.supportEmail || process.env.SMTP_USER
+          }
+        );
+        logger.info('Data deletion email sent', { userId, email: user.email });
+      } catch (emailError) {
+        logger.error('Failed to send data deletion email', {
+          userId,
+          error: emailError.message
+        });
+        // Don't fail the request if email fails
+      }
+    }
 
     res.json({
       success: true,
@@ -193,7 +238,10 @@ router.post('/delete-data', flexibleAuth, async (req, res) => {
 router.post('/delete-account', flexibleAuth, async (req, res) => {
   const { sendError } = require('../utils/response');
   const logger = require('../utils/logger');
+  const config = require('../config');
   const gdprService = require('../services/gdprService');
+  const { sendTemplateEmail } = require('../../lib/emailService');
+  const supabase = require('../../lib/supabase');
 
   try {
     const { userId } = req.body;
@@ -209,6 +257,13 @@ router.post('/delete-account', flexibleAuth, async (req, res) => {
 
     logger.info('Account deletion requested', { userId });
 
+    // Get user info before deletion (for email)
+    const { data: user } = await supabase
+      .from('user_signup')
+      .select('email, first_name, last_name')
+      .eq('create_user_id', userId)
+      .single();
+
     // Delete all user data (storage, auth, etc.)
     const result = await gdprService.deleteUserData(userId, 'user_request');
 
@@ -217,6 +272,34 @@ router.post('/delete-account', flexibleAuth, async (req, res) => {
     }
 
     logger.success('Account deleted successfully', { userId });
+
+    // Send email notification
+    if (user && user.email) {
+      try {
+        await sendTemplateEmail(
+          user.email,
+          'Account Deletion Confirmed - Car Crash Lawyer AI',
+          'gdpr-account-deleted',
+          {
+            userName: `${user.first_name || 'User'} ${user.last_name || ''}`.trim(),
+            deletionDate: new Date().toLocaleDateString('en-GB', {
+              day: '2-digit',
+              month: 'long',
+              year: 'numeric'
+            }),
+            requestId: req.requestId || 'N/A',
+            supportEmail: config.email?.supportEmail || process.env.SMTP_USER
+          }
+        );
+        logger.info('Account deletion email sent', { userId, email: user.email });
+      } catch (emailError) {
+        logger.error('Failed to send account deletion email', {
+          userId,
+          error: emailError.message
+        });
+        // Don't fail the request if email fails
+      }
+    }
 
     res.json({
       success: true,
