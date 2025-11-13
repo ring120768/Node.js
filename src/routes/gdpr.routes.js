@@ -146,7 +146,6 @@ router.post('/delete-data', flexibleAuth, async (req, res) => {
   const config = require('../config');
   const gdprService = require('../services/gdprService');
   const { sendTemplateEmail } = require('../../lib/emailService');
-  const supabase = require('../../lib/supabase');
 
   try {
     const { userId } = req.body;
@@ -161,6 +160,12 @@ router.post('/delete-data', flexibleAuth, async (req, res) => {
     }
 
     logger.info('Data deletion requested (keeping account)', { userId });
+
+    // Get supabase from app locals
+    const supabase = req.app.locals.supabase;
+    if (!supabase) {
+      return sendError(res, 503, 'Database service unavailable', 'SERVICE_UNAVAILABLE');
+    }
 
     // Get user info before deletion (for email)
     const { data: user } = await supabase
@@ -241,7 +246,6 @@ router.post('/delete-account', flexibleAuth, async (req, res) => {
   const config = require('../config');
   const gdprService = require('../services/gdprService');
   const { sendTemplateEmail } = require('../../lib/emailService');
-  const supabase = require('../../lib/supabase');
 
   try {
     const { userId } = req.body;
@@ -256,6 +260,12 @@ router.post('/delete-account', flexibleAuth, async (req, res) => {
     }
 
     logger.info('Account deletion requested', { userId });
+
+    // Get supabase from app locals
+    const supabase = req.app.locals.supabase;
+    if (!supabase) {
+      return sendError(res, 503, 'Database service unavailable', 'SERVICE_UNAVAILABLE');
+    }
 
     // Get user info before deletion (for email)
     const { data: user } = await supabase
