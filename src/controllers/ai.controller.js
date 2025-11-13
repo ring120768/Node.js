@@ -42,13 +42,14 @@ async function analyzeStatement(req, res) {
       textLength: transcription.length
     });
 
-    // Fetch incident data if available
+    // Fetch incident data if available (excluding soft-deleted)
     let incidentData = null;
     if (incidentId) {
       const { data, error } = await supabase
         .from('incident_reports')
         .select('*')
         .eq('id', incidentId)
+        .is('deleted_at', null)
         .single();
 
       if (!error && data) {

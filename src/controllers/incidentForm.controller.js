@@ -798,11 +798,11 @@ async function listIncidentReports(req, res) {
     });
 
     // Fetch incident reports for this user
-    // Query both auth_user_id (new) and create_user_id (legacy Typeform)
+    // Query all three user ID columns: auth_user_id (new), create_user_id (legacy Typeform), user_id (older)
     const { data: reports, error, count } = await supabase
       .from('incident_reports')
       .select('*', { count: 'exact' })
-      .or(`auth_user_id.eq.${userId},create_user_id.eq.${userId}`)
+      .or(`auth_user_id.eq.${userId},create_user_id.eq.${userId},user_id.eq.${userId}`)
       .is('deleted_at', null)
       .order('created_at', { ascending: false })
       .range(offset, offset + limit - 1);

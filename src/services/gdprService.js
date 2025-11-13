@@ -600,10 +600,11 @@ class GDPRService {
       for (const table of tables) {
         try {
           // Use service role key to bypass RLS
+          // Check all three possible user ID columns (auth_user_id, create_user_id, user_id)
           const { data, error } = await this.supabase
             .from(table)
             .update({ deleted_at: deletedAt })
-            .or(`auth_user_id.eq.${userId},create_user_id.eq.${userId}`)
+            .or(`auth_user_id.eq.${userId},create_user_id.eq.${userId},user_id.eq.${userId}`)
             .is('deleted_at', null)
             .select('id');
 

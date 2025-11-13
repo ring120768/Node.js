@@ -223,6 +223,7 @@ async function getUserDataBatch(userId) {
     logger.info('Fetching user data batch', { userId });
 
     // Fetch all user-related data in parallel (excluding soft-deleted records)
+    // Note: incident_reports checks all 3 user ID columns (auth_user_id, create_user_id, user_id)
     const [
       { data: user, error: userError },
       { data: incidents, error: incidentError },
@@ -233,7 +234,7 @@ async function getUserDataBatch(userId) {
       { data: emergencyCalls, error: emergencyCallError }
     ] = await Promise.all([
       supabase.from('user_signup').select('*').eq('create_user_id', userId).single(),
-      supabase.from('incident_reports').select('*').eq('create_user_id', userId).is('deleted_at', null),
+      supabase.from('incident_reports').select('*').or(`auth_user_id.eq.${userId},create_user_id.eq.${userId},user_id.eq.${userId}`).is('deleted_at', null),
       supabase.from('ai_transcription').select('*').eq('create_user_id', userId).is('deleted_at', null),
       supabase.from('ai_summary').select('*').eq('create_user_id', userId).is('deleted_at', null),
       supabase.from('incident_images').select('*').eq('create_user_id', userId).is('deleted_at', null),
