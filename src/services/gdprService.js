@@ -591,12 +591,13 @@ class GDPRService {
 
       // Table 1: incident_reports
       // Schema: Has auth_user_id, create_user_id, user_id, deleted_at (166 columns)
-      // Action: Soft-delete using all 3 user ID columns
+      // NOTE: In practice, only create_user_id is populated, auth_user_id and user_id are NULL
+      // Action: Soft-delete using create_user_id only (TEXT column)
       try {
         const { data, error } = await this.supabase
           .from('incident_reports')
           .update({ deleted_at: deletedAt })
-          .or(`auth_user_id.eq.${userId},create_user_id.eq.${userId},user_id.eq.${userId}`)
+          .eq('create_user_id', userId)
           .is('deleted_at', null)
           .select('id');
 
@@ -658,13 +659,13 @@ class GDPRService {
       }
 
       // Table 3: ai_transcription
-      // Schema: Has auth_user_id, create_user_id, but NO deleted_at column (11 columns)
-      // Action: Hard delete (GDPR allows deletion of AI-generated content)
+      // Schema: Has create_user_id (TEXT), but NO deleted_at column (11 columns)
+      // Action: Hard delete using create_user_id (GDPR allows deletion of AI-generated content)
       try {
         const { data, error } = await this.supabase
           .from('ai_transcription')
           .delete()
-          .or(`auth_user_id.eq.${userId},create_user_id.eq.${userId}`)
+          .eq('create_user_id', userId)
           .select('id');
 
         deletionResults.database.push({
