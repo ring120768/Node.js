@@ -1608,8 +1608,11 @@ Continue with: What happened immediately after impact? Any injuries you noticed?
                 💾 Save Changes
             </button>
             <button class="btn btn-primary" id="generateSummaryBtn" style="margin-top: 20px;">
-                🤖 Generate AI Analysis
+                🤖 Generate Comprehensive AI Analysis
             </button>
+            <p style="text-align: center; color: #666; margin-top: 10px; font-size: 13px; max-width: 600px; margin-left: auto; margin-right: auto;">
+                Generates a comprehensive closing statement narrative (Page 14), key points summary, and next steps guide (Page 15) using ALL your incident data
+            </p>
             <button class="btn btn-warning" id="clearDraftBtn" style="margin-top: 20px;">
                 🗑️ Clear Draft
             </button>
@@ -1698,7 +1701,7 @@ Continue with: What happened immediately after impact? Any injuries you noticed?
             <div class="ai-progress-steps">
                 <div class="ai-step" id="aiStep1">
                     <div class="ai-step-circle">1</div>
-                    <div class="ai-step-label">Summary</div>
+                    <div class="ai-step-label">Initial Summary</div>
                 </div>
                 <div class="ai-step" id="aiStep2">
                     <div class="ai-step-circle">2</div>
@@ -1706,15 +1709,15 @@ Continue with: What happened immediately after impact? Any injuries you noticed?
                 </div>
                 <div class="ai-step" id="aiStep3">
                     <div class="ai-step-circle">3</div>
-                    <div class="ai-step-label">Full Report</div>
+                    <div class="ai-step-label">Comprehensive Narrative (Page 14)</div>
                 </div>
                 <div class="ai-step" id="aiStep4">
                     <div class="ai-step-circle">4</div>
-                    <div class="ai-step-label">Final Review</div>
+                    <div class="ai-step-label">Next Steps Guide (Page 15)</div>
                 </div>
             </div>
             <div class="spinner"></div>
-            <div class="loading-text" id="aiProgressText">Initializing AI analysis...</div>
+            <div class="loading-text" id="aiProgressText">Initializing comprehensive AI analysis...</div>
         </div>
 
         <!-- Analysis Complete Banner (hidden by default) -->
@@ -1723,12 +1726,14 @@ Continue with: What happened immediately after impact? Any injuries you noticed?
             <p>Your personal statement has been analyzed and reviewed.</p>
         </div>
 
-        <!-- AI Summary Section -->
+        <!-- Page 15 Preview: Key Points Summary -->
         <div id="summarySection">
-            <h2>🤖 Personal Statement Summary</h2>
-            <div class="summary-content">
-                <h4>Summary</h4>
-                <p id="summaryText" style="color: #555; line-height: 1.6;"></p>
+            <h2>📋 Page 15: Key Points Summary</h2>
+            <div style="background: #e3f2fd; padding: 15px; border-left: 4px solid #2196F3; margin-bottom: 15px; border-radius: 4px;">
+                <p style="margin: 0; color: #1565c0; font-size: 14px;">
+                    <strong>📋 PDF Page 15 Preview (Part 1)</strong><br>
+                    These bullet points will appear at the top of Page 15 in your PDF report, providing a concise summary of your incident.
+                </p>
             </div>
             <div class="summary-content">
                 <h4>Key Points</h4>
@@ -1758,20 +1763,33 @@ Continue with: What happened immediately after impact? Any injuries you noticed?
             </div>
         </div>
 
-        <!-- Combined Report Summary -->
+        <!-- Page 14 Preview: Comprehensive Closing Statement Narrative -->
         <div id="combinedReportSection">
             <div class="collapsible-header" data-target="combinedReportContent">
-                <h2 style="margin: 0;">📄 Complete Incident Overview</h2>
+                <h2 style="margin: 0;">📄 Page 14: Comprehensive Closing Statement</h2>
                 <span>▼</span>
             </div>
-            <div class="collapsible-content" id="combinedReportContent">
+            <div class="collapsible-content expanded" id="combinedReportContent">
+                <div style="background: #e8f5e9; padding: 15px; border-left: 4px solid #4CAF50; margin-bottom: 15px; border-radius: 4px;">
+                    <p style="margin: 0; color: #2e7d32; font-size: 14px;">
+                        <strong>📋 PDF Page 14 Preview</strong><br>
+                        This is the <strong>"centre piece"</strong> of your legal document - a comprehensive closing statement narrative
+                        generated using ALL data from pages 1-12 plus your personal statement. This narrative will appear on Page 14 of your PDF report.
+                    </p>
+                </div>
                 <div class="report-box" id="combinedReportText"></div>
             </div>
         </div>
 
-        <!-- Final AI Review with Next Steps -->
+        <!-- Page 15 Preview: Next Steps Guide -->
         <div id="finalReviewSection" style="display: none;">
-            <h2>✨ AL's Incident Report Review</h2>
+            <h2>📋 Page 15: Next Steps Guide</h2>
+            <div style="background: #e3f2fd; padding: 15px; border-left: 4px solid #2196F3; margin-bottom: 15px; border-radius: 4px;">
+                <p style="margin: 0; color: #1565c0; font-size: 14px;">
+                    <strong>📋 PDF Page 15 Preview (Part 2)</strong><br>
+                    These recommended next steps and legal considerations will appear below the key points on Page 15 of your PDF report.
+                </p>
+            </div>
             <div class="final-review-box">
                 <h3>Documentation Completeness Score</h3>
                 <div class="completeness-score" id="completenessScore">--</div>

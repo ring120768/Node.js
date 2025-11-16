@@ -706,78 +706,70 @@ class AdobePdfFormFillerService {
     setUrlFieldWithAutoFitFont('vehicle_damage_path_6', data.imageUrls?.vehicle_damage_path_6 || '');
 
     // ========================================
-    // PAGE 13: AI Summary of Accident Data
+    // PAGE 13: User's Direct Statement (Transcription)
     // ========================================
-    // Use comprehensive AI analysis from ai_analysis table
-    // Format: Summary (2-3 sentences) + Key Points (bullets) + Fault Analysis
-    let page13Content = '';
+    // User's personal statement about the incident - straight transcription, manually input, or edited
+    // Data source: ai_transcription.transcript_text (user's own words)
+    // This is NOT AI-generated - it's the user's direct account
+    const userTranscription = data.aiTranscription?.transcription || '';
 
-    if (data.aiAnalysis) {
-      // Add summary
-      if (data.aiAnalysis.summary) {
-        page13Content += data.aiAnalysis.summary + '\n\n';
-      }
+    setFieldText('ai_summary_of_accident_data_transcription', userTranscription.trim());
+    console.log(`   ✅ Page 13 (User's Transcription): ${userTranscription ? userTranscription.length + ' chars' : 'No data'}`);
 
-      // Add key points as bullet list
-      if (data.aiAnalysis.keyPoints && data.aiAnalysis.keyPoints.length > 0) {
-        page13Content += 'KEY POINTS:\n';
-        data.aiAnalysis.keyPoints.forEach(point => {
-          page13Content += `• ${point}\n`;
-        });
-        page13Content += '\n';
-      }
+    // ========================================
+    // PAGE 14: Comprehensive AI Closing Statement Narrative (CENTRE PIECE)
+    // ========================================
+    // AI-generated comprehensive closing statement using ALL data from pages 1-12 + transcription
+    // This is the legal narrative equivalent to a closing statement (800-1200 words)
+    // Data source: ai_analysis.combined_report (HTML format)
+    let page14Narrative = '';
 
-      // Add fault analysis
-      if (data.aiAnalysis.faultAnalysis) {
-        page13Content += 'FAULT ANALYSIS:\n' + data.aiAnalysis.faultAnalysis;
-      }
-    } else {
-      // Fallback to legacy data if new AI analysis not available
-      page13Content = data.aiSummary?.summary || incident.ai_summary_of_data_collected || '';
+    if (data.aiAnalysis?.combinedReport) {
+      // Strip HTML tags and convert to plain text for PDF
+      page14Narrative = data.aiAnalysis.combinedReport
+        .replace(/<p>/gi, '\n\n')
+        .replace(/<\/p>/gi, '')
+        .replace(/<br\s*\/?>/gi, '\n')
+        .replace(/<ul>/gi, '\n')
+        .replace(/<\/ul>/gi, '\n')
+        .replace(/<li>/gi, '• ')
+        .replace(/<\/li>/gi, '\n')
+        .replace(/<[^>]+>/g, '')
+        .replace(/&nbsp;/g, ' ')
+        .replace(/&amp;/g, '&')
+        .replace(/&lt;/g, '<')
+        .replace(/&gt;/g, '>')
+        .replace(/\n\n\n+/g, '\n\n')
+        .trim();
     }
 
-    setFieldText('ai_summary_of_accident_data_transcription', page13Content.trim());
-    console.log(`   ✅ Page 13 (AI Summary): ${page13Content ? page13Content.length + ' chars' : 'No data'}`);
+    setFieldText('detailed_account_of_what_happened', page14Narrative);
+    console.log(`   ✅ Page 14 (Comprehensive Narrative): ${page14Narrative ? page14Narrative.length + ' chars, ' + page14Narrative.split(/\s+/).length + ' words' : 'No data'}`);
 
     // ========================================
-    // PAGE 14: AI Transcription / Detailed Account
+    // PAGE 15: AI Key Points & Next Steps Guide
     // ========================================
-    // Check for transcription from both incident and dedicated AI table
-    const transcriptionText = data.aiTranscription?.transcription ||
-                             incident.detailed_account_of_what_happened ||
-                             '';
-    setFieldText('detailed_account_of_what_happened', transcriptionText);  // ai_transcription → detailed_account_of_what_happened
-
-    // ========================================
-    // PAGE 15: AI Combined Report & Next Steps
-    // ========================================
-    // Comprehensive AI-generated narrative using ALL data from pages 1-12 + transcription
-    // Plus recommended next steps for the user
+    // AI bullet point summary + recommended next steps for the user
+    // Data sources:
+    //   - ai_analysis.key_points (TEXT[] array) - Bullet point summary
+    //   - ai_analysis.final_review.nextSteps (JSONB array) - Action items
+    // NOTE: Narrative is on Page 14, NOT duplicated here
     let page15Content = '';
 
     if (data.aiAnalysis) {
-      // Add combined report (HTML narrative converted to plain text)
-      if (data.aiAnalysis.combinedReport) {
-        // Strip HTML tags and convert to plain text
-        const plainTextNarrative = data.aiAnalysis.combinedReport
-          .replace(/<p>/gi, '\n')
-          .replace(/<\/p>/gi, '\n')
-          .replace(/<br\s*\/?>/gi, '\n')
-          .replace(/<[^>]+>/g, '')
-          .replace(/&nbsp;/g, ' ')
-          .replace(/&amp;/g, '&')
-          .replace(/&lt;/g, '<')
-          .replace(/&gt;/g, '>')
-          .replace(/&quot;/g, '"')
-          .trim();
-
-        page15Content += 'COMPREHENSIVE INCIDENT NARRATIVE:\n\n';
-        page15Content += plainTextNarrative + '\n\n';
+      // Add key points as bullet list
+      if (data.aiAnalysis.keyPoints && data.aiAnalysis.keyPoints.length > 0) {
+        page15Content += 'KEY POINTS SUMMARY:\n\n';
+        data.aiAnalysis.keyPoints.forEach(point => {
+          page15Content += `• ${point}\n\n`;
+        });
       }
 
-      // Add next steps
+      // Add next steps guide
       if (data.aiAnalysis.finalReview?.nextSteps && data.aiAnalysis.finalReview.nextSteps.length > 0) {
-        page15Content += '─'.repeat(60) + '\n\n';
+        if (page15Content) {
+          page15Content += '\n' + '─'.repeat(60) + '\n\n';
+        }
         page15Content += 'RECOMMENDED NEXT STEPS:\n\n';
         data.aiAnalysis.finalReview.nextSteps.forEach((step, index) => {
           page15Content += `${index + 1}. ${step}\n\n`;
@@ -787,9 +779,9 @@ class AdobePdfFormFillerService {
 
     if (page15Content) {
       setFieldText('ai_combined_narrative_and_next_steps', page15Content.trim());
-      console.log(`   ✅ Page 15 (AI Combined Report): ${page15Content.length} chars`);
+      console.log(`   ✅ Page 15 (Key Points & Next Steps): ${page15Content.length} chars`);
     } else {
-      console.log('   ⚠️  Page 15 (AI Combined Report): No data available');
+      console.log('   ⚠️  Page 15 (Key Points & Next Steps): No data available');
     }
 
     // ========================================
@@ -852,13 +844,39 @@ class AdobePdfFormFillerService {
     // ========================================
     // Emergency audio transcription from AI Eavesdropper feature (incident.html)
     // Data source: ai_listening_transcripts table → data.emergencyAudio
+    // LEGAL REQUIREMENT: TEXT ONLY - No URLs allowed in legal document
     const emergencyTranscription = data.emergencyAudio?.transcription_text || '';
     const emergencyTimestamp = data.emergencyAudio?.recorded_at || '';
+    const emergencyDuration = data.emergencyAudio?.duration_seconds || null;
 
-    setFieldText('emergency_audio_transcription', emergencyTranscription);
+    // Add transcription text with disclaimer
+    let emergencyContent = '';
+    if (emergencyTranscription) {
+      emergencyContent = emergencyTranscription + '\n\n';
+
+      // Add metadata footer
+      emergencyContent += '─'.repeat(60) + '\n';
+      emergencyContent += 'RECORDING INFORMATION:\n';
+      if (emergencyTimestamp) {
+        emergencyContent += `Recorded: ${new Date(emergencyTimestamp).toLocaleString('en-GB', {
+          dateStyle: 'full',
+          timeStyle: 'long',
+          timeZone: 'Europe/London'
+        })}\n`;
+      }
+      if (emergencyDuration) {
+        const minutes = Math.floor(emergencyDuration / 60);
+        const seconds = emergencyDuration % 60;
+        emergencyContent += `Duration: ${minutes}m ${seconds}s\n`;
+      }
+      emergencyContent += '\nNote: This is an AI-generated transcription of emergency audio recorded during the incident. ' +
+                         'Transcription accuracy may vary depending on audio quality and background noise.';
+    }
+
+    setFieldText('emergency_audio_transcription', emergencyContent.trim());
     setFieldText('emergency_recording_timestamp', emergencyTimestamp);
 
-    console.log(`   ✅ Page 18 (Emergency Audio): ${emergencyTranscription ? emergencyTranscription.length + ' chars' : 'No data'}`);
+    console.log(`   ✅ Page 18 (Emergency Audio Transcription): ${emergencyTranscription ? emergencyTranscription.length + ' chars' : 'No data'}`);
 
     console.log('✅ All form fields mapped with corrected database column names');
     logger.info('✅ PDF form fields populated across all pages (1-18)');
