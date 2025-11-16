@@ -281,28 +281,37 @@ Format as JSON:
 async function storeAIAnalysis(userId, incidentId, transcription, analysis) {
   try {
     const analysisData = {
-      user_id: userId,
+      create_user_id: userId,  // Fixed: was user_id
       incident_id: incidentId,
       transcription_text: transcription,
       summary: analysis.summary,
-      key_points: analysis.keyPoints,
+      key_points: analysis.keyPoints,  // Array of strings
       fault_analysis: analysis.faultAnalysis,
-      quality_review: analysis.review,
-      combined_report: analysis.combinedReport,
+      quality_review: analysis.review,  // JSONB object
+      combined_report: analysis.combinedReport,  // HTML narrative
       completeness_score: analysis.finalReview?.completenessScore,
-      final_review: analysis.finalReview,
+      final_review: analysis.finalReview,  // JSONB object with nextSteps[]
       created_at: new Date().toISOString()
     };
 
-    const { error } = await supabase
+    const { data, error } = await supabase
       .from('ai_analysis')
-      .insert([analysisData]);
+      .insert([analysisData])
+      .select();
 
     if (error) {
-      // Non-critical error - just log it
-      logger.warn('Failed to store AI analysis (non-critical)', { error: error.message });
+      // Log error but don't fail the analysis request
+      logger.warn('Failed to store AI analysis (non-critical)', {
+        error: error.message,
+        userId,
+        incidentId
+      });
     } else {
-      logger.success('AI analysis stored in database', { incidentId });
+      logger.success('AI analysis stored in database', {
+        analysisId: data[0].id,
+        incidentId,
+        userId
+      });
     }
 
   } catch (error) {
