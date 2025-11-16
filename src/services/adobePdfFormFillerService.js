@@ -255,31 +255,15 @@ class AdobePdfFormFillerService {
     setFieldText('policy_holder', user.policy_holder);
     setFieldText('cover_type', user.cover_type);
 
-    // Signup date - use subscription_start_date from user_signup table
+    // PDF REVISION 4: Signup date fields on Page 2
+    // Note: "time_stamp" field was renamed to "subscription_start_date" in PDF template
+    // because it kept reverting to a digital signature field
     if (user.subscription_start_date) {
       const signupDate = new Date(user.subscription_start_date).toLocaleDateString('en-GB');  // DD/MM/YYYY format
+
+      // Both fields show the same signup date
       setFieldText('Date69_af_date', signupDate);  // DB: subscription_start_date → PDF: Date69_af_date
-    }
-
-    // PDF REVISION 3: time_stamp now shows accident datetime instead of signup date
-    // Combine accident_date and accident_time into a single timestamp
-    if (incident.accident_date) {
-      let timestamp = '';
-
-      // Format date as DD/MM/YYYY
-      const accidentDate = new Date(incident.accident_date);
-      const formattedDate = accidentDate.toLocaleDateString('en-GB');
-
-      // Add time if available (format: HH:MM)
-      if (incident.accident_time) {
-        const timeParts = incident.accident_time.split(':');
-        const formattedTime = `${timeParts[0]}:${timeParts[1]}`;  // HH:MM (remove seconds)
-        timestamp = `${formattedDate} ${formattedTime}`;
-      } else {
-        timestamp = formattedDate;
-      }
-
-      setFieldText('time_stamp', timestamp);  // DB: accident_date + accident_time → PDF: time_stamp (e.g., "16/11/2025 12:25")
+      setFieldText('subscription_start_date', signupDate);  // DB: subscription_start_date → PDF: subscription_start_date (was "time_stamp")
     }
 
     // ========================================

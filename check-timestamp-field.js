@@ -13,14 +13,14 @@ const fs = require('fs');
   const pdfDoc = await PDFDocument.load(pdfBytes);
   const form = pdfDoc.getForm();
 
-  const timeStampField = form.getTextField('time_stamp');
+  const subscriptionField = form.getTextField('subscription_start_date');
   const date69Field = form.getTextField('Date69_af_date');
   const accidentDateField = form.getTextField('accident_date');
   const accidentTimeField = form.getTextField('accident_time');
 
-  console.log('=== CURRENT PDF FIELD VALUES ===\n');
-  console.log('Page 2:');
-  console.log('  time_stamp:', timeStampField.getText() || '(empty)');
+  console.log('=== CURRENT PDF FIELD VALUES (Revision 4) ===\n');
+  console.log('Page 2 - Signup Date:');
+  console.log('  subscription_start_date:', subscriptionField.getText() || '(empty)');
   console.log('  Date69_af_date:', date69Field.getText() || '(empty)');
   console.log('');
   console.log('Accident fields:');
