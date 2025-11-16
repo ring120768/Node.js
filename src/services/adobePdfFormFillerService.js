@@ -140,6 +140,7 @@ class AdobePdfFormFillerService {
 
   /**
    * Fill all form fields based on Supabase data
+   * CORRECTED: Uses actual database column names instead of old Typeform fields
    *
    * @param {Object} form - PDF form object from pdf-lib
    * @param {Object} data - All data from Supabase
@@ -157,10 +158,20 @@ class AdobePdfFormFillerService {
           field.setText(String(value));
         }
       } catch (error) {
-        // Log errors for debugging
-        if (fieldName === 'name' || fieldName === 'surname' || fieldName === 'email' || fieldName === 'mobile' || fieldName === 'street') {
-          console.error(`  ❌ ERROR setting field "${fieldName}":`, error.message);
+        // Silently handle missing fields
+      }
+    };
+
+    const setFieldTextWithMaxFont = (fieldName, value, maxFontSize = 14) => {
+      try {
+        const field = form.getTextField(fieldName);
+        if (field && value !== null && value !== undefined) {
+          field.setText(String(value));
+          // Set maximum font size to prevent huge text
+          field.setFontSize(maxFontSize);
         }
+      } catch (error) {
+        // Silently handle missing fields
       }
     };
 
@@ -168,14 +179,21 @@ class AdobePdfFormFillerService {
       try {
         const field = form.getCheckBox(fieldName);
         if (field) {
-          if (shouldCheck) {
+          // Handle both boolean and string values (e.g., "true", "yes", true)
+          const isChecked = shouldCheck === true ||
+                           shouldCheck === 'true' ||
+                           shouldCheck === 'yes' ||
+                           shouldCheck === '1' ||
+                           shouldCheck === 1;
+
+          if (isChecked) {
             field.check();
           } else {
             field.uncheck();
           }
         }
       } catch (error) {
-        // Field might not exist or might be wrong type - that's okay
+        // Field might not exist - that's okay
       }
     };
 
@@ -203,10 +221,12 @@ class AdobePdfFormFillerService {
     console.log('  ✓ Set mobile field to:', user.mobile);
     setFieldText('street', user.street_address);  // DB: street_address → PDF: street
     console.log('  ✓ Set street field to:', user.street_address);
+    setFieldText('street_name_optional', user.street_address_optional);  // DB: street_address_optional → PDF: street_name_optional (address label: Home/Work/etc)
     setFieldText('town', user.town);  // DB: town → PDF: town
     setFieldText('postcode', user.postcode);  // DB: postcode → PDF: postcode
     setFieldText('country', user.country);  // DB: country → PDF: country
     setFieldText('driving_license_number', user.driving_license_number);  // DB: driving_license_number → PDF: driving_license_number
+    setFieldText('date_of_birth', user.date_of_birth);  // DB: date_of_birth → PDF: date_of_birth
 
     // PAGE 1: Vehicle Information
     setFieldText('car_registration_number', user.car_registration_number);  // DB: car_registration_number → PDF: car_registration_number
@@ -221,16 +241,28 @@ class AdobePdfFormFillerService {
     // ========================================
     // PAGE 2: Emergency Contact & Insurance
     // ========================================
-    setFieldText('emergency_contact_name', user.emergency_contact_name);  // DB: emergency_contact_name → PDF: emergency_contact_name
-    setFieldText('emergency_contact_number', user.emergency_contact_number);  // DB: emergency_contact_number → PDF: emergency_contact_number
-    // Note: emergency_contact_email exists in DB but not in PDF template
+    // Parse emergency_contact field (format: "Name | Phone | Email | Relationship")
+    if (user.emergency_contact) {
+      const parts = user.emergency_contact.split('|').map(p => p.trim());
+      setFieldText('emergency_contact_name', parts[0] || '');  // DB: emergency_contact (parsed) → PDF: emergency_contact_name
+      setFieldText('emergency_contact_number', parts[1] || '');  // DB: emergency_contact (parsed) → PDF: emergency_contact_number
+      // Note: Email (parts[2]) and relationship (parts[3]) exist but PDF only has name & number fields
+    }
 
     // Insurance fields (these already match PDF field names)
     setFieldText('insurance_company', user.insurance_company);
     setFieldText('policy_number', user.policy_number);
     setFieldText('policy_holder', user.policy_holder);
     setFieldText('cover_type', user.cover_type);
-    setFieldText('sign_up_date', user.sign_up_date);
+
+    // Signup date - use subscription_start_date from user_signup table
+    if (user.subscription_start_date) {
+      const signupDate = new Date(user.subscription_start_date).toLocaleDateString('en-GB');  // DD/MM/YYYY format
+      setFieldText('Date69_af_date', signupDate);  // DB: subscription_start_date → PDF: Date69_af_date
+
+      // Also populate time_stamp field (after converting from signature → text field in template)
+      setFieldText('time_stamp', signupDate);  // DB: subscription_start_date → PDF: time_stamp
+    }
 
     // ========================================
     // PAGE 3: Personal Documentation (Images)
@@ -250,216 +282,315 @@ class AdobePdfFormFillerService {
     setFieldText('submit_date', incident.created_at);
 
     // Immediate Safety Assessment - Map to PDF field names
-    checkField('are_you_safe', incident.are_you_safe_and_ready_to_complete_this_form === 'Yes');  // safe_ready → are_you_safe
+    // Use incident data if available, fallback to user_signup data
+    const isSafe = incident.are_you_safe_and_ready_to_complete_this_form === 'Yes' ||
+                   (user.safety_status && user.safety_status.toLowerCase().includes('safe'));
+    checkField('are_you_safe', isSafe);  // DB: incident.are_you_safe_and_ready_to_complete_this_form OR user.safety_status → PDF: are_you_safe
+    setFieldText('emergency_recording_timestamp', user.safety_status_timestamp);  // DB: user.safety_status_timestamp → PDF: emergency_recording_timestamp
     checkField('medical_attention_needed', incident.medical_attention_required === 'Yes');  // medical_attention_required → medical_attention_needed
-    setFieldText('medical_how_are_you_feeling', incident.how_are_you_feeling);  // how_feeling → medical_how_are_you_feeling
+    setFieldText('medical_how_are_you_feeling', incident.final_feeling);  // DB: final_feeling (from safety-check.html) → PDF: medical_how_are_you_feeling
     setFieldText('medical_attention_from_who', incident.medical_attention_from_who);
     setFieldText('further_medical_attention_needed', incident.medical_further_attention);  // medical_further → further_medical_attention_needed
-    checkField('six_point_safety_check', incident.six_point_safety_check_completed === 'Yes');  // six_point_check → six_point_safety_check
+    checkField('six_point_safety_check', incident.six_point_safety_check_completed === 'Yes');  // DB: six_point_safety_check_completed (from six-point-safety-check.html) → PDF: six_point_safety_check
     checkField('emergency_contact_made', incident.emergency_contact_made === 'Yes');
 
-    // PAGE 4: Medical and Injury Assessment - Map to medical_symptom_* fields
-    checkField('medical_symptom_chest_pain', incident.chest_pain === true);  // chest_pain → medical_symptom_chest_pain
-    checkField('medical_symptom_uncontrolled_bleeding', incident.uncontrolled_bleeding === true);  // uncontrolled_bleeding → medical_symptom_uncontrolled_bleeding
-    checkField('medical_symptom_breathlessness', incident.breathlessness === true);  // breathlessness → medical_symptom_breathlessness
-    checkField('medical_symptom_limb_weakness', incident.limb_weakness === true);  // limb_weakness → medical_symptom_limb_weakness
-    checkField('medical_symptom_loss_of_consciousness', incident.loss_of_consciousness === true);  // loss_consciousness → medical_symptom_loss_of_consciousness
-    checkField('medical_symptom_severe_headache', incident.severe_headache === true);  // severe_headache → medical_symptom_severe_headache
-    checkField('medical_symptom_abdominal_bruising', incident.abdominal_bruising === true);  // abdominal_bruising → medical_symptom_abdominal_bruising
-    checkField('medical_sympton_change_in_vision', incident.change_in_vision === true);  // change_vision → medical_sympton_change_in_vision (note: typo in PDF field name)
-    checkField('medical_symptom_abdominal_pain', incident.abdominal_pain === true);  // abdominal_pain → medical_symptom_abdominal_pain
-    checkField('medical_symptom_limb_pain_mobilty', incident.limb_pain_impeding_mobility === true);  // limb_pain → medical_symptom_limb_pain_mobilty (note: typo in PDF field name)
-    checkField('medical_symptom_none', incident.none_of_these_i_feel_fine === true);  // none_feel_fine → medical_symptom_none
-    setFieldText('medical_injury_details', incident.medical_conditions_summary);  // medical_conditions_summary → medical_injury_details
+    // PAGE 4: Medical and Injury Assessment
+    // IMPORTANT: Use incident.medical_symptom_* columns (not old Typeform columns!)
+    // Note: Some PDF fields have typos (sympton, mobilty, life _threatening with SPACE)
+    checkField('medical_symptom_chest_pain', incident.medical_symptom_chest_pain);
+    checkField('medical_symptom_uncontrolled_bleeding', incident.medical_symptom_uncontrolled_bleeding);
+    checkField('medical_symptom_breathlessness', incident.medical_symptom_breathlessness);
+    checkField('medical_symptom_limb_weakness', incident.medical_symptom_limb_weakness);
+    checkField('medical_symptom_loss_of_consciousness', incident.medical_symptom_loss_of_consciousness);
+    checkField('medical_symptom_severe_headache', incident.medical_symptom_severe_headache);
+    checkField('medical_symptom_abdominal_bruising', incident.medical_symptom_abdominal_bruising);
+    checkField('medical_sympton_change_in_vision', incident.medical_symptom_change_in_vision);  // PDF has typo: "sympton"
+    checkField('medical_symptom_abdominal_pain', incident.medical_symptom_abdominal_pain);
+    checkField('medical_symptom_limb_pain_mobilty', incident.medical_symptom_limb_pain_mobility);  // PDF has typo: "mobilty"
+    checkField('medical_symptom_life _threatening', incident.medical_symptom_life_threatening);  // PDF has typo: "life _threatening" (with SPACE)
+    checkField('medical_symptom_dizziness', incident.medical_symptom_dizziness);  // DB: medical_symptom_dizziness → PDF: medical_symptom_dizziness
+    checkField('medical_symptom_none', incident.medical_symptom_none);
+    setFieldText('medical_injury_details', incident.medical_conditions_summary || incident.medical_injury_details);
 
     // ========================================
-    // PAGE 5: Accident Time and Location
+    // PAGE 3: Accident Date/Time/Location
+    // Database columns: accident_date, accident_time, location, what3words
     // ========================================
-    setFieldText('accident_date', incident.when_did_the_accident_happen);  // Already correct
-    setFieldText('accident_time', incident.what_time_did_the_accident_happen);  // Already correct
-    setFieldText('location', incident.where_exactly_did_the_accident_happen);  // accident_location → location
-
-    // PAGE 5: Safety Equipment
-    checkField('seatbelt_worn', incident.wearing_seatbelts === 'Yes');  // wearing_seatbelts → seatbelt_worn
-    checkField('airbags_deployed', incident.airbags_deployed === 'Yes');  // Already correct
-    setFieldText('seatbelt_reason', incident.why_werent_seat_belts_being_worn);  // why_no_seatbelts → seatbelt_reason
-    checkField('vehicle_damaged', incident.was_your_vehicle_damaged === 'Yes');
-
-    // PAGE 5: Weather Conditions - Map to PDF field names
-    checkField('weather_cloudy', incident.overcast_dull === true);  // weather_overcast → weather_cloudy
-    checkField('weather_heavy_rain', incident.heavy_rain === true);  // Already correct
-    checkField('road_condition_wet', incident.wet_road === true);  // weather_wet_road → road_condition_wet
-    checkField('weather_fog', incident.fog_poor_visibility === true);  // Already correct
-    checkField('visibilty_street_lights', incident.street_lights === true);  // weather_street_lights → visibilty_street_lights
-    checkField('weather_dusk', incident.dusk === true);  // Already correct
-
-    // clear_and_dry needs to map to TWO fields: weather_clear AND road_condition_dry
-    checkField('weather_clear', incident.clear_and_dry === true);  // weather_clear_dry → weather_clear
-    checkField('road_condition_dry', incident.clear_and_dry === true);  // weather_clear_dry → road_condition_dry
-
-    checkField('road_condition_snow_covered', incident.snow_ice_on_road === true);  // weather_snow_ice → road_condition_snow_covered
-    checkField('weather_drizzle', incident.light_rain === true);  // weather_light_rain → weather_drizzle
-    checkField('weather_bright_sunlight', incident.bright_daylight === true);  // weather_bright_daylight → weather_bright_sunlight
-    setFieldText('weather_summary', incident.weather_conditions_summary);
+    setFieldText('accident_date', incident.accident_date);
+    setFieldText('accident_time', incident.accident_time);
+    setFieldText('location', incident.location);
+    setFieldText('what3words', incident.what3words);
+    setFieldText('nearest_landmark', incident.nearest_landmark);
 
     // ========================================
-    // PAGE 6: Road & Junction Details
-    // ========================================
-    // Note: road_type in DB may be a single value that needs to map to checkboxes
-    // For now, keeping as text field - may need checkbox mapping later
-    setFieldText('road_type', incident.road_type);  // May need to map to road_type_motorway, road_type_urban, etc.
-    setFieldText('your_speed', incident.speed_limit);  // speed_limit → your_speed
-    setFieldText('junction_type', incident.junction_information);  // junction_info → junction_type
-    setFieldText('junction_control', incident.junction_control);  // Additional field for junction control
-    setFieldText('special_conditions', incident.special_conditions);
-
-    // PAGE 6: Accident Description
-    setFieldText('detailed_account_of_what_happened', incident.describe_what_happened);  // accident_description → detailed_account_of_what_happened
-
-    // ========================================
-    // PAGE 5 (NEW): Your Vehicle Details (DVLA, Damage, Driveability)
+    // PAGE 4: Safety Equipment & Medical
+    // Database columns: airbags_deployed, seatbelts_worn, seatbelt_reason,
+    //                   medical_attention_needed, medical_injury_details,
+    //                   medical_injury_severity, medical_hospital_name,
+    //                   medical_ambulance_called, medical_treatment_received,
+    //                   medical_symptom_*
     // ========================================
 
-    // 1. Usual Vehicle (2 checkboxes from 1 TEXT field)
+    // Safety equipment (handles boolean, string "true"/"yes"/"no", or string "yes")
+    // Note: PDF has both "yes" and "no" checkboxes for these fields
+    checkField('airbags_deployed', incident.airbags_deployed);
+    checkField('airbags_deployed_no', !incident.airbags_deployed);  // Inverse for "no" checkbox
+
+    // Seatbelts: DB uses "yes"/"no" strings, not booleans
+    const seatbeltsWorn = incident.seatbelts_worn === 'yes' || incident.seatbelts_worn === true;
+    checkField('seatbelt_worn', seatbeltsWorn);  // PDF: seatbelt_worn (singular), DB: seatbelts_worn (plural)
+    checkField('seatbelt_worn_no', !seatbeltsWorn);  // Inverse for "no" checkbox
+    setFieldTextWithMaxFont('seatbelt_reason', incident.seatbelt_reason, 16);  // Max 16pt font to prevent gigantic text
+
+    // Medical attention
+    checkField('medical_attention_needed', incident.medical_attention_needed);
+    setFieldText('medical_injury_details', incident.medical_injury_details);
+    setFieldText('medical_injury_severity', incident.medical_injury_severity);
+    setFieldText('medical_hospital_name', incident.medical_hospital_name);
+    checkField('medical_ambulance_called', incident.medical_ambulance_called);
+    setFieldText('medical_treatment_received', incident.medical_treatment_received);
+    setFieldText('medical_treatment_recieved', incident.medical_treatment_received);  // PDF has typo (i before e)
+
+    // Note: Medical symptoms are mapped earlier in PAGE 4 section (lines 284-299)
+    // to handle PDF field name typos correctly
+
+    // ========================================
+    // PAGE 5: Environmental Conditions
+    // Database columns: weather_*, road_condition_*, road_type_*
+    // ========================================
+
+    // Weather conditions (12 checkboxes)
+    checkField('weather_bright_sunlight', incident.weather_bright_sunlight);
+    checkField('weather_clear', incident.weather_clear);
+    checkField('weather_cloudy', incident.weather_cloudy);
+    checkField('weather_raining', incident.weather_raining);
+    checkField('weather_heavy_rain', incident.weather_heavy_rain);
+    checkField('weather_drizzle', incident.weather_drizzle);
+    checkField('weather_fog', incident.weather_fog);
+    checkField('weather_snow', incident.weather_snow);
+    checkField('weather_ice', incident.weather_ice);
+    checkField('weather_windy', incident.weather_windy);
+    checkField('weather_hail', incident.weather_hail);
+    checkField('weather_thunder_lightening', incident.weather_thunder_lightning);  // PDF has typo: "lightening" not "lightning"
+    checkField('weather_dusk', incident.dusk);  // DB: dusk → PDF: weather_dusk (Page 4 time of day)
+
+    // Road surface conditions (6 checkboxes)
+    checkField('road_condition_dry', incident.road_condition_dry);
+    checkField('road_condition_wet', incident.road_condition_wet);
+    checkField('road_condition_icy', incident.road_condition_icy);
+    checkField('road_condition_snow_covered', incident.road_condition_snow_covered);
+    checkField('road_condition_loose_surface', incident.road_condition_loose_surface);
+    checkField('road_condition_slush_on_road', incident.road_condition_slush_on_road);
+
+    // Road type (7 checkboxes)
+    // NOTE: PDF field names differ from database column names
+    checkField('road_type_motorway', incident.road_type_motorway);
+    checkField('road_type_a_road', incident.road_type_a_road);
+    checkField('road_type_b_road', incident.road_type_b_road);
+    checkField('road_type_urban', incident.road_type_urban_street);  // DB: road_type_urban_street → PDF: road_type_urban
+    checkField('road_type_rural', incident.road_type_rural_road);  // DB: road_type_rural_road → PDF: road_type_rural
+    checkField('road_type_car_park', incident.road_type_car_park);
+    checkField('road_type_private_road', incident.road_type_private_road);
+
+    // ========================================
+    // PAGE 6: Traffic, Visibility, Junction, Speed
+    // Database columns: speed_limit, your_speed, traffic_conditions_*,
+    //                   visibility_*, road_markings_visible_*, junction_type,
+    //                   junction_control, traffic_light_status, user_manoeuvre,
+    //                   special_condition_*
+    // ========================================
+
+    // Speed
+    setFieldText('speed_limit', incident.speed_limit ? String(incident.speed_limit) : '');
+    setFieldText('your_speed', incident.your_speed ? String(incident.your_speed) : '');
+
+    // Traffic conditions (4 checkboxes)
+    checkField('traffic_conditions_heavy', incident.traffic_conditions_heavy);
+    checkField('traffic_conditions_moderate', incident.traffic_conditions_moderate);
+    checkField('traffic_conditions_light', incident.traffic_conditions_light);
+    checkField('traffic_conditions_no_traffic', incident.traffic_conditions_no_traffic);
+
+    // Visibility (4 checkboxes)
+    // NOTE: PDF has typos in some field names
+    checkField('visibilty_good', incident.visibility_good);  // PDF has typo: "visibilty" not "visibility"
+    checkField('visibility_poor', incident.visibility_poor);
+    checkField('visibility_very_poor', incident.visibility_very_poor);
+    checkField('visibilty_street_lights', incident.visibility_street_lights);  // PDF has typo: "visibilty" not "visibility"
+
+    // Road markings visibility (3 radio buttons)
+    // PDF has typo: "vsible" instead of "visible"
+    checkField('road_markings_vsible_yes', incident.road_markings_visible_yes);
+    checkField('road_markings_vsible_no', incident.road_markings_visible_no);
+    checkField('road_markings_visible_partially', incident.road_markings_visible_partially);
+
+    // Junction details
+    setFieldText('junction_type', incident.junction_type);
+    setFieldText('junction_control', incident.junction_control);
+    setFieldText('traffic_light_status', incident.traffic_light_status);
+    setFieldText('user_manoeuvre', incident.user_manoeuvre);
+
+    // Visibility detail (5 checkboxes)
+    checkField('visibility_clear', incident.visibility_clear);
+    checkField('visibility_restricted_structure', incident.visibility_restricted_structure);
+    checkField('visibility_restricted_bend', incident.visibility_restricted_bend);
+    checkField('visibility_large_vehicle', incident.visibility_large_vehicle);
+    checkField('visibility_sun_glare', incident.visibility_sun_glare);
+
+    // Special conditions/hazards (12 checkboxes)
+    checkField('special_condition_roadworks', incident.special_condition_roadworks);
+    checkField('special_condition_workmen', incident.special_condition_workmen);
+    checkField('special_condition_cyclists', incident.special_condition_cyclists);
+    checkField('special_condition_pedestrians', incident.special_condition_pedestrians);
+    checkField('special_condition_traffic_calming', incident.special_condition_traffic_calming);
+    checkField('special_condition_parked_vehicles', incident.special_condition_parked_vehicles);
+    checkField('special_condition_crossing', incident.special_condition_crossing);
+    checkField('special_condition_school_zone', incident.special_condition_school_zone);
+    checkField('special_condition_narrow_road', incident.special_condition_narrow_road);
+    checkField('special_condition_potholes', incident.special_condition_potholes);
+    checkField('special_condition_oil_spills', incident.special_condition_oil_spills);
+    checkField('special_condition_animals', incident.special_condition_animals);
+
+    // Additional hazards text field
+    setFieldText('additional_hazards', incident.additional_hazards);
+
+    // ========================================
+    // PAGE 7: Your Vehicle Details (DVLA Data)
+    // Database columns: usual_vehicle, vehicle_license_plate, dvla_make,
+    //                   dvla_model, dvla_colour, dvla_year, dvla_fuel_type,
+    //                   dvla_mot_status, dvla_mot_expiry, dvla_tax_status,
+    //                   dvla_tax_due_date
+    // ========================================
+
+    // Usual vehicle checkboxes
     checkField('usual_vehicle_yes', incident.usual_vehicle === 'yes');
     checkField('usual_vehicle_no', incident.usual_vehicle === 'no');
 
-    // 2. DVLA Lookup Registration
-    setFieldText('vehicle_license_plate', incident.dvla_lookup_reg);  // dvla_lookup_reg → vehicle_license_plate
+    // DVLA lookup registration
+    setFieldText('vehicle_license_plate', incident.vehicle_license_plate);
 
-    // 3. DVLA Vehicle Data (10 text fields) - Remove "vehicle_lookup" prefix
-    setFieldText('dvla_make', incident.dvla_vehicle_lookup_make);  // dvla_vehicle_lookup_make → dvla_make
-    setFieldText('dvla_model', incident.dvla_vehicle_lookup_model);  // dvla_vehicle_lookup_model → dvla_model
-    setFieldText('dvla_colour', incident.dvla_vehicle_lookup_color);  // dvla_vehicle_lookup_color → dvla_colour
-    setFieldText('dvla_year', incident.dvla_vehicle_lookup_year);  // dvla_vehicle_lookup_year → dvla_year
-    setFieldText('dvla_fuel_type', incident.dvla_vehicle_lookup_fuel_type);  // dvla_vehicle_lookup_fuel_type → dvla_fuel_type
-    setFieldText('dvla_mot_status', incident.dvla_vehicle_lookup_mot_status);  // dvla_vehicle_lookup_mot_status → dvla_mot_status
-    setFieldText('dvla_mot_expiry', incident.dvla_vehicle_lookup_mot_expiry);  // dvla_vehicle_lookup_mot_expiry → dvla_mot_expiry
-    setFieldText('dvla_tax_status', incident.dvla_vehicle_lookup_tax_status);  // dvla_vehicle_lookup_tax_status → dvla_tax_status
-    setFieldText('dvla_tax_due_date', incident.dvla_vehicle_lookup_tax_due_date);  // dvla_vehicle_lookup_tax_due_date → dvla_tax_due_date
-    // Note: dvla_vehicle_lookup_insurance_status may not have a direct PDF field
-    setFieldText('dvla_insurance_status', incident.dvla_vehicle_lookup_insurance_status);
+    // DVLA vehicle data
+    setFieldText('dvla_make', incident.dvla_make);
+    setFieldText('dvla_model', incident.dvla_model);
+    setFieldText('dvla_colour', incident.dvla_colour);
+    setFieldText('dvla_year', incident.dvla_year);
+    setFieldText('dvla_fuel_type', incident.dvla_fuel_type);
+    setFieldText('dvla_mot_status', incident.dvla_mot_status);
+    setFieldText('dvla_mot_expiry', incident.dvla_mot_expiry);
+    setFieldText('dvla_tax_status', incident.dvla_tax_status);
+    setFieldText('dvla_tax_due_date', incident.dvla_tax_due_date);
 
-    // 4. Impact Points (10 checkboxes from TEXT[] array)
-    const impactPoints = incident.impact_point || [];
-    checkField('impact_point_front', impactPoints.includes('front'));
-    checkField('impact_point_front_driver', impactPoints.includes('front_driver'));
-    checkField('impact_point_front_passenger', impactPoints.includes('front_passenger'));
-    checkField('impact_point_driver_side', impactPoints.includes('driver_side'));
-    checkField('impact_point_passenger_side', impactPoints.includes('passenger_side'));
-    checkField('impact_point_rear_driver', impactPoints.includes('rear_driver'));
-    checkField('impact_point_rear_passenger', impactPoints.includes('rear_passenger'));
-    checkField('impact_point_rear', impactPoints.includes('rear'));
-    checkField('impact_point_roof', impactPoints.includes('roof'));
-    checkField('impact_point_undercarriage', impactPoints.includes('undercarriage'));
+    // Impact points (10 checkboxes)
+    checkField('impact_point_front', incident.impact_point_front);
+    checkField('impact_point_front_driver', incident.impact_point_front_driver);
+    checkField('impact_point_front_passenger', incident.impact_point_front_passenger);
+    checkField('impact_point_driver_side', incident.impact_point_driver_side);
+    checkField('impact_point_passenger_side', incident.impact_point_passenger_side);
+    checkField('impact_point_rear_driver', incident.impact_point_rear_driver);
+    checkField('impact_point_rear_passenger', incident.impact_point_rear_passenger);
+    checkField('impact_point_rear', incident.impact_point_rear);
+    checkField('impact_point_roof', incident.impact_point_roof);
+    checkField('impact_point_undercarriage', incident.impact_point_undercarriage);
 
-    // 5. Damage Description
+    // Damage details (PDF uses hyphens for some fields!)
+    checkField('no_damage', incident.no_damage);
+    checkField('no-visible-damage', incident.no_visible_damage);
     setFieldText('damage_to_your_vehicle', incident.damage_to_your_vehicle);
+    setFieldText('describe-damage-to-vehicle', incident.describe_damage_to_vehicle);
+    setFieldText('describle_the_damage', incident.describle_the_damage);  // DB: describle_the_damage (NEW field with typo) → PDF: describle_the_damage
 
-    // 6. Vehicle Driveability (3 mutually exclusive checkboxes from 1 TEXT field)
+    // Vehicle driveability (3 checkboxes)
     checkField('vehicle_driveable_yes', incident.vehicle_driveable === 'yes');
     checkField('vehicle_driveable_no', incident.vehicle_driveable === 'no');
     checkField('vehicle_driveable_unsure', incident.vehicle_driveable === 'unsure');
 
     // ========================================
-    // PAGE 7 (LEGACY): Your Vehicle Information
+    // PAGE 8: Other Vehicle Information
+    // Database columns: other_vehicle_registration, other_vehicle_look_up_*,
+    //                   other_drivers_insurance_*, other_full_name,
+    //                   other_contact_number, other_email_address,
+    //                   other_driving_license_number
     // ========================================
-    setFieldText('driving_usual', incident.driving_usual_vehicle);
-    setFieldText('make_of_car', incident.make_of_car);
-    setFieldText('model_of_car', incident.model_of_car);
-    setFieldText('your_license_plate', incident.license_plate_incident);
-    setFieldText('direction_speed', incident.direction_of_travel_and_estimated_speed);
-    setFieldText('impact_point', incident.impact_point); // Legacy single text field
-    setFieldText('damage_caused', incident.damage_caused_by_accident);
-    setFieldText('damage_prior', incident.damage_prior_to_accident);
 
-    // ========================================
-    // PAGE 8: Other Vehicles Involved (Page 7 HTML Form)
-    // ========================================
-    checkField('other_vehicles', incident.other_vehicles_involved === 'Yes');
+    // Driver information (PDF uses hyphens, not underscores!)
+    setFieldText('other-full-name', incident.other_full_name);
+    setFieldText('other-contact-number', incident.other_contact_number);
+    setFieldText('other-email-address', incident.other_email_address);
+    setFieldText('other-driving-license-number', incident.other_driving_license_number);
 
-    // Driver information - Use hyphenated field names from PDF
-    setFieldText('other-full-name', incident.other_full_name || incident.other_driver_name);  // other_driver_name → other-full-name
-    setFieldText('other-contact-number', incident.other_contact_number || incident.other_driver_number);  // other_driver_number → other-contact-number
-    setFieldText('other-email-address', incident.other_email_address);  // other_driver_email → other-email-address
-    setFieldText('other-driving-license-number', incident.other_driving_license_number);  // other_driver_license → other-driving-license-number
+    // Vehicle registration and DVLA data (PDF uses hyphens!)
+    setFieldText('other-vehicle-registration', incident.other_vehicle_registration);
+    setFieldText('other-vehicle-look-up-make', incident.other_vehicle_look_up_make);
+    setFieldText('other-vehicle-look-up-model', incident.other_vehicle_look_up_model);
+    setFieldText('other-vehicle-look-up-colour', incident.other_vehicle_look_up_colour);
+    setFieldText('other-vehicle-look-up-year', incident.other_vehicle_look_up_year);
+    setFieldText('other-vehicle-look-up-fuel-type', incident.other_vehicle_look_up_fuel_type);
+    setFieldText('other-vehicle-look-up-mot-status', incident.other_vehicle_look_up_mot_status);
+    setFieldText('other-vehicle-look-up-mot-expiry-date', incident.other_vehicle_look_up_mot_expiry_date);  // DB: other_vehicle_look_up_mot_expiry_date → PDF: other-vehicle-look-up-mot-expiry-date
+    setFieldText('other-vehicle-look-up-tax-status', incident.other_vehicle_look_up_tax_status);
+    setFieldText('other-vehicle-look-up-tax-due-date', incident.other_vehicle_look_up_tax_due_date);
+    setFieldText('other-vehicle-look-up-insurance-status', incident.other_vehicle_look_up_insurance_status);
 
-    // Vehicle registration and DVLA data - Use hyphenated field names
-    setFieldText('other-vehicle-registration', incident.other_vehicle_registration);  // other_license → other-vehicle-registration
-    setFieldText('other-vehicle-look-up-make', incident.other_vehicle_look_up_make || incident.other_make_of_vehicle);  // other_make → other-vehicle-look-up-make
-    setFieldText('other-vehicle-look-up-model', incident.other_vehicle_look_up_model || incident.other_model_of_vehicle);  // other_model → other-vehicle-look-up-model
-    setFieldText('other-vehicle-look-up-colour', incident.other_vehicle_look_up_colour);  // other_color → other-vehicle-look-up-colour
-    setFieldText('other-vehicle-look-up-year', incident.other_vehicle_look_up_year);  // other_year → other-vehicle-look-up-year
-    setFieldText('other-vehicle-look-up-fuel-type', incident.other_vehicle_look_up_fuel_type);  // other_fuel_type → other-vehicle-look-up-fuel-type
+    // Insurance information (PDF uses hyphens!)
+    setFieldText('other-drivers-insurance-company', incident.other_drivers_insurance_company);
+    setFieldText('other-drivers-policy-number', incident.other_drivers_policy_number);
+    setFieldText('other-drivers-policy-holder-name', incident.other_drivers_policy_holder_name);
+    setFieldText('other-drivers-policy-cover-type', incident.other_drivers_policy_cover_type);
 
-    // Vehicle status (DVLA data) - Use hyphenated field names
-    setFieldText('other-vehicle-look-up-mot-status', incident.other_vehicle_look_up_mot_status);  // other_mot_status → other-vehicle-look-up-mot-status
-    setFieldText('other-vehicle-look-up-mot-expiry-date', incident.other_vehicle_look_up_mot_expiry_date);  // other_mot_expiry → other-vehicle-look-up-mot-expiry-date
-    setFieldText('other-vehicle-look-up-tax-status', incident.other_vehicle_look_up_tax_status);  // other_tax_status → other-vehicle-look-up-tax-status
-    setFieldText('other-vehicle-look-up-tax-due-date', incident.other_vehicle_look_up_tax_due_date);  // other_tax_due → other-vehicle-look-up-tax-due-date
-    setFieldText('other-vehicle-look-up-insurance-status', incident.other_vehicle_look_up_insurance_status);  // other_insurance_status → other-vehicle-look-up-insurance-status
-
-    // Insurance information - Use hyphenated field names
-    setFieldText('other-drivers-insurance-company', incident.other_drivers_insurance_company || incident.other_insurance_company);  // other_insurance → other-drivers-insurance-company
-    setFieldText('other-drivers-policy-number', incident.other_drivers_policy_number || incident.other_policy_number);  // other_policy_number → other-drivers-policy-number
-    setFieldText('other-drivers-policy-holder-name', incident.other_drivers_policy_holder_name || incident.other_policy_holder);  // other_policy_holder → other-drivers-policy-holder-name
-    setFieldText('other-drivers-policy-cover-type', incident.other_drivers_policy_cover_type || incident.other_policy_cover);  // other_cover_type → other-drivers-policy-cover-type
-
-    // Damage information
-    checkField('no_visible_damage', incident.no_visible_damage === true);
-    setFieldText('other_damage_description', incident.describe_damage_to_vehicle);
+    // Other vehicle damage description (from incident_other_vehicles table, max 14pt font)
+    if (data.vehicles && data.vehicles[0] && data.vehicles[0].damage_description) {
+      setFieldTextWithMaxFont('describe_the_damage_to_the_other_vehicle', data.vehicles[0].damage_description, 14);
+    }
 
     // ========================================
-    // PAGE 9: Damage to Other Vehicles & Police
+    // PAGE 9: Witnesses
+    // Database columns: witnesses_present, witness_name, witness_mobile_number,
+    //                   witness_email_address, witness_statement
     // ========================================
-    setFieldText('other_damage_current', incident.damage_to_other_vehicle_current_accident);
-    setFieldText('other_damage_prior', incident.damage_to_other_vehicle_prior_to_accident);
 
-    // Police Involvement - Map to PDF field names
-    checkField('police_attended', incident.did_the_police_attend_the_scene === 'Yes');  // Already correct
-    setFieldText('accident_ref_number', incident.accident_reference_number);  // accident_reference → accident_ref_number
-    setFieldText('officer_name', incident.police_officer_name);  // Already correct
-    setFieldText('officer_badge', incident.police_officer_badge_number);
-    setFieldText('police_force', incident.police_force_details);
-    checkField('user_breath_test', incident.breath_test === 'Yes');  // breath_test → user_breath_test
-    checkField('other_breath_test', incident.other_breath_test === 'Yes');  // Already correct
-
-    // ========================================
-    // PAGE 9: Witnesses (2 witnesses max on this page)
-    // ========================================
-    // Map first 2 witnesses from incident_witnesses table to page 9 fields
     const hasWitnesses = data.witnesses && data.witnesses.length > 0;
+    checkField('witnesses_present', hasWitnesses);
 
-    checkField('witnesses_present', hasWitnesses);  // any_witness → witnesses_present
-    // Note: any_witness_no field doesn't exist in PDF template
-
-    // Witness 1 (if exists)
+    // Witness 1 (apply 14pt max font size to statement to prevent huge text)
     if (data.witnesses && data.witnesses[0]) {
       const witness1 = data.witnesses[0];
       setFieldText('witness_name', witness1.witness_name || '');
       setFieldText('witness_mobile_number', witness1.witness_mobile_number || '');
       setFieldText('witness_email_address', witness1.witness_email_address || '');
-      setFieldText('witness_statement', witness1.witness_statement || '');
-      // Note: witness_address is NOT in PDF, so it's not mapped
+      setFieldTextWithMaxFont('witness_statement', witness1.witness_statement || '', 14);  // Max 14pt font
     }
 
-    // Witness 2 (if exists)
+    // Witness 2 (apply 14pt max font size to statement)
     if (data.witnesses && data.witnesses[1]) {
       const witness2 = data.witnesses[1];
       setFieldText('witness_name_2', witness2.witness_name || '');
       setFieldText('witness_mobile_number_2', witness2.witness_mobile_number || '');
       setFieldText('witness_email_address_2', witness2.witness_email_address || '');
-      setFieldText('witness_statement_2', witness2.witness_statement || '');
-      // Note: witness_address is NOT in PDF, so it's not mapped
+      setFieldTextWithMaxFont('witness_statement_2', witness2.witness_statement || '', 14);  // Max 14pt font
     }
 
-    // Note: Witnesses 3+ will be added as separate pages via appendWitnessPages()
+    // ========================================
+    // PAGE 10: Police Involvement
+    // Database columns: police_attended, police_force, accident_ref_number,
+    //                   officer_name, officer_badge, user_breath_test,
+    //                   other_breath_test
+    // ========================================
+
+    // PDF has both "police_attend" and "police_attended" fields
+    checkField('police_attended', incident.police_attended);
+    checkField('police_attend', incident.police_attended);  // Alternate field name in PDF
+    setFieldText('police_force', incident.police_force);
+    setFieldText('accident_ref_number', incident.accident_ref_number);
+    setFieldText('officer_name', incident.officer_name);
+    setFieldText('officer_badge', incident.officer_badge);
+    setFieldText('user_breath_test', incident.user_breath_test);
+    setFieldText('other_breath_test', incident.other_breath_test);
 
     // ========================================
-    // PAGE 10: Additional Info
+    // PAGE 12: Final Feeling & Additional Info
+    // Database columns: final_feeling
     // ========================================
-    setFieldText('anything_else_important', incident.anything_else_important);  // anything_else → anything_else_important
-    // Note: call_recovery and upgrade_premium fields don't exist in PDF template
+
+    setFieldText('final_feeling', incident.final_feeling);
 
     // ========================================
     // PAGES 11-12: Evidence Collection (URLs)
@@ -547,10 +678,11 @@ class AdobePdfFormFillerService {
     // ========================================
     // PAGE 17: Legal Documentation and Declaration
     // ========================================
-    setFieldText('Signature70', `${user.driver_name || ''} ${user.driver_surname || ''}`.trim());  // declaration_name → Signature70
-    setFieldText('Date69_af_date', new Date().toLocaleDateString('en-GB'));  // declaration_date → Date69_af_date
+    setFieldText('Signature70', `${user.driver_name || ''} ${user.driver_surname || ''}`.trim());
+    setFieldText('Date69_af_date', new Date().toLocaleDateString('en-GB'));
 
-    logger.info('✅ All form fields mapped and filled');
+    console.log('✅ All form fields mapped with corrected database column names');
+    logger.info('✅ PDF form fields populated across all 12 pages');
   }
 
   /**

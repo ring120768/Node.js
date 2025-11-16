@@ -106,7 +106,61 @@ class LocationPhotoService {
             continue;
           }
 
-          // Create user_documents record with provided document type
+          // Generate signed URL (12 months expiry to match subscription period)
+          logger.info('🔍 DEBUG: About to generate signed URL for incident photo', {
+            userId,
+            incidentReportId,
+            fieldName,
+            permanentPath,
+            photoNumber
+          });
+
+          const signedUrlExpirySeconds = 31536000; // 365 days (12 months)
+          const { data: signedUrlData, error: signedUrlError } = await this.supabase.storage
+            .from(this.BUCKET_NAME)
+            .createSignedUrl(permanentPath, signedUrlExpirySeconds);
+
+          if (signedUrlError) {
+            logger.error('❌ DEBUG: Signed URL generation FAILED for incident photo', {
+              error: signedUrlError.message,
+              path: permanentPath,
+              userId,
+              incidentReportId,
+              fieldName,
+              photoNumber
+            });
+            errors.push({
+              uploadId: upload.id,
+              error: `Failed to generate signed URL: ${signedUrlError.message}`
+            });
+            continue;
+          }
+
+          const signedUrl = signedUrlData.signedUrl;
+          const signedUrlExpiresAt = new Date(Date.now() + (signedUrlExpirySeconds * 1000));
+
+          logger.info('✅ DEBUG: Signed URL generated successfully for incident photo', {
+            userId,
+            incidentReportId,
+            fieldName,
+            photoNumber,
+            signedUrl: signedUrl.substring(0, 100) + '...',
+            expiresAt: signedUrlExpiresAt.toISOString(),
+            expirySeconds: signedUrlExpirySeconds
+          });
+
+          // Create user_documents record with provided document type AND signed URLs
+          logger.info('🔍 DEBUG: About to call createDocumentRecordGeneric with URL fields', {
+            userId,
+            incidentReportId,
+            fieldName,
+            photoNumber,
+            has_public_url: !!signedUrl,
+            has_signed_url: !!signedUrl,
+            has_signed_url_expires_at: !!signedUrlExpiresAt,
+            signedUrlLength: signedUrl.length
+          });
+
           const document = await this.createDocumentRecordGeneric({
             userId,
             incidentReportId,
@@ -115,7 +169,11 @@ class LocationPhotoService {
             mimeType: upload.mime_type,
             documentType,
             photoNumber,
-            source: `page_${fieldName}_photos`
+            source: `page_${fieldName}_photos`,
+            public_url: signedUrl,                    // Keep for backwards compatibility
+            signed_url: signedUrl,                    // NEW: Store in signed_url field for PDF generation
+            signed_url_expires_at: signedUrlExpiresAt.toISOString(), // NEW: Track expiry
+            document_category: 'incident_report'      // NEW: Categorize as incident report photo
           });
 
           if (!document) {
@@ -293,24 +351,59 @@ class LocationPhotoService {
     mimeType,
     documentType,
     photoNumber,
-    source
+    source,
+    public_url,
+    signed_url,
+    signed_url_expires_at,
+    document_category
   }) {
     try {
+      // Debug logging: Verify parameters received
+      logger.info('🔍 DEBUG: createDocumentRecord called with URL parameters', {
+        userId,
+        documentType,
+        status: 'completed',
+        public_url: public_url ? 'PRESENT' : 'NULL',
+        signed_url: signed_url ? 'PRESENT' : 'NULL',
+        signed_url_expires_at: signed_url_expires_at ? 'PRESENT' : 'NULL',
+        document_category: document_category || 'NULL',
+        signed_url_length: signed_url ? signed_url.length : 0
+      });
+
+      // Prepare document record object
+      const documentRecord = {
+        create_user_id: userId,
+        incident_report_id: incidentReportId,
+        document_type: documentType,
+        storage_path: storagePath,
+        file_size: fileSize,
+        mime_type: mimeType,
+        status: 'completed',
+        metadata: {
+          photo_number: photoNumber,
+          source: source
+        }
+      };
+
+      // Add URL fields if provided
+      if (public_url) documentRecord.public_url = public_url;
+      if (signed_url) documentRecord.signed_url = signed_url;
+      if (signed_url_expires_at) documentRecord.signed_url_expires_at = signed_url_expires_at;
+      if (document_category) documentRecord.document_category = document_category;
+
+      // Debug logging: Document record prepared
+      logger.info('🔍 DEBUG: Document record object prepared for database insert', {
+        userId,
+        documentType,
+        hasPublicUrl: !!public_url,
+        hasSignedUrl: !!signed_url,
+        hasSignedUrlExpiry: !!signed_url_expires_at,
+        hasDocumentCategory: !!document_category
+      });
+
       const { data, error } = await this.supabase
         .from('user_documents')
-        .insert({
-          create_user_id: userId,
-          incident_report_id: incidentReportId,
-          document_type: documentType,
-          storage_path: storagePath,
-          file_size: fileSize,
-          mime_type: mimeType,
-          status: 'completed',
-          metadata: {
-            photo_number: photoNumber,
-            source: source
-          }
-        })
+        .insert(documentRecord)
         .select()
         .single();
 
@@ -323,6 +416,17 @@ class LocationPhotoService {
         });
         return null;
       }
+
+      // Debug logging: Database insert successful
+      logger.info('✅ DEBUG: Document record created in database', {
+        id: data.id,
+        documentType: documentType,
+        status: data.status,
+        public_url_in_db: data.public_url ? 'PRESENT' : 'NULL',
+        signed_url_in_db: data.signed_url ? 'PRESENT' : 'NULL',
+        signed_url_expires_at_in_db: data.signed_url_expires_at ? 'PRESENT' : 'NULL',
+        document_category_in_db: data.document_category || 'NULL'
+      });
 
       logger.info('Document record created', { documentId: data.id, documentType });
       return data;

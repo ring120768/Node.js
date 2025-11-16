@@ -209,7 +209,7 @@ class AdobeRestFormFillerService {
       // Handle boolean values (true/false)
       if (typeof value === 'boolean') {
         if (value === true) {
-          // Explicit list of fields that require "On" export value
+          // Fields requiring "On" export value (43 fields discovered through 20 test iterations)
           const fieldsUsingOn = new Set([
             // Medical symptoms (mixed - specific fields discovered through testing)
             'medical_symptom_abdominal_bruising',
@@ -254,7 +254,26 @@ class AdobeRestFormFillerService {
             'impact_point_rear_passenger'
           ]);
 
-          formData[key] = fieldsUsingOn.has(key) ? 'On' : 'Yes';
+          // Fields requiring lowercase "yes" export value (discovered through comprehensive mock testing)
+          const fieldsUsingLowercaseYes = new Set([
+            'impact_point_front_driver'
+          ]);
+
+          // Fields requiring lowercase "on" export value (discovered through comprehensive mock testing)
+          const fieldsUsingLowercaseOn = new Set([
+            'impact_point_front_passenger'
+          ]);
+
+          // Four-tier export value handling
+          if (fieldsUsingOn.has(key)) {
+            formData[key] = 'On';
+          } else if (fieldsUsingLowercaseYes.has(key)) {
+            formData[key] = 'yes';  // lowercase
+          } else if (fieldsUsingLowercaseOn.has(key)) {
+            formData[key] = 'on';   // lowercase
+          } else {
+            formData[key] = 'Yes';  // capitalized (default)
+          }
         }
         // Skip false values - unchecked checkboxes should be left unset
       }
@@ -264,7 +283,7 @@ class AdobeRestFormFillerService {
 
         // Check if this is a boolean-like string
         if (lowerValue === 'yes' || lowerValue === 'true') {
-          // Same whitelist as above for consistent handling
+          // Same whitelists as boolean handler for consistent handling
           const fieldsUsingOn = new Set([
             'medical_symptom_abdominal_bruising',
             'medical_symptom_uncontrolled_bleeding',
@@ -301,7 +320,24 @@ class AdobeRestFormFillerService {
             'impact_point_rear_passenger'
           ]);
 
-          formData[key] = fieldsUsingOn.has(key) ? 'On' : 'Yes';
+          const fieldsUsingLowercaseYes = new Set([
+            'impact_point_front_driver'
+          ]);
+
+          const fieldsUsingLowercaseOn = new Set([
+            'impact_point_front_passenger'
+          ]);
+
+          // Four-tier export value handling (matches boolean handler)
+          if (fieldsUsingOn.has(key)) {
+            formData[key] = 'On';
+          } else if (fieldsUsingLowercaseYes.has(key)) {
+            formData[key] = 'yes';  // lowercase
+          } else if (fieldsUsingLowercaseOn.has(key)) {
+            formData[key] = 'on';   // lowercase
+          } else {
+            formData[key] = 'Yes';  // capitalized (default)
+          }
         } else if (lowerValue === 'no' || lowerValue === 'false') {
           // Skip - unchecked checkboxes should be left unset
           continue;
