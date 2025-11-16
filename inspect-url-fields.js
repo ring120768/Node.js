@@ -45,7 +45,23 @@ const path = require('path');
     try {
       const field = form.getTextField(fieldName);
       const text = field.getText();
-      const fontSize = field.acroField.getDefaultAppearance()?.match(/\/F\d+\s+(\d+\.?\d*)\s+Tf/)?.[1];
+      const defaultAppearance = field.acroField.getDefaultAppearance();
+
+      // Try multiple regex patterns to match font size
+      let fontSize = null;
+      if (defaultAppearance) {
+        // Pattern 1: /F1 12 Tf
+        let match = defaultAppearance.match(/\/F\d+\s+(\d+\.?\d*)\s+Tf/);
+        if (match) {
+          fontSize = parseFloat(match[1]);
+        } else {
+          // Pattern 2: 12 Tf (without font reference)
+          match = defaultAppearance.match(/(\d+\.?\d*)\s+Tf/);
+          if (match) {
+            fontSize = parseFloat(match[1]);
+          }
+        }
+      }
 
       // Check if multiline is enabled by inspecting the field flags
       const fieldDict = field.acroField.dict;
@@ -70,6 +86,9 @@ const path = require('path');
       console.log(`   Text: ${hasText ? text.substring(0, 80) + '...' : '(empty)'}`);
       console.log(`   Length: ${textLength} chars`);
       console.log(`   Font Size: ${fontSize || 'unknown'}`);
+      if (!fontSize && defaultAppearance) {
+        console.log(`   DA String: ${defaultAppearance.substring(0, 100)}`);
+      }
       console.log(`   Multiline: ${isMultiline ? '✅ Yes' : '❌ No'}`);
       console.log(`   Scrollable: ${isScrollable ? '✅ Yes' : '❌ No'}`);
       console.log(`   Dimensions: ${width.toFixed(0)}w × ${height.toFixed(0)}h`);

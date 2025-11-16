@@ -175,17 +175,61 @@ class AdobePdfFormFillerService {
       }
     };
 
-    // Helper for URL fields: enables multiline wrapping and scrolling for long URLs
-    const setUrlFieldWithWrapping = (fieldName, value, fontSize = 6) => {
+    // Helper for URL fields: auto-fit font size based on field dimensions and text length
+    const setUrlFieldWithAutoFitFont = (fieldName, value) => {
       try {
         const field = form.getTextField(fieldName);
         if (field && value !== null && value !== undefined) {
-          // Enable multiline so URLs wrap across multiple lines
+          const text = String(value);
+
+          // Get field dimensions
+          const widgets = field.acroField.getWidgets();
+          if (widgets.length === 0) {
+            // Fallback if no widgets
+            field.enableMultiline();
+            field.enableScrolling();
+            field.setText(text);
+            field.setFontSize(6);
+            return;
+          }
+
+          const rect = widgets[0].getRectangle();
+          const fieldWidth = rect.width;
+          const fieldHeight = rect.height;
+
+          // Calculate appropriate font size based on text length and field size
+          // Approximate characters per line at different font sizes (assuming ~0.6 * fontSize width per char)
+          // For multiline, estimate how many lines we need
+
+          let fontSize = 10; // Start with readable size
+          const minFontSize = 4;
+          const maxFontSize = 10;
+
+          // Estimate characters per line (rough approximation: fieldWidth / (fontSize * 0.6))
+          // Estimate lines needed: textLength / charsPerLine
+          // Estimate height needed: linesNeeded * (fontSize * 1.2) for line spacing
+
+          while (fontSize >= minFontSize) {
+            const avgCharWidth = fontSize * 0.6; // Approximate character width
+            const charsPerLine = Math.floor(fieldWidth / avgCharWidth);
+            const linesNeeded = Math.ceil(text.length / charsPerLine);
+            const lineHeight = fontSize * 1.2; // Line spacing factor
+            const heightNeeded = linesNeeded * lineHeight;
+
+            if (heightNeeded <= fieldHeight || fontSize === minFontSize) {
+              break;
+            }
+
+            fontSize -= 1;
+          }
+
+          // Ensure font size is within bounds
+          fontSize = Math.max(minFontSize, Math.min(maxFontSize, fontSize));
+
+          // Enable multiline and scrolling for long URLs
           field.enableMultiline();
-          // Enable scrolling so users can scroll through long URLs
           field.enableScrolling();
-          field.setText(String(value));
-          // Use very small font size (6) for better fit
+          field.setText(text);
           field.setFontSize(fontSize);
         }
       } catch (error) {
@@ -291,12 +335,12 @@ class AdobePdfFormFillerService {
     // Mapping examples:
     //   DB: driving_license_picture → PDF: driving_license_picture
     //   DB: vehicle_front_image → PDF: vehicle_picture_front
-    // Multiline + scrolling enabled with font size 6 for full URL visibility
-    setUrlFieldWithWrapping('driving_license_picture', data.imageUrls?.driving_license_picture || '', 6);
-    setUrlFieldWithWrapping('vehicle_picture_front', data.imageUrls?.vehicle_picture_front || '', 6);
-    setUrlFieldWithWrapping('vehicle_picture_driver_side', data.imageUrls?.vehicle_picture_driver_side || '', 6);
-    setUrlFieldWithWrapping('vehicle_picture_passenger_side', data.imageUrls?.vehicle_picture_passenger_side || '', 6);
-    setUrlFieldWithWrapping('vehicle_picture_back', data.imageUrls?.vehicle_picture_back || '', 6);
+    // Auto-fit font size based on field dimensions and URL length
+    setUrlFieldWithAutoFitFont('driving_license_picture', data.imageUrls?.driving_license_picture || '');
+    setUrlFieldWithAutoFitFont('vehicle_picture_front', data.imageUrls?.vehicle_picture_front || '');
+    setUrlFieldWithAutoFitFont('vehicle_picture_driver_side', data.imageUrls?.vehicle_picture_driver_side || '');
+    setUrlFieldWithAutoFitFont('vehicle_picture_passenger_side', data.imageUrls?.vehicle_picture_passenger_side || '');
+    setUrlFieldWithAutoFitFont('vehicle_picture_back', data.imageUrls?.vehicle_picture_back || '');
 
     // ========================================
     // PAGE 4: Form Metadata & Safety Assessment
@@ -630,28 +674,28 @@ class AdobePdfFormFillerService {
     // ========================================
     // All image URLs now come from user_documents table using ACTUAL PDF field names
     // PDF has 18 total image fields - mapped from database document_type values
-    // Multiline + scrolling enabled with font size 6 for full URL visibility
+    // Auto-fit font size based on field dimensions and URL length
 
     // Audio recording (1 field)
-    setUrlFieldWithWrapping('file_url_record_detailed_account_of_what_happened', data.imageUrls?.file_url_record_detailed_account_of_what_happened || '', 6);
+    setUrlFieldWithAutoFitFont('file_url_record_detailed_account_of_what_happened', data.imageUrls?.file_url_record_detailed_account_of_what_happened || '');
 
     // Scene images (3 fields) - includes location screenshot
-    setUrlFieldWithWrapping('scene_images_path_1', data.imageUrls?.scene_images_path_1 || '', 6);  // location_map_screenshot
-    setUrlFieldWithWrapping('scene_images_path_2', data.imageUrls?.scene_images_path_2 || '', 6);  // scene_overview
-    setUrlFieldWithWrapping('scene_images_path_3', data.imageUrls?.scene_images_path_3 || '', 6);  // scene_overview_2 or documents
+    setUrlFieldWithAutoFitFont('scene_images_path_1', data.imageUrls?.scene_images_path_1 || '');  // location_map_screenshot
+    setUrlFieldWithAutoFitFont('scene_images_path_2', data.imageUrls?.scene_images_path_2 || '');  // scene_overview
+    setUrlFieldWithAutoFitFont('scene_images_path_3', data.imageUrls?.scene_images_path_3 || '');  // scene_overview_2 or documents
 
     // Other vehicle photos (3 fields)
-    setUrlFieldWithWrapping('other_vehicle_photo_1', data.imageUrls?.other_vehicle_photo_1 || '', 6);
-    setUrlFieldWithWrapping('other_vehicle_photo_2', data.imageUrls?.other_vehicle_photo_2 || '', 6);
-    setUrlFieldWithWrapping('other_vehicle_photo_3', data.imageUrls?.other_vehicle_photo_3 || '', 6);
+    setUrlFieldWithAutoFitFont('other_vehicle_photo_1', data.imageUrls?.other_vehicle_photo_1 || '');
+    setUrlFieldWithAutoFitFont('other_vehicle_photo_2', data.imageUrls?.other_vehicle_photo_2 || '');
+    setUrlFieldWithAutoFitFont('other_vehicle_photo_3', data.imageUrls?.other_vehicle_photo_3 || '');
 
     // Vehicle damage photos (6 fields)
-    setUrlFieldWithWrapping('vehicle_damage_path_1', data.imageUrls?.vehicle_damage_path_1 || '', 6);
-    setUrlFieldWithWrapping('vehicle_damage_path_2', data.imageUrls?.vehicle_damage_path_2 || '', 6);
-    setUrlFieldWithWrapping('vehicle_damage_path_3', data.imageUrls?.vehicle_damage_path_3 || '', 6);
-    setUrlFieldWithWrapping('vehicle_damage_path_4', data.imageUrls?.vehicle_damage_path_4 || '', 6);
-    setUrlFieldWithWrapping('vehicle_damage_path_5', data.imageUrls?.vehicle_damage_path_5 || '', 6);
-    setUrlFieldWithWrapping('vehicle_damage_path_6', data.imageUrls?.vehicle_damage_path_6 || '', 6);
+    setUrlFieldWithAutoFitFont('vehicle_damage_path_1', data.imageUrls?.vehicle_damage_path_1 || '');
+    setUrlFieldWithAutoFitFont('vehicle_damage_path_2', data.imageUrls?.vehicle_damage_path_2 || '');
+    setUrlFieldWithAutoFitFont('vehicle_damage_path_3', data.imageUrls?.vehicle_damage_path_3 || '');
+    setUrlFieldWithAutoFitFont('vehicle_damage_path_4', data.imageUrls?.vehicle_damage_path_4 || '');
+    setUrlFieldWithAutoFitFont('vehicle_damage_path_5', data.imageUrls?.vehicle_damage_path_5 || '');
+    setUrlFieldWithAutoFitFont('vehicle_damage_path_6', data.imageUrls?.vehicle_damage_path_6 || '');
 
     // ========================================
     // PAGE 13: AI Summary of Accident Data
