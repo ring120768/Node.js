@@ -716,12 +716,25 @@ class AdobePdfFormFillerService {
     setFieldText('detailed_account_of_what_happened', transcriptionText);  // ai_transcription → detailed_account_of_what_happened
 
     // ========================================
-    // PAGES 15-16: DVLA Reports
+    // PAGE 15: AI Eavesdropper (Emergency Audio Recording)
+    // ========================================
+    // Emergency audio transcription from AI Eavesdropper feature (incident.html)
+    // Data source: ai_listening_transcripts table → data.emergencyAudio
+    const emergencyTranscription = data.emergencyAudio?.transcription_text || '';
+    const emergencyTimestamp = data.emergencyAudio?.recorded_at || '';
+
+    setFieldText('emergency_audio_transcription', emergencyTranscription);
+    setFieldText('emergency_recording_timestamp', emergencyTimestamp);
+
+    console.log(`   ✅ Page 15 (Emergency Audio): ${emergencyTranscription ? emergencyTranscription.length + ' chars' : 'No data'}`);
+
+    // ========================================
+    // PAGES 16-17: DVLA Reports
     // ========================================
     if (data.dvla && data.dvla.length > 0) {
       const dvlaInfo = data.dvla[0];
 
-      // PAGE 15: DVLA Report - Driver
+      // PAGE 16: DVLA Report - Driver
       setFieldText('dvla_driver_name', dvlaInfo.driver_name);
       setFieldText('dvla_registration', dvlaInfo.registration_number);
       setFieldText('dvla_make', dvlaInfo.make);
@@ -740,7 +753,7 @@ class AdobePdfFormFillerService {
       setFieldText('dvla_type_approval', dvlaInfo.type_approval);
       setFieldText('dvla_v5c_issued', dvlaInfo.date_of_last_v5c_issued);
 
-      // PAGE 16: DVLA Report - Other Driver (if available)
+      // PAGE 17: DVLA Report - Other Driver (if available)
       if (data.dvla.length > 1) {
         const otherDvla = data.dvla[1];
         setFieldText('other_dvla_name', otherDvla.driver_name);
