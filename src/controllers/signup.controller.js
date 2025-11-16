@@ -269,8 +269,8 @@ async function submitSignup(req, res) {
             throw new Error(`Temp upload not found: ${uploadId}`);
           }
 
-          // Define permanent storage path
-          const permanentPath = tempPath.replace(`temp/${sessionId}/`, `${userId}/`);
+          // Define permanent storage path (consistent with location photo structure)
+          const permanentPath = tempPath.replace(`temp/${sessionId}/`, `users/${userId}/signup/`);
 
           logger.info(`📦 Moving: ${tempPath} → ${permanentPath}`);
 
@@ -289,8 +289,51 @@ async function submitSignup(req, res) {
             .from('user-documents')
             .getPublicUrl(permanentPath);
 
+          logger.info('🔍 DEBUG: About to generate signed URL', {
+            userId,
+            fieldName,
+            permanentPath,
+            publicUrl
+          });
+
+          // Generate signed URL (12 months expiry to match subscription period)
+          const signedUrlExpirySeconds = 31536000; // 365 days (12 months)
+          const { data: signedUrlData, error: signedUrlError } = await supabase.storage
+            .from('user-documents')
+            .createSignedUrl(permanentPath, signedUrlExpirySeconds);
+
+          if (signedUrlError) {
+            logger.error('❌ DEBUG: Signed URL generation FAILED', {
+              error: signedUrlError.message,
+              path: permanentPath,
+              userId,
+              fieldName
+            });
+            throw new Error('Failed to generate signed URL for uploaded file');
+          }
+
+          const signedUrl = signedUrlData.signedUrl;
+          const signedUrlExpiresAt = new Date(Date.now() + (signedUrlExpirySeconds * 1000));
+
+          logger.info('✅ DEBUG: Signed URL generated successfully', {
+            userId,
+            fieldName,
+            signedUrl: signedUrl.substring(0, 100) + '...',
+            expiresAt: signedUrlExpiresAt.toISOString(),
+            expirySeconds: signedUrlExpirySeconds
+          });
+
           // Create document record in user_documents table
-          await imageProcessor.createDocumentRecord({
+          logger.info('🔍 DEBUG: About to call createDocumentRecord with URL fields', {
+            userId,
+            fieldName,
+            public_url: signedUrl ? 'PRESENT' : 'NULL',
+            signed_url: signedUrl ? 'PRESENT' : 'NULL',
+            signed_url_expires_at: signedUrlExpiresAt ? signedUrlExpiresAt.toISOString() : 'NULL',
+            signedUrlLength: signedUrl?.length || 0
+          });
+
+          const documentRecord = await imageProcessor.createDocumentRecord({
             create_user_id: userId,
             document_type: fieldName,
             document_category: 'user_signup',
@@ -303,6 +346,9 @@ async function submitSignup(req, res) {
             mime_type: tempUpload.mime_type,
             file_extension: permanentPath.split('.').pop().toLowerCase(),
             status: 'completed',
+            public_url: signedUrl, // Keep for backwards compatibility
+            signed_url: signedUrl, // NEW: Store in signed_url field for PDF generation
+            signed_url_expires_at: signedUrlExpiresAt.toISOString(), // NEW: Track expiry
             original_checksum_sha256: null, // Checksum from temp upload
             current_checksum_sha256: null,
             metadata: {
@@ -312,6 +358,13 @@ async function submitSignup(req, res) {
               temp_session_id: sessionId,
               moved_from_temp: true
             }
+          });
+
+          logger.info('✅ DEBUG: createDocumentRecord completed', {
+            userId,
+            fieldName,
+            documentId: documentRecord?.id || 'NO_ID',
+            recordCreated: !!documentRecord
           });
 
           // Mark temp upload as claimed
