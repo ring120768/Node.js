@@ -273,11 +273,12 @@ class AdobePdfFormFillerService {
     // Mapping examples:
     //   DB: driving_license_picture → PDF: driving_license_picture
     //   DB: vehicle_front_image → PDF: vehicle_picture_front
-    setFieldText('driving_license_picture', data.imageUrls?.driving_license_picture || '');
-    setFieldText('vehicle_picture_front', data.imageUrls?.vehicle_picture_front || '');
-    setFieldText('vehicle_picture_driver_side', data.imageUrls?.vehicle_picture_driver_side || '');
-    setFieldText('vehicle_picture_passenger_side', data.imageUrls?.vehicle_picture_passenger_side || '');
-    setFieldText('vehicle_picture_back', data.imageUrls?.vehicle_picture_back || '');
+    // Font size limited to 12 to prevent overflow
+    setFieldTextWithMaxFont('driving_license_picture', data.imageUrls?.driving_license_picture || '', 12);
+    setFieldTextWithMaxFont('vehicle_picture_front', data.imageUrls?.vehicle_picture_front || '', 12);
+    setFieldTextWithMaxFont('vehicle_picture_driver_side', data.imageUrls?.vehicle_picture_driver_side || '', 12);
+    setFieldTextWithMaxFont('vehicle_picture_passenger_side', data.imageUrls?.vehicle_picture_passenger_side || '', 12);
+    setFieldTextWithMaxFont('vehicle_picture_back', data.imageUrls?.vehicle_picture_back || '', 12);
 
     // ========================================
     // PAGE 4: Form Metadata & Safety Assessment
@@ -611,27 +612,28 @@ class AdobePdfFormFillerService {
     // ========================================
     // All image URLs now come from user_documents table using ACTUAL PDF field names
     // PDF has 18 total image fields - mapped from database document_type values
+    // Font size limited to 12 to prevent overflow
 
     // Audio recording (1 field)
-    setFieldText('file_url_record_detailed_account_of_what_happened', data.imageUrls?.file_url_record_detailed_account_of_what_happened || '');
+    setFieldTextWithMaxFont('file_url_record_detailed_account_of_what_happened', data.imageUrls?.file_url_record_detailed_account_of_what_happened || '', 12);
 
     // Scene images (3 fields) - includes location screenshot
-    setFieldText('scene_images_path_1', data.imageUrls?.scene_images_path_1 || '');  // location_map_screenshot
-    setFieldText('scene_images_path_2', data.imageUrls?.scene_images_path_2 || '');  // scene_overview
-    setFieldText('scene_images_path_3', data.imageUrls?.scene_images_path_3 || '');  // scene_overview_2 or documents
+    setFieldTextWithMaxFont('scene_images_path_1', data.imageUrls?.scene_images_path_1 || '', 12);  // location_map_screenshot
+    setFieldTextWithMaxFont('scene_images_path_2', data.imageUrls?.scene_images_path_2 || '', 12);  // scene_overview
+    setFieldTextWithMaxFont('scene_images_path_3', data.imageUrls?.scene_images_path_3 || '', 12);  // scene_overview_2 or documents
 
     // Other vehicle photos (3 fields)
-    setFieldText('other_vehicle_photo_1', data.imageUrls?.other_vehicle_photo_1 || '');
-    setFieldText('other_vehicle_photo_2', data.imageUrls?.other_vehicle_photo_2 || '');
-    setFieldText('other_vehicle_photo_3', data.imageUrls?.other_vehicle_photo_3 || '');
+    setFieldTextWithMaxFont('other_vehicle_photo_1', data.imageUrls?.other_vehicle_photo_1 || '', 12);
+    setFieldTextWithMaxFont('other_vehicle_photo_2', data.imageUrls?.other_vehicle_photo_2 || '', 12);
+    setFieldTextWithMaxFont('other_vehicle_photo_3', data.imageUrls?.other_vehicle_photo_3 || '', 12);
 
     // Vehicle damage photos (6 fields)
-    setFieldText('vehicle_damage_path_1', data.imageUrls?.vehicle_damage_path_1 || '');
-    setFieldText('vehicle_damage_path_2', data.imageUrls?.vehicle_damage_path_2 || '');
-    setFieldText('vehicle_damage_path_3', data.imageUrls?.vehicle_damage_path_3 || '');
-    setFieldText('vehicle_damage_path_4', data.imageUrls?.vehicle_damage_path_4 || '');
-    setFieldText('vehicle_damage_path_5', data.imageUrls?.vehicle_damage_path_5 || '');
-    setFieldText('vehicle_damage_path_6', data.imageUrls?.vehicle_damage_path_6 || '');
+    setFieldTextWithMaxFont('vehicle_damage_path_1', data.imageUrls?.vehicle_damage_path_1 || '', 12);
+    setFieldTextWithMaxFont('vehicle_damage_path_2', data.imageUrls?.vehicle_damage_path_2 || '', 12);
+    setFieldTextWithMaxFont('vehicle_damage_path_3', data.imageUrls?.vehicle_damage_path_3 || '', 12);
+    setFieldTextWithMaxFont('vehicle_damage_path_4', data.imageUrls?.vehicle_damage_path_4 || '', 12);
+    setFieldTextWithMaxFont('vehicle_damage_path_5', data.imageUrls?.vehicle_damage_path_5 || '', 12);
+    setFieldTextWithMaxFont('vehicle_damage_path_6', data.imageUrls?.vehicle_damage_path_6 || '', 12);
 
     // ========================================
     // PAGE 13: AI Summary of Accident Data
