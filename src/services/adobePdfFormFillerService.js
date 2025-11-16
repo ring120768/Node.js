@@ -175,15 +175,17 @@ class AdobePdfFormFillerService {
       }
     };
 
-    // Helper for URL fields: enables multiline wrapping for long URLs
-    const setUrlFieldWithWrapping = (fieldName, value, fontSize = 8) => {
+    // Helper for URL fields: enables multiline wrapping and scrolling for long URLs
+    const setUrlFieldWithWrapping = (fieldName, value, fontSize = 6) => {
       try {
         const field = form.getTextField(fieldName);
         if (field && value !== null && value !== undefined) {
           // Enable multiline so URLs wrap across multiple lines
           field.enableMultiline();
+          // Enable scrolling so users can scroll through long URLs
+          field.enableScrolling();
           field.setText(String(value));
-          // Use smaller font size for better fit
+          // Use very small font size (6) for better fit
           field.setFontSize(fontSize);
         }
       } catch (error) {
@@ -289,12 +291,12 @@ class AdobePdfFormFillerService {
     // Mapping examples:
     //   DB: driving_license_picture → PDF: driving_license_picture
     //   DB: vehicle_front_image → PDF: vehicle_picture_front
-    // Multiline enabled with font size 8 for clear visibility of long URLs
-    setUrlFieldWithWrapping('driving_license_picture', data.imageUrls?.driving_license_picture || '', 8);
-    setUrlFieldWithWrapping('vehicle_picture_front', data.imageUrls?.vehicle_picture_front || '', 8);
-    setUrlFieldWithWrapping('vehicle_picture_driver_side', data.imageUrls?.vehicle_picture_driver_side || '', 8);
-    setUrlFieldWithWrapping('vehicle_picture_passenger_side', data.imageUrls?.vehicle_picture_passenger_side || '', 8);
-    setUrlFieldWithWrapping('vehicle_picture_back', data.imageUrls?.vehicle_picture_back || '', 8);
+    // Multiline + scrolling enabled with font size 6 for full URL visibility
+    setUrlFieldWithWrapping('driving_license_picture', data.imageUrls?.driving_license_picture || '', 6);
+    setUrlFieldWithWrapping('vehicle_picture_front', data.imageUrls?.vehicle_picture_front || '', 6);
+    setUrlFieldWithWrapping('vehicle_picture_driver_side', data.imageUrls?.vehicle_picture_driver_side || '', 6);
+    setUrlFieldWithWrapping('vehicle_picture_passenger_side', data.imageUrls?.vehicle_picture_passenger_side || '', 6);
+    setUrlFieldWithWrapping('vehicle_picture_back', data.imageUrls?.vehicle_picture_back || '', 6);
 
     // ========================================
     // PAGE 4: Form Metadata & Safety Assessment
@@ -628,28 +630,28 @@ class AdobePdfFormFillerService {
     // ========================================
     // All image URLs now come from user_documents table using ACTUAL PDF field names
     // PDF has 18 total image fields - mapped from database document_type values
-    // Multiline enabled with font size 8 for clear visibility of long URLs
+    // Multiline + scrolling enabled with font size 6 for full URL visibility
 
     // Audio recording (1 field)
-    setUrlFieldWithWrapping('file_url_record_detailed_account_of_what_happened', data.imageUrls?.file_url_record_detailed_account_of_what_happened || '', 8);
+    setUrlFieldWithWrapping('file_url_record_detailed_account_of_what_happened', data.imageUrls?.file_url_record_detailed_account_of_what_happened || '', 6);
 
     // Scene images (3 fields) - includes location screenshot
-    setUrlFieldWithWrapping('scene_images_path_1', data.imageUrls?.scene_images_path_1 || '', 8);  // location_map_screenshot
-    setUrlFieldWithWrapping('scene_images_path_2', data.imageUrls?.scene_images_path_2 || '', 8);  // scene_overview
-    setUrlFieldWithWrapping('scene_images_path_3', data.imageUrls?.scene_images_path_3 || '', 8);  // scene_overview_2 or documents
+    setUrlFieldWithWrapping('scene_images_path_1', data.imageUrls?.scene_images_path_1 || '', 6);  // location_map_screenshot
+    setUrlFieldWithWrapping('scene_images_path_2', data.imageUrls?.scene_images_path_2 || '', 6);  // scene_overview
+    setUrlFieldWithWrapping('scene_images_path_3', data.imageUrls?.scene_images_path_3 || '', 6);  // scene_overview_2 or documents
 
     // Other vehicle photos (3 fields)
-    setUrlFieldWithWrapping('other_vehicle_photo_1', data.imageUrls?.other_vehicle_photo_1 || '', 8);
-    setUrlFieldWithWrapping('other_vehicle_photo_2', data.imageUrls?.other_vehicle_photo_2 || '', 8);
-    setUrlFieldWithWrapping('other_vehicle_photo_3', data.imageUrls?.other_vehicle_photo_3 || '', 8);
+    setUrlFieldWithWrapping('other_vehicle_photo_1', data.imageUrls?.other_vehicle_photo_1 || '', 6);
+    setUrlFieldWithWrapping('other_vehicle_photo_2', data.imageUrls?.other_vehicle_photo_2 || '', 6);
+    setUrlFieldWithWrapping('other_vehicle_photo_3', data.imageUrls?.other_vehicle_photo_3 || '', 6);
 
     // Vehicle damage photos (6 fields)
-    setUrlFieldWithWrapping('vehicle_damage_path_1', data.imageUrls?.vehicle_damage_path_1 || '', 8);
-    setUrlFieldWithWrapping('vehicle_damage_path_2', data.imageUrls?.vehicle_damage_path_2 || '', 8);
-    setUrlFieldWithWrapping('vehicle_damage_path_3', data.imageUrls?.vehicle_damage_path_3 || '', 8);
-    setUrlFieldWithWrapping('vehicle_damage_path_4', data.imageUrls?.vehicle_damage_path_4 || '', 8);
-    setUrlFieldWithWrapping('vehicle_damage_path_5', data.imageUrls?.vehicle_damage_path_5 || '', 8);
-    setUrlFieldWithWrapping('vehicle_damage_path_6', data.imageUrls?.vehicle_damage_path_6 || '', 8);
+    setUrlFieldWithWrapping('vehicle_damage_path_1', data.imageUrls?.vehicle_damage_path_1 || '', 6);
+    setUrlFieldWithWrapping('vehicle_damage_path_2', data.imageUrls?.vehicle_damage_path_2 || '', 6);
+    setUrlFieldWithWrapping('vehicle_damage_path_3', data.imageUrls?.vehicle_damage_path_3 || '', 6);
+    setUrlFieldWithWrapping('vehicle_damage_path_4', data.imageUrls?.vehicle_damage_path_4 || '', 6);
+    setUrlFieldWithWrapping('vehicle_damage_path_5', data.imageUrls?.vehicle_damage_path_5 || '', 6);
+    setUrlFieldWithWrapping('vehicle_damage_path_6', data.imageUrls?.vehicle_damage_path_6 || '', 6);
 
     // ========================================
     // PAGE 13: AI Summary of Accident Data
