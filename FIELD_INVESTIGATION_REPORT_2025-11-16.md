@@ -38,8 +38,10 @@ checkField('six_point_safety_check', incident.six_point_safety_check_completed =
 **Solution:** Add column to database:
 ```sql
 ALTER TABLE incident_reports
-  ADD COLUMN six_point_safety_check_completed TEXT;
+  ADD COLUMN six_point_safety_check_completed BOOLEAN DEFAULT FALSE;
 ```
+
+**Note:** Column should be BOOLEAN (true/false), not TEXT. Code updated to support both BOOLEAN and legacy TEXT "Yes" for backward compatibility.
 
 **User Note:** "six_point_safety_check Completed is done on the six-point-safety-check.html page"
 
@@ -256,12 +258,12 @@ VALUES ('ee7cfcaf-5810-4c62-b99b-ab0f2291733e', 1, 'Large dent on rear bumper, b
 Execute in Supabase Dashboard:
 
 ```sql
--- Add six-point safety check field
+-- Add six-point safety check field (✅ USER ALREADY ADDED AS BOOLEAN)
 ALTER TABLE incident_reports
-  ADD COLUMN IF NOT EXISTS six_point_safety_check_completed TEXT;
+  ADD COLUMN IF NOT EXISTS six_point_safety_check_completed BOOLEAN DEFAULT FALSE;
 
 COMMENT ON COLUMN incident_reports.six_point_safety_check_completed
-  IS 'Tracks if six-point safety check was completed (from six-point-safety-check.html). Values: "Yes", "No", or NULL';
+  IS 'Tracks if six-point safety check was completed (from six-point-safety-check.html). BOOLEAN: true/false';
 
 -- Add dusk time of day field
 ALTER TABLE incident_reports

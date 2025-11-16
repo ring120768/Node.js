@@ -287,12 +287,12 @@ class AdobePdfFormFillerService {
                    (user.safety_status && user.safety_status.toLowerCase().includes('safe'));
     checkField('are_you_safe', isSafe);  // DB: incident.are_you_safe_and_ready_to_complete_this_form OR user.safety_status → PDF: are_you_safe
     setFieldText('emergency_recording_timestamp', user.safety_status_timestamp);  // DB: user.safety_status_timestamp → PDF: emergency_recording_timestamp
-    checkField('medical_attention_needed', incident.medical_attention_required === 'Yes');  // medical_attention_required → medical_attention_needed
+    checkField('medical_attention_needed', incident.medical_attention_required === true || incident.medical_attention_required === 'Yes');  // DB: BOOLEAN (or legacy TEXT "Yes")
     setFieldText('medical_how_are_you_feeling', incident.final_feeling);  // DB: final_feeling (from safety-check.html) → PDF: medical_how_are_you_feeling
     setFieldText('medical_attention_from_who', incident.medical_attention_from_who);
     setFieldText('further_medical_attention_needed', incident.medical_further_attention);  // medical_further → further_medical_attention_needed
-    checkField('six_point_safety_check', incident.six_point_safety_check_completed === 'Yes');  // DB: six_point_safety_check_completed (from six-point-safety-check.html) → PDF: six_point_safety_check
-    checkField('emergency_contact_made', incident.emergency_contact_made === 'Yes');
+    checkField('six_point_safety_check_completed', incident.six_point_safety_check_completed === true || incident.six_point_safety_check_completed === 'Yes');  // PDF REVISION 3: six_point_safety_check → six_point_safety_check_completed
+    checkField('emergency_contact_made', incident.emergency_contact_made === true || incident.emergency_contact_made === 'Yes');  // DB: BOOLEAN (or legacy TEXT "Yes")
 
     // PAGE 4: Medical and Injury Assessment
     // IMPORTANT: Use incident.medical_symptom_* columns (not old Typeform columns!)
@@ -461,9 +461,11 @@ class AdobePdfFormFillerService {
     //                   dvla_tax_due_date
     // ========================================
 
-    // Usual vehicle checkboxes
-    checkField('usual_vehicle_yes', incident.usual_vehicle === 'yes');
-    checkField('usual_vehicle_no', incident.usual_vehicle === 'no');
+    // PDF REVISION 3: usual_vehicle field structure changed
+    // Old: usual_vehicle_yes / usual_vehicle_no
+    // New: usual_vehicle (checkbox for yes) / driving_your_usual_vehicle_no (checkbox for no)
+    checkField('usual_vehicle', incident.usual_vehicle === 'yes');  // PDF REVISION 3: usual_vehicle_yes → usual_vehicle
+    checkField('driving_your_usual_vehicle_no', incident.usual_vehicle === 'no');  // PDF REVISION 3: usual_vehicle_no → driving_your_usual_vehicle_no
 
     // DVLA lookup registration
     setFieldText('vehicle_license_plate', incident.vehicle_license_plate);
@@ -489,7 +491,7 @@ class AdobePdfFormFillerService {
     checkField('impact_point_rear_passenger', incident.impact_point_rear_passenger);
     checkField('impact_point_rear', incident.impact_point_rear);
     checkField('impact_point_roof', incident.impact_point_roof);
-    checkField('impact_point_undercarriage', incident.impact_point_undercarriage);
+    checkField('impact_point_under_carriage', incident.impact_point_undercarriage);  // PDF REVISION 3: impact_point_undercarriage → impact_point_under_carriage (underscore position changed)
 
     // Damage details (PDF uses hyphens for some fields!)
     checkField('no_damage', incident.no_damage);
@@ -498,10 +500,12 @@ class AdobePdfFormFillerService {
     setFieldText('describe-damage-to-vehicle', incident.describe_damage_to_vehicle);
     setFieldText('describle_the_damage', incident.describle_the_damage);  // DB: describle_the_damage (NEW field with typo) → PDF: describle_the_damage
 
-    // Vehicle driveability (3 checkboxes)
-    checkField('vehicle_driveable_yes', incident.vehicle_driveable === 'yes');
-    checkField('vehicle_driveable_no', incident.vehicle_driveable === 'no');
-    checkField('vehicle_driveable_unsure', incident.vehicle_driveable === 'unsure');
+    // PDF REVISION 3: Vehicle driveability field names changed
+    // Old: vehicle_driveable_yes / vehicle_driveable_no / vehicle_driveable_unsure
+    // New: yes_i_drove_it_away / no_it_needed_to_be_towed / "unsure _did_not_attempt" (with space!)
+    checkField('yes_i_drove_it_away', incident.vehicle_driveable === 'yes');  // PDF REVISION 3
+    checkField('no_it_needed_to_be_towed', incident.vehicle_driveable === 'no');  // PDF REVISION 3
+    checkField('unsure _did_not_attempt', incident.vehicle_driveable === 'unsure');  // PDF REVISION 3 - NOTE: field name has SPACE before "did"
 
     // ========================================
     // PAGE 8: Other Vehicle Information
@@ -536,10 +540,15 @@ class AdobePdfFormFillerService {
     setFieldText('other-drivers-policy-holder-name', incident.other_drivers_policy_holder_name);
     setFieldText('other-drivers-policy-cover-type', incident.other_drivers_policy_cover_type);
 
-    // Other vehicle damage description (from incident_other_vehicles table, max 14pt font)
-    if (data.vehicles && data.vehicles[0] && data.vehicles[0].damage_description) {
-      setFieldTextWithMaxFont('describe_the_damage_to_the_other_vehicle', data.vehicles[0].damage_description, 14);
-    }
+    // PDF REVISION 3: CRITICAL - describe_the_damage_to_the_other_vehicle field REMOVED from PDF
+    // This field does not exist in the revised PDF template. Other vehicle damage data is being
+    // stored in database (incident_other_vehicles.damage_description) but cannot be displayed.
+    // RECOMMENDATION: Ask user to add this field back to PDF or find alternative location.
+    //
+    // COMMENTED OUT until field is restored to PDF:
+    // if (data.vehicles && data.vehicles[0] && data.vehicles[0].damage_description) {
+    //   setFieldTextWithMaxFont('describe_the_damage_to_the_other_vehicle', data.vehicles[0].damage_description, 14);
+    // }
 
     // ========================================
     // PAGE 9: Witnesses

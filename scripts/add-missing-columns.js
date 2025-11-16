@@ -40,8 +40,8 @@ async function addMissingColumns() {
     console.log('3. Go to Table Editor → incident_reports');
     console.log('4. Add these columns:\n');
     console.log('   Column: six_point_safety_check_completed');
-    console.log('   Type: text');
-    console.log('   Default: NULL\n');
+    console.log('   Type: bool');
+    console.log('   Default: false\n');
     console.log('   Column: dusk');
     console.log('   Type: bool');
     console.log('   Default: false\n');
