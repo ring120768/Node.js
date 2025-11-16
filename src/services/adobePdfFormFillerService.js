@@ -269,12 +269,15 @@ class AdobePdfFormFillerService {
     // ========================================
     // PAGE 3: Personal Documentation (Images)
     // ========================================
-    // Note: Image URLs are stored in imageUrls object
-    setFieldText('driving_license_url', data.imageUrls?.driving_license || '');
-    setFieldText('vehicle_front_url', data.imageUrls?.vehicle_front || '');
-    setFieldText('vehicle_driver_side_url', data.imageUrls?.vehicle_driver_side || '');
-    setFieldText('vehicle_passenger_side_url', data.imageUrls?.vehicle_passenger_side || '');
-    setFieldText('vehicle_back_url', data.imageUrls?.vehicle_back || '');
+    // Image URLs from user_documents table, mapped by dataFetcher using ACTUAL PDF field names
+    // Mapping examples:
+    //   DB: driving_license_picture → PDF: driving_license_picture
+    //   DB: vehicle_front_image → PDF: vehicle_picture_front
+    setFieldText('driving_license_picture', data.imageUrls?.driving_license_picture || '');
+    setFieldText('vehicle_picture_front', data.imageUrls?.vehicle_picture_front || '');
+    setFieldText('vehicle_picture_driver_side', data.imageUrls?.vehicle_picture_driver_side || '');
+    setFieldText('vehicle_picture_passenger_side', data.imageUrls?.vehicle_picture_passenger_side || '');
+    setFieldText('vehicle_picture_back', data.imageUrls?.vehicle_picture_back || '');
 
     // ========================================
     // PAGE 4: Form Metadata & Safety Assessment
@@ -604,20 +607,31 @@ class AdobePdfFormFillerService {
     setFieldText('final_feeling', incident.final_feeling);
 
     // ========================================
-    // PAGES 11-12: Evidence Collection (URLs)
+    // PAGES 11-12: Evidence Collection (Images)
     // ========================================
-    setFieldText('documents_url', data.imageUrls?.document || incident.file_url_documents || '');
-    setFieldText('documents_url_1', data.imageUrls?.document_2 || incident.file_url_documents_1 || '');
-    setFieldText('record_account_url', data.imageUrls?.audio_account || incident.file_url_record_detailed_account_of_what_happened || '');
-    setFieldText('what3words_url', data.imageUrls?.what3words || incident.file_url_what3words || '');
-    setFieldText('scene_overview_url', data.imageUrls?.scene_overview || incident.file_url_scene_overview || '');
-    setFieldText('scene_overview_url_1', data.imageUrls?.scene_overview_2 || incident.file_url_scene_overview_1 || '');
-    setFieldText('other_vehicle_url', data.imageUrls?.other_vehicle || incident.file_url_other_vehicle || '');
-    setFieldText('other_vehicle_url_1', data.imageUrls?.other_vehicle_2 || incident.file_url_other_vehicle_1 || '');
-    setFieldText('vehicle_damage_url', data.imageUrls?.vehicle_damage || incident.file_url_vehicle_damage || '');
-    setFieldText('vehicle_damage_url_1', data.imageUrls?.vehicle_damage_2 || incident.file_url_vehicle_damage_1 || '');
-    setFieldText('vehicle_damage_url_2', data.imageUrls?.vehicle_damage_3 || incident.file_url_vehicle_damage_2 || '');
-    setFieldText('spare_url', incident.file_url_spare || '');
+    // All image URLs now come from user_documents table using ACTUAL PDF field names
+    // PDF has 18 total image fields - mapped from database document_type values
+
+    // Audio recording (1 field)
+    setFieldText('file_url_record_detailed_account_of_what_happened', data.imageUrls?.file_url_record_detailed_account_of_what_happened || '');
+
+    // Scene images (3 fields) - includes location screenshot
+    setFieldText('scene_images_path_1', data.imageUrls?.scene_images_path_1 || '');  // location_map_screenshot
+    setFieldText('scene_images_path_2', data.imageUrls?.scene_images_path_2 || '');  // scene_overview
+    setFieldText('scene_images_path_3', data.imageUrls?.scene_images_path_3 || '');  // scene_overview_2 or documents
+
+    // Other vehicle photos (3 fields)
+    setFieldText('other_vehicle_photo_1', data.imageUrls?.other_vehicle_photo_1 || '');
+    setFieldText('other_vehicle_photo_2', data.imageUrls?.other_vehicle_photo_2 || '');
+    setFieldText('other_vehicle_photo_3', data.imageUrls?.other_vehicle_photo_3 || '');
+
+    // Vehicle damage photos (6 fields)
+    setFieldText('vehicle_damage_path_1', data.imageUrls?.vehicle_damage_path_1 || '');
+    setFieldText('vehicle_damage_path_2', data.imageUrls?.vehicle_damage_path_2 || '');
+    setFieldText('vehicle_damage_path_3', data.imageUrls?.vehicle_damage_path_3 || '');
+    setFieldText('vehicle_damage_path_4', data.imageUrls?.vehicle_damage_path_4 || '');
+    setFieldText('vehicle_damage_path_5', data.imageUrls?.vehicle_damage_path_5 || '');
+    setFieldText('vehicle_damage_path_6', data.imageUrls?.vehicle_damage_path_6 || '');
 
     // ========================================
     // PAGE 13: AI Summary of Accident Data
