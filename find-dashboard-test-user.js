@@ -32,7 +32,7 @@ async function findTestUser() {
       signupUsers.forEach(user => {
         console.log(`\n  User: ${user.email || user.create_user_id}`);
         console.log(`  ID: ${user.create_user_id}`);
-        console.log(`  Name: ${user.first_name} ${user.last_name}`);
+        console.log(`  Name: ${user.name} ${user.surname}`);
       });
     }
   }

@@ -791,7 +791,8 @@ class AdobePdfFormFillerService {
       const dvlaInfo = data.dvla[0];
 
       // PAGE 16: DVLA Report - Driver
-      setFieldText('dvla_driver_name', dvlaInfo.driver_name);
+      // Driver info comes from user table (DVLA only has vehicle data)
+      setFieldText('dvla_driver_name', `${user.name || ''} ${user.surname || ''}`.trim());
       setFieldText('dvla_registration', dvlaInfo.registration_number);
       setFieldText('dvla_make', dvlaInfo.make);
       setFieldText('dvla_month_manufacture', dvlaInfo.month_of_manufacture);
@@ -812,7 +813,9 @@ class AdobePdfFormFillerService {
       // PAGE 17: DVLA Report - Other Driver (if available)
       if (data.dvla.length > 1) {
         const otherDvla = data.dvla[1];
-        setFieldText('other_dvla_name', otherDvla.driver_name);
+        // Driver info comes from vehicles array (DVLA only has vehicle data)
+        const otherDriverName = data.vehicles?.[0]?.driver_name || data.currentIncident?.other_driver_name || '';
+        setFieldText('other_dvla_name', otherDriverName);
         setFieldText('other_dvla_registration', otherDvla.registration_number);
         setFieldText('other_dvla_make', otherDvla.make);
         setFieldText('other_dvla_month_manufacture', otherDvla.month_of_manufacture);
@@ -836,7 +839,7 @@ class AdobePdfFormFillerService {
     // ========================================
     // PAGE 17: Legal Documentation and Declaration
     // ========================================
-    setFieldText('Signature70', `${user.driver_name || ''} ${user.driver_surname || ''}`.trim());
+    setFieldText('Signature70', `${user.name || ''} ${user.surname || ''}`.trim());
     setFieldText('Date69_af_date', new Date().toLocaleDateString('en-GB'));
 
     // ========================================
@@ -969,7 +972,8 @@ class AdobePdfFormFillerService {
         this.setFieldValue(form, 'Additional Driver Name', vehicle.driver_name || '');
         this.setFieldValue(form, 'Additional Driver Adress', vehicle.driver_address || ''); // Note: "Adress" matches template typo
         this.setFieldValue(form, 'Additional Driver Mobile', vehicle.driver_phone || '');
-        this.setFieldValue(form, 'Additional Driver email:', vehicle.driver_email || '');
+        // NOTE: driver_email column doesn't exist in incident_other_vehicles table
+        this.setFieldValue(form, 'Additional Driver email:', '');
         this.setFieldValue(form, 'Additional registration Number', vehicle.vehicle_license_plate || '');
         this.setFieldValue(form, 'Additional Make of Vehicle', vehicle.vehicle_make || '');
         this.setFieldValue(form, 'Additional Model of Vehicle', vehicle.vehicle_model || '');

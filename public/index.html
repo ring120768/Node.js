@@ -191,14 +191,15 @@
             box-shadow: 0 4px 12px rgba(0, 0, 0, 0.2);
         }
 
-        .auth-btn.login {
+        .auth-btn.logout {
             background: transparent;
             color: white;
+            display: none; /* Hidden by default, shown when logged in */
         }
 
-        .auth-btn.login:hover {
-            background: white;
-            color: #0B7AB0;
+        .auth-btn.logout:hover {
+            background: rgba(255, 255, 255, 0.2);
+            color: white;
             transform: translateY(-2px);
             box-shadow: 0 6px 16px rgba(255, 255, 255, 0.3);
         }
@@ -504,8 +505,8 @@
 
         <!-- AUTH BUTTONS -->
         <div class="auth-buttons">
-            <button class="auth-btn login" id="loginBtn">
-                🔑 Login
+            <button class="auth-btn logout" id="logoutBtn">
+                🚪 Logout
             </button>
             <button class="auth-btn signup" id="signupBtn">
                 ✨ Sign Up
@@ -724,7 +725,7 @@
             const incidentBtn = document.getElementById('incidentBtn');
             const dashboardBtn = document.getElementById('dashboardBtn');
             const demoBtn = document.getElementById('demoBtn');
-            const loginBtn = document.getElementById('loginBtn');
+            const logoutBtn = document.getElementById('logoutBtn');
             const signupBtn = document.getElementById('signupBtn');
 
             if (incidentBtn) {
@@ -752,13 +753,32 @@
                 console.log('✅ Demo button event listener added');
             }
 
-            if (loginBtn) {
-                loginBtn.addEventListener('click', function(e) {
+            if (logoutBtn) {
+                logoutBtn.addEventListener('click', async function(e) {
                     e.preventDefault();
-                    console.log('🔑 Login button clicked');
-                    window.location.href = '/login-improved.html';
+                    console.log('🚪 Logout button clicked');
+
+                    try {
+                        const response = await fetch('/api/auth/logout', {
+                            method: 'POST',
+                            credentials: 'include'
+                        });
+
+                        if (response.ok) {
+                            console.log('✅ Logout successful');
+                            // Hide logout button, show signup button
+                            logoutBtn.style.display = 'none';
+                            if (signupBtn) signupBtn.style.display = 'inline-block';
+                            // Redirect to landing page
+                            window.location.href = '/index.html';
+                        } else {
+                            console.error('❌ Logout failed');
+                        }
+                    } catch (error) {
+                        console.error('❌ Logout error:', error);
+                    }
                 });
-                console.log('✅ Login button event listener added');
+                console.log('✅ Logout button event listener added');
             }
 
             if (signupBtn) {
@@ -769,6 +789,73 @@
                 });
                 console.log('✅ Signup button event listener added');
             }
+
+            // Check session status and show/hide logout button
+            async function checkSession() {
+                console.log('🔍 Starting session check...');
+                console.log('🔍 Logout button element:', logoutBtn);
+                console.log('🔍 Signup button element:', signupBtn);
+
+                try {
+                    const response = await fetch('/api/auth/session', {
+                        method: 'GET',
+                        credentials: 'include'
+                    });
+
+                    console.log('🔍 Session API response status:', response.status);
+
+                    if (response.ok) {
+                        const data = await response.json();
+                        console.log('🔍 Session API response data:', data);
+
+                        if (data.authenticated && data.user) {
+                            // User is logged in - show logout button, hide signup
+                            console.log('✅ User authenticated:', data.user.email);
+                            console.log('🔍 Setting logout button to display: inline-block');
+                            if (logoutBtn) {
+                                logoutBtn.style.display = 'inline-block';
+                                console.log('🔍 Logout button display after setting:', logoutBtn.style.display);
+                                console.log('🔍 Logout button computed style:', window.getComputedStyle(logoutBtn).display);
+                            }
+                            if (signupBtn) {
+                                signupBtn.style.display = 'none';
+                                console.log('🔍 Signup button display after setting:', signupBtn.style.display);
+                            }
+                        } else {
+                            // User not logged in - hide logout button, show signup
+                            console.log('ℹ️ User not authenticated - data.authenticated:', data.authenticated);
+                            if (logoutBtn) {
+                                logoutBtn.style.display = 'none';
+                            }
+                            if (signupBtn) {
+                                signupBtn.style.display = 'inline-block';
+                            }
+                        }
+                    } else {
+                        // Error checking session - assume not logged in
+                        console.log('ℹ️ Session check failed with status:', response.status);
+                        if (logoutBtn) {
+                            logoutBtn.style.display = 'none';
+                        }
+                        if (signupBtn) {
+                            signupBtn.style.display = 'inline-block';
+                        }
+                    }
+                } catch (error) {
+                    console.error('❌ Session check error:', error);
+                    // On error, hide logout button, show signup
+                    if (logoutBtn) {
+                        logoutBtn.style.display = 'none';
+                    }
+                    if (signupBtn) {
+                        signupBtn.style.display = 'inline-block';
+                    }
+                }
+            }
+
+            // Run session check on page load
+            console.log('🔍 About to run checkSession on page load...');
+            checkSession();
 
             console.log('✅ Page fully loaded');
             
@@ -803,9 +890,10 @@
                         e.preventDefault();
                         window.location.href = '/demo.html';
                     }
-                } else if (target.matches('.auth-btn.login')) {
+                } else if (target.matches('.auth-btn.logout')) {
                     e.preventDefault();
-                    window.location.href = '/login-improved.html';
+                    // Logout handler already attached above, this is just fallback
+                    if (logoutBtn) logoutBtn.click();
                 } else if (target.matches('.auth-btn.signup')) {
                     e.preventDefault();
                     window.location.href = '/signup-form.html';

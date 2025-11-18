@@ -280,7 +280,7 @@
             try {
                 // Save to Supabase if we have necessary data
                 if (incidentData.userId || incidentData.what3wordsStoragePath) {
-                    const response = await fetch('/api/update-safety-status', {
+                    const response = await fetch('/api/safety-status', {
                         method: 'POST',
                         credentials: 'include', // Send authentication cookies
                         headers: {

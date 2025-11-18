@@ -126,7 +126,8 @@ class WitnessVehiclePdfService {
       this.setFieldValue(form, 'Additional Driver Name', vehicleData.driver_name || '');
       this.setFieldValue(form, 'Additional Driver Adress', vehicleData.driver_address || ''); // Note: template has typo "Adress"
       this.setFieldValue(form, 'Additional Driver Mobile', vehicleData.driver_phone || '');
-      this.setFieldValue(form, 'Additional Driver email:', vehicleData.driver_email || '');
+      // NOTE: driver_email column doesn't exist in incident_other_vehicles table
+      this.setFieldValue(form, 'Additional Driver email:', '');
       this.setFieldValue(form, 'Additional registration Number', vehicleData.vehicle_license_plate || '');
       this.setFieldValue(form, 'Additional Make of Vehicle', vehicleData.vehicle_make || '');
       this.setFieldValue(form, 'Additional Model of Vehicle', vehicleData.vehicle_model || '');

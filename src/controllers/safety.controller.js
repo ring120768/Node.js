@@ -19,15 +19,16 @@ function mapSafetyStatusToBoolean(safetyStatus) {
 
   return safeOptions.includes(safetyStatus);
 }
-
 /**
  * Save safety status assessment
- * POST /api/update-safety-status
+ * POST /api/safety-status
  */
 async function updateSafetyStatus(req, res) {
   try {
+    // Use authenticated user from middleware (set by requireAuth)
+    const userId = req.userId;
+
     const {
-      userId,
       safetyStatus,
       areYouSafe,
       timestamp,
@@ -40,6 +41,17 @@ async function updateSafetyStatus(req, res) {
     // Validation
     if (!userId) {
       return res.status(400).json({ error: 'userId is required' });
+    }
+
+    // Security: Validate that request body userId (if sent) matches authenticated user
+    if (req.body.userId && req.body.userId !== userId) {
+      logger.warn('Authorization failed: attempting to update different user', {
+        authenticated: userId,
+        requested: req.body.userId,
+        ip: req.ip,
+        userAgent: req.get('user-agent')
+      });
+      return res.status(403).json({ error: 'Forbidden: Cannot modify another user\'s safety status' });
     }
 
     if (!safetyStatus) {
@@ -108,7 +120,6 @@ async function updateSafetyStatus(req, res) {
     res.status(500).json({ error: 'Internal server error' });
   }
 }
-
 /**
  * Get safety status for a user
  * GET /api/safety-status/:userId
@@ -119,6 +130,17 @@ async function getSafetyStatus(req, res) {
 
     if (!userId) {
       return res.status(400).json({ error: 'userId is required' });
+    }
+
+    // Security: Validate that authenticated user can only access their own safety status
+    if (req.userId && req.userId !== userId) {
+      logger.warn('Authorization failed: attempting to access different user\'s safety status', {
+        authenticated: req.userId,
+        requested: userId,
+        ip: req.ip,
+        userAgent: req.get('user-agent')
+      });
+      return res.status(403).json({ error: 'Forbidden: Cannot access another user\'s safety status' });
     }
 
     const { data, error } = await supabase
@@ -151,9 +173,69 @@ async function getSafetyStatus(req, res) {
     res.status(500).json({ error: 'Internal server error' });
   }
 }
+/**
+ * Get current user's safety status
+ * Requires authentication - uses req.userId from requireAuth middleware
+ */
+async function getMyStatus(req, res) {
+  try {
+    // Use authenticated user from middleware
+    const userId = req.userId;
+
+    if (!userId) {
+      return res.status(401).json({
+        success: false,
+        error: 'Authentication required'
+      });
+    }
+
+    logger.info('Fetching safety status for user', { userId });
+
+    const { data, error } = await supabase
+      .from('user_signup')
+      .select('are_you_safe, safety_status, safety_status_timestamp')
+      .eq('create_user_id', userId)
+      .single();
+
+    if (error) {
+      logger.error('Supabase error fetching safety status:', error);
+      return res.status(500).json({
+        success: false,
+        error: 'Failed to fetch safety status'
+      });
+    }
+
+    if (!data) {
+      return res.status(404).json({
+        success: false,
+        error: 'User not found'
+      });
+    }
+
+    // Return safety status with completion indicator
+    res.status(200).json({
+      success: true,
+      data: {
+        userId,
+        areYouSafe: data.are_you_safe,
+        safetyStatus: data.safety_status,
+        timestamp: data.safety_status_timestamp,
+        isComplete: data.are_you_safe === true // Explicitly check if safety check is complete
+      }
+    });
+
+  } catch (error) {
+    logger.error('Error in getMyStatus:', error);
+    res.status(500).json({
+      success: false,
+      error: 'Internal server error'
+    });
+  }
+}
 
 module.exports = {
   updateSafetyStatus,
   getSafetyStatus,
+  getMyStatus,
   mapSafetyStatusToBoolean
 };

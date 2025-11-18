@@ -170,7 +170,7 @@ router.post('/delete-data', flexibleAuth, async (req, res) => {
     // Get user info before deletion (for email)
     const { data: user } = await supabase
       .from('user_signup')
-      .select('email, first_name, last_name, subscription_end_date')
+      .select('email, name, surname, subscription_end_date')
       .eq('create_user_id', userId)
       .single();
 
@@ -191,7 +191,7 @@ router.post('/delete-data', flexibleAuth, async (req, res) => {
           'Your Data Has Been Deleted - Car Crash Lawyer AI',
           'gdpr-data-deleted',
           {
-            userName: `${user.first_name || 'User'} ${user.last_name || ''}`.trim(),
+            userName: `${user.name || 'User'} ${user.surname || ''}`.trim(),
             deletionDate: new Date().toLocaleDateString('en-GB', {
               day: '2-digit',
               month: 'long',
@@ -270,7 +270,7 @@ router.post('/delete-account', flexibleAuth, async (req, res) => {
     // Get user info before deletion (for email)
     const { data: user } = await supabase
       .from('user_signup')
-      .select('email, first_name, last_name')
+      .select('email, name, surname')
       .eq('create_user_id', userId)
       .single();
 
@@ -291,7 +291,7 @@ router.post('/delete-account', flexibleAuth, async (req, res) => {
           'Account Deletion Confirmed - Car Crash Lawyer AI',
           'gdpr-account-deleted',
           {
-            userName: `${user.first_name || 'User'} ${user.last_name || ''}`.trim(),
+            userName: `${user.name || 'User'} ${user.surname || ''}`.trim(),
             deletionDate: new Date().toLocaleDateString('en-GB', {
               day: '2-digit',
               month: 'long',

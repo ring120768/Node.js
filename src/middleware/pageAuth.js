@@ -71,7 +71,7 @@ async function pageAuth(req, res, next) {
       });
 
       // Redirect to login page (browser will follow automatically)
-      const redirectUrl = `/login-improved.html?redirect=${encodeURIComponent(req.path)}`;
+      const redirectUrl = `/login.html?redirect=${encodeURIComponent(req.path)}`;
       return res.redirect(302, redirectUrl);
     }
 
@@ -86,7 +86,7 @@ async function pageAuth(req, res, next) {
       });
 
       // Redirect to login page (session expired)
-      const redirectUrl = `/login-improved.html?redirect=${encodeURIComponent(req.path)}`;
+      const redirectUrl = `/login.html?redirect=${encodeURIComponent(req.path)}`;
       return res.redirect(302, redirectUrl);
     }
 
@@ -109,7 +109,7 @@ async function pageAuth(req, res, next) {
     logger.error('Page auth middleware error:', error);
 
     // Redirect to login page (server error)
-    return res.redirect(302, '/login-improved.html');
+    return res.redirect(302, '/login.html');
   }
 }
 

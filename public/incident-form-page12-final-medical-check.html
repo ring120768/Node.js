@@ -755,6 +755,28 @@
           console.log('📦 Response data:', result);
 
           if (!response.ok) {
+            // Check for safety check requirement
+            if (result.code === 'SAFETY_CHECK_REQUIRED') {
+              const safetyCheckUrl = result.action?.url || '/safety-check.html';
+              const confirmed = confirm(
+                `⚠️ Safety Check Required\n\n` +
+                `${result.message || 'You must complete the safety check before submitting an incident report.'}\n\n` +
+                `Click OK to go to the safety check page now.`
+              );
+
+              if (confirmed) {
+                // Save current form data before redirecting
+                sessionStorage.setItem('return_to_incident_form', 'true');
+                window.location.href = safetyCheckUrl;
+                return;
+              } else {
+                // User cancelled - re-enable button
+                submitBtn.disabled = false;
+                submitBtn.textContent = '📝 Submit Incident Report';
+                return;
+              }
+            }
+
             throw new Error(result.error || 'Failed to submit incident report');
           }
 

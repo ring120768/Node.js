@@ -88,6 +88,21 @@ async function submitIncidentForm(req, res) {
         error: insertError.message,
         code: insertError.code
       });
+
+      // P0001 = Database trigger exception (safety check required)
+      if (insertError.code === 'P0001' && insertError.message?.includes('safety check')) {
+        return res.status(400).json({
+          success: false,
+          error: 'Safety check required',
+          message: 'You must complete the safety check before submitting an incident report. Please visit the safety check page first.',
+          code: 'SAFETY_CHECK_REQUIRED',
+          action: {
+            url: '/safety-check.html',
+            label: 'Complete Safety Check'
+          }
+        });
+      }
+
       return res.status(500).json({
         success: false,
         error: 'Failed to save incident report',

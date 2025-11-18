@@ -41,14 +41,40 @@ async function getEmergencyContact(req, res) {
 
     logger.info('Fetching emergency contact', { userId });
 
+    // DEBUG: Log query details before execution
+    logger.info('About to execute Supabase query', {
+      userId,
+      table: 'user_signup',
+      columns: 'emergency_contact, name, surname',
+      filter: 'create_user_id'
+    });
+
     const { data, error } = await supabase
       .from('user_signup')
-      .select('emergency_contact_number, emergency_contact, first_name, last_name')
+      .select('emergency_contact, name, surname')
       .eq('create_user_id', userId)
       .single();
 
+    // DEBUG: Log query results
+    logger.info('Supabase query completed', {
+      userId,
+      hasData: !!data,
+      hasError: !!error,
+      errorDetails: error ? JSON.stringify(error) : 'none',
+      dataKeys: data ? Object.keys(data) : 'none',
+      dataValues: data ? JSON.stringify(data) : 'none'
+    });
+
     if (error) {
       logger.error('Error fetching emergency contact:', error);
+      // DEBUG: Log detailed error structure
+      logger.error('Full error object:', {
+        code: error.code,
+        message: error.message,
+        details: error.details,
+        hint: error.hint,
+        fullError: JSON.stringify(error)
+      });
       return sendError(res, 404, 'User not found', 'USER_NOT_FOUND');
     }
 
@@ -57,8 +83,8 @@ async function getEmergencyContact(req, res) {
     }
 
     // Parse emergency_contact if it's in pipe-delimited format
-    let contactNumber = data.emergency_contact_number;
-    if (!contactNumber && data.emergency_contact) {
+    let contactNumber = null;
+    if (data.emergency_contact) {
       // Parse pipe-delimited format: "Name | Phone | Email | Company"
       if (data.emergency_contact.includes('|')) {
         const parts = data.emergency_contact.split('|').map(part => part.trim());
@@ -68,7 +94,7 @@ async function getEmergencyContact(req, res) {
       }
     }
 
-    const userName = `${data.first_name || ''} ${data.last_name || ''}`.trim() || 'User';
+    const userName = `${data.name || ''} ${data.surname || ''}`.trim() || 'User';
 
     await gdprService.logActivity(userId, 'EMERGENCY_CONTACT_ACCESSED', {
       has_contact: !!contactNumber,
@@ -136,7 +162,7 @@ async function updateEmergencyContact(req, res) {
     const { data, error } = await supabase
       .from('user_signup')
       .update({
-        emergency_contact_number: emergencyContact,
+        emergency_contact: emergencyContact,
         updated_at: new Date().toISOString()
       })
       .eq('create_user_id', userId)
@@ -208,7 +234,7 @@ async function getEmergencyContacts(req, res) {
 
     const { data, error } = await supabase
       .from('user_signup')
-      .select('emergency_contact, emergency_contact_number, recovery_breakdown_number')
+      .select('emergency_contact, recovery_breakdown_number')
       .eq('create_user_id', userId)
       .single();
 
@@ -218,8 +244,8 @@ async function getEmergencyContacts(req, res) {
     }
 
     // Parse emergency_contact if it's in pipe-delimited format
-    let emergencyContactNumber = data.emergency_contact_number;
-    if (!emergencyContactNumber && data.emergency_contact) {
+    let emergencyContactNumber = null;
+    if (data.emergency_contact) {
       emergencyContactNumber = parseEmergencyContact(data.emergency_contact);
       logger.info('Parsed emergency contact from pipe-delimited format', {
         original: data.emergency_contact,

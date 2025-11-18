@@ -47,8 +47,8 @@ async function deleteExpiredAccounts() {
       id,
       auth_user_id,
       email,
-      first_name,
-      last_name,
+      name,
+      surname,
       subscription_end_date,
       subscription_status
     `)

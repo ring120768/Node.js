@@ -263,7 +263,7 @@ async function exportData(req, res) {
         'Your Data Export is Ready - Car Crash Lawyer AI',
         'gdpr-data-exported',
         {
-          userName: `${user.first_name || 'User'} ${user.last_name || ''}`.trim(),
+          userName: `${user.name || 'User'} ${user.surname || ''}`.trim(),
           exportDate: new Date().toLocaleDateString('en-GB', {
             day: '2-digit',
             month: 'long',

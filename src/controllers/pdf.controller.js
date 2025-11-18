@@ -49,7 +49,7 @@ function prepareFormDataForRestAPI(allData) {
     // Personal Details
     formData.name = user.name;
     formData.surname = user.surname;
-    formData.email = user.driver_email || user.email;
+    formData.email = user.email;
     formData.mobile = user.mobile;
     formData.street = user.street_address;
     formData.town = user.town;
@@ -332,7 +332,7 @@ async function generateUserPDF(create_user_id, source = 'direct') {
 
   const allData = await fetchAllData(create_user_id);
 
-  if (!allData.user || !allData.user.driver_email) {
+  if (!allData.user || !allData.user.email) {
     throw new Error('User not found or missing email');
   }
 
@@ -382,7 +382,7 @@ async function generateUserPDF(create_user_id, source = 'direct') {
   }
 
   const storedForm = await storeCompletedForm(create_user_id, pdfBuffer, allData);
-  const emailResult = await sendEmails(allData.user.driver_email, pdfBuffer, create_user_id);
+  const emailResult = await sendEmails(allData.user.email, pdfBuffer, create_user_id);
 
   if (storedForm.id && !storedForm.id.startsWith('temp-') && !storedForm.id.startsWith('error-')) {
     await supabase

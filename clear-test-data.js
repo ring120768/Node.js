@@ -11,7 +11,9 @@
  * - incident_witnesses
  * - temp_uploads
  * - ai_transcription
- * - Supabase Storage files
+ * - ai_analysis (NEW - Pages 14-15 data)
+ * - ai_listening_transcripts (NEW - Page 18 data)
+ * - Supabase Storage files (automated cleanup)
  *
  * USE WITH CAUTION - Data deletion is permanent!
  */
@@ -38,6 +40,9 @@ async function clearTestData() {
   console.log('\n╔════════════════════════════════════════════════════════════════╗');
   console.log('║              SUPABASE TEST DATA CLEANUP                        ║');
   console.log('╚════════════════════════════════════════════════════════════════╝\n');
+
+  // Check for --force flag
+  const forceMode = process.argv.includes('--force') || process.argv.includes('-f');
 
   console.log('⚠️  WARNING: This will DELETE ALL test data from Supabase!\n');
 
@@ -74,6 +79,14 @@ async function clearTestData() {
       .from('incident_witnesses')
       .select('*', { count: 'exact', head: true });
 
+    const { count: aiAnalysisCount } = await supabase
+      .from('ai_analysis')
+      .select('*', { count: 'exact', head: true });
+
+    const { count: aiListeningCount } = await supabase
+      .from('ai_listening_transcripts')
+      .select('*', { count: 'exact', head: true });
+
     console.log('Found records to delete:');
     console.log(`  - user_signup: ${signupCount || 0}`);
     console.log(`  - user_documents: ${documentsCount || 0}`);
@@ -82,12 +95,15 @@ async function clearTestData() {
     console.log(`  - incident_witnesses: ${witnessesCount || 0}`);
     console.log(`  - temp_uploads: ${tempCount || 0}`);
     console.log(`  - ai_transcription: ${transcriptionCount || 0}`);
+    console.log(`  - ai_analysis: ${aiAnalysisCount || 0}`);
+    console.log(`  - ai_listening_transcripts: ${aiListeningCount || 0}`);
     console.log('');
 
     const totalRecords = (signupCount || 0) + (documentsCount || 0) +
                          (incidentsCount || 0) + (tempCount || 0) +
                          (transcriptionCount || 0) + (otherVehiclesCount || 0) +
-                         (witnessesCount || 0);
+                         (witnessesCount || 0) + (aiAnalysisCount || 0) +
+                         (aiListeningCount || 0);
 
     if (totalRecords === 0) {
       console.log('✅ No test data found - database is already clean!\n');
@@ -97,16 +113,20 @@ async function clearTestData() {
 
     console.log(`📊 TOTAL: ${totalRecords} records will be PERMANENTLY DELETED\n`);
 
-    // Step 2: Get confirmation
-    const answer = await question('❓ Type "DELETE" to confirm (or anything else to cancel): ');
+    // Step 2: Get confirmation (skip if --force flag)
+    if (!forceMode) {
+      const answer = await question('❓ Type "DELETE" to confirm (or anything else to cancel): ');
 
-    if (answer.trim() !== 'DELETE') {
-      console.log('\n✅ Cancelled - No data was deleted\n');
-      rl.close();
-      return;
+      if (answer.trim() !== 'DELETE') {
+        console.log('\n✅ Cancelled - No data was deleted\n');
+        rl.close();
+        return;
+      }
+    } else {
+      console.log('🚀 FORCE MODE: Skipping confirmation (--force flag detected)\n');
     }
 
-    console.log('\n🗑️  DELETING DATA...\n');
+    console.log('🗑️  DELETING DATA...\n');
 
     // Step 3: Delete in correct order (respecting foreign keys)
     let deletedCount = 0;
@@ -137,6 +157,34 @@ async function clearTestData() {
     } else {
       console.log(`   ✅ Deleted ${transcriptionDeleted || 0} ai_transcription records`);
       deletedCount += (transcriptionDeleted || 0);
+    }
+
+    // 3b2. Delete ai_analysis (references user_signup) - Pages 14-15
+    console.log('🗑️  Deleting ai_analysis...');
+    const { error: aiAnalysisError, count: aiAnalysisDeleted } = await supabase
+      .from('ai_analysis')
+      .delete({ count: 'exact' })
+      .neq('id', '00000000-0000-0000-0000-000000000000');
+
+    if (aiAnalysisError) {
+      console.error('❌ Error deleting ai_analysis:', aiAnalysisError.message);
+    } else {
+      console.log(`   ✅ Deleted ${aiAnalysisDeleted || 0} ai_analysis records`);
+      deletedCount += (aiAnalysisDeleted || 0);
+    }
+
+    // 3b3. Delete ai_listening_transcripts (references user_signup) - Page 18
+    console.log('🗑️  Deleting ai_listening_transcripts...');
+    const { error: aiListeningError, count: aiListeningDeleted } = await supabase
+      .from('ai_listening_transcripts')
+      .delete({ count: 'exact' })
+      .neq('id', '00000000-0000-0000-0000-000000000000');
+
+    if (aiListeningError) {
+      console.error('❌ Error deleting ai_listening_transcripts:', aiListeningError.message);
+    } else {
+      console.log(`   ✅ Deleted ${aiListeningDeleted || 0} ai_listening_transcripts records`);
+      deletedCount += (aiListeningDeleted || 0);
     }
 
     // 3c. Delete user_documents (references user_signup and incident_reports)
@@ -209,22 +257,89 @@ async function clearTestData() {
       deletedCount += (signupDeleted || 0);
     }
 
-    // Step 4: Clean up Supabase Storage (optional but recommended)
-    console.log('\n🗑️  Cleaning Supabase Storage...');
-    console.log('   ℹ️  Storage cleanup requires manual verification in Supabase Dashboard');
-    console.log('   → https://supabase.com/dashboard → Storage → user-documents bucket');
-    console.log('   → Delete folders manually: users/, temp/');
+    // Step 4: Clean up Supabase Storage buckets
+    console.log('\n🗑️  Cleaning Supabase Storage buckets...');
+
+    let storageFilesDeleted = 0;
+
+    // 4a. List and delete all files in user-documents bucket
+    console.log('🗑️  Scanning user-documents bucket...');
+    try {
+      const { data: bucketFiles, error: listError } = await supabase.storage
+        .from('user-documents')
+        .list('', { limit: 1000, sortBy: { column: 'name', order: 'asc' } });
+
+      if (listError) {
+        console.error('   ❌ Error listing files:', listError.message);
+      } else if (bucketFiles && bucketFiles.length > 0) {
+        console.log(`   Found ${bucketFiles.length} files/folders to delete`);
+
+        // Delete each file/folder
+        for (const file of bucketFiles) {
+          const { error: deleteError } = await supabase.storage
+            .from('user-documents')
+            .remove([file.name]);
+
+          if (deleteError) {
+            console.error(`   ❌ Error deleting ${file.name}:`, deleteError.message);
+          } else {
+            storageFilesDeleted++;
+          }
+        }
+
+        console.log(`   ✅ Deleted ${storageFilesDeleted} storage items from user-documents`);
+      } else {
+        console.log('   ✅ user-documents bucket is already empty');
+      }
+    } catch (error) {
+      console.error('   ❌ Storage cleanup error:', error.message);
+    }
+
+    // 4b. List and delete all files in incident-audio bucket
+    console.log('🗑️  Scanning incident-audio bucket...');
+    try {
+      const { data: audioBucketFiles, error: audioListError } = await supabase.storage
+        .from('incident-audio')
+        .list('', { limit: 1000, sortBy: { column: 'name', order: 'asc' } });
+
+      if (audioListError) {
+        console.error('   ❌ Error listing audio files:', audioListError.message);
+      } else if (audioBucketFiles && audioBucketFiles.length > 0) {
+        console.log(`   Found ${audioBucketFiles.length} audio files/folders to delete`);
+
+        let audioDeleted = 0;
+        for (const file of audioBucketFiles) {
+          const { error: deleteError } = await supabase.storage
+            .from('incident-audio')
+            .remove([file.name]);
+
+          if (deleteError) {
+            console.error(`   ❌ Error deleting ${file.name}:`, deleteError.message);
+          } else {
+            audioDeleted++;
+          }
+        }
+
+        console.log(`   ✅ Deleted ${audioDeleted} storage items from incident-audio`);
+        storageFilesDeleted += audioDeleted;
+      } else {
+        console.log('   ✅ incident-audio bucket is already empty');
+      }
+    } catch (error) {
+      console.error('   ❌ Audio storage cleanup error:', error.message);
+    }
 
     // Step 5: Summary
     console.log('\n╔════════════════════════════════════════════════════════════════╗');
     console.log('║                      CLEANUP COMPLETE                          ║');
     console.log('╚════════════════════════════════════════════════════════════════╝\n');
 
-    console.log(`✅ Successfully deleted ${deletedCount} database records\n`);
+    console.log(`✅ Successfully deleted ${deletedCount} database records`);
+    console.log(`✅ Successfully deleted ${storageFilesDeleted} storage files\n`);
 
     console.log('📋 NEXT STEPS:\n');
-    console.log('1. ✅ Database tables cleaned');
-    console.log('2. ⚠️  Manually clean Storage bucket (see URL above)');
+    console.log('1. ✅ Database tables cleaned (9 tables)');
+    console.log('2. ✅ Storage buckets cleaned (user-documents + incident-audio)');
     console.log('3. ✅ Ready for fresh verification testing\n');
 
     console.log('🔄 VERIFICATION TESTING:\n');
@@ -238,10 +353,23 @@ async function clearTestData() {
     console.log('  2. Run: node check-incident-photos.js');
     console.log('  3. Expected: All 14 images with signed_url\n');
 
-    console.log('Complete Test (19 images total):');
-    console.log('  1. Complete both tests above');
+    console.log('Pages 13-18 Implementation (AI Content):');
+    console.log('  1. Navigate to transcription-status.html');
+    console.log('  2. Create transcription content (Page 13)');
+    console.log('  3. Click "Generate AI Analysis" button (Pages 14-15)');
+    console.log('  4. Run: node scripts/verify-pages-13-18-implementation.js [user-uuid]');
+    console.log('  5. Expected: 12/12 tests passing (100%)\n');
+
+    console.log('Complete PDF Generation Test (ALL 18 Pages):');
+    console.log('  1. Complete all tests above (signup + incident + AI content)');
     console.log('  2. Verify all 19 images have signed URLs');
-    console.log('  3. Test PDF generation with: node test-form-filling.js [user-uuid]\n');
+    console.log('  3. Generate PDF: node test-form-filling.js [user-uuid]');
+    console.log('  4. Verify PDF contains:');
+    console.log('     - Pages 1-12: All form data');
+    console.log('     - Page 13: User transcription text');
+    console.log('     - Page 14: Comprehensive AI narrative (800-1200 words)');
+    console.log('     - Page 15: Key points + next steps');
+    console.log('     - Page 18: Emergency audio transcription (text only)\n');
 
   } catch (error) {
     console.error('\n❌ Unexpected error:', error.message);

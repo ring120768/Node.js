@@ -13,7 +13,7 @@ const supabase = createClient(
 
   const { data, error } = await supabase
     .from('user_signup')
-    .select('create_user_id, driver_name, driver_surname, driver_email, created_at')
+    .select('create_user_id, name, surname, email, created_at')
     .order('created_at', { ascending: false })
     .limit(5);
 
@@ -26,7 +26,7 @@ const supabase = createClient(
   } else {
     console.log(`✅ Found ${data.length} users:\n`);
     data.forEach((u, i) => {
-      console.log(`${i+1}. ${u.driver_name} ${u.driver_surname} (${u.driver_email})`);
+      console.log(`${i+1}. ${u.name} ${u.surname} (${u.email})`);
       console.log(`   ID: ${u.create_user_id}`);
       console.log(`   Created: ${new Date(u.created_at).toLocaleString()}\n`);
     });

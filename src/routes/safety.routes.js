@@ -1,12 +1,9 @@
 const express = require('express');
 const router = express.Router();
-const { authenticateToken } = require('../middleware/auth');
+const { requireAuth } = require('../middleware/authMiddleware');
 
-// Import controller functions directly to avoid timing issues
+// Import controller functions
 const safetyController = require('../controllers/safety.controller');
-
-// Debug: Check if controller functions are properly loaded
-console.log('Safety Controller Methods:', Object.keys(safetyController));
 
 /**
  * Safety Status Routes
@@ -16,38 +13,23 @@ console.log('Safety Controller Methods:', Object.keys(safetyController));
 /**
  * POST /api/safety-status
  * Update safety status for a user
- * Body: { userId, safetyStatus, areYouSafe, timestamp, location, what3words, what3wordsStoragePath, address }
+ * Body: { safetyStatus, areYouSafe, timestamp, location, what3words, what3wordsStoragePath, address }
+ * Requires authentication
  */
-router.post('/safety-status', authenticateToken, (req, res) => {
-  if (typeof safetyController.updateSafetyStatus !== 'function') {
-    console.error('updateSafetyStatus is not a function:', typeof safetyController.updateSafetyStatus);
-    return res.status(500).json({ error: 'Controller method not available' });
-  }
-  return safetyController.updateSafetyStatus(req, res);
-});
+router.post('/safety-status', requireAuth, safetyController.updateSafetyStatus);
+
+/**
+ * GET /api/safety-status/me
+ * Get current user's safety status
+ * Requires authentication
+ */
+router.get('/safety-status/me', requireAuth, safetyController.getMyStatus);
 
 /**
  * GET /api/safety-status/:userId
  * Get current safety status for a user
+ * Requires authentication
  */
-router.get('/safety-status/:userId', authenticateToken, (req, res) => {
-  if (typeof safetyController.getSafetyStatus !== 'function') {
-    console.error('getSafetyStatus is not a function:', typeof safetyController.getSafetyStatus);
-    return res.status(500).json({ error: 'Controller method not available' });
-  }
-  return safetyController.getSafetyStatus(req, res);
-});
-
-/**
- * POST /api/update-safety-status (Legacy alias)
- * Redirect to new endpoint
- */
-router.post('/update-safety-status', authenticateToken, (req, res) => {
-  if (typeof safetyController.updateSafetyStatus !== 'function') {
-    console.error('updateSafetyStatus is not a function:', typeof safetyController.updateSafetyStatus);
-    return res.status(500).json({ error: 'Controller method not available' });
-  }
-  return safetyController.updateSafetyStatus(req, res);
-});
+router.get('/safety-status/:userId', requireAuth, safetyController.getSafetyStatus);
 
 module.exports = router;

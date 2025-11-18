@@ -39,7 +39,7 @@ async function testDashboardData() {
 
   const { data: users, error: usersError } = await supabase
     .from('user_signup')
-    .select('create_user_id, email, first_name, last_name')
+    .select('create_user_id, email, name, surname')
     .not('create_user_id', 'is', null)
     .limit(5);
 
@@ -58,7 +58,7 @@ async function testDashboardData() {
 
   const { data: profile, error: profileError } = await supabase
     .from('user_signup')
-    .select('first_name, last_name, phone, email, vehicle_registration_number, make, model, colour, created_at')
+    .select('name, surname, phone, email, vehicle_registration_number, make, model, colour, created_at')
     .eq('create_user_id', testUser.create_user_id)
     .single();
 
@@ -66,7 +66,7 @@ async function testDashboardData() {
     console.log(colors.red, `❌ Profile fetch failed: ${profileError.message}`);
   } else {
     console.log(colors.green, '✅ Profile data loaded');
-    console.log(colors.reset, '   Name:', profile.first_name, profile.last_name);
+    console.log(colors.reset, '   Name:', profile.name, profile.surname);
     console.log('   Vehicle:', profile.make || 'Not set', profile.model || '');
   }
 

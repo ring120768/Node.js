@@ -1,21 +1,23 @@
 # Quick Status - Upload Fixes
 
-**Last Updated:** 2025-11-16 10:15 GMT
-**Status:** ✅ All fixes deployed, clean retest ready
+**Last Updated:** 2025-11-16 13:00 GMT
+**Status:** ✅ Signup verified (5/5), Incident partial (1/14 - need complete submission)
 
 ---
 
 ## TL;DR
 
-### Signup Photos (5 images) ✅
-✅ **File structure** - Fixed inconsistent paths
-✅ **Signed URLs** - Added generation + debug logging
-⏳ **Verification** - Need new test signup
+### Signup Photos (5 images) ✅ **VERIFIED**
+✅ **File structure** - Standardized paths working (`users/{userId}/signup/`)
+✅ **Signed URLs** - All 5 images have 12-month signed URLs
+✅ **Verification** - Tested with real signup (16 Nov 2025 12:22)
+✅ **Result** - 100% success rate (5/5 images)
 
-### Incident Photos (14 images) ✅
-✅ **Signed URL generation** - Added to locationPhotoService
-✅ **URL storage** - Updated createDocumentRecordGeneric
-⏳ **Verification** - Need new test incident report
+### Incident Photos (14 images) ⚠️ **PARTIAL**
+✅ **Signed URL generation** - Working (map screenshot verified)
+✅ **URL storage** - Confirmed working
+⏳ **Verification** - Need complete incident report (currently 1/14 photos)
+⏳ **Missing** - 3 scene + 5 vehicle_damage + 5 other_damage photos
 
 ---
 
@@ -102,9 +104,16 @@ node check-incident-photos.js
 
 ## Current Database
 
-**Last signup:** 15 Nov 14:06 (PRE-FIX)
-- 5 images with OLD structure (flat paths)
-- Missing signed URLs (expected - uploaded before fix)
+**Latest signup:** 16 Nov 12:22 (POST-FIX) ✅ **VERIFIED WORKING**
+- User: Ian Ring (ian.ring@sky.com)
+- 5 images with NEW structure (`users/{userId}/signup/`)
+- All 5 images have signed URLs ✅
+- All expiry dates set to 12 months ✅
+
+**Latest incident:** 16 Nov 12:56 (POST-FIX) ⚠️ **PARTIAL**
+- User: Ian Ring (same as signup)
+- 1 image (map screenshot) with signed URL ✅
+- Missing: 13 other photos (incomplete submission)
 
 ---
 
@@ -136,10 +145,23 @@ node check-incident-photos.js
 
 ## Next Steps
 
-**Clean Retest Workflow:**
+**Current Progress:**
 
-1. **Clean Database:** Run `node clear-test-data.js` → Type "DELETE" to confirm
-2. **Signup Test:** Complete new signup → Run `node verify-signup-fixes.js`
-3. **Incident Test:** Submit new incident report → Run `node check-incident-photos.js`
-4. **Full Test:** Verify all 19 images have signed URLs (5 signup + 14 incident)
-5. **PDF Test:** Run `node test-form-filling.js [user-uuid]` to test PDF generation
+1. ✅ **Signup Test COMPLETE** - All 5 images verified with signed URLs
+2. ⏳ **Incident Test IN PROGRESS** - Need complete submission:
+   - ✅ Map screenshot (1/14) verified
+   - ⏳ Scene photos (0/3)
+   - ⏳ Vehicle damage photos (0/5)
+   - ⏳ Other damage photos (0/5)
+3. ⏳ **Full Test PENDING** - After incident photos complete
+4. ⏳ **PDF Test PENDING** - After all 19 images verified
+
+**To Complete Verification:**
+
+Submit complete incident report through web form with:
+- Page 4: ✅ Map screenshot (already done)
+- Page 4a: Scene photos (3 images)
+- Page 6: Vehicle damage photos (5 images)
+- Page 8: Other vehicle damage photos (5 images)
+
+Then verify: `node check-incident-photos.js` (expect 14/14)
