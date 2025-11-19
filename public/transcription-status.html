@@ -575,33 +575,114 @@
         }
 
         /* AI Summary Section */
+        /* Enhanced Key Points Summary - Visual Upgrade */
+        .key-points {
+            list-style: none;
+            padding-left: 0;
+            counter-reset: key-point-counter;
+        }
+
+        .key-points li {
+            position: relative;
+            padding: 18px 20px 18px 60px;
+            margin-bottom: 16px;
+            background: linear-gradient(135deg, #e3f2fd 0%, #bbdefb 100%);
+            border-left: 5px solid #2196F3;
+            border-radius: 8px;
+            box-shadow: 0 3px 10px rgba(33, 150, 243, 0.15);
+            transition: all 0.3s ease;
+            animation: slideInFromLeft 0.5s ease-out backwards;
+            counter-increment: key-point-counter;
+            font-size: 15px;
+            line-height: 1.6;
+            color: #1565c0;
+        }
+
+        .key-points li:nth-child(1) { animation-delay: 0.1s; }
+        .key-points li:nth-child(2) { animation-delay: 0.2s; }
+        .key-points li:nth-child(3) { animation-delay: 0.3s; }
+        .key-points li:nth-child(4) { animation-delay: 0.4s; }
+        .key-points li:nth-child(5) { animation-delay: 0.5s; }
+        .key-points li:nth-child(6) { animation-delay: 0.6s; }
+        .key-points li:nth-child(7) { animation-delay: 0.7s; }
+        .key-points li:nth-child(8) { animation-delay: 0.8s; }
+
+        .key-points li::before {
+            content: "✓";
+            position: absolute;
+            left: 20px;
+            top: 50%;
+            transform: translateY(-50%);
+            width: 28px;
+            height: 28px;
+            background: #2196F3;
+            color: white;
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-weight: bold;
+            font-size: 16px;
+            box-shadow: 0 2px 6px rgba(33, 150, 243, 0.3);
+        }
+
+        .key-points li:hover {
+            transform: translateX(5px);
+            box-shadow: 0 5px 20px rgba(33, 150, 243, 0.25);
+            background: linear-gradient(135deg, #bbdefb 0%, #90caf9 100%);
+        }
+
+        @keyframes slideInFromLeft {
+            from {
+                opacity: 0;
+                transform: translateX(-30px);
+            }
+            to {
+                opacity: 1;
+                transform: translateX(0);
+            }
+        }
+
+        /* Enhanced Summary Section Container */
         #summarySection {
             display: none;
             margin-top: 30px;
-            padding: 25px;
-            background: linear-gradient(135deg, #f5f7fa 0%, #c3cfe2 100%);
+            padding: 30px;
+            background: linear-gradient(135deg, #f5f7fa 0%, #e8eef2 100%);
             border-radius: 12px;
+            box-shadow: 0 4px 15px rgba(0, 0, 0, 0.1);
+        }
+
+        #summarySection h2 {
+            color: #1565c0;
+            font-size: 24px;
+            margin-bottom: 20px;
+            text-align: center;
+            text-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
         }
 
         .summary-content {
             background: white;
-            padding: 20px;
-            border-radius: 8px;
+            padding: 25px;
+            border-radius: 10px;
             margin-bottom: 20px;
-            box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+            box-shadow: 0 3px 12px rgba(0,0,0,0.12);
         }
 
-        .key-points {
-            list-style: none;
-            padding-left: 0;
+        .summary-content h4 {
+            color: #2196F3;
+            font-size: 20px;
+            margin-bottom: 20px;
+            padding-bottom: 10px;
+            border-bottom: 2px solid #2196F3;
+            display: flex;
+            align-items: center;
+            gap: 10px;
         }
 
-        .key-points li {
-            padding: 10px 15px;
-            margin-bottom: 10px;
-            background: #e3f2fd;
-            border-left: 4px solid #2196F3;
-            border-radius: 4px;
+        .summary-content h4::before {
+            content: "📌";
+            font-size: 24px;
         }
 
         /* AI Review Section */
@@ -1365,6 +1446,7 @@
         }
     </style>
     <link rel="stylesheet" href="/css/mascot.css">
+    <link rel="stylesheet" href="/css/mascot-loading.css">
 </head>
 <body>
     <!-- Microphone Check Modal -->
@@ -1550,10 +1632,43 @@
         <!-- Audio Playback -->
         <audio id="audioPlayback" controls></audio>
 
+        <!-- Transcription Loading -->
+        <div id="transcriptionLoadingContainer" style="display: none; margin: 20px 0;"></div>
+
         </div> <!-- End Tab Panel: Record -->
 
         <!-- Tab Panel: Transcription -->
         <div class="tab-panel" id="tab-transcription">
+
+        <!-- Voice Transcription (Optional) -->
+        <div id="transcriptionResult" style="margin-top: 30px;">
+            <h3>🎤 Voice Transcription (Optional)</h3>
+            <div style="background: #f0f4f8; border-left: 4px solid #718096; padding: 12px 16px; margin-bottom: 15px; border-radius: 4px;">
+                <strong>Voice Recording:</strong> Use the "Record" tab above to verbally describe the accident. Your audio will be transcribed and appear here as additional supporting detail.
+            </div>
+            <div class="transcription-box" contenteditable="true" id="transcriptionText" placeholder="Voice transcription will appear here if you use the recorder..."></div>
+            <div class="char-count">
+                <span id="wordCount">0 words</span> | <span id="charCount">0 characters</span>
+            </div>
+            <div class="auto-save-indicator" id="autoSaveIndicator">
+                Auto-save enabled
+            </div>
+            <button class="btn btn-success" id="saveTranscriptionBtn" style="margin-top: 20px;">
+                💾 Save Changes
+            </button>
+            <button class="btn btn-primary" id="generateSummaryBtn" style="margin-top: 20px;">
+                🤖 Generate Comprehensive AI Analysis
+            </button>
+            <p style="text-align: center; color: #666; margin-top: 10px; font-size: 13px; max-width: 600px; margin-left: auto; margin-right: auto;">
+                Generates a comprehensive closing statement narrative (Page 14), key points summary, and next steps guide (Page 15) using ALL your incident data
+            </p>
+            <button class="btn btn-warning" id="clearDraftBtn" style="margin-top: 20px;">
+                🗑️ Clear Draft
+            </button>
+            <p style="text-align: center; color: #666; margin-top: 10px; font-size: 14px;">
+                You can edit the transcription above if needed
+            </p>
+        </div>
 
         <!-- Full Accident Narrative -->
         <div id="narrativeSection">
@@ -1589,36 +1704,6 @@ Continue with: What happened immediately after impact? Any injuries you noticed?
             <div style="background: #e3f2fd; border-left: 4px solid #2196F3; padding: 12px 16px; margin: 20px 0; border-radius: 4px;">
                 <strong>💡 Optional:</strong> You can also use the voice recorder below to verbally describe the accident. Your recording will be transcribed automatically and can supplement your written narrative.
             </div>
-        </div>
-
-        <!-- Voice Transcription (Optional) -->
-        <div id="transcriptionResult" style="margin-top: 30px;">
-            <h3>🎤 Voice Transcription (Optional)</h3>
-            <div style="background: #f0f4f8; border-left: 4px solid #718096; padding: 12px 16px; margin-bottom: 15px; border-radius: 4px;">
-                <strong>Voice Recording:</strong> Use the "Record" tab above to verbally describe the accident. Your audio will be transcribed and appear here as additional supporting detail.
-            </div>
-            <div class="transcription-box" contenteditable="true" id="transcriptionText" placeholder="Voice transcription will appear here if you use the recorder..."></div>
-            <div class="char-count">
-                <span id="wordCount">0 words</span> | <span id="charCount">0 characters</span>
-            </div>
-            <div class="auto-save-indicator" id="autoSaveIndicator">
-                Auto-save enabled
-            </div>
-            <button class="btn btn-success" id="saveTranscriptionBtn" style="margin-top: 20px;">
-                💾 Save Changes
-            </button>
-            <button class="btn btn-primary" id="generateSummaryBtn" style="margin-top: 20px;">
-                🤖 Generate Comprehensive AI Analysis
-            </button>
-            <p style="text-align: center; color: #666; margin-top: 10px; font-size: 13px; max-width: 600px; margin-left: auto; margin-right: auto;">
-                Generates a comprehensive closing statement narrative (Page 14), key points summary, and next steps guide (Page 15) using ALL your incident data
-            </p>
-            <button class="btn btn-warning" id="clearDraftBtn" style="margin-top: 20px;">
-                🗑️ Clear Draft
-            </button>
-            <p style="text-align: center; color: #666; margin-top: 10px; font-size: 14px;">
-                You can edit the transcription above if needed
-            </p>
         </div>
 
         <!-- Save and Continue Button - TRANSCRIPTION TAB -->
@@ -1716,8 +1801,7 @@ Continue with: What happened immediately after impact? Any injuries you noticed?
                     <div class="ai-step-label">Next Steps Guide (Page 15)</div>
                 </div>
             </div>
-            <div class="spinner"></div>
-            <div class="loading-text" id="aiProgressText">Initializing comprehensive AI analysis...</div>
+            <div id="aiLoadingAnimation"></div>
         </div>
 
         <!-- Analysis Complete Banner (hidden by default) -->
@@ -2374,6 +2458,7 @@ Continue with: What happened immediately after impact? Any injuries you noticed?
                 // Update UI
                 document.getElementById('pauseButton').style.display = 'none';
                 document.getElementById('stopButton').style.display = 'none';
+                MascotLoading.show('#transcriptionLoadingContainer', 'Transcribing your voice recording...', 'mascot');
                 document.getElementById('retryButton').style.display = 'inline-block';
                 document.getElementById('recordingStatus').style.display = 'none';
                 showStatus('Processing your recording...', 'info');
@@ -2553,6 +2638,8 @@ Continue with: What happened immediately after impact? Any injuries you noticed?
 
         // ===== TRANSCRIPTION DISPLAY =====
         function showTranscription(text) {
+            // Hide transcription loading animation
+            MascotLoading.hide('#transcriptionLoadingContainer');
             currentTranscriptionText = text;
             document.getElementById('transcriptionText').textContent = text;
             document.getElementById('transcriptionResult').style.display = 'block';
@@ -2566,6 +2653,17 @@ Continue with: What happened immediately after impact? Any injuries you noticed?
 
             // Switch to Transcription tab
             switchTab('transcription');
+
+            // Auto-scroll to voice transcription section after tab switch completes
+            setTimeout(() => {
+                const transcriptionResult = document.getElementById('transcriptionResult');
+                if (transcriptionResult) {
+                    transcriptionResult.scrollIntoView({
+                        behavior: 'smooth',
+                        block: 'start'
+                    });
+                }
+            }, 300); // Small delay to ensure tab transition completes
         }
 
         async function fetchUserName() {
@@ -2880,6 +2978,7 @@ Continue with: What happened immediately after impact? Any injuries you noticed?
                 const completeBanner = document.getElementById('analysisCompleteBanner');
                 progressContainer.style.display = 'block';
                 completeBanner.style.display = 'none';
+                MascotLoading.show('#aiLoadingAnimation', 'Initializing comprehensive AI analysis...', 'mascot');
 
                 // Hide analysis sections initially
                 document.getElementById('summarySection').style.display = 'none';
@@ -2967,7 +3066,6 @@ Continue with: What happened immediately after impact? Any injuries you noticed?
         // Helper function to update AI progress steps
         function updateAIStep(stepNumber, status, text) {
             const step = document.getElementById(`aiStep${stepNumber}`);
-            const progressText = document.getElementById('aiProgressText');
 
             if (status === 'active') {
                 // Remove active from all steps
@@ -2976,7 +3074,7 @@ Continue with: What happened immediately after impact? Any injuries you noticed?
                 }
                 // Add active to current step
                 step.classList.add('active');
-                if (text) progressText.textContent = text;
+                if (text) MascotLoading.updateMessage('#aiLoadingAnimation', text);
             } else if (status === 'complete') {
                 step.classList.remove('active');
                 step.classList.add('complete');
@@ -3358,5 +3456,6 @@ Continue with: What happened immediately after impact? Any injuries you noticed?
         });
     </script>
     <script src="/js/mascot.js"></script>
+    <script src="/js/mascot-loading.js"></script>
 </body>
 </html>

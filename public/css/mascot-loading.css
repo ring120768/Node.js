@@ -1,0 +1,201 @@
+/**
+ * Mascot Loading Animations
+ * Enhanced loading states for Transcription-Status page
+ */
+
+/* Enhanced Mascot Loading Animation */
+.mascot-loading-container {
+    text-align: center;
+    padding: 30px 20px;
+    background: linear-gradient(135deg, #f8f9fa 0%, #e8eef2 100%);
+    border-radius: 12px;
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+}
+
+.mascot-loading-animation {
+    width: 150px;
+    height: 150px;
+    margin: 0 auto 20px;
+    position: relative;
+}
+
+.mascot-loading-animation img {
+    width: 100%;
+    height: 100%;
+    object-fit: contain;
+    animation: mascotBounce 1.5s ease-in-out infinite;
+    filter: drop-shadow(0 8px 16px rgba(0, 0, 0, 0.15));
+}
+
+@keyframes mascotBounce {
+    0%, 100% {
+        transform: translateY(0) scale(1);
+    }
+    50% {
+        transform: translateY(-20px) scale(1.05);
+    }
+}
+
+.mascot-loading-dots {
+    display: flex;
+    justify-content: center;
+    gap: 8px;
+    margin-top: 15px;
+}
+
+.mascot-loading-dots span {
+    width: 12px;
+    height: 12px;
+    background: #0E7490;
+    border-radius: 50%;
+    animation: dotPulse 1.4s ease-in-out infinite;
+}
+
+.mascot-loading-dots span:nth-child(1) {
+    animation-delay: 0s;
+}
+
+.mascot-loading-dots span:nth-child(2) {
+    animation-delay: 0.2s;
+}
+
+.mascot-loading-dots span:nth-child(3) {
+    animation-delay: 0.4s;
+}
+
+@keyframes dotPulse {
+    0%, 100% {
+        transform: scale(0.8);
+        opacity: 0.5;
+    }
+    50% {
+        transform: scale(1.2);
+        opacity: 1;
+    }
+}
+
+.mascot-loading-text {
+    text-align: center;
+    color: #0E7490;
+    font-size: 16px;
+    font-weight: 600;
+    margin-top: 20px;
+    animation: textFade 2s ease-in-out infinite;
+}
+
+@keyframes textFade {
+    0%, 100% {
+        opacity: 0.7;
+    }
+    50% {
+        opacity: 1;
+    }
+}
+
+/* Hourglass Alternative Animation */
+.hourglass-container {
+    text-align: center;
+    padding: 30px 20px;
+    background: linear-gradient(135deg, #f8f9fa 0%, #e8eef2 100%);
+    border-radius: 12px;
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+}
+
+.hourglass-animation {
+    width: 80px;
+    height: 100px;
+    margin: 0 auto 20px;
+    position: relative;
+    display: inline-block;
+}
+
+.hourglass-animation::before,
+.hourglass-animation::after {
+    content: '';
+    position: absolute;
+    width: 0;
+    height: 0;
+    border-style: solid;
+}
+
+.hourglass-animation::before {
+    top: 0;
+    left: 50%;
+    transform: translateX(-50%);
+    border-width: 40px 30px 0 30px;
+    border-color: #0E7490 transparent transparent transparent;
+    animation: hourglassTop 2s ease-in-out infinite;
+}
+
+.hourglass-animation::after {
+    bottom: 0;
+    left: 50%;
+    transform: translateX(-50%);
+    border-width: 0 30px 40px 30px;
+    border-color: transparent transparent #0E7490 transparent;
+    animation: hourglassBottom 2s ease-in-out infinite;
+}
+
+@keyframes hourglassTop {
+    0%, 100% {
+        border-top-width: 40px;
+    }
+    50% {
+        border-top-width: 10px;
+    }
+}
+
+@keyframes hourglassBottom {
+    0%, 100% {
+        border-bottom-width: 10px;
+    }
+    50% {
+        border-bottom-width: 40px;
+    }
+}
+
+.hourglass-text {
+    text-align: center;
+    color: #0E7490;
+    font-size: 16px;
+    font-weight: 600;
+    margin-top: 20px;
+}
+
+/* Responsive sizing for mobile */
+@media (max-width: 768px) {
+    .mascot-loading-animation {
+        width: 120px;
+        height: 120px;
+    }
+
+    .hourglass-animation {
+        width: 60px;
+        height: 80px;
+    }
+
+    .hourglass-animation::before {
+        border-width: 30px 22px 0 22px;
+    }
+
+    .hourglass-animation::after {
+        border-width: 0 22px 30px 22px;
+    }
+}
+
+@media (max-width: 480px) {
+    .mascot-loading-container,
+    .hourglass-container {
+        padding: 20px 15px;
+    }
+
+    .mascot-loading-animation {
+        width: 100px;
+        height: 100px;
+    }
+
+    .mascot-loading-text,
+    .hourglass-text {
+        font-size: 14px;
+    }
+}
