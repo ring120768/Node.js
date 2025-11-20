@@ -627,7 +627,7 @@
         const formData = new FormData();
         formData.append('file', file);
         formData.append('field_name', fieldName);  // Specific field name per slot
-        formData.append('temp_session_id', sessionStorage.getItem('temp_session_id') || crypto.randomUUID());
+        formData.append('temp_session_id', localStorage.getItem('temp_session_id') || crypto.randomUUID()); // ✅ Use localStorage
 
         const response = await fetch('/api/images/temp-upload', {
           method: 'POST',
@@ -748,9 +748,10 @@
       return (bytes / (1024 * 1024)).toFixed(1) + ' MB';
     }
 
-    // Auto-save
+    // Auto-save to sessionStorage (matches Page 12 expectation)
     function autoSave() {
       const formData = {
+        session_id: localStorage.getItem('temp_session_id'), // ✅ Required for controller finalization
         other_damage_images: uploadedImages.map(img => ({
           path: img.path,
           fileName: img.fileName,
@@ -759,13 +760,13 @@
         }))
       };
 
-      localStorage.setItem('page8_data', JSON.stringify(formData));
+      sessionStorage.setItem('incident_page8', JSON.stringify(formData)); // ✅ Use standard pattern
       console.log('Page 8 data saved:', formData);
     }
 
-    // Load saved data
+    // Load saved data from sessionStorage (matches Page 12 expectation)
     function loadSavedData() {
-      const saved = localStorage.getItem('page8_data');
+      const saved = sessionStorage.getItem('incident_page8'); // ✅ Use standard pattern
       if (saved) {
         const data = JSON.parse(saved);
 
@@ -852,11 +853,11 @@
 
     // Initialize
     window.addEventListener('DOMContentLoaded', () => {
-      // Create or reuse session ID for temp uploads
-      if (!sessionStorage.getItem('temp_session_id')) {
-        sessionStorage.setItem('temp_session_id', crypto.randomUUID());
+      // ✅ Use localStorage for session ID persistence across navigation
+      if (!localStorage.getItem('temp_session_id')) {
+        localStorage.setItem('temp_session_id', crypto.randomUUID());
       }
-      console.log('Session ID:', sessionStorage.getItem('temp_session_id'));
+      console.log('Session ID:', localStorage.getItem('temp_session_id'));
 
       loadSavedData();
     });

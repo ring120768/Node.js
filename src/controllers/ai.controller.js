@@ -219,10 +219,10 @@ Format as JSON:
       duration: `${((Date.now() - startTime) / 1000).toFixed(1)}s`
     });
 
-    // Step 3: Generate Comprehensive Closing Statement Narrative (FOR PAGE 14 - CENTRE PIECE)
+    // Step 3: Generate Comprehensive Factual Narrative (FOR PAGE 14 - CENTRE PIECE)
     let combinedReport = null;
     if (incidentData) {
-      logger.info('[AI Analysis] Step 3/4: Generating comprehensive closing statement narrative (Page 14)...');
+      logger.info('[AI Analysis] Step 3/4: Generating comprehensive factual narrative (Page 14)...');
 
       // Build comprehensive data structure using ALL available fields
       const comprehensiveData = buildComprehensiveIncidentData(
@@ -231,9 +231,9 @@ Format as JSON:
         witnesses
       );
 
-      const closingStatementPrompt = `You are a senior legal counsel with 25 years of experience preparing closing statements for traffic accident cases.
+      const closingStatementPrompt = `You are a legal documentation specialist preparing a comprehensive factual account of a traffic accident.
 
-Create a comprehensive, factual narrative suitable for a legal closing statement. This will be the CENTRE PIECE of the legal document (Page 14).
+Create a complete, factual narrative that accurately documents the incident. This will be the CENTRE PIECE of the legal document (Page 14).
 
 PERSONAL STATEMENT FROM CLIENT:
 """
@@ -245,23 +245,24 @@ ${JSON.stringify(comprehensiveData, null, 2)}
 
 INSTRUCTIONS:
 1. Write in third person, past tense
-2. Create a flowing narrative (800-1200 words) that reads like a professional closing statement
-3. Use formal legal language but remain clear and accessible
+2. Create a flowing factual narrative (800-1200 words) presenting the incident information clearly and accurately
+3. Use professional language that is clear and accessible
 4. Include ALL relevant factual details from both the personal statement and incident data
-5. Structure logically: Introduction → Incident Details → Conditions → Vehicles Involved → Injuries/Medical → Witnesses/Evidence → Conclusion
-6. State facts objectively - this is a legal document
-7. Do NOT add speculation or information not provided
+5. Structure logically: Introduction → Incident Details → Conditions → Vehicles Involved → Injuries/Medical → Witnesses/Evidence → Summary
+6. State facts objectively and sincerely - this is documentation for legal purposes
+7. Do NOT add speculation, interpretation, or information not provided
 8. Format with proper paragraphs using <p> tags
 9. Ensure every factual claim is supported by the provided data
+10. Maintain a sincere, factual tone throughout - avoid dramatic language
 
-Create a compelling, complete narrative that a legal professional would use in court.`;
+Create a complete, accurate narrative that documents the incident comprehensively.`;
 
       const combinedResponse = await openai.chat.completions.create({
         model: 'gpt-4o',
         messages: [
           {
             role: 'system',
-            content: 'You are a senior legal counsel with 25 years of experience in traffic accident litigation. You prepare comprehensive, factual closing statements for court proceedings.'
+            content: 'You are a legal documentation specialist who creates comprehensive, factual accounts of traffic accidents. You present information clearly, accurately, and sincerely without dramatic language, ensuring all facts are properly documented for legal purposes.'
           },
           { role: 'user', content: closingStatementPrompt }
         ],
@@ -271,7 +272,7 @@ Create a compelling, complete narrative that a legal professional would use in c
 
       combinedReport = combinedResponse.choices[0].message.content;
       const wordCount = combinedReport.split(/\s+/).length;
-      logger.info('[AI Analysis] Step 3/4 complete - Closing statement narrative generated', {
+      logger.info('[AI Analysis] Step 3/4 complete - Comprehensive factual narrative generated', {
         duration: `${((Date.now() - startTime) / 1000).toFixed(1)}s`,
         wordCount: wordCount,
         targetRange: '800-1200 words',

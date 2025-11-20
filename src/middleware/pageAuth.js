@@ -79,13 +79,78 @@ async function pageAuth(req, res, next) {
     const { data: { user }, error } = await supabase.auth.getUser(sessionToken);
 
     if (error || !user) {
-      logger.warn('Page access denied - Invalid or expired session', {
+      logger.warn('Page access denied - Token validation failed', {
         ip: req.ip,
         path: req.path,
         error: error?.message
       });
 
-      // Redirect to login page (session expired)
+      // Try to refresh the session using the refresh token
+      const refreshToken = cookies['refresh_token'];
+
+      if (refreshToken) {
+        logger.info('Attempting to refresh expired session', {
+          path: req.path,
+          userId: user?.id
+        });
+
+        try {
+          const { data, error: refreshError } = await supabase.auth.refreshSession({
+            refresh_token: refreshToken
+          });
+
+          if (!refreshError && data.session) {
+            // Successfully refreshed! Update cookies with new tokens
+            const cookieMaxAge = 30 * 24 * 60 * 60 * 1000; // 30 days
+
+            res.cookie('access_token', data.session.access_token, {
+              httpOnly: true,
+              secure: true,
+              sameSite: 'none',
+              path: '/',
+              maxAge: cookieMaxAge
+            });
+
+            res.cookie('refresh_token', data.session.refresh_token, {
+              httpOnly: true,
+              secure: true,
+              sameSite: 'none',
+              path: '/',
+              maxAge: cookieMaxAge
+            });
+
+            // Attach user data
+            req.user = data.user;
+            req.sessionToken = data.session.access_token;
+
+            logger.success('Session refreshed successfully', {
+              userId: data.user.id,
+              email: data.user.email,
+              path: req.path
+            });
+
+            return next();
+          } else {
+            logger.warn('Session refresh failed', {
+              path: req.path,
+              error: refreshError?.message
+            });
+          }
+        } catch (refreshErr) {
+          logger.error('Error refreshing session', {
+            path: req.path,
+            error: refreshErr.message
+          });
+        }
+      }
+
+      // If refresh failed or no refresh token, redirect to login
+      logger.warn('Page access denied - Session expired and refresh failed', {
+        ip: req.ip,
+        path: req.path,
+        hadRefreshToken: !!refreshToken
+      });
+
       const redirectUrl = `/login.html?redirect=${encodeURIComponent(req.path)}`;
       return res.redirect(302, redirectUrl);
     }
@@ -180,6 +245,66 @@ async function apiAuth(req, res, next) {
         hasUser: !!user
       });
 
+      // Try to refresh the session using the refresh token
+      const cookies = parseCookies(req);
+      const refreshToken = cookies['refresh_token'];
+
+      if (refreshToken) {
+        logger.info('Attempting to refresh expired session (API)', {
+          path: req.path
+        });
+
+        try {
+          const { data, error: refreshError } = await supabase.auth.refreshSession({
+            refresh_token: refreshToken
+          });
+
+          if (!refreshError && data.session) {
+            // Successfully refreshed! Update cookies with new tokens
+            const cookieMaxAge = 30 * 24 * 60 * 60 * 1000; // 30 days
+
+            res.cookie('access_token', data.session.access_token, {
+              httpOnly: true,
+              secure: true,
+              sameSite: 'none',
+              path: '/',
+              maxAge: cookieMaxAge
+            });
+
+            res.cookie('refresh_token', data.session.refresh_token, {
+              httpOnly: true,
+              secure: true,
+              sameSite: 'none',
+              path: '/',
+              maxAge: cookieMaxAge
+            });
+
+            // Attach user data
+            req.user = data.user;
+            req.sessionToken = data.session.access_token;
+
+            logger.success('Session refreshed successfully (API)', {
+              userId: data.user.id,
+              email: data.user.email,
+              path: req.path
+            });
+
+            return next();
+          } else {
+            logger.warn('Session refresh failed (API)', {
+              path: req.path,
+              error: refreshError?.message
+            });
+          }
+        } catch (refreshErr) {
+          logger.error('Error refreshing session (API)', {
+            path: req.path,
+            error: refreshErr.message
+          });
+        }
+      }
+
+      // If refresh failed or no refresh token, return 401
       return res.status(401).json({
         error: 'Unauthorized',
         message: error?.message || 'Invalid or expired session'

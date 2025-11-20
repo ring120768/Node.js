@@ -91,7 +91,8 @@ async function updateSafetyStatus(req, res) {
         safety_check_location_lng: location?.lng || null,
         safety_check_what3words: what3words || null,
         safety_check_what3words_storage_path: what3wordsStoragePath || null,
-        safety_check_address: address || null,
+        // REMOVED: safety_check_address (column does not exist in user_signup table)
+        // Location data already captured via lat/lng and what3words
         updated_at: new Date().toISOString()
       })
       .eq('create_user_id', userId);

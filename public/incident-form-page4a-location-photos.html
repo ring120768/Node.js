@@ -445,9 +445,9 @@
     const backBtn = document.getElementById('backBtn');
     const nextBtn = document.getElementById('nextBtn');
 
-    // Load saved data from localStorage
+    // Load saved data from sessionStorage (matches Page 12 expectation)
     function loadSavedData() {
-      const saved = localStorage.getItem('page4a_data');
+      const saved = sessionStorage.getItem('incident_page4a'); // ✅ Use standard pattern
       if (saved) {
         try {
           const data = JSON.parse(saved);
@@ -491,9 +491,10 @@
       }
     }
 
-    // Save data to localStorage
+    // Save data to sessionStorage (matches Page 12 expectation)
     function saveData() {
       const page4aData = {
+        session_id: localStorage.getItem('temp_session_id'), // ✅ Include session_id for controller
         scene_images: uploadedSceneImages.map(img => ({
           path: img.path,
           fileName: img.fileName,
@@ -502,7 +503,7 @@
         page_completed: new Date().toISOString()
       };
 
-      localStorage.setItem('page4a_data', JSON.stringify(page4aData));
+      sessionStorage.setItem('incident_page4a', JSON.stringify(page4aData)); // ✅ Use standard pattern
       console.log('✅ Page 4a data saved:', page4aData);
     }
 

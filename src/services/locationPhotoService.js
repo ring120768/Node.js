@@ -260,7 +260,15 @@ class LocationPhotoService {
 
   /**
    * Finalize location photos: Move from temp storage to permanent
-   * (Backward compatibility wrapper for Page 4a)
+   * (Specialized implementation for Page 4a scene photos)
+   *
+   * Scene photos from Page 4a are GENERAL SCENE VIEWS.
+   * The location_map_screenshot comes from Page 4 (what3words map), NOT from Page 4a.
+   *
+   * PDF Field Mapping (Page 11):
+   *   scene_images_path_1 ← Page 4 what3words map ('location_map_screenshot')
+   *   scene_images_path_2 ← Page 4a scene photo #1 ('scene_overview')
+   *   scene_images_path_3 ← Page 4a scene photo #2 ('scene_overview_2')
    *
    * @param {string} userId - User UUID
    * @param {string} incidentReportId - Incident report UUID
@@ -268,15 +276,205 @@ class LocationPhotoService {
    * @returns {Promise<{success: boolean, photos: Array, error?: string}>}
    */
   async finalizePhotos(userId, incidentReportId, sessionId) {
-    // Call generic method with scene_photo parameters
-    return this.finalizePhotosByType(
-      userId,
-      incidentReportId,
-      sessionId,
-      'scene_photo',
-      'location-photos',
-      'location_photo'
-    );
+    try {
+      logger.info('Finalizing scene photos with numbered document types', {
+        userId,
+        incidentReportId,
+        sessionId
+      });
+
+      // 1. Get temp uploads for scene_photo field
+      const { data: tempUploads, error: fetchError } = await this.supabase
+        .from('temp_uploads')
+        .select('*')
+        .eq('session_id', sessionId)
+        .eq('field_name', 'scene_photo')
+        .eq('claimed', false)
+        .order('uploaded_at', { ascending: true });
+
+      if (fetchError) {
+        logger.error('Error fetching scene photo temp uploads', { error: fetchError });
+        throw new Error(`Failed to fetch temp uploads: ${fetchError.message}`);
+      }
+
+      if (!tempUploads || tempUploads.length === 0) {
+        logger.warn('No scene photo temp uploads found', { sessionId });
+        return {
+          success: true,
+          photos: [],
+          message: 'No scene photos to finalize'
+        };
+      }
+
+      logger.info(`Found ${tempUploads.length} scene photos to finalize`);
+
+      // 2. Map photo numbers to correct document types for PDF generation
+      // NOTE: location_map_screenshot comes from Page 4 (what3words map), NOT from Page 4a scene photos
+      const documentTypeMapping = {
+        1: 'scene_overview',            // First scene photo = general scene view
+        2: 'scene_overview_2'           // Second scene photo = additional scene view
+      };
+
+      // 3. Process each upload with correct document type
+      const finalizedPhotos = [];
+      const errors = [];
+
+      for (let [index, upload] of tempUploads.entries()) {
+        try {
+          const photoNumber = index + 1;
+          const documentType = documentTypeMapping[photoNumber] || `scene_overview_${photoNumber}`;
+
+          const ext = path.extname(upload.storage_path);
+          const permanentPath = `users/${userId}/incident-reports/${incidentReportId}/location-photos/scene_photo_${photoNumber}${ext}`;
+
+          // Move file in storage
+          const moveResult = await this.movePhoto(
+            upload.storage_path,
+            permanentPath
+          );
+
+          if (!moveResult.success) {
+            errors.push({
+              uploadId: upload.id,
+              photoNumber,
+              error: moveResult.error
+            });
+            continue;
+          }
+
+          // Generate signed URL (12 months expiry)
+          logger.info('Generating signed URL for scene photo', {
+            userId,
+            incidentReportId,
+            photoNumber,
+            documentType,
+            permanentPath
+          });
+
+          const signedUrlExpirySeconds = 31536000; // 365 days
+          const { data: signedUrlData, error: signedUrlError } = await this.supabase.storage
+            .from(this.BUCKET_NAME)
+            .createSignedUrl(permanentPath, signedUrlExpirySeconds);
+
+          if (signedUrlError) {
+            logger.error('Signed URL generation failed for scene photo', {
+              error: signedUrlError.message,
+              path: permanentPath,
+              photoNumber,
+              documentType
+            });
+            errors.push({
+              uploadId: upload.id,
+              photoNumber,
+              error: `Failed to generate signed URL: ${signedUrlError.message}`
+            });
+            continue;
+          }
+
+          const signedUrl = signedUrlData.signedUrl;
+          const signedUrlExpiresAt = new Date(Date.now() + (signedUrlExpirySeconds * 1000));
+
+          logger.info('Signed URL generated for scene photo', {
+            userId,
+            incidentReportId,
+            photoNumber,
+            documentType,
+            expiresAt: signedUrlExpiresAt.toISOString()
+          });
+
+          // Create user_documents record with photo-specific document type
+          const document = await this.createDocumentRecordGeneric({
+            userId,
+            incidentReportId,
+            storagePath: permanentPath,
+            fileSize: upload.file_size,
+            mimeType: upload.mime_type,
+            documentType,                                  // Use mapped document type
+            photoNumber,
+            source: 'page_scene_photo_photos',
+            public_url: signedUrl,
+            signed_url: signedUrl,
+            signed_url_expires_at: signedUrlExpiresAt.toISOString(),
+            document_category: 'incident_report'
+          });
+
+          if (!document) {
+            errors.push({
+              uploadId: upload.id,
+              photoNumber,
+              documentType,
+              error: 'Failed to create document record'
+            });
+            continue;
+          }
+
+          // Generate permanent download URL
+          const downloadUrl = `/api/user-documents/${document.id}/download`;
+
+          // Update document with download URL
+          await this.supabase
+            .from('user_documents')
+            .update({ download_url: downloadUrl })
+            .eq('id', document.id);
+
+          // Mark temp upload as claimed
+          await this.claimTempUpload(upload.id, userId);
+
+          finalizedPhotos.push({
+            id: document.id,
+            photoNumber,
+            documentType,
+            storagePath: permanentPath,
+            downloadUrl,
+            signedUrl,
+            signedUrlExpiresAt: signedUrlExpiresAt.toISOString()
+          });
+
+          logger.info('Scene photo finalized successfully', {
+            documentId: document.id,
+            photoNumber,
+            documentType,
+            downloadUrl
+          });
+
+        } catch (photoError) {
+          logger.error('Error finalizing individual scene photo', {
+            index,
+            error: photoError.message
+          });
+          errors.push({
+            uploadId: upload.id,
+            photoNumber: index + 1,
+            error: photoError.message
+          });
+        }
+      }
+
+      // 4. Return results
+      const result = {
+        success: errors.length === 0,
+        photos: finalizedPhotos,
+        successCount: finalizedPhotos.length,
+        errorCount: errors.length
+      };
+
+      if (errors.length > 0) {
+        result.errors = errors;
+      }
+
+      logger.info('Scene photo finalization complete', result);
+      return result;
+
+    } catch (error) {
+      logger.error('Scene photo finalization failed', { error: error.message });
+      return {
+        success: false,
+        photos: [],
+        successCount: 0,
+        errorCount: 0,
+        error: error.message
+      };
+    }
   }
 
   /**

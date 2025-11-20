@@ -17,6 +17,7 @@ class AdobePdfFormFillerService {
     this.initialized = false;
     this.credentials = null;
     this.pdfServices = null;
+    // FIX: Updated to use latest PDF template (18 Nov 2025) with corrected field names
     this.templatePath = path.join(__dirname, '../../pdf-templates/Car-Crash-Lawyer-AI-incident-report-main.pdf');
     this.initializeCredentials();
   }
@@ -86,7 +87,7 @@ class AdobePdfFormFillerService {
       const pdfBytes = fs.readFileSync(this.templatePath);
 
       // Create a PDFDocument from the template
-      const { PDFDocument } = require('pdf-lib');
+      const { PDFDocument, PDFName, PDFDict } = require('pdf-lib');
       const pdfDoc = await PDFDocument.load(pdfBytes);
       const form = pdfDoc.getForm();
 
@@ -122,6 +123,22 @@ class AdobePdfFormFillerService {
       console.log('\\n📐 Updating form field appearances...');
       form.updateFieldAppearances();
       console.log('✅ Field appearances updated');
+
+      // FIX: Set NeedAppearances flag to force PDF readers to generate visual appearances
+      // This is required for checkboxes like weather_dusk that have no appearance dictionary
+      // Without this, Adobe Acrobat won't render checkmarks visually even if field is checked
+      console.log('\\n🔧 Setting NeedAppearances flag for checkbox rendering...');
+      try {
+        const acroForm = pdfDoc.catalog.lookupMaybe(PDFName.of('AcroForm'), PDFDict);
+        if (acroForm) {
+          acroForm.set(PDFName.of('NeedAppearances'), pdfDoc.context.obj(true));
+          console.log('✅ NeedAppearances flag set to true');
+        } else {
+          console.log('⚠️ AcroForm not found, NeedAppearances flag not set');
+        }
+      } catch (e) {
+        console.log('⚠️ Failed to set NeedAppearances flag:', e.message);
+      }
 
       // Save the filled PDF (without flattening to preserve editability)
       console.log('\\n💾 Saving PDF with editable form fields...');
@@ -253,9 +270,66 @@ class AdobePdfFormFillerService {
           } else {
             field.uncheck();
           }
+
+          // DEBUG: Log checkbox operations for key fields
+          if (fieldName === 'final_feeling' || fieldName === 'medical_symptom_change_in_vision' || fieldName === 'weather_dusk') {
+            console.log(`    ✅ Checkbox "${fieldName}" ${isChecked ? 'CHECKED' : 'UNCHECKED'} (shouldCheck value: ${shouldCheck}, type: ${typeof shouldCheck})`);
+          }
+        } else {
+          // DEBUG: Log if field doesn't exist
+          if (fieldName === 'final_feeling' || fieldName === 'medical_symptom_change_in_vision' || fieldName === 'weather_dusk') {
+            console.log(`    ❌ Checkbox "${fieldName}" field exists but is falsy`);
+          }
         }
       } catch (error) {
-        // Field might not exist - that's okay
+        // DEBUG: Log field not found errors for key fields
+        if (fieldName === 'final_feeling' || fieldName === 'medical_symptom_change_in_vision' || fieldName === 'weather_dusk') {
+          console.log(`    ❌ Checkbox "${fieldName}" NOT FOUND in PDF: ${error.message}`);
+        }
+      }
+    };
+
+    // Helper function to handle yes/no checkbox pairs
+    // CRITICAL: PDF templates often have TWO checkboxes for boolean questions (yes and no)
+    // This function ensures only one is checked at a time
+    const checkFieldPair = (yesFieldName, noFieldName, value) => {
+      const isTrue = value === true ||
+                     value === 'true' ||
+                     value === 'yes' ||
+                     value === 1 ||
+                     value === '1';
+      const isFalse = value === false ||
+                      value === 'false' ||
+                      value === 'no' ||
+                      value === 0 ||
+                      value === '0';
+
+      if (isTrue) {
+        checkField(yesFieldName, true);
+        checkField(noFieldName, false);
+      } else if (isFalse) {
+        checkField(yesFieldName, false);
+        checkField(noFieldName, true);
+      } else {
+        // undefined/null: uncheck both
+        checkField(yesFieldName, false);
+        checkField(noFieldName, false);
+      }
+    };
+
+    // Helper for text fields with fixed font size (no auto-calculation)
+    const setFieldTextWithFixedFont = (fieldName, value, fontSize) => {
+      try {
+        const field = form.getTextField(fieldName);
+        if (field && value !== null && value !== undefined) {
+          const text = String(value);
+          field.enableMultiline();
+          field.enableScrolling();
+          field.setText(text);
+          field.setFontSize(fontSize);
+        }
+      } catch (error) {
+        // Silently handle missing fields
       }
     };
 
@@ -335,12 +409,12 @@ class AdobePdfFormFillerService {
     // Mapping examples:
     //   DB: driving_license_picture → PDF: driving_license_picture
     //   DB: vehicle_front_image → PDF: vehicle_picture_front
-    // Auto-fit font size based on field dimensions and URL length
-    setUrlFieldWithAutoFitFont('driving_license_picture', data.imageUrls?.driving_license_picture || '');
-    setUrlFieldWithAutoFitFont('vehicle_picture_front', data.imageUrls?.vehicle_picture_front || '');
-    setUrlFieldWithAutoFitFont('vehicle_picture_driver_side', data.imageUrls?.vehicle_picture_driver_side || '');
-    setUrlFieldWithAutoFitFont('vehicle_picture_passenger_side', data.imageUrls?.vehicle_picture_passenger_side || '');
-    setUrlFieldWithAutoFitFont('vehicle_picture_back', data.imageUrls?.vehicle_picture_back || '');
+    // FIX: Use fixed 6pt font as requested (was auto-fitting 4-10pt causing font too big)
+    setFieldTextWithFixedFont('driving_license_picture', data.imageUrls?.driving_license_picture || '', 6);
+    setFieldTextWithFixedFont('vehicle_picture_front', data.imageUrls?.vehicle_picture_front || '', 6);
+    setFieldTextWithFixedFont('vehicle_picture_driver_side', data.imageUrls?.vehicle_picture_driver_side || '', 6);
+    setFieldTextWithFixedFont('vehicle_picture_passenger_side', data.imageUrls?.vehicle_picture_passenger_side || '', 6);
+    setFieldTextWithFixedFont('vehicle_picture_back', data.imageUrls?.vehicle_picture_back || '', 6);
 
     // ========================================
     // PAGE 4: Form Metadata & Safety Assessment
@@ -350,10 +424,23 @@ class AdobePdfFormFillerService {
     setFieldText('submit_date', incident.created_at);
 
     // Immediate Safety Assessment - Map to PDF field names
-    // Use incident data if available, fallback to user_signup data
-    const isSafe = incident.are_you_safe_and_ready_to_complete_this_form === 'Yes' ||
+    // FIX: Changed from 'are_you_safe_and_ready_to_complete_this_form' (deleted column) to 'final_feeling'
+    // User's final_feeling response is now used for the safety check
+    const finalFeeling = incident.final_feeling ? incident.final_feeling.toLowerCase() : '';
+    const isSafe = finalFeeling.includes('safe') ||
+                   finalFeeling.includes('good') ||
+                   finalFeeling.includes('ok') ||
+                   finalFeeling.includes('fine') ||  // FIX: Added "fine" as a positive safety response
                    (user.safety_status && user.safety_status.toLowerCase().includes('safe'));
-    checkField('are_you_safe', isSafe);  // DB: incident.are_you_safe_and_ready_to_complete_this_form OR user.safety_status → PDF: are_you_safe
+
+    // DEBUG: Log the safety check logic
+    console.log('\n🔍 DEBUG - Safety Check:');
+    console.log('  final_feeling from DB:', incident.final_feeling);
+    console.log('  isSafe evaluates to:', isSafe);
+    console.log('  Will check final_feeling checkbox:', isSafe ? 'YES ✅' : 'NO ❌');
+
+    // FIX: PDF field is "final_feeling", not "are_you_safe"
+    checkField('final_feeling', isSafe);  // DB: incident.final_feeling → PDF: final_feeling (checkbox for "Are you safe and ready to complete this form?")
     setFieldText('emergency_recording_timestamp', user.safety_status_timestamp);  // DB: user.safety_status_timestamp → PDF: emergency_recording_timestamp
     checkField('medical_attention_needed', incident.medical_attention_required === true || incident.medical_attention_required === 'Yes');  // DB: BOOLEAN (or legacy TEXT "Yes")
     setFieldText('medical_how_are_you_feeling', incident.final_feeling);  // DB: final_feeling (from safety-check.html) → PDF: medical_how_are_you_feeling
@@ -372,7 +459,15 @@ class AdobePdfFormFillerService {
     checkField('medical_symptom_loss_of_consciousness', incident.medical_symptom_loss_of_consciousness);
     checkField('medical_symptom_severe_headache', incident.medical_symptom_severe_headache);
     checkField('medical_symptom_abdominal_bruising', incident.medical_symptom_abdominal_bruising);
-    checkField('medical_sympton_change_in_vision', incident.medical_symptom_change_in_vision);  // PDF has typo: "sympton"
+
+    // DEBUG: Log change_in_vision field
+    console.log('\n🔍 DEBUG - Change in Vision:');
+    console.log('  medical_symptom_change_in_vision from DB:', incident.medical_symptom_change_in_vision);
+    console.log('  Type:', typeof incident.medical_symptom_change_in_vision);
+    console.log('  Will check medical_symptom_change_in_vision checkbox:', incident.medical_symptom_change_in_vision ? 'YES ✅' : 'NO ❌');
+
+    // FIX: PDF field is "medical_symptom_change_in_vision" (correct spelling, not "sympton")
+    checkField('medical_symptom_change_in_vision', incident.medical_symptom_change_in_vision);
     checkField('medical_symptom_abdominal_pain', incident.medical_symptom_abdominal_pain);
     checkField('medical_symptom_limb_pain_mobilty', incident.medical_symptom_limb_pain_mobility);  // PDF has typo: "mobilty"
     checkField('medical_symptom_life _threatening', incident.medical_symptom_life_threatening);  // PDF has typo: "life _threatening" (with SPACE)
@@ -440,7 +535,28 @@ class AdobePdfFormFillerService {
     checkField('weather_windy', incident.weather_windy);
     checkField('weather_hail', incident.weather_hail);
     checkField('weather_thunder_lightening', incident.weather_thunder_lightning);  // PDF has typo: "lightening" not "lightning"
-    checkField('weather_dusk', incident.dusk);  // DB: dusk → PDF: weather_dusk (Page 4 time of day)
+
+    // FIX: Use actual weather_dusk value from database (not auto-calculated)
+    console.log('\n🔍 DEBUG - Dusk Field:');
+    console.log('  weather_dusk from DB:', incident.weather_dusk);
+    console.log('  Type:', typeof incident.weather_dusk);
+    console.log('  Will check weather_dusk checkbox:', incident.weather_dusk ? 'YES ✅' : 'NO ❌');
+
+    // WORKAROUND: weather_dusk checkbox has no appearance dictionary in PDF template
+    // Standard checkField() sets the value but appearance doesn't render
+    // Try setting it multiple times and force appearance update
+    checkField('weather_dusk', incident.weather_dusk);  // DB: weather_dusk → PDF: weather_dusk
+
+    // Extra workaround: Manually ensure the field appearance is set
+    if (incident.weather_dusk) {
+      try {
+        const duskCheckbox = form.getCheckBox('weather_dusk');
+        duskCheckbox.check();  // Double-check to ensure it's set
+        console.log('    🔧 Applied workaround: manually re-checked weather_dusk');
+      } catch (e) {
+        console.log('    ⚠️ Workaround failed:', e.message);
+      }
+    }
 
     // Road surface conditions (6 checkboxes)
     checkField('road_condition_dry', incident.road_condition_dry);
@@ -532,8 +648,8 @@ class AdobePdfFormFillerService {
     // PDF REVISION 3: usual_vehicle field structure changed
     // Old: usual_vehicle_yes / usual_vehicle_no
     // New: usual_vehicle (checkbox for yes) / driving_your_usual_vehicle_no (checkbox for no)
-    checkField('usual_vehicle', incident.usual_vehicle === 'yes');  // PDF REVISION 3: usual_vehicle_yes → usual_vehicle
-    checkField('driving_your_usual_vehicle_no', incident.usual_vehicle === 'no');  // PDF REVISION 3: usual_vehicle_no → driving_your_usual_vehicle_no
+    // FIX: Use checkFieldPair to ensure only one checkbox is checked at a time
+    checkFieldPair('usual_vehicle', 'driving_your_usual_vehicle_no', incident.usual_vehicle === 'yes');
 
     // DVLA lookup registration
     setFieldText('vehicle_license_plate', incident.vehicle_license_plate);
@@ -615,15 +731,12 @@ class AdobePdfFormFillerService {
     setFieldText('other-drivers-policy-holder-name', incident.other_drivers_policy_holder_name);
     setFieldText('other-drivers-policy-cover-type', incident.other_drivers_policy_cover_type);
 
-    // PDF REVISION 3: CRITICAL - describe_the_damage_to_the_other_vehicle field REMOVED from PDF
-    // This field does not exist in the revised PDF template. Other vehicle damage data is being
-    // stored in database (incident_other_vehicles.damage_description) but cannot be displayed.
-    // RECOMMENDATION: Ask user to add this field back to PDF or find alternative location.
-    //
-    // COMMENTED OUT until field is restored to PDF:
-    // if (data.vehicles && data.vehicles[0] && data.vehicles[0].damage_description) {
-    //   setFieldTextWithMaxFont('describe_the_damage_to_the_other_vehicle', data.vehicles[0].damage_description, 14);
-    // }
+    // PDF REVISION 4: Field restored in new template with max 14pt font requirement
+    // User confirmed field exists in new PDF template: /Users/ianring/Ian.ring\ Dropbox/...
+    // FIX: Uncommented and set max 14pt font as requested
+    if (data.vehicles && data.vehicles[0] && data.vehicles[0].damage_description) {
+      setFieldTextWithMaxFont('describe_the_damage_to_the_other_vehicle', data.vehicles[0].damage_description, 14);
+    }
 
     // ========================================
     // PAGE 9: Witnesses
@@ -631,8 +744,9 @@ class AdobePdfFormFillerService {
     //                   witness_email_address, witness_statement
     // ========================================
 
-    const hasWitnesses = data.witnesses && data.witnesses.length > 0;
-    checkField('witnesses_present', hasWitnesses);
+    // FIX: Use checkFieldPair to ensure only one checkbox is checked at a time
+    // Database stores: witnesses_present = 'yes' or 'no'
+    checkFieldPair('witnesses_present', 'witnesses_present_no', incident.witnesses_present === 'yes');
 
     // Witness 1 (apply 14pt max font size to statement to prevent huge text)
     if (data.witnesses && data.witnesses[0]) {
@@ -659,9 +773,10 @@ class AdobePdfFormFillerService {
     //                   other_breath_test
     // ========================================
 
-    // PDF has both "police_attend" and "police_attended" fields
-    checkField('police_attended', incident.police_attended);
-    checkField('police_attend', incident.police_attended);  // Alternate field name in PDF
+    // FIX: Use checkFieldPair to ensure only one checkbox is checked at a time
+    // Database stores: police_attended = true/false
+    // PDF has yes/no checkbox pair: police_attended (yes) + police_attended_no (no)
+    checkFieldPair('police_attended', 'police_attended_no', incident.police_attended);
     setFieldText('police_force', incident.police_force);
     setFieldText('accident_ref_number', incident.accident_ref_number);
     setFieldText('officer_name', incident.officer_name);
@@ -688,22 +803,27 @@ class AdobePdfFormFillerService {
     setUrlFieldWithAutoFitFont('file_url_record_detailed_account_of_what_happened', data.imageUrls?.file_url_record_detailed_account_of_what_happened || '');
 
     // Scene images (3 fields) - includes location screenshot
-    setUrlFieldWithAutoFitFont('scene_images_path_1', data.imageUrls?.scene_images_path_1 || '');  // location_map_screenshot
-    setUrlFieldWithAutoFitFont('scene_images_path_2', data.imageUrls?.scene_images_path_2 || '');  // scene_overview
-    setUrlFieldWithAutoFitFont('scene_images_path_3', data.imageUrls?.scene_images_path_3 || '');  // scene_overview_2 or documents
+    // FIX: Use ACTUAL PDF field names (not scene_images_path_*)
+    setUrlFieldWithAutoFitFont('location_map_screenshot', data.imageUrls?.location_map_screenshot || '');  // what3words location screenshot
+    setUrlFieldWithAutoFitFont('scene_photo_1_url', data.imageUrls?.scene_photo_1_url || '');  // scene_overview
+    setUrlFieldWithAutoFitFont('scene_photo_2_url', data.imageUrls?.scene_photo_2_url || '');  // scene_overview_2
+    setUrlFieldWithAutoFitFont('scene_photo_3_url', data.imageUrls?.scene_photo_3_url || '');  // scene_overview_3
 
-    // Other vehicle photos (3 fields)
-    setUrlFieldWithAutoFitFont('other_vehicle_photo_1', data.imageUrls?.other_vehicle_photo_1 || '');
-    setUrlFieldWithAutoFitFont('other_vehicle_photo_2', data.imageUrls?.other_vehicle_photo_2 || '');
-    setUrlFieldWithAutoFitFont('other_vehicle_photo_3', data.imageUrls?.other_vehicle_photo_3 || '');
+    // Other vehicle photos (5 fields)
+    // FIX: Add _url suffix to match actual PDF field names
+    setUrlFieldWithAutoFitFont('other_vehicle_photo_1_url', data.imageUrls?.other_vehicle_photo_1_url || '');
+    setUrlFieldWithAutoFitFont('other_vehicle_photo_2_url', data.imageUrls?.other_vehicle_photo_2_url || '');
+    setUrlFieldWithAutoFitFont('other_vehicle_photo_3_url', data.imageUrls?.other_vehicle_photo_3_url || '');
+    setUrlFieldWithAutoFitFont('other_vehicle_photo_4_url', data.imageUrls?.other_vehicle_photo_4_url || '');
+    setUrlFieldWithAutoFitFont('other_vehicle_photo_5_url', data.imageUrls?.other_vehicle_photo_5_url || '');
 
-    // Vehicle damage photos (6 fields)
-    setUrlFieldWithAutoFitFont('vehicle_damage_path_1', data.imageUrls?.vehicle_damage_path_1 || '');
-    setUrlFieldWithAutoFitFont('vehicle_damage_path_2', data.imageUrls?.vehicle_damage_path_2 || '');
-    setUrlFieldWithAutoFitFont('vehicle_damage_path_3', data.imageUrls?.vehicle_damage_path_3 || '');
-    setUrlFieldWithAutoFitFont('vehicle_damage_path_4', data.imageUrls?.vehicle_damage_path_4 || '');
-    setUrlFieldWithAutoFitFont('vehicle_damage_path_5', data.imageUrls?.vehicle_damage_path_5 || '');
-    setUrlFieldWithAutoFitFont('vehicle_damage_path_6', data.imageUrls?.vehicle_damage_path_6 || '');
+    // Vehicle damage photos (5 fields)
+    // FIX: Use vehicle_damage_photo_N_url (not vehicle_damage_path_N)
+    setUrlFieldWithAutoFitFont('vehicle_damage_photo_1_url', data.imageUrls?.vehicle_damage_photo_1_url || '');
+    setUrlFieldWithAutoFitFont('vehicle_damage_photo_2_url', data.imageUrls?.vehicle_damage_photo_2_url || '');
+    setUrlFieldWithAutoFitFont('vehicle_damage_photo_3_url', data.imageUrls?.vehicle_damage_photo_3_url || '');
+    setUrlFieldWithAutoFitFont('vehicle_damage_photo_4_url', data.imageUrls?.vehicle_damage_photo_4_url || '');
+    setUrlFieldWithAutoFitFont('vehicle_damage_photo_5_url', data.imageUrls?.vehicle_damage_photo_5_url || '');
 
     // ========================================
     // PAGE 13: User's Direct Statement (Transcription)

@@ -692,10 +692,10 @@
       return Math.round(bytes / Math.pow(k, i) * 100) / 100 + ' ' + sizes[i];
     }
 
-    // Auto-save
+    // Auto-save to sessionStorage (matches Page 12 expectation)
     function autoSave() {
       const formData = {
-        session_id: localStorage.getItem('temp_session_id'), // Required for backend to find temp uploads
+        session_id: localStorage.getItem('temp_session_id'), // ✅ Required for controller finalization
         uploaded_images: uploadedImages.map(img => ({
           path: img.path,
           fileName: img.fileName,
@@ -703,13 +703,13 @@
         }))
       };
 
-      localStorage.setItem('page6_data', JSON.stringify(formData));
+      sessionStorage.setItem('incident_page6', JSON.stringify(formData)); // ✅ Use standard pattern
       console.log('Page 6 data saved:', formData);
     }
 
-    // Load saved data
+    // Load saved data from sessionStorage (matches Page 12 expectation)
     function loadSavedData() {
-      const saved = localStorage.getItem('page6_data');
+      const saved = sessionStorage.getItem('incident_page6'); // ✅ Use standard pattern
       if (saved) {
         const data = JSON.parse(saved);
 
