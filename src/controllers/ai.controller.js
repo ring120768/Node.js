@@ -148,7 +148,7 @@ async function generateComprehensiveAnalysis(
 
     // Step 1: Generate Summary and Key Points (FOR PAGE 15)
     logger.info('[AI Analysis] Step 1/4: Generating summary and key points...');
-    const summaryPrompt = `You are an expert legal assistant analyzing a car accident personal statement.
+    const summaryPrompt = `Analyze this car accident personal statement and extract factual information.
 
 Personal Statement:
 """
@@ -156,9 +156,9 @@ ${transcription}
 """
 
 Provide:
-1. A concise 2-3 sentence summary
-2. 3-7 key bullet points highlighting main events, injuries, and critical details (suitable for legal document)
-3. Brief fault analysis (1-2 sentences)
+1. A concise 2-3 sentence summary stating the facts of what occurred
+2. 3-7 key bullet points documenting main events, injuries, and critical details
+3. Brief fault analysis based solely on the facts presented (1-2 sentences)
 
 Format as JSON:
 {
@@ -170,7 +170,7 @@ Format as JSON:
     const summaryResponse = await openai.chat.completions.create({
       model: 'gpt-4o',
       messages: [
-        { role: 'system', content: 'You are a legal assistant specializing in car accident cases with 15 years of experience.' },
+        { role: 'system', content: 'You are a legal documentation assistant who analyzes car accident statements and extracts factual information objectively.' },
         { role: 'user', content: summaryPrompt }
       ],
       temperature: 0.3,  // Reduced for factual accuracy
@@ -185,17 +185,17 @@ Format as JSON:
 
     // Step 2: Generate Quality Review
     logger.info('[AI Analysis] Step 2/4: Generating quality review...');
-    const reviewPrompt = `You are an expert legal assistant reviewing a car accident statement for completeness.
+    const reviewPrompt = `Review a car accident statement for completeness and identify missing information.
 
 Personal Statement:
 """
 ${transcription}
 """
 
-Analyze the statement and provide:
-1. Quality assessment (2-3 sentences about overall quality)
+Review the statement and provide:
+1. Quality assessment (2-3 sentences about the completeness of the documentation)
 2. Missing critical information (list specific items not mentioned: exact date/time, precise location, weather conditions, injuries detail, vehicle damage specifics, witness information, police attendance, etc.)
-3. Suggestions for improvement (3-5 specific actionable suggestions to strengthen the legal case)
+3. Suggestions for improvement (3-5 specific items to document for more complete records)
 
 Format as JSON:
 {
@@ -207,7 +207,7 @@ Format as JSON:
     const reviewResponse = await openai.chat.completions.create({
       model: 'gpt-4o',
       messages: [
-        { role: 'system', content: 'You are a legal assistant specializing in accident documentation and case preparation.' },
+        { role: 'system', content: 'You review accident documentation to identify completeness and missing factual information.' },
         { role: 'user', content: reviewPrompt }
       ],
       temperature: 0.3,
@@ -231,9 +231,9 @@ Format as JSON:
         witnesses
       );
 
-      const closingStatementPrompt = `You are a legal documentation specialist preparing a comprehensive factual account of a traffic accident.
+      const closingStatementPrompt = `Document a comprehensive factual account of a traffic accident.
 
-Create a complete, factual narrative that accurately documents the incident. This will be the CENTRE PIECE of the legal document (Page 14).
+Create a complete, factual narrative that documents the incident. This narrative will form the centre piece of the legal document (Page 14).
 
 PERSONAL STATEMENT FROM CLIENT:
 """
@@ -253,16 +253,16 @@ INSTRUCTIONS:
 7. Do NOT add speculation, interpretation, or information not provided
 8. Format with proper paragraphs using <p> tags
 9. Ensure every factual claim is supported by the provided data
-10. Maintain a sincere, factual tone throughout - avoid dramatic language
+10. Maintain a sincere, factual tone throughout - record only what is presented
 
-Create a complete, accurate narrative that documents the incident comprehensively.`;
+Provide a complete, accurate record that documents all factual aspects of the incident.`;
 
       const combinedResponse = await openai.chat.completions.create({
         model: 'gpt-4o',
         messages: [
           {
             role: 'system',
-            content: 'You are a legal documentation specialist who creates comprehensive, factual accounts of traffic accidents. You present information clearly, accurately, and sincerely without dramatic language, ensuring all facts are properly documented for legal purposes.'
+            content: 'You document traffic accidents by recording factual information clearly and accurately. You present only the facts provided, maintaining objectivity and sincerity throughout.'
           },
           { role: 'user', content: closingStatementPrompt }
         ],
@@ -284,7 +284,7 @@ Create a complete, accurate narrative that documents the incident comprehensivel
 
     // Step 4: Generate Final Review with Next Steps (FOR PAGE 15)
     logger.info('[AI Analysis] Step 4/4: Generating final review and next steps guide...');
-    const finalReviewPrompt = `You are a senior legal advisor reviewing a car accident case and providing guidance to the client.
+    const finalReviewPrompt = `Review the car accident documentation and provide guidance to the client.
 
 Personal Statement:
 """
@@ -323,7 +323,7 @@ Format as JSON:
       messages: [
         {
           role: 'system',
-          content: 'You are a senior legal advisor with 20 years of experience in UK traffic accident law. You provide clear, actionable guidance to accident victims.'
+          content: 'You provide clear, actionable guidance to UK traffic accident victims based on standard legal procedures and documentation requirements.'
         },
         { role: 'user', content: finalReviewPrompt }
       ],
