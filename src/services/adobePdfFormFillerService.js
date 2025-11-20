@@ -8,6 +8,7 @@
  */
 
 const { ServicePrincipalCredentials, PDFServices } = require('@adobe/pdfservices-node-sdk');
+const { PDFDocument, PDFName, PDFDict, PDFString } = require('pdf-lib');
 const fs = require('fs');
 const path = require('path');
 const logger = require('../utils/logger');
@@ -86,8 +87,7 @@ class AdobePdfFormFillerService {
       // Load the PDF template
       const pdfBytes = fs.readFileSync(this.templatePath);
 
-      // Create a PDFDocument from the template
-      const { PDFDocument, PDFName, PDFDict } = require('pdf-lib');
+      // Create a PDFDocument from the template (pdf-lib imported at top of file)
       const pdfDoc = await PDFDocument.load(pdfBytes);
       const form = pdfDoc.getForm();
 
@@ -247,7 +247,27 @@ class AdobePdfFormFillerService {
           field.enableMultiline();
           field.enableScrolling();
           field.setText(text);
-          field.setFontSize(fontSize);
+
+          // Try to set font size, but add /DA entry if missing
+          try {
+            field.setFontSize(fontSize);
+          } catch (daError) {
+            // Field has no /DA (default appearance) entry - create one
+            console.log(`   🔧 Field "${fieldName}" missing /DA entry, creating it...`);
+            try {
+              const acroField = field.acroField;
+              const fieldDict = acroField.dict;
+
+              // Create /DA string: /Font_Name font_size Tf color_r color_g color_b rg
+              // The /DA entry already contains the font size
+              // Don't call setFontSize() or updateAppearances() - let form.updateFieldAppearances() handle it
+              const daString = `/Helv ${fontSize} Tf 0 0 0 rg`;
+              fieldDict.set(PDFName.of('DA'), PDFString.of(daString));
+              console.log(`   ✅ /DA entry created with font size ${fontSize}`);
+            } catch (createError) {
+              console.log(`   ⚠️ Failed to create /DA entry: ${createError.message}`);
+            }
+          }
         }
       } catch (error) {
         // Silently handle missing fields
@@ -326,7 +346,27 @@ class AdobePdfFormFillerService {
           field.enableMultiline();
           field.enableScrolling();
           field.setText(text);
-          field.setFontSize(fontSize);
+
+          // Try to set font size, but add /DA entry if missing
+          try {
+            field.setFontSize(fontSize);
+          } catch (daError) {
+            // Field has no /DA (default appearance) entry - create one
+            console.log(`   🔧 Field "${fieldName}" missing /DA entry, creating it...`);
+            try {
+              const acroField = field.acroField;
+              const fieldDict = acroField.dict;
+
+              // Create /DA string: /Font_Name font_size Tf color_r color_g color_b rg
+              // The /DA entry already contains the font size
+              // Don't call setFontSize() or updateAppearances() - let form.updateFieldAppearances() handle it
+              const daString = `/Helv ${fontSize} Tf 0 0 0 rg`;
+              fieldDict.set(PDFName.of('DA'), PDFString.of(daString));
+              console.log(`   ✅ /DA entry created with font size ${fontSize}`);
+            } catch (createError) {
+              console.log(`   ⚠️ Failed to create /DA entry: ${createError.message}`);
+            }
+          }
         }
       } catch (error) {
         // Silently handle missing fields
