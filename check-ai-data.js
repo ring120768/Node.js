@@ -1,70 +1,50 @@
-const { createClient } = require('@supabase/supabase-js');
 require('dotenv').config();
+const { createClient } = require('@supabase/supabase-js');
 
-const supabase = createClient(process.env.SUPABASE_URL, process.env.SUPABASE_SERVICE_ROLE_KEY);
+const supabase = createClient(
+  process.env.SUPABASE_URL,
+  process.env.SUPABASE_SERVICE_ROLE_KEY
+);
 
-(async () => {
-  const userId = 'ee7cfcaf-5810-4c62-b99b-ab0f2291733e';
+async function checkAIData() {
+  const userId = '5326c2aa-f1d5-4edc-a972-7fb14995ed0f';
 
-  console.log('=== CHECKING AI DATA FOR TEST USER ===\n');
+  console.log('Fetching AI analysis data from database...\n');
 
-  // Check ai_transcription table
-  const { data: transcriptions, error: transError } = await supabase
-    .from('ai_transcription')
-    .select('*')
-    .eq('create_user_id', userId);
-
-  console.log('📝 ai_transcription table:');
-  if (transError) {
-    console.log(`   ❌ Error: ${transError.message}`);
-  } else if (!transcriptions || transcriptions.length === 0) {
-    console.log('   ⚠️  No records found');
-  } else {
-    console.log(`   ✅ Found ${transcriptions.length} record(s)`);
-    transcriptions.forEach((t, i) => {
-      console.log(`   Record ${i + 1}:`);
-      console.log(`     - ID: ${t.id}`);
-      console.log(`     - Transcript length: ${t.transcript_text?.length || 0} chars`);
-      console.log(`     - Model: ${t.model || 'N/A'}`);
-      console.log(`     - Created: ${t.created_at}`);
-    });
-  }
-
-  console.log('');
-
-  // Check ai_summary table
-  const { data: summaries, error: summError } = await supabase
-    .from('ai_summary')
-    .select('*')
-    .eq('create_user_id', userId);
-
-  console.log('📋 ai_summary table:');
-  if (summError) {
-    console.log(`   ❌ Error: ${summError.message}`);
-  } else if (!summaries || summaries.length === 0) {
-    console.log('   ⚠️  No records found');
-  } else {
-    console.log(`   ✅ Found ${summaries.length} record(s)`);
-    summaries.forEach((s, i) => {
-      console.log(`   Record ${i + 1}:`);
-      console.log(`     - ID: ${s.id}`);
-      console.log(`     - Summary length: ${s.summary?.length || 0} chars`);
-      console.log(`     - Created: ${s.created_at}`);
-    });
-  }
-
-  console.log('');
-
-  // Check incident_reports for fallback fields
-  const { data: incident } = await supabase
+  const { data, error } = await supabase
     .from('incident_reports')
-    .select('ai_summary_of_data_collected, detailed_account_of_what_happened')
+    .select('voice_transcription, analysis_metadata, quality_review, ai_summary, closing_statement, final_review')
     .eq('create_user_id', userId)
     .single();
 
-  console.log('📄 incident_reports fallback fields:');
-  if (incident) {
-    console.log(`   ai_summary_of_data_collected: ${incident.ai_summary_of_data_collected ? '✅ Has data (' + incident.ai_summary_of_data_collected.length + ' chars)' : '❌ Empty'}`);
-    console.log(`   detailed_account_of_what_happened: ${incident.detailed_account_of_what_happened ? '✅ Has data (' + incident.detailed_account_of_what_happened.length + ' chars)' : '❌ Empty'}`);
+  if (error) {
+    console.error('❌ Error:', error);
+    return;
   }
-})();
+
+  console.log('📊 Current AI Data in Database:\n');
+  console.log('1. voice_transcription:');
+  console.log('   ' + (data.voice_transcription || '(empty)').substring(0, 150));
+  console.log('   Length:', data.voice_transcription?.length || 0, 'chars\n');
+
+  console.log('2. analysis_metadata:');
+  console.log('   ' + JSON.stringify(data.analysis_metadata, null, 2) + '\n');
+
+  console.log('3. quality_review:');
+  console.log('   ' + (data.quality_review || '(empty)').substring(0, 150));
+  console.log('   Length:', data.quality_review?.length || 0, 'chars\n');
+
+  console.log('4. ai_summary:');
+  console.log('   ' + (data.ai_summary || '(empty)').substring(0, 150));
+  console.log('   Length:', data.ai_summary?.length || 0, 'chars\n');
+
+  console.log('5. closing_statement:');
+  console.log('   ' + (data.closing_statement || '(empty)').substring(0, 150));
+  console.log('   Length:', data.closing_statement?.length || 0, 'chars\n');
+
+  console.log('6. final_review:');
+  console.log('   ' + (data.final_review || '(empty)').substring(0, 150));
+  console.log('   Length:', data.final_review?.length || 0, 'chars\n');
+}
+
+checkAIData().catch(console.error);
