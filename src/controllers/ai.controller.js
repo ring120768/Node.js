@@ -516,43 +516,107 @@ function extractArrayField(field) {
 }
 
 /**
- * Store AI analysis in database for audit trail
+ * Store AI analysis in incident_reports table for PDF generation
+ *
+ * This function updates the incident_reports record with AI-generated content
+ * that will appear in the final PDF document (Pages 13-16).
+ *
+ * Migration 028 added these columns to incident_reports:
+ * - voice_transcription (Page 13): User's transcription
+ * - analysis_metadata (Page 13): GPT model info
+ * - quality_review (Page 13): Quality assessment
+ * - ai_summary (Page 14): Summary with key points
+ * - closing_statement (Page 15): Comprehensive narrative
+ * - final_review (Page 16): Next steps and recommendations
  */
 async function storeAIAnalysis(userId, incidentId, transcription, analysis) {
   try {
-    const analysisData = {
-      create_user_id: userId,  // Fixed: was user_id
-      incident_id: incidentId,
-      transcription_text: transcription,
-      summary: analysis.summary,
-      key_points: analysis.keyPoints,  // Array of strings
-      fault_analysis: analysis.faultAnalysis,
-      quality_review: analysis.review,  // JSONB object
-      combined_report: analysis.combinedReport,  // HTML narrative
-      completeness_score: analysis.finalReview?.completenessScore,
-      final_review: analysis.finalReview,  // JSONB object with nextSteps[]
-      created_at: new Date().toISOString()
+    // Format AI summary: Combine summary text with key points as bullets
+    const keyPointsBullets = analysis.keyPoints && analysis.keyPoints.length > 0
+      ? '\n\nKey Points:\n' + analysis.keyPoints.map(point => `• ${point}`).join('\n')
+      : '';
+    const aiSummary = `${analysis.summary || ''}${keyPointsBullets}`;
+
+    // Format quality review: Extract quality text from review object
+    const qualityReviewText = typeof analysis.review === 'object' && analysis.review.quality
+      ? analysis.review.quality
+      : '';
+
+    // Format final review: Convert JSONB to readable text
+    let finalReviewText = '';
+    if (analysis.finalReview) {
+      if (analysis.finalReview.strengths) {
+        finalReviewText += `Strengths:\n${analysis.finalReview.strengths}\n\n`;
+      }
+      if (analysis.finalReview.nextSteps && Array.isArray(analysis.finalReview.nextSteps)) {
+        finalReviewText += 'Next Steps:\n' + analysis.finalReview.nextSteps.map((step, i) => `${i + 1}. ${step}`).join('\n') + '\n\n';
+      }
+      if (analysis.finalReview.legalConsiderations) {
+        finalReviewText += `Legal Considerations:\n${analysis.finalReview.legalConsiderations}`;
+      }
+    }
+
+    // Create metadata object
+    const analysisMetadata = {
+      model: 'gpt-4o',
+      timestamp: new Date().toISOString(),
+      version: '2.0',
+      temperature: 0.3,
+      wordCount: analysis.combinedReport ? analysis.combinedReport.split(/\s+/).length : 0
+    };
+
+    // Update incident_reports record with AI analysis fields
+    const updateData = {
+      voice_transcription: transcription,
+      analysis_metadata: analysisMetadata,
+      quality_review: qualityReviewText,
+      ai_summary: aiSummary,
+      closing_statement: analysis.combinedReport,  // HTML narrative for Page 15
+      final_review: finalReviewText
     };
 
     const { data, error } = await supabase
-      .from('ai_analysis')
-      .insert([analysisData])
+      .from('incident_reports')
+      .update(updateData)
+      .eq('id', incidentId)
       .select();
 
     if (error) {
       // Log error but don't fail the analysis request
-      logger.warn('Failed to store AI analysis (non-critical)', {
+      logger.warn('Failed to store AI analysis in incident_reports (non-critical)', {
         error: error.message,
         userId,
         incidentId
       });
     } else {
-      logger.success('AI analysis stored in database', {
-        analysisId: data[0].id,
+      logger.success('AI analysis stored in incident_reports table', {
         incidentId,
-        userId
+        userId,
+        fieldsUpdated: Object.keys(updateData),
+        wordCount: analysisMetadata.wordCount
       });
     }
+
+    // ALSO store in ai_analysis table for audit trail (optional)
+    const auditData = {
+      create_user_id: userId,
+      incident_id: incidentId,
+      transcription_text: transcription,
+      summary: analysis.summary,
+      key_points: analysis.keyPoints,
+      fault_analysis: analysis.faultAnalysis,
+      quality_review: analysis.review,
+      combined_report: analysis.combinedReport,
+      completeness_score: analysis.finalReview?.completenessScore,
+      final_review: analysis.finalReview,
+      created_at: new Date().toISOString()
+    };
+
+    await supabase
+      .from('ai_analysis')
+      .insert([auditData])
+      .select();
+    // Ignore errors - audit trail is non-critical
 
   } catch (error) {
     logger.warn('Error storing AI analysis (non-critical)', { error: error.message });
