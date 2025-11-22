@@ -534,9 +534,9 @@
             </button>
         </div>
 
-        <!-- Go to Homepage Button -->
-        <button class="website-btn" id="homepageBtn">
-            🏠 Homepage
+        <!-- Go to Dashboard Button -->
+        <button class="website-btn" id="dashboardBtn">
+            📊 View Dashboard
         </button>
 
         <p class="helper-text" id="helperText">
@@ -805,8 +805,12 @@
             }
         }
 
-        function goToHomepage() {
-            window.location.href = '/index.html';
+        function goToDashboard() {
+            if (userId) {
+                window.location.href = `/dashboard.html?user_id=${userId}`;
+            } else {
+                window.location.href = '/dashboard.html';
+            }
         }
 
         // ===== MODAL AND WITNESS/VEHICLE FUNCTIONS REMOVED =====
@@ -832,7 +836,7 @@
 
             // Setup navigation button event listeners (CSP-compliant)
             document.getElementById('newReportBtn').addEventListener('click', startNewReport);
-            document.getElementById('homepageBtn').addEventListener('click', goToHomepage);
+            document.getElementById('dashboardBtn').addEventListener('click', goToDashboard);
 
             console.log('📋 Page Context:', {
                 userId,
