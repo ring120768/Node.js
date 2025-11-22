@@ -16,7 +16,7 @@ let fetchAllData, generatePDF, sendEmails;
 try {
   fetchAllData = require('../../lib/data/dataFetcher').fetchAllData;
   generatePDF = require('../../lib/pdfGenerator').generatePDF; // Legacy fallback implementation
-  sendEmails = require('../../lib/generators/emailService').sendEmails;
+  sendEmails = require('../../lib/emailService').sendEmails; // ✅ Uses configured Hostinger SMTP service
 } catch (error) {
   logger.warn('PDF generation modules not found - PDF features will be disabled', error.message);
 }
