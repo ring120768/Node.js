@@ -19,18 +19,16 @@ const corsOptions = {
       'https://workspace.ring120768.repl.co',
       'https://workspace.ring120768.replit.app',
       'https://workspace.ring120768.replit.dev',
-      'http://localhost:3000',
-      'http://localhost:5000',
       'https://form.typeform.com',
       'https://typeform.com',
       'https://api.typeform.com'
       // Removed wildcard patterns for security: /.typeform.com$/, /.zapier.com$/, /.replit.co$/,
-      
-      
-      
-      
-      
     ];
+
+    // Add localhost origins only in development/test environments
+    if (process.env.NODE_ENV !== 'production') {
+      allowedOrigins.push('http://localhost:3000', 'http://localhost:5000');
+    }
 
     if (!origin) return callback(null, true);
 
