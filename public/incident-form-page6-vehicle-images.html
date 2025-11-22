@@ -506,10 +506,28 @@
         <span>←</span>
         <span>Back</span>
       </button>
-      <button type="button" class="btn btn-primary" id="next-btn" disabled>
-        <span>Next</span>
-        <span>→</span>
-      </button>
+
+      <!-- Next Button with Bandwidth Pro-Tip -->
+      <div class="btn-with-tooltip">
+        <button type="button" class="btn btn-primary" id="next-btn" disabled>
+          <span>Next</span>
+          <span>→</span>
+        </button>
+
+        <!-- Hover Tooltip -->
+        <div class="hover-tooltip" style="bottom: auto; top: -120px;">
+          <div class="hover-tooltip-content">
+            <div class="hover-tooltip-title">
+              <span>💡</span>
+              <span>Pro Tip</span>
+            </div>
+            <div class="hover-tooltip-text">
+              On slow connection? You can skip photos now and upload them later from your Dashboard when you have better bandwidth.
+            </div>
+          </div>
+          <div class="hover-tooltip-arrow" style="top: auto; bottom: -8px; border-top: 8px solid var(--accent); border-bottom: none;"></div>
+        </div>
+      </div>
     </div>
 
   </div>
@@ -525,6 +543,46 @@
     const imagesContainer = document.getElementById('images-container');
     const imageCountSpan = document.getElementById('image-count');
     const nextBtn = document.getElementById('next-btn');
+
+    // ========================================
+    // BANDWIDTH DETECTION & PRO-TIP ALERT
+    // ========================================
+    // Detect slow connection and show helpful message about uploading later from Dashboard
+    function detectSlowConnection() {
+      // Check Network Information API (supported on most mobile browsers)
+      if ('connection' in navigator) {
+        const connection = navigator.connection || navigator.mozConnection || navigator.webkitConnection;
+
+        // Slow connection indicators:
+        // - effectiveType: 'slow-2g', '2g', '3g' (anything slower than '4g')
+        // - downlink: < 1 Mbps
+        // - saveData: true (user has enabled data saver mode)
+        const slowTypes = ['slow-2g', '2g', '3g'];
+        const isSlowType = connection.effectiveType && slowTypes.includes(connection.effectiveType);
+        const isSlowDownlink = connection.downlink && connection.downlink < 1; // Less than 1 Mbps
+        const isSaveDataMode = connection.saveData === true;
+
+        return isSlowType || isSlowDownlink || isSaveDataMode;
+      }
+
+      // Fallback: No detection available, assume connection is OK
+      return false;
+    }
+
+    // Show pro-tip alert on slow connection (once per session)
+    function showSlowConnectionTip() {
+      const tipShown = sessionStorage.getItem('bandwidthTipShown');
+
+      if (!tipShown && detectSlowConnection()) {
+        setTimeout(() => {
+          alert('💡 Slow connection detected!\n\nYou can skip uploading photos now and add them later from your Dashboard when you have better bandwidth.\n\nThis will save you time and data.');
+          sessionStorage.setItem('bandwidthTipShown', 'true');
+        }, 1000); // Delay 1s to let page load
+      }
+    }
+
+    // Run bandwidth detection on page load
+    showSlowConnectionTip();
 
     // Add Image Button Click
     addImageBtn.addEventListener('click', () => {
