@@ -1097,8 +1097,16 @@
 
                 // Handle button clicks inside modal
                 userGuideModal.addEventListener('click', function(e) {
+                    console.log('🔍 Modal clicked:', e.target);
+
                     const button = e.target.closest('[data-guide], [data-action]');
-                    if (!button) return;
+
+                    if (!button) {
+                        console.log('⚠️ No button found from target:', e.target);
+                        return;
+                    }
+
+                    console.log('✅ Button found:', button, 'data-action:', button.getAttribute('data-action'));
 
                     // Handle guide selection buttons
                     if (button.hasAttribute('data-guide')) {
@@ -1110,22 +1118,27 @@
                     // Handle action buttons
                     if (button.hasAttribute('data-action')) {
                         const action = button.getAttribute('data-action');
+                        console.log('🎯 Action detected:', action);
 
                         switch(action) {
                             case 'cancel-guide':
+                                console.log('❌ Closing modal...');
                                 closeGuideModal();
                                 break;
                             case 'back-to-menu':
+                                console.log('⬅️ Going back to menu...');
                                 showGuideMenu();
                                 break;
                             case 'start-signup':
-                                console.log('📝 Navigating to signup form...');
+                                console.log('✨ Navigating to signup form...');
                                 window.location.href = '/signup-form.html';
                                 break;
                             case 'start-incident':
                                 console.log('📝 Navigating to incident report...');
                                 window.location.href = '/incident.html';
                                 break;
+                            default:
+                                console.log('⚠️ Unknown action:', action);
                         }
                     }
                 });
