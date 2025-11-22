@@ -498,6 +498,12 @@
             Try Demo
         </button>
 
+        <!-- USER GUIDE BUTTON -->
+        <button class="secondary-btn" id="userGuideBtn">
+            <span class="btn-icon">📖</span>
+            User Guide
+        </button>
+
         <!-- DIVIDER -->
         <div class="divider">
             <span>Account</span>
@@ -527,6 +533,37 @@
                     <div class="spinner"></div>
                     <p>Getting your location...</p>
                 </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- USER GUIDE MODAL -->
+    <div class="modal-overlay" id="userGuideModal">
+        <div class="emergency-modal">
+            <div class="modal-header">
+                <h2>📖 User Guide</h2>
+                <p>Choose the guide you need</p>
+            </div>
+
+            <div id="guideContent">
+                <button class="secondary-btn" data-guide="signup" style="width: 100%; margin-bottom: 15px;">
+                    <span class="btn-icon">✨</span>
+                    Signup Guide
+                </button>
+
+                <button class="secondary-btn" data-guide="incident" style="width: 100%; margin-bottom: 15px;">
+                    <span class="btn-icon">📝</span>
+                    Incident Reports Guide
+                </button>
+
+                <button class="secondary-btn" data-guide="scenarios" style="width: 100%; margin-bottom: 20px;">
+                    <span class="btn-icon">🎭</span>
+                    Example Scenarios
+                </button>
+
+                <button class="cancel-btn" data-action="cancel-guide">
+                    Close
+                </button>
             </div>
         </div>
     </div>
@@ -717,6 +754,173 @@
             window.location.href = '/dashboard.html';
         }
 
+        // User Guide Modal Functions
+        function showGuideMenu() {
+            const userGuideModal = document.getElementById('userGuideModal');
+            const guideContent = document.getElementById('guideContent');
+
+            guideContent.innerHTML = `
+                <button class="secondary-btn" data-guide="signup" style="width: 100%; margin-bottom: 15px;">
+                    <span class="btn-icon">✨</span>
+                    Signup Guide
+                </button>
+
+                <button class="secondary-btn" data-guide="incident" style="width: 100%; margin-bottom: 15px;">
+                    <span class="btn-icon">📝</span>
+                    Incident Reports Guide
+                </button>
+
+                <button class="secondary-btn" data-guide="scenarios" style="width: 100%; margin-bottom: 20px;">
+                    <span class="btn-icon">🎭</span>
+                    Example Scenarios
+                </button>
+
+                <button class="cancel-btn" data-action="cancel-guide">
+                    Close
+                </button>
+            `;
+        }
+
+        function showGuideContent(type) {
+            const guideContent = document.getElementById('guideContent');
+
+            let content = '';
+
+            switch(type) {
+                case 'signup':
+                    content = `
+                        <div class="guide-section">
+                            <h3>📋 Signup Guide</h3>
+                            <div style="text-align: left; line-height: 1.6; margin: 20px 0;">
+                                <p><strong>Before You Start:</strong></p>
+                                <ul style="margin: 10px 0; padding-left: 20px;">
+                                    <li>Driving licence (photo)</li>
+                                    <li>Vehicle registration details</li>
+                                    <li>Insurance policy number</li>
+                                    <li>Vehicle photos ready</li>
+                                </ul>
+
+                                <p style="margin-top: 20px;"><strong>Steps:</strong></p>
+                                <ol style="margin: 10px 0; padding-left: 20px;">
+                                    <li><strong>Page 1:</strong> Create account with email & password</li>
+                                    <li><strong>Pages 2-3:</strong> Personal information & contact details</li>
+                                    <li><strong>Pages 4-5:</strong> Vehicle details & upload photos</li>
+                                    <li><strong>Pages 6-7:</strong> Insurance information</li>
+                                    <li><strong>Pages 8-9:</strong> Policyholder details (if different)</li>
+                                </ol>
+
+                                <p style="margin-top: 20px;"><strong>💡 Tips:</strong></p>
+                                <ul style="margin: 10px 0; padding-left: 20px;">
+                                    <li>Upload photos immediately - they save automatically</li>
+                                    <li>You can save and return later</li>
+                                    <li>Takes 15-30 minutes to complete</li>
+                                </ul>
+                            </div>
+
+                            <button class="secondary-btn" onclick="window.location.href='/signup-form.html'" style="width: 100%; margin-bottom: 15px;">
+                                ✨ Start Signup
+                            </button>
+
+                            <button class="cancel-btn" data-action="back-to-menu">
+                                ← Back to Menu
+                            </button>
+                        </div>
+                    `;
+                    break;
+
+                case 'incident':
+                    content = `
+                        <div class="guide-section">
+                            <h3>📝 Incident Report Guide</h3>
+                            <div style="text-align: left; line-height: 1.6; margin: 20px 0;">
+                                <p><strong>What You'll Document:</strong></p>
+                                <ul style="margin: 10px 0; padding-left: 20px;">
+                                    <li>Date, time, and location of accident</li>
+                                    <li>What happened (your account)</li>
+                                    <li>Vehicle damage photos</li>
+                                    <li>Injuries and medical details</li>
+                                    <li>Other vehicles and witnesses</li>
+                                    <li>Police and emergency services</li>
+                                    <li>Scene photos and conditions</li>
+                                </ul>
+
+                                <p style="margin-top: 20px;"><strong>🎤 AI Features:</strong></p>
+                                <ul style="margin: 10px 0; padding-left: 20px;">
+                                    <li>Voice transcription - speak instead of type</li>
+                                    <li>AI analysis of your case</li>
+                                    <li>Automatic legal recommendations</li>
+                                </ul>
+
+                                <p style="margin-top: 20px;"><strong>📄 Final Report:</strong></p>
+                                <ul style="margin: 10px 0; padding-left: 20px;">
+                                    <li>17-page professional PDF</li>
+                                    <li>All photos embedded</li>
+                                    <li>Ready for insurance/solicitor</li>
+                                    <li>Generated in 5 minutes</li>
+                                </ul>
+                            </div>
+
+                            <button class="secondary-btn" onclick="window.location.href='/incident.html'" style="width: 100%; margin-bottom: 15px;">
+                                📝 Start Incident Report
+                            </button>
+
+                            <button class="cancel-btn" data-action="back-to-menu">
+                                ← Back to Menu
+                            </button>
+                        </div>
+                    `;
+                    break;
+
+                case 'scenarios':
+                    content = `
+                        <div class="guide-section">
+                            <h3>🎭 Example Scenarios</h3>
+                            <div style="text-align: left; line-height: 1.6; margin: 20px 0; max-height: 400px; overflow-y: auto;">
+                                <div style="margin-bottom: 20px; padding: 15px; background: #f5f5f5; border-radius: 8px;">
+                                    <h4 style="margin: 0 0 10px 0;">🚗 Rear-End Collision</h4>
+                                    <p style="margin: 5px 0;">You're stopped at red lights when another car hits you from behind. The other driver admits they were distracted.</p>
+                                    <p style="margin: 5px 0; font-size: 0.9em; color: #666;"><strong>What to do:</strong> Get driver details, take photos of damage, note any witnesses, record exact location.</p>
+                                </div>
+
+                                <div style="margin-bottom: 20px; padding: 15px; background: #f5f5f5; border-radius: 8px;">
+                                    <h4 style="margin: 0 0 10px 0;">🛣️ Motorway Lane Change</h4>
+                                    <p style="margin: 5px 0;">A vehicle changes lanes suddenly without indicating, causing you to brake and swerve.</p>
+                                    <p style="margin: 5px 0; font-size: 0.9em; color: #666;"><strong>What to do:</strong> If safe, note registration. Check dashcam footage. Get contact details if they stop.</p>
+                                </div>
+
+                                <div style="margin-bottom: 20px; padding: 15px; background: #f5f5f5; border-radius: 8px;">
+                                    <h4 style="margin: 0 0 10px 0;">🚦 Junction Accident</h4>
+                                    <p style="margin: 5px 0;">You have right of way at a roundabout, but another car pulls out and hits your passenger side.</p>
+                                    <p style="margin: 5px 0; font-size: 0.9em; color: #666;"><strong>What to do:</strong> Photos of junction, road markings, signage. Get witness details. Note traffic light sequence.</p>
+                                </div>
+
+                                <div style="margin-bottom: 20px; padding: 15px; background: #f5f5f5; border-radius: 8px;">
+                                    <h4 style="margin: 0 0 10px 0;">🅿️ Car Park Collision</h4>
+                                    <p style="margin: 5px 0;">While reversing from a parking space, another car reverses into you at the same time.</p>
+                                    <p style="margin: 5px 0; font-size: 0.9em; color: #666;"><strong>What to do:</strong> Exchange details immediately. Check for CCTV cameras. Take photos showing parking bay positions.</p>
+                                </div>
+
+                                <div style="padding: 15px; background: #fff3cd; border-radius: 8px;">
+                                    <p style="margin: 0; font-size: 0.9em;"><strong>⚠️ Important:</strong> Never admit fault at the scene, even if you think it's your fault. Get all details, document everything, let insurance decide liability.</p>
+                                </div>
+                            </div>
+
+                            <button class="cancel-btn" data-action="back-to-menu" style="margin-top: 15px;">
+                                ← Back to Menu
+                            </button>
+                        </div>
+                    `;
+                    break;
+            }
+
+            guideContent.innerHTML = content;
+        }
+
+        function closeGuideModal() {
+            const userGuideModal = document.getElementById('userGuideModal');
+            userGuideModal.classList.remove('show');
+        }
+
         // Add event listeners when page loads
         document.addEventListener('DOMContentLoaded', function() {
             console.log('🚗 Car Crash Lawyer AI - Landing Page Initialized');
@@ -727,6 +931,9 @@
             const demoBtn = document.getElementById('demoBtn');
             const logoutBtn = document.getElementById('logoutBtn');
             const signupBtn = document.getElementById('signupBtn');
+            const userGuideBtn = document.getElementById('userGuideBtn');
+            const userGuideModal = document.getElementById('userGuideModal');
+            const guideContent = document.getElementById('guideContent');
 
             if (incidentBtn) {
                 incidentBtn.addEventListener('click', function(e) {
@@ -788,6 +995,17 @@
                     window.location.href = '/signup-form.html';
                 });
                 console.log('✅ Signup button event listener added');
+            }
+
+            if (userGuideBtn) {
+                userGuideBtn.addEventListener('click', function(e) {
+                    e.preventDefault();
+                    console.log('📖 User Guide button clicked');
+                    userGuideModal.classList.add('show');
+                    // Reset to main menu when opening
+                    showGuideMenu();
+                });
+                console.log('✅ User Guide button event listener added');
             }
 
             // Check session status and show/hide logout button
@@ -857,6 +1075,45 @@
             console.log('🔍 About to run checkSession on page load...');
             checkSession();
 
+            // User Guide Modal Event Delegation
+            if (userGuideModal) {
+                // Close modal when clicking outside
+                userGuideModal.addEventListener('click', function(e) {
+                    if (e.target === userGuideModal) {
+                        closeGuideModal();
+                    }
+                });
+
+                // Handle button clicks inside modal
+                userGuideModal.addEventListener('click', function(e) {
+                    const button = e.target.closest('[data-guide], [data-action]');
+                    if (!button) return;
+
+                    // Handle guide selection buttons
+                    if (button.hasAttribute('data-guide')) {
+                        const guideType = button.getAttribute('data-guide');
+                        console.log('📖 Guide selected:', guideType);
+                        showGuideContent(guideType);
+                    }
+
+                    // Handle action buttons
+                    if (button.hasAttribute('data-action')) {
+                        const action = button.getAttribute('data-action');
+
+                        switch(action) {
+                            case 'cancel-guide':
+                                closeGuideModal();
+                                break;
+                            case 'back-to-menu':
+                                showGuideMenu();
+                                break;
+                        }
+                    }
+                });
+
+                console.log('✅ User Guide modal event listeners added');
+            }
+
             console.log('✅ Page fully loaded');
             
             // Debug: Check if buttons are clickable
@@ -878,7 +1135,7 @@
             document.body.addEventListener('click', function(e) {
                 const target = e.target;
                 const text = target.textContent.trim();
-                
+
                 if (target.matches('.secondary-btn')) {
                     if (text.includes('Report an Incident')) {
                         e.preventDefault();
@@ -889,6 +1146,12 @@
                     } else if (text.includes('Try Demo')) {
                         e.preventDefault();
                         window.location.href = '/demo.html';
+                    } else if (text.includes('User Guide')) {
+                        e.preventDefault();
+                        if (userGuideModal) {
+                            userGuideModal.classList.add('show');
+                            showGuideMenu();
+                        }
                     }
                 } else if (target.matches('.auth-btn.logout')) {
                     e.preventDefault();
