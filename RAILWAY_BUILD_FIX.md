@@ -201,6 +201,27 @@ Should return PDF without "Failed to launch browser" error.
 
 ## Common Railway Build Errors
 
+### Error: "undefined variable 'ca-certificates'" (Nix package naming)
+**Error Message:**
+```
+error: undefined variable 'ca-certificates'
+at /app/.nixpacks/nixpkgs-*.nix:19:47
+```
+
+**Root Cause:**
+- Used Debian/Ubuntu package names instead of Nix package names
+- `ca-certificates` is not a valid Nix package (should be `cacert`)
+- Xorg libraries need `xorg.` prefix (e.g., `xorg.libX11` not `libX11`)
+
+**Fix Applied (commit ad389bc):**
+```toml
+# ❌ WRONG (Debian names)
+nixPkgs = ["ca-certificates", "libX11", "libXcomposite"]
+
+# ✅ CORRECT (Nix names)
+nixPkgs = ["cacert", "xorg.libX11", "xorg.libXcomposite"]
+```
+
 ### Error: "Cannot find module 'puppeteer'"
 **Fix:** Run `npm install` to add Puppeteer to `package.json` dependencies (already present)
 
