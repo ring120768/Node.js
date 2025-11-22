@@ -13,6 +13,10 @@ const fs = require('fs');
 const path = require('path');
 const logger = require('../utils/logger');
 
+// NEW: HTML rendering services for hybrid PDF generation (pages 13-16)
+const aiAnalysisHtmlRenderer = require('./aiAnalysisHtmlRenderer');
+const htmlToPdfConverter = require('./htmlToPdfConverter');
+
 class AdobePdfFormFillerService {
   constructor() {
     this.initialized = false;
@@ -140,12 +144,115 @@ class AdobePdfFormFillerService {
         console.log('⚠️ Failed to set NeedAppearances flag:', e.message);
       }
 
-      // Save the filled PDF (without flattening to preserve editability)
-      console.log('\\n💾 Saving PDF with editable form fields...');
-      const filledPdfBytes = await pdfDoc.save();
+      // ========================================
+      // HYBRID PDF GENERATION: HTML Pages 13-16
+      // ========================================
+      // Render HTML templates for AI analysis pages with beautiful styling
+      console.log('\n🎨 Rendering HTML templates for pages 13-16...');
+
+      // FIX: dataFetcher returns 'currentIncident', not 'incident'
+      const incident = data.currentIncident || data.incident || {};
+
+      // DEBUG: Log what data we're passing to HTML renderer
+      console.log('📊 DEBUG: Data being passed to HTML renderer:');
+      console.log(`   voice_transcription: ${incident.voice_transcription ? incident.voice_transcription.length + ' chars' : 'EMPTY/UNDEFINED'}`);
+      console.log(`   analysis_metadata: ${incident.analysis_metadata ? JSON.stringify(incident.analysis_metadata).substring(0, 100) : 'EMPTY/UNDEFINED'}`);
+      console.log(`   quality_review: ${incident.quality_review ? incident.quality_review.length + ' chars' : 'EMPTY/UNDEFINED'}`);
+      console.log(`   ai_summary: ${incident.ai_summary ? incident.ai_summary.length + ' chars' : 'EMPTY/UNDEFINED'}`);
+      console.log(`   closing_statement: ${incident.closing_statement ? incident.closing_statement.length + ' chars' : 'EMPTY/UNDEFINED'}`);
+      console.log(`   final_review: ${incident.final_review ? incident.final_review.length + ' chars' : 'EMPTY/UNDEFINED'}`);
+
+      const htmlPages = await aiAnalysisHtmlRenderer.renderAllPages({
+        voice_transcription: incident.voice_transcription,
+        analysis_metadata: incident.analysis_metadata,
+        quality_review: incident.quality_review,
+        ai_summary: incident.ai_summary,
+        closing_statement: incident.closing_statement,
+        final_review: incident.final_review
+      });
+
+      console.log('🔄 Converting HTML to PDF using Puppeteer...');
+      const htmlPdfBuffers = await htmlToPdfConverter.convertMultiplePages(htmlPages);
+
+      // ========================================
+      // PDF MERGING: Combine Form + HTML Pages
+      // ========================================
+      console.log('🔗 Merging form-filled pages with HTML-rendered pages...');
+
+      // CRITICAL: Do NOT flatten the form when NeedAppearances is set
+      //
+      // Root cause analysis (Nov 2025):
+      // - form.flatten() converts form fields to static content
+      // - NeedAppearances flag tells PDF readers to regenerate field appearances
+      // - These two operations conflict when merging with copyPages()
+      // - Result: Invalid XRef entries that prevent pages 13-19 from rendering
+      //
+      // Testing confirmed:
+      // - Without flatten: 0 XRef errors ✅
+      // - With flatten + NeedAppearances: 10+ XRef errors ❌
+      //
+      // Solution: Keep NeedAppearances (required for checkbox rendering),
+      //           remove flatten() (keeps fields editable, no XRef corruption)
+      //
+      // See test: test-flatten-with-needappearances.js
+      //
+      // form.flatten(); // ← PERMANENTLY DISABLED - DO NOT RE-ENABLE
+
+      // Create final merged PDF document
+      const mergedPdf = await PDFDocument.create();
+
+      // Count current pages in the form-filled PDF
+      const totalFormPages = pdfDoc.getPageCount();
+      console.log(`  📊 Form PDF has ${totalFormPages} pages total`);
+
+      // Step 1: Copy pages 1-12 from form-filled PDF
+      console.log('  📄 Copying form pages 1-12...');
+      const formPages1to12 = await mergedPdf.copyPages(pdfDoc, [0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11]);
+      formPages1to12.forEach(page => mergedPdf.addPage(page));
+
+      // Step 2: Load and add HTML-rendered pages 13-16
+      console.log('  🎨 Adding HTML pages 13-16...');
+      const page13Pdf = await PDFDocument.load(htmlPdfBuffers.page13);
+      const page14Pdf = await PDFDocument.load(htmlPdfBuffers.page14);
+      const page15Pdf = await PDFDocument.load(htmlPdfBuffers.page15);
+      const page16Pdf = await PDFDocument.load(htmlPdfBuffers.page16);
+
+      const [htmlPage13] = await mergedPdf.copyPages(page13Pdf, [0]);
+      const [htmlPage14] = await mergedPdf.copyPages(page14Pdf, [0]);
+      const [htmlPage15] = await mergedPdf.copyPages(page15Pdf, [0]);
+      const [htmlPage16] = await mergedPdf.copyPages(page16Pdf, [0]);
+
+      mergedPdf.addPage(htmlPage13);
+      mergedPdf.addPage(htmlPage14);
+      mergedPdf.addPage(htmlPage15);
+      mergedPdf.addPage(htmlPage16);
+
+      // Step 3: Copy remaining pages 17-18 from form-filled PDF
+      console.log('  📄 Copying form pages 17-18...');
+      const formPages17to18 = await mergedPdf.copyPages(pdfDoc, [16, 17]);
+      formPages17to18.forEach(page => mergedPdf.addPage(page));
+
+      // Step 4: Copy any additional pages (witnesses, vehicles) if they exist
+      if (totalFormPages > 18) {
+        const additionalPageCount = totalFormPages - 18;
+        console.log(`  📋 Copying ${additionalPageCount} additional page(s) (witnesses/vehicles)...`);
+
+        const additionalPageIndices = Array.from(
+          { length: additionalPageCount },
+          (_, i) => 18 + i
+        );
+        const additionalPages = await mergedPdf.copyPages(pdfDoc, additionalPageIndices);
+        additionalPages.forEach(page => mergedPdf.addPage(page));
+      }
+
+      console.log(`✅ PDF merge complete: ${mergedPdf.getPageCount()} pages total`);
+
+      // Save the merged PDF
+      console.log('\\n💾 Saving merged PDF...');
+      const filledPdfBytes = await mergedPdf.save();
       const filledPdfBuffer = Buffer.from(filledPdfBytes);
 
-      logger.info(`✅ PDF form filled successfully (${(filledPdfBuffer.length / 1024).toFixed(2)} KB)`);
+      logger.info(`✅ Hybrid PDF generated successfully (${(filledPdfBuffer.length / 1024).toFixed(2)} KB)`);
 
       return filledPdfBuffer;
 
@@ -866,135 +973,42 @@ class AdobePdfFormFillerService {
     setUrlFieldWithAutoFitFont('vehicle_damage_photo_5_url', data.imageUrls?.vehicle_damage_photo_5_url || '');
 
     // ========================================
-    // PAGE 13: User's Direct Statement (Transcription)
+    // PAGES 13-16: AI Analysis Fields (GPT-4o Generated Content)
     // ========================================
-    // User's personal statement about the incident - straight transcription, manually input, or edited
-    // Data source: ai_transcription.transcript_text (user's own words)
-    // This is NOT AI-generated - it's the user's direct account
-    const userTranscription = data.aiTranscription?.transcription || '';
+    // Migration 028 added these 6 fields directly to incident_reports table
+    // AI analysis fields are now in incident object, not separate table
 
-    setFieldText('ai_summary_of_accident_data_transcription', userTranscription.trim());
-    console.log(`   ✅ Page 13 (User's Transcription): ${userTranscription ? userTranscription.length + ' chars' : 'No data'}`);
+    console.log('\n🤖 Mapping AI Analysis Fields (Pages 13-16):');
 
-    // ========================================
-    // PAGE 14: Comprehensive AI Closing Statement Narrative (CENTRE PIECE)
-    // ========================================
-    // AI-generated comprehensive closing statement using ALL data from pages 1-12 + transcription
-    // This is the legal narrative equivalent to a closing statement (800-1200 words)
-    // Data source: ai_analysis.combined_report (HTML format)
-    let page14Narrative = '';
+    // Page 13 - Voice Transcription
+    setFieldText('voice_transcription', incident.voice_transcription || '');
+    console.log(`   ✅ voice_transcription: ${incident.voice_transcription ? incident.voice_transcription.length + ' chars' : 'No data'}`);
 
-    if (data.aiAnalysis?.combinedReport) {
-      // Strip HTML tags and convert to plain text for PDF
-      page14Narrative = data.aiAnalysis.combinedReport
-        .replace(/<p>/gi, '\n\n')
-        .replace(/<\/p>/gi, '')
-        .replace(/<br\s*\/?>/gi, '\n')
-        .replace(/<ul>/gi, '\n')
-        .replace(/<\/ul>/gi, '\n')
-        .replace(/<li>/gi, '• ')
-        .replace(/<\/li>/gi, '\n')
-        .replace(/<[^>]+>/g, '')
-        .replace(/&nbsp;/g, ' ')
-        .replace(/&amp;/g, '&')
-        .replace(/&lt;/g, '<')
-        .replace(/&gt;/g, '>')
-        .replace(/\n\n\n+/g, '\n\n')
-        .trim();
-    }
+    // Page 13 - Analysis Metadata (compact format for small text box)
+    const aiMetadata = incident.analysis_metadata || {};
+    const aiMetadataText = aiMetadata.model && aiMetadata.timestamp
+      ? `Model: ${aiMetadata.model} | Generated: ${new Date(aiMetadata.timestamp).toLocaleString('en-GB')}${aiMetadata.version ? ` | v${aiMetadata.version}` : ''}`
+      : '';
+    setFieldText('analysis_metadata', aiMetadataText);
+    console.log(`   ✅ analysis_metadata: ${aiMetadataText || 'No data'}`);
 
-    setFieldText('detailed_account_of_what_happened', page14Narrative);
-    console.log(`   ✅ Page 14 (Comprehensive Narrative): ${page14Narrative ? page14Narrative.length + ' chars, ' + page14Narrative.split(/\s+/).length + ' words' : 'No data'}`);
+    // Page 13 - Quality Review
+    setFieldText('quality_review', incident.quality_review || '');
+    console.log(`   ✅ quality_review: ${incident.quality_review ? incident.quality_review.length + ' chars' : 'No data'}`);
 
-    // ========================================
-    // PAGE 15: AI Key Points & Next Steps Guide
-    // ========================================
-    // AI bullet point summary + recommended next steps for the user
-    // Data sources:
-    //   - ai_analysis.key_points (TEXT[] array) - Bullet point summary
-    //   - ai_analysis.final_review.nextSteps (JSONB array) - Action items
-    // NOTE: Narrative is on Page 14, NOT duplicated here
-    let page15Content = '';
+    // Page 14 - AI Summary
+    setFieldText('ai_summary', incident.ai_summary || '');
+    console.log(`   ✅ ai_summary: ${incident.ai_summary ? incident.ai_summary.length + ' chars' : 'No data'}`);
 
-    if (data.aiAnalysis) {
-      // Add key points as bullet list
-      if (data.aiAnalysis.keyPoints && data.aiAnalysis.keyPoints.length > 0) {
-        page15Content += 'KEY POINTS SUMMARY:\n\n';
-        data.aiAnalysis.keyPoints.forEach(point => {
-          page15Content += `• ${point}\n\n`;
-        });
-      }
+    // Page 15 - Closing Statement
+    setFieldText('closing_statement', incident.closing_statement || '');
+    console.log(`   ✅ closing_statement: ${incident.closing_statement ? incident.closing_statement.length + ' chars' : 'No data'}`);
 
-      // Add next steps guide
-      if (data.aiAnalysis.finalReview?.nextSteps && data.aiAnalysis.finalReview.nextSteps.length > 0) {
-        if (page15Content) {
-          page15Content += '\n' + '─'.repeat(60) + '\n\n';
-        }
-        page15Content += 'RECOMMENDED NEXT STEPS:\n\n';
-        data.aiAnalysis.finalReview.nextSteps.forEach((step, index) => {
-          page15Content += `${index + 1}. ${step}\n\n`;
-        });
-      }
-    }
+    // Page 16 - Final Review
+    setFieldText('final_review', incident.final_review || '');
+    console.log(`   ✅ final_review: ${incident.final_review ? incident.final_review.length + ' chars' : 'No data'}`);
 
-    if (page15Content) {
-      setFieldText('ai_combined_narrative_and_next_steps', page15Content.trim());
-      console.log(`   ✅ Page 15 (Key Points & Next Steps): ${page15Content.length} chars`);
-    } else {
-      console.log('   ⚠️  Page 15 (Key Points & Next Steps): No data available');
-    }
-
-    // ========================================
-    // PAGES 16-17: DVLA Reports
-    // ========================================
-    if (data.dvla && data.dvla.length > 0) {
-      const dvlaInfo = data.dvla[0];
-
-      // PAGE 16: DVLA Report - Driver
-      // Driver info comes from user table (DVLA only has vehicle data)
-      setFieldText('dvla_driver_name', `${user.name || ''} ${user.surname || ''}`.trim());
-      setFieldText('dvla_registration', dvlaInfo.registration_number);
-      setFieldText('dvla_make', dvlaInfo.make);
-      setFieldText('dvla_month_manufacture', dvlaInfo.month_of_manufacture);
-      setFieldText('dvla_colour', dvlaInfo.colour);
-      setFieldText('dvla_year_manufacture', dvlaInfo.year_of_manufacture);
-      setFieldText('dvla_mot_status', dvlaInfo.mot_status);
-      setFieldText('dvla_road_tax', dvlaInfo.road_tax_status);
-      setFieldText('dvla_mot_renewal', dvlaInfo.mot_expiry_date);
-      setFieldText('dvla_tax_renewal', dvlaInfo.tax_due_date);
-      setFieldText('dvla_fuel_type', dvlaInfo.fuel_type);
-      setFieldText('dvla_co2', dvlaInfo.co2_emissions);
-      setFieldText('dvla_revenue_weight', dvlaInfo.revenue_weight);
-      setFieldText('dvla_engine_capacity', dvlaInfo.engine_capacity);
-      setFieldText('dvla_wheelplan', dvlaInfo.wheelplan);
-      setFieldText('dvla_type_approval', dvlaInfo.type_approval);
-      setFieldText('dvla_v5c_issued', dvlaInfo.date_of_last_v5c_issued);
-
-      // PAGE 17: DVLA Report - Other Driver (if available)
-      if (data.dvla.length > 1) {
-        const otherDvla = data.dvla[1];
-        // Driver info comes from vehicles array (DVLA only has vehicle data)
-        const otherDriverName = data.vehicles?.[0]?.driver_name || data.currentIncident?.other_driver_name || '';
-        setFieldText('other_dvla_name', otherDriverName);
-        setFieldText('other_dvla_registration', otherDvla.registration_number);
-        setFieldText('other_dvla_make', otherDvla.make);
-        setFieldText('other_dvla_month_manufacture', otherDvla.month_of_manufacture);
-        setFieldText('other_dvla_colour', otherDvla.colour);
-        setFieldText('other_dvla_year_registration', otherDvla.year_of_manufacture);
-        setFieldText('other_dvla_mot_status', otherDvla.mot_status);
-        setFieldText('other_dvla_road_tax', otherDvla.road_tax_status);
-        setFieldText('other_dvla_mot_renewal', otherDvla.mot_expiry_date);
-        setFieldText('other_dvla_tax_renewal', otherDvla.tax_due_date);
-        setFieldText('other_dvla_fuel_type', otherDvla.fuel_type);
-        setFieldText('other_dvla_co2', otherDvla.co2_emissions);
-        setFieldText('other_dvla_revenue_weight', otherDvla.revenue_weight);
-        setFieldText('other_dvla_engine_capacity', otherDvla.engine_capacity);
-        setFieldText('other_dvla_wheelplan', otherDvla.wheelplan);
-        setFieldText('other_dvla_type_approval', otherDvla.type_approval);
-        setFieldText('other_dvla_v5c_issued', otherDvla.date_of_last_v5c_issued);
-        setFieldText('other_dvla_marked_export', otherDvla.marked_for_export);
-      }
-    }
+    console.log('✅ All 6 AI analysis fields mapped from incident_reports table');
 
     // ========================================
     // PAGE 17: Legal Documentation and Declaration
