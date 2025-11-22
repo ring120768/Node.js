@@ -817,7 +817,7 @@
                                 </ul>
                             </div>
 
-                            <button class="secondary-btn" onclick="window.location.href='/signup-form.html'" style="width: 100%; margin-bottom: 15px;">
+                            <button class="secondary-btn" data-action="start-signup" style="width: 100%; margin-bottom: 15px;">
                                 ✨ Start Signup
                             </button>
 
@@ -860,7 +860,7 @@
                                 </ul>
                             </div>
 
-                            <button class="secondary-btn" onclick="window.location.href='/incident.html'" style="width: 100%; margin-bottom: 15px;">
+                            <button class="secondary-btn" data-action="start-incident" style="width: 100%; margin-bottom: 15px;">
                                 📝 Start Incident Report
                             </button>
 
@@ -1117,6 +1117,14 @@
                                 break;
                             case 'back-to-menu':
                                 showGuideMenu();
+                                break;
+                            case 'start-signup':
+                                console.log('📝 Navigating to signup form...');
+                                window.location.href = '/signup-form.html';
+                                break;
+                            case 'start-incident':
+                                console.log('📝 Navigating to incident report...');
+                                window.location.href = '/incident.html';
                                 break;
                         }
                     }
