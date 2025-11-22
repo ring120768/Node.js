@@ -1,0 +1,124 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Your Data Export is Ready</title>
+</head>
+<body style="margin: 0; padding: 0; font-family: Arial, sans-serif; background-color: #f4f4f4;">
+    <table width="100%" cellpadding="0" cellspacing="0" style="background-color: #f4f4f4; padding: 20px 0;">
+        <tr>
+            <td align="center">
+                <table width="600" cellpadding="0" cellspacing="0" style="background-color: #ffffff; border-radius: 10px; overflow: hidden; box-shadow: 0 4px 6px rgba(0,0,0,0.1);">
+
+                    <!-- Header -->
+                    <tr>
+                        <td style="background: linear-gradient(135deg, #0E7490 0%, #0c6179 100%); padding: 40px 30px; text-align: center;">
+                            <h1 style="margin: 0; color: #ffffff; font-size: 28px; font-weight: 600;">
+                                📥 Your Data Export is Ready
+                            </h1>
+                            <p style="margin: 10px 0 0 0; color: rgba(255,255,255,0.9); font-size: 16px;">
+                                GDPR Data Export Completed
+                            </p>
+                        </td>
+                    </tr>
+
+                    <!-- Content -->
+                    <tr>
+                        <td style="padding: 40px 30px;">
+                            <p style="margin: 0 0 20px 0; color: #333; font-size: 16px; line-height: 1.6;">
+                                Hello <strong>{{userName}}</strong>,
+                            </p>
+
+                            <p style="margin: 0 0 20px 0; color: #333; font-size: 16px; line-height: 1.6;">
+                                Your data export request has been completed successfully. Your download should have started automatically in your browser.
+                            </p>
+
+                            <!-- Export Info Box -->
+                            <table width="100%" cellpadding="0" cellspacing="0" style="background-color: #f8f9fa; border-radius: 8px; margin: 30px 0;">
+                                <tr>
+                                    <td style="padding: 25px;">
+                                        <h3 style="margin: 0 0 15px 0; color: #0E7490; font-size: 18px;">
+                                            📋 Export Details
+                                        </h3>
+                                        <table width="100%" cellpadding="5" cellspacing="0">
+                                            <tr>
+                                                <td style="color: #666; font-size: 14px; padding: 5px 0;">
+                                                    <strong>Export Date:</strong>
+                                                </td>
+                                                <td style="color: #333; font-size: 14px; text-align: right; padding: 5px 0;">
+                                                    {{exportDate}}
+                                                </td>
+                                            </tr>
+                                            <tr>
+                                                <td style="color: #666; font-size: 14px; padding: 5px 0;">
+                                                    <strong>Format:</strong>
+                                                </td>
+                                                <td style="color: #333; font-size: 14px; text-align: right; padding: 5px 0;">
+                                                    JSON
+                                                </td>
+                                            </tr>
+                                            <tr>
+                                                <td style="color: #666; font-size: 14px; padding: 5px 0;">
+                                                    <strong>Request ID:</strong>
+                                                </td>
+                                                <td style="color: #333; font-size: 14px; text-align: right; padding: 5px 0; font-family: monospace;">
+                                                    {{requestId}}
+                                                </td>
+                                            </tr>
+                                        </table>
+                                    </td>
+                                </tr>
+                            </table>
+
+                            <!-- What's Included -->
+                            <h3 style="margin: 30px 0 15px 0; color: #333; font-size: 18px;">
+                                📦 What's Included in Your Export
+                            </h3>
+                            <ul style="color: #666; font-size: 14px; line-height: 1.8; margin: 0 0 25px 0; padding-left: 25px;">
+                                <li>Personal information and account details</li>
+                                <li>All incident reports you've created</li>
+                                <li>Audio transcriptions and AI summaries</li>
+                                <li>Document metadata and references</li>
+                                <li>Activity logs and timestamps</li>
+                            </ul>
+
+                            <!-- Important Notice -->
+                            <table width="100%" cellpadding="0" cellspacing="0" style="background-color: #fff3cd; border-left: 4px solid #ffc107; border-radius: 5px; margin: 25px 0;">
+                                <tr>
+                                    <td style="padding: 20px;">
+                                        <h4 style="margin: 0 0 10px 0; color: #856404; font-size: 16px;">
+                                            🔒 Keep Your Data Secure
+                                        </h4>
+                                        <p style="margin: 0; color: #856404; font-size: 14px; line-height: 1.6;">
+                                            Your exported data contains sensitive personal information. Please store it securely and do not share it with unauthorized parties.
+                                        </p>
+                                    </td>
+                                </tr>
+                            </table>
+
+                            <p style="margin: 25px 0 0 0; color: #666; font-size: 14px; line-height: 1.6;">
+                                If you didn't request this export, please contact us immediately at
+                                <a href="mailto:{{supportEmail}}" style="color: #0E7490; text-decoration: none;">{{supportEmail}}</a>
+                            </p>
+                        </td>
+                    </tr>
+
+                    <!-- Footer -->
+                    <tr>
+                        <td style="background-color: #f8f9fa; padding: 30px; text-align: center; border-top: 1px solid #e9ecef;">
+                            <p style="margin: 0 0 10px 0; color: #666; font-size: 14px;">
+                                This is an automated notification from Car Crash Lawyer AI
+                            </p>
+                            <p style="margin: 0; color: #999; font-size: 12px;">
+                                © {{currentYear}} Car Crash Lawyer AI. All rights reserved.
+                            </p>
+                        </td>
+                    </tr>
+
+                </table>
+            </td>
+        </tr>
+    </table>
+</body>
+</html>

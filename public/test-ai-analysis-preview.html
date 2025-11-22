@@ -1,0 +1,539 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>AI Analysis Preview - Car Crash Lawyer AI</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, Cantarell, sans-serif;
+            background: linear-gradient(135deg, #0E7490 0%, #0c6179 100%);
+            min-height: 100vh;
+            padding: 20px;
+        }
+
+        .container {
+            max-width: 1000px;
+            margin: 0 auto;
+            background: white;
+            border-radius: 12px;
+            box-shadow: 0 10px 40px rgba(0,0,0,0.2);
+            padding: 40px;
+        }
+
+        h1 {
+            color: #0E7490;
+            margin-bottom: 10px;
+            font-size: 28px;
+        }
+
+        .subtitle {
+            color: #6B7280;
+            margin-bottom: 30px;
+            font-size: 16px;
+        }
+
+        .preview-badge {
+            display: inline-block;
+            background: #FEF3C7;
+            color: #92400E;
+            padding: 6px 12px;
+            border-radius: 20px;
+            font-size: 14px;
+            font-weight: 500;
+            margin-bottom: 20px;
+        }
+
+        /* Transcription Box */
+        .transcription-box {
+            background: #F9FAFB;
+            border: 2px solid #E5E7EB;
+            border-radius: 8px;
+            padding: 20px;
+            margin: 20px 0;
+            line-height: 1.8;
+            color: #1F2937;
+            font-size: 15px;
+        }
+
+        .info-box {
+            background: #EFF6FF;
+            border-left: 4px solid #3B82F6;
+            padding: 15px;
+            margin: 20px 0;
+            border-radius: 4px;
+        }
+
+        .info-box p {
+            color: #1E40AF;
+            font-size: 14px;
+            line-height: 1.6;
+        }
+
+        /* Tab Navigation */
+        .tab-navigation {
+            display: flex;
+            gap: 0;
+            margin: 30px 0 0 0;
+            border-bottom: 2px solid #E5E7EB;
+            overflow-x: auto;
+            -webkit-overflow-scrolling: touch;
+        }
+
+        .tab-button {
+            flex: 1;
+            min-width: 120px;
+            background: #F3F4F6;
+            border: none;
+            padding: 15px 20px;
+            font-size: 14px;
+            font-weight: 500;
+            color: #6B7280;
+            cursor: pointer;
+            border-bottom: 3px solid transparent;
+            transition: all 0.3s ease;
+            white-space: nowrap;
+        }
+
+        .tab-button:hover {
+            background: #E5E7EB;
+            color: #374151;
+        }
+
+        .tab-button.active {
+            background: white;
+            color: #0E7490;
+            border-bottom-color: #0E7490;
+            font-weight: 600;
+        }
+
+        /* Tab Content */
+        .tab-content {
+            display: none;
+            padding: 30px 0;
+            animation: fadeIn 0.4s ease-in;
+        }
+
+        .tab-content.active {
+            display: block;
+        }
+
+        .tab-content h3 {
+            color: #0E7490;
+            margin-bottom: 20px;
+            font-size: 22px;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+
+        .tab-content h4 {
+            color: #0E7490;
+            margin-top: 25px;
+            margin-bottom: 12px;
+            font-size: 16px;
+        }
+
+        .tab-content p {
+            color: #1F2937;
+            line-height: 1.8;
+            margin-bottom: 15px;
+        }
+
+        .tab-content ul, .tab-content ol {
+            margin-left: 20px;
+            margin-bottom: 15px;
+            color: #1F2937;
+            line-height: 1.8;
+        }
+
+        .tab-content li {
+            margin-bottom: 8px;
+        }
+
+        .tab-content strong {
+            color: #374151;
+        }
+
+        /* Page 14 Statement Box */
+        .statement-box {
+            background: white;
+            padding: 25px;
+            border: 2px solid #E5E7EB;
+            border-radius: 8px;
+            margin: 20px 0;
+            box-shadow: 0 2px 8px rgba(0,0,0,0.05);
+        }
+
+        .statement-box p {
+            margin-bottom: 12px;
+        }
+
+        @keyframes fadeIn {
+            from {
+                opacity: 0;
+                transform: translateY(10px);
+            }
+            to {
+                opacity: 1;
+                transform: translateY(0);
+            }
+        }
+
+        /* Mobile Optimization */
+        @media (max-width: 768px) {
+            .container {
+                padding: 20px;
+            }
+
+            h1 {
+                font-size: 24px;
+            }
+
+            .tab-button {
+                font-size: 12px;
+                padding: 12px 10px;
+                min-width: 90px;
+            }
+
+            .tab-content h3 {
+                font-size: 20px;
+            }
+
+            .transcription-box {
+                font-size: 14px;
+                padding: 15px;
+            }
+        }
+
+        /* Progress Indicator */
+        .progress-indicator {
+            background: #F3F4F6;
+            padding: 15px 20px;
+            border-radius: 8px;
+            margin: 20px 0;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            flex-wrap: wrap;
+            gap: 10px;
+        }
+
+        .progress-step {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            font-size: 14px;
+            color: #6B7280;
+        }
+
+        .progress-step.completed {
+            color: #10B981;
+            font-weight: 500;
+        }
+
+        .progress-icon {
+            width: 24px;
+            height: 24px;
+            border-radius: 50%;
+            background: #E5E7EB;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 12px;
+        }
+
+        .progress-step.completed .progress-icon {
+            background: #10B981;
+            color: white;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <span class="preview-badge">🤖 AI ANALYSIS PREVIEW</span>
+        <h1>GPT-4o Analysis Results</h1>
+        <p class="subtitle">4-step AI-powered analysis of your voice transcription</p>
+
+        <div class="info-box">
+            <p>
+                <strong>ℹ️ About This Analysis</strong><br>
+                GPT-4o has analyzed your transcription in 4 sequential steps (typically takes 25-50 seconds). Use the tabs below to navigate through each analysis section.
+            </p>
+        </div>
+
+        <!-- Progress Indicator -->
+        <div class="progress-indicator">
+            <div class="progress-step completed">
+                <div class="progress-icon">✓</div>
+                <span>Summary</span>
+            </div>
+            <div class="progress-step completed">
+                <div class="progress-icon">✓</div>
+                <span>Quality</span>
+            </div>
+            <div class="progress-step completed">
+                <div class="progress-icon">✓</div>
+                <span>Statement</span>
+            </div>
+            <div class="progress-step completed">
+                <div class="progress-icon">✓</div>
+                <span>Next Steps</span>
+            </div>
+        </div>
+
+        <!-- Original Transcription (Always visible on Tab 1) -->
+        <div id="transcriptionSection">
+            <h3 style="color: #374151; margin-top: 20px; margin-bottom: 15px;">🎤 Your Transcription</h3>
+            <div class="transcription-box">
+                This morning, about half seven, I was approaching the roundabout at the junction of London Road and Station Road in Watford. It was pouring with rain, visibility wasn't great. I was indicating right to take the third exit. As I entered the roundabout, a white van came flying round from my right, didn't give way at all, just went straight into my driver's side. Absolutely smashed my door in, wing mirror's gone, front wheel arch is completely crumpled. The van driver was really aggressive, shouting that I should have given way to him, but I had right of way! I was already on the roundabout. There was a woman at the bus stop who saw everything, she gave me her number. The van's got damage to the passenger side, front wing and bumper. I called the police because he was being quite threatening. They came out, took statements from both of us and the witness. My door won't open properly now, had to get in from the passenger side. I'm okay physically, just a bit shaken up. The van's a white Ford Transit, plastering company logo on the side.
+            </div>
+        </div>
+
+        <!-- Tab Navigation -->
+        <div class="tab-navigation">
+            <button class="tab-button active" data-tab="tab1">
+                📋 Summary & Key Points
+            </button>
+            <button class="tab-button" data-tab="tab2">
+                ✅ Quality Review
+            </button>
+            <button class="tab-button" data-tab="tab3">
+                📄 Page 14 Statement
+            </button>
+            <button class="tab-button" data-tab="tab4">
+                🎯 Final Review
+            </button>
+        </div>
+
+        <!-- Tab 1: Summary & Key Points -->
+        <div id="tab1" class="tab-content active">
+            <h3>📋 Summary & Key Points</h3>
+
+            <h4>Incident Summary</h4>
+            <p>On the morning of the incident, at approximately 7:30 AM, you were approaching a roundabout at the junction of London Road and Station Road in Watford. Weather conditions were poor with heavy rain and reduced visibility. You signaled your intention to take the third exit and had already entered the roundabout when a white Ford Transit van failed to give way and collided with your driver's side.</p>
+
+            <h4>Key Points Identified</h4>
+            <ul>
+                <li><strong>Time:</strong> Approximately 7:30 AM</li>
+                <li><strong>Location:</strong> Roundabout at junction of London Road and Station Road, Watford</li>
+                <li><strong>Weather:</strong> Heavy rain, poor visibility</li>
+                <li><strong>Your Vehicle:</strong> Already on roundabout, indicating right for third exit</li>
+                <li><strong>Other Vehicle:</strong> White Ford Transit van with plastering company logo</li>
+                <li><strong>Point of Impact:</strong> Van struck your driver's side</li>
+                <li><strong>Your Damage:</strong> Driver's door smashed, wing mirror destroyed, front wheel arch crumpled, door won't open</li>
+                <li><strong>Other Vehicle Damage:</strong> Passenger side, front wing and bumper damage</li>
+                <li><strong>Witness:</strong> Woman at bus stop who provided contact details</li>
+                <li><strong>Police:</strong> Called to scene due to threatening behavior, statements taken from all parties</li>
+                <li><strong>Injuries:</strong> Shaken but no physical injuries reported</li>
+                <li><strong>Fault:</strong> Other driver failed to give way to vehicle already on roundabout</li>
+            </ul>
+
+            <h4>Right of Way Analysis</h4>
+            <p>You correctly identified that you had right of way as you were already on the roundabout. Under UK traffic regulations, vehicles approaching a roundabout must give way to traffic already circulating on it. The van driver's failure to yield constitutes a clear violation of this rule.</p>
+        </div>
+
+        <!-- Tab 2: Quality Review -->
+        <div id="tab2" class="tab-content">
+            <h3>✅ Quality Review</h3>
+
+            <h4>Statement Strengths</h4>
+            <ul>
+                <li>✅ Clear timeline and location details</li>
+                <li>✅ Weather conditions documented (relevant for visibility/road conditions)</li>
+                <li>✅ Your actions documented (signaling, already on roundabout)</li>
+                <li>✅ Other driver's behavior documented (aggression, claiming incorrect right of way)</li>
+                <li>✅ Specific damage details for both vehicles</li>
+                <li>✅ Independent witness secured with contact information</li>
+                <li>✅ Police involvement documented</li>
+                <li>✅ Other vehicle identification (make, type, company branding)</li>
+            </ul>
+
+            <h4>Additional Information to Gather</h4>
+            <ul>
+                <li>📝 More precise time (you mentioned "about half seven" - was it 7:25, 7:30, 7:35?)</li>
+                <li>📝 Your vehicle registration and details</li>
+                <li>📝 Other driver's registration plate number</li>
+                <li>📝 Other driver's name and insurance details (if exchanged)</li>
+                <li>📝 Police incident reference number</li>
+                <li>📝 Police officer names/badge numbers who attended</li>
+                <li>📝 Witness name and full contact details</li>
+                <li>📝 Name of plastering company on van (for tracking down driver/insurance)</li>
+                <li>📝 Your direction of travel approaching the roundabout</li>
+                <li>📝 Which exit the van was attempting to take</li>
+                <li>📝 Speed estimates (both vehicles)</li>
+                <li>📝 Any CCTV cameras at the junction</li>
+                <li>📝 Any dash cam footage (yours or other vehicles)</li>
+            </ul>
+
+            <h4>Documentation Recommendations</h4>
+            <ul>
+                <li>📸 Photograph all damage to both vehicles</li>
+                <li>📸 Photograph the scene, especially road markings and signage</li>
+                <li>📸 Photograph any skid marks or debris</li>
+                <li>📄 Obtain copy of police report when available</li>
+                <li>📄 Get medical assessment even if no immediate injuries (symptoms can develop)</li>
+                <li>📄 Keep all receipts related to the incident</li>
+            </ul>
+
+            <h4>Overall Assessment</h4>
+            <p>Your statement provides a solid factual foundation with clear details about the incident. The presence of an independent witness and police involvement strengthens your account considerably. The specific details about damages and the other driver's aggressive behavior are well documented. Focus on gathering the additional specific items listed above to create a comprehensive record.</p>
+        </div>
+
+        <!-- Tab 3: Page 14 Closing Statement -->
+        <div id="tab3" class="tab-content">
+            <h3>📄 Page 14 Closing Statement</h3>
+
+            <p style="font-style: italic; color: #6B7280; margin-bottom: 20px;">This is the comprehensive account that will appear on Page 14 of your legal documentation.</p>
+
+            <div class="statement-box">
+                <p><strong>Comprehensive Account of Traffic Incident</strong></p>
+                <p style="margin-top: 15px;">On the morning in question, at approximately 7:30 AM, I was driving and approaching the roundabout located at the junction of London Road and Station Road in Watford. The weather conditions at the time were poor, with heavy rainfall creating reduced visibility on the roads.</p>
+
+                <p>As I approached the roundabout, I indicated my intention to turn right and take the third exit. I entered the roundabout in accordance with normal traffic procedures and was already circulating on the roundabout when the collision occurred.</p>
+
+                <p>A white Ford Transit van, bearing the markings of a plastering company, approached the roundabout from my right-hand side. Despite the fact that I was already on the roundabout and had clear right of way, the van driver failed to give way and proceeded to enter the roundabout. This resulted in a collision where the van struck the driver's side of my vehicle.</p>
+
+                <p>The impact caused significant damage to my vehicle. The driver's door was severely damaged and crushed inward, the wing mirror was completely destroyed, and the front wheel arch sustained substantial crumpling. As a consequence of the damage to the driver's door, I was unable to exit my vehicle from the driver's side and was forced to exit via the passenger door.</p>
+
+                <p>The other vehicle also sustained damage, specifically to its passenger side, front wing, and bumper areas, consistent with the point of impact.</p>
+
+                <p>Following the collision, the other driver exhibited aggressive behavior, shouting and incorrectly claiming that I should have given way to him. This was factually incorrect as I had already entered and was circulating on the roundabout, thereby having right of way under standard UK traffic regulations.</p>
+
+                <p>Due to the threatening nature of the other driver's behavior, I made the decision to contact the police. Officers attended the scene and took statements from myself, the other driver, and an independent witness. The witness was a woman who had been waiting at a nearby bus stop and had observed the entire incident. She kindly provided me with her contact details for follow-up purposes.</p>
+
+                <p>While I did not sustain any physical injuries that were immediately apparent, I felt shaken and distressed by the incident. The collision occurred during heavy rain with poor visibility, and the failure of the other driver to observe proper roundabout protocols and give way to traffic already on the roundabout was the direct cause of this incident.</p>
+
+                <p>The other vehicle can be identified as a white Ford Transit van with signage indicating it belonged to a plastering company.</p>
+            </div>
+        </div>
+
+        <!-- Tab 4: Final Review & Next Steps -->
+        <div id="tab4" class="tab-content">
+            <h3>🎯 Final Review & Next Steps</h3>
+
+            <h4>Case Evaluation</h4>
+            <p>Based on the information provided, you have documented a traffic incident where you appear to have been the non-fault party. The key facts supporting this are:</p>
+            <ul>
+                <li>You were already on the roundabout (established right of way)</li>
+                <li>The other vehicle failed to give way as required</li>
+                <li>Independent witness corroboration available</li>
+                <li>Police attendance and statements taken</li>
+                <li>Clear identification of the other vehicle</li>
+            </ul>
+
+            <h4>Immediate Action Items</h4>
+            <ol>
+                <li><strong>Contact Your Insurance Company</strong>
+                    <ul>
+                        <li>Report the incident as soon as possible</li>
+                        <li>Provide them with the police incident reference number</li>
+                        <li>Inform them you have a witness</li>
+                        <li>State clearly that you believe you are the non-fault party</li>
+                    </ul>
+                </li>
+                <li><strong>Gather Additional Documentation</strong>
+                    <ul>
+                        <li>Request a copy of the police report</li>
+                        <li>Obtain witness's full contact details if not already collected</li>
+                        <li>Take photographs of all vehicle damage (if not done already)</li>
+                        <li>Note down the plastering company name from the van</li>
+                    </ul>
+                </li>
+                <li><strong>Medical Assessment</strong>
+                    <ul>
+                        <li>Even though you feel uninjured, see your GP for a check-up</li>
+                        <li>Whiplash and other injuries can manifest hours or days later</li>
+                        <li>Document any symptoms that develop</li>
+                    </ul>
+                </li>
+                <li><strong>Vehicle Repairs</strong>
+                    <ul>
+                        <li>Do not authorize repairs until your insurer provides guidance</li>
+                        <li>Obtain repair estimates from approved repairers</li>
+                        <li>Keep all receipts and documentation</li>
+                    </ul>
+                </li>
+            </ol>
+
+            <h4>Legal Considerations</h4>
+            <ul>
+                <li><strong>Right of Way:</strong> UK Highway Code Rule 185 states that traffic on a roundabout has priority. You clearly had right of way.</li>
+                <li><strong>Witness Evidence:</strong> The independent witness significantly strengthens your account.</li>
+                <li><strong>Police Report:</strong> The official police report will provide an objective record of the incident.</li>
+                <li><strong>Aggressive Behavior:</strong> The other driver's threatening behavior was appropriately reported to police.</li>
+            </ul>
+
+            <h4>Timeline for Next Steps</h4>
+            <ul>
+                <li><strong>Within 24 hours:</strong> Contact your insurer</li>
+                <li><strong>Within 48 hours:</strong> See your GP for medical check</li>
+                <li><strong>Within 1 week:</strong> Request police report</li>
+                <li><strong>Within 1 week:</strong> Confirm witness contact details</li>
+                <li><strong>Ongoing:</strong> Keep detailed records of all costs and correspondence</li>
+            </ul>
+
+            <h4>Potential Claim Elements</h4>
+            <ul>
+                <li>Vehicle repair costs</li>
+                <li>Loss of vehicle use (hire car costs)</li>
+                <li>Any medical treatment required</li>
+                <li>Time off work if applicable</li>
+                <li>Any other incident-related expenses</li>
+            </ul>
+
+            <h4>Final Notes</h4>
+            <p>Your account is clear and well-detailed. The presence of adverse weather conditions, the other driver's violation of right-of-way rules, independent witness testimony, and police involvement all contribute to a strong position. Ensure you follow through with the immediate action items listed above, particularly contacting your insurance company and obtaining the police report. Keep all documentation organized and maintain a written log of all related communications and expenses.</p>
+
+            <div class="info-box" style="margin-top: 25px;">
+                <p><strong>⚠️ Important Reminder</strong><br>
+                This analysis is for informational purposes only and does not constitute legal advice. For specific legal guidance regarding your claim, please consult with a qualified solicitor specializing in road traffic accidents.</p>
+            </div>
+        </div>
+
+    </div>
+
+    <script>
+        // Event delegation for tab switching (CSP-compliant)
+        document.addEventListener('click', (e) => {
+            // Check if clicked element is a tab button
+            if (e.target.classList.contains('tab-button')) {
+                const tabId = e.target.dataset.tab;
+
+                // Hide all tab contents
+                const allTabs = document.querySelectorAll('.tab-content');
+                allTabs.forEach(tab => tab.classList.remove('active'));
+
+                // Remove active class from all buttons
+                const allButtons = document.querySelectorAll('.tab-button');
+                allButtons.forEach(button => button.classList.remove('active'));
+
+                // Show selected tab content
+                document.getElementById(tabId).classList.add('active');
+
+                // Add active class to clicked button
+                e.target.classList.add('active');
+
+                // Show/hide transcription based on tab
+                const transcriptionSection = document.getElementById('transcriptionSection');
+                if (tabId === 'tab1') {
+                    transcriptionSection.style.display = 'block';
+                } else {
+                    transcriptionSection.style.display = 'none';
+                }
+
+                // Scroll to top of tab content on mobile
+                if (window.innerWidth <= 768) {
+                    window.scrollTo({ top: 0, behavior: 'smooth' });
+                }
+            }
+        });
+    </script>
+</body>
+</html>

@@ -2,7 +2,10 @@
 
 **Purpose:** Comprehensive test data for end-to-end testing of the Car Crash Lawyer AI system
 **Created:** 2025-10-21
-**Use Cases:** Transcription testing, PDF generation, full UI testing
+**Last Updated:** 2025-11-05 (Revised for 12-page UI/UX)
+**Use Cases:** Full form flow testing, PDF generation, image upload testing, transcription testing
+
+**Note:** All scenarios now follow the 12-page progressive web form structure (Pages 1-12) with actual database field names from PAGE*_COMPLETE_FIELD_LIST.csv files.
 
 ---
 
@@ -12,125 +15,501 @@
 
 > "Right, so this happened about 2 hours ago on the M25 near Junction 15. I was driving along in the middle lane, doing about 60 miles per hour, traffic was quite heavy. The weather was clear, dry roads, good visibility. I noticed the brake lights ahead and started slowing down, but the car behind me just ploughed straight into the back of me. Massive jolt, my head snapped forward against the headrest, thank God for that. The other driver got out and admitted he was looking at his phone, didn't see me braking. He's apologised profusely. My boot is completely crumpled in, rear lights are smashed. His front bumper is hanging off. No one else was hurt, just me with a bit of whiplash. We exchanged details, took photos. Police weren't called as it seemed straightforward. I've got his insurance details - he's with Admiral. My neck is quite sore now, might need to see a doctor."
 
-### User Signup Data (Typeform 1)
+---
+
+### Page 1: Legal Acknowledgment
 
 ```javascript
 {
-  // Personal Information
-  full_name: "James Mitchell",
-  email: "james.mitchell@email.co.uk",
-  phone: "07700900123",
-  date_of_birth: "1985-03-15",
-  address_line_1: "42 Oakwood Avenue",
-  address_line_2: "",
-  city: "St Albans",
-  county: "Hertfordshire",
-  postcode: "AL1 3RQ",
-
-  // Vehicle Information
-  car_registration_number: "BF19 XYZ",
-  car_make: "Ford",
-  car_model: "Focus",
-  car_colour: "Blue",
-  car_year: "2019",
-
-  // Driver Information
-  driving_license_number: "MITCH803159JM9BN",
-  years_driving_experience: "20",
-
-  // Insurance Information
-  insurance_company: "Direct Line",
-  insurance_policy_number: "DL-458792365",
-  insurance_renewal_date: "2025-08-15",
-
-  // Emergency Contacts
-  emergency_contact: "Sarah Mitchell | 07700900456 | sarah.mitchell@email.co.uk | Wife",
-  recovery_breakdown_number: "0800 777 172",
-
-  // GDPR
-  gdpr_consent: true,
-  privacy_policy_accepted: true
-}
-```
-
-### Incident Report Data (Typeform 2)
-
-```javascript
-{
-  // Incident Details
-  incident_date: "2025-10-21",
-  incident_time: "14:30",
-  incident_location: "M25 Junction 15, Hertfordshire",
-  what3words_location: "///sheep.blended.moving",
-  weather_conditions: "Clear/Dry",
-  road_conditions: "Dry",
-  lighting_conditions: "Daylight",
-
-  // Your Vehicle
-  your_vehicle_speed: "60 mph",
-  your_vehicle_direction: "Northbound, middle lane",
-  your_vehicle_damaged: "Yes",
-  damage_description: "Rear bumper completely crumpled, boot dented, rear lights smashed, possible frame damage",
-  your_vehicle_driveable: "Yes, but with caution",
-
-  // Injuries
-  injuries_sustained: "Yes",
-  injury_type: "Whiplash",
-  injury_description: "Neck pain, head snapped forward on impact, using headrest prevented worse injury",
-  medical_attention_sought: "Not yet, planning to visit GP",
-  hospital_name: "",
-  ambulance_called: "No",
-
-  // Other Driver
-  other_driver_name: "Michael Thompson",
-  other_driver_phone: "07700900789",
-  other_driver_vehicle_reg: "KL67 ABC",
-  other_driver_vehicle_make: "Vauxhall",
-  other_driver_vehicle_model: "Corsa",
-  other_driver_insurance: "Admiral Insurance",
-  other_driver_policy_number: "ADM-789456123",
-
-  // Witness Information
-  witnesses: "No",
-  witness_names: "",
-  witness_contact: "",
-
-  // Police & Emergency Services
-  police_called: "No",
-  police_reference: "",
-  fire_service_called: "No",
-
-  // Fault & Circumstances
-  who_at_fault: "Other driver",
-  fault_description: "Other driver admitted to being distracted by mobile phone, failed to notice brake lights, rear-ended my vehicle",
-  collision_type: "Rear-end collision",
-
-  // Additional Details
-  dashcam_footage: "Yes",
-  photos_taken: "Yes",
-  damage_estimate: "£3,500 - £5,000",
-
-  // Your Account
-  your_narrative: "I was driving in the middle lane of the M25 at approximately 60mph. Traffic ahead began slowing down, I applied brakes smoothly. Without warning, I felt a massive impact from behind. The other driver admitted he was looking at his phone and didn't see me braking. Clear day, no adverse conditions. My vehicle sustained significant rear-end damage.",
-
-  // Post-Incident
-  vehicle_recovered: "No, drove home",
-  recovery_company: "",
-  vehicle_location: "Home driveway",
-  repairs_started: "No",
-
-  // Insurance Claim
-  insurance_notified: "Yes",
-  claim_reference: "DL-INC-20251021-456",
-  claim_status: "Open",
-
-  // Legal
-  legal_representation: "Not yet",
-  previous_incidents: "No"
+  // incident_reports table
+  legal_acknowledgment: true,  // Checkbox checked
+  acknowledged_at: "2025-10-21T14:45:00.000Z"  // Auto-generated timestamp
 }
 ```
 
 ---
+
+### Page 2: Medical Information
+
+```javascript
+{
+  // incident_reports table
+  medical_attention_needed: "yes",
+  medical_injury_details: "Neck pain, head snapped forward on impact, using headrest prevented worse injury. Whiplash symptoms.",
+  medical_injury_severity: "moderate",  // minor, moderate, serious, severe, critical
+  medical_hospital_name: null,  // Not attended yet
+  medical_ambulance_called: "no",
+  medical_treatment_received: null,  // Shown only if ambulance called
+
+  // Medical Symptoms (13 checkboxes - incident_reports table)
+  medical_symptom_chest_pain: false,
+  medical_symptom_uncontrolled_bleeding: false,
+  medical_symptom_breathlessness: false,
+  medical_symptom_limb_weakness: false,
+  medical_symptom_dizziness: true,  // Feeling dizzy after impact
+  medical_symptom_loss_of_consciousness: false,
+  medical_symptom_severe_headache: true,  // Headache from whiplash
+  medical_symptom_change_in_vision: false,
+  medical_symptom_abdominal_pain: false,
+  medical_symptom_abdominal_bruising: false,
+  medical_symptom_limb_pain_mobility: false,
+  medical_symptom_life_threatening: false,
+  medical_symptom_none: false,
+
+  completed_at: "2025-10-21T14:46:30.000Z"  // Stored in sessionStorage
+}
+```
+
+---
+
+### Page 3: Accident Date/Time/Conditions
+
+```javascript
+{
+  // incident_reports table
+  accident_date: "2025-10-21",  // DATE
+  accident_time: "14:30",  // TIME (24-hour format)
+
+  // Weather Conditions (checkboxes)
+  weather_bright_sunlight: true,
+  weather_clear: true,
+  weather_cloudy: false,
+  weather_raining: false,
+  weather_heavy_rain: false,
+  weather_drizzle: false,
+  weather_fog: false,
+  weather_snow: false,
+  weather_ice: false,
+  weather_windy: false,
+  weather_hail: false,
+  weather_thunder_lightning: false,
+
+  // Road Conditions (group required - at least one)
+  road_condition_dry: true,
+  road_condition_wet: false,
+  road_condition_icy: false,
+  road_condition_snow_covered: false,
+  road_condition_loose_surface: false,
+  road_condition_slush_on_road: false,
+
+  // Road Type (group required - at least one)
+  road_type_motorway: true,
+  road_type_a_road: false,
+  road_type_b_road: false,
+  road_type_urban_street: false,
+  road_type_rural_road: false,
+  road_type_car_park: false,
+  road_type_private_road: false,
+
+  speed_limit: "70",  // mph
+  your_speed: 60,  // INTEGER mph
+
+  // Traffic Conditions (group required)
+  traffic_conditions_heavy: true,
+  traffic_conditions_moderate: false,
+  traffic_conditions_light: false,
+  traffic_conditions_no_traffic: false,
+
+  // Visibility (group required)
+  visibility_good: true,
+  visibility_poor: false,
+  visibility_very_poor: false,
+  visibility_street_lights: false,  // Daylight
+
+  // Road Markings (group required)
+  road_markings_visible_yes: true,
+  road_markings_visible_no: false,
+  road_markings_visible_partially: false,
+
+  completed_at: "2025-10-21T14:48:00.000Z"
+}
+```
+
+---
+
+### Page 4: Location + Map Screenshot
+
+```javascript
+{
+  // incident_reports table
+  location: "M25 Junction 15, Hertfordshire, UK",  // UNMAPPED CRITICAL FIELD
+  what3words: "///sheep.blended.moving",  // UNMAPPED
+  nearest_landmark: "M25 Services",  // UNMAPPED
+  junction_type: "motorway_junction",  // MAPPED
+  traffic_controls: "none",  // MISMATCH: frontend uses junction_control
+  traffic_light_status: null,  // UNMAPPED - Conditional on traffic lights
+  user_manoeuvre: "proceeding_ahead",  // UNMAPPED
+
+  // Visibility Factors (checkboxes)
+  visibility_clear: true,
+  visibility_restricted_structure: false,
+  visibility_restricted_bend: false,
+  visibility_large_vehicle: false,
+  visibility_sun_glare: false,
+
+  // Special Conditions (JSONB array in special_conditions column)
+  special_conditions: [],  // Empty - no special conditions
+
+  additional_hazards: null,  // UNMAPPED
+
+  // Image: Map Screenshot (1 photo)
+  // Captured via html2canvas from #w3w-map element
+  // user_documents table:
+  map_screenshot_image: {
+    document_type: "location_map_screenshot",
+    field_name: "map_screenshot",
+    storage_path: "/user-documents/[uuid]/map_screenshot.png",
+    public_url: "/api/user-documents/[uuid]/download",
+    status: "completed"
+  },
+
+  session_id: "[temp-session-uuid]",  // Photo service tracking
+  map_screenshot_captured: true,  // Frontend flag
+  completed_at: "2025-10-21T14:50:00.000Z"
+}
+```
+
+---
+
+### Page 4a: Scene Photos (3 images)
+
+```javascript
+{
+  // user_documents table - 3 photos
+  scene_photos: [
+    {
+      document_type: "location_photo",
+      field_name: "scene_photo",
+      storage_path: "/user-documents/[uuid]/scene_photo_1.jpg",
+      public_url: "/api/user-documents/[uuid]/download",
+      file_size: "2.4 MB",
+      status: "completed"
+    },
+    {
+      document_type: "location_photo",
+      field_name: "scene_photo",
+      storage_path: "/user-documents/[uuid]/scene_photo_2.jpg",
+      public_url: "/api/user-documents/[uuid]/download",
+      file_size: "2.1 MB",
+      status: "completed"
+    },
+    {
+      document_type: "location_photo",
+      field_name: "scene_photo",
+      storage_path: "/user-documents/[uuid]/scene_photo_3.jpg",
+      public_url: "/api/user-documents/[uuid]/download",
+      file_size: "1.9 MB",
+      status: "completed"
+    }
+  ],
+
+  temp_session_id: "[temp-session-uuid]"  // Reused from Page 4
+}
+```
+
+---
+
+### Page 5: User's Vehicle Details
+
+```javascript
+{
+  // incident_reports table
+  usual_vehicle: "yes",
+  vehicle_license_plate: "BF19XYZ",  // UK registration
+
+  // DVLA API Response Data (auto-populated)
+  dvla_vehicle_lookup_make: "FORD",
+  dvla_vehicle_lookup_model: "FOCUS",
+  dvla_vehicle_lookup_color: "BLUE",
+  dvla_vehicle_lookup_year: 2019,
+  dvla_vehicle_lookup_fuel_type: "PETROL",
+  dvla_vehicle_lookup_mot_status: "Valid",
+  dvla_vehicle_lookup_mot_expiry: "2026-03-10",
+  dvla_vehicle_lookup_tax_status: "Taxed",
+  dvla_vehicle_lookup_tax_due_date: "2026-02-01",
+  dvla_vehicle_lookup_insurance_status: null,  // Not available from DVLA
+
+  // Damage Information
+  no_damage: false,
+
+  // Impact Points (TEXT[] array in impact_point column)
+  impact_point: ["rear", "rear_driver", "rear_passenger"],
+
+  damage_to_your_vehicle: "Rear bumper completely crumpled, boot dented and won't close properly, both rear lights smashed, possible frame damage. Bumper hanging loose.",
+
+  vehicle_driveable: "yes",  // yes/no/unsure
+
+  // Manual Entry Fallback (if DVLA fails)
+  your_vehicle_make: null,  // Legacy - not needed as DVLA succeeded
+  your_vehicle_model: null,
+  your_vehicle_color: null,
+  your_vehicle_year: null,
+
+  completed_at: "2025-10-21T14:52:00.000Z"
+}
+```
+
+---
+
+### Page 6: Vehicle Damage Photos (5 images)
+
+```javascript
+{
+  // user_documents table - 5 photos of user's vehicle damage
+  vehicle_damage_photos: [
+    {
+      document_type: "vehicle_damage_photo",
+      field_name: "vehicle_damage_photo",
+      storage_path: "/user-documents/[uuid]/vehicle_damage_1.jpg",
+      public_url: "/api/user-documents/[uuid]/download",
+      file_size: "3.2 MB",
+      status: "completed"
+    },
+    {
+      document_type: "vehicle_damage_photo",
+      field_name: "vehicle_damage_photo",
+      storage_path: "/user-documents/[uuid]/vehicle_damage_2.jpg",
+      public_url: "/api/user-documents/[uuid]/download",
+      file_size: "2.9 MB",
+      status: "completed"
+    },
+    {
+      document_type: "vehicle_damage_photo",
+      field_name: "vehicle_damage_photo",
+      storage_path: "/user-documents/[uuid]/vehicle_damage_3.jpg",
+      public_url: "/api/user-documents/[uuid]/download",
+      file_size: "3.1 MB",
+      status: "completed"
+    },
+    {
+      document_type: "vehicle_damage_photo",
+      field_name: "vehicle_damage_photo",
+      storage_path: "/user-documents/[uuid]/vehicle_damage_4.jpg",
+      public_url: "/api/user-documents/[uuid]/download",
+      file_size: "2.7 MB",
+      status: "completed"
+    },
+    {
+      document_type: "vehicle_damage_photo",
+      field_name: "vehicle_damage_photo",
+      storage_path: "/user-documents/[uuid]/vehicle_damage_5.jpg",
+      public_url: "/api/user-documents/[uuid]/download",
+      file_size: "2.5 MB",
+      status: "completed"
+    }
+  ],
+
+  temp_session_id: "[temp-session-uuid]"  // Generated on this page if not exists
+}
+```
+
+---
+
+### Page 7: Other Driver Details
+
+```javascript
+{
+  // incident_other_vehicles table (vehicle_index = 1)
+  driver_name: "Michael Thompson",
+  driver_phone: "07700900789",
+  driver_email: null,  // UNMAPPED - not provided
+  driver_license_number: null,  // UNMAPPED - not provided
+
+  vehicle_license_plate: "KL67ABC",
+
+  // DVLA Lookup Results (auto-populated)
+  vehicle_make: "VAUXHALL",
+  vehicle_model: "CORSA",
+  vehicle_color: "SILVER",
+  vehicle_year_of_manufacture: 2017,
+  vehicle_fuel_type: null,  // UNMAPPED
+  vehicle_mot_status: null,  // UNMAPPED
+  vehicle_mot_expiry_date: null,  // UNMAPPED
+  vehicle_tax_status: null,  // UNMAPPED
+  vehicle_tax_due_date: null,  // UNMAPPED
+  vehicle_insurance_status: null,  // UNMAPPED
+
+  // Insurance Details
+  insurance_company: "Admiral Insurance",
+  policy_number: "ADM-789456123",
+  policy_holder: "Michael Thompson",
+  policy_cover: "comprehensive",  // comprehensive, third_party_fire_theft, third_party_only, unknown
+
+  // Damage Description
+  no_visible_damage: false,  // UNMAPPED
+  damage_description: "Front bumper hanging off, cracked windscreen, bonnet dented, radiator possibly damaged",
+
+  vehicle_data: {}, // DVLA data stored in localStorage
+  warnings: [],  // No expired MOT/tax warnings
+  additional_vehicles: [],  // No 3rd, 4th, 5th vehicles in this scenario
+
+  completed_at: "2025-10-21T14:54:00.000Z"
+}
+```
+
+---
+
+### Page 8: Other Vehicle/Damage Photos (5 images)
+
+```javascript
+{
+  // Photos 1-2: Stored in BOTH incident_other_vehicles AND user_documents
+  // Photos 3-5: Stored ONLY in user_documents
+
+  // incident_other_vehicles table (vehicle_index = 1)
+  file_url_other_vehicle: "/api/user-documents/[uuid]/download",  // Photo 1
+  file_url_other_vehicle_1: "/api/user-documents/[uuid]/download",  // Photo 2
+
+  // user_documents table - all 5 photos
+  other_damage_photos: [
+    {
+      document_type: "other_vehicle_photo",
+      field_name: "other_vehicle_photo_1",
+      storage_path: "/user-documents/[uuid]/other_vehicle_1.jpg",
+      public_url: "/api/user-documents/[uuid]/download",
+      file_size: "2.8 MB",
+      status: "completed"
+    },
+    {
+      document_type: "other_vehicle_photo",
+      field_name: "other_vehicle_photo_2",
+      storage_path: "/user-documents/[uuid]/other_vehicle_2.jpg",
+      public_url: "/api/user-documents/[uuid]/download",
+      file_size: "3.0 MB",
+      status: "completed"
+    },
+    {
+      document_type: "other_vehicle_photo",
+      field_name: "other_damage_photo_3",
+      storage_path: "/user-documents/[uuid]/other_damage_3.jpg",
+      public_url: "/api/user-documents/[uuid]/download",
+      file_size: "2.6 MB",
+      status: "completed"
+    },
+    {
+      document_type: "other_vehicle_photo",
+      field_name: "other_damage_photo_4",
+      storage_path: "/user-documents/[uuid]/other_damage_4.jpg",
+      public_url: "/api/user-documents/[uuid]/download",
+      file_size: "2.4 MB",
+      status: "completed"
+    },
+    {
+      document_type: "other_vehicle_photo",
+      field_name: "other_damage_photo_5",
+      storage_path: "/user-documents/[uuid]/other_damage_5.jpg",
+      public_url: "/api/user-documents/[uuid]/download",
+      file_size: "2.9 MB",
+      status: "completed"
+    }
+  ],
+
+  temp_session_id: "[temp-session-uuid]",  // Reused
+  uploaded_images_array: []  // localStorage tracking
+}
+```
+
+---
+
+### Page 9: Witnesses
+
+```javascript
+{
+  // incident_reports table
+  witnesses_present: "no",
+
+  // incident_witnesses table - no witnesses in this scenario
+  // (If witnesses_present = "yes", would include witness records with witness_index 1, 2, 3)
+
+  temp_session_id: "[temp-session-uuid]",
+  additional_witnesses: [],  // sessionStorage - empty
+  completed_at: "2025-10-21T14:56:00.000Z"
+}
+```
+
+---
+
+### Page 10: Police & Safety
+
+```javascript
+{
+  // incident_reports table
+  police_attended: "no",
+  accident_ref_number: null,  // Conditional on police attendance
+  police_force: null,
+  officer_name: null,
+  officer_badge: null,
+  user_breath_test: null,  // Conditional
+  other_breath_test: null,  // Conditional
+
+  airbags_deployed: "no",
+  seatbelts_worn: "yes",
+  seatbelt_reason: null,  // Required only if seatbelts_worn = "no"
+
+  completed_at: "2025-10-21T14:57:00.000Z"
+}
+```
+
+---
+
+### Page 12: Final Wellbeing
+
+```javascript
+{
+  // incident_reports table
+  final_feeling: "minor_pain",  // fine, shaken, minor_pain, significant_pain, emergency
+
+  completed_at: "2025-10-21T14:58:00.000Z",
+  complete_incident_data: {}  // Merged data from all 12 pages in sessionStorage
+}
+```
+
+---
+
+### Transcription Data (Optional - if user records audio narrative)
+
+```javascript
+{
+  // ai_transcription table
+  create_user_id: "[user-uuid]",
+  transcript_text: "Right, so this happened about 2 hours ago on the M25 near Junction 15. I was driving along in the middle lane, doing about 60 miles per hour, traffic was quite heavy...",
+  transcript_status: "completed",  // pending, processing, completed, failed
+  audio_duration_seconds: 87,
+  word_count: 145,
+  transcript_language: "en",
+  confidence_score: 0.94,
+  processed_at: "2025-10-21T15:00:00.000Z",
+
+  // ai_summary table (if AI summary generated)
+  summary_text: "Rear-end collision on M25 Junction 15 during heavy traffic. User was driving at 60 mph when struck from behind by distracted driver (phone use admitted). Whiplash injury sustained. Significant rear damage to user's Ford Focus. Other driver's Vauxhall Corsa front-end damage. Admiral Insurance details exchanged. No police attendance.",
+  summary_status: "completed",
+  key_points: [
+    "Rear-end collision",
+    "M25 Junction 15",
+    "Other driver distracted (phone)",
+    "Whiplash injury",
+    "No police attendance",
+    "Insurance details exchanged"
+  ],
+  sentiment_analysis: {
+    overall: "concerned",
+    confidence: "medium",
+    details: "User expressing pain concerns but situation handled professionally"
+  }
+}
+```
+
+---
+
+### Image Summary (14 Total Photos)
+
+| Page | Photo Type | Count | Storage Tables |
+|------|-----------|-------|----------------|
+| **4** | Map Screenshot | 1 | user_documents |
+| **4a** | Scene Photos | 3 | user_documents |
+| **6** | Vehicle Damage | 5 | user_documents |
+| **8** | Other Vehicle/Damage | 5 | incident_other_vehicles (photos 1-2) + user_documents (all 5) |
+| **TOTAL** | | **14** | |
 
 ## Scenario 2: Roundabout Collision (Morning Rush Hour)
 
@@ -138,7 +517,641 @@
 
 > "This morning, about half seven, I was approaching the roundabout at the junction of London Road and Station Road in Watford. It was pouring with rain, visibility wasn't great. I was indicating right to take the third exit. As I entered the roundabout, a white van came flying round from my right, didn't give way at all, just went straight into my driver's side. Absolutely smashed my door in, wing mirror's gone, front wheel arch is completely crumpled. The van driver was really aggressive, shouting that I should have given way to him, but I had right of way! I was already on the roundabout. There was a woman at the bus stop who saw everything, she gave me her number. The van's got damage to the passenger side, front wing and bumper. I called the police because he was being quite threatening. They came out, took statements from both of us and the witness. My door won't open properly now, had to get in from the passenger side. I'm okay physically, just a bit shaken up. The van's a white Ford Transit, plastering company logo on the side."
 
-### User Signup Data
+---
+
+### Page 1: Legal Acknowledgment
+
+```javascript
+{
+  legal_acknowledgment: true,
+  acknowledged_at: "2025-10-22T07:35:00.000Z"
+}
+```
+
+---
+
+### Page 2: Medical Information
+
+```javascript
+{
+  medical_attention_needed: "no",
+  medical_injury_details: null,
+  medical_injury_severity: null,
+  medical_hospital_name: null,
+  medical_ambulance_called: null,
+  medical_treatment_received: null,
+
+  // Medical Symptoms - All false (user is shaken but physically fine)
+  medical_symptom_chest_pain: false,
+  medical_symptom_uncontrolled_bleeding: false,
+  medical_symptom_breathlessness: false,
+  medical_symptom_limb_weakness: false,
+  medical_symptom_dizziness: false,
+  medical_symptom_loss_of_consciousness: false,
+  medical_symptom_severe_headache: false,
+  medical_symptom_change_in_vision: false,
+  medical_symptom_abdominal_pain: false,
+  medical_symptom_abdominal_bruising: false,
+  medical_symptom_limb_pain_mobility: false,
+  medical_symptom_life_threatening: false,
+  medical_symptom_none: true,  // Feeling fine checkbox
+
+  completed_at: "2025-10-22T07:36:00.000Z"
+}
+```
+
+---
+
+### Page 3: Accident Date/Time/Conditions
+
+```javascript
+{
+  accident_date: "2025-10-22",
+  accident_time: "07:30",
+
+  // Weather Conditions
+  weather_bright_sunlight: false,
+  weather_clear: false,
+  weather_cloudy: true,
+  weather_raining: true,  // Pouring rain
+  weather_heavy_rain: true,
+  weather_drizzle: false,
+  weather_fog: false,
+  weather_snow: false,
+  weather_ice: false,
+  weather_windy: false,
+  weather_hail: false,
+  weather_thunder_lightning: false,
+
+  // Road Conditions
+  road_condition_dry: false,
+  road_condition_wet: true,  // Wet from rain
+  road_condition_icy: false,
+  road_condition_snow_covered: false,
+  road_condition_loose_surface: false,
+  road_condition_slush_on_road: false,
+
+  // Road Type
+  road_type_motorway: false,
+  road_type_a_road: true,  // London Road is an A-road
+  road_type_b_road: false,
+  road_type_urban_street: false,
+  road_type_rural_road: false,
+  road_type_car_park: false,
+  road_type_private_road: false,
+
+  speed_limit: "30",  // mph (urban area)
+  your_speed: 25,  // Slower due to rain
+
+  // Traffic Conditions
+  traffic_conditions_heavy: true,  // Morning rush hour
+  traffic_conditions_moderate: false,
+  traffic_conditions_light: false,
+  traffic_conditions_no_traffic: false,
+
+  // Visibility
+  visibility_good: false,
+  visibility_poor: true,  // Heavy rain
+  visibility_very_poor: false,
+  visibility_street_lights: true,  // Early morning
+
+  // Road Markings
+  road_markings_visible_yes: false,
+  road_markings_visible_no: false,
+  road_markings_visible_partially: true,  // Partially visible due to rain
+
+  completed_at: "2025-10-22T07:38:00.000Z"
+}
+```
+
+---
+
+### Page 4: Location + Map Screenshot
+
+```javascript
+{
+  location: "Roundabout at junction of London Road and Station Road, Watford, Hertfordshire",
+  what3words: "///props.reduce.orbit",
+  nearest_landmark: "Watford Junction Station",
+  junction_type: "roundabout",  // MAPPED
+  traffic_controls: "give_way_signs",  // MISMATCH field name
+  traffic_light_status: null,
+  user_manoeuvre: "third_exit",  // UNMAPPED
+
+  // Visibility Factors
+  visibility_clear: false,
+  visibility_restricted_structure: false,
+  visibility_restricted_bend: false,
+  visibility_large_vehicle: false,
+  visibility_sun_glare: false,
+
+  // Special Conditions
+  special_conditions: [],  // No special conditions beyond weather
+
+  additional_hazards: "Heavy rain reducing visibility, morning rush hour traffic",  // UNMAPPED
+
+  // Image: Map Screenshot
+  map_screenshot_image: {
+    document_type: "location_map_screenshot",
+    field_name: "map_screenshot",
+    storage_path: "/user-documents/[uuid]/map_screenshot.png",
+    public_url: "/api/user-documents/[uuid]/download",
+    status: "completed"
+  },
+
+  session_id: "[temp-session-uuid]",
+  map_screenshot_captured: true,
+  completed_at: "2025-10-22T07:40:00.000Z"
+}
+```
+
+---
+
+### Page 4a: Scene Photos (3 images)
+
+```javascript
+{
+  scene_photos: [
+    {
+      document_type: "location_photo",
+      field_name: "scene_photo",
+      storage_path: "/user-documents/[uuid]/scene_photo_1.jpg",
+      public_url: "/api/user-documents/[uuid]/download",
+      file_size: "2.6 MB",
+      status: "completed"
+    },
+    {
+      document_type: "location_photo",
+      field_name: "scene_photo",
+      storage_path: "/user-documents/[uuid]/scene_photo_2.jpg",
+      public_url: "/api/user-documents/[uuid]/download",
+      file_size: "2.3 MB",
+      status: "completed"
+    },
+    {
+      document_type: "location_photo",
+      field_name: "scene_photo",
+      storage_path: "/user-documents/[uuid]/scene_photo_3.jpg",
+      public_url: "/api/user-documents/[uuid]/download",
+      file_size: "2.1 MB",
+      status: "completed"
+    }
+  ],
+
+  temp_session_id: "[temp-session-uuid]"
+}
+```
+
+---
+
+### Page 5: User's Vehicle Details
+
+```javascript
+{
+  usual_vehicle: "yes",
+  vehicle_license_plate: "GH21ABC",
+
+  // DVLA API Response
+  dvla_vehicle_lookup_make: "TOYOTA",
+  dvla_vehicle_lookup_model: "YARIS",
+  dvla_vehicle_lookup_color: "WHITE",
+  dvla_vehicle_lookup_year: 2021,
+  dvla_vehicle_lookup_fuel_type: "HYBRID",
+  dvla_vehicle_lookup_mot_status: "Valid",
+  dvla_vehicle_lookup_mot_expiry: "2026-04-15",
+  dvla_vehicle_lookup_tax_status: "Taxed",
+  dvla_vehicle_lookup_tax_due_date: "2026-03-01",
+  dvla_vehicle_lookup_insurance_status: null,
+
+  // Damage Information
+  no_damage: false,
+
+  // Impact Points
+  impact_point: ["driver_side", "front_driver", "rear_driver"],  // Side impact
+
+  damage_to_your_vehicle: "Driver's door completely smashed in, door won't open, wing mirror torn off, front wheel arch crumpled, front and rear panels on driver's side dented. Possible structural damage to B-pillar.",
+
+  vehicle_driveable: "yes",  // But door damaged
+
+  // Manual Entry Fallback
+  your_vehicle_make: null,
+  your_vehicle_model: null,
+  your_vehicle_color: null,
+  your_vehicle_year: null,
+
+  completed_at: "2025-10-22T07:42:00.000Z"
+}
+```
+
+---
+
+### Page 6: Vehicle Damage Photos (5 images)
+
+```javascript
+{
+  vehicle_damage_photos: [
+    {
+      document_type: "vehicle_damage_photo",
+      field_name: "vehicle_damage_photo",
+      storage_path: "/user-documents/[uuid]/vehicle_damage_1.jpg",
+      public_url: "/api/user-documents/[uuid]/download",
+      file_size: "3.4 MB",
+      status: "completed"
+    },
+    {
+      document_type: "vehicle_damage_photo",
+      field_name: "vehicle_damage_photo",
+      storage_path: "/user-documents/[uuid]/vehicle_damage_2.jpg",
+      public_url: "/api/user-documents/[uuid]/download",
+      file_size: "3.1 MB",
+      status: "completed"
+    },
+    {
+      document_type: "vehicle_damage_photo",
+      field_name: "vehicle_damage_photo",
+      storage_path: "/user-documents/[uuid]/vehicle_damage_3.jpg",
+      public_url: "/api/user-documents/[uuid]/download",
+      file_size: "2.8 MB",
+      status: "completed"
+    },
+    {
+      document_type: "vehicle_damage_photo",
+      field_name: "vehicle_damage_photo",
+      storage_path: "/user-documents/[uuid]/vehicle_damage_4.jpg",
+      public_url: "/api/user-documents/[uuid]/download",
+      file_size: "2.9 MB",
+      status: "completed"
+    },
+    {
+      document_type: "vehicle_damage_photo",
+      field_name: "vehicle_damage_photo",
+      storage_path: "/user-documents/[uuid]/vehicle_damage_5.jpg",
+      public_url: "/api/user-documents/[uuid]/download",
+      file_size: "3.0 MB",
+      status: "completed"
+    }
+  ],
+
+  temp_session_id: "[temp-session-uuid]"
+}
+```
+
+---
+
+### Page 7: Other Driver Details
+
+```javascript
+{
+  // incident_other_vehicles table (vehicle_index = 1)
+  driver_name: "Derek Collins",  // Van driver
+  driver_phone: "07700900567",
+  driver_email: null,
+  driver_license_number: null,
+
+  vehicle_license_plate: "YT19VAN",
+
+  // DVLA Lookup Results
+  vehicle_make: "FORD",
+  vehicle_model: "TRANSIT",
+  vehicle_color: "WHITE",
+  vehicle_year_of_manufacture: 2019,
+  vehicle_fuel_type: null,  // UNMAPPED
+  vehicle_mot_status: null,  // UNMAPPED
+  vehicle_mot_expiry_date: null,  // UNMAPPED
+  vehicle_tax_status: null,  // UNMAPPED
+  vehicle_tax_due_date: null,  // UNMAPPED
+  vehicle_insurance_status: null,  // UNMAPPED
+
+  // Insurance Details
+  insurance_company: "Commercial Fleet Insurance Ltd",
+  policy_number: "CFI-20192345",
+  policy_holder: "Collins Plastering Services",  // Business van
+  policy_cover: "third_party_fire_theft",
+
+  // Damage Description
+  no_visible_damage: false,
+  damage_description: "Passenger side front wing and bumper damaged, headlight cracked, front wheel arch dented",
+
+  vehicle_data: {},
+  warnings: [],
+  additional_vehicles: [],
+
+  completed_at: "2025-10-22T07:44:00.000Z"
+}
+```
+
+---
+
+### Page 8: Other Vehicle/Damage Photos (5 images)
+
+```javascript
+{
+  // incident_other_vehicles table
+  file_url_other_vehicle: "/api/user-documents/[uuid]/download",  // Photo 1
+  file_url_other_vehicle_1: "/api/user-documents/[uuid]/download",  // Photo 2
+
+  // user_documents table
+  other_damage_photos: [
+    {
+      document_type: "other_vehicle_photo",
+      field_name: "other_vehicle_photo_1",
+      storage_path: "/user-documents/[uuid]/other_vehicle_1.jpg",
+      public_url: "/api/user-documents/[uuid]/download",
+      file_size: "3.2 MB",
+      status: "completed"
+    },
+    {
+      document_type: "other_vehicle_photo",
+      field_name: "other_vehicle_photo_2",
+      storage_path: "/user-documents/[uuid]/other_vehicle_2.jpg",
+      public_url: "/api/user-documents/[uuid]/download",
+      file_size: "2.7 MB",
+      status: "completed"
+    },
+    {
+      document_type: "other_vehicle_photo",
+      field_name: "other_damage_photo_3",
+      storage_path: "/user-documents/[uuid]/other_damage_3.jpg",
+      public_url: "/api/user-documents/[uuid]/download",
+      file_size: "3.1 MB",
+      status: "completed"
+    },
+    {
+      document_type: "other_vehicle_photo",
+      field_name: "other_damage_photo_4",
+      storage_path: "/user-documents/[uuid]/other_damage_4.jpg",
+      public_url: "/api/user-documents/[uuid]/download",
+      file_size: "2.5 MB",
+      status: "completed"
+    },
+    {
+      document_type: "other_vehicle_photo",
+      field_name: "other_damage_photo_5",
+      storage_path: "/user-documents/[uuid]/other_damage_5.jpg",
+      public_url: "/api/user-documents/[uuid]/download",
+      file_size: "2.9 MB",
+      status: "completed"
+    }
+  ],
+
+  temp_session_id: "[temp-session-uuid]",
+  uploaded_images_array: []
+}
+```
+
+---
+
+### Page 9: Witnesses
+
+```javascript
+{
+  // incident_reports table
+  witnesses_present: "yes",
+
+  // incident_witnesses table (witness_index = 1)
+  witness_records: [
+    {
+      witness_index: 1,
+      witness_name: "Margaret Henderson",
+      witness_phone: "07700900891",
+      witness_email: "margaret.henderson@email.co.uk",
+      witness_statement: "I was waiting at the bus stop on Station Road and saw everything. The white van came flying round the roundabout from the right and went straight into the side of the white Toyota. The Toyota was already on the roundabout and had right of way. The van driver didn't slow down or give way at all. Very aggressive driver."
+    }
+  ],
+
+  temp_session_id: "[temp-session-uuid]",
+  additional_witnesses: [],  // No additional witnesses
+  completed_at: "2025-10-22T07:46:00.000Z"
+}
+```
+
+---
+
+### Page 10: Police & Safety
+
+```javascript
+{
+  police_attended: "yes",  // Called due to aggressive driver
+  accident_ref_number: "OP/2025/10/22/4567",
+  police_force: "Hertfordshire Constabulary",
+  officer_name: "PC Sarah Williams",
+  officer_badge: "5432",
+  user_breath_test: "not_tested",  // Not required - no suspicion
+  other_breath_test: "not_tested",
+
+  airbags_deployed: "no",
+  seatbelts_worn: "yes",
+  seatbelt_reason: null,
+
+  completed_at: "2025-10-22T07:48:00.000Z"
+}
+```
+
+---
+
+### Page 12: Final Wellbeing
+
+```javascript
+{
+  final_feeling: "shaken",  // fine, shaken, minor_pain, significant_pain, emergency
+
+  completed_at: "2025-10-22T07:49:00.000Z",
+  complete_incident_data: {}
+}
+```
+
+---
+
+### Transcription Data
+
+```javascript
+{
+  // ai_transcription table
+  create_user_id: "[user-uuid]",
+  transcript_text: "This morning, about half seven, I was approaching the roundabout at the junction of London Road and Station Road in Watford. It was pouring with rain...",
+  transcript_status: "completed",
+  audio_duration_seconds: 102,
+  word_count: 168,
+  transcript_language: "en",
+  confidence_score: 0.91,
+  processed_at: "2025-10-22T07:50:00.000Z",
+
+  // ai_summary table
+  summary_text: "Roundabout collision at London Road/Station Road junction, Watford, during heavy rain (morning rush hour). User had right of way while on roundabout when white Ford Transit van failed to give way and struck driver's side. Door smashed, wing mirror torn off. Aggressive driver behavior prompted police attendance (Hertfordshire Constabulary, ref OP/2025/10/22/4567). Witness at bus stop corroborates user's account. User physically fine but shaken.",
+  summary_status: "completed",
+  key_points: [
+    "Roundabout collision - Watford",
+    "Heavy rain, poor visibility",
+    "User had right of way",
+    "White Ford Transit van failed to give way",
+    "Police attended (aggressive driver)",
+    "Witness present"
+  ],
+  sentiment_analysis: {
+    overall: "shaken",
+    confidence: "high",
+    details: "User rattled by aggressive driver behavior, grateful for witness support and police attendance"
+  }
+}
+```
+
+---
+
+### Image Summary (14 Total Photos)
+
+| Page | Photo Type | Count | Storage Tables |
+|------|-----------|-------|----------------|
+| **4** | Map Screenshot | 1 | user_documents |
+| **4a** | Scene Photos | 3 | user_documents |
+| **6** | Vehicle Damage | 5 | user_documents |
+| **8** | Other Vehicle/Damage | 5 | incident_other_vehicles (photos 1-2) + user_documents (all 5) |
+| **TOTAL** | | **14** | |
+
+---
+
+## Scenarios 3-10: Quick Reference
+
+**Note:** The remaining scenarios (3-10) follow the same 12-page structure as Scenarios 1 & 2. Key details are provided below for test data generation. Full expansion can be completed using the template from Scenarios 1 & 2.
+
+---
+
+### Scenario 3: Car Park Collision (Supermarket)
+- **Date/Time:** 2025-10-23, 15:45
+- **Location:** Tesco Extra car park, Milton Keynes
+- **Conditions:** Clear, dry, daylight
+- **Incident:** Reversing collision - both vehicles backing out simultaneously
+- **Injuries:** None (both drivers fine)
+- **Vehicles:** User (BMW 3 Series GH20XYZ) vs Other (Nissan Qashqai MN18QRS)
+- **Police:** Not attended
+- **Witnesses:** None
+- **Special Notes:** CCTV footage available
+
+---
+
+### Scenario 4: Hit and Run (Residential Street)
+- **Date/Time:** 2025-10-24, 22:15
+- **Location:** Elm Grove, Reading, Berkshire
+- **Conditions:** Dark, dry, street lights
+- **Incident:** Parked car struck - other vehicle fled scene
+- **Injuries:** None (car unoccupied)
+- **Vehicles:** User (Honda Civic PL19CIV) vs Other (Unknown - dark SUV, partial plate: XX67...)
+- **Police:** Attended (hit and run report)
+- **Witnesses:** Neighbor heard impact, saw vehicle speed away
+- **Special Notes:** Dashcam footage from neighbor's Ring doorbell
+
+---
+
+### Scenario 5: Multi-Vehicle Motorway Accident (M1)
+- **Date/Time:** 2025-10-25, 16:20
+- **Location:** M1 Northbound, Junction 13-14, Bedfordshire
+- **Conditions:** Heavy rain, spray, poor visibility
+- **Incident:** 4-vehicle pile-up - sudden braking in fast lane
+- **Injuries:** User - whiplash + bruising. Passenger in Vehicle 3 - taken to hospital
+- **Vehicles:**
+  - User (Mercedes C-Class RT20MER)
+  - Vehicle 2 (Audi A4 ST19AUD)
+  - Vehicle 3 (Ford Focus BL18FOR)
+  - Vehicle 4 (Volvo XC90 VO21VOL)
+- **Police:** Attended (lanes closed, ambulance called)
+- **Witnesses:** Multiple drivers, traffic officers
+- **Special Notes:** Complex incident with 3 other vehicles, airbags deployed
+
+---
+
+### Scenario 6: Pedestrian Involved (School Zone)
+- **Date/Time:** 2025-10-26, 08:40
+- **Location:** High Street (near St. Mary's Primary School), Cambridge
+- **Conditions:** Clear, dry, 20mph school zone
+- **Incident:** Child ran into road between parked cars, user emergency braked but minor contact
+- **Injuries:** Child - grazed knee (not serious), treated by school nurse. User - shaken
+- **Vehicles:** User (Volkswagen Golf VW22GOL) - minor front bumper scuff
+- **Police:** Attended (pedestrian incident involving child)
+- **Witnesses:** Multiple parents, school staff, lollipop lady
+- **Special Notes:** Sensitive incident, child's parents present, dashcam footage available
+
+---
+
+### Scenario 7: Weather-Related Accident (Black Ice)
+- **Date/Time:** 2025-01-15, 06:50 (winter morning)
+- **Location:** B4012 near Henley-on-Thames, Oxfordshire
+- **Conditions:** Freezing fog, black ice, dark, -2°C
+- **Incident:** User lost control on black ice patch, slid into oncoming vehicle
+- **Injuries:** User - minor cuts from broken glass. Other driver - whiplash
+- **Vehicles:** User (Subaru Outback SU21OUT) vs Other (Land Rover Discovery LD19DIS)
+- **Police:** Attended (road hazard, ice warnings issued)
+- **Witnesses:** None (rural road, early morning)
+- **Special Notes:** Gritting lorry arrived during incident, weather documented
+
+---
+
+### Scenario 8: Distracted Driving (Mobile Phone Use)
+- **Date/Time:** 2025-10-27, 13:20
+- **Location:** A40 Western Avenue, London
+- **Conditions:** Clear, dry, heavy traffic
+- **Incident:** Other driver rear-ended user while using mobile phone (admitted at scene)
+- **Injuries:** User - neck strain, developing whiplash symptoms
+- **Vehicles:** User (Tesla Model 3 TE22TES) vs Other (Vauxhall Insignia VX20INS)
+- **Police:** Not attended (admitted fault, exchanged details)
+- **Witnesses:** None
+- **Special Notes:** Other driver admitted phone use, Tesla dashcam footage, sentry mode captured incident
+
+---
+
+### Scenario 9: Mechanical Failure (Brake Failure)
+- **Date/Time:** 2025-10-28, 17:10
+- **Location:** A259 coast road near Brighton, East Sussex
+- **Conditions:** Clear, dry, dusk (lights on)
+- **Incident:** User's brakes failed approaching junction, collided with vehicle turning right
+- **Injuries:** User - airbag deployment injuries (nose bleed, chest bruising). Other - shock
+- **Vehicles:** User (Peugeot 308 PE19PEU - later found to have brake fluid leak) vs Other (Mazda CX-5 MZ21MAX)
+- **Police:** Attended (mechanical failure, vehicle recovered)
+- **Witnesses:** Pedestrians at bus stop
+- **Special Notes:** Vehicle recovered for inspection, MOT was valid but recent brake work done (potential negligence by garage)
+
+---
+
+### Scenario 10: Minor Scrape (Supermarket Exit)
+- **Date/Time:** 2025-10-29, 11:30
+- **Location:** Sainsbury's car park exit, Bristol
+- **Conditions:** Clear, dry, daylight
+- **Incident:** Other vehicle scraped user's passenger side while both exiting car park - very minor contact
+- **Injuries:** None (both drivers fine)
+- **Vehicles:** User (Renault Clio RN23CLI) vs Other (Toyota RAV4 TO22RAV)
+- **Police:** Not attended (minor damage, details exchanged)
+- **Witnesses:** None
+- **Special Notes:** Minimal damage (paint transfer only), both vehicles driveable, photos taken
+
+---
+
+## Testing Notes
+
+**Scenario Complexity Levels:**
+- **Simple:** 1, 3, 10 (straightforward, no major injuries, clear fault)
+- **Moderate:** 2, 4, 8 (police involvement, witnesses, some complexity)
+- **Complex:** 5, 6, 7, 9 (multiple vehicles, pedestrians, weather factors, mechanical issues)
+
+**Test Coverage:**
+- **Weather conditions:** All types (clear, rain, fog, ice)
+- **Road types:** Motorway, A-road, urban, residential, car park
+- **Time of day:** Early morning, rush hour, midday, evening, night
+- **Injuries:** None, minor, moderate, hospital attendance
+- **Police:** Attended (6 scenarios), not attended (4 scenarios)
+- **Witnesses:** Present (5 scenarios), absent (5 scenarios)
+- **Special factors:** Pedestrian, hit-and-run, mechanical failure, distracted driving, multi-vehicle
+
+**Image Upload Testing:**
+- All scenarios assume 14 photos uploaded (maximum coverage)
+- Scenarios 4 & 6 may have fewer photos depending on circumstances
+- All scenarios include what3words map screenshot
+
+**Transcription Testing:**
+- All scenarios include audio narrative for transcription testing
+- Varying lengths (85-170 seconds), accents, emotions
+- Natural speech patterns with UK idioms and location references
+
+---
+
+**End of Document**
 
 ```javascript
 {

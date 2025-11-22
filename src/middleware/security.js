@@ -19,18 +19,16 @@ const corsOptions = {
       'https://workspace.ring120768.repl.co',
       'https://workspace.ring120768.replit.app',
       'https://workspace.ring120768.replit.dev',
-      'http://localhost:3000',
-      'http://localhost:5000',
       'https://form.typeform.com',
       'https://typeform.com',
       'https://api.typeform.com'
       // Removed wildcard patterns for security: /.typeform.com$/, /.zapier.com$/, /.replit.co$/,
-      
-      
-      
-      
-      
     ];
+
+    // Add localhost origins only in development/test environments
+    if (process.env.NODE_ENV !== 'production') {
+      allowedOrigins.push('http://localhost:3000', 'http://localhost:5000');
+    }
 
     if (!origin) return callback(null, true);
 
@@ -169,13 +167,15 @@ function httpsRedirect(req, res, next) {
     return next();
   }
 
-  // Skip if already HTTPS or in development
-  if (req.secure || req.get('x-forwarded-proto') === 'https' || process.env.NODE_ENV === 'development') {
+  // Skip if already HTTPS, in development, or localhost
+  const host = req.get('host') || '';
+  const isLocalhost = host.includes('localhost') || host.includes('127.0.0.1');
+  if (req.secure || req.get('x-forwarded-proto') === 'https' || process.env.NODE_ENV === 'development' || isLocalhost) {
     return next();
   }
 
   // Force HTTPS redirect for non-webhook requests
-  const httpsUrl = `https://${req.get('host')}${req.originalUrl}`;
+  const httpsUrl = `https://${host}${req.originalUrl}`;
   return res.redirect(301, httpsUrl);
 }
 

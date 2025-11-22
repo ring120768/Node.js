@@ -495,6 +495,345 @@ class GDPRService {
   }
 
   /**
+   * Delete user data only (keeps auth account active)
+   * GDPR Article 17 - Right to Erasure (partial)
+   * Soft-deletes database records and removes storage files
+   *
+   * @param {string} userId - The user's ID
+   * @param {string} reason - Reason for deletion
+   * @returns {Promise<Object>} Deletion results
+   */
+  async deleteUserDataOnly(userId, reason = 'user_request') {
+    if (!this.enabled || !this.supabase) {
+      throw new Error('GDPR service not available');
+    }
+
+    try {
+      logger.info('Processing data-only deletion request (keeping account)', { userId, reason });
+
+      // Log the deletion request BEFORE deleting
+      await this.logActivity(userId, 'DATA_DELETION_REQUESTED', {
+        reason,
+        keepAccount: true
+      });
+
+      const deletionResults = {
+        storage: [],
+        database: [],
+        account: 'preserved'
+      };
+
+      // Step 1: Delete all storage files
+      const buckets = [
+        'incident-reports',
+        'incident-media',
+        'audio-files',
+        'transcription-data',
+        'user-documents'
+      ];
+
+      for (const bucket of buckets) {
+        try {
+          // List all files in user's folder
+          const { data: files } = await this.supabase
+            .storage
+            .from(bucket)
+            .list(userId, {
+              limit: 1000
+            });
+
+          if (files && files.length > 0) {
+            // Delete all files
+            const filePaths = files.map(file => `${userId}/${file.name}`);
+            const { error } = await this.supabase
+              .storage
+              .from(bucket)
+              .remove(filePaths);
+
+            deletionResults.storage.push({
+              bucket,
+              success: !error,
+              filesDeleted: files.length,
+              error: error?.message
+            });
+
+            if (error) {
+              logger.warn(`Failed to delete files from ${bucket}`, {
+                userId,
+                error: error.message
+              });
+            } else {
+              logger.info(`Deleted ${files.length} files from ${bucket}`, { userId });
+            }
+          } else {
+            deletionResults.storage.push({
+              bucket,
+              success: true,
+              filesDeleted: 0,
+              message: 'No files found'
+            });
+          }
+        } catch (bucketError) {
+          logger.error(`Error processing bucket ${bucket}`, {
+            userId,
+            error: bucketError.message
+          });
+          deletionResults.storage.push({
+            bucket,
+            success: false,
+            error: bucketError.message
+          });
+        }
+      }
+
+      // Step 2: Delete database records (using table-specific logic based on actual schema)
+      const deletedAt = new Date().toISOString();
+
+      // Table 1: incident_reports
+      // Schema: Has auth_user_id, create_user_id, user_id, deleted_at (166 columns)
+      // NOTE: In practice, only create_user_id is populated, auth_user_id and user_id are NULL
+      // Action: Soft-delete using create_user_id only (TEXT column)
+      try {
+        const { data, error } = await this.supabase
+          .from('incident_reports')
+          .update({ deleted_at: deletedAt })
+          .eq('create_user_id', userId)
+          .is('deleted_at', null)
+          .select('id');
+
+        deletionResults.database.push({
+          table: 'incident_reports',
+          success: !error,
+          recordsDeleted: data?.length || 0,
+          error: error?.message,
+          method: 'soft_delete'
+        });
+
+        if (error) {
+          logger.warn('Failed to soft-delete incident_reports', { userId, error: error.message });
+        } else {
+          logger.info(`Soft-deleted ${data?.length || 0} incident_reports`, { userId });
+        }
+      } catch (error) {
+        logger.error('Error processing incident_reports', { userId, error: error.message });
+        deletionResults.database.push({
+          table: 'incident_reports',
+          success: false,
+          error: error.message,
+          method: 'soft_delete'
+        });
+      }
+
+      // Table 2: user_documents
+      // Schema: Only has create_user_id (not auth_user_id), has deleted_at (46 columns)
+      // Action: Soft-delete using only create_user_id
+      try {
+        const { data, error } = await this.supabase
+          .from('user_documents')
+          .update({ deleted_at: deletedAt })
+          .eq('create_user_id', userId)
+          .is('deleted_at', null)
+          .select('id');
+
+        deletionResults.database.push({
+          table: 'user_documents',
+          success: !error,
+          recordsDeleted: data?.length || 0,
+          error: error?.message,
+          method: 'soft_delete'
+        });
+
+        if (error) {
+          logger.warn('Failed to soft-delete user_documents', { userId, error: error.message });
+        } else {
+          logger.info(`Soft-deleted ${data?.length || 0} user_documents`, { userId });
+        }
+      } catch (error) {
+        logger.error('Error processing user_documents', { userId, error: error.message });
+        deletionResults.database.push({
+          table: 'user_documents',
+          success: false,
+          error: error.message,
+          method: 'soft_delete'
+        });
+      }
+
+      // Table 3: ai_transcription
+      // Schema: Has create_user_id (TEXT), but NO deleted_at column (11 columns)
+      // Action: Hard delete using create_user_id (GDPR allows deletion of AI-generated content)
+      try {
+        const { data, error } = await this.supabase
+          .from('ai_transcription')
+          .delete()
+          .eq('create_user_id', userId)
+          .select('id');
+
+        deletionResults.database.push({
+          table: 'ai_transcription',
+          success: !error,
+          recordsDeleted: data?.length || 0,
+          error: error?.message,
+          method: 'hard_delete'
+        });
+
+        if (error) {
+          logger.warn('Failed to delete ai_transcription', { userId, error: error.message });
+        } else {
+          logger.info(`Hard-deleted ${data?.length || 0} ai_transcription records`, { userId });
+        }
+      } catch (error) {
+        logger.error('Error processing ai_transcription', { userId, error: error.message });
+        deletionResults.database.push({
+          table: 'ai_transcription',
+          success: false,
+          error: error.message,
+          method: 'hard_delete'
+        });
+      }
+
+      // Table 4: ai_summary
+      // Schema: Empty table, likely no deleted_at column
+      // Action: Hard delete (AI-generated summaries)
+      try {
+        const { data, error } = await this.supabase
+          .from('ai_summary')
+          .delete()
+          .eq('create_user_id', userId)
+          .select('id');
+
+        deletionResults.database.push({
+          table: 'ai_summary',
+          success: !error,
+          recordsDeleted: data?.length || 0,
+          error: error?.message,
+          method: 'hard_delete'
+        });
+
+        if (error) {
+          logger.warn('Failed to delete ai_summary', { userId, error: error.message });
+        } else {
+          logger.info(`Hard-deleted ${data?.length || 0} ai_summary records`, { userId });
+        }
+      } catch (error) {
+        logger.error('Error processing ai_summary', { userId, error: error.message });
+        deletionResults.database.push({
+          table: 'ai_summary',
+          success: false,
+          error: error.message,
+          method: 'hard_delete'
+        });
+      }
+
+      // Table 5: temp_uploads
+      // Schema: Only has claimed_by_user_id, no deleted_at (12 columns)
+      // Action: Hard delete (temporary files, no audit trail needed)
+      try {
+        const { data, error } = await this.supabase
+          .from('temp_uploads')
+          .delete()
+          .eq('claimed_by_user_id', userId)
+          .select('id');
+
+        deletionResults.database.push({
+          table: 'temp_uploads',
+          success: !error,
+          recordsDeleted: data?.length || 0,
+          error: error?.message,
+          method: 'hard_delete'
+        });
+
+        if (error) {
+          logger.warn('Failed to delete temp_uploads', { userId, error: error.message });
+        } else {
+          logger.info(`Hard-deleted ${data?.length || 0} temp_uploads`, { userId });
+        }
+      } catch (error) {
+        logger.error('Error processing temp_uploads', { userId, error: error.message });
+        deletionResults.database.push({
+          table: 'temp_uploads',
+          success: false,
+          error: error.message,
+          method: 'hard_delete'
+        });
+      }
+
+      // Table 6: incident_images (legacy table - also needs handling)
+      // Schema: Has create_user_id, has deletion_completed instead of deleted_at
+      // Action: Soft-delete using deletion_completed field
+      try {
+        const { data, error } = await this.supabase
+          .from('incident_images')
+          .update({ deletion_completed: deletedAt })
+          .eq('create_user_id', userId)
+          .is('deletion_completed', null)
+          .select('id');
+
+        deletionResults.database.push({
+          table: 'incident_images',
+          success: !error,
+          recordsDeleted: data?.length || 0,
+          error: error?.message,
+          method: 'soft_delete'
+        });
+
+        if (error) {
+          logger.warn('Failed to soft-delete incident_images', { userId, error: error.message });
+        } else {
+          logger.info(`Soft-deleted ${data?.length || 0} incident_images`, { userId });
+        }
+      } catch (error) {
+        logger.error('Error processing incident_images', { userId, error: error.message });
+        deletionResults.database.push({
+          table: 'incident_images',
+          success: false,
+          error: error.message,
+          method: 'soft_delete'
+        });
+      }
+
+      // Step 3: Log completion
+      await this.logActivity(userId, 'DATA_DELETION_COMPLETED', {
+        reason,
+        keepAccount: true,
+        deletionResults
+      });
+
+      logger.info('Data-only deletion completed successfully', {
+        userId,
+        storageResults: deletionResults.storage.length,
+        databaseResults: deletionResults.database.length
+      });
+
+      return {
+        success: true,
+        deletionResults,
+        deletedAt,
+        accountStatus: 'preserved'
+      };
+
+    } catch (error) {
+      logger.error('Data-only deletion error', {
+        userId,
+        error: error.message,
+        stack: error.stack
+      });
+
+      // Log the failure
+      try {
+        await this.logActivity(userId, 'DATA_DELETION_FAILED', {
+          reason,
+          keepAccount: true,
+          error: error.message
+        });
+      } catch (logError) {
+        logger.error('Failed to log deletion failure', logError);
+      }
+
+      return { success: false, error: error.message };
+    }
+  }
+
+  /**
    * Enforce data retention policy
    * ✅ Uses storage-based architecture
    * Note: This is a simplified version - you may want to customize retention logic

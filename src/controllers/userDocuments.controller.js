@@ -568,11 +568,115 @@ async function downloadDocument(req, res) {
   }
 }
 
+/**
+ * PATCH /api/user-documents/:id
+ * Update document metadata (type, category, notes)
+ *
+ * Security: Requires authentication, can only update own documents
+ */
+async function updateDocument(req, res) {
+  const requestId = req.id || crypto.randomBytes(8).toString('hex');
+
+  try {
+    const userId = req.user?.id || req.query.user_id;
+    const documentId = req.params.id;
+    const { document_type, document_category, notes } = req.body;
+
+    if (!userId) {
+      logger.warn(`[${requestId}] Missing user ID`);
+      return res.status(401).json({
+        success: false,
+        error: 'Authentication required',
+        code: 'AUTH_REQUIRED'
+      });
+    }
+
+    // Validate inputs
+    const updates = {};
+    if (document_type !== undefined) updates.document_type = document_type;
+    if (document_category !== undefined) updates.document_category = document_category;
+    if (notes !== undefined) updates.notes = notes;
+    updates.updated_at = new Date().toISOString();
+
+    if (Object.keys(updates).length === 1) { // Only updated_at
+      return res.status(400).json({
+        success: false,
+        error: 'No valid fields to update',
+        code: 'VALIDATION_ERROR'
+      });
+    }
+
+    logger.info(`[${requestId}] Updating document`, {
+      userId,
+      documentId,
+      updates
+    });
+
+    // Update document (only if user owns it)
+    const { data, error } = await supabase
+      .from('user_documents')
+      .update(updates)
+      .eq('id', documentId)
+      .eq('create_user_id', userId)
+      .is('deleted_at', null)
+      .select()
+      .single();
+
+    if (error) {
+      logger.error(`[${requestId}] Failed to update document`, {
+        documentId,
+        userId,
+        error: error.message
+      });
+      return res.status(500).json({
+        success: false,
+        error: 'Failed to update document',
+        code: 'DATABASE_ERROR'
+      });
+    }
+
+    if (!data) {
+      logger.warn(`[${requestId}] Document not found or unauthorized`, {
+        documentId,
+        userId
+      });
+      return res.status(404).json({
+        success: false,
+        error: 'Document not found or unauthorized',
+        code: 'NOT_FOUND'
+      });
+    }
+
+    logger.info(`[${requestId}] Document updated successfully`, {
+      documentId,
+      userId
+    });
+
+    return res.status(200).json({
+      success: true,
+      message: 'Document updated successfully',
+      data
+    });
+
+  } catch (error) {
+    logger.error(`[${requestId}] Error in updateDocument`, {
+      error: error.message,
+      stack: error.stack
+    });
+    return res.status(500).json({
+      success: false,
+      error: 'Internal server error',
+      code: 'INTERNAL_ERROR'
+    });
+  }
+}
+
 module.exports = {
   listUserDocuments,
   getDocument,
   getDocumentStats,
   refreshSignedUrl,
+  updateDocument,
   deleteDocument,
   downloadDocument
 };

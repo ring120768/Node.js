@@ -421,10 +421,6 @@
     <link rel="stylesheet" href="/css/mascot.css"></head>
 <body>
     <div class="container">
-        <div class="header">
-            <h1>🚗 Car Crash Lawyer AI</h1>
-            <p>Your Legal First Responder</p>
-        </div>
 
         <!-- Welcome Banner -->
         <div class="welcome-banner">
@@ -516,8 +512,8 @@
             <button class="primary-action-btn" id="reportIncidentBtn">
                 📝 Report Your First Incident
             </button>
-            <button class="secondary-action-btn" id="gotoDashboardBtn">
-                📊 Go to Dashboard
+            <button class="secondary-action-btn" id="gotoHomepageBtn">
+                🏠 Homepage
             </button>
         </div>
 
@@ -785,7 +781,7 @@
 
             // Primary action buttons
             const reportIncidentBtn = document.getElementById('reportIncidentBtn');
-            const gotoDashboardBtn = document.getElementById('gotoDashboardBtn');
+            const gotoHomepageBtn = document.getElementById('gotoHomepageBtn');
 
             if (reportIncidentBtn) {
                 reportIncidentBtn.addEventListener('click', function(e) {
@@ -795,11 +791,11 @@
                 });
             }
 
-            if (gotoDashboardBtn) {
-                gotoDashboardBtn.addEventListener('click', function(e) {
+            if (gotoHomepageBtn) {
+                gotoHomepageBtn.addEventListener('click', function(e) {
                     e.preventDefault();
-                    console.log('📊 Dashboard button clicked');
-                    navigateToDashboard();
+                    console.log('🏠 Homepage button clicked');
+                    navigateToHomepage();
                 });
             }
 
@@ -847,25 +843,10 @@
             }
         }
 
-        // Navigate to dashboard with auth check
-        async function navigateToDashboard() {
-            console.log('📊 Navigating to dashboard...');
-            try {
-                const response = await fetch('/api/auth/status', {
-                    credentials: 'include'
-                });
-                const data = await response.json();
-
-                if (data.authenticated) {
-                    window.location.href = '/dashboard.html';
-                } else {
-                    window.location.href = '/login.html?redirect=dashboard.html';
-                }
-            } catch (error) {
-                console.error('Auth check failed:', error);
-                // Allow navigation even if auth check fails
-                window.location.href = '/dashboard.html';
-            }
+        // Navigate to homepage
+        function navigateToHomepage() {
+            console.log('🏠 Navigating to homepage...');
+            window.location.href = '/index.html';
         }
 
         // Helper function to get valid userId from storage

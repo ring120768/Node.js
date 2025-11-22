@@ -1,0 +1,1241 @@
+<!DOCTYPE html>
+<html lang="en-GB">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+  <meta name="apple-mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+  <title>Your Vehicle Details - Page 5 of 10</title>
+
+  <style>
+    /* Design System Variables */
+    :root {
+      /* Brand Colors */
+      --grad-start: #0E7490;
+      --grad-end: #0c6179;
+      --accent: #0E7490;
+      --accent-hover: #0c6179;
+
+      /* Page Background */
+      --bg-light: #E8DCC4;
+
+      /* Text Colors */
+      --text-dark: #1a1a1a;
+      --text-muted: #6b7280;
+
+      /* Borders & Dividers */
+      --border: #4B5563;
+
+      /* Form Elements */
+      --input-bg: #CFD2D7;
+      --checkbox-bg: #F5F1E8;
+      --container-bg: #F5F1E8;
+      --button-bg: #ffffff;
+      --button-hover: rgba(14, 116, 144, 0.1);
+
+      /* Status Colors */
+      --success: #10b981;
+      --danger: #ef4444;
+      --warning: #f59e0b;
+    }
+
+    /* Reset & Base */
+    * {
+      margin: 0;
+      padding: 0;
+      box-sizing: border-box;
+      -webkit-tap-highlight-color: transparent;
+    }
+
+    html {
+      font-size: 16px;
+      -webkit-text-size-adjust: 100%;
+    }
+
+    body {
+      font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, Cantarell, sans-serif;
+      background: var(--bg-light);
+      color: var(--text-dark);
+      line-height: 1.6;
+      overflow-x: hidden;
+      padding-bottom: env(safe-area-inset-bottom, 20px);
+    }
+
+    /* Sticky Banner */
+    .banner {
+      background: linear-gradient(135deg, var(--grad-start) 0%, var(--grad-end) 100%);
+      padding: 20px 16px;
+      position: sticky;
+      top: 0;
+      z-index: 200;
+      box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+    }
+
+    @supports (padding-top: env(safe-area-inset-top)) {
+      .banner {
+        padding-top: max(20px, env(safe-area-inset-top));
+      }
+    }
+
+    .brand {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      text-align: center;
+      gap: 12px;
+    }
+
+    .brand .logo {
+      width: 80px;
+      height: 80px;
+      border-radius: 12px;
+      box-shadow: 0 4px 12px rgba(0,0,0,0.15);
+    }
+
+    .brand h1 {
+      font-size: 1.25rem;
+      font-weight: 700;
+      color: white;
+      text-shadow: 0 2px 4px rgba(0,0,0,0.1);
+    }
+
+    .brand .tagline {
+      font-size: 0.875rem;
+      color: rgba(255,255,255,0.95);
+      font-weight: 500;
+    }
+
+    /* Progress Bar */
+    .progress-container {
+      margin-top: 16px;
+      background: rgba(255,255,255,0.2);
+      border-radius: 20px;
+      height: 8px;
+      overflow: hidden;
+      backdrop-filter: blur(8px);
+    }
+
+    .progress-bar {
+      height: 100%;
+      background: white;
+      border-radius: 20px;
+      transition: width 0.3s ease;
+      width: 50%; /* Page 5 of 10 */
+    }
+
+    .progress-label {
+      text-align: center;
+      color: white;
+      font-size: 0.75rem;
+      margin-top: 8px;
+      font-weight: 600;
+    }
+
+    /* Main Container */
+    .container {
+      max-width: 600px;
+      margin: 0 auto;
+      padding: 24px 16px;
+    }
+
+    .page-header {
+      text-align: center;
+      margin-bottom: 32px;
+    }
+
+    .page-header h2 {
+      font-size: 1.5rem;
+      color: var(--text-dark);
+      margin-bottom: 8px;
+    }
+
+    .page-header p {
+      color: var(--text-muted);
+      font-size: 0.938rem;
+    }
+
+    /* Form Sections */
+    .form-section {
+      background: var(--container-bg);
+      border-radius: 12px;
+      padding: 20px;
+      margin-bottom: 20px;
+      box-shadow: 0 2px 8px rgba(0,0,0,0.05);
+    }
+
+    .section-title {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      font-size: 1.125rem;
+      font-weight: 600;
+      color: var(--text-dark);
+      margin-bottom: 16px;
+    }
+
+    .section-icon {
+      font-size: 1.5rem;
+    }
+
+    /* Form Groups */
+    .form-group {
+      margin-bottom: 20px;
+    }
+
+    .form-group:last-child {
+      margin-bottom: 0;
+    }
+
+    .form-label {
+      display: block;
+      font-weight: 600;
+      color: var(--text-dark);
+      margin-bottom: 8px;
+      font-size: 0.938rem;
+    }
+
+    .required {
+      color: var(--danger);
+    }
+
+    .form-hint {
+      font-size: 0.813rem;
+      color: var(--text-muted);
+      margin-bottom: 12px;
+      line-height: 1.5;
+    }
+
+    /* Input Fields */
+    input[type="text"],
+    input[type="tel"],
+    select,
+    textarea {
+      width: 100%;
+      padding: 12px 16px;
+      border: 2px solid var(--border);
+      border-radius: 8px;
+      font-size: 1rem;
+      font-family: inherit;
+      transition: all 0.2s;
+      background: var(--input-bg);
+    }
+
+    input:focus,
+    select:focus,
+    textarea:focus {
+      outline: none;
+      border-color: var(--accent);
+      box-shadow: 0 0 0 3px rgba(14, 116, 144, 0.1);
+      background: #ffffff;
+    }
+
+    input::placeholder,
+    textarea::placeholder {
+      color: #9ca3af;
+    }
+
+    /* Character Counter */
+    .char-counter {
+      text-align: right;
+      font-size: 0.75rem;
+      color: var(--text-muted);
+      margin-top: 4px;
+    }
+
+    /* Radio Buttons */
+    .radio-group {
+      display: flex;
+      flex-direction: column;
+      gap: 12px;
+    }
+
+    .radio-option {
+      display: flex;
+      align-items: center;
+      padding: 14px 16px;
+      border: 2px solid var(--border);
+      border-radius: 8px;
+      cursor: pointer;
+      transition: all 0.2s;
+      background: var(--checkbox-bg);
+    }
+
+    .radio-option:hover {
+      border-color: var(--accent);
+      background: var(--button-hover);
+    }
+
+    .radio-option:has(input[type="radio"]:checked) {
+      border: 3px solid var(--accent);
+      background: rgba(14, 116, 144, 0.18);
+      box-shadow: 0 4px 12px rgba(14, 116, 144, 0.25);
+      transform: scale(1.02);
+    }
+
+    .radio-option:has(input[type="radio"]:checked) label {
+      color: var(--accent);
+      font-weight: 700;
+    }
+
+    .radio-option input[type="radio"] {
+      width: 20px;
+      height: 20px;
+      margin-right: 12px;
+      cursor: pointer;
+      accent-color: var(--accent);
+    }
+
+    .radio-option label {
+      flex: 1;
+      cursor: pointer;
+      font-size: 0.938rem;
+    }
+
+    /* Checkbox Grid */
+    .checkbox-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
+      gap: 12px;
+    }
+
+    .checkbox-option {
+      display: flex;
+      align-items: center;
+      padding: 14px 16px;
+      border: 2px solid var(--border);
+      border-radius: 8px;
+      cursor: pointer;
+      transition: all 0.2s;
+      background: var(--checkbox-bg);
+    }
+
+    .checkbox-option:hover {
+      border-color: var(--accent);
+      background: var(--button-hover);
+    }
+
+    .checkbox-option input[type="checkbox"] {
+      width: 20px;
+      height: 20px;
+      margin-right: 12px;
+      cursor: pointer;
+      accent-color: var(--accent);
+    }
+
+    .checkbox-option input[type="checkbox"]:checked + span {
+      font-weight: 600;
+      color: var(--accent);
+    }
+
+    .checkbox-option span {
+      flex: 1;
+      font-size: 0.938rem;
+    }
+
+    /* DVLA Lookup Section */
+    .lookup-container {
+      display: flex;
+      gap: 12px;
+      align-items: flex-start;
+    }
+
+    .lookup-container input {
+      flex: 1;
+      text-transform: uppercase;
+      font-weight: 600;
+      letter-spacing: 1px;
+    }
+
+    .lookup-btn {
+      padding: 12px 20px;
+      background: linear-gradient(135deg, var(--grad-start) 0%, var(--grad-end) 100%);
+      color: white;
+      border: none;
+      border-radius: 8px;
+      font-weight: 600;
+      font-size: 0.938rem;
+      cursor: pointer;
+      white-space: nowrap;
+      transition: all 0.2s;
+    }
+
+    .lookup-btn:hover {
+      transform: translateY(-1px);
+      box-shadow: 0 4px 12px rgba(14, 116, 144, 0.3);
+    }
+
+    .lookup-btn:active {
+      transform: translateY(0);
+    }
+
+    .lookup-btn:disabled {
+      opacity: 0.5;
+      cursor: not-allowed;
+      transform: none;
+    }
+
+    /* Vehicle Details Display */
+    .vehicle-details {
+      background: linear-gradient(135deg, rgba(46, 106, 157, 0.05) 0%, rgba(55, 118, 162, 0.05) 100%);
+      border: 2px solid var(--accent);
+      border-radius: 12px;
+      padding: 20px;
+      margin-top: 16px;
+    }
+
+    .vehicle-details h3 {
+      font-size: 1.125rem;
+      color: var(--accent);
+      margin-bottom: 16px;
+      display: flex;
+      align-items: center;
+      gap: 8px;
+    }
+
+    .detail-row {
+      display: flex;
+      justify-content: space-between;
+      padding: 10px 0;
+      border-bottom: 1px solid rgba(0,0,0,0.05);
+    }
+
+    .detail-row:last-child {
+      border-bottom: none;
+    }
+
+    .detail-label {
+      font-weight: 600;
+      color: var(--text-dark);
+      font-size: 0.875rem;
+    }
+
+    .detail-value {
+      color: var(--text-muted);
+      font-size: 0.875rem;
+      text-align: right;
+    }
+
+    /* Status Badges */
+    .status-badge {
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+      padding: 6px 12px;
+      border-radius: 20px;
+      font-size: 0.813rem;
+      font-weight: 600;
+    }
+
+    .status-badge.valid {
+      background: rgba(16, 185, 129, 0.1);
+      color: var(--success);
+    }
+
+    .status-badge.invalid {
+      background: rgba(239, 68, 68, 0.1);
+      color: var(--danger);
+    }
+
+    .status-badge.checking {
+      background: rgba(245, 158, 11, 0.1);
+      color: var(--warning);
+    }
+
+    .status-badge.beta {
+      background: rgba(99, 102, 241, 0.1);
+      color: #6366f1;
+      font-size: 0.75rem;
+    }
+
+
+    /* Navigation Buttons */
+    .nav-buttons {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 12px;
+      margin-top: 32px;
+    }
+
+    .btn {
+      padding: 16px 24px;
+      border-radius: 12px;
+      font-weight: 600;
+      font-size: 1rem;
+      cursor: pointer;
+      transition: all 0.2s;
+      border: none;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: 8px;
+    }
+
+    .btn-secondary {
+      background: var(--button-bg);
+      color: var(--grad-start);
+      border: 2px solid var(--grad-start);
+    }
+
+    .btn-secondary:hover {
+      border-color: var(--grad-start);
+      background: var(--button-hover);
+    }
+
+    .btn-primary {
+      background: var(--grad-start);
+      color: white;
+      box-shadow: 0 4px 12px rgba(14, 116, 144, 0.3);
+    }
+
+    .btn-primary:hover {
+      transform: translateY(-2px);
+      box-shadow: 0 6px 16px rgba(14, 116, 144, 0.4);
+      background: var(--grad-end);
+    }
+
+    .btn-primary:active {
+      transform: translateY(0);
+    }
+
+    .btn:disabled {
+      opacity: 0.5;
+      cursor: not-allowed;
+      transform: none;
+    }
+
+    /* Alert Messages */
+    .alert {
+      padding: 12px 16px;
+      border-radius: 8px;
+      margin-bottom: 16px;
+      display: flex;
+      align-items: flex-start;
+      gap: 10px;
+      font-size: 0.875rem;
+    }
+
+    .alert-info {
+      background: rgba(99, 102, 241, 0.1);
+      color: #4338ca;
+      border: 1px solid rgba(99, 102, 241, 0.2);
+    }
+
+    .alert-success {
+      background: rgba(16, 185, 129, 0.1);
+      color: #047857;
+      border: 1px solid rgba(16, 185, 129, 0.2);
+    }
+
+    .alert-error {
+      background: rgba(239, 68, 68, 0.1);
+      color: #b91c1c;
+      border: 1px solid rgba(239, 68, 68, 0.2);
+    }
+
+    /* Mobile Responsive */
+    @media (max-width: 640px) {
+      .lookup-container {
+        flex-direction: column;
+      }
+
+      .lookup-btn {
+        width: 100%;
+      }
+    }
+  </style>
+</head>
+<body>
+
+  <!-- Sticky Banner -->
+  <div class="banner">
+    <div class="brand">
+      <img src="/images/logo.png" alt="Car Crash Lawyer AI Logo" class="logo">
+      <h1>Incident Report</h1>
+      <p class="tagline">Page 5 of 10: Your Vehicle Details</p>
+    </div>
+
+    <div class="progress-container">
+      <div class="progress-bar"></div>
+    </div>
+    <div class="progress-label">50% Complete</div>
+  </div>
+
+  <!-- Main Container -->
+  <div class="container">
+
+    <div class="page-header">
+      <h2>Your Vehicle Details</h2>
+      <p>Tell us about the vehicle you were driving</p>
+    </div>
+
+    <!-- Usual Vehicle Question -->
+    <div class="form-section">
+      <div class="section-title">
+        <span class="section-icon">🚗</span>
+        <span>Vehicle Information</span>
+      </div>
+
+      <div class="form-group">
+        <label class="form-label">
+          Were you driving your usual vehicle?
+          <span class="required">*</span>
+        </label>
+        <p class="form-hint">This helps us understand if you're familiar with the vehicle</p>
+
+        <div class="radio-group">
+          <div class="radio-option">
+            <input type="radio" id="usual-yes" name="usual_vehicle" value="yes" required>
+            <label for="usual-yes">Yes, my usual vehicle</label>
+          </div>
+          <div class="radio-option">
+            <input type="radio" id="usual-no" name="usual_vehicle" value="no">
+            <label for="usual-no">No, a different vehicle</label>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- License Plate & DVLA Lookup -->
+    <div class="form-section">
+      <div class="section-title">
+        <span class="section-icon">🔍</span>
+        <span>Vehicle Registration</span>
+      </div>
+
+      <div class="form-group">
+        <label for="license-plate" class="form-label">
+          UK License Plate Number
+          <span class="required">*</span>
+        </label>
+        <p class="form-hint">Enter your registration number and we'll look up your vehicle details</p>
+
+        <div class="lookup-container">
+          <input
+            type="text"
+            id="license-plate"
+            name="vehicle_license_plate"
+            placeholder="e.g., AB12 CDE"
+            maxlength="8"
+            required
+          >
+          <button type="button" class="lookup-btn" id="lookup-btn">
+            🔍 Look Up
+          </button>
+        </div>
+      </div>
+
+      <!-- Vehicle Details (Hidden until lookup) -->
+      <div id="vehicle-details" style="display: none;" class="vehicle-details">
+        <h3>✅ Vehicle Found</h3>
+
+        <div class="detail-row">
+          <span class="detail-label">Make</span>
+          <span class="detail-value" id="vehicle-make">-</span>
+        </div>
+        <div class="detail-row">
+          <span class="detail-label">Model</span>
+          <span class="detail-value" id="vehicle-model">-</span>
+        </div>
+        <div class="detail-row">
+          <span class="detail-label">Colour</span>
+          <span class="detail-value" id="vehicle-colour">-</span>
+        </div>
+        <div class="detail-row">
+          <span class="detail-label">Year</span>
+          <span class="detail-value" id="vehicle-year">-</span>
+        </div>
+        <div class="detail-row">
+          <span class="detail-label">Fuel Type</span>
+          <span class="detail-value" id="vehicle-fuel">-</span>
+        </div>
+      </div>
+
+      <!-- Error Message -->
+      <div id="lookup-error" style="display: none;" class="alert alert-error">
+        <span>⚠️</span>
+        <span id="lookup-error-message">Vehicle not found. Please check the registration number.</span>
+      </div>
+
+      <!-- Manual Entry Fallback (appears when DVLA fails) -->
+      <div id="manual-entry-section" style="display: none;" class="manual-entry">
+        <button type="button" class="secondary-btn" id="manual-entry-btn">
+          ✍️ Can't find vehicle? Enter details manually
+        </button>
+
+        <!-- Manual Entry Form (hidden until clicked) -->
+        <div id="manual-entry-form" style="display: none; margin-top: 16px;">
+          <div class="alert alert-info" style="margin-bottom: 16px;">
+            <span>ℹ️</span>
+            <span>Please enter your vehicle details manually. Fill in as much information as you have.</span>
+          </div>
+
+          <div class="form-group">
+            <label for="manual-make">Make *</label>
+            <input type="text" id="manual-make" placeholder="e.g., BMW, Toyota, Ford" required>
+          </div>
+
+          <div class="form-group">
+            <label for="manual-model">Model *</label>
+            <input type="text" id="manual-model" placeholder="e.g., 3 Series, Corolla, Focus" required>
+          </div>
+
+          <div class="form-group">
+            <label for="manual-colour">Colour *</label>
+            <input type="text" id="manual-colour" placeholder="e.g., Blue, Red, Silver" required>
+          </div>
+
+          <div class="form-group">
+            <label for="manual-year">Year of Manufacture *</label>
+            <input type="number" id="manual-year" placeholder="e.g., 2020" min="1900" max="2025" required>
+          </div>
+
+          <div class="form-group">
+            <label for="manual-fuel">Fuel Type</label>
+            <select id="manual-fuel">
+              <option value="">Select fuel type...</option>
+              <option value="Petrol">Petrol</option>
+              <option value="Diesel">Diesel</option>
+              <option value="Electric">Electric</option>
+              <option value="Hybrid">Hybrid</option>
+              <option value="Other">Other</option>
+            </select>
+          </div>
+
+          <button type="button" class="primary-btn" id="save-manual-entry-btn">
+            ✅ Save Vehicle Details
+          </button>
+        </div>
+      </div>
+    </div>
+
+    <!-- MOT & Tax Status (from DVLA) -->
+    <div class="form-section">
+      <div class="section-title">
+        <span class="section-icon">📋</span>
+        <span>Vehicle Status</span>
+      </div>
+
+      <div class="form-group">
+        <div class="detail-row">
+          <span class="detail-label">MOT Status</span>
+          <span id="mot-status" class="status-badge">-</span>
+        </div>
+        <div class="detail-row">
+          <span class="detail-label">MOT Expiry Date</span>
+          <span id="mot-expiry" class="detail-value">-</span>
+        </div>
+        <div class="detail-row">
+          <span class="detail-label">Tax Status</span>
+          <span id="tax-status" class="status-badge">-</span>
+        </div>
+        <div class="detail-row">
+          <span class="detail-label">Tax Due Date</span>
+          <span id="tax-due" class="detail-value">-</span>
+        </div>
+        <div class="detail-row">
+          <span class="detail-label">Insurance Status <span class="status-badge beta">BETA</span></span>
+          <span id="insurance-status" class="status-badge">Not Available</span>
+        </div>
+      </div>
+
+      <div class="alert alert-info" style="margin-top: 12px;">
+        <span>ℹ️</span>
+        <span>MOT and Tax data from DVLA. Insurance verification is not yet available via API.</span>
+      </div>
+    </div>
+
+    <!-- Point of Impact & Damage -->
+    <div class="form-section">
+      <div class="section-title">
+        <span class="section-icon">💥</span>
+        <span>Point of Impact & Damage to My Vehicle</span>
+      </div>
+
+      <!-- No Damage Checkbox -->
+      <div class="form-group" style="background: var(--input-bg); padding: 16px; border-radius: 8px; margin-bottom: 20px;">
+        <label style="display: flex; align-items: center; gap: 12px; cursor: pointer; font-weight: 600;">
+          <input type="checkbox" id="no-damage-checkbox" name="no_damage" style="width: 20px; height: 20px; cursor: pointer;">
+          <span>My vehicle has no visible damage</span>
+        </label>
+        <p class="form-hint" style="margin: 8px 0 0 32px;">Check this if your vehicle was not damaged in the incident (e.g., near miss, minor contact with no marks)</p>
+      </div>
+
+      <!-- Damage Details Section (hidden when no damage checked) -->
+      <div id="damage-details-section">
+        <div class="form-group">
+          <label class="form-label">
+            Where was your vehicle hit?
+            <span class="required" id="impact-required">*</span>
+          </label>
+          <p class="form-hint">Select all areas that were impacted</p>
+
+        <div class="checkbox-grid">
+          <label class="checkbox-option">
+            <input type="checkbox" name="impact_point" value="front">
+            <span>Front</span>
+          </label>
+          <label class="checkbox-option">
+            <input type="checkbox" name="impact_point" value="front_driver">
+            <span>Front Driver Side</span>
+          </label>
+          <label class="checkbox-option">
+            <input type="checkbox" name="impact_point" value="front_passenger">
+            <span>Front Passenger Side</span>
+          </label>
+          <label class="checkbox-option">
+            <input type="checkbox" name="impact_point" value="driver_side">
+            <span>Driver Side</span>
+          </label>
+          <label class="checkbox-option">
+            <input type="checkbox" name="impact_point" value="passenger_side">
+            <span>Passenger Side</span>
+          </label>
+          <label class="checkbox-option">
+            <input type="checkbox" name="impact_point" value="rear_driver">
+            <span>Rear Driver Side</span>
+          </label>
+          <label class="checkbox-option">
+            <input type="checkbox" name="impact_point" value="rear_passenger">
+            <span>Rear Passenger Side</span>
+          </label>
+          <label class="checkbox-option">
+            <input type="checkbox" name="impact_point" value="rear">
+            <span>Rear</span>
+          </label>
+          <label class="checkbox-option">
+            <input type="checkbox" name="impact_point" value="roof">
+            <span>Roof</span>
+          </label>
+          <label class="checkbox-option">
+            <input type="checkbox" name="impact_point" value="undercarriage">
+            <span>Undercarriage</span>
+          </label>
+        </div>
+      </div>
+
+      <div class="form-group">
+        <label for="damage-description" class="form-label">
+          Describe the damage to your vehicle
+          <span class="required">*</span>
+        </label>
+        <p class="form-hint">Include details about dents, scratches, broken parts, etc.</p>
+        <textarea
+          id="damage-description"
+          name="damage_description"
+          rows="4"
+          placeholder="e.g., Large dent on driver door, front bumper cracked, headlight smashed, windscreen cracked on passenger side"
+          required
+        ></textarea>
+      </div>
+
+      <div class="form-group">
+        <label class="form-label">
+          Was your vehicle driveable after the accident?
+          <span class="required">*</span>
+        </label>
+
+        <div class="checkbox-grid" data-exclusive="vehicle-driveable">
+          <div class="checkbox-option">
+            <input
+              type="checkbox"
+              id="driveable-yes"
+              name="vehicle_driveable"
+              value="yes"
+              style="width: 20px; height: 20px; cursor: pointer;">
+            <label for="driveable-yes">✅ Yes, I drove it away</label>
+          </div>
+          <div class="checkbox-option">
+            <input
+              type="checkbox"
+              id="driveable-no"
+              name="vehicle_driveable"
+              value="no"
+              style="width: 20px; height: 20px; cursor: pointer;">
+            <label for="driveable-no">🚛 No, it needed to be towed</label>
+          </div>
+          <div class="checkbox-option">
+            <input
+              type="checkbox"
+              id="driveable-unsure"
+              name="vehicle_driveable"
+              value="unsure"
+              style="width: 20px; height: 20px; cursor: pointer;">
+            <label for="driveable-unsure">🤷 Unsure / Did not attempt</label>
+          </div>
+        </div>
+      </div>
+      </div><!-- End damage-details-section -->
+    </div>
+
+    <!-- Navigation Buttons -->
+    <div class="nav-buttons">
+      <button type="button" class="btn btn-secondary" id="back-btn">
+        <span>←</span>
+        <span>Back</span>
+      </button>
+      <button type="button" class="btn btn-primary" id="next-btn" disabled>
+        <span>Next</span>
+        <span>→</span>
+      </button>
+    </div>
+
+  </div>
+
+  <script>
+    // Page state
+    let vehicleData = {};
+
+    // Character counter
+    function setupCharCounter(inputId, counterId, maxLength) {
+      const input = document.getElementById(inputId);
+      const counter = document.getElementById(counterId);
+
+      if (input && counter) {
+        input.addEventListener('input', () => {
+          const length = input.value.length;
+          counter.textContent = `${length} / ${maxLength} characters`;
+        });
+      }
+    }
+
+    // Format license plate
+    document.getElementById('license-plate').addEventListener('input', (e) => {
+      e.target.value = e.target.value.toUpperCase().replace(/[^A-Z0-9]/g, '');
+    });
+
+    // DVLA Lookup
+    document.getElementById('lookup-btn').addEventListener('click', async () => {
+      const licensePlate = document.getElementById('license-plate').value.trim();
+      const lookupBtn = document.getElementById('lookup-btn');
+      const vehicleDetails = document.getElementById('vehicle-details');
+      const lookupError = document.getElementById('lookup-error');
+
+      if (!licensePlate) {
+        alert('Please enter a license plate number');
+        return;
+      }
+
+      // Show loading state
+      lookupBtn.disabled = true;
+      lookupBtn.textContent = '⏳ Looking up...';
+      vehicleDetails.style.display = 'none';
+      lookupError.style.display = 'none';
+
+      try {
+        // Call DVLA API endpoint
+        const response = await fetch(`/api/dvla/lookup?registration=${licensePlate}`, {
+          credentials: 'include'
+        });
+
+        const data = await response.json();
+
+        if (response.ok && data.success) {
+          // Store vehicle data
+          vehicleData = data.vehicle;
+
+          // Display vehicle details
+          document.getElementById('vehicle-make').textContent = data.vehicle.make || '-';
+          document.getElementById('vehicle-model').textContent = data.vehicle.model || '-';
+          document.getElementById('vehicle-colour').textContent = data.vehicle.colour || '-';
+          document.getElementById('vehicle-year').textContent = data.vehicle.yearOfManufacture || '-';
+          document.getElementById('vehicle-fuel').textContent = data.vehicle.fuelType || '-';
+
+          // Display MOT status from DVLA
+          const motStatus = document.getElementById('mot-status');
+          if (data.vehicle.motStatus) {
+            motStatus.className = 'status-badge ' + (data.vehicle.motStatus.toLowerCase().includes('valid') ? 'valid' : 'invalid');
+            motStatus.textContent = data.vehicle.motStatus;
+          }
+          if (data.vehicle.motExpiryDate) {
+            document.getElementById('mot-expiry').textContent = data.vehicle.motExpiryDate;
+          }
+
+          // Display Tax status from DVLA
+          const taxStatus = document.getElementById('tax-status');
+          if (data.vehicle.taxStatus) {
+            taxStatus.className = 'status-badge ' + (data.vehicle.taxStatus.toLowerCase().includes('tax') ? 'valid' : 'invalid');
+            taxStatus.textContent = data.vehicle.taxStatus;
+          }
+          if (data.vehicle.taxDueDate) {
+            document.getElementById('tax-due').textContent = data.vehicle.taxDueDate;
+          }
+
+          vehicleDetails.style.display = 'block';
+
+          // Enable next button
+          validateForm();
+        } else {
+          throw new Error(data.error || 'Vehicle not found');
+        }
+
+      } catch (error) {
+        console.error('DVLA lookup error:', error);
+        document.getElementById('lookup-error-message').textContent = error.message || 'Failed to look up vehicle. Please try again.';
+        lookupError.style.display = 'flex';
+
+        // Show manual entry option
+        document.getElementById('manual-entry-section').style.display = 'block';
+      } finally {
+        lookupBtn.disabled = false;
+        lookupBtn.textContent = '🔍 Look Up';
+      }
+    });
+
+    // Manual Entry Button - Show manual entry form
+    document.getElementById('manual-entry-btn').addEventListener('click', function() {
+      document.getElementById('manual-entry-form').style.display = 'block';
+      this.style.display = 'none'; // Hide the button after clicking
+    });
+
+    // Save Manual Entry - Populate vehicleData and show details
+    document.getElementById('save-manual-entry-btn').addEventListener('click', function() {
+      const make = document.getElementById('manual-make').value.trim();
+      const model = document.getElementById('manual-model').value.trim();
+      const colour = document.getElementById('manual-colour').value.trim();
+      const year = document.getElementById('manual-year').value.trim();
+      const fuel = document.getElementById('manual-fuel').value;
+
+      // Validation
+      if (!make || !model || !colour || !year) {
+        alert('Please fill in all required fields (Make, Model, Colour, Year)');
+        return;
+      }
+
+      // Populate vehicleData object (same structure as DVLA response)
+      vehicleData = {
+        make: make,
+        model: model,
+        colour: colour,
+        yearOfManufacture: year,
+        fuelType: fuel || 'Unknown',
+        motStatus: 'Unknown (Manual Entry)',
+        motExpiryDate: 'Not Available',
+        taxStatus: 'Unknown (Manual Entry)',
+        taxDueDate: 'Not Available',
+        insuranceStatus: 'Unknown (Manual Entry)',
+        source: 'manual_entry' // Flag to indicate manual entry
+      };
+
+      // Display vehicle details
+      document.getElementById('vehicle-make').textContent = make;
+      document.getElementById('vehicle-model').textContent = model;
+      document.getElementById('vehicle-colour').textContent = colour;
+      document.getElementById('vehicle-year').textContent = year;
+      document.getElementById('vehicle-fuel').textContent = fuel || 'Unknown';
+
+      // Show vehicle details section
+      const vehicleDetails = document.getElementById('vehicle-details');
+      vehicleDetails.querySelector('h3').textContent = '✅ Vehicle Details (Manual Entry)';
+      vehicleDetails.style.display = 'block';
+
+      // Hide manual entry form
+      document.getElementById('manual-entry-form').style.display = 'none';
+      document.getElementById('manual-entry-section').style.display = 'none';
+
+      // Hide error message
+      document.getElementById('lookup-error').style.display = 'none';
+
+      // Enable form validation (Next button)
+      validateForm();
+
+      // Auto-save
+      autoSave();
+
+      console.log('Manual vehicle entry saved:', vehicleData);
+    });
+
+    // Mutual exclusivity for checkboxes (UX Design Pattern)
+    function exclusiveCheck(checkbox, groupName) {
+      if (checkbox.checked) {
+        document.querySelectorAll(`[data-exclusive="${groupName}"] input[type="checkbox"]`)
+          .forEach(cb => {
+            if (cb !== checkbox) cb.checked = false;
+          });
+      }
+      validateForm();
+    }
+
+    // Form Validation
+    function validateForm() {
+      const usualVehicle = document.querySelector('input[name="usual_vehicle"]:checked');
+      const licensePlate = document.getElementById('license-plate').value.trim();
+      const hasVehicleDetails = Object.keys(vehicleData).length > 0;
+
+      // Check if no-damage checkbox is checked
+      const noDamageChecked = document.getElementById('no-damage-checkbox').checked;
+
+      let damageFieldsValid = true;
+
+      if (!noDamageChecked) {
+        // Check impact points
+        const impactPoints = document.querySelectorAll('input[name="impact_point"]:checked');
+        const hasImpactPoint = impactPoints.length > 0;
+
+        // Check damage description
+        const damageDescription = document.getElementById('damage-description').value.trim();
+
+        // Check vehicle driveable (now checkboxes)
+        const vehicleDriveable = document.querySelector('input[name="vehicle_driveable"]:checked');
+
+        damageFieldsValid = hasImpactPoint && damageDescription && vehicleDriveable;
+      }
+
+      const nextBtn = document.getElementById('next-btn');
+      nextBtn.disabled = !(usualVehicle && licensePlate && hasVehicleDetails && damageFieldsValid);
+    }
+
+    // Add event listeners for form validation
+    document.querySelectorAll('input[name="usual_vehicle"]').forEach(radio => {
+      radio.addEventListener('change', validateForm);
+    });
+
+    document.querySelectorAll('input[name="impact_point"]').forEach(checkbox => {
+      checkbox.addEventListener('change', validateForm);
+    });
+
+    document.getElementById('damage-description').addEventListener('input', validateForm);
+
+    // Add event listeners for vehicle driveable checkboxes
+    document.querySelectorAll('input[name="vehicle_driveable"]').forEach(checkbox => {
+      checkbox.addEventListener('change', function() {
+        exclusiveCheck(this, 'vehicle-driveable');
+      });
+    });
+
+    // Toggle damage details section based on no-damage checkbox
+    function toggleDamageDetails() {
+      const noDamageCheckbox = document.getElementById('no-damage-checkbox');
+      const damageDetailsSection = document.getElementById('damage-details-section');
+      const impactCheckboxes = document.querySelectorAll('input[name="impact_point"]');
+      const damageDescription = document.getElementById('damage-description');
+      const driveableCheckboxes = document.querySelectorAll('input[name="vehicle_driveable"]');
+
+      if (noDamageCheckbox.checked) {
+        // Hide damage details section
+        damageDetailsSection.style.display = 'none';
+
+        // Clear and remove required from impact checkboxes
+        impactCheckboxes.forEach(cb => {
+          cb.checked = false;
+          cb.removeAttribute('required');
+        });
+
+        // Clear and remove required from damage description
+        damageDescription.value = '';
+        damageDescription.removeAttribute('required');
+
+        // Clear driveable checkboxes
+        driveableCheckboxes.forEach(checkbox => {
+          checkbox.checked = false;
+        });
+      } else {
+        // Show damage details section
+        damageDetailsSection.style.display = 'block';
+
+        // Restore required attribute to damage description
+        damageDescription.setAttribute('required', 'required');
+      }
+
+      validateForm();
+    }
+
+    // Add event listener for no-damage checkbox
+    document.getElementById('no-damage-checkbox').addEventListener('change', toggleDamageDetails);
+
+    // Auto-save
+    function autoSave() {
+      const impactPoints = Array.from(document.querySelectorAll('input[name="impact_point"]:checked'))
+        .map(cb => cb.value);
+
+      const formData = {
+        usual_vehicle: document.querySelector('input[name="usual_vehicle"]:checked')?.value,
+        dvla_lookup_reg: document.getElementById('license-plate').value,
+        dvla_vehicle_data: vehicleData, // Contains dvla_vehicle_lookup_* fields
+        no_damage: document.getElementById('no-damage-checkbox').checked,
+        impact_points: impactPoints,
+        damage_to_your_vehicle: document.getElementById('damage-description').value,
+        vehicle_driveable: document.querySelector('input[name="vehicle_driveable"]:checked')?.value
+      };
+
+      sessionStorage.setItem('incident_page5', JSON.stringify(formData));
+      console.log('Page 5 data saved:', formData);
+    }
+
+    // Load saved data
+    function loadSavedData() {
+      const saved = sessionStorage.getItem('incident_page5');
+      if (saved) {
+        const data = JSON.parse(saved);
+
+        if (data.usual_vehicle) {
+          document.querySelector(`input[name="usual_vehicle"][value="${data.usual_vehicle}"]`).checked = true;
+        }
+
+        if (data.dvla_lookup_reg || data.license_plate) {
+          document.getElementById('license-plate').value = data.dvla_lookup_reg || data.license_plate;
+        }
+
+        // Restore no-damage checkbox
+        if (data.no_damage) {
+          document.getElementById('no-damage-checkbox').checked = true;
+          toggleDamageDetails(); // Hide damage section if no damage
+        }
+
+        if (data.dvla_vehicle_data || data.vehicle_data) {
+          vehicleData = data.dvla_vehicle_data || data.vehicle_data;
+          // Re-display vehicle details
+          document.getElementById('vehicle-details').style.display = 'block';
+          document.getElementById('vehicle-make').textContent = vehicleData.make || '-';
+          document.getElementById('vehicle-model').textContent = vehicleData.model || '-';
+          document.getElementById('vehicle-colour').textContent = vehicleData.colour || '-';
+          document.getElementById('vehicle-year').textContent = vehicleData.yearOfManufacture || '-';
+          document.getElementById('vehicle-fuel').textContent = vehicleData.fuelType || '-';
+        }
+
+        // Restore impact points
+        if (data.impact_points && Array.isArray(data.impact_points)) {
+          data.impact_points.forEach(point => {
+            const checkbox = document.querySelector(`input[name="impact_point"][value="${point}"]`);
+            if (checkbox) checkbox.checked = true;
+          });
+        }
+
+        // Restore damage description
+        if (data.damage_to_your_vehicle || data.damage_description) {
+          document.getElementById('damage-description').value = data.damage_to_your_vehicle || data.damage_description;
+        }
+
+        // Restore vehicle driveable
+        if (data.vehicle_driveable) {
+          const checkbox = document.querySelector(`input[name="vehicle_driveable"][value="${data.vehicle_driveable}"]`);
+          if (checkbox) checkbox.checked = true;
+        }
+
+        validateForm();
+      }
+    }
+
+    // Navigation
+    document.getElementById('back-btn').addEventListener('click', () => {
+      autoSave();
+      window.location.href = '/incident-form-page4a-location-photos.html';
+    });
+
+    document.getElementById('next-btn').addEventListener('click', () => {
+      autoSave();
+      window.location.href = '/incident-form-page6-vehicle-images.html';
+    });
+
+    // Auto-save on changes
+    document.querySelectorAll('input, textarea, select').forEach(element => {
+      element.addEventListener('change', autoSave);
+    });
+
+    // Initialize
+    window.addEventListener('DOMContentLoaded', () => {
+      loadSavedData();
+    });
+  </script>
+
+</body>
+</html>

@@ -16,7 +16,7 @@ async function inspectPdfFields() {
     console.log('========================================\n');
 
     // Load the PDF template
-    const templatePath = path.join(process.cwd(), 'pdf-templates/Car-Crash-Lawyer-AI-Incident-Report.pdf');
+    const templatePath = path.join(process.cwd(), 'pdf-templates/Car-Crash-Lawyer-AI-incident-report-main.pdf');
     console.log(`📄 Loading template: ${templatePath}\n`);
 
     const existingPdfBytes = await fs.readFile(templatePath);

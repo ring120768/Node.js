@@ -1,0 +1,715 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Witness Information - Incident Report</title>
+  <style>
+    /* Design System Variables */
+    :root {
+      --grad-start: #0E7490;
+      --grad-end: #0c6179;
+      --accent: #0E7490;
+      --accent-hover: #0c6179;
+      --bg-light: #E8DCC4;
+      --text-dark: #1a1a1a;
+      --text-muted: #6b7280;
+      --border: #4B5563;
+      --input-bg: #CFD2D7;
+      --checkbox-bg: #F5F1E8;
+      --container-bg: #F5F1E8;
+      --button-bg: #ffffff;
+      --button-hover: rgba(14, 116, 144, 0.1);
+      --success: #10b981;
+      --danger: #ef4444;
+      --warning: #f59e0b;
+    }
+
+    /* Reset & Base */
+    * {
+      margin: 0;
+      padding: 0;
+      box-sizing: border-box;
+      -webkit-tap-highlight-color: transparent;
+    }
+
+    html {
+      font-size: 16px;
+      -webkit-text-size-adjust: 100%;
+    }
+
+    body {
+      font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, Cantarell, sans-serif;
+      background: var(--bg-light);
+      color: var(--text-dark);
+      line-height: 1.6;
+      overflow-x: hidden;
+      padding-bottom: env(safe-area-inset-bottom, 20px);
+    }
+
+    .container {
+      max-width: 800px;
+      margin: 0 auto;
+      background: white;
+      border-radius: 16px;
+      box-shadow: 0 20px 60px rgba(0,0,0,0.3);
+      overflow: hidden;
+    }
+
+    .header {
+      background: linear-gradient(135deg, var(--grad-start) 0%, var(--grad-end) 100%);
+      color: white;
+      padding: 30px;
+      text-align: center;
+    }
+
+    .header h1 {
+      font-size: 28px;
+      margin-bottom: 10px;
+    }
+
+    .progress-container {
+      background: rgba(255,255,255,0.2);
+      border-radius: 10px;
+      height: 8px;
+      margin-top: 20px;
+      overflow: hidden;
+    }
+
+    .progress-bar {
+      background: white;
+      height: 100%;
+      border-radius: 10px;
+      transition: width 0.3s ease;
+      width: 90%; /* Page 9 of 10 = 90% */
+    }
+
+    .content {
+      padding: 40px;
+    }
+
+    .section-title {
+      font-size: 20px;
+      color: var(--accent);
+      margin-bottom: 8px;
+      display: flex;
+      align-items: center;
+      gap: 8px;
+    }
+
+    .section-icon {
+      font-size: 24px;
+    }
+
+    .section-description {
+      color: #666;
+      font-size: 14px;
+      margin-bottom: 24px;
+      line-height: 1.6;
+    }
+
+    .form-group {
+      margin-bottom: 24px;
+    }
+
+    .form-label {
+      display: block;
+      font-weight: 600;
+      margin-bottom: 8px;
+      color: #333;
+    }
+
+    .form-hint {
+      font-size: 14px;
+      color: #666;
+      margin-top: 4px;
+      line-height: 1.5;
+    }
+
+    .required {
+      color: #e74c3c;
+      margin-left: 4px;
+    }
+
+    .radio-group {
+      display: flex;
+      gap: 16px;
+      margin-top: 12px;
+    }
+
+    .radio-option {
+      flex: 1;
+      border: 2px solid var(--border);
+      border-radius: 12px;
+      padding: 16px;
+      cursor: pointer;
+      transition: all 0.2s ease;
+      text-align: center;
+      background: var(--checkbox-bg);
+    }
+
+    .radio-option:hover {
+      border-color: var(--accent);
+      background: var(--button-hover);
+    }
+
+    .radio-option.selected {
+      border: 3px solid var(--accent);
+      background: rgba(14, 116, 144, 0.18);
+      box-shadow: 0 4px 12px rgba(14, 116, 144, 0.25);
+      transform: scale(1.02);
+    }
+
+    .radio-option.selected .radio-option-icon {
+      transform: scale(1.15);
+      filter: drop-shadow(0 2px 4px rgba(14, 116, 144, 0.3));
+    }
+
+    .radio-option.selected .radio-option-label {
+      color: var(--accent);
+      font-weight: 700;
+    }
+
+    .radio-option input[type="radio"] {
+      display: none;
+    }
+
+    .radio-option-icon {
+      font-size: 32px;
+      margin-bottom: 8px;
+    }
+
+    .radio-option-label {
+      font-weight: 600;
+      color: #333;
+    }
+
+    input[type="text"],
+    input[type="email"],
+    input[type="tel"],
+    textarea {
+      width: 100%;
+      padding: 12px;
+      border: 2px solid var(--border);
+      border-radius: 8px;
+      font-family: inherit;
+      font-size: 16px;
+      background: var(--input-bg);
+      transition: all 0.2s ease;
+    }
+
+    input[type="text"]:focus,
+    input[type="email"]:focus,
+    input[type="tel"]:focus,
+    textarea:focus {
+      outline: none;
+      border-color: var(--accent);
+      box-shadow: 0 0 0 3px rgba(14, 116, 144, 0.1);
+      background: #ffffff;
+    }
+
+    textarea {
+      resize: vertical;
+      min-height: 100px;
+    }
+
+    .witness-details-container {
+      display: none;
+      margin-top: 24px;
+      padding: 24px;
+      background: var(--container-bg);
+      border-radius: 12px;
+      border: 2px solid var(--accent);
+    }
+
+    .witness-details-container.visible {
+      display: block;
+    }
+
+    .alert {
+      padding: 16px;
+      border-radius: 8px;
+      margin-bottom: 24px;
+      display: flex;
+      align-items: flex-start;
+      gap: 12px;
+    }
+
+    .alert-info {
+      background: #e3f2fd;
+      border-left: 4px solid #2196f3;
+      color: #1976d2;
+    }
+
+    .alert-warning {
+      background: #fff3cd;
+      border-left: 4px solid #ffc107;
+      color: #856404;
+    }
+
+    .char-counter {
+      text-align: right;
+      font-size: 12px;
+      color: #666;
+      margin-top: 4px;
+    }
+
+    .char-counter.warning {
+      color: #ff9800;
+    }
+
+    .char-counter.error {
+      color: #e74c3c;
+    }
+
+    .navigation {
+      display: flex;
+      gap: 16px;
+      margin-top: 32px;
+    }
+
+    .btn {
+      flex: 1;
+      padding: 16px 32px;
+      border: none;
+      border-radius: 8px;
+      font-size: 16px;
+      font-weight: 600;
+      cursor: pointer;
+      transition: all 0.2s ease;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: 8px;
+    }
+
+    .btn-secondary {
+      background: var(--button-bg);
+      color: var(--grad-start);
+      border: 2px solid var(--grad-start);
+    }
+
+    .btn-secondary:hover {
+      background: var(--button-hover);
+    }
+
+    .btn-primary {
+      background: var(--grad-start);
+      color: white;
+      box-shadow: 0 4px 12px rgba(14, 116, 144, 0.3);
+    }
+
+    .btn-primary:hover {
+      transform: translateY(-2px);
+      box-shadow: 0 6px 16px rgba(14, 116, 144, 0.4);
+      background: var(--grad-end);
+    }
+
+    .btn-primary:disabled {
+      opacity: 0.5;
+      cursor: not-allowed;
+      transform: none;
+    }
+
+    #add-witness-btn:hover {
+      transform: translateY(-2px);
+      box-shadow: 0 6px 16px rgba(14, 116, 144, 0.4);
+      background: var(--accent-hover);
+    }
+
+    #add-witness-btn:active {
+      transform: translateY(0);
+    }
+
+    @media (max-width: 768px) {
+      body {
+        padding: 0;
+      }
+
+      .container {
+        border-radius: 0;
+      }
+
+      .content {
+        padding: 24px;
+      }
+
+      .header {
+        padding: 24px;
+      }
+
+      .header h1 {
+        font-size: 24px;
+      }
+
+      .radio-group {
+        flex-direction: column;
+      }
+    }
+  </style>
+</head>
+<body>
+  <div class="container">
+    <div class="header">
+      <h1>Witness Information</h1>
+      <p>Page 9 of 10: 90% Complete</p>
+      <div class="progress-container">
+        <div class="progress-bar"></div>
+      </div>
+    </div>
+
+    <div class="content">
+      <div class="alert alert-info">
+        <span>ℹ️</span>
+        <span>Witness testimony can be crucial evidence for your case. If anyone saw the accident, please provide their details.</span>
+      </div>
+
+      <!-- Were there any witnesses? -->
+      <div class="form-group">
+        <label class="form-label">
+          Were there any witnesses to the accident?<span class="required">*</span>
+        </label>
+        <p class="form-hint">Select whether anyone other than those directly involved saw what happened.</p>
+
+        <div class="radio-group">
+          <div class="radio-option" data-value="yes">
+            <input type="radio" name="witnesses_present" value="yes" id="witnesses-yes">
+            <div class="radio-option-icon">👥</div>
+            <div class="radio-option-label">Yes</div>
+          </div>
+          <div class="radio-option" data-value="no">
+            <input type="radio" name="witnesses_present" value="no" id="witnesses-no">
+            <div class="radio-option-icon">🚫</div>
+            <div class="radio-option-label">No</div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Witness Details (conditional) -->
+      <div id="witness-details-container" class="witness-details-container">
+        <div class="section-title">
+          <span class="section-icon">📝</span>
+          <span>Witness Details</span>
+        </div>
+
+        <div class="alert alert-warning">
+          <span>⚠️</span>
+          <span>Please provide as much detail as possible. All fields help build your case.</span>
+        </div>
+
+        <!-- Witness Name -->
+        <div class="form-group">
+          <label class="form-label" for="witness-name">
+            Witness Full Name<span class="required">*</span>
+          </label>
+          <p class="form-hint">First and last name of the witness</p>
+          <input type="text" id="witness-name" placeholder="e.g., John Smith">
+        </div>
+
+        <!-- Witness Phone -->
+        <div class="form-group">
+          <label class="form-label" for="witness-phone">
+            Witness Phone Number
+          </label>
+          <p class="form-hint">UK phone number (optional but recommended)</p>
+          <input type="tel" id="witness-phone" placeholder="e.g., 07700 900123">
+        </div>
+
+        <!-- Witness Email -->
+        <div class="form-group">
+          <label class="form-label" for="witness-email">
+            Witness Email Address
+          </label>
+          <p class="form-hint">Optional - alternative contact method</p>
+          <input type="email" id="witness-email" placeholder="e.g., john.smith@email.com">
+        </div>
+
+        <!-- What They Saw -->
+        <div class="form-group">
+          <label class="form-label" for="witness-statement">
+            What did they witness?<span class="required">*</span>
+          </label>
+          <p class="form-hint">Describe what the witness saw happen. Include their perspective, what they noticed about the accident, any relevant details.</p>
+          <textarea
+            id="witness-statement"
+            maxlength="1000"
+            placeholder="Example:&#10;&#10;John was waiting at the traffic lights opposite the junction. He saw the other car run the red light at speed and collide with the passenger side of my vehicle. He mentioned the other driver appeared distracted and didn't brake until after the impact. He has dashcam footage and is willing to provide a statement."
+          ></textarea>
+          <div id="statement-char-counter" class="char-counter">0 / 1000 characters</div>
+        </div>
+      </div>
+
+      <!-- Additional witness note -->
+      <div class="alert alert-info">
+        <span>💡</span>
+        <span><strong>Note:</strong> If there were multiple witnesses, you can add them using the button below.</span>
+      </div>
+
+      <!-- Add Another Witness Button -->
+      <div id="add-witness-container" style="margin: 32px 0; text-align: center; display: none;">
+        <button type="button" id="add-witness-btn" style="background: var(--accent); color: white; padding: 16px 32px; font-size: 1rem; font-weight: 600; border-radius: 12px; border: none; cursor: pointer; display: inline-flex; align-items: center; gap: 12px; box-shadow: 0 4px 12px rgba(14, 116, 144, 0.3); transition: all 0.2s ease;">
+          <span style="font-size: 1.5rem;">➕</span>
+          <span>Add Another Witness</span>
+        </button>
+        <p style="margin-top: 12px; color: var(--text-muted); font-size: 0.875rem;">If there were multiple witnesses to the incident</p>
+      </div>
+
+      <!-- Navigation -->
+      <div class="navigation">
+        <button type="button" class="btn btn-secondary" id="back-btn">
+          <span>←</span>
+          <span>Back</span>
+        </button>
+        <button type="button" class="btn btn-primary" id="next-btn" disabled>
+          <span>Next</span>
+          <span>→</span>
+        </button>
+      </div>
+    </div>
+  </div>
+
+  <script>
+    console.log('Page 9: Witnesses - Initializing');
+
+    // Get session ID
+    if (!sessionStorage.getItem('temp_session_id')) {
+      sessionStorage.setItem('temp_session_id', crypto.randomUUID());
+    }
+    console.log('Session ID:', sessionStorage.getItem('temp_session_id'));
+
+    // DOM elements
+    const radioOptions = document.querySelectorAll('.radio-option');
+    const witnessDetailsContainer = document.getElementById('witness-details-container');
+    const witnessNameInput = document.getElementById('witness-name');
+    const witnessPhoneInput = document.getElementById('witness-phone');
+    const witnessEmailInput = document.getElementById('witness-email');
+    const witnessStatementTextarea = document.getElementById('witness-statement');
+    const statementCharCounter = document.getElementById('statement-char-counter');
+    const nextBtn = document.getElementById('next-btn');
+
+    let witnessesPresent = null;
+
+    // Radio button handling
+    radioOptions.forEach(option => {
+      option.addEventListener('click', () => {
+        const value = option.dataset.value;
+        const radio = option.querySelector('input[type="radio"]');
+
+        // Deselect all
+        radioOptions.forEach(opt => opt.classList.remove('selected'));
+
+        // Select clicked
+        option.classList.add('selected');
+        radio.checked = true;
+
+        witnessesPresent = value;
+        console.log('Witnesses present:', witnessesPresent);
+
+        // Show/hide witness details
+        if (value === 'yes') {
+          witnessDetailsContainer.classList.add('visible');
+          // Show add witness button
+          document.getElementById('add-witness-container').style.display = 'block';
+        } else {
+          witnessDetailsContainer.classList.remove('visible');
+          document.getElementById('add-witness-container').style.display = 'none';
+          // Clear all witness fields
+          witnessNameInput.value = '';
+          witnessPhoneInput.value = '';
+          witnessEmailInput.value = '';
+          witnessStatementTextarea.value = '';
+          statementCharCounter.textContent = '0 / 1000 characters';
+        }
+
+        validateForm();
+        saveData();
+      });
+    });
+
+    // Character counter for witness statement
+    witnessStatementTextarea.addEventListener('input', () => {
+      const length = witnessStatementTextarea.value.length;
+      statementCharCounter.textContent = `${length} / 1000 characters`;
+
+      if (length > 950) {
+        statementCharCounter.classList.add('error');
+        statementCharCounter.classList.remove('warning');
+      } else if (length > 800) {
+        statementCharCounter.classList.add('warning');
+        statementCharCounter.classList.remove('error');
+      } else {
+        statementCharCounter.classList.remove('warning', 'error');
+      }
+
+      validateForm();
+      saveData();
+    });
+
+    // Save on all input changes
+    [witnessNameInput, witnessPhoneInput, witnessEmailInput].forEach(input => {
+      input.addEventListener('input', () => {
+        validateForm();
+        saveData();
+      });
+    });
+
+    // Form validation
+    function validateForm() {
+      let isValid = false;
+
+      if (witnessesPresent === 'no') {
+        // No witnesses - form is valid
+        isValid = true;
+      } else if (witnessesPresent === 'yes') {
+        // Witnesses present - name and statement required
+        const hasName = witnessNameInput.value.trim().length > 2;
+        const hasStatement = witnessStatementTextarea.value.trim().length > 10;
+        isValid = hasName && hasStatement;
+      }
+
+      nextBtn.disabled = !isValid;
+      console.log('Form valid:', isValid, {
+        witnessesPresent,
+        hasName: witnessNameInput.value.trim().length > 2,
+        hasStatement: witnessStatementTextarea.value.trim().length > 10
+      });
+    }
+
+    // Save data to localStorage
+    function saveData() {
+      const data = {
+        witnesses_present: witnessesPresent,
+        witness_name: witnessesPresent === 'yes' ? witnessNameInput.value.trim() : null,
+        witness_mobile_number: witnessesPresent === 'yes' ? witnessPhoneInput.value.trim() : null,
+        witness_email_address: witnessesPresent === 'yes' ? witnessEmailInput.value.trim() : null,
+        witness_statement: witnessesPresent === 'yes' ? witnessStatementTextarea.value.trim() : null
+      };
+
+      // Include additional witnesses from sessionStorage
+      const additionalWitnessesStr = sessionStorage.getItem('additional_witnesses');
+      if (additionalWitnessesStr) {
+        try {
+          data.additional_witnesses = JSON.parse(additionalWitnessesStr);
+        } catch (e) {
+          console.error('Error parsing additional witnesses:', e);
+          data.additional_witnesses = [];
+        }
+      }
+
+      sessionStorage.setItem('incident_page9', JSON.stringify(data));
+      console.log('Page 9 data saved:', data);
+    }
+
+    // Load existing data
+    function loadData() {
+      const saved = sessionStorage.getItem('incident_page9');
+      if (!saved) return;
+
+      try {
+        const data = JSON.parse(saved);
+        console.log('Loading saved data:', data);
+
+        // Restore witnesses present
+        if (data.witnesses_present) {
+          witnessesPresent = data.witnesses_present;
+          const option = document.querySelector(`.radio-option[data-value="${data.witnesses_present}"]`);
+          if (option) {
+            option.click();
+          }
+        }
+
+        // Restore witness details
+        if (data.witness_name) witnessNameInput.value = data.witness_name;
+        if (data.witness_mobile_number) witnessPhoneInput.value = data.witness_mobile_number;
+        if (data.witness_email_address) witnessEmailInput.value = data.witness_email_address;
+        if (data.witness_statement) {
+          witnessStatementTextarea.value = data.witness_statement;
+          const length = data.witness_statement.length;
+          statementCharCounter.textContent = `${length} / 1000 characters`;
+        }
+
+        validateForm();
+      } catch (error) {
+        console.error('Error loading data:', error);
+      }
+    }
+
+    // Add Another Witness handler
+    document.getElementById('add-witness-btn').addEventListener('click', () => {
+      // Get existing additional witnesses
+      let additionalWitnesses = [];
+      const stored = sessionStorage.getItem('additional_witnesses');
+      if (stored) {
+        try {
+          additionalWitnesses = JSON.parse(stored);
+        } catch (e) {
+          console.error('Error parsing additional witnesses:', e);
+          additionalWitnesses = [];
+        }
+      }
+
+      // Save current witness data
+      const currentWitnessData = {
+        witness_number: additionalWitnesses.length + 2, // Witness 1 is primary, 2+ are additional
+        witness_name: witnessNameInput.value,
+        witness_mobile_number: witnessPhoneInput.value,
+        witness_email_address: witnessEmailInput.value,
+        witness_statement: witnessStatementTextarea.value,
+        saved_at: new Date().toISOString()
+      };
+
+      additionalWitnesses.push(currentWitnessData);
+      sessionStorage.setItem('additional_witnesses', JSON.stringify(additionalWitnesses));
+
+      console.log(`✅ Witness ${currentWitnessData.witness_number} saved. Total witnesses: ${additionalWitnesses.length + 1}`);
+
+      // Show confirmation message
+      const witnessNum = currentWitnessData.witness_number;
+      const confirmMsg = document.createElement('div');
+      confirmMsg.style.cssText = 'position: fixed; top: 80px; left: 50%; transform: translateX(-50%); background: var(--success); color: white; padding: 16px 24px; border-radius: 12px; box-shadow: 0 4px 16px rgba(0,0,0,0.2); z-index: 1000; font-weight: 600;';
+      confirmMsg.innerHTML = `<span style="font-size: 1.2rem; margin-right: 8px;">✓</span> Witness ${witnessNum} saved! Now add witness ${witnessNum + 1}`;
+      document.body.appendChild(confirmMsg);
+
+      setTimeout(() => {
+        confirmMsg.remove();
+      }, 2000);
+
+      // Clear form for next witness
+      witnessNameInput.value = '';
+      witnessPhoneInput.value = '';
+      witnessEmailInput.value = '';
+      witnessStatementTextarea.value = '';
+      statementCharCounter.textContent = '0 / 1000 characters';
+
+      // Reset validation
+      validateForm();
+
+      // Update button text to show count
+      const addBtn = document.getElementById('add-witness-btn');
+      const existingBadge = addBtn.querySelector('span:last-child');
+      if (existingBadge.textContent === 'Add Another Witness') {
+        existingBadge.textContent = `Add Witness ${witnessNum + 1}`;
+      }
+
+      // Scroll to top smoothly
+      window.scrollTo({ top: 0, behavior: 'smooth' });
+    });
+
+    // Navigation
+    document.getElementById('back-btn').addEventListener('click', () => {
+      console.log('Back button clicked - returning to Page 8');
+      window.location.href = '/incident-form-page8-other-damage-images.html';
+    });
+
+    document.getElementById('next-btn').addEventListener('click', () => {
+      console.log('Next button clicked - proceeding to Page 10');
+      saveData();
+      window.location.href = '/incident-form-page10-police-details.html';
+    });
+
+    // Initialize
+    loadData();
+    console.log('Page 9 initialization complete');
+  </script>
+</body>
+</html>

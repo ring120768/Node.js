@@ -1,0 +1,78 @@
+<!DOCTYPE html>
+<html lang="en-GB">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Page 8: Accident Narrative - PDF Mockup</title>
+  <link rel="stylesheet" href="pdf-styles.css">
+</head>
+<body>
+  <!-- Navigation -->
+  <div class="navigation no-print">
+    <h2>PDF Mockup Preview</h2>
+    <a href="index.html">← All Pages</a>
+    <a href="page-07-junction-infrastructure.html">← Page 7</a>
+    <a href="page-08-accident-narrative.html" class="current">Page 8</a>
+    <a href="page-09-other-vehicle.html">Page 9 →</a>
+  </div>
+
+  <!-- PDF Page -->
+  <div class="pdf-page">
+    <!-- Header -->
+    <div class="pdf-header">
+      <img src="../images/logo.png" alt="Logo" class="header-logo">
+      <div class="header-title">
+        <h1>CAR CRASH LAWYER AI</h1>
+        <p>Incident Report</p>
+      </div>
+      <div class="header-page-number">Page 8 of 17</div>
+    </div>
+
+    <!-- Content -->
+    <div class="pdf-content">
+      <!-- Section 1: Your Manoeuvre -->
+      <section class="section">
+        <h2 class="section-title">Your Actions</h2>
+
+        <div class="field-group">
+          <label class="field-label required">What manoeuvre were you performing?</label>
+          <select class="field-dropdown">
+            <option value="">Select manoeuvre...</option>
+            <option value="going-straight">Going straight ahead</option>
+            <option value="turning-left">Turning left</option>
+            <option value="turning-right">Turning right</option>
+            <option value="overtaking">Overtaking</option>
+            <option value="changing-lanes">Changing lanes</option>
+            <option value="reversing">Reversing</option>
+            <option value="parking">Parking/leaving parking space</option>
+            <option value="u-turn">U-turn</option>
+            <option value="stationary">Stationary</option>
+            <option value="other">Other</option>
+          </select>
+          <span class="field-help">userManoeuvre</span>
+        </div>
+      </section>
+
+      <!-- Section 2: Accident Description -->
+      <section class="section">
+        <h2 class="section-title">Accident Description</h2>
+
+        <div class="field-group">
+          <label class="field-label required">Describe what happened in your own words</label>
+          <textarea class="field-textarea extra-large" placeholder="Please describe the accident in detail: What were you doing? What did the other driver do? How did the collision occur? Include any relevant details about road layout, visibility, or other factors."></textarea>
+          <span class="field-help">accident_narrative (extra-large textarea for detailed description)</span>
+        </div>
+      </section>
+    </div>
+
+    <!-- Footer -->
+    <div class="pdf-footer">
+      <p class="footer-text">
+        Confidential Legal Document - Car Crash Lawyer AI<br>
+        For legal purposes only. Do not distribute without authorization.
+      </p>
+      <img src="../images/car-crash-lawyer-ai-450.webp" alt="Car Crash Lawyer AI" class="footer-logo">
+    </div>
+  </div>
+</body>
+</html>

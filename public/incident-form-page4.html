@@ -1,0 +1,1295 @@
+<!DOCTYPE html>
+<html lang="en-GB">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+  <meta name="apple-mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+  <title>Accident Location - Page 4 of 12</title>
+
+  <!-- Leaflet CSS for interactive map -->
+  <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
+
+  <!-- html2canvas for screenshot capture -->
+  <script src="https://cdn.jsdelivr.net/npm/html2canvas@1.4.1/dist/html2canvas.min.js"></script>
+
+  <style>
+    /* Design System Variables */
+    :root {
+      /* Brand Colors */
+      --grad-start: #0E7490;
+      --grad-end: #0c6179;
+      --accent: #0E7490;
+      --accent-hover: #0c6179;
+      --bg-light: #E8DCC4;
+
+      /* Text */
+      --text-dark: #333;
+      --text-muted: #666;
+
+      /* Borders & Dividers */
+      --border: #4B5563;
+
+      /* Buttons */
+      --button-bg: #C0C0C0;
+      --button-hover: #B0B0B0;
+
+      /* Form Elements */
+      --input-bg: #CFD2D7;
+      --checkbox-bg: #F5F1E8;
+      --container-bg: #F5F1E8;
+
+      /* Status Colors */
+      --success: #10b981;
+      --danger: #ef4444;
+      --warning: #f59e0b;
+    }
+
+    /* Reset & Base */
+    * {
+      margin: 0;
+      padding: 0;
+      box-sizing: border-box;
+      -webkit-tap-highlight-color: transparent;
+    }
+
+    html {
+      font-size: 16px;
+      -webkit-text-size-adjust: 100%;
+    }
+
+    body {
+      font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, Cantarell, sans-serif;
+      background: var(--bg-light);
+      color: var(--text-dark);
+      line-height: 1.6;
+      overflow-x: hidden;
+      padding-bottom: env(safe-area-inset-bottom, 20px);
+    }
+
+    /* Sticky Banner */
+    .banner {
+      background: linear-gradient(135deg, var(--grad-start) 0%, var(--grad-end) 100%);
+      padding: 20px 16px;
+      position: sticky;
+      top: 0;
+      z-index: 200;
+      box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+    }
+
+    @supports (padding-top: env(safe-area-inset-top)) {
+      .banner {
+        padding-top: max(20px, env(safe-area-inset-top));
+      }
+    }
+
+    .brand {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      text-align: center;
+      gap: 12px;
+    }
+
+    .brand .logo {
+      width: 80px;
+      height: 80px;
+      border-radius: 12px;
+      box-shadow: 0 4px 12px rgba(0,0,0,0.15);
+    }
+
+    .brand h1 {
+      font-size: 1.25rem;
+      font-weight: 700;
+      color: white;
+      text-shadow: 0 2px 4px rgba(0,0,0,0.1);
+    }
+
+    .brand .tagline {
+      font-size: 0.875rem;
+      color: rgba(255,255,255,0.95);
+      font-weight: 500;
+    }
+
+    /* Progress Bar */
+    .progress-container {
+      margin-top: 16px;
+      background: rgba(255,255,255,0.2);
+      border-radius: 20px;
+      height: 8px;
+      overflow: hidden;
+      backdrop-filter: blur(8px);
+    }
+
+    .progress-bar {
+      height: 100%;
+      background: white;
+      border-radius: 20px;
+      transition: width 0.3s ease;
+      width: 33.33%; /* Page 4 of 12 */
+    }
+
+    .progress-label {
+      text-align: center;
+      color: white;
+      font-size: 0.75rem;
+      margin-top: 8px;
+      font-weight: 600;
+    }
+
+    /* Main Container */
+    .container {
+      max-width: 600px;
+      margin: 0 auto;
+      padding: 24px 16px;
+    }
+
+    .page-header {
+      text-align: center;
+      margin-bottom: 32px;
+    }
+
+    .page-header h2 {
+      font-size: 1.5rem;
+      color: var(--text-dark);
+      margin-bottom: 8px;
+    }
+
+    .page-header p {
+      color: var(--text-muted);
+      font-size: 0.938rem;
+    }
+
+    /* Form Section */
+    .form-section {
+      background: var(--container-bg);
+      border-radius: 12px;
+      padding: 24px;
+      margin-bottom: 20px;
+      box-shadow: 0 2px 8px rgba(0,0,0,0.05);
+    }
+
+    .form-section h3 {
+      color: var(--accent);
+      font-size: 1.125rem;
+      margin-bottom: 20px;
+      display: flex;
+      align-items: center;
+      gap: 8px;
+    }
+
+    .form-group {
+      margin-bottom: 20px;
+    }
+
+    .form-group label {
+      display: block;
+      font-weight: 600;
+      color: var(--text-dark);
+      margin-bottom: 8px;
+      font-size: 0.938rem;
+    }
+
+    .form-group label .required {
+      color: var(--danger);
+      margin-left: 4px;
+    }
+
+    .form-group input,
+    .form-group select,
+    .form-group textarea {
+      width: 100%;
+      padding: 14px 16px;
+      border: 2px solid var(--border);
+      border-radius: 8px;
+      font-size: 16px;
+      font-family: inherit;
+      background: var(--input-bg);
+      transition: border-color 0.2s ease, background-color 0.2s ease;
+      -webkit-appearance: none;
+      appearance: none;
+    }
+
+    .form-group textarea {
+      min-height: 100px;
+      resize: vertical;
+    }
+
+    .form-group input:focus,
+    .form-group select:focus,
+    .form-group textarea:focus {
+      outline: none;
+      border-color: var(--accent);
+      background: #ffffff;
+      box-shadow: 0 0 0 3px rgba(14, 116, 144, 0.1);
+    }
+
+    .form-group input::placeholder,
+    .form-group textarea::placeholder {
+      color: #999;
+    }
+
+    .form-group select {
+      background: var(--input-bg) url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='12' viewBox='0 0 12 12'%3E%3Cpath fill='%23333' d='M6 9L1 4h10z'/%3E%3C/svg%3E") no-repeat right 16px center;
+      padding-right: 40px;
+      cursor: pointer;
+    }
+
+    .form-group .help-text {
+      font-size: 0.813rem;
+      color: var(--text-muted);
+      margin-top: 6px;
+    }
+
+    /* Checkbox Group */
+    .checkbox-group {
+      display: flex;
+      flex-direction: column;
+      gap: 12px;
+    }
+
+    .checkbox-group label {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+      padding: 14px 16px;
+      border: 2px solid var(--border);
+      border-radius: 8px;
+      cursor: pointer;
+      transition: all 0.2s ease;
+      font-weight: 500;
+    }
+
+    .checkbox-group label:hover {
+      border-color: var(--accent);
+      background: rgba(53, 122, 148, 0.05);
+    }
+
+    .checkbox-group input[type="checkbox"] {
+      appearance: none;
+      -webkit-appearance: none;
+      width: 24px;
+      height: 24px;
+      min-width: 24px;
+      cursor: pointer;
+      border: 2px solid var(--border);
+      border-radius: 6px;
+      background: var(--checkbox-bg);
+      position: relative;
+      transition: all 0.2s ease;
+    }
+
+    .checkbox-group input[type="checkbox"]:hover {
+      border-color: var(--success);
+    }
+
+    .checkbox-group input[type="checkbox"]:checked {
+      background: var(--success);
+      border-color: var(--success);
+    }
+
+    .checkbox-group input[type="checkbox"]:checked::after {
+      content: '✓';
+      position: absolute;
+      top: 50%;
+      left: 50%;
+      transform: translate(-50%, -50%);
+      color: white;
+      font-size: 16px;
+      font-weight: bold;
+      line-height: 1;
+    }
+
+    .checkbox-group input[type="checkbox"]:checked + span {
+      color: var(--success);
+      font-weight: 600;
+    }
+
+    /* Navigation Buttons */
+    .nav-buttons {
+      display: flex;
+      gap: 12px;
+      margin-top: 32px;
+      padding-bottom: env(safe-area-inset-bottom, 0px);
+    }
+
+    .btn {
+      flex: 1;
+      padding: 16px 24px;
+      border: none;
+      border-radius: 12px;
+      font-size: 1rem;
+      font-weight: 600;
+      cursor: pointer;
+      transition: all 0.2s ease;
+      min-height: 56px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: 8px;
+    }
+
+    .btn-secondary {
+      background: var(--button-bg);
+      color: var(--grad-start);
+      border: 2px solid var(--grad-start);
+    }
+
+    .btn-secondary:hover {
+      background: var(--button-hover);
+    }
+
+    .btn-primary {
+      background: var(--grad-start);
+      color: white;
+      box-shadow: 0 4px 12px rgba(14, 116, 144, 0.3);
+    }
+
+    .btn-primary:hover {
+      transform: translateY(-2px);
+      box-shadow: 0 6px 16px rgba(14, 116, 144, 0.4);
+      background: var(--grad-end);
+    }
+
+    .btn-primary:active {
+      transform: translateY(0);
+    }
+
+    /* Mobile Optimizations */
+    @media (max-width: 480px) {
+      .container {
+        padding: 16px 12px;
+      }
+
+      .page-header h2 {
+        font-size: 1.25rem;
+      }
+
+      .form-section {
+        padding: 20px 16px;
+      }
+    }
+
+    /* Touch Feedback */
+    @media (hover: none) {
+      .btn:active {
+        opacity: 0.8;
+      }
+    }
+
+    /* Location Button (overrides for specific button) */
+    #get-location-btn {
+      background: var(--bg-light);
+      color: var(--grad-start);
+      border: 2px solid var(--grad-start);
+      font-weight: 600;
+    }
+
+    #get-location-btn:hover {
+      background: var(--grad-start);
+      color: white;
+    }
+
+    #get-location-btn:disabled {
+      opacity: 0.6;
+      cursor: not-allowed;
+    }
+
+    /* Info and Warning Boxes */
+    .info-box {
+      padding: 12px 16px;
+      margin-bottom: 20px;
+      border-radius: 4px;
+      background: #e0f2fe;
+      border-left: 4px solid var(--accent);
+    }
+
+    .info-box p {
+      margin: 0;
+      font-size: 0.875rem;
+      color: #0c4a6e;
+    }
+
+    .info-box strong {
+      font-weight: 600;
+    }
+
+    .warning-box {
+      padding: 16px;
+      background: #fef3c7;
+      border: 1px solid var(--warning);
+      border-radius: 8px;
+      margin-bottom: 20px;
+    }
+
+    .warning-box p:first-child {
+      margin: 0;
+      color: #92400e;
+      font-weight: 500;
+    }
+
+    .warning-box p:last-child {
+      margin: 4px 0 0 0;
+      color: #78350f;
+      font-size: 0.9rem;
+    }
+
+    .hazard-placeholder {
+      display: none;
+      padding: 20px;
+      background: #fef3c7;
+      border: 2px solid var(--warning);
+      border-radius: 12px;
+      color: #856404;
+    }
+
+    .hazard-placeholder p:first-child {
+      margin: 0;
+      font-weight: 600;
+    }
+
+    .hazard-placeholder p:last-child {
+      margin: 8px 0 0 0;
+      font-size: 0.875rem;
+    }
+  </style>
+</head>
+<body>
+  <!-- Sticky Banner -->
+  <div class="banner">
+    <div class="brand">
+      <img src="/images/logo.png" alt="Logo" class="logo">
+      <h1>Car Crash Lawyer AI</h1>
+      <p class="tagline">Legal Incident Report</p>
+    </div>
+    <div class="progress-container">
+      <div class="progress-bar"></div>
+    </div>
+    <div class="progress-label">Page 4 of 12</div>
+  </div>
+
+  <!-- Main Content -->
+  <div class="container">
+    <div class="page-header">
+      <h2>📍 Accident Location</h2>
+      <p>Help us pinpoint exactly where the accident occurred</p>
+    </div>
+
+    <!-- Location with what3words -->
+    <div class="form-section">
+      <h3>📌 Precise Location</h3>
+
+      <div class="form-group" id="what3words-group">
+        <label for="what3words">
+          what3words address
+        </label>
+        <div style="display: flex; gap: 8px; align-items: flex-start;">
+          <input
+            type="text"
+            id="what3words"
+            name="what3words"
+            placeholder="e.g. ///filled.count.soap"
+            style="flex: 1;"
+          >
+          <button type="button" id="get-location-btn" class="btn btn-secondary" style="white-space: nowrap; padding: 12px 16px;">
+            📍 Get My Location
+          </button>
+        </div>
+        <p class="help-text" id="what3words-help">Click "Get My Location" to auto-populate, or manually enter the 3 word address from <a href="https://what3words.com" target="_blank" style="color: var(--accent);">what3words.com</a></p>
+        <p id="what3words-status" style="margin-top: 8px; font-size: 0.9rem; color: var(--text-muted); display: none;"></p>
+      </div>
+
+      <div id="what3words-unavailable" class="warning-box" style="display: none;">
+        <p>
+          ℹ️ what3words: Not Currently Available
+        </p>
+        <p>
+          Location services are temporarily unavailable. You can continue without providing a what3words address.
+        </p>
+      </div>
+
+      <!-- Interactive Map Display -->
+      <div id="location-map-container" style="display: none; margin-top: 16px;">
+        <div id="map-screenshot-target" style="border-radius: 12px; overflow: hidden; border: 2px solid var(--border); box-shadow: 0 2px 8px rgba(0,0,0,0.1); height: 300px;">
+          <div id="location-map" style="width: 100%; height: 100%;"></div>
+        </div>
+        <p style="margin-top: 8px; font-size: 0.85rem; color: var(--text-muted); text-align: center;">
+          📍 Interactive map - pinch to zoom, drag to pan
+        </p>
+
+        <!-- Capture Map Button -->
+        <div style="text-align: center; margin-top: 12px;">
+          <button type="button" id="capture-map-btn" class="btn btn-secondary" style="display: inline-flex; align-items: center; gap: 8px; padding: 10px 20px;">
+            <span style="font-size: 1.2rem;">📸</span>
+            <span>Capture Map Screenshot</span>
+          </button>
+        </div>
+
+        <!-- Screenshot Status -->
+        <p id="map-screenshot-status" style="margin-top: 8px; font-size: 0.85rem; text-align: center; display: none;"></p>
+      </div>
+
+      <div class="form-group">
+        <label for="location">
+          Full address or location description
+          <span class="required">*</span>
+        </label>
+        <textarea
+          id="location"
+          name="location"
+          required
+          placeholder="e.g. Junction of High Street and Park Road, London SW1A 1AA, or M25 between Junction 15 and 16 northbound"
+        ></textarea>
+        <p class="help-text">Include street names, postcode, landmarks, or motorway junctions</p>
+      </div>
+
+      <div class="form-group">
+        <label for="nearestlandmark">
+          Nearest landmark or notable feature
+        </label>
+        <input
+          type="text"
+          id="nearestlandmark"
+          name="nearestlandmark"
+          placeholder="e.g. Tesco Metro, Red Lion pub, Shell petrol station"
+        >
+        <p class="help-text">Helps emergency services and investigators find the exact location</p>
+      </div>
+    </div>
+
+
+    <!-- Junction Information -->
+    <div class="form-section">
+      <h3>🔀 Junction / Intersection Details</h3>
+
+      <!-- Primary: Was it at a junction? -->
+      <div class="form-group">
+        <label for="junctiontype">
+          What type of junction was it?
+          <span class="required">*</span>
+        </label>
+        <select id="junctiontype" name="junctiontype" required>
+          <option value="">Select junction type...</option>
+          <option value="straight_road">Straight road (not at junction)</option>
+          <option value="not_junction">Not at or near a junction</option>
+          <option value="t_junction">T-junction</option>
+          <option value="crossroads">Crossroads (4-way junction)</option>
+          <option value="y_junction">Y-junction</option>
+          <option value="staggered_junction">Staggered junction</option>
+          <option value="roundabout">Roundabout (single-lane)</option>
+          <option value="mini_roundabout">Mini roundabout</option>
+          <option value="multi_lane_roundabout">Multi-lane roundabout</option>
+          <option value="slip_road">Slip road (motorway entry/exit)</option>
+          <option value="box_junction">Box junction (yellow hatched area)</option>
+          <option value="not_sure">Not sure</option>
+        </select>
+        <p class="help-text">Select the junction type that best describes the location</p>
+      </div>
+
+      <!-- Conditional: Junction Details (only if NOT "not_junction") -->
+      <div id="junctionDetailsGroup" style="display: none;">
+
+        <!-- Junction Control -->
+        <div class="form-group">
+          <label for="junctioncontrol">
+            What controlled this junction?
+            <span class="required">*</span>
+          </label>
+          <select id="junctioncontrol" name="junctioncontrol">
+            <option value="">Select control type...</option>
+            <option value="traffic_lights">Traffic lights</option>
+            <option value="stop_sign">Stop sign</option>
+            <option value="give_way_sign">Give Way sign or road markings</option>
+            <option value="uncontrolled">Uncontrolled (no signs or markings)</option>
+            <option value="not_sure">Not sure</option>
+          </select>
+          <p class="help-text">This helps determine right-of-way and liability</p>
+        </div>
+
+        <!-- Conditional: Traffic Light Status (only if "traffic_lights" selected) -->
+        <div id="trafficlightstatusgroup" class="form-group" style="display: none;">
+          <label for="trafficlightstatus">
+            What colour was the traffic light for your direction?
+            <span class="required">*</span>
+          </label>
+          <select id="trafficlightstatus" name="trafficlightstatus">
+            <option value="">Select traffic light colour...</option>
+            <option value="green">Green</option>
+            <option value="amber">Amber</option>
+            <option value="red">Red</option>
+            <option value="green_filter">Green filter arrow (directional)</option>
+            <option value="not_working">Lights were not working</option>
+            <option value="not_sure">Not sure</option>
+          </select>
+          <p class="help-text">Critical for determining liability in traffic light violations</p>
+        </div>
+
+        <!-- User Manoeuvre -->
+        <div class="form-group">
+          <label for="usermanoeuvre">
+            What were you doing when the collision occurred?
+            <span class="required">*</span>
+          </label>
+          <select id="usermanoeuvre" name="usermanoeuvre">
+            <option value="">Select your manoeuvre...</option>
+            <option value="going_straight">Going straight ahead</option>
+            <option value="turning_left">Turning left</option>
+            <option value="turning_right">Turning right</option>
+            <option value="waiting_to_turn_right">Waiting to turn right (in junction)</option>
+            <option value="waiting_at_line">Waiting at stop/give way line</option>
+            <option value="entering_from_minor">Entering junction from minor road</option>
+            <option value="already_in_junction">Already in junction when hit</option>
+            <option value="other">Other (describe in notes below)</option>
+          </select>
+          <p class="help-text">Your manoeuvre at the time of impact</p>
+        </div>
+
+      </div>
+    </div>
+
+    <!-- Special Conditions -->
+    <div class="form-section">
+      <h3>⚠️ Special Road Conditions & Hazards</h3>
+
+      <!-- Hazard Reference Image -->
+      <div id="hazardImageContainer" style="margin-bottom: 20px; text-align: center;">
+        <img
+          id="hazardReferenceImage"
+          src="/images/hazard-labeled-image.png"
+          alt="Road hazards reference guide"
+          style="max-width: 100%; height: auto; border-radius: 12px; border: 2px solid var(--border); box-shadow: 0 2px 8px rgba(0,0,0,0.1);"
+          onerror="this.style.display='none'; document.getElementById('hazardImagePlaceholder').style.display='block';"
+        >
+        <div id="hazardImagePlaceholder" class="hazard-placeholder">
+          <p>📋 Hazard Reference Image</p>
+          <p>Common hazards include: wet roads, ice, debris, potholes, roadworks, animals, pedestrians</p>
+        </div>
+        <p class="help-text" style="margin-top: 8px; font-size: 0.85rem;">
+          Reference guide for common road hazards
+        </p>
+      </div>
+
+      <div class="info-box">
+        <p>
+          <strong>Note:</strong> Visibility issues like weather conditions, street lighting, and parked vehicles obstructing view are also captured in this section and the Junction Details above. Select all conditions that were present at the time of the accident.
+        </p>
+      </div>
+
+      <p class="help-text" style="margin-bottom: 16px;">
+        Select any that apply:
+      </p>
+
+      <div class="checkbox-group">
+        <label>
+          <input type="checkbox" name="specialconditions" value="roadworks">
+          <span>Roadworks or construction</span>
+        </label>
+        <label>
+          <input type="checkbox" name="specialconditions" value="workmen_in_road">
+          <span>Workmen in road</span>
+        </label>
+        <label>
+          <input type="checkbox" name="specialconditions" value="cyclists_in_road">
+          <span>Cyclists in road</span>
+        </label>
+        <label>
+          <input type="checkbox" name="specialconditions" value="pedestrians_in_road">
+          <span>Pedestrians in road</span>
+        </label>
+        <label>
+          <input type="checkbox" name="specialconditions" value="traffic_calming">
+          <span>Traffic calming measures (speed bumps, chicanes)</span>
+        </label>
+        <label>
+          <input type="checkbox" name="specialconditions" value="parked_vehicles">
+          <span>Parked vehicles obstructing view</span>
+        </label>
+        <label>
+          <input type="checkbox" name="specialconditions" value="pedestrian_crossing">
+          <span>Near pedestrian crossing</span>
+        </label>
+        <label>
+          <input type="checkbox" name="specialconditions" value="school_zone">
+          <span>School zone or playground area</span>
+        </label>
+        <label>
+          <input type="checkbox" name="specialconditions" value="narrow_road">
+          <span>Narrow road or single-track</span>
+        </label>
+        <label>
+          <input type="checkbox" name="specialconditions" value="pot_holes_road_defects">
+          <span>Pot holes and road defects</span>
+        </label>
+        <label>
+          <input type="checkbox" name="specialconditions" value="oil_spills">
+          <span>Oil spills</span>
+        </label>
+        <label>
+          <input type="checkbox" name="specialconditions" value="animals_in_road">
+          <span>Animals in road</span>
+        </label>
+      </div>
+
+      <!-- Visibility Issues -->
+      <div class="form-group" style="margin-top: 24px; padding-top: 24px; border-top: 2px dashed var(--border);">
+        <label style="font-weight: 600; color: var(--accent); font-size: 1.05rem;">
+          👁️ Visibility Issues
+          <span style="color: var(--text-muted); font-weight: normal; font-size: 0.9rem;">(Optional - select all that apply)</span>
+        </label>
+        <div class="checkbox-group">
+          <label>
+            <input type="checkbox" name="visibilityfactors" value="clear_visibility">
+            <span>Clear visibility - no issues</span>
+          </label>
+          <label>
+            <input type="checkbox" name="visibilityfactors" value="restricted_by_structure">
+            <span>Restricted by hedge, wall, or fence</span>
+          </label>
+          <label>
+            <input type="checkbox" name="visibilityfactors" value="restricted_by_bend">
+            <span>Restricted by bend or corner</span>
+          </label>
+          <label>
+            <input type="checkbox" name="visibilityfactors" value="large_vehicle">
+            <span>Large vehicle obstructing view (lorry, bus, van)</span>
+          </label>
+          <label>
+            <input type="checkbox" name="visibilityfactors" value="sun_glare">
+            <span>Sun glare or low sun</span>
+          </label>
+        </div>
+        <p class="help-text">Visibility factors may affect liability determination. Weather conditions and street lighting are covered in Time & Weather section (Page 3).</p>
+      </div>
+
+      <!-- Additional Hazards Text Field -->
+      <div class="form-group" style="margin-top: 20px;">
+        <label for="additionalhazards">
+          Additional hazards or conditions
+          <span style="color: var(--text-muted); font-weight: normal;">(Optional)</span>
+        </label>
+        <textarea
+          id="additionalhazards"
+          name="additionalhazards"
+          rows="3"
+          placeholder="Describe any other hazards, road conditions, or circumstances not covered above..."
+          style="width: 100%; padding: 12px; border: 1px solid var(--border); border-radius: 8px; font-family: inherit; font-size: 1rem; resize: vertical;"
+        ></textarea>
+        <p class="help-text">Include any additional details about road conditions, hazards, or circumstances that might be relevant to the accident.</p>
+      </div>
+    </div>
+
+    <!-- Navigation -->
+    <div class="nav-buttons">
+      <button type="button" class="btn btn-secondary" id="backBtn">
+        ← Back
+      </button>
+      <button type="button" class="btn btn-primary" id="nextBtn">
+        Continue →
+      </button>
+    </div>
+  </div>
+
+  <script>
+    // Initialize temp session ID for screenshot uploads (shared across all form pages)
+    if (!localStorage.getItem('temp_session_id')) {
+      localStorage.setItem('temp_session_id', crypto.randomUUID());
+      console.log('✅ Created new temp session ID:', localStorage.getItem('temp_session_id'));
+    }
+
+    // Elements
+    const backBtn = document.getElementById('backBtn');
+    const nextBtn = document.getElementById('nextBtn');
+
+    // Progressive Disclosure: Junction Details
+    const junctionType = document.getElementById('junctiontype');
+    const junctionDetailsGroup = document.getElementById('junctionDetailsGroup');
+    const junctionControl = document.getElementById('junctioncontrol');
+    const trafficlightstatusgroup = document.getElementById('trafficlightstatusgroup');
+    const trafficLightStatus = document.getElementById('trafficlightstatus');
+
+    // Show/hide junction details based on junction type selection
+    junctionType.addEventListener('change', function() {
+      const selectedType = this.value;
+
+      if (selectedType === 'not_junction' || selectedType === 'straight_road' || selectedType === '') {
+        // Hide all junction details if not at a junction or on straight road
+        junctionDetailsGroup.style.display = 'none';
+
+        // Clear junction detail fields
+        junctionControl.value = '';
+        trafficLightStatus.value = '';
+        document.getElementById('usermanoeuvre').value = '';
+        document.querySelectorAll('input[name="visibilityfactors"]').forEach(cb => cb.checked = false);
+
+        // Remove required attributes when hidden
+        junctionControl.removeAttribute('required');
+        document.getElementById('usermanoeuvre').removeAttribute('required');
+      } else {
+        // Show junction details for any junction type
+        junctionDetailsGroup.style.display = 'block';
+
+        // Add required attributes
+        junctionControl.setAttribute('required', 'required');
+        document.getElementById('usermanoeuvre').setAttribute('required', 'required');
+      }
+    });
+
+    // Show/hide traffic light status based on junction control selection
+    junctionControl.addEventListener('change', function() {
+      const selectedControl = this.value;
+
+      if (selectedControl === 'traffic_lights') {
+        // Show traffic light status field
+        trafficlightstatusgroup.style.display = 'block';
+        // Make dropdown required
+        trafficLightStatus.setAttribute('required', 'required');
+      } else {
+        // Hide and clear traffic light status
+        trafficlightstatusgroup.style.display = 'none';
+        trafficLightStatus.value = '';
+        trafficLightStatus.removeAttribute('required');
+      }
+    });
+
+    // Validate form
+    function validateForm() {
+      const location = document.getElementById('location').value.trim();
+      const what3words = document.getElementById('what3words').value.trim();
+      const junctionType = document.getElementById('junctiontype').value;
+
+      if (!location) {
+        alert('Please provide the accident location.');
+        return false;
+      }
+
+      // what3words is now optional, but if provided, validate format
+      if (what3words) {
+        const w3wPattern = /^(\/\/\/)?[\w-]+\.[\w-]+\.[\w-]+$/;
+        if (!w3wPattern.test(what3words)) {
+          alert('Please enter a valid what3words address (e.g. ///filled.count.soap)');
+          return false;
+        }
+      }
+
+      if (!junctionType) {
+        alert('Please select the junction type.');
+        return false;
+      }
+
+      // Validate junction details if at a junction
+      if (junctionType !== 'not_junction' && junctionType !== 'straight_road' && junctionType !== '') {
+        const junctionControl = document.getElementById('junctioncontrol').value;
+        const userManoeuvre = document.getElementById('usermanoeuvre').value;
+
+        if (!junctionControl) {
+          alert('Please select what controlled the junction.');
+          document.getElementById('junctioncontrol').focus();
+          return false;
+        }
+
+        // If traffic lights selected, validate traffic light status
+        if (junctionControl === 'traffic_lights') {
+          const trafficLightStatusValue = document.getElementById('trafficlightstatus').value;
+          if (!trafficLightStatusValue) {
+            alert('Please select what colour the traffic light was for your direction.');
+            document.getElementById('trafficlightstatus').focus();
+            return false;
+          }
+        }
+
+        if (!userManoeuvre) {
+          alert('Please select what you were doing when the collision occurred.');
+          document.getElementById('usermanoeuvre').focus();
+          return false;
+        }
+      }
+
+      return true;
+    }
+
+    // Get location and auto-populate what3words
+    const getLocationBtn = document.getElementById('get-location-btn');
+    const what3wordsInput = document.getElementById('what3words');
+    const what3wordsStatus = document.getElementById('what3words-status');
+    const what3wordsGroup = document.getElementById('what3words-group');
+    const what3wordsUnavailable = document.getElementById('what3words-unavailable');
+
+    getLocationBtn.addEventListener('click', async function() {
+      // Check if geolocation is supported
+      if (!navigator.geolocation) {
+        showWhat3WordsUnavailable('Geolocation is not supported by your browser.');
+        return;
+      }
+
+      // Disable button and show loading
+      getLocationBtn.disabled = true;
+      getLocationBtn.textContent = '🔄 Getting location...';
+      what3wordsStatus.style.display = 'block';
+      what3wordsStatus.style.color = 'var(--text-muted)';
+      what3wordsStatus.textContent = 'Requesting your location...';
+
+      try {
+        // Get current position
+        const position = await new Promise((resolve, reject) => {
+          navigator.geolocation.getCurrentPosition(resolve, reject, {
+            enableHighAccuracy: true,
+            timeout: 10000,
+            maximumAge: 0
+          });
+        });
+
+        const { latitude, longitude } = position.coords;
+        what3wordsStatus.textContent = `Location found (${latitude.toFixed(4)}, ${longitude.toFixed(4)}). Converting to what3words...`;
+
+        // Call API to convert to what3words
+        const response = await fetch(`/api/location/convert?lat=${latitude}&lng=${longitude}`);
+        const data = await response.json();
+
+        if (data.success && data.words) {
+          // Auto-populate what3words field
+          what3wordsInput.value = `///${data.words}`;
+          what3wordsStatus.style.color = 'var(--success)';
+          what3wordsStatus.textContent = `✓ Location found: ///${data.words}`;
+
+          // Display interactive map
+          const mapContainer = document.getElementById('location-map-container');
+          mapContainer.style.display = 'block';
+
+          // Auto-populate location description with detailed address
+          const locationTextarea = document.getElementById('location');
+          if (locationTextarea && !locationTextarea.value.trim()) {
+            let locationDescription = '';
+
+            // Build street address from components
+            if (data.address) {
+              const addr = data.address;
+
+              // Street address line
+              let streetLine = '';
+              if (addr.houseNumber) streetLine += addr.houseNumber + ' ';
+              if (addr.road) streetLine += addr.road;
+              if (streetLine) locationDescription += streetLine.trim() + '\n';
+
+              // City/Town line
+              let cityLine = '';
+              if (addr.suburb) cityLine += addr.suburb + ', ';
+              if (addr.city) cityLine += addr.city;
+              if (cityLine) locationDescription += cityLine.trim() + '\n';
+
+              // County and postcode line
+              let countyLine = '';
+              if (addr.county) countyLine += addr.county;
+              if (addr.postcode) {
+                countyLine += (countyLine ? ', ' : '') + addr.postcode;
+              }
+              if (countyLine) locationDescription += countyLine.trim() + '\n';
+
+              // Country
+              if (data.country) {
+                locationDescription += data.country + '\n';
+              }
+            } else if (data.nearestPlace) {
+              // Fallback to basic info if detailed address unavailable
+              locationDescription = data.nearestPlace;
+              if (data.country) {
+                locationDescription += `, ${data.country}`;
+              }
+              locationDescription += '\n';
+            }
+
+            locationDescription += `\nCoordinates: ${latitude.toFixed(6)}, ${longitude.toFixed(6)}`;
+            locationDescription += `\nwhat3words: ///${data.words}`;
+            locationTextarea.value = locationDescription;
+          }
+
+          // Initialize Leaflet map
+          setTimeout(() => {
+            const map = L.map('location-map').setView([latitude, longitude], 15);
+
+            // Add OpenStreetMap tile layer
+            L.tileLayer('https://tile.openstreetmap.org/{z}/{x}/{y}.png', {
+              attribution: '© OpenStreetMap contributors'
+            }).addTo(map);
+
+            // Add marker with popup
+            L.marker([latitude, longitude])
+              .addTo(map)
+              .bindPopup(`<strong>///${data.words}</strong><br>${data.nearestPlace || 'Location'}`)
+              .openPopup();
+
+            // Scroll to the map smoothly after it's loaded
+            setTimeout(() => {
+              mapContainer.scrollIntoView({ behavior: 'smooth', block: 'center' });
+            }, 200);
+          }, 100); // Small delay to ensure container is visible
+
+          // Reset button
+          getLocationBtn.disabled = false;
+          getLocationBtn.textContent = '📍 Get My Location';
+
+          // Hide status after 3 seconds
+          setTimeout(() => {
+            what3wordsStatus.style.display = 'none';
+          }, 3000);
+        } else {
+          // API returned error or no words
+          showWhat3WordsUnavailable(data.message || 'Unable to convert location to what3words.');
+        }
+      } catch (error) {
+        console.error('Location error:', error);
+
+        if (error.code === 1) {
+          // Permission denied
+          showWhat3WordsUnavailable('Location permission denied. Please enable location access in your browser settings.');
+        } else if (error.code === 2) {
+          // Position unavailable
+          showWhat3WordsUnavailable('Location unavailable. Please check your device settings.');
+        } else if (error.code === 3) {
+          // Timeout
+          showWhat3WordsUnavailable('Location request timed out. Please try again.');
+        } else if (error.message && error.message.includes('fetch')) {
+          // API error
+          showWhat3WordsUnavailable('Location service temporarily unavailable.');
+        } else {
+          showWhat3WordsUnavailable('Unable to get your location.');
+        }
+      }
+    });
+
+    function showWhat3WordsUnavailable(message) {
+      // Hide the what3words input group
+      what3wordsGroup.style.display = 'none';
+
+      // Show unavailable message
+      what3wordsUnavailable.style.display = 'block';
+
+      // Update the message if provided
+      if (message) {
+        const messageP = what3wordsUnavailable.querySelector('p:last-child');
+        messageP.textContent = message;
+      }
+    }
+
+    // Capture Map Screenshot
+    const captureMapBtn = document.getElementById('capture-map-btn');
+    const mapScreenshotStatus = document.getElementById('map-screenshot-status');
+    let mapScreenshotBlob = null;
+
+    if (captureMapBtn) {
+      captureMapBtn.addEventListener('click', async function() {
+        try {
+          // Disable button and show loading
+          captureMapBtn.disabled = true;
+          captureMapBtn.innerHTML = '<span style="font-size: 1.2rem;">⏳</span><span>Capturing...</span>';
+
+          mapScreenshotStatus.textContent = 'Capturing map screenshot...';
+          mapScreenshotStatus.style.display = 'block';
+          mapScreenshotStatus.style.color = 'var(--accent)';
+
+          // Wait for map tiles to fully load
+          await new Promise(resolve => setTimeout(resolve, 500));
+
+          // Capture the map div using html2canvas
+          const mapElement = document.getElementById('map-screenshot-target');
+          const canvas = await html2canvas(mapElement, {
+            useCORS: true,
+            allowTaint: true,
+            backgroundColor: '#ffffff',
+            scale: 2 // Higher quality
+          });
+
+          // Convert canvas to blob
+          mapScreenshotBlob = await new Promise(resolve => {
+            canvas.toBlob(resolve, 'image/png', 0.95);
+          });
+
+          console.log('✅ Map screenshot captured:', {
+            size: mapScreenshotBlob.size,
+            type: mapScreenshotBlob.type
+          });
+
+          // Upload immediately to Supabase temp storage
+          mapScreenshotStatus.textContent = 'Uploading screenshot...';
+          mapScreenshotStatus.style.color = 'var(--accent)';
+
+          const formData = new FormData();
+          formData.append('file', mapScreenshotBlob, `map-screenshot-${Date.now()}.png`);
+          formData.append('field_name', 'map_screenshot');
+          formData.append('temp_session_id', localStorage.getItem('temp_session_id') || crypto.randomUUID());
+
+          const uploadResponse = await fetch('/api/images/temp-upload', {
+            method: 'POST',
+            body: formData,
+            credentials: 'include'
+          });
+
+          if (!uploadResponse.ok) {
+            throw new Error(`Upload failed: ${uploadResponse.status} ${uploadResponse.statusText}`);
+          }
+
+          const uploadResult = await uploadResponse.json();
+          console.log('✅ Screenshot uploaded to Supabase:', uploadResult);
+
+          // Success message
+          mapScreenshotStatus.innerHTML = '✅ Map screenshot saved to Supabase! <span style="font-weight: 600;">(Uploaded)</span>';
+          mapScreenshotStatus.style.color = 'var(--success)';
+
+          // Update button
+          captureMapBtn.disabled = false;
+          captureMapBtn.innerHTML = '<span style="font-size: 1.2rem;">✓</span><span>Screenshot Uploaded</span>';
+          captureMapBtn.style.background = 'var(--success)';
+
+          // Hide success message after 5 seconds
+          setTimeout(() => {
+            mapScreenshotStatus.style.display = 'none';
+          }, 5000);
+
+        } catch (error) {
+          console.error('Screenshot capture/upload error:', error);
+
+          // Provide specific error message
+          let errorMessage = '❌ Failed to save screenshot. ';
+          if (!navigator.onLine) {
+            errorMessage += 'Please check your internet connection.';
+          } else if (error.message.includes('Failed to fetch')) {
+            errorMessage += 'Network error. Please check your connection and try again.';
+          } else if (error.message.includes('413')) {
+            errorMessage += 'Screenshot file is too large.';
+          } else {
+            errorMessage += 'Please try again or contact support if the problem persists.';
+          }
+
+          mapScreenshotStatus.textContent = errorMessage;
+          mapScreenshotStatus.style.color = 'var(--danger)';
+
+          // Reset button
+          captureMapBtn.disabled = false;
+          captureMapBtn.innerHTML = '<span style="font-size: 1.2rem;">📸</span><span>Capture Map Screenshot</span>';
+          captureMapBtn.style.background = '';
+        }
+      });
+    }
+
+    // Save and proceed
+    nextBtn.addEventListener('click', function() {
+      if (!validateForm()) {
+        return;
+      }
+
+      // Get selected special conditions
+      const selectedConditions = Array.from(document.querySelectorAll('input[name="specialconditions"]:checked'))
+        .map(cb => cb.value);
+
+      // Get selected visibility factors
+      const selectedVisibilityFactors = Array.from(document.querySelectorAll('input[name="visibilityfactors"]:checked'))
+        .map(cb => cb.value);
+
+      // Get traffic light status if applicable
+      const trafficLightStatusValue = document.getElementById('trafficlightstatus').value;
+      const trafficLightStatus = trafficLightStatusValue || null;
+
+      // Check if map screenshot was captured and uploaded
+      const mapScreenshotCaptured = (captureMapBtn &&
+        captureMapBtn.innerHTML.includes('Screenshot Uploaded'));
+
+      // Save data to session storage
+      const pageData = {
+        location: document.getElementById('location').value.trim(),
+        what3words: document.getElementById('what3words').value.trim(),
+        nearest_landmark: document.getElementById('nearestlandmark').value.trim(),
+        junction_type: document.getElementById('junctiontype').value,
+        junction_control: document.getElementById('junctioncontrol').value,
+        traffic_light_status: trafficLightStatus,
+        user_manoeuvre: document.getElementById('usermanoeuvre').value,
+        visibility_factors: selectedVisibilityFactors,
+        special_conditions: selectedConditions,
+        additional_hazards: document.getElementById('additionalhazards').value.trim(),
+        session_id: localStorage.getItem('temp_session_id'),  // For photo finalization
+        map_screenshot_captured: mapScreenshotCaptured,        // Flag for backend
+        completed_at: new Date().toISOString()
+      };
+
+      sessionStorage.setItem('incident_page4', JSON.stringify(pageData));
+
+      console.log('✅ Page 4 saved:', pageData);
+
+      // Navigate to page 4a (location photos)
+      window.location.href = '/incident-form-page4a-location-photos.html';
+    });
+
+    // Back button
+    backBtn.addEventListener('click', function() {
+      window.location.href = '/incident-form-page3.html';
+    });
+
+    // Restore saved data if returning to this page
+    window.addEventListener('DOMContentLoaded', function() {
+      const saved = sessionStorage.getItem('incident_page4');
+      if (saved) {
+        try {
+          const data = JSON.parse(saved);
+
+          // Restore location
+          if (data.location) document.getElementById('location').value = data.location;
+          if (data.what3words) document.getElementById('what3words').value = data.what3words;
+          if (data.nearest_landmark) document.getElementById('nearestlandmark').value = data.nearest_landmark;
+
+          // Restore junction type and trigger progressive disclosure
+          if (data.junction_type) {
+            document.getElementById('junctiontype').value = data.junction_type;
+            // Trigger change event to show/hide junction details
+            junctionType.dispatchEvent(new Event('change'));
+          }
+
+          // Restore junction control and trigger progressive disclosure
+          if (data.junction_control) {
+            document.getElementById('junctioncontrol').value = data.junction_control;
+            // Trigger change event to show/hide traffic light status
+            junctionControl.dispatchEvent(new Event('change'));
+          }
+
+          // Restore traffic light status
+          if (data.traffic_light_status) {
+            document.getElementById('trafficlightstatus').value = data.traffic_light_status;
+          }
+
+          // Restore user manoeuvre
+          if (data.user_manoeuvre) {
+            document.getElementById('usermanoeuvre').value = data.user_manoeuvre;
+          }
+
+          // Restore visibility factors
+          if (data.visibility_factors && Array.isArray(data.visibility_factors)) {
+            data.visibility_factors.forEach(factor => {
+              const checkbox = document.querySelector(`input[name="visibilityfactors"][value="${factor}"]`);
+              if (checkbox) checkbox.checked = true;
+            });
+          }
+
+          // Restore special conditions
+          if (data.special_conditions && Array.isArray(data.special_conditions)) {
+            data.special_conditions.forEach(condition => {
+              const checkbox = document.querySelector(`input[name="specialconditions"][value="${condition}"]`);
+              if (checkbox) checkbox.checked = true;
+            });
+          }
+
+          // Restore additional hazards text
+          if (data.additional_hazards) {
+            document.getElementById('additionalhazards').value = data.additional_hazards;
+          }
+
+          console.log('✅ Page 4 data restored');
+        } catch (e) {
+          console.error('Error restoring page 4 data:', e);
+        }
+      }
+    });
+
+    console.log('📋 Incident Form - Page 4: Accident Location loaded');
+  </script>
+
+  <!-- Leaflet JS for interactive map -->
+  <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+</body>
+</html>

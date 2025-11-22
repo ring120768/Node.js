@@ -27,9 +27,12 @@ const userDocumentsRoutes = require('./userDocuments.routes'); // NEW: User docu
 const imageProxyRoutes = require('./imageProxy.routes'); // NEW: Image proxy for authenticated access
 const witnessesRoutes = require('./witnesses.routes'); // NEW: Witnesses management
 const vehiclesRoutes = require('./vehicles.routes'); // NEW: Other vehicles with DVLA integration
+const safetyRoutes = require('./safety.routes'); // NEW: Safety check status management
+const dvlaRoutes = require('./dvla.routes'); // NEW: DVLA vehicle lookup (frontend-friendly)
 const signupRoutes = require('./signup.routes'); // NEW: User signup form submission
 const imageUploadRoutes = require('./imageUpload.routes'); // NEW: Post-signup image upload
 const tempImageUploadRoutes = require('./tempImageUpload.routes'); // NEW: Immediate temp upload for mobile
+const incidentFormRoutes = require('./incidentForm.routes'); // NEW: Multi-page incident form submission
 
 // GitHub webhooks are mounted in app.js via webhook.routes.js (not imported here)
 const locationRoutes = require('./location.routes');
@@ -270,6 +273,7 @@ router.get('/system-status', async (req, res) => {
                 <li><code>/api/auth/*</code> - Authentication</li>
                 <li><code>/api/signup/*</code> - User signup (custom form)</li>
                 <li><code>/api/profile/*</code> - User profile management</li>
+                <li><code>/api/safety-status/*</code> - Safety check assessment</li>
                 <li><code>/api/transcription/*</code> - Audio transcription</li>
                 <li><code>/api/gdpr/*</code> - GDPR compliance</li>
                 <li><code>/api/emergency/*</code> - Emergency contacts</li>
@@ -277,20 +281,20 @@ router.get('/system-status', async (req, res) => {
                 <li><code>/api/location/*</code> - Location services</li>
                 <li><code>/api/witnesses/*</code> - Witness management</li>
                 <li><code>/api/other-vehicles/*</code> - Other vehicles (DVLA)</li>
+                <li><code>/api/dvla/*</code> - DVLA vehicle lookup (GET)</li>
                 <li><code>/api/images/*</code> - Post-signup image upload</li>
                 <li><code>/api/debug/*</code> - Debug tools</li>
             </ul>
         </div>
 
         <div class="section">
-            <h3>🎣 Webhooks (✅ All Confirmed with Zapier/Typeform)</h3>
+            <h3>🎣 Webhooks</h3>
             <ul>
-                <li><code>/webhooks/user_signup</code> - ✅ User profiles</li>
-                <li><code>/webhooks/incident_reports</code> - ✅ Incident reports</li>
-                <li><code>/webhooks/demo</code> - ✅ Demo submissions</li>
-                <li><code>/webhooks/test</code> - ✅ Test endpoint</li>
-                <li><code>/webhooks/health</code> - ✅ Health check</li>
+                <li><code>/webhooks/github</code> - ✅ GitHub repository events</li>
             </ul>
+            <p style="margin-top: 10px; font-size: 12px; color: #666;">
+                Note: Typeform webhooks removed - application now uses in-house HTML forms
+            </p>
         </div>
 
         <div class="links">
@@ -330,7 +334,10 @@ router.use('/api/images', tempImageUploadRoutes); // NEW: Immediate temp upload 
 router.use('/api/images', imageUploadRoutes); // NEW: Post-signup image upload endpoint
 router.use('/api/witnesses', witnessesRoutes); // NEW: Witnesses management
 router.use('/api/other-vehicles', vehiclesRoutes); // NEW: Other vehicles with DVLA integration
+router.use('/api/dvla', dvlaRoutes); // NEW: DVLA vehicle lookup (frontend-friendly GET endpoints)
+router.use('/api', safetyRoutes); // NEW: Safety check status management (/api/safety-status/*)
 router.use('/api/signup', signupRoutes); // NEW: User signup form submission (custom HTML form)
+router.use('/api/incident-form', incidentFormRoutes); // NEW: Multi-page incident form submission (Pages 1-12)
 // Note: Webhook routes are mounted directly in app.js for raw body handling
 // GitHub webhooks are mounted in app.js via webhook.routes.js (not here)
 router.use('/api/location', locationRoutes);
@@ -428,23 +435,9 @@ router.get('/download-pdf/:userId', (req, res) => {
 
 /**
  * Legacy Webhook Endpoints
- * Redirect to new /webhooks/typeform endpoint
+ * Note: Typeform webhook redirects removed - application now uses in-house HTML forms
+ * All form submissions now go through /api/incident-form/* endpoints
  */
-router.post('/api/webhooks/signup', (req, res) => {
-  res.redirect(307, '/webhooks/typeform');
-});
-
-router.post('/api/webhooks/incident-report', (req, res) => {
-  res.redirect(307, '/webhooks/typeform');
-});
-
-router.post('/webhook/signup', (req, res) => {
-  res.redirect(307, '/webhooks/typeform');
-});
-
-router.post('/webhook/incident-report', (req, res) => {
-  res.redirect(307, '/webhooks/typeform');
-});
 
 /**
  * Legacy Debug Endpoints

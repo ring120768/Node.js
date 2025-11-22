@@ -38,7 +38,7 @@ const supabase = createClient(
   console.log('\n📊 Database (user_signup) Record:');
   const { data: dbData, error: dbError } = await supabase
     .from('user_signup')
-    .select('create_user_id, email, name, surname, first_name, last_name, created_at')
+    .select('create_user_id, email, name, surname, created_at')
     .eq('email', 'ian.ring@sky.com')
     .single();
 
@@ -48,7 +48,7 @@ const supabase = createClient(
   } else {
     console.log('✅ EXISTS in user_signup table');
     console.log('   create_user_id:', dbData.create_user_id);
-    console.log('   Name:', dbData.name || dbData.first_name, dbData.surname || dbData.last_name);
+    console.log('   Name:', dbData.name, dbData.surname);
     console.log('   Email:', dbData.email);
     console.log('   Created:', new Date(dbData.created_at).toLocaleString('en-GB'));
   }

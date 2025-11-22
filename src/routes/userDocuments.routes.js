@@ -8,16 +8,17 @@
  * - GET    /api/user-documents/:id          - Get specific document
  * - GET    /api/user-documents/:id/download - Download document
  * - POST   /api/user-documents/:id/refresh-url - Refresh signed URL
+ * - PATCH  /api/user-documents/:id          - Update document metadata
  * - DELETE /api/user-documents/:id          - Delete document (soft delete)
  */
 
 const express = require('express');
 const router = express.Router();
 const userDocumentsController = require('../controllers/userDocuments.controller');
+const { apiAuth } = require('../middleware/pageAuth');
 
-// Note: In production, add proper authentication middleware
-// const { requireAuth } = require('../middleware/auth');
-// router.use(requireAuth);
+// Require authentication for all user-documents endpoints (supports cookie-based auth)
+router.use(apiAuth);
 
 /**
  * GET /api/user-documents
@@ -141,6 +142,32 @@ router.get('/:id/download', userDocumentsController.downloadDocument);
  * }
  */
 router.post('/:id/refresh-url', userDocumentsController.refreshSignedUrl);
+
+/**
+ * PATCH /api/user-documents/:id
+ * Update document metadata (type, category, notes)
+ *
+ * Params:
+ * - id: Document UUID
+ *
+ * Body:
+ * {
+ *   "document_type": "driving_license",  // Optional
+ *   "document_category": "identification", // Optional
+ *   "notes": "Updated notes"  // Optional
+ * }
+ *
+ * Query params:
+ * - user_id: User ID (for testing without auth)
+ *
+ * Response:
+ * {
+ *   "success": true,
+ *   "message": "Document updated successfully",
+ *   "data": { ... }
+ * }
+ */
+router.patch('/:id', userDocumentsController.updateDocument);
 
 /**
  * DELETE /api/user-documents/:id

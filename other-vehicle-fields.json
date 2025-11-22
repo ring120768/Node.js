@@ -1,0 +1,112 @@
+[
+  {
+    "index": 1,
+    "name": "other_driver_mobile_1",
+    "type": "PDFTextField"
+  },
+  {
+    "index": 2,
+    "name": "other_driver_name_1",
+    "type": "PDFTextField"
+  },
+  {
+    "index": 3,
+    "name": "other_driver_email_1",
+    "type": "PDFTextField"
+  },
+  {
+    "index": 4,
+    "name": "other_driver_license_number_1",
+    "type": "PDFTextField"
+  },
+  {
+    "index": 5,
+    "name": "other_vehicle_make_1",
+    "type": "PDFTextField"
+  },
+  {
+    "index": 6,
+    "name": "other_vehicle_license_plate_1",
+    "type": "PDFTextField"
+  },
+  {
+    "index": 7,
+    "name": "other_vehicle_model_1",
+    "type": "PDFTextField"
+  },
+  {
+    "index": 8,
+    "name": "other_vehicle_year_1",
+    "type": "PDFTextField"
+  },
+  {
+    "index": 9,
+    "name": "other_vehicle_colour_1",
+    "type": "PDFTextField"
+  },
+  {
+    "index": 10,
+    "name": "other_vehicle_fuel_type_1",
+    "type": "PDFTextField"
+  },
+  {
+    "index": 11,
+    "name": "other_vehicle_tax_status_1",
+    "type": "PDFTextField"
+  },
+  {
+    "index": 12,
+    "name": "other_vehicle_mot_status_1",
+    "type": "PDFTextField"
+  },
+  {
+    "index": 13,
+    "name": "other_vehicle_mot_expiry_1",
+    "type": "PDFTextField"
+  },
+  {
+    "index": 14,
+    "name": "other_vehicle_tax_renewal_date_1",
+    "type": "PDFTextField"
+  },
+  {
+    "index": 15,
+    "name": "other_vehicle_insurance_1",
+    "type": "PDFTextField"
+  },
+  {
+    "index": 16,
+    "name": "other_vehicle_policy_number_1",
+    "type": "PDFTextField"
+  },
+  {
+    "index": 17,
+    "name": "other_vehicle_policy_holder_1",
+    "type": "PDFTextField"
+  },
+  {
+    "index": 18,
+    "name": "other_vehicle_policy_cover_1",
+    "type": "PDFTextField"
+  },
+  {
+    "index": 19,
+    "name": "other_vehicle_insurance_status_1",
+    "type": "PDFTextField"
+  },
+  {
+    "index": 20,
+    "name": "other_vehicle_maked_for_export_1",
+    "type": "PDFTextField"
+  },
+  {
+    "index": 21,
+    "name": "other_vehicle_no_visible_damage_1",
+    "type": "PDFCheckBox"
+  },
+  {
+    "index": 22,
+    "name": "other_vehicle_describe_damage_1",
+    "type": "PDFTextField"
+  }
+]

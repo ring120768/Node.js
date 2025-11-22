@@ -83,6 +83,7 @@ car-crash-lawyer-ai/
 │   │   ├── cors.js
 │   │   ├── errorHandler.js
 │   │   ├── gdpr.js
+│   │   ├── pageAuth.js         # ⭐ Server-side page authentication
 │   │   ├── rateLimit.js
 │   │   └── security.js
 │   ├── models/                 # Data models (if any)
@@ -222,6 +223,73 @@ gdprService.initialize(true);
 
 // Agent Service (background processing)
 agentService.start();
+```
+
+**Page Authentication (Security Wall):**
+
+Protected pages require authentication at the server level before HTML is served:
+
+```javascript
+// src/middleware/pageAuth.js
+async function pageAuth(req, res, next) {
+  // 1. Parse cookies from request header
+  const cookies = parseCookies(req.headers.cookie);
+
+  // 2. Extract session token (sb-access-token or sb-auth-token)
+  const token = cookies['sb-access-token'] || cookies['sb-auth-token'];
+
+  if (!token) {
+    return res.status(401).json({
+      error: 'Authentication required',
+      redirect: `/login.html?redirect=${encodeURIComponent(req.path)}`
+    });
+  }
+
+  // 3. Verify token with Supabase Auth API
+  const { data: { user }, error } = await supabase.auth.getUser(token);
+
+  if (error || !user) {
+    return res.status(401).json({
+      error: 'Invalid or expired session',
+      redirect: `/login.html?redirect=${encodeURIComponent(req.path)}`
+    });
+  }
+
+  // 4. Attach user and token to request
+  req.user = user;
+  req.sessionToken = token;
+  next();
+}
+```
+
+**Protected Routes (src/app.js):**
+```javascript
+// Dashboard (requires authentication)
+app.get('/dashboard.html', pageAuth, (req, res) => {
+  res.sendFile(path.join(__dirname, '../public/dashboard.html'));
+});
+
+// Transcription status (requires authentication)
+app.get('/transcription-status.html', pageAuth, (req, res) => {
+  res.sendFile(path.join(__dirname, '../public/transcription-status.html'));
+});
+
+// Incident report (requires authentication)
+app.get('/incident.html', pageAuth, (req, res) => {
+  res.sendFile(path.join(__dirname, '../public/incident.html'));
+});
+```
+
+**Why Server-Side Authentication:**
+- Cannot be bypassed by modifying JavaScript
+- Session verified before HTML is sent
+- Protects sensitive user data at the earliest point
+- Works even if JavaScript is disabled
+- Provides proper 401 responses for unauthorized access
+
+**Testing:**
+```bash
+node test-security-wall.js
 ```
 
 ---
@@ -1368,6 +1436,6 @@ Car Crash Lawyer AI is a well-architected, production-ready application with:
 
 ---
 
-*Last Updated: 2025-10-17*
-*Version: 2.0.1*
+*Last Updated: 2025-10-28*
+*Version: 2.1.0*
 *Author: Car Crash Lawyer AI Team*

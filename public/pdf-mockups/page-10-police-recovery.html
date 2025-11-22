@@ -1,0 +1,97 @@
+<!DOCTYPE html>
+<html lang="en-GB">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Page 10: Police & Recovery - PDF Mockup</title>
+  <link rel="stylesheet" href="pdf-styles.css">
+</head>
+<body>
+  <!-- Navigation -->
+  <div class="navigation no-print">
+    <h2>PDF Mockup Preview</h2>
+    <a href="index.html">← All Pages</a>
+    <a href="page-09-other-vehicle.html">← Page 9</a>
+    <a href="page-10-police-recovery.html" class="current">Page 10</a>
+    <a href="page-11-witnesses.html">Page 11 →</a>
+  </div>
+
+  <!-- PDF Page -->
+  <div class="pdf-page">
+    <!-- Header -->
+    <div class="pdf-header">
+      <img src="../images/logo.png" alt="Logo" class="header-logo">
+      <div class="header-title">
+        <h1>CAR CRASH LAWYER AI</h1>
+        <p>Incident Report</p>
+      </div>
+      <div class="header-page-number">Page 10 of 17</div>
+    </div>
+
+    <!-- Content -->
+    <div class="pdf-content">
+      <!-- Section 1: Police Attendance -->
+      <section class="section">
+        <h2 class="section-title">Police Attendance</h2>
+
+        <div class="field-group">
+          <label class="field-label required">Did police attend the scene?</label>
+          <div class="radio-group">
+            <div class="radio-item">
+              <div class="radio-circle"></div>
+              <span class="radio-label">Yes</span>
+            </div>
+            <div class="radio-item">
+              <div class="radio-circle"></div>
+              <span class="radio-label">No</span>
+            </div>
+            <div class="radio-item">
+              <div class="radio-circle"></div>
+              <span class="radio-label">Unknown</span>
+            </div>
+          </div>
+          <span class="field-help">police_attended</span>
+        </div>
+      </section>
+
+      <!-- Section 2: Vehicle Recovery -->
+      <section class="section">
+        <h2 class="section-title">Vehicle Recovery Information</h2>
+
+        <div class="field-group">
+          <label class="field-label">Recovery Company Name</label>
+          <input type="text" class="field-input" placeholder="e.g. AA, RAC, Green Flag" value="">
+          <span class="field-help">recovery_company</span>
+        </div>
+
+        <div class="field-group">
+          <label class="field-label">Recovery Company Phone</label>
+          <input type="text" class="field-input medium" placeholder="+44 800 0000000" value="">
+          <span class="field-help">recovery_phone</span>
+        </div>
+
+        <div class="field-group">
+          <label class="field-label">Where was your vehicle recovered to?</label>
+          <input type="text" class="field-input" placeholder="e.g. Home address, garage, storage facility" value="">
+          <span class="field-help">recovery_location</span>
+        </div>
+
+        <div class="field-group">
+          <label class="field-label">Additional Recovery Notes</label>
+          <textarea class="field-textarea" placeholder="Any additional details about vehicle recovery"></textarea>
+          <span class="field-help">recovery_notes</span>
+        </div>
+      </section>
+    </div>
+
+    <!-- Footer -->
+    <div class="pdf-footer">
+      <p class="footer-text">
+        Confidential Legal Document - Car Crash Lawyer AI<br>
+        For legal purposes only. Do not distribute without authorization.
+      </p>
+      <img src="../images/car-crash-lawyer-ai-450.webp" alt="Car Crash Lawyer AI" class="footer-logo">
+    </div>
+  </div>
+</body>
+</html>

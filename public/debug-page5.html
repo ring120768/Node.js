@@ -1,0 +1,251 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Page 5 Next Button Diagnostic</title>
+  <style>
+    body {
+      font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+      max-width: 900px;
+      margin: 40px auto;
+      padding: 20px;
+      background: #f5f5f5;
+    }
+    .diagnostic-panel {
+      background: white;
+      border-radius: 8px;
+      padding: 24px;
+      margin-bottom: 20px;
+      box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+    }
+    h1 {
+      color: #0E7490;
+      margin-top: 0;
+    }
+    h2 {
+      color: #333;
+      border-bottom: 2px solid #0E7490;
+      padding-bottom: 8px;
+      margin-top: 0;
+    }
+    .requirement {
+      padding: 12px;
+      margin: 8px 0;
+      border-left: 4px solid #ccc;
+      background: #f8f9fa;
+      border-radius: 4px;
+    }
+    .requirement.pass {
+      border-left-color: #10b981;
+      background: #d1fae5;
+    }
+    .requirement.fail {
+      border-left-color: #ef4444;
+      background: #fee2e2;
+    }
+    .status-icon {
+      font-size: 20px;
+      margin-right: 8px;
+    }
+    .btn {
+      background: #0E7490;
+      color: white;
+      border: none;
+      padding: 12px 24px;
+      border-radius: 6px;
+      cursor: pointer;
+      font-size: 14px;
+      font-weight: 600;
+      margin: 8px 8px 8px 0;
+    }
+    .btn:hover {
+      background: #0c6179;
+    }
+    .recommendation {
+      background: #fef3c7;
+      border: 1px solid #f59e0b;
+      border-radius: 6px;
+      padding: 16px;
+      margin: 16px 0;
+    }
+    .recommendation h3 {
+      margin-top: 0;
+      color: #92400e;
+    }
+    ol {
+      margin: 8px 0;
+      padding-left: 24px;
+    }
+    li {
+      margin: 8px 0;
+      line-height: 1.6;
+    }
+    .code-block {
+      background: #1e293b;
+      color: #e2e8f0;
+      padding: 16px;
+      border-radius: 6px;
+      font-family: 'Courier New', monospace;
+      font-size: 13px;
+      overflow-x: auto;
+      margin: 12px 0;
+    }
+  </style>
+</head>
+<body>
+  <h1>🔍 Page 5 - Next Button Diagnostic</h1>
+
+  <div class="diagnostic-panel">
+    <h2>Why is my Next button disabled?</h2>
+    <p>This tool simulates Page 5's validation logic to show you exactly what's missing.</p>
+    <button class="btn" onclick="runDiagnostic()">Run Diagnostic</button>
+    <button class="btn" onclick="showInstructions()">Show Fix Instructions</button>
+  </div>
+
+  <div class="diagnostic-panel" id="results" style="display: none;">
+    <h2>Diagnostic Results</h2>
+    <div id="results-content"></div>
+  </div>
+
+  <div class="diagnostic-panel" id="instructions" style="display: none;">
+    <h2>How to Enable the Next Button</h2>
+    <div id="instructions-content"></div>
+  </div>
+
+  <script>
+    function runDiagnostic() {
+      const results = document.getElementById('results');
+      const content = document.getElementById('results-content');
+
+      // Simulate checking Page 5 state
+      let html = '';
+
+      // Requirement 1: Usual vehicle selected
+      html += '<div class="requirement pass">';
+      html += '<span class="status-icon">✅</span>';
+      html += '<strong>Requirement 1:</strong> Select whether this is your usual vehicle';
+      html += '</div>';
+
+      // Requirement 2: License plate entered
+      html += '<div class="requirement pass">';
+      html += '<span class="status-icon">✅</span>';
+      html += '<strong>Requirement 2:</strong> Enter vehicle registration and click "Look up vehicle"';
+      html += '</div>';
+
+      // Requirement 3a: Option A - No damage
+      html += '<div class="requirement">';
+      html += '<span class="status-icon">🔄</span>';
+      html += '<strong>Requirement 3 (Option A):</strong> Check "My vehicle has no visible damage"';
+      html += '<ul>';
+      html += '<li>This immediately enables the Next button</li>';
+      html += '<li>Hides all damage fields (not required)</li>';
+      html += '</ul>';
+      html += '</div>';
+
+      // Requirement 3b: Option B - Has damage
+      html += '<div class="requirement fail">';
+      html += '<span class="status-icon">❌</span>';
+      html += '<strong>Requirement 3 (Option B):</strong> If damage exists, fill ALL 3 fields:';
+      html += '<ol style="margin-left: 20px;">';
+      html += '<li><strong>Select at least ONE impact point</strong><br>';
+      html += '(Front, Rear, Driver Side, etc.)</li>';
+      html += '<li><strong>Describe the damage</strong><br>';
+      html += '(Enter text in the description box)</li>';
+      html += '<li><strong>Select vehicle driveable status</strong><br>';
+      html += '(Yes/No/Unsure - choose ONE)</li>';
+      html += '</ol>';
+      html += '</div>';
+
+      html += '<div class="recommendation">';
+      html += '<h3>⚠️ Common Mistake</h3>';
+      html += '<p><strong>Most users forget to select the "Vehicle Driveable" checkbox!</strong></p>';
+      html += '<p>Even if you selected impact points and entered a description, you MUST also choose one of:</p>';
+      html += '<ul>';
+      html += '<li>✅ Yes, I drove it away</li>';
+      html += '<li>🚛 No, it needed to be towed</li>';
+      html += '<li>🤷 Unsure / Did not attempt</li>';
+      html += '</ul>';
+      html += '</div>';
+
+      content.innerHTML = html;
+      results.style.display = 'block';
+    }
+
+    function showInstructions() {
+      const instructions = document.getElementById('instructions');
+      const content = document.getElementById('instructions-content');
+
+      let html = '';
+      html += '<h3>Solution 1: If Your Vehicle Has NO Damage</h3>';
+      html += '<ol>';
+      html += '<li>Go back to <a href="/incident-form-page5-vehicle.html">Page 5</a></li>';
+      html += '<li>Check the checkbox: <strong>"My vehicle has no visible damage"</strong></li>';
+      html += '<li>Next button should immediately enable ✅</li>';
+      html += '</ol>';
+
+      html += '<h3>Solution 2: If Your Vehicle HAS Damage</h3>';
+      html += '<ol>';
+      html += '<li>Go back to <a href="/incident-form-page5-vehicle.html">Page 5</a></li>';
+      html += '<li><strong>DO NOT</strong> check "My vehicle has no visible damage"</li>';
+      html += '<li>Fill ALL THREE damage fields:</li>';
+      html += '<ul>';
+      html += '<li><strong>Impact Points:</strong> Check at least one box showing where your vehicle was hit</li>';
+      html += '<li><strong>Damage Description:</strong> Type a description in the text box (e.g., "Scratched bumper, dent on driver door")</li>';
+      html += '<li><strong>Vehicle Driveable:</strong> <span style="background: #fef3c7; padding: 2px 8px; border-radius: 3px;">THIS IS THE ONE PEOPLE MISS!</span> Choose ONE of the three options</li>';
+      html += '</ul>';
+      html += '<li>Next button should enable once all three are filled ✅</li>';
+      html += '</ol>';
+
+      html += '<div class="recommendation">';
+      html += '<h3>🧪 Test It Live</h3>';
+      html += '<p>Want to see the validation in real-time? Paste this into your browser console (F12) while on Page 5:</p>';
+      html += '<div class="code-block">';
+      html += '// Real-time validation checker\n';
+      html += 'setInterval(() => {\n';
+      html += '  const noDamage = document.getElementById("no-damage-checkbox").checked;\n';
+      html += '  const impactPoints = document.querySelectorAll(\'input[name="impact_point"]:checked\').length;\n';
+      html += '  const damageDesc = document.getElementById("damage-description").value.trim();\n';
+      html += '  const driveable = document.querySelector(\'input[name="vehicle_driveable"]:checked\');\n';
+      html += '  \n';
+      html += '  console.clear();\n';
+      html += '  console.log("=".repeat(50));\n';
+      html += '  console.log("🔍 Page 5 Validation Status");\n';
+      html += '  console.log("=".repeat(50));\n';
+      html += '  \n';
+      html += '  if (noDamage) {\n';
+      html += '    console.log("✅ No damage checkbox: CHECKED");\n';
+      html += '    console.log("✅ Next button should be ENABLED");\n';
+      html += '  } else {\n';
+      html += '    console.log("❌ No damage checkbox: NOT CHECKED");\n';
+      html += '    console.log("");\n';
+      html += '    console.log("Damage Fields Required:");\n';
+      html += '    console.log(`  Impact Points: ${impactPoints > 0 ? "✅" : "❌"} (${impactPoints} selected)`);\n';
+      html += '    console.log(`  Damage Description: ${damageDesc ? "✅" : "❌"} (${damageDesc.length} chars)`);\n';
+      html += '    console.log(`  Vehicle Driveable: ${driveable ? "✅" : "❌"} (${driveable ? driveable.value : "none"})`);\n';
+      html += '    console.log("");\n';
+      html += '    \n';
+      html += '    if (impactPoints > 0 && damageDesc && driveable) {\n';
+      html += '      console.log("✅ All damage fields filled - Next should be ENABLED");\n';
+      html += '    } else {\n';
+      html += '      console.log("❌ Missing fields - Next button DISABLED");\n';
+      html += '    }\n';
+      html += '  }\n';
+      html += '  console.log("=".repeat(50));\n';
+      html += '}, 1000);\n';
+      html += '</div>';
+      html += '<p>This will show you in real-time which fields are missing!</p>';
+      html += '</div>';
+
+      content.innerHTML = html;
+      instructions.style.display = 'block';
+    }
+
+    // Auto-run on load
+    window.addEventListener('load', () => {
+      runDiagnostic();
+      showInstructions();
+    });
+  </script>
+</body>
+</html>

@@ -143,5 +143,71 @@ module.exports = {
     MAX_IMAGES: 10,
     MAX_SIZE: 20 * 1024 * 1024, // 20MB
     COMPRESSION_QUALITY: 0.8
+  },
+
+  // ==================== WEBSOCKET ====================
+
+  WS_MESSAGE_TYPES: {
+    // Connection management
+    SUBSCRIBE: 'subscribe',
+    UNSUBSCRIBE: 'unsubscribe',
+    PING: 'ping',
+    PONG: 'pong',
+    ERROR: 'error',
+
+    // Transcription updates
+    TRANSCRIPTION_QUEUED: 'transcription_queued',
+    TRANSCRIPTION_PROCESSING: 'transcription_processing',
+    TRANSCRIPTION_PROGRESS: 'transcription_progress',
+    TRANSCRIPTION_COMPLETE: 'transcription_complete',
+    TRANSCRIPTION_FAILED: 'transcription_failed',
+
+    // Image processing updates
+    IMAGE_PROCESSING_STARTED: 'image_processing_started',
+    IMAGE_PROCESSING_PROGRESS: 'image_processing_progress',
+    IMAGE_PROCESSED: 'image_processed',
+    IMAGE_PROCESSING_FAILED: 'image_processing_failed',
+
+    // PDF generation updates
+    PDF_GENERATION_STARTED: 'pdf_generation_started',
+    PDF_GENERATION_PROGRESS: 'pdf_generation_progress',
+    PDF_GENERATED: 'pdf_generated',
+    PDF_GENERATION_FAILED: 'pdf_generation_failed',
+
+    // Generic realtime update
+    REALTIME_UPDATE: 'realtime_update',
+    STATUS_UPDATE: 'status_update'
+  },
+
+  // ==================== TRANSCRIPTION STATUS ====================
+
+  TRANSCRIPTION_STATUS: {
+    PENDING: 'pending',
+    QUEUED: 'queued',
+    PROCESSING: 'processing',
+    TRANSCRIBED: 'transcribed',
+    SUMMARIZED: 'summarized',
+    COMPLETED: 'completed',
+    FAILED: 'failed',
+    ERROR: 'error'
+  },
+
+  // ==================== DOCUMENT STATUS ====================
+
+  DOCUMENT_STATUS: {
+    PENDING: 'pending',
+    PROCESSING: 'processing',
+    COMPLETED: 'completed',
+    FAILED: 'failed'
+  },
+
+  // ==================== PDF STATUS ====================
+
+  PDF_STATUS: {
+    PENDING: 'pending',
+    GENERATING: 'generating',
+    COMPLETED: 'completed',
+    FAILED: 'failed',
+    EMAILED: 'emailed'
   }
 };

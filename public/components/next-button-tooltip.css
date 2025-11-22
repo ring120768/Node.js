@@ -1,0 +1,148 @@
+/**
+ * Next Button Tooltip Component
+ * Shows users what fields are missing when hovering over Next button
+ * Pro tip: Helps users complete forms without frustrating validation errors
+ */
+
+/* Tooltip Container */
+.next-btn-wrapper {
+  position: relative;
+  flex: 1;
+}
+
+/* Tooltip */
+.next-btn-tooltip {
+  position: absolute;
+  bottom: calc(100% + 12px);
+  right: 0;
+  background: white;
+  border: 2px solid var(--border);
+  border-radius: 12px;
+  padding: 16px;
+  min-width: 280px;
+  max-width: 400px;
+  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.15);
+  opacity: 0;
+  visibility: hidden;
+  transform: translateY(8px);
+  transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+  z-index: 1000;
+  pointer-events: none;
+}
+
+/* Show tooltip on button hover */
+.next-btn-wrapper:hover .next-btn-tooltip {
+  opacity: 1;
+  visibility: visible;
+  transform: translateY(0);
+}
+
+/* Tooltip arrow */
+.next-btn-tooltip::after {
+  content: '';
+  position: absolute;
+  bottom: -10px;
+  right: 24px;
+  width: 0;
+  height: 0;
+  border-left: 10px solid transparent;
+  border-right: 10px solid transparent;
+  border-top: 10px solid var(--border);
+}
+
+.next-btn-tooltip::before {
+  content: '';
+  position: absolute;
+  bottom: -7px;
+  right: 26px;
+  width: 0;
+  height: 0;
+  border-left: 8px solid transparent;
+  border-right: 8px solid transparent;
+  border-top: 8px solid white;
+  z-index: 1;
+}
+
+/* Tooltip header */
+.tooltip-header {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin-bottom: 12px;
+  font-weight: 600;
+  font-size: 0.938rem;
+}
+
+.tooltip-header.complete {
+  color: var(--success);
+}
+
+.tooltip-header.incomplete {
+  color: var(--warning);
+}
+
+.tooltip-icon {
+  font-size: 1.25rem;
+}
+
+/* Missing fields list */
+.tooltip-content {
+  font-size: 0.875rem;
+  color: var(--text-dark);
+  line-height: 1.6;
+}
+
+.missing-fields-list {
+  margin: 8px 0 0 0;
+  padding-left: 20px;
+  color: var(--text-muted);
+}
+
+.missing-fields-list li {
+  margin-bottom: 6px;
+  position: relative;
+}
+
+.missing-fields-list li::marker {
+  color: var(--danger);
+}
+
+/* Success message */
+.tooltip-success {
+  color: var(--success);
+  font-weight: 500;
+}
+
+/* Mobile responsive */
+@media (max-width: 640px) {
+  .next-btn-tooltip {
+    right: 0;
+    left: 0;
+    min-width: auto;
+    max-width: none;
+    margin: 0 12px;
+  }
+
+  .next-btn-tooltip::after {
+    right: 50%;
+    transform: translateX(50%);
+  }
+
+  .next-btn-tooltip::before {
+    right: calc(50% - 2px);
+  }
+}
+
+/* Tooltip animation on content change */
+@keyframes pulse {
+  0%, 100% {
+    transform: scale(1);
+  }
+  50% {
+    transform: scale(1.05);
+  }
+}
+
+.tooltip-icon.pulse {
+  animation: pulse 0.3s ease-out;
+}

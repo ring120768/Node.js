@@ -1,0 +1,3 @@
+Page,Field_Name,Field_Type,Required,Description
+16,ai_model_used,String,No,AI model used for narrative generation (e.g. OpenAI GPT-4o)
+16,ai_narrative_text,Text,No,AI-generated chronological factual account (2000-2500 words)

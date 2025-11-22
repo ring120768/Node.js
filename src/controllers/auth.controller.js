@@ -12,6 +12,7 @@ const logger = require('../utils/logger');
 const config = require('../config');
 const gdprService = require('../services/gdprService');
 const { normalizeEmail } = require('../utils/emailNormalizer');
+const emailService = require('../../lib/emailService');
 
 // Import AuthService (uses ANON key for client operations)
 const AuthService = require('../../lib/services/authService');
@@ -165,6 +166,30 @@ async function signup(req, res) {
     }
 
     // ========================================
+    // SEND WELCOME EMAIL (non-blocking)
+    // ========================================
+    if (process.env.EMAIL_ENABLED === 'true') {
+      // Fire-and-forget: don't await, don't block signup response
+      emailService.sendSubscriptionWelcome(email, {
+        userName: fullName,
+        subscriptionStartDate: new Date(),
+        subscriptionEndDate: new Date(Date.now() + 365 * 24 * 60 * 60 * 1000) // 1 year
+      })
+        .then(result => {
+          if (result.success) {
+            logger.success('📧 Welcome email sent', { userId, messageId: result.messageId });
+          } else {
+            logger.warn('⚠️ Welcome email failed (non-critical)', { userId, error: result.error });
+          }
+        })
+        .catch(error => {
+          logger.warn('⚠️ Welcome email error (non-critical)', { userId, error: error.message });
+        });
+
+      logger.info('📧 Welcome email queued', { userId, email });
+    }
+
+    // ========================================
     // SET AUTHENTICATION COOKIES (both access and refresh)
     // ========================================
     const cookieMaxAge = 30 * 24 * 60 * 60 * 1000; // 30 days for new signups
@@ -174,6 +199,7 @@ async function signup(req, res) {
       httpOnly: true,
       secure: true, // Always true - Replit uses HTTPS
       sameSite: 'none', // Required for Replit subdomains
+      path: '/', // CRITICAL: Make cookie available site-wide for API endpoints
       maxAge: cookieMaxAge
     });
 
@@ -181,6 +207,7 @@ async function signup(req, res) {
       httpOnly: true,
       secure: true, // Always true - Replit uses HTTPS
       sameSite: 'none', // Required for Replit subdomains
+      path: '/', // CRITICAL: Make cookie available site-wide
       maxAge: cookieMaxAge
     });
 
@@ -255,6 +282,7 @@ async function login(req, res) {
       httpOnly: true,
       secure: true, // Always true - Replit uses HTTPS
       sameSite: 'none', // Required for Replit subdomains
+      path: '/', // CRITICAL: Make cookie available site-wide for API endpoints
       maxAge: cookieMaxAge
     });
 
@@ -263,13 +291,22 @@ async function login(req, res) {
       httpOnly: true,
       secure: true, // Always true - Replit uses HTTPS
       sameSite: 'none', // Required for Replit subdomains
+      path: '/', // CRITICAL: Make cookie available site-wide
       maxAge: cookieMaxAge // Same duration as access token cookie
     });
 
     logger.info('✅ Session cookies set', {
       rememberMe,
       durationDays: rememberMe ? 90 : 30,
-      hasRefreshToken: !!authResult.session.refresh_token
+      hasRefreshToken: !!authResult.session.refresh_token,
+      cookieSettings: {
+        httpOnly: true,
+        secure: true,
+        sameSite: 'none',
+        path: '/',
+        maxAge: cookieMaxAge
+      },
+      accessTokenLength: authResult.session.access_token.length
     });
 
     // Get user metadata from auth

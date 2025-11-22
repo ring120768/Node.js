@@ -51,7 +51,7 @@ async function testPdfWorkflow() {
 
   // Test 2: Check PDF template
   log('\nTest 2: Checking PDF template...', 'blue');
-  const templatePath = path.join(__dirname, 'pdf-templates/Car-Crash-Lawyer-AI-Incident-Report.pdf');
+  const templatePath = path.join(__dirname, 'pdf-templates/Car-Crash-Lawyer-AI-incident-report-main.pdf');
   
   if (fs.existsSync(templatePath)) {
     const stats = fs.statSync(templatePath);
@@ -59,7 +59,7 @@ async function testPdfWorkflow() {
     log(`✅ PDF template found (${sizeKB} KB)`, 'green');
   } else {
     log('❌ PDF template not found', 'red');
-    log('   Expected location: /pdf-templates/Car-Crash-Lawyer-AI-Incident-Report.pdf', 'yellow');
+    log('   Expected location: /pdf-templates/Car-Crash-Lawyer-AI-incident-report-main.pdf', 'yellow');
   }
 
   // Test 3: Check Adobe services

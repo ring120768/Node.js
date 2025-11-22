@@ -1,0 +1,8 @@
+Field_Number,Field_Name,HTML_Type,Input_Name,Supabase_Table,Supabase_Column,Data_Type,Required,Default_Value,Category,Generated_By_JS,Mapped_To_DB,Notes
+1,vehicle_damage_images,File Input (Multiple),image-input,user_documents,storage_path,TEXT,Yes (Min 1),NULL (Empty Array),Vehicle Damage Photos,No,✅ YES,"Array of 1-5 vehicle damage photos - Uploaded to temp storage immediately, moved to permanent on form submission"
+2,vehicle_damage_path_1,N/A (Derived),N/A,user_documents,storage_path,TEXT,Conditional,NULL,Vehicle Damage Photos,Yes,✅ YES,"First vehicle damage photo path - Extracted from vehicle_damage_images array"
+3,vehicle_damage_path_2,N/A (Derived),N/A,user_documents,storage_path,TEXT,Conditional,NULL,Vehicle Damage Photos,Yes,✅ YES,"Second vehicle damage photo path - Extracted from vehicle_damage_images array"
+4,vehicle_damage_path_3,N/A (Derived),N/A,user_documents,storage_path,TEXT,Conditional,NULL,Vehicle Damage Photos,Yes,✅ YES,"Third vehicle damage photo path - Extracted from vehicle_damage_images array"
+5,vehicle_damage_path_4,N/A (Derived),N/A,user_documents,storage_path,TEXT,Conditional,NULL,Vehicle Damage Photos,Yes,✅ YES,"Fourth vehicle damage photo path - Extracted from vehicle_damage_images array"
+6,vehicle_damage_path_5,N/A (Derived),N/A,user_documents,storage_path,TEXT,Conditional,NULL,Vehicle Damage Photos,Yes,✅ YES,"Fifth vehicle damage photo path - Extracted from vehicle_damage_images array"
+7,temp_session_id,N/A (localStorage),N/A,temp_uploads,session_id,UUID,Yes,NULL,System,Yes,✅ YES,"Temp session ID for photo finalization - From localStorage, shared across all photo pages"

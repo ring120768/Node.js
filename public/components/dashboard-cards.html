@@ -1,0 +1,330 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Dashboard Cards Component Library - Car Crash Lawyer AI</title>
+
+    <!-- Dashboard Cards CSS -->
+    <link rel="stylesheet" href="/components/dashboard-cards.css">
+
+    <style>
+        /* Demo page specific styles */
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, sans-serif;
+            background-color: #F3F4F6;
+            padding: 2rem;
+            margin: 0;
+        }
+
+        .demo-container {
+            max-width: 1400px;
+            margin: 0 auto;
+        }
+
+        .demo-header {
+            background: white;
+            padding: 2rem;
+            border-radius: 0.75rem;
+            margin-bottom: 2rem;
+            box-shadow: 0 1px 3px rgba(0,0,0,0.1);
+        }
+
+        .demo-header h1 {
+            color: #0B7AB0;
+            margin: 0 0 0.5rem 0;
+        }
+
+        .demo-section {
+            background: white;
+            padding: 2rem;
+            border-radius: 0.75rem;
+            margin-bottom: 2rem;
+            box-shadow: 0 1px 3px rgba(0,0,0,0.1);
+        }
+
+        .demo-section h2 {
+            color: #1F2937;
+            margin: 0 0 1.5rem 0;
+            padding-bottom: 0.75rem;
+            border-bottom: 2px solid #E5E7EB;
+        }
+
+        .code-block {
+            background: #1F2937;
+            color: #F3F4F6;
+            padding: 1rem;
+            border-radius: 0.5rem;
+            overflow-x: auto;
+            margin-top: 1rem;
+            font-size: 0.875rem;
+        }
+
+        .variant-label {
+            color: #6B7280;
+            font-size: 0.875rem;
+            font-weight: 600;
+            margin: 1.5rem 0 0.5rem 0;
+            text-transform: uppercase;
+            letter-spacing: 0.05em;
+        }
+    </style>
+</head>
+<body>
+    <div class="demo-container">
+        <!-- Header -->
+        <div class="demo-header">
+            <h1>📱 Dashboard Cards Component Library</h1>
+            <p>Responsive, accessible card components for Car Crash Lawyer AI dashboard</p>
+        </div>
+
+        <!-- Base Card Component -->
+        <div class="demo-section">
+            <h2>1. Base Card Component</h2>
+            <p>Standard card with header, badge, and body content.</p>
+
+            <div class="card">
+                <div class="card-header">
+                    <h3 class="card-title">Section Title</h3>
+                    <span class="card-badge badge-success">3 items</span>
+                </div>
+                <div class="card-body">
+                    <p>Card content goes here. This is the standard base card component.</p>
+                </div>
+            </div>
+
+            <pre class="code-block">&lt;div class="card"&gt;
+  &lt;div class="card-header"&gt;
+    &lt;h3 class="card-title"&gt;Section Title&lt;/h3&gt;
+    &lt;span class="card-badge badge-success"&gt;3 items&lt;/span&gt;
+  &lt;/div&gt;
+  &lt;div class="card-body"&gt;
+    &lt;p&gt;Content here&lt;/p&gt;
+  &lt;/div&gt;
+&lt;/div&gt;</pre>
+        </div>
+
+        <!-- Image Card Component -->
+        <div class="demo-section">
+            <h2>2. Image Card Component</h2>
+            <p>Interactive card for displaying user documents with images.</p>
+
+            <div class="cards-grid">
+                <div class="card card-interactive" tabindex="0" role="button" aria-label="View driving license image">
+                    <img src="https://via.placeholder.com/400x300/0B7AB0/FFFFFF?text=Driving+License"
+                         alt="Driving License"
+                         class="card-image">
+                    <div class="card-content">
+                        <h4>Driving License</h4>
+                        <div class="card-meta">
+                            <span class="badge badge-completed">✓ Completed</span>
+                            <time datetime="2025-10-28">28 Oct 2025</time>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="card card-interactive" tabindex="0" role="button" aria-label="View vehicle front image">
+                    <img src="https://via.placeholder.com/400x300/10B981/FFFFFF?text=Vehicle+Front"
+                         alt="Vehicle Front"
+                         class="card-image">
+                    <div class="card-content">
+                        <h4>Vehicle Front</h4>
+                        <div class="card-meta">
+                            <span class="badge badge-completed">✓ Completed</span>
+                            <time datetime="2025-10-28">28 Oct 2025</time>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="card card-interactive" tabindex="0" role="button" aria-label="View accident scene image">
+                    <img src="https://via.placeholder.com/400x300/F59E0B/FFFFFF?text=Accident+Scene"
+                         alt="Accident Scene"
+                         class="card-image">
+                    <div class="card-content">
+                        <h4>Accident Scene</h4>
+                        <div class="card-meta">
+                            <span class="badge badge-pending">⏳ Pending</span>
+                            <time datetime="2025-10-28">28 Oct 2025</time>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <pre class="code-block">&lt;div class="card card-interactive" tabindex="0" role="button" aria-label="View image"&gt;
+  &lt;img src="image-url" alt="Description" class="card-image"&gt;
+  &lt;div class="card-content"&gt;
+    &lt;h4&gt;Document Name&lt;/h4&gt;
+    &lt;div class="card-meta"&gt;
+      &lt;span class="badge badge-completed"&gt;✓ Completed&lt;/span&gt;
+      &lt;time datetime="2025-10-28"&gt;28 Oct 2025&lt;/time&gt;
+    &lt;/div&gt;
+  &lt;/div&gt;
+&lt;/div&gt;</pre>
+        </div>
+
+        <!-- Transcription Card Component -->
+        <div class="demo-section">
+            <h2>3. Transcription Card Component</h2>
+            <p>Card showing audio transcription processing status with progress bar.</p>
+
+            <div class="cards-grid">
+                <div class="card">
+                    <div class="card-header">
+                        <h4>Incident Description</h4>
+                        <span class="badge badge-processing">Processing...</span>
+                    </div>
+                    <div class="card-body">
+                        <div class="progress-bar" role="progressbar" aria-valuenow="65" aria-valuemin="0" aria-valuemax="100">
+                            <div class="progress-fill" style="width: 65%"></div>
+                        </div>
+                        <p class="card-meta">Uploaded: 28 Oct 2025 10:45</p>
+                    </div>
+                </div>
+
+                <div class="card">
+                    <div class="card-header">
+                        <h4>Witness Statement</h4>
+                        <span class="badge badge-completed">✓ Complete</span>
+                    </div>
+                    <div class="card-body">
+                        <div class="progress-bar" role="progressbar" aria-valuenow="100" aria-valuemin="0" aria-valuemax="100">
+                            <div class="progress-fill" style="width: 100%"></div>
+                        </div>
+                        <p class="card-meta">Completed: 28 Oct 2025 11:30</p>
+                    </div>
+                </div>
+
+                <div class="card">
+                    <div class="card-header">
+                        <h4>Driver Statement</h4>
+                        <span class="badge badge-failed">✗ Failed</span>
+                    </div>
+                    <div class="card-body">
+                        <div class="progress-bar" role="progressbar" aria-valuenow="0" aria-valuemin="0" aria-valuemax="100">
+                            <div class="progress-fill" style="width: 0%"></div>
+                        </div>
+                        <p class="card-meta error-text">Error: File format not supported</p>
+                    </div>
+                </div>
+            </div>
+
+            <pre class="code-block">&lt;div class="card"&gt;
+  &lt;div class="card-header"&gt;
+    &lt;h4&gt;Incident Description&lt;/h4&gt;
+    &lt;span class="badge badge-processing"&gt;Processing...&lt;/span&gt;
+  &lt;/div&gt;
+  &lt;div class="card-body"&gt;
+    &lt;div class="progress-bar" role="progressbar" aria-valuenow="65"
+         aria-valuemin="0" aria-valuemax="100"&gt;
+      &lt;div class="progress-fill" style="width: 65%"&gt;&lt;/div&gt;
+    &lt;/div&gt;
+    &lt;p class="card-meta"&gt;Uploaded: 28 Oct 2025 10:45&lt;/p&gt;
+  &lt;/div&gt;
+&lt;/div&gt;</pre>
+        </div>
+
+        <!-- Empty State Card -->
+        <div class="demo-section">
+            <h2>4. Empty State Card</h2>
+            <p>Card shown when no data is available yet.</p>
+
+            <div class="card card-empty">
+                <div class="empty-icon">📁</div>
+                <h3>No Images Yet</h3>
+                <p>Upload images via the signup form to get started</p>
+                <button class="btn btn-primary" aria-label="Upload images now">Upload Now</button>
+            </div>
+
+            <pre class="code-block">&lt;div class="card card-empty"&gt;
+  &lt;div class="empty-icon"&gt;📁&lt;/div&gt;
+  &lt;h3&gt;No Images Yet&lt;/h3&gt;
+  &lt;p&gt;Upload images via the signup form&lt;/p&gt;
+  &lt;button class="btn btn-primary"&gt;Upload Now&lt;/button&gt;
+&lt;/div&gt;</pre>
+        </div>
+
+        <!-- Skeleton Loader -->
+        <div class="demo-section">
+            <h2>5. Skeleton Loader</h2>
+            <p>Loading placeholder shown while data is being fetched.</p>
+
+            <div class="cards-grid">
+                <div class="card card-skeleton" aria-busy="true" aria-label="Loading content">
+                    <div class="skeleton skeleton-image"></div>
+                    <div class="skeleton-content">
+                        <div class="skeleton skeleton-text"></div>
+                        <div class="skeleton skeleton-text short"></div>
+                    </div>
+                </div>
+
+                <div class="card card-skeleton" aria-busy="true" aria-label="Loading content">
+                    <div class="skeleton skeleton-image"></div>
+                    <div class="skeleton-content">
+                        <div class="skeleton skeleton-text"></div>
+                        <div class="skeleton skeleton-text short"></div>
+                    </div>
+                </div>
+
+                <div class="card card-skeleton" aria-busy="true" aria-label="Loading content">
+                    <div class="skeleton skeleton-image"></div>
+                    <div class="skeleton-content">
+                        <div class="skeleton skeleton-text"></div>
+                        <div class="skeleton skeleton-text short"></div>
+                    </div>
+                </div>
+            </div>
+
+            <pre class="code-block">&lt;div class="card card-skeleton" aria-busy="true" aria-label="Loading content"&gt;
+  &lt;div class="skeleton skeleton-image"&gt;&lt;/div&gt;
+  &lt;div class="skeleton-content"&gt;
+    &lt;div class="skeleton skeleton-text"&gt;&lt;/div&gt;
+    &lt;div class="skeleton skeleton-text short"&gt;&lt;/div&gt;
+  &lt;/div&gt;
+&lt;/div&gt;</pre>
+        </div>
+
+        <!-- Badge Variants -->
+        <div class="demo-section">
+            <h2>6. Badge Variants</h2>
+            <p>Status indicators for different states.</p>
+
+            <div style="display: flex; gap: 1rem; flex-wrap: wrap;">
+                <span class="badge badge-success">✓ Success</span>
+                <span class="badge badge-completed">✓ Completed</span>
+                <span class="badge badge-processing">⏳ Processing</span>
+                <span class="badge badge-pending">⏱ Pending</span>
+                <span class="badge badge-failed">✗ Failed</span>
+                <span class="badge badge-warning">⚠ Warning</span>
+                <span class="badge badge-info">ℹ Info</span>
+            </div>
+
+            <pre class="code-block">&lt;span class="badge badge-success"&gt;✓ Success&lt;/span&gt;
+&lt;span class="badge badge-completed"&gt;✓ Completed&lt;/span&gt;
+&lt;span class="badge badge-processing"&gt;⏳ Processing&lt;/span&gt;
+&lt;span class="badge badge-pending"&gt;⏱ Pending&lt;/span&gt;
+&lt;span class="badge badge-failed"&gt;✗ Failed&lt;/span&gt;</pre>
+        </div>
+
+        <!-- Responsive Grid Demo -->
+        <div class="demo-section">
+            <h2>7. Responsive Grid</h2>
+            <p>Cards automatically adjust to 3 columns (desktop), 2 columns (tablet), 1 column (mobile).</p>
+            <p style="color: #6B7280; font-size: 0.875rem; margin-top: 0.5rem;">
+                Resize your browser window to see the responsive behavior.
+            </p>
+
+            <div class="cards-grid">
+                <div class="card"><div class="card-body">Card 1</div></div>
+                <div class="card"><div class="card-body">Card 2</div></div>
+                <div class="card"><div class="card-body">Card 3</div></div>
+                <div class="card"><div class="card-body">Card 4</div></div>
+                <div class="card"><div class="card-body">Card 5</div></div>
+                <div class="card"><div class="card-body">Card 6</div></div>
+            </div>
+        </div>
+    </div>
+
+    <!-- JavaScript for dynamic card generation -->
+    <script src="/components/dashboard-cards.js"></script>
+</body>
+</html>

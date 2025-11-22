@@ -136,7 +136,7 @@ async function testWitnessVehiclePdf() {
     const allData = await fetchAllData(userId);
 
     console.log(colors.cyan, '\nData summary:');
-    console.log(`  • User: ${allData.user.first_name} ${allData.user.last_name}`);
+    console.log(`  • User: ${allData.user.name} ${allData.user.surname}`);
     console.log(`  • Incidents: ${allData.metadata.total_incidents}`);
     console.log(`  • Images: ${allData.metadata.total_images}`);
     console.log(`  • Witnesses: ${allData.metadata.total_witnesses}`);

@@ -1,0 +1,208 @@
+PDF_Field_Name,Field_Type,Index,Multiline,DB_Table,DB_Column,UI_Page,Status,Notes
+driver_dob,PDFTextField,1,No,user_signup,date_of_birth,signup-form.html,✅ Exists,DD/MM/YYYY
+email,PDFTextField,2,No,user_signup,email,signup-auth.html,✅ Exists,Primary contact
+mobile,PDFTextField,3,No,user_signup,mobile,signup-form.html,✅ Exists,+44 format
+street,PDFTextField,4,No,user_signup,street,signup-form.html,✅ Exists,Address line 1
+town,PDFTextField,5,No,user_signup,town,signup-form.html,✅ Exists,City/town
+street_name_optional,PDFTextField,6,No,user_signup,street_name_optional,signup-form.html,✅ Exists,Address line 2
+postcode,PDFTextField,7,No,user_signup,postcode,signup-form.html,✅ Exists,UK postcode
+country,PDFTextField,8,No,user_signup,country,signup-form.html,✅ Exists,Default: UK
+driving_license_number,PDFTextField,9,No,user_signup,driving_license_number,signup-form.html,✅ Exists,UK license
+car_registration_number,PDFTextField,10,No,user_signup,car_registration_number,signup-form.html,✅ Exists,UK reg plate
+vehicle_make,PDFTextField,11,No,user_signup,vehicle_make,signup-form.html,✅ Exists,e.g. PORSCHE
+vehicle_model,PDFTextField,12,No,user_signup,vehicle_model,signup-form.html,✅ Exists,e.g. 911
+vehicle_colour,PDFTextField,13,No,user_signup,vehicle_colour,signup-form.html,✅ Exists,e.g. BLACK
+vehicle_condition,PDFTextField,14,No,user_signup,vehicle_condition,signup-form.html,✅ Exists,Pre-accident
+recovery_company,PDFTextField,15,No,user_signup,recovery_company,signup-form.html,✅ Exists,e.g. AA RAC
+recovery_breakdown_number,PDFTextField,16,No,user_signup,recovery_breakdown_number,signup-form.html,✅ Exists,Membership number
+emergency_contact,PDFTextField,17,No,user_signup,emergency_contact,signup-form.html,✅ Exists,Emergency contact
+insurance_company,PDFTextField,18,No,user_signup,insurance_company,signup-form.html,✅ Exists,e.g. Beat the Bookie
+policy_number,PDFTextField,19,No,user_signup,policy_number,signup-form.html,✅ Exists,Policy number
+time_stamp,PDFSignature,20,,incident_reports,timestamp,declaration.html,✅ Exists,Auto timestamp
+cover_type,PDFTextField,21,No,user_signup,cover_type,signup-form.html,✅ Exists,Comprehensive/Third Party
+recovery_breakdown_email,PDFTextField,22,No,user_signup,recovery_breakdown_email,signup-form.html,✅ Exists,Recovery email
+policy_holder,PDFTextField,23,No,user_signup,policy_holder,signup-form.html,✅ Exists,Policy holder name
+vehicle_picture_front,PDFTextField,24,Yes,user_documents,storage_path,signup-form.html,✅ Exists,Front image path
+driving_license_picture,PDFTextField,25,Yes,user_documents,storage_path,signup-form.html,✅ Exists,License image path
+vehicle_picture_driver_side,PDFTextField,26,Yes,user_documents,storage_path,signup-form.html,✅ Exists,Driver side path
+vehicle_picture_passenger_side,PDFTextField,27,Yes,user_documents,storage_path,signup-form.html,✅ Exists,Passenger side path
+vehicle_picture_back,PDFTextField,28,Yes,user_documents,storage_path,signup-form.html,✅ Exists,Back image path
+six_point_safety_check,PDFCheckBox,29,,incident_reports,six_point_safety_check,page2.html,✅ Exists,Scene safety
+ambulance_callled,PDFCheckBox,30,,incident_reports,ambulance_called,page2.html,🆕 NEW,Typo in PDF: callled
+medical_how_are_you_feeling,PDFTextField,31,No,incident_reports,medical_how_feeling,page2.html,✅ Exists,Self-assessment
+medical_attention_from_who,PDFTextField,32,No,incident_reports,medical_attention_from_who,page2.html,✅ Exists,Paramedic/doctor
+hospital_or_medical_center,PDFTextField,33,No,incident_reports,hospital_name,page2.html,🆕 NEW,Hospital/GP name
+severity_of_injuries,PDFTextField,34,No,incident_reports,injury_severity,page2.html,🆕 NEW,Minor/Moderate/Severe
+treatment_recieved,PDFTextField,35,No,incident_reports,treatment_received,page2.html,🆕 NEW,Treatment description
+are_you_safe,PDFCheckBox,36,,incident_reports,are_you_safe,page2.html,✅ Exists,Personal safety
+medical_attention,PDFCheckBox,37,,incident_reports,medical_attention,page2.html,✅ Exists,Received medical help
+further_medical_attention,PDFTextField,38,No,incident_reports,further_medical_attention,page2.html,✅ Exists,Follow-up needed
+medical_chest_pain,PDFCheckBox,39,,incident_reports,symptom_chest_pain,page2.html,✅ Exists,Chest pain
+medical_abdominal_bruising,PDFCheckBox,40,,incident_reports,symptom_abdominal_bruising,page2.html,✅ Exists,Abdominal bruising
+medical_uncontrolled_bleeding,PDFCheckBox,41,,incident_reports,symptom_uncontrolled_bleeding,page2.html,✅ Exists,Uncontrolled bleeding
+medical_limb_pain,PDFCheckBox,42,,incident_reports,symptom_limb_pain,page2.html,✅ Exists,Limb pain
+medical_none_of_these,PDFCheckBox,43,,incident_reports,symptom_none,page2.html,✅ Exists,No symptoms
+medical_severe_headache,PDFCheckBox,44,,incident_reports,symptom_severe_headache,page2.html,✅ Exists,Severe headache
+medical_change_in_vision,PDFCheckBox,45,,incident_reports,symptom_vision_change,page2.html,✅ Exists,Vision change
+medical_abdominal_pain,PDFCheckBox,46,,incident_reports,symptom_abdominal_pain,page2.html,✅ Exists,Abdominal pain
+medical_limb_weakness,PDFCheckBox,47,,incident_reports,symptom_limb_weakness,page2.html,✅ Exists,Limb weakness
+medical_loss_of_consciousness,PDFCheckBox,48,,incident_reports,symptom_loss_consciousness,page2.html,✅ Exists,Loss of consciousness
+medical_breathlessness,PDFCheckBox,49,,incident_reports,symptom_breathlessness,page2.html,✅ Exists,Breathlessness
+please_provide_details_of_any_injuries,PDFTextField,50,No,incident_reports,injury_details,page2.html,✅ Exists,Detailed description
+when_did_the_accident_happen,PDFTextField,51,No,incident_reports,accident_date,page3.html,✅ Exists,DD/MM/YYYY
+what_time_did_the_accident_happen,PDFTextField,52,No,incident_reports,accident_time,page3.html,✅ Exists,HH:MM 24hr
+weather_overcast,PDFCheckBox,53,,incident_reports,weather_overcast,page4.html,✅ Exists,Overcast
+weather_clear_and_dry,PDFCheckBox,54,,incident_reports,weather_clear_dry,page4.html,✅ Exists,Clear and dry
+weather_bright_daylight,PDFCheckBox,55,,incident_reports,weather_bright_daylight,page4.html,✅ Exists,Bright daylight
+weather_heavy_rain,PDFCheckBox,56,,incident_reports,weather_heavy_rain,page4.html,✅ Exists,Heavy rain
+weather_fog,PDFCheckBox,57,,incident_reports,weather_fog,page4.html,✅ Exists,Fog
+weather_snow,PDFCheckBox,58,,incident_reports,weather_snow,page4.html,✅ Exists,Snow
+weather_thunder_lightening,PDFCheckBox,59,,incident_reports,weather_thunder_lightning,page4.html,🆕 NEW,Thunder/lightning (typo in PDF)
+weather_ice_on_road,PDFCheckBox,60,,incident_reports,road_surface_ice,page4.html,✅ Exists,Ice on road
+weather_street_lights,PDFCheckBox,61,,incident_reports,weather_street_lights,page4.html,✅ Exists,Street lights on
+speed_limit,PDFTextField,62,No,incident_reports,speed_limit,page4.html,✅ Exists,Speed limit mph
+your_estimated_speed_mph,PDFTextField,63,No,incident_reports,estimated_speed,page4.html,✅ Exists,Your speed mph
+weather_drizzle,PDFCheckBox,64,,incident_reports,weather_drizzle,page4.html,🆕 NEW,Light rain/drizzle
+weather_raining,PDFCheckBox,65,,incident_reports,weather_raining,page4.html,🆕 NEW,Moderate rain
+weather-hail,PDFCheckBox,66,,incident_reports,weather_hail,page4.html,🆕 NEW,Hail/sleet (hyphen in PDF)
+weather_windy,PDFCheckBox,67,,incident_reports,weather_windy,page4.html,🆕 NEW,Strong wind
+weather_dusk,PDFCheckBox,68,,incident_reports,weather_dusk,page4.html,✅ Exists,Dusk
+weather_road_dry,PDFCheckBox,69,,incident_reports,road_surface_dry,page4.html,✅ Exists,Dry road
+weather_wet_road,PDFCheckBox,70,,incident_reports,road_surface_wet,page4.html,✅ Exists,Wet road
+weather_slush_road,PDFCheckBox,71,,incident_reports,road_surface_slush,page4.html,🆕 NEW,Slush on road
+weather_loose_surface_road,PDFCheckBox,72,,incident_reports,road_surface_loose,page4.html,🆕 NEW,Loose surface
+weather_snow_on_road,PDFCheckBox,73,,incident_reports,road_surface_snow,page4.html,✅ Exists,Snow on road
+road_type_motorway,PDFCheckBox,74,,incident_reports,road_type_motorway,page4.html,✅ Exists,Motorway
+road_type_urban,PDFCheckBox,75,,incident_reports,road_type_urban,page4.html,✅ Exists,Urban road
+road_type_rural,PDFCheckBox,76,,incident_reports,road_type_rural,page4.html,✅ Exists,Rural road
+road_type_car_park,PDFCheckBox,77,,incident_reports,road_type_car_park,page4.html,✅ Exists,Car park
+traffic_conditions_heavy,PDFCheckBox,78,,incident_reports,traffic_heavy,page4.html,🆕 NEW,Heavy traffic
+road_type_private_road,PDFCheckBox,79,,incident_reports,road_type_private_road,page4.html,✅ Exists,Private road
+traffic_conditions_moderate,PDFCheckBox,80,,incident_reports,traffic_moderate,page4.html,🆕 NEW,Moderate traffic
+road_type_a_road,PDFCheckBox,81,,incident_reports,road_type_a_road,page4.html,✅ Exists,A-Road
+road_type_b_road,PDFCheckBox,82,,incident_reports,road_type_b_road,page4.html,✅ Exists,B-Road
+road_markings_partial,PDFCheckBox,83,,incident_reports,road_markings_partial,page4.html,🆕 NEW,Faded/partial
+road_markings_no,PDFCheckBox,84,,incident_reports,road_markings_absent,page4.html,🆕 NEW,No markings
+road_markings_yes,PDFCheckBox,85,,incident_reports,road_markings_present,page4.html,🆕 NEW,Clear markings
+traffic_conditions_light,PDFCheckBox,86,,incident_reports,traffic_light,page4.html,🆕 NEW,Light traffic
+traffic_conditions_no_traffic,PDFCheckBox,87,,incident_reports,traffic_none,page4.html,🆕 NEW,No traffic
+visabilty_good,PDFCheckBox,88,,incident_reports,visibility_good,page4.html,🆕 NEW,Good visibility (typo in PDF)
+visability_very_poor,PDFCheckBox,89,,incident_reports,visibility_very_poor,page4.html,🆕 NEW,Very poor visibility (typo in PDF)
+what3words_address,PDFTextField,90,No,incident_reports,what3words,page5.html,✅ Exists,///word.word.word
+nearest_landmark,PDFTextField,91,No,incident_reports,nearest_landmark,page5.html,✅ Exists,Landmark
+full_address_location_description,PDFTextField,92,No,incident_reports,location_description,page5.html,✅ Exists,Full location
+what_type_of_junction_was_it,PDFTextField,93,No,incident_reports,junction_type,page5.html,✅ Exists,Junction type
+what_controlled_this_junction,PDFTextField,94,No,incident_reports,junction_control,page5.html,✅ Exists,Traffic control
+what_were_you_doing_when_the_collision_occurred,PDFTextField,95,No,incident_reports,action_at_collision,page5.html,✅ Exists,Your action
+what _color_were_traffic _lights,PDFTextField,96,No,incident_reports,traffic_light_color,page5.html,✅ Exists,Traffic light color (spaces in PDF)
+special_conditions_workman,PDFCheckBox,97,,incident_reports,hazard_workman,page6.html,✅ Exists,Workmen present
+special_conditions_pedestrians,PDFCheckBox,98,,incident_reports,hazard_pedestrians,page6.html,✅ Exists,Pedestrians
+special_conditions_traffic_calming,PDFCheckBox,99,,incident_reports,hazard_traffic_calming,page6.html,✅ Exists,Traffic calming
+special_conditions_sun_glare,PDFCheckBox,100,,incident_reports,hazard_sun_glare,page6.html,✅ Exists,Sun glare
+special_conditions_oil_spills,PDFCheckBox,101,,incident_reports,hazard_oil_spill,page6.html,✅ Exists,Oil spill
+special_conditions_defective_road,PDFCheckBox,102,,incident_reports,hazard_defective_road,page6.html,✅ Exists,Defective road
+special_conditions_pot_holes,PDFCheckBox,103,,incident_reports,hazard_pot_holes,page6.html,✅ Exists,Pot holes
+special_conditions_pedestrian_crossing,PDFCheckBox,104,,incident_reports,hazard_ped_crossing,page6.html,✅ Exists,Ped crossing
+special_conditions_hedgerow,PDFCheckBox,105,,incident_reports,hazard_hedgerow,page6.html,✅ Exists,Hedgerow
+special_conditions_roadworks,PDFCheckBox,106,,incident_reports,hazard_roadworks,page6.html,✅ Exists,Roadworks
+special_conditions_cyclists,PDFCheckBox,107,,incident_reports,hazard_cyclists,page6.html,✅ Exists,Cyclists
+special_conditions_school,PDFCheckBox,108,,incident_reports,hazard_school,page6.html,✅ Exists,School zone
+special_conditions_none_of_these,PDFCheckBox,109,,incident_reports,hazard_none,page6.html,✅ Exists,No special hazards
+special_conditions_narrow_road,PDFCheckBox,110,,incident_reports,hazard_narrow_road,page6.html,✅ Exists,Narrow road
+special_conditions_large_vehicle,PDFCheckBox,111,,incident_reports,hazard_large_vehicle,page6.html,✅ Exists,Large vehicle
+special_conditions_additional_hazards,PDFTextField,112,No,incident_reports,hazard_additional,page6.html,✅ Exists,Additional hazards
+driving_your_usual_vehicle_yes,PDFCheckBox,113,,incident_reports,usual_vehicle_yes,page8.html,✅ Exists,Usual vehicle yes
+driving_your_usual_vehicle_no,PDFCheckBox,114,,incident_reports,usual_vehicle_no,page8.html,✅ Exists,Usual vehicle no
+uk_licence_plate_look_up,PDFTextField,115,No,incident_reports,dvla_lookup_reg,page7.html,🆕 NEW,Reg searched
+vehicle_found_make,PDFTextField,116,No,incident_reports,dvla_vehicle_make,page7.html,🆕 NEW,From DVLA API
+vehicle_found_model,PDFTextField,117,No,incident_reports,dvla_vehicle_model,page7.html,🆕 NEW,From DVLA API
+vehicle_found_color,PDFTextField,118,No,incident_reports,dvla_vehicle_color,page7.html,🆕 NEW,From DVLA API
+vehicle_found_year,PDFTextField,119,No,incident_reports,dvla_vehicle_year,page7.html,🆕 NEW,From DVLA API
+vehicle_found_fuel_type,PDFTextField,120,No,incident_reports,dvla_fuel_type,page7.html,🆕 NEW,Petrol/Diesel/Electric
+vehicle_found_mot,PDFTextField,121,No,incident_reports,dvla_mot_status,page7.html,🆕 NEW,Valid/Expired
+vehicle_found_mot_expiry,PDFTextField,122,No,incident_reports,dvla_mot_expiry_date,page7.html,🆕 NEW,DD/MM/YYYY
+vehicle_found_road_tax,PDFTextField,123,No,incident_reports,dvla_tax_status,page7.html,🆕 NEW,Taxed/SORN/Untaxed
+vehicle_found_road_tax_due_date,PDFTextField,124,No,incident_reports,dvla_tax_due_date,page7.html,🆕 NEW,DD/MM/YYYY
+my_vehicle_has_no_visible_damage,PDFCheckBox,125,,incident_reports,damage_none,page8.html,✅ Exists,No damage
+no_it_needed_to_be_towed,PDFCheckBox,126,,incident_reports,vehicle_driveable_no,page8.html,✅ Exists,Needed towing
+unsure _did_not_attempt,PDFCheckBox,127,,incident_reports,vehicle_driveable_unsure,page8.html,✅ Exists,Unsure (space in PDF)
+vehicle_damage_front_driver_side,PDFCheckBox,128,,incident_reports,damage_front_driver,page8.html,✅ Exists,Front driver
+vehicle_damage_rear_driver_side,PDFCheckBox,129,,incident_reports,damage_rear_driver,page8.html,✅ Exists,Rear driver
+vehicle_damage_front_assenger_side,PDFCheckBox,130,,incident_reports,damage_front_passenger,page8.html,✅ Exists,Front passenger (typo in PDF)
+vehicle_damage_rear_passenger_side,PDFCheckBox,131,,incident_reports,damage_rear_passenger,page8.html,✅ Exists,Rear passenger
+vehicle_damage_passenger_side,PDFCheckBox,132,,incident_reports,damage_passenger_side,page8.html,✅ Exists,Passenger side
+vehicle_damage_under-carriage,PDFCheckBox,133,,incident_reports,damage_undercarriage,page8.html,✅ Exists,Undercarriage
+vehicle_damage_roof,PDFCheckBox,134,,incident_reports,damage_roof,page8.html,✅ Exists,Roof
+vehicle_damage_driver_side,PDFCheckBox,135,,incident_reports,damage_driver_side,page8.html,✅ Exists,Driver side
+vehicle_damage_front,PDFCheckBox,136,,incident_reports,damage_front,page8.html,✅ Exists,Front damage
+vehicle_damage_rear,PDFCheckBox,137,,incident_reports,damage_rear,page8.html,✅ Exists,Rear damage
+yes_i_drove_it_away,PDFCheckBox,138,,incident_reports,vehicle_driveable_yes,page8.html,✅ Exists,Drove away
+other_drivers_name,PDFTextField,139,No,incident_other_vehicles,driver_name,page9.html,✅ Exists,Other driver name
+other_car_colour,PDFTextField,140,No,incident_other_vehicles,vehicle_color,page9.html,✅ Exists,Other vehicle color
+other_car_vehicle_fuel_type,PDFTextField,141,No,incident_other_vehicles,vehicle_fuel_type,page9.html,✅ Exists,Other fuel type
+other_car_mot_status,PDFTextField,142,No,incident_other_vehicles,mot_status,page9.html,🆕 NEW,From DVLA API
+other_car_tax_status,PDFTextField,143,No,incident_other_vehicles,tax_status,page9.html,🆕 NEW,From DVLA API
+other_car_mot_expiry,PDFTextField,144,No,incident_other_vehicles,mot_expiry_date,page9.html,🆕 NEW,From DVLA API
+other_car_tax_due_date,PDFTextField,145,No,incident_other_vehicles,tax_due_date,page9.html,🆕 NEW,From DVLA API
+other_car_insurance_company,PDFTextField,146,No,incident_other_vehicles,insurance_company,page9.html,✅ Exists,Other insurance co
+other_car_colour_policy number,PDFTextField,147,No,incident_other_vehicles,insurance_policy_number,page9.html,🆕 NEW,Policy number (odd naming)
+other_car_colour_policy holder,PDFTextField,148,No,incident_other_vehicles,insurance_policy_holder,page9.html,🆕 NEW,Policy holder (odd naming)
+other_car_colour_policy_cover_type,PDFTextField,149,No,incident_other_vehicles,insurance_cover_type,page9.html,🆕 NEW,Cover type (odd naming)
+other_car_insurance_status,PDFTextField,150,No,incident_other_vehicles,insurance_status,page9.html,🆕 NEW,From MIB database
+other_driver_vehicle_marked_for_export,PDFTextField,151,No,incident_other_vehicles,marked_for_export,page9.html,🆕 NEW,From DVLA API
+describe_the_damage_to_the_other_vehicle,PDFTextField,152,Yes,incident_other_vehicles,damage_description,page9.html,✅ Exists,Damage description
+other_car_colour_vehicle_license_plate,PDFTextField,153,No,incident_other_vehicles,vehicle_registration,page9.html,✅ Exists,Other vehicle reg (odd naming)
+other_car_vehicle_model,PDFTextField,154,No,incident_other_vehicles,vehicle_model,page9.html,✅ Exists,Other vehicle model
+other_car_vehicle_year,PDFTextField,155,No,incident_other_vehicles,vehicle_year,page9.html,✅ Exists,Other vehicle year
+other_driver_email_address,PDFTextField,156,No,incident_other_vehicles,driver_email,page9.html,✅ Exists,Other driver email
+other_driver_license_number,PDFTextField,157,No,incident_other_vehicles,driver_license_number,page9.html,✅ Exists,Other driver license
+other_driver_mobile_number,PDFTextField,158,No,incident_other_vehicles,driver_mobile,page9.html,✅ Exists,Other driver mobile
+other_car_no_visible_damage,PDFCheckBox,159,,incident_other_vehicles,no_visible_damage,page9.html,✅ Exists,No damage
+witness_name,PDFTextField,160,No,incident_witnesses,witness_1_name,page10.html,✅ Exists,Witness 1 name
+witness_mobile_number,PDFTextField,161,No,incident_witnesses,witness_1_mobile,page10.html,✅ Exists,Witness 1 mobile
+witness_email_address,PDFTextField,162,No,incident_witnesses,witness_1_email,page10.html,✅ Exists,Witness 1 email
+witness_statement,PDFTextField,163,Yes,incident_witnesses,witness_1_statement,page10.html,✅ Exists,Witness 1 statement
+witness_name_2,PDFTextField,164,No,incident_witnesses,witness_2_name,page10.html,🆕 NEW,Witness 2 name
+witness_mobile_number_2,PDFTextField,165,No,incident_witnesses,witness_2_mobile,page10.html,🆕 NEW,Witness 2 mobile
+witness_email_address_2,PDFTextField,166,No,incident_witnesses,witness_2_email,page10.html,🆕 NEW,Witness 2 email
+witness_statement_2,PDFTextField,167,Yes,incident_witnesses,witness_2_statement,page10.html,🆕 NEW,Witness 2 statement
+police_officer_name,PDFTextField,168,No,incident_reports,police_officer_name,page11.html,✅ Exists,Officer name
+accident_reference_number,PDFTextField,169,No,incident_reports,police_reference_number,page11.html,✅ Exists,Reference number
+police_officer_badge_number,PDFTextField,170,No,incident_reports,police_badge_number,page11.html,✅ Exists,Badge number
+police_force_details,PDFTextField,171,No,incident_reports,police_force,page11.html,✅ Exists,Police force
+breath_test,PDFTextField,172,No,incident_reports,breath_test_result_you,page11.html,✅ Exists,Your breath test
+other_breath_test,PDFTextField,173,No,incident_reports,breath_test_result_other,page11.html,✅ Exists,Other breath test
+any_witness,PDFCheckBox,174,,incident_witnesses,witnesses_present_yes,page10.html,✅ Exists,Witnesses yes
+any_witness_no,PDFCheckBox,175,,incident_witnesses,witnesses_present_no,page10.html,✅ Exists,Witnesses no
+did_police_attend,PDFCheckBox,176,,incident_reports,police_attended_yes,page11.html,✅ Exists,Police yes
+reason_no_seatbelts,PDFTextField,177,Yes,incident_reports,seatbelt_reason_not_worn,page12.html,✅ Exists,Reason not worn
+wearing_seatbelts,PDFCheckBox,178,,incident_reports,seatbelt_yes,page12.html,✅ Exists,Seatbelt yes
+wearing_seatbelts_no,PDFCheckBox,179,,incident_reports,seatbelt_no,page12.html,✅ Exists,Seatbelt no
+airbags_deployed_no,PDFCheckBox,180,,incident_reports,airbags_deployed_no,page12.html,✅ Exists,Airbags no
+airbags_deployed,PDFCheckBox,181,,incident_reports,airbags_deployed_yes,page12.html,✅ Exists,Airbags yes
+vehicle_images_file_1_url,PDFTextField,182,Yes,generated,N/A,various,🆕 NEW,Signed URL for embedding
+vehicle_images_file_2_url,PDFTextField,183,Yes,generated,N/A,various,🆕 NEW,Signed URL for embedding
+vehicle_images_file_3_url,PDFTextField,184,Yes,generated,N/A,various,🆕 NEW,Signed URL for embedding
+vehicle_images_file_4_url,PDFTextField,185,Yes,generated,N/A,various,🆕 NEW,Signed URL for embedding
+vehicle_images_file_5_url,PDFTextField,186,Yes,generated,N/A,various,🆕 NEW,Signed URL for embedding
+vehicle_images_file_6_url,PDFTextField,187,Yes,generated,N/A,various,🆕 NEW,Signed URL for embedding
+what3Words_map_image_url,PDFTextField,188,Yes,generated,N/A,page5.html,🆕 NEW,what3words map image
+scene_images_file_1_url,PDFTextField,189,Yes,generated,N/A,various,🆕 NEW,Signed URL for embedding
+scene_images_file_2_url,PDFTextField,190,Yes,generated,N/A,various,🆕 NEW,Signed URL for embedding
+scene_images_file_3_url,PDFTextField,191,Yes,generated,N/A,various,🆕 NEW,Signed URL for embedding
+other_vehicle_images_1_url,PDFTextField,192,Yes,generated,N/A,various,🆕 NEW,Signed URL for embedding
+other_vehicle_images_2_url,PDFTextField,193,Yes,generated,N/A,various,🆕 NEW,Signed URL for embedding
+other_vehicle_images_3_url,PDFTextField,194,Yes,generated,N/A,various,🆕 NEW,Signed URL for embedding
+ai_transcription,PDFTextField,195,No,ai_transcription,transcript_text,transcription-status.html,✅ Exists,Whisper transcript
+ai_model_used,PDFTextField,196,No,ai_transcription,model,transcription-status.html,✅ Exists,Model name
+ai_summary,PDFTextField,197,No,ai_summary,summary_text,transcription-status.html,✅ Exists,Legal summary
+other_make_of_car,PDFTextField,198,No,incident_other_vehicles,vehicle_make,page9.html,✅ Exists,Other vehicle make
+anything_else_important,PDFTextField,199,Yes,incident_reports,additional_comments,page13.html,✅ Exists,Additional info
+visability_poor,PDFCheckBox,200,,incident_reports,visibility_poor,page4.html,🆕 NEW,Poor visibility (typo in PDF)
+ai_narrative_text,PDFTextField,201,No,ai_summary,narrative,transcription-status.html,✅ Exists,Plain English
+Date69_af_date,PDFTextField,202,No,incident_reports,signature_date,declaration.html,✅ Exists,Signature date
+Signature70,PDFSignature,203,,incident_reports,signature_data,declaration.html,✅ Exists,Base64 signature
+name,PDFTextField,204,No,user_signup,name,signup-auth.html,✅ Exists,First name
+surname,PDFTextField,205,No,user_signup,surname,signup-auth.html,✅ Exists,Last name
+did_police_attend_no,PDFCheckBox,206,,incident_reports,police_attended_no,page11.html,✅ Exists,Police no
+id,PDFTextField,207,No,user_signup,create_user_id,footer/header,🆕 NEW,UUID tracking field (REQUESTED)

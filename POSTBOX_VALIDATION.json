@@ -1,0 +1,410 @@
+{
+  "gap1_ui_no_db": [
+    "recovery_company"
+  ],
+  "gap2_pdf_no_db": [
+    {
+      "pdfField": "create_user_id",
+      "dbColumn": "metadata"
+    },
+    {
+      "pdfField": "id",
+      "dbColumn": "metadata"
+    },
+    {
+      "pdfField": "name",
+      "dbColumn": "name"
+    },
+    {
+      "pdfField": "driver_name",
+      "dbColumn": "name"
+    },
+    {
+      "pdfField": "surname",
+      "dbColumn": "surname"
+    },
+    {
+      "pdfField": "email",
+      "dbColumn": "email"
+    },
+    {
+      "pdfField": "mobile",
+      "dbColumn": "mobile"
+    },
+    {
+      "pdfField": "street",
+      "dbColumn": "street_address"
+    },
+    {
+      "pdfField": "street_address_optional",
+      "dbColumn": "street_address_optional"
+    },
+    {
+      "pdfField": "town",
+      "dbColumn": "town"
+    },
+    {
+      "pdfField": "postcode",
+      "dbColumn": "postcode"
+    },
+    {
+      "pdfField": "country",
+      "dbColumn": "country"
+    },
+    {
+      "pdfField": "driving_license_number",
+      "dbColumn": "driving_license_number"
+    },
+    {
+      "pdfField": "driver_dob",
+      "dbColumn": "driver_dob"
+    },
+    {
+      "pdfField": "license_plate",
+      "dbColumn": "license_plate_incident"
+    },
+    {
+      "pdfField": "vehicle_colour",
+      "dbColumn": "vehicle_colour"
+    },
+    {
+      "pdfField": "vehicle_condition",
+      "dbColumn": "vehicle_condition"
+    },
+    {
+      "pdfField": "recovery_company",
+      "dbColumn": "recovery_company"
+    },
+    {
+      "pdfField": "recovery_breakdown_number",
+      "dbColumn": "recovery_breakdown_number"
+    },
+    {
+      "pdfField": "recovery_breakdown_email",
+      "dbColumn": "recovery_breakdown_email"
+    },
+    {
+      "pdfField": "emergency_contact",
+      "dbColumn": "emergency_contact"
+    },
+    {
+      "pdfField": "cover_type",
+      "dbColumn": "cover_type"
+    },
+    {
+      "pdfField": "driving_license_picture",
+      "dbColumn": "driving_license_picture"
+    },
+    {
+      "pdfField": "vehicle_picture_front",
+      "dbColumn": "vehicle_picture_front"
+    },
+    {
+      "pdfField": "vehicle_picture_driver_side",
+      "dbColumn": "vehicle_picture_driver_side"
+    },
+    {
+      "pdfField": "vehicle_picture_passenger_side",
+      "dbColumn": "vehicle_picture_passenger_side"
+    },
+    {
+      "pdfField": "vehicle_picture_back",
+      "dbColumn": "vehicle_picture_back"
+    },
+    {
+      "pdfField": "reason_no_seatbelts",
+      "dbColumn": "why_werent_seat_belts_being_worn"
+    },
+    {
+      "pdfField": "damage_to_your_vehicle",
+      "dbColumn": "was_your_vehicle_damaged"
+    },
+    {
+      "pdfField": "weather_overcast",
+      "dbColumn": "overcast_dull"
+    },
+    {
+      "pdfField": "weather_heavy_rain",
+      "dbColumn": "heavy_rain"
+    },
+    {
+      "pdfField": "weather_wet_road",
+      "dbColumn": "wet_road"
+    },
+    {
+      "pdfField": "weather_fog",
+      "dbColumn": "fog_poor_visibility"
+    },
+    {
+      "pdfField": "weather_street_lights",
+      "dbColumn": "street_lights"
+    },
+    {
+      "pdfField": "weather_dusk",
+      "dbColumn": "dusk"
+    },
+    {
+      "pdfField": "weather_clear_and_dry",
+      "dbColumn": "clear_and_dry"
+    },
+    {
+      "pdfField": "weather_snow_on_road",
+      "dbColumn": "snow_ice_on_road"
+    },
+    {
+      "pdfField": "weather_snow",
+      "dbColumn": "snow"
+    },
+    {
+      "pdfField": "weather_light_rain",
+      "dbColumn": "light_rain"
+    },
+    {
+      "pdfField": "weather_bright_daylight",
+      "dbColumn": "bright_daylight"
+    },
+    {
+      "pdfField": "weather_conditions",
+      "dbColumn": "weather_conditions_summary"
+    },
+    {
+      "pdfField": "detailed_account_of_what_happened",
+      "dbColumn": "describe_what_happened"
+    },
+    {
+      "pdfField": "direction_and_speed",
+      "dbColumn": "direction_of_travel_and_estimated_speed"
+    },
+    {
+      "pdfField": "any_damage_prior_to_accident",
+      "dbColumn": "damage_prior_to_accident"
+    },
+    {
+      "pdfField": "other_policy_cover",
+      "dbColumn": "other_policy_cover_type"
+    },
+    {
+      "pdfField": "did_police_attend",
+      "dbColumn": "did_the_police_attend_the_scene"
+    },
+    {
+      "pdfField": "police_officers_name",
+      "dbColumn": "police_officer_name"
+    },
+    {
+      "pdfField": "anything_else",
+      "dbColumn": "anything_else_important"
+    },
+    {
+      "pdfField": "any_witness",
+      "dbColumn": "witness_present"
+    },
+    {
+      "pdfField": "witness_contact_information",
+      "dbColumn": "witness_information"
+    },
+    {
+      "pdfField": "file_url_documents",
+      "dbColumn": "imageUrls"
+    },
+    {
+      "pdfField": "file_url_documents_1",
+      "dbColumn": "imageUrls"
+    },
+    {
+      "pdfField": "file_url_record_detailed_account_of_what_happened",
+      "dbColumn": "imageUrls"
+    },
+    {
+      "pdfField": "file_url_what3words",
+      "dbColumn": "imageUrls"
+    },
+    {
+      "pdfField": "file_url_scene_overview",
+      "dbColumn": "imageUrls"
+    },
+    {
+      "pdfField": "file_url_scene_overview_1",
+      "dbColumn": "imageUrls"
+    },
+    {
+      "pdfField": "file_url_other_vehicle",
+      "dbColumn": "imageUrls"
+    },
+    {
+      "pdfField": "file_url_other_vehicle_1",
+      "dbColumn": "imageUrls"
+    },
+    {
+      "pdfField": "file_url_vehicle_damage",
+      "dbColumn": "imageUrls"
+    },
+    {
+      "pdfField": "file_url_vehicle_damage_1",
+      "dbColumn": "imageUrls"
+    },
+    {
+      "pdfField": "file_url_vehicle_damage_2",
+      "dbColumn": "imageUrls"
+    },
+    {
+      "pdfField": "ai_summary_of_accident_data",
+      "dbColumn": "ai_summary_of_data_collected"
+    }
+  ],
+  "working_flow": [
+    {
+      "uiField": "speed_limit",
+      "dbColumn": "speed_limit",
+      "pdfFields": "speed_limit"
+    },
+    {
+      "uiField": "visibility_good",
+      "dbColumn": "visibility_good",
+      "pdfFields": "visibility"
+    },
+    {
+      "uiField": "visibility_poor",
+      "dbColumn": "visibility_poor",
+      "pdfFields": "visibility_poor"
+    },
+    {
+      "uiField": "visibility_very_poor",
+      "dbColumn": "visibility_very_poor",
+      "pdfFields": "visibility_very_poor"
+    },
+    {
+      "uiField": "weather_drizzle",
+      "dbColumn": "weather_drizzle",
+      "pdfFields": "weather_drizzle"
+    },
+    {
+      "uiField": "weather_hail",
+      "dbColumn": "weather_hail",
+      "pdfFields": "weather_hail"
+    },
+    {
+      "uiField": "weather_raining",
+      "dbColumn": "weather_raining",
+      "pdfFields": "weather_raining"
+    },
+    {
+      "uiField": "weather_windy",
+      "dbColumn": "weather_windy",
+      "pdfFields": "weather_windy"
+    },
+    {
+      "uiField": "impact_point",
+      "dbColumn": "impact_point",
+      "pdfFields": "impact"
+    },
+    {
+      "uiField": "vehicle_license_plate",
+      "dbColumn": "vehicle_license_plate",
+      "pdfFields": "other_registration_number"
+    },
+    {
+      "uiField": "other_insurance_company",
+      "dbColumn": "other_insurance_company",
+      "pdfFields": "other_insurance_company"
+    },
+    {
+      "uiField": "other_policy_holder",
+      "dbColumn": "other_policy_holder",
+      "pdfFields": "other_policy_holder"
+    },
+    {
+      "uiField": "other_policy_number",
+      "dbColumn": "other_policy_number",
+      "pdfFields": "other_policy_number"
+    },
+    {
+      "uiField": "airbags_deployed",
+      "dbColumn": "airbags_deployed",
+      "pdfFields": "airbags_deployed"
+    }
+  ],
+  "wasted": [
+    "medical_ambulance_called",
+    "medical_attention_needed",
+    "medical_hospital_name",
+    "medical_injury_details",
+    "medical_injury_severity",
+    "medical_symptom_abdominal_bruising",
+    "medical_symptom_abdominal_pain",
+    "medical_symptom_breathlessness",
+    "medical_symptom_change_in_vision",
+    "medical_symptom_chest_pain",
+    "medical_symptom_dizziness",
+    "medical_symptom_life_threatening",
+    "medical_symptom_limb_pain_mobility",
+    "medical_symptom_limb_weakness",
+    "medical_symptom_loss_of_consciousness",
+    "medical_symptom_none",
+    "medical_symptom_severe_headache",
+    "medical_symptom_uncontrolled_bleeding",
+    "medical_treatment_received",
+    "accident_date",
+    "accident_time",
+    "road_condition_dry",
+    "road_condition_icy",
+    "road_condition_loose_surface",
+    "road_condition_other",
+    "road_condition_snow_covered",
+    "road_condition_wet",
+    "road_markings_visible_no",
+    "road_markings_visible_partially",
+    "road_markings_visible_yes",
+    "road_type_a_road",
+    "road_type_b_road",
+    "road_type_car_park",
+    "road_type_motorway",
+    "road_type_other",
+    "road_type_rural_road",
+    "road_type_urban_street",
+    "traffic_conditions_heavy",
+    "traffic_conditions_light",
+    "traffic_conditions_moderate",
+    "traffic_conditions_no_traffic",
+    "visibility_severely_restricted",
+    "weather_bright_sunlight",
+    "weather_clear",
+    "weather_cloudy",
+    "weather_fog",
+    "weather_heavy_rain",
+    "weather_ice",
+    "weather_other",
+    "weather_snow",
+    "weather_thunder_lightning",
+    "your_speed",
+    "additionalhazards",
+    "junctioncontrol",
+    "junctiontype",
+    "location",
+    "nearestlandmark",
+    "specialconditions",
+    "trafficlightstatus",
+    "usermanoeuvre",
+    "visibilityfactors",
+    "what3words",
+    "damage_description",
+    "no_damage",
+    "recovery_location",
+    "recovery_notes",
+    "recovery_phone",
+    "usual_vehicle",
+    "vehicle_driveable",
+    "no_visible_damage",
+    "other_driver_email",
+    "other_driver_license",
+    "other_driver_name",
+    "other_driver_phone",
+    "other_license_plate",
+    "other_point_of_impact",
+    "other_policy_cover",
+    "witnesses_present",
+    "police_attended",
+    "seatbelts_worn",
+    "final_feeling"
+  ]
+}

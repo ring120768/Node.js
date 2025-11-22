@@ -1,398 +1,610 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-  <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Login - Car Crash Lawyer AI</title>
-  <style>
-    body {
-      margin: 0;
-      font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
-      background-color: #f7f9fa;
-      display: flex;
-      flex-direction: column;
-      min-height: 100vh;
-    }
-    .nav {
-      display: flex;
-      align-items: center;
-      gap: 10px;
-      padding: 16px;
-      background-color: white;
-      box-shadow: 0 2px 4px rgba(0,0,0,0.05);
-      position: relative;
-      z-index: 10;
-    }
-    .nav button,
-    .nav a {
-      background-color: #007acc;
-      color: white;
-      padding: 6px 12px;
-      border-radius: 6px;
-      font-weight: bold;
-      font-size: 0.85rem;
-      cursor: pointer;
-      border: none;
-      text-decoration: none;
-      transition: background-color 0.3s ease, transform 0.2s ease;
-    }
-    .nav button:hover,
-    .nav a:hover {
-      background-color: #005f9e;
-      transform: translateY(-1px);
-    }
-    .container {
-      max-width: 400px;
-      margin: 40px auto;
-      padding: 20px;
-      background-color: white;
-      border-radius: 8px;
-      box-shadow: 0 2px 10px rgba(0,0,0,0.1);
-    }
-    h1 {
-      text-align: center;
-      margin-bottom: 24px;
-      color: #333;
-    }
-    .form-group {
-      margin-bottom: 16px;
-    }
-    .form-group label {
-      display: block;
-      margin-bottom: 6px;
-      font-weight: 500;
-      color: #555;
-    }
-    .form-group input {
-      width: 100%;
-      padding: 10px;
-      border: 1px solid #ddd;
-      border-radius: 4px;
-      font-size: 16px;
-      box-sizing: border-box;
-    }
-    .form-group input:focus {
-      outline: none;
-      border-color: #007acc;
-      box-shadow: 0 0 0 2px rgba(0,120,204,0.2);
-    }
-
-    /* GDPR Consent Checkbox */
-    .gdpr-consent {
-      margin: 20px 0;
-      padding: 12px;
-      background: #f8f9fa;
-      border: 2px solid #e0e0e0;
-      border-radius: 6px;
-    }
-
-    .gdpr-consent.error {
-      border-color: #e74c3c;
-      background: #fff5f5;
-    }
-
-    .checkbox-wrapper {
-      display: flex;
-      align-items: flex-start;
-      gap: 10px;
-    }
-
-    .checkbox-wrapper input[type="checkbox"] {
-      width: 18px;
-      height: 18px;
-      margin-top: 2px;
-      cursor: pointer;
-      flex-shrink: 0;
-      accent-color: #007acc;
-    }
-
-    .checkbox-label {
-      font-size: 13px;
-      color: #555;
-      line-height: 1.5;
-      cursor: pointer;
-    }
-
-    .checkbox-label a {
-      color: #007acc;
-      text-decoration: none;
-      font-weight: 600;
-    }
-
-    .checkbox-label a:hover {
-      text-decoration: underline;
-    }
-
-    .btn {
-      display: block;
-      width: 100%;
-      padding: 12px;
-      background-color: #007acc;
-      color: white;
-      border: none;
-      border-radius: 4px;
-      font-size: 16px;
-      font-weight: 500;
-      cursor: pointer;
-      transition: background-color 0.3s;
-    }
-    .btn:hover {
-      background-color: #005f9e;
-    }
-    .btn:disabled {
-      background-color: #ccc;
-      cursor: not-allowed;
-    }
-    .error {
-      color: #e74c3c;
-      margin-top: 16px;
-      text-align: center;
-      font-size: 14px;
-    }
-    .links {
-      margin-top: 20px;
-      text-align: center;
-    }
-    .links a {
-      color: #007acc;
-      text-decoration: none;
-    }
-    .links a:hover {
-      text-decoration: underline;
-    }
-  </style>
-    <link rel="stylesheet" href="/css/mascot.css"></head>
-<body>
-  <!-- Navigation Bar -->
-  <div class="nav">
-    <button onclick="window.history.back()">← Back</button>
-    <a href="index.html">🏠 Home</a>
-  </div>
-
-  <div class="container">
-    <h1>Login</h1>
-    <div id="error-message" class="error" style="display: none;"></div>
-
-    <form id="login-form">
-      <div class="form-group">
-        <label for="email">Email</label>
-        <input type="email" id="email" name="email" required placeholder="Enter your email">
-      </div>
-
-      <div class="form-group">
-        <label for="password">Password</label>
-        <input type="password" id="password" name="password" required>
-      </div>
-
-      <!-- GDPR CONSENT CHECKBOX -->
-      <div class="gdpr-consent" id="gdprConsentBox">
-        <div class="checkbox-wrapper">
-          <input
-            type="checkbox"
-            id="gdprConsent"
-            name="gdprConsent"
-            required
-          >
-          <label for="gdprConsent" class="checkbox-label">
-            I consent to the processing of my personal data including audio/video recordings, photographs, medical information, and location data through AI transcription services and secure storage as detailed in our <a href="/privacy-policy.html" target="_blank">Privacy Policy</a>.
-          </label>
-        </div>
-        <div class="error" id="gdprConsentError" style="display: none; text-align: left; margin-top: 8px; font-size: 12px;"></div>
-      </div>
-
-      <!-- REMEMBER ME CHECKBOX -->
-      <div class="form-group">
-        <div class="checkbox-wrapper">
-          <input
-            type="checkbox"
-            id="rememberMe"
-            name="rememberMe"
-            checked
-          >
-          <label for="rememberMe" class="checkbox-label" style="color: #333; font-size: 14px;">
-            Keep me logged in for 30 days
-          </label>
-        </div>
-      </div>
-
-      <button type="submit" class="btn" id="loginBtn">Login</button>
-    </form>
-
-    <div class="links">
-      <p>Don't have an account? <a href="signup-auth.html">Sign Up</a></p>
-      <p><a href="#" id="forgot-password">Forgot Password?</a></p>
-    </div>
-  </div>
-
-  <script>
-    const gdprConsentCheckbox = document.getElementById('gdprConsent');
-    const gdprConsentBox = document.getElementById('gdprConsentBox');
-    const gdprConsentError = document.getElementById('gdprConsentError');
-    const loginBtn = document.getElementById('loginBtn');
-
-    // Get redirect parameter from URL
-    function getRedirectUrl() {
-      const urlParams = new URLSearchParams(window.location.search);
-      const redirect = urlParams.get('redirect');
-
-      // If no redirect parameter, go to index
-      if (!redirect) {
-        return '/index.html';
-      }
-
-      // Decode the redirect URL (it's URL-encoded)
-      let decodedRedirect = decodeURIComponent(redirect);
-
-      // Security: Only allow relative paths (no external URLs)
-      // Remove any protocol or domain if present
-      if (decodedRedirect.includes('://')) {
-        // Extract just the path from a full URL
-        try {
-          const url = new URL(decodedRedirect);
-          decodedRedirect = url.pathname + url.search + url.hash;
-        } catch (e) {
-          // If URL parsing fails, default to index
-          console.warn('Invalid redirect URL, defaulting to index');
-          return '/index.html';
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Login - Car Crash Lawyer AI</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
         }
-      }
 
-      // Ensure path starts with /
-      const finalUrl = decodedRedirect.startsWith('/') ? decodedRedirect : `/${decodedRedirect}`;
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif;
+            background: linear-gradient(135deg, #0B7AB0 0%, #1EA1D4 100%);
+            min-height: 100vh;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            padding: 20px;
+        }
 
-      console.log('🔍 Redirect Debug:', {
-        fullUrl: window.location.href,
-        searchParams: window.location.search,
-        redirectParam: redirect,
-        decodedRedirect: decodedRedirect,
-        finalRedirectUrl: finalUrl
-      });
+        .login-container {
+            background: white;
+            border-radius: 20px;
+            box-shadow: 0 20px 60px rgba(0, 0, 0, 0.3);
+            max-width: 480px;
+            width: 100%;
+            padding: 40px;
+        }
 
-      return finalUrl;
-    }
+        .logo {
+            text-align: center;
+            margin-bottom: 30px;
+        }
 
-    // Clear GDPR error when checkbox is clicked
-    gdprConsentCheckbox.addEventListener('change', function() {
-      if (this.checked) {
-        gdprConsentBox.classList.remove('error');
-        gdprConsentError.style.display = 'none';
-      }
-    });
+        .logo img {
+            max-width: 180px;
+            height: auto;
+        }
 
-    // Handle login form submission
-    document.getElementById('login-form').addEventListener('submit', async (e) => {
-      e.preventDefault();
+        h1 {
+            color: #0B7AB0;
+            font-size: 28px;
+            text-align: center;
+            margin-bottom: 10px;
+        }
 
-      const email = document.getElementById('email').value;
-      const password = document.getElementById('password').value;
-      const rememberMe = document.getElementById('rememberMe').checked;
-      const errorElement = document.getElementById('error-message');
+        .subtitle {
+            text-align: center;
+            color: #666;
+            font-size: 16px;
+            margin-bottom: 30px;
+        }
 
-      // Validate GDPR consent
-      if (!gdprConsentCheckbox.checked) {
-        gdprConsentBox.classList.add('error');
-        gdprConsentError.textContent = 'You must consent to data processing to continue';
-        gdprConsentError.style.display = 'block';
-        return;
-      }
+        .form-group {
+            margin-bottom: 20px;
+        }
 
-      loginBtn.disabled = true;
+        label {
+            display: block;
+            color: #333;
+            font-weight: 500;
+            margin-bottom: 8px;
+            font-size: 14px;
+        }
 
-      console.log('🔐 Logging in with Remember Me:', rememberMe);
+        .input-wrapper {
+            position: relative;
+        }
 
-      try {
-        // Send credentials to backend for authentication
-        const response = await fetch('/api/auth/login', {
-          method: 'POST',
-          credentials: 'include', // CRITICAL: Required to store cookies
-          headers: {
-            'Content-Type': 'application/json'
-          },
-          body: JSON.stringify({
-            email,
-            password,
-            rememberMe,
-            gdprConsent: gdprConsentCheckbox.checked,
-            consentTimestamp: new Date().toISOString()
-          })
+        .input-icon {
+            position: absolute;
+            left: 15px;
+            top: 50%;
+            transform: translateY(-50%);
+            color: #666;
+            font-size: 18px;
+        }
+
+        input[type="email"],
+        input[type="password"] {
+            width: 100%;
+            padding: 14px 14px 14px 45px;
+            border: 2px solid #e0e0e0;
+            border-radius: 10px;
+            font-size: 16px;
+            transition: all 0.3s;
+        }
+
+        input[type="email"]:focus,
+        input[type="password"]:focus {
+            outline: none;
+            border-color: #0B7AB0;
+            box-shadow: 0 0 0 3px rgba(11, 122, 176, 0.1);
+        }
+
+        input.error {
+            border-color: #dc3545;
+        }
+
+        .error-message {
+            color: #dc3545;
+            font-size: 14px;
+            margin-top: 5px;
+            display: none;
+        }
+
+        .error-message.show {
+            display: block;
+        }
+
+        .checkbox-group {
+            margin: 20px 0;
+        }
+
+        .checkbox-wrapper {
+            display: flex;
+            align-items: flex-start;
+            gap: 10px;
+        }
+
+        input[type="checkbox"] {
+            width: 20px;
+            height: 20px;
+            cursor: pointer;
+            flex-shrink: 0;
+            margin-top: 2px;
+        }
+
+        .checkbox-label {
+            color: #333;
+            font-size: 14px;
+            line-height: 1.5;
+            cursor: pointer;
+        }
+
+        .checkbox-label a {
+            color: #0B7AB0;
+            text-decoration: none;
+        }
+
+        .checkbox-label a:hover {
+            text-decoration: underline;
+        }
+
+        .gdpr-consent {
+            background: #f8f9fa;
+            border: 2px solid #e0e0e0;
+            border-radius: 10px;
+            padding: 15px;
+            margin: 20px 0;
+            transition: all 0.3s;
+        }
+
+        .gdpr-consent.error {
+            border-color: #dc3545;
+            background: #fff5f5;
+        }
+
+        .gdpr-error {
+            color: #dc3545;
+            font-size: 14px;
+            margin-top: 8px;
+            display: none;
+        }
+
+        .gdpr-error.show {
+            display: block;
+        }
+
+        .login-button {
+            width: 100%;
+            padding: 16px;
+            background: linear-gradient(135deg, #0B7AB0 0%, #1EA1D4 100%);
+            color: white;
+            border: none;
+            border-radius: 10px;
+            font-size: 18px;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.3s;
+            margin-top: 10px;
+        }
+
+        .login-button:hover:not(:disabled) {
+            transform: translateY(-2px);
+            box-shadow: 0 8px 20px rgba(11, 122, 176, 0.3);
+        }
+
+        .login-button:disabled {
+            opacity: 0.6;
+            cursor: not-allowed;
+        }
+
+        .login-button.loading {
+            position: relative;
+            color: transparent;
+        }
+
+        .login-button.loading::after {
+            content: '';
+            position: absolute;
+            width: 20px;
+            height: 20px;
+            top: 50%;
+            left: 50%;
+            margin-left: -10px;
+            margin-top: -10px;
+            border: 3px solid rgba(255, 255, 255, 0.3);
+            border-top-color: white;
+            border-radius: 50%;
+            animation: spin 0.8s linear infinite;
+        }
+
+        @keyframes spin {
+            to { transform: rotate(360deg); }
+        }
+
+        .links {
+            text-align: center;
+            margin-top: 25px;
+            padding-top: 25px;
+            border-top: 1px solid #e0e0e0;
+        }
+
+        .links a {
+            color: #0B7AB0;
+            text-decoration: none;
+            font-weight: 500;
+            transition: color 0.3s;
+        }
+
+        .links a:hover {
+            color: #1EA1D4;
+            text-decoration: underline;
+        }
+
+        .alert {
+            padding: 15px;
+            border-radius: 10px;
+            margin-bottom: 20px;
+            display: none;
+        }
+
+        .alert.show {
+            display: block;
+        }
+
+        .alert.error {
+            background: #fff5f5;
+            border: 1px solid #dc3545;
+            color: #dc3545;
+        }
+
+        .alert.success {
+            background: #f0fdf4;
+            border: 1px solid #10b981;
+            color: #059669;
+        }
+
+        @media (max-width: 480px) {
+            .login-container {
+                padding: 30px 20px;
+            }
+
+            h1 {
+                font-size: 24px;
+            }
+
+            .subtitle {
+                font-size: 14px;
+            }
+        }
+    </style>
+    <link rel="stylesheet" href="/css/mascot.css">
+</head>
+<body>
+    <div class="login-container">
+        <div class="logo">
+            <img src="/images/logo.png" alt="Car Crash Lawyer AI">
+        </div>
+
+        <h1>Welcome Back</h1>
+        <p class="subtitle">Sign in to access your account</p>
+
+        <div id="alertBox" class="alert"></div>
+
+        <form id="loginForm">
+            <div class="form-group">
+                <label for="email">Email Address</label>
+                <div class="input-wrapper">
+                    <span class="input-icon">📧</span>
+                    <input
+                        type="email"
+                        id="email"
+                        name="email"
+                        placeholder="you@example.com"
+                        required
+                        autocomplete="email"
+                    >
+                </div>
+                <div class="error-message" id="emailError"></div>
+            </div>
+
+            <div class="form-group">
+                <label for="password">Password</label>
+                <div class="input-wrapper">
+                    <span class="input-icon">🔒</span>
+                    <input
+                        type="password"
+                        id="password"
+                        name="password"
+                        placeholder="Enter your password"
+                        required
+                        autocomplete="current-password"
+                    >
+                </div>
+                <div class="error-message" id="passwordError"></div>
+            </div>
+
+            <div class="checkbox-group">
+                <div class="checkbox-wrapper">
+                    <input
+                        type="checkbox"
+                        id="rememberMe"
+                        name="rememberMe"
+                        checked
+                    >
+                    <label for="rememberMe" class="checkbox-label">
+                        Keep me logged in (90 days)
+                    </label>
+                </div>
+            </div>
+
+            <!-- GDPR CONSENT CHECKBOX (REQUIRED FOR COMPLIANCE) -->
+            <div class="gdpr-consent" id="gdprConsentBox">
+                <div class="checkbox-wrapper">
+                    <input
+                        type="checkbox"
+                        id="gdprConsent"
+                        name="gdprConsent"
+                        required
+                    >
+                    <label for="gdprConsent" class="checkbox-label">
+                        I consent to the processing of my personal data including audio/video recordings,
+                        photographs, medical information, and location data through AI transcription services
+                        and secure storage as detailed in our
+                        <a href="/privacy-policy.html" target="_blank">Privacy Policy</a>.
+                    </label>
+                </div>
+                <div class="gdpr-error" id="gdprConsentError"></div>
+            </div>
+
+            <button type="submit" class="login-button" id="loginButton">
+                Sign In
+            </button>
+        </form>
+
+        <div class="links">
+            <p>Don't have an account? <a href="/signup-form.html">Sign up</a></p>
+        </div>
+    </div>
+
+    <script>
+        // Get form elements
+        const loginForm = document.getElementById('loginForm');
+        const emailInput = document.getElementById('email');
+        const passwordInput = document.getElementById('password');
+        const rememberMeCheckbox = document.getElementById('rememberMe');
+        const gdprConsentCheckbox = document.getElementById('gdprConsent');
+        const loginButton = document.getElementById('loginButton');
+        const alertBox = document.getElementById('alertBox');
+        const emailError = document.getElementById('emailError');
+        const passwordError = document.getElementById('passwordError');
+        const gdprConsentBox = document.getElementById('gdprConsentBox');
+        const gdprConsentError = document.getElementById('gdprConsentError');
+
+        // Get redirect parameter from URL
+        function getRedirectUrl() {
+            const urlParams = new URLSearchParams(window.location.search);
+            const redirect = urlParams.get('redirect');
+
+            // If no redirect parameter, go to landing page (index.html)
+            if (!redirect) {
+                return '/index.html';
+            }
+
+            // Decode the redirect URL
+            let decodedRedirect = decodeURIComponent(redirect);
+
+            // Security: Only allow relative paths (no external URLs)
+            if (decodedRedirect.includes('://')) {
+                try {
+                    const url = new URL(decodedRedirect);
+                    decodedRedirect = url.pathname + url.search + url.hash;
+                } catch (e) {
+                    console.warn('Invalid redirect URL, defaulting to dashboard');
+                    return '/dashboard.html';
+                }
+            }
+
+            // Ensure path starts with /
+            const finalUrl = decodedRedirect.startsWith('/') ? decodedRedirect : `/${decodedRedirect}`;
+
+            console.log('🔍 Redirect Debug:', {
+                fullUrl: window.location.href,
+                searchParams: window.location.search,
+                redirectParam: redirect,
+                decodedRedirect: decodedRedirect,
+                finalRedirectUrl: finalUrl
+            });
+
+            return finalUrl;
+        }
+
+        // Show alert message
+        function showAlert(message, type = 'error') {
+            alertBox.textContent = message;
+            alertBox.className = `alert ${type} show`;
+            setTimeout(() => {
+                alertBox.className = 'alert';
+            }, 5000);
+        }
+
+        // Clear field error
+        function clearFieldError(input, errorElement) {
+            input.classList.remove('error');
+            errorElement.textContent = '';
+            errorElement.classList.remove('show');
+        }
+
+        // Show field error
+        function showFieldError(input, errorElement, message) {
+            input.classList.add('error');
+            errorElement.textContent = message;
+            errorElement.classList.add('show');
+        }
+
+        // Clear all errors
+        function clearAllErrors() {
+            clearFieldError(emailInput, emailError);
+            clearFieldError(passwordInput, passwordError);
+            gdprConsentBox.classList.remove('error');
+            gdprConsentError.classList.remove('show');
+            alertBox.className = 'alert';
+        }
+
+        // Input event listeners to clear errors on typing
+        emailInput.addEventListener('input', () => clearFieldError(emailInput, emailError));
+        passwordInput.addEventListener('input', () => clearFieldError(passwordInput, passwordError));
+        gdprConsentCheckbox.addEventListener('change', () => {
+            gdprConsentBox.classList.remove('error');
+            gdprConsentError.classList.remove('show');
         });
 
-        const data = await response.json();
+        // Form submission
+        loginForm.addEventListener('submit', async function(e) {
+            e.preventDefault();
+            clearAllErrors();
 
-        if (data.success) {
-          console.log('========================================');
-          console.log('✅ LOGIN SUCCESSFUL');
-          console.log('========================================');
-          console.log('Response data:', data);
-          console.log('Cookies after login:', document.cookie);
-          console.log('');
+            const email = emailInput.value.trim();
+            const password = passwordInput.value;
+            const rememberMe = rememberMeCheckbox.checked;
 
-          // TEST: Immediately check if session is valid
-          console.log('🔍 Testing session immediately after login...');
-          try {
-            const sessionTest = await fetch('/api/auth/session', {
-              credentials: 'include'
-            });
-            const sessionData = await sessionTest.json();
-            console.log('Session test result:', sessionData);
+            // Basic validation
+            let hasError = false;
 
-            if (sessionData.authenticated) {
-              console.log('✅ Session is VALID - cookies are working!');
-            } else {
-              console.log('❌ Session is INVALID - cookies NOT working!');
-              console.log('⚠️  THIS IS THE PROBLEM!');
+            if (!email) {
+                showFieldError(emailInput, emailError, 'Email is required');
+                hasError = true;
+            } else if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) {
+                showFieldError(emailInput, emailError, 'Please enter a valid email address');
+                hasError = true;
             }
-          } catch (sessionError) {
-            console.log('❌ Session test failed:', sessionError);
-          }
-          console.log('');
 
-          // Redirect to target page (from URL param) or default to index.html
-          const redirectUrl = getRedirectUrl();
-          console.log('Redirecting to:', redirectUrl);
-          console.log('========================================');
+            if (!password) {
+                showFieldError(passwordInput, passwordError, 'Password is required');
+                hasError = true;
+            } else if (password.length < 6) {
+                showFieldError(passwordInput, passwordError, 'Password must be at least 6 characters');
+                hasError = true;
+            }
 
-          // Delay redirect slightly to see console output
-          setTimeout(() => {
-            window.location.href = redirectUrl;
-          }, 1000);
-        } else {
-          errorElement.textContent = data.error || 'Login failed';
-          errorElement.style.display = 'block';
-          loginBtn.disabled = false;
+            // Validate GDPR consent
+            if (!gdprConsentCheckbox.checked) {
+                gdprConsentBox.classList.add('error');
+                gdprConsentError.textContent = 'You must consent to data processing to continue';
+                gdprConsentError.classList.add('show');
+                hasError = true;
+            }
+
+            if (hasError) {
+                return;
+            }
+
+            // Disable button and show loading state
+            loginButton.disabled = true;
+            loginButton.classList.add('loading');
+
+            console.log('🔐 Logging in with Remember Me:', rememberMe);
+
+            try {
+                const response = await fetch('/api/auth/login', {
+                    method: 'POST',
+                    credentials: 'include', // CRITICAL: Required to store cookies
+                    headers: {
+                        'Content-Type': 'application/json'
+                    },
+                    body: JSON.stringify({
+                        email,
+                        password,
+                        rememberMe,
+                        gdprConsent: gdprConsentCheckbox.checked,
+                        consentTimestamp: new Date().toISOString()
+                    })
+                });
+
+                const data = await response.json();
+
+                if (!response.ok) {
+                    throw new Error(data.error || 'Login failed');
+                }
+
+                if (data.success) {
+                    console.log('========================================');
+                    console.log('✅ LOGIN SUCCESSFUL');
+                    console.log('========================================');
+                    console.log('Response data:', data);
+                    console.log('Cookies after login:', document.cookie);
+                    console.log('');
+
+                    // TEST: Immediately check if session is valid
+                    console.log('🔍 Testing session immediately after login...');
+                    try {
+                        const sessionTest = await fetch('/api/auth/session', {
+                            credentials: 'include'
+                        });
+                        const sessionData = await sessionTest.json();
+                        console.log('Session test result:', sessionData);
+
+                        if (sessionData.authenticated) {
+                            console.log('✅ Session is VALID - cookies are working!');
+                        } else {
+                            console.log('❌ Session is INVALID - cookies NOT working!');
+                            console.log('⚠️  THIS IS THE PROBLEM!');
+                        }
+                    } catch (sessionError) {
+                        console.log('❌ Session test failed:', sessionError);
+                    }
+                    console.log('');
+
+                    showAlert('Login successful! Redirecting...', 'success');
+
+                    // Store user data in sessionStorage for use across pages
+                    if (data.user) {
+                        sessionStorage.setItem('user', JSON.stringify(data.user));
+                    }
+
+                    // Redirect to target page
+                    const redirectUrl = getRedirectUrl();
+                    console.log('Redirecting to:', redirectUrl);
+                    console.log('========================================');
+
+                    setTimeout(() => {
+                        window.location.href = redirectUrl;
+                    }, 1000);
+                } else {
+                    throw new Error(data.error || 'Login failed');
+                }
+
+            } catch (error) {
+                console.error('Login error:', error);
+                showAlert(error.message || 'Login failed. Please try again.', 'error');
+
+                // Re-enable button
+                loginButton.disabled = false;
+                loginButton.classList.remove('loading');
+            }
+        });
+
+        // Check if user is already logged in
+        async function checkExistingSession() {
+            try {
+                const response = await fetch('/api/auth/session', {
+                    method: 'GET',
+                    credentials: 'include'
+                });
+
+                if (response.ok) {
+                    const data = await response.json();
+                    if (data.authenticated && data.user) {
+                        // User already logged in, redirect to dashboard or specified page
+                        const redirectUrl = getRedirectUrl();
+                        window.location.href = redirectUrl;
+                    }
+                }
+            } catch (error) {
+                // Ignore errors - user not logged in, which is expected on login page
+                console.log('No existing session');
+            }
         }
-      } catch (error) {
-        console.error('Login error:', error);
-        errorElement.textContent = error.message || 'Login failed';
-        errorElement.style.display = 'block';
-        loginBtn.disabled = false;
-      }
-    });
 
-    // Handle forgot password
-    document.getElementById('forgot-password').addEventListener('click', async (e) => {
-      e.preventDefault();
-
-      const email = document.getElementById('email').value;
-      const errorElement = document.getElementById('error-message');
-
-      if (!email) {
-        errorElement.textContent = 'Please enter your email address';
-        errorElement.style.display = 'block';
-        return;
-      }
-
-      try {
-        // Password reset functionality to be implemented with Supabase
-        errorElement.textContent = 'Password reset functionality coming soon!';
-        errorElement.style.display = 'block';
-        errorElement.style.color = '#f39c12'; // Orange color for info
-      } catch (error) {
-        console.error('Password reset error:', error);
-        errorElement.textContent = error.message || 'Failed to send password reset email';
-        errorElement.style.display = 'block';
-      }
-    });
-  </script>
-    <script src="/js/mascot.js"></script></body>
+        // Check for existing session on page load
+        checkExistingSession();
+    </script>
+    <script src="/js/mascot.js"></script>
+</body>
 </html>

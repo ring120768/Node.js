@@ -35,7 +35,7 @@ Show the directory tree focusing on key files and folders:
 │   ├── transcription-status.html  # Audio recording UI
 │   └── payment-success.html  # Post-signup page
 ├── pdf-templates/            # PDF form templates
-│   └── Car-Crash-Lawyer-AI-Incident-Report.pdf
+│   └── Car-Crash-Lawyer-AI-incident-report-main.pdf
 ├── credentials/              # Adobe credentials (not in Git)
 │   └── pdfservices-api-credentials.json
 ├── test-output/              # Generated test files (not in Git)
@@ -95,7 +95,7 @@ Explain the complete flow from user submission to PDF delivery:
 - **Purpose**: Fill the 17-page legal PDF form from Supabase data
 - **Replaces**: Zapier + PDFco workflow (saves £480/year)
 - **Credentials**: `/credentials/pdfservices-api-credentials.json`
-- **Template**: `/pdf-templates/Car-Crash-Lawyer-AI-Incident-Report.pdf`
+- **Template**: `/pdf-templates/Car-Crash-Lawyer-AI-incident-report-main.pdf`
 
 ### Supabase Integration
 - **Purpose**: Database, authentication, storage

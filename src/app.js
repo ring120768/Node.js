@@ -102,7 +102,13 @@ function createApp() {
   app.use(cors);
   app.use(compression);
   app.use(requestId);
-  app.use(requestTimeout(parseInt(process.env.REQUEST_TIMEOUT) || 30000));
+
+  // Conditional timeout: 120s for AI operations, 30s for others
+  app.use((req, res, next) => {
+    const isAIRoute = req.path.startsWith('/api/ai/');
+    const timeout = isAIRoute ? 120000 : (parseInt(process.env.REQUEST_TIMEOUT) || 30000);
+    return requestTimeout(timeout)(req, res, next);
+  });
 
   // HTTPS/WWW redirect middleware (bypasses webhook endpoints)
   const { httpsRedirect, wwwRedirect } = require('./middleware/security');
@@ -125,6 +131,95 @@ function createApp() {
   // Cookie parsing
   app.use(cookieParser());
 
+  // ==================== PROTECTED PAGE ROUTES (SECURITY WALL) ====================
+
+  /**
+   * Page Authentication Middleware
+   * Protects sensitive HTML pages at the server level before serving static files.
+   *
+   * This is the "security wall" - authentication happens before HTML is served,
+   * not just in client-side JavaScript.
+   */
+  const { pageAuth } = require('./middleware/pageAuth');
+
+  // Protected pages (require authentication)
+  app.get('/dashboard.html', pageAuth, (req, res) => {
+    res.sendFile(path.join(__dirname, '../public/dashboard.html'));
+  });
+
+  app.get('/transcription-status.html', pageAuth, (req, res) => {
+    // Force no-cache to ensure users get latest fixes
+    res.setHeader('Cache-Control', 'no-cache, no-store, must-revalidate, private, max-age=0');
+    res.setHeader('Pragma', 'no-cache');
+    res.setHeader('Expires', '0');
+    res.sendFile(path.join(__dirname, '../public/transcription-status.html'));
+  });
+
+  app.get('/incident.html', pageAuth, (req, res) => {
+    res.sendFile(path.join(__dirname, '../public/incident.html'));
+  });
+
+  // Protect all incident form pages (Page 1-12)
+  app.get('/incident-form-page1.html', pageAuth, (req, res) => {
+    res.sendFile(path.join(__dirname, '../public/incident-form-page1.html'));
+  });
+
+  app.get('/incident-form-page2.html', pageAuth, (req, res) => {
+    res.sendFile(path.join(__dirname, '../public/incident-form-page2.html'));
+  });
+
+  app.get('/incident-form-page3.html', pageAuth, (req, res) => {
+    res.sendFile(path.join(__dirname, '../public/incident-form-page3.html'));
+  });
+
+  app.get('/incident-form-page4.html', pageAuth, (req, res) => {
+    res.sendFile(path.join(__dirname, '../public/incident-form-page4.html'));
+  });
+
+  app.get('/incident-form-page4a-vehicle-extended.html', pageAuth, (req, res) => {
+    res.sendFile(path.join(__dirname, '../public/incident-form-page4a-vehicle-extended.html'));
+  });
+
+  app.get('/incident-form-page5.html', pageAuth, (req, res) => {
+    res.sendFile(path.join(__dirname, '../public/incident-form-page5.html'));
+  });
+
+  app.get('/incident-form-page6.html', pageAuth, (req, res) => {
+    res.sendFile(path.join(__dirname, '../public/incident-form-page6.html'));
+  });
+
+  app.get('/incident-form-page7.html', pageAuth, (req, res) => {
+    res.sendFile(path.join(__dirname, '../public/incident-form-page7.html'));
+  });
+
+  app.get('/incident-form-page8.html', pageAuth, (req, res) => {
+    res.sendFile(path.join(__dirname, '../public/incident-form-page8.html'));
+  });
+
+  app.get('/incident-form-page9.html', pageAuth, (req, res) => {
+    res.sendFile(path.join(__dirname, '../public/incident-form-page9.html'));
+  });
+
+  app.get('/incident-form-page10.html', pageAuth, (req, res) => {
+    res.sendFile(path.join(__dirname, '../public/incident-form-page10.html'));
+  });
+
+  app.get('/incident-form-page12.html', pageAuth, (req, res) => {
+    // Force no-cache to ensure users get latest fixes
+    res.setHeader('Cache-Control', 'no-cache, no-store, must-revalidate, private, max-age=0');
+    res.setHeader('Pragma', 'no-cache');
+    res.setHeader('Expires', '0');
+    res.sendFile(path.join(__dirname, '../public/incident-form-page12.html'));
+  });
+
+  app.get('/report-complete.html', pageAuth, (req, res) => {
+    res.sendFile(path.join(__dirname, '../public/report-complete.html'));
+  });
+
+  app.get('/declaration.html', pageAuth, (req, res) => {
+    res.sendFile(path.join(__dirname, '../public/declaration.html'));
+  });
+
   // Cache control for HTML (MUST be before express.static to work)
   // Sets aggressive cache prevention headers for all HTML files
   app.use((req, res, next) => {
@@ -137,6 +232,7 @@ function createApp() {
   });
 
   // Static files (served with cache headers set above)
+  // Protected pages are intercepted above, so only public pages reach here
   app.use(express.static(path.join(__dirname, '../public')));
 
   // Rate limiting
@@ -440,11 +536,11 @@ function createApp() {
   /**
    * CRITICAL: Webhooks MUST be mounted FIRST (before other routes)
    * Raw body is captured globally via verify functions above
-   * 
+   *
    * Webhook endpoints:
-   * - POST /webhooks/typeform - Typeform form submissions
    * - POST /webhooks/github - GitHub repository events
-   * - GET  /webhooks/test - Test webhook endpoint
+   *
+   * Note: Typeform webhooks removed - application now uses in-house HTML forms
    */
   app.use('/webhooks', webhookRouter);
 
@@ -453,11 +549,8 @@ function createApp() {
     res.json({
       status: 'ok',
       github_webhook_configured: !!process.env.GITHUB_WEBHOOK_SECRET,
-      typeform_webhook_configured: !!process.env.TYPEFORM_WEBHOOK_SECRET,
       endpoints: {
-        typeform: '/webhooks/typeform',
-        github: '/webhooks/github',
-        test: '/webhooks/test'
+        github: '/webhooks/github'
       },
       raw_body_capture: 'enabled',
       timestamp: new Date().toISOString()
@@ -488,8 +581,7 @@ function createApp() {
   app.get('/readyz', (req, res) => {
     const checks = {
       supabase: supabaseEnabled,
-      env_vars: !!(process.env.SUPABASE_URL && process.env.OPENAI_API_KEY),
-      webhooks: !!(process.env.TYPEFORM_WEBHOOK_SECRET)
+      env_vars: !!(process.env.SUPABASE_URL && process.env.OPENAI_API_KEY)
     };
 
     const ready = Object.values(checks).every(Boolean);

@@ -25,7 +25,7 @@ async function checkEmergencyData() {
     // Get all users with their emergency contact fields
     const { data: users, error } = await supabase
       .from('user_signup')
-      .select('create_user_id, email, name, surname, emergency_contact, emergency_contact_number, recovery_breakdown_number')
+      .select('create_user_id, email, name, surname, emergency_contact, recovery_breakdown_number')
       .order('created_at', { ascending: false })
       .limit(10);
 
@@ -47,11 +47,10 @@ async function checkEmergencyData() {
       console.log(`   Email: ${user.email || 'N/A'}`);
       console.log(`   Name: ${user.name} ${user.surname}`);
       console.log(`   Emergency Contact: ${user.emergency_contact || '❌ NOT SET'}`);
-      console.log(`   Emergency Contact Number: ${user.emergency_contact_number || '❌ NOT SET'}`);
       console.log(`   Recovery Number: ${user.recovery_breakdown_number || '❌ NOT SET'}`);
 
       // Check if this user has usable emergency contacts
-      const hasEmergency = !!(user.emergency_contact || user.emergency_contact_number);
+      const hasEmergency = !!user.emergency_contact;
       const hasRecovery = !!user.recovery_breakdown_number;
 
       if (hasEmergency || hasRecovery) {
@@ -62,7 +61,7 @@ async function checkEmergencyData() {
     });
 
     // Summary
-    const usersWithEmergency = users.filter(u => u.emergency_contact || u.emergency_contact_number).length;
+    const usersWithEmergency = users.filter(u => u.emergency_contact).length;
     const usersWithRecovery = users.filter(u => u.recovery_breakdown_number).length;
 
     console.log('\n\n📊 Summary:');

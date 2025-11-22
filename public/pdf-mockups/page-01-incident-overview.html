@@ -1,0 +1,137 @@
+<!DOCTYPE html>
+<html lang="en-GB">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Page 1: Incident Overview - PDF Mockup</title>
+  <link rel="stylesheet" href="pdf-styles.css">
+</head>
+<body>
+  <!-- Navigation (hidden in print) -->
+  <div class="navigation no-print">
+    <h2>PDF Mockup Preview</h2>
+    <a href="index.html">← All Pages</a>
+    <a href="page-01-incident-overview.html" class="current">Page 1</a>
+    <a href="page-02-medical-assessment.html">Page 2</a>
+    <a href="page-03-vehicle-damage.html">Page 3</a>
+    <a href="page-04-weather-road-conditions.html">Page 4</a>
+    <a href="page-05-road-type-traffic.html">Page 5</a>
+    <a href="page-06-visibility.html">Page 6</a>
+    <a href="page-07-junction-infrastructure.html">Page 7</a>
+    <a href="page-08-accident-narrative.html">Page 8</a>
+    <a href="page-09-other-vehicle.html">Page 9</a>
+    <a href="page-10-police-recovery.html">Page 10</a>
+    <a href="page-11-witnesses.html">Page 11</a>
+    <a href="page-12-breath-tests.html">Page 12</a>
+    <a href="page-13-location-photos.html">Page 13</a>
+    <a href="page-14-vehicle-photos.html">Page 14</a>
+    <a href="page-15-other-vehicle-photos.html">Page 15</a>
+    <a href="page-16-additional-evidence.html">Page 16</a>
+    <a href="page-17-declaration.html">Page 17</a>
+  </div>
+
+  <!-- PDF Page -->
+  <div class="pdf-page">
+    <!-- Header -->
+    <div class="pdf-header">
+      <img src="../images/logo.png" alt="Logo" class="header-logo">
+      <div class="header-title">
+        <h1>CAR CRASH LAWYER AI</h1>
+        <p>Incident Report</p>
+      </div>
+      <div class="header-page-number">Page 1 of 17</div>
+    </div>
+
+    <!-- Content -->
+    <div class="pdf-content">
+      <!-- Section 1: Basic Incident Information -->
+      <section class="section">
+        <h2 class="section-title">Basic Incident Information</h2>
+
+        <div class="field-row">
+          <div class="field-group">
+            <label class="field-label required">Date of Accident</label>
+            <input type="text" class="field-input date" placeholder="DD/MM/YYYY" value="">
+            <span class="field-help">accident_date</span>
+          </div>
+
+          <div class="field-group">
+            <label class="field-label required">Time of Accident</label>
+            <input type="text" class="field-input time" placeholder="HH:MM" value="">
+            <span class="field-help">accident_time</span>
+          </div>
+        </div>
+
+        <div class="field-row">
+          <div class="field-group">
+            <label class="field-label required">Your Speed (mph)</label>
+            <input type="text" class="field-input number" placeholder="e.g. 30" value="">
+            <span class="field-help">your_speed</span>
+          </div>
+
+          <div class="field-group">
+            <label class="field-label required">Speed Limit (mph)</label>
+            <input type="text" class="field-input number" placeholder="e.g. 30" value="">
+            <span class="field-help">speed_limit</span>
+          </div>
+        </div>
+
+        <div class="field-group">
+          <label class="field-label required">Was this your usual vehicle?</label>
+          <div class="radio-group">
+            <div class="radio-item">
+              <div class="radio-circle"></div>
+              <span class="radio-label">Yes</span>
+            </div>
+            <div class="radio-item">
+              <div class="radio-circle"></div>
+              <span class="radio-label">No</span>
+            </div>
+          </div>
+          <span class="field-help">usual_vehicle</span>
+        </div>
+
+        <div class="field-group">
+          <label class="field-label required">Your Vehicle Registration (License Plate)</label>
+          <input type="text" class="field-input medium" placeholder="e.g. AB12 CDE" value="">
+          <span class="field-help">license_plate</span>
+        </div>
+      </section>
+
+      <!-- Section 2: Location Information -->
+      <section class="section">
+        <h2 class="section-title">Location Information</h2>
+
+        <div class="field-group">
+          <label class="field-label required">Accident Location (Full Address)</label>
+          <textarea class="field-textarea" placeholder="Street address, city, postcode"></textarea>
+          <span class="field-help">location</span>
+        </div>
+
+        <div class="field-row">
+          <div class="field-group">
+            <label class="field-label">what3words Location</label>
+            <input type="text" class="field-input medium" placeholder="e.g. filled.count.soap" value="">
+            <span class="field-help">what3words (3-word precise location)</span>
+          </div>
+
+          <div class="field-group">
+            <label class="field-label">Nearest Landmark</label>
+            <input type="text" class="field-input medium" placeholder="e.g. Tesco Superstore" value="">
+            <span class="field-help">nearestLandmark</span>
+          </div>
+        </div>
+      </section>
+    </div>
+
+    <!-- Footer -->
+    <div class="pdf-footer">
+      <p class="footer-text">
+        Confidential Legal Document - Car Crash Lawyer AI<br>
+        For legal purposes only. Do not distribute without authorization.
+      </p>
+      <img src="../images/car-crash-lawyer-ai-450.webp" alt="Car Crash Lawyer AI" class="footer-logo">
+    </div>
+  </div>
+</body>
+</html>

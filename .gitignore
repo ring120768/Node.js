@@ -31,3 +31,4 @@ user-pdfs/
 # Test/temp files
 test-timestamp.js
 temp/
+supabase/.temp/

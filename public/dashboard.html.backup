@@ -1,0 +1,2415 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Dashboard - Car Crash Lawyer AI</title>
+  <style>
+    * {
+      margin: 0;
+      padding: 0;
+      box-sizing: border-box;
+    }
+
+    :root {
+      --primary-blue: #0B7AB0;
+      --primary-blue-dark: #095A85;
+      --primary-blue-light: #0D8DC7;
+      --success-green: #10B981;
+      --danger-red: #EF4444;
+      --warning-orange: #F59E0B;
+      --bg-gray: #F3F4F6;
+      --text-dark: #1F2937;
+      --text-gray: #6B7280;
+      --border-gray: #E5E7EB;
+    }
+
+    body {
+      font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, sans-serif;
+      background-color: var(--bg-gray);
+      color: var(--text-dark);
+      min-height: 100vh;
+    }
+
+    /* Navigation */
+    .nav {
+      background: white;
+      box-shadow: 0 1px 3px rgba(0,0,0,0.1);
+      padding: 1rem 2rem;
+      position: sticky;
+      top: 0;
+      z-index: 100;
+    }
+
+    .nav-container {
+      max-width: 1200px;
+      margin: 0 auto;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+    }
+
+    .nav-logo {
+      font-size: 1.25rem;
+      font-weight: bold;
+      color: var(--primary-blue);
+      text-decoration: none;
+      display: flex;
+      align-items: center;
+      gap: 0.5rem;
+    }
+
+    .nav-logo img {
+      width: 40px;
+      height: 40px;
+      object-fit: contain;
+    }
+
+    .nav-right {
+      display: flex;
+      align-items: center;
+      gap: 1rem;
+    }
+
+    .user-badge {
+      display: flex;
+      align-items: center;
+      gap: 0.5rem;
+      padding: 0.5rem 1rem;
+      background: var(--bg-gray);
+      border-radius: 2rem;
+      font-size: 0.875rem;
+      color: var(--text-gray);
+    }
+
+    .user-avatar {
+      width: 2rem;
+      height: 2rem;
+      border-radius: 50%;
+      background: var(--primary-blue);
+      color: white;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-weight: bold;
+    }
+
+    .btn {
+      padding: 0.5rem 1rem;
+      border: none;
+      border-radius: 0.375rem;
+      cursor: pointer;
+      font-weight: 500;
+      transition: all 0.2s;
+      text-decoration: none;
+      display: inline-block;
+      text-align: center;
+    }
+
+    .btn-primary {
+      background: var(--primary-blue);
+      color: white;
+    }
+
+    .btn-primary:hover {
+      background: var(--primary-blue-dark);
+    }
+
+    .btn-secondary {
+      background: var(--bg-gray);
+      color: var(--text-dark);
+    }
+
+    .btn-secondary:hover {
+      background: var(--border-gray);
+    }
+
+    .btn-danger {
+      background: var(--danger-red);
+      color: white;
+    }
+
+    .btn-danger:hover {
+      background: #DC2626;
+    }
+
+    /* Container */
+    .container {
+      max-width: 1200px;
+      margin: 0 auto;
+      padding: 2rem;
+    }
+
+    /* Header */
+    .page-header {
+      margin-bottom: 2rem;
+    }
+
+    .page-header h1 {
+      font-size: 2rem;
+      color: var(--text-dark);
+      margin-bottom: 0.5rem;
+    }
+
+    .page-header p {
+      color: var(--text-gray);
+    }
+
+    .breadcrumb {
+      display: flex;
+      gap: 0.5rem;
+      align-items: center;
+      margin-bottom: 1rem;
+      font-size: 0.875rem;
+      color: var(--text-gray);
+    }
+
+    .breadcrumb a {
+      color: var(--primary-blue);
+      text-decoration: none;
+    }
+
+    .breadcrumb a:hover {
+      text-decoration: underline;
+    }
+
+    /* Dashboard Grid */
+    .dashboard-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+      gap: 1.5rem;
+      margin-top: 2rem;
+    }
+
+    .dashboard-card {
+      background: white;
+      border-radius: 0.5rem;
+      padding: 1.5rem;
+      box-shadow: 0 1px 3px rgba(0,0,0,0.1);
+      transition: all 0.3s;
+      cursor: pointer;
+      border: 2px solid transparent;
+    }
+
+    .dashboard-card:hover {
+      transform: translateY(-4px);
+      box-shadow: 0 4px 12px rgba(11, 122, 176, 0.15);
+      border-color: var(--primary-blue);
+    }
+
+    .card-header {
+      display: flex;
+      justify-content: space-between;
+      align-items: flex-start;
+      margin-bottom: 1rem;
+    }
+
+    .card-icon {
+      font-size: 2.5rem;
+      margin-bottom: 1rem;
+    }
+
+    .card-title {
+      font-size: 1.125rem;
+      font-weight: 600;
+      color: var(--text-dark);
+      margin-bottom: 0.5rem;
+    }
+
+    .card-description {
+      font-size: 0.875rem;
+      color: var(--text-gray);
+      line-height: 1.5;
+    }
+
+    .count-badge {
+      background: var(--primary-blue);
+      color: white;
+      padding: 0.25rem 0.75rem;
+      border-radius: 1rem;
+      font-size: 0.875rem;
+      font-weight: bold;
+    }
+
+    /* Mobile Summary Card */
+    .mobile-summary-card {
+      background: linear-gradient(135deg, #0B7AB0 0%, #1EA1D4 100%);
+      border-radius: 1rem;
+      padding: 1.5rem;
+      box-shadow: 0 4px 6px rgba(11, 122, 176, 0.2);
+      color: white;
+      margin-bottom: 2rem;
+      display: none; /* Hide on desktop */
+    }
+
+    .mobile-summary-card h2 {
+      font-size: 1.5rem;
+      margin-bottom: 0.5rem;
+      font-weight: 600;
+    }
+
+    .mobile-summary-card .summary-subtitle {
+      font-size: 0.875rem;
+      opacity: 0.9;
+      margin-bottom: 1.5rem;
+    }
+
+    .summary-stats {
+      display: grid;
+      grid-template-columns: repeat(2, 1fr);
+      gap: 1rem;
+      margin-bottom: 1.5rem;
+    }
+
+    .summary-stat {
+      background: rgba(255, 255, 255, 0.15);
+      backdrop-filter: blur(10px);
+      border-radius: 0.5rem;
+      padding: 1rem;
+      text-align: center;
+    }
+
+    .summary-stat .stat-icon {
+      font-size: 1.75rem;
+      margin-bottom: 0.5rem;
+    }
+
+    .summary-stat .stat-value {
+      font-size: 1.5rem;
+      font-weight: bold;
+      display: block;
+      margin-bottom: 0.25rem;
+    }
+
+    .summary-stat .stat-label {
+      font-size: 0.75rem;
+      opacity: 0.9;
+    }
+
+    .summary-actions {
+      display: grid;
+      grid-template-columns: repeat(2, 1fr);
+      gap: 0.75rem;
+    }
+
+    .summary-action-btn {
+      background: white;
+      color: var(--primary-blue);
+      padding: 0.75rem;
+      border-radius: 0.5rem;
+      font-weight: 600;
+      font-size: 0.875rem;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: 0.5rem;
+      border: none;
+      cursor: pointer;
+      transition: all 0.2s;
+    }
+
+    .summary-action-btn:active {
+      transform: scale(0.98);
+    }
+
+    /* Show mobile summary card only on mobile/tablet */
+    @media (max-width: 768px) {
+      .mobile-summary-card {
+        display: block;
+      }
+
+      .dashboard-grid {
+        grid-template-columns: 1fr;
+      }
+    }
+
+    /* Section View */
+    .section-view {
+      display: none;
+    }
+
+    .section-view.active {
+      display: block;
+    }
+
+    .section-header {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      margin-bottom: 2rem;
+      flex-wrap: wrap;
+      gap: 1rem;
+    }
+
+    .section-actions {
+      display: flex;
+      gap: 0.5rem;
+    }
+
+    /* Items Grid */
+    .items-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
+      gap: 1.5rem;
+    }
+
+    .item-card {
+      background: white;
+      border-radius: 0.75rem;
+      overflow: hidden;
+      box-shadow: 0 1px 3px rgba(0,0,0,0.1), 0 1px 2px rgba(0,0,0,0.06);
+      transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+      cursor: pointer;
+    }
+
+    .item-card:hover {
+      box-shadow: 0 10px 15px -3px rgba(0,0,0,0.1), 0 4px 6px -2px rgba(0,0,0,0.05);
+      transform: translateY(-4px);
+    }
+
+    .item-preview {
+      width: 100%;
+      height: 200px;
+      object-fit: cover;
+      background: var(--bg-gray);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 3rem;
+      color: var(--text-gray);
+    }
+
+    .item-preview img {
+      width: 100%;
+      height: 100%;
+      object-fit: cover;
+    }
+
+    .item-content {
+      padding: 1rem;
+    }
+
+    .item-title {
+      font-weight: 600;
+      margin-bottom: 0.5rem;
+      color: var(--text-dark);
+    }
+
+    .item-meta {
+      font-size: 0.875rem;
+      color: var(--text-gray);
+      margin-bottom: 1rem;
+    }
+
+    .item-actions {
+      display: flex;
+      gap: 0.5rem;
+      padding-top: 1rem;
+      border-top: 1px solid var(--border-gray);
+    }
+
+    .item-actions button {
+      flex: 1;
+      padding: 0.5rem;
+      font-size: 0.875rem;
+    }
+
+    /* Empty State */
+    .empty-state {
+      background: white;
+      border-radius: 0.5rem;
+      padding: 4rem 2rem;
+      text-align: center;
+      box-shadow: 0 1px 3px rgba(0,0,0,0.1);
+    }
+
+    .empty-state-icon {
+      font-size: 4rem;
+      margin-bottom: 1rem;
+      opacity: 0.3;
+    }
+
+    .empty-state h3 {
+      font-size: 1.25rem;
+      margin-bottom: 0.5rem;
+      color: var(--text-dark);
+    }
+
+    .empty-state p {
+      color: var(--text-gray);
+      margin-bottom: 1.5rem;
+    }
+
+    /* Modal */
+    .modal {
+      display: none;
+      position: fixed;
+      top: 0;
+      left: 0;
+      width: 100%;
+      height: 100%;
+      background: rgba(0,0,0,0.7);
+      z-index: 1000;
+      align-items: center;
+      justify-content: center;
+      padding: 1rem;
+    }
+
+    .modal.active {
+      display: flex;
+    }
+
+    .modal-content {
+      background: white;
+      border-radius: 0.5rem;
+      max-width: 900px;
+      width: 100%;
+      max-height: 90vh;
+      overflow-y: auto;
+      position: relative;
+    }
+
+    .modal-header {
+      padding: 1.5rem;
+      border-bottom: 1px solid var(--border-gray);
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+    }
+
+    .modal-header h2 {
+      font-size: 1.5rem;
+      color: var(--text-dark);
+    }
+
+    .modal-close {
+      background: none;
+      border: none;
+      font-size: 1.5rem;
+      cursor: pointer;
+      color: var(--text-gray);
+      padding: 0.5rem;
+      line-height: 1;
+    }
+
+    .modal-close:hover {
+      color: var(--text-dark);
+    }
+
+    .modal-body {
+      padding: 1.5rem;
+    }
+
+    .modal-image {
+      width: 100%;
+      height: auto;
+      border-radius: 0.5rem;
+      margin-bottom: 1rem;
+    }
+
+    .modal-footer {
+      padding: 1.5rem;
+      border-top: 1px solid var(--border-gray);
+      display: flex;
+      gap: 0.5rem;
+      justify-content: flex-end;
+    }
+
+    /* Loading */
+    .loading {
+      text-align: center;
+      padding: 3rem;
+      color: var(--text-gray);
+    }
+
+    .loading-spinner {
+      width: 3rem;
+      height: 3rem;
+      border: 4px solid var(--border-gray);
+      border-top-color: var(--primary-blue);
+      border-radius: 50%;
+      animation: spin 1s linear infinite;
+      margin: 0 auto 1rem;
+    }
+
+    @keyframes spin {
+      to { transform: rotate(360deg); }
+    }
+
+    /* Responsive */
+    @media (max-width: 768px) {
+      .container {
+        padding: 1rem;
+      }
+
+      .dashboard-grid {
+        grid-template-columns: 1fr;
+      }
+
+      .items-grid {
+        grid-template-columns: 1fr;
+      }
+
+      .section-header {
+        flex-direction: column;
+        align-items: flex-start;
+      }
+
+      .nav {
+        padding: 1rem;
+      }
+
+      .page-header h1 {
+        font-size: 1.5rem;
+      }
+    }
+
+    /* Utility */
+    .hidden {
+      display: none !important;
+    }
+
+    /* Profile Form Styles */
+    .form-section {
+      background: white;
+      border-radius: 0.75rem;
+      padding: 1.5rem;
+      margin-bottom: 1.5rem;
+      box-shadow: 0 1px 3px rgba(0,0,0,0.1);
+    }
+
+    .form-section h3 {
+      color: var(--primary-blue);
+      font-size: 1.125rem;
+      margin-bottom: 1rem;
+      padding-bottom: 0.5rem;
+      border-bottom: 2px solid var(--border-gray);
+    }
+
+    .form-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+      gap: 1rem;
+    }
+
+    .form-group {
+      display: flex;
+      flex-direction: column;
+    }
+
+    .form-group.full-width {
+      grid-column: 1 / -1;
+    }
+
+    .form-group label {
+      font-weight: 500;
+      margin-bottom: 0.5rem;
+      color: var(--text-dark);
+      font-size: 0.875rem;
+    }
+
+    .form-group input,
+    .form-group select,
+    .form-group textarea {
+      padding: 0.625rem 0.875rem;
+      border: 1px solid var(--border-gray);
+      border-radius: 0.375rem;
+      font-size: 1rem;
+      transition: border-color 0.2s;
+      font-family: inherit;
+    }
+
+    .form-group input:focus,
+    .form-group select:focus,
+    .form-group textarea:focus {
+      outline: none;
+      border-color: var(--primary-blue);
+      box-shadow: 0 0 0 3px rgba(11, 122, 176, 0.1);
+    }
+
+    .form-group input:read-only {
+      background-color: var(--bg-gray);
+      cursor: not-allowed;
+    }
+
+    .field-error {
+      color: var(--danger-red);
+      font-size: 0.75rem;
+      margin-top: 0.25rem;
+      min-height: 1rem;
+      display: block;
+    }
+
+    .form-actions {
+      background: white;
+      border-radius: 0.75rem;
+      padding: 1.5rem;
+      display: flex;
+      gap: 1rem;
+      justify-content: flex-end;
+      box-shadow: 0 1px 3px rgba(0,0,0,0.1);
+    }
+
+    /* Success/Error Messages */
+    .message {
+      padding: 1rem;
+      border-radius: 0.5rem;
+      margin-bottom: 1rem;
+      display: flex;
+      align-items: center;
+      gap: 0.5rem;
+    }
+
+    .message-success {
+      background-color: #D1FAE5;
+      color: #065F46;
+      border: 1px solid #6EE7B7;
+    }
+
+    .message-error {
+      background-color: #FEE2E2;
+      color: #991B1B;
+      border: 1px solid #FCA5A5;
+    }
+
+    /* Toast Notifications */
+    .toast-container {
+      position: fixed;
+      bottom: 2rem;
+      right: 2rem;
+      z-index: 9999;
+      display: flex;
+      flex-direction: column;
+      gap: 0.5rem;
+      max-width: 400px;
+    }
+
+    .toast {
+      padding: 1rem 1.5rem;
+      background: white;
+      border-radius: 0.5rem;
+      box-shadow: 0 10px 25px rgba(0,0,0,0.15);
+      display: flex;
+      align-items: center;
+      gap: 0.75rem;
+      animation: slideInUp 0.3s ease;
+      border-left: 4px solid;
+    }
+
+    .toast-success {
+      border-left-color: var(--success-green);
+    }
+
+    .toast-error {
+      border-left-color: var(--danger-red);
+    }
+
+    .toast-info {
+      border-left-color: var(--primary-blue);
+    }
+
+    .toast-icon {
+      font-size: 1.25rem;
+      flex-shrink: 0;
+    }
+
+    .toast-message {
+      flex-grow: 1;
+      font-size: 0.875rem;
+      color: var(--text-dark);
+    }
+
+    @keyframes slideInUp {
+      from {
+        transform: translateY(100%);
+        opacity: 0;
+      }
+      to {
+        transform: translateY(0);
+        opacity: 1;
+      }
+    }
+
+    @keyframes slideOutDown {
+      from {
+        transform: translateY(0);
+        opacity: 1;
+      }
+      to {
+        transform: translateY(100%);
+        opacity: 0;
+      }
+    }
+
+    /* Loading Skeleton */
+    .skeleton-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
+      gap: 1.5rem;
+    }
+
+    .skeleton-card {
+      background: white;
+      border-radius: 0.75rem;
+      overflow: hidden;
+      box-shadow: 0 1px 3px rgba(0,0,0,0.1);
+    }
+
+    .skeleton-content {
+      padding: 1rem;
+    }
+
+    .skeleton-image {
+      width: 100%;
+      height: 200px;
+      background: linear-gradient(90deg, #f0f0f0 25%, #e0e0e0 50%, #f0f0f0 75%);
+      background-size: 200% 100%;
+      animation: loading 1.5s infinite;
+    }
+
+    .skeleton-text {
+      height: 1rem;
+      background: linear-gradient(90deg, #f0f0f0 25%, #e0e0e0 50%, #f0f0f0 75%);
+      background-size: 200% 100%;
+      animation: loading 1.5s infinite;
+      margin: 1rem;
+      border-radius: 0.25rem;
+    }
+
+    .skeleton-text.short {
+      width: 60%;
+    }
+
+    @keyframes loading {
+      0% {
+        background-position: 200% 0;
+      }
+      100% {
+        background-position: -200% 0;
+      }
+    }
+
+    /* Edit Modal */
+    #editModal {
+      display: none;
+    }
+
+    #editModal.active {
+      display: flex;
+    }
+
+    .edit-form-group {
+      margin-bottom: 1.5rem;
+    }
+
+    .edit-form-group label {
+      display: block;
+      margin-bottom: 0.5rem;
+      font-weight: 600;
+      color: var(--text-dark);
+    }
+
+    .edit-form-group select,
+    .edit-form-group textarea {
+      width: 100%;
+      padding: 0.75rem;
+      border: 1px solid var(--border-gray);
+      border-radius: 0.5rem;
+      font-size: 1rem;
+      transition: border-color 0.2s, box-shadow 0.2s;
+    }
+
+    .edit-form-group select:focus,
+    .edit-form-group textarea:focus {
+      outline: none;
+      border-color: var(--primary-blue);
+      box-shadow: 0 0 0 3px rgba(11, 122, 176, 0.1);
+    }
+
+    .edit-form-group textarea {
+      min-height: 100px;
+      resize: vertical;
+      font-family: inherit;
+    }
+
+    /* Button improvements */
+    .btn {
+      position: relative;
+      overflow: hidden;
+    }
+
+    .btn::after {
+      content: '';
+      position: absolute;
+      top: 50%;
+      left: 50%;
+      width: 0;
+      height: 0;
+      border-radius: 50%;
+      background: rgba(255, 255, 255, 0.3);
+      transform: translate(-50%, -50%);
+      transition: width 0.6s, height 0.6s;
+    }
+
+    .btn:active::after {
+      width: 300px;
+      height: 300px;
+    }
+
+    /* Smooth transitions for section changes */
+    .section-view {
+      animation: fadeIn 0.3s ease;
+    }
+
+    @keyframes fadeIn {
+      from {
+        opacity: 0;
+        transform: translateY(10px);
+      }
+      to {
+        opacity: 1;
+        transform: translateY(0);
+      }
+    }
+
+    /* Improved item-actions buttons */
+    .item-actions {
+      display: flex;
+      gap: 0.5rem;
+      flex-wrap: wrap;
+    }
+
+    .item-actions .btn {
+      flex: 1;
+      min-width: max-content;
+      justify-content: center;
+      font-size: 0.875rem;
+      padding: 0.5rem 0.75rem;
+    }
+
+    /* Responsive improvements */
+    @media (max-width: 768px) {
+      .toast-container {
+        left: 1rem;
+        right: 1rem;
+        bottom: 1rem;
+      }
+
+      .item-actions {
+        flex-direction: column;
+      }
+
+      .item-actions .btn {
+        width: 100%;
+      }
+    }
+  </style>
+  <link rel="stylesheet" href="/css/mascot.css?v=20241028">
+</head>
+<body>
+  <!-- Navigation -->
+  <nav class="nav">
+    <div class="nav-container">
+      <a href="index.html" class="nav-logo">
+        <img src="/images/car-crash-lawyer-ai-450.webp" alt="Car Crash Lawyer AI">
+        <span>Car Crash Lawyer AI</span>
+      </a>
+      <div class="nav-right">
+        <a href="index.html" class="btn btn-secondary" style="text-decoration: none;">🏠 Home</a>
+        <div class="user-badge">
+          <div class="user-avatar" id="userAvatar">?</div>
+          <span id="userName">Loading...</span>
+        </div>
+        <button class="btn btn-secondary" onclick="handleLogout()">Logout</button>
+      </div>
+    </div>
+  </nav>
+
+  <div class="container">
+    <!-- Landing View -->
+    <div id="landingView" class="section-view active">
+      <div class="page-header">
+        <h1>Your Dashboard</h1>
+        <p>Manage your incident reports and files</p>
+        <!-- Version marker to confirm new code is loaded -->
+        <div style="background: #10B981; color: white; padding: 0.5rem; border-radius: 0.25rem; margin-top: 1rem; font-size: 0.875rem;">
+          ✅ Version 2.1.2 - Fixed API Calls & Image Loading (21 Oct 2025, 21:00)
+        </div>
+      </div>
+
+      <!-- Mobile Summary Card (visible only on mobile) -->
+      <div class="mobile-summary-card">
+        <h2>Your Incident Report</h2>
+        <p class="summary-subtitle">Quick overview of your files</p>
+
+        <div class="summary-stats">
+          <div class="summary-stat">
+            <div class="stat-icon">📸</div>
+            <span class="stat-value" id="mobileImagesCount">0</span>
+            <div class="stat-label">Photos</div>
+          </div>
+
+          <div class="summary-stat">
+            <div class="stat-icon">📹</div>
+            <span class="stat-value" id="mobileVideosCount">0</span>
+            <div class="stat-label">Videos</div>
+          </div>
+
+          <div class="summary-stat">
+            <div class="stat-icon">🎙️</div>
+            <span class="stat-value" id="mobileTranscriptionsCount">0</span>
+            <div class="stat-label">Audio</div>
+          </div>
+
+          <div class="summary-stat">
+            <div class="stat-icon">📄</div>
+            <span class="stat-value" id="mobilePdfsCount">0</span>
+            <div class="stat-label">Reports</div>
+          </div>
+        </div>
+
+        <div class="summary-actions">
+          <button class="summary-action-btn" onclick="showSection('images')">
+            <span>📸</span> View Photos
+          </button>
+          <button class="summary-action-btn" onclick="showSection('videos')">
+            <span>📹</span> View Videos
+          </button>
+        </div>
+      </div>
+
+      <div class="dashboard-grid">
+        <!-- Incident Reports -->
+        <div class="dashboard-card" onclick="showSection('reports')">
+          <div class="card-header">
+            <div class="card-icon">📋</div>
+            <span class="count-badge" id="reportsCount">0</span>
+          </div>
+          <h3 class="card-title">Incident Reports</h3>
+          <p class="card-description">View and manage your accident reports and claim details</p>
+        </div>
+
+        <!-- Images -->
+        <div class="dashboard-card" onclick="showSection('images')">
+          <div class="card-header">
+            <div class="card-icon">🖼️</div>
+            <span class="count-badge" id="imagesCount">0</span>
+          </div>
+          <h3 class="card-title">Images</h3>
+          <p class="card-description">Photos of damage, documents, and evidence</p>
+        </div>
+
+        <!-- Dashcam Footage -->
+        <div class="dashboard-card" onclick="showSection('videos')">
+          <div class="card-header">
+            <div class="card-icon">📹</div>
+            <span class="count-badge" id="videosCount">0</span>
+          </div>
+          <h3 class="card-title">Dashcam Footage</h3>
+          <p class="card-description">Video recordings from the incident</p>
+        </div>
+
+        <!-- Audio Transcriptions -->
+        <div class="dashboard-card" onclick="showSection('transcriptions')">
+          <div class="card-header">
+            <div class="card-icon">🎙️</div>
+            <span class="count-badge" id="transcriptionsCount">0</span>
+          </div>
+          <h3 class="card-title">Audio Transcriptions</h3>
+          <p class="card-description">Voice recordings and transcribed statements</p>
+        </div>
+
+        <!-- Generated PDFs -->
+        <div class="dashboard-card" onclick="showSection('pdfs')">
+          <div class="card-header">
+            <div class="card-icon">📄</div>
+            <span class="count-badge" id="pdfsCount">0</span>
+          </div>
+          <h3 class="card-title">Generated Reports</h3>
+          <p class="card-description">Completed PDF incident reports ready for submission</p>
+        </div>
+
+        <!-- Profile -->
+        <div class="dashboard-card" onclick="showSection('profile')">
+          <div class="card-header">
+            <div class="card-icon">👤</div>
+          </div>
+          <h3 class="card-title">My Profile</h3>
+          <p class="card-description">Update your personal information and contact details</p>
+        </div>
+      </div>
+    </div>
+
+    <!-- Images Section -->
+    <div id="imagesView" class="section-view">
+      <div class="breadcrumb">
+        <a href="#" onclick="showSection('landing')">Dashboard</a>
+        <span>›</span>
+        <span>Images</span>
+      </div>
+
+      <div class="section-header">
+        <div class="page-header">
+          <h1>Images</h1>
+          <p>Photos and documents from your incident</p>
+        </div>
+        <div class="section-actions">
+          <button class="btn btn-secondary" onclick="showSection('landing')">← Back to Dashboard</button>
+        </div>
+      </div>
+
+      <div id="imagesContainer">
+        <div class="loading">
+          <div class="loading-spinner"></div>
+          <p>Loading images...</p>
+        </div>
+      </div>
+    </div>
+
+    <!-- Videos Section -->
+    <div id="videosView" class="section-view">
+      <div class="breadcrumb">
+        <a href="#" onclick="showSection('landing')">Dashboard</a>
+        <span>›</span>
+        <span>Dashcam Footage</span>
+      </div>
+
+      <div class="section-header">
+        <div class="page-header">
+          <h1>Dashcam Footage</h1>
+          <p>Video recordings from your incident</p>
+        </div>
+        <div class="section-actions">
+          <button class="btn btn-secondary" onclick="showSection('landing')">← Back to Dashboard</button>
+        </div>
+      </div>
+
+      <div id="videosContainer">
+        <div class="loading">
+          <div class="loading-spinner"></div>
+          <p>Loading videos...</p>
+        </div>
+      </div>
+    </div>
+
+    <!-- Transcriptions Section -->
+    <div id="transcriptionsView" class="section-view">
+      <div class="breadcrumb">
+        <a href="#" onclick="showSection('landing')">Dashboard</a>
+        <span>›</span>
+        <span>Audio Transcriptions</span>
+      </div>
+
+      <div class="section-header">
+        <div class="page-header">
+          <h1>Audio Transcriptions</h1>
+          <p>Voice recordings and AI-generated transcripts</p>
+        </div>
+        <div class="section-actions">
+          <button class="btn btn-secondary" onclick="showSection('landing')">← Back to Dashboard</button>
+        </div>
+      </div>
+
+      <div id="transcriptionsContainer">
+        <div class="loading">
+          <div class="loading-spinner"></div>
+          <p>Loading transcriptions...</p>
+        </div>
+      </div>
+    </div>
+
+    <!-- PDFs Section -->
+    <div id="pdfsView" class="section-view">
+      <div class="breadcrumb">
+        <a href="#" onclick="showSection('landing')">Dashboard</a>
+        <span>›</span>
+        <span>Generated Reports</span>
+      </div>
+
+      <div class="section-header">
+        <div class="page-header">
+          <h1>Generated Reports</h1>
+          <p>Completed PDF incident reports</p>
+        </div>
+        <div class="section-actions">
+          <button class="btn btn-secondary" onclick="showSection('landing')">← Back to Dashboard</button>
+        </div>
+      </div>
+
+      <div id="pdfsContainer">
+        <div class="loading">
+          <div class="loading-spinner"></div>
+          <p>Loading reports...</p>
+        </div>
+      </div>
+    </div>
+
+    <!-- Reports Section -->
+    <div id="reportsView" class="section-view">
+      <div class="breadcrumb">
+        <a href="#" onclick="showSection('landing')">Dashboard</a>
+        <span>›</span>
+        <span>Incident Reports</span>
+      </div>
+
+      <div class="section-header">
+        <div class="page-header">
+          <h1>Incident Reports</h1>
+          <p>Your submitted accident reports and claim details</p>
+        </div>
+        <div class="section-actions">
+          <button class="btn btn-secondary" onclick="showSection('landing')">← Back to Dashboard</button>
+        </div>
+      </div>
+
+      <div id="reportsContainer">
+        <div class="loading">
+          <div class="loading-spinner"></div>
+          <p>Loading reports...</p>
+        </div>
+      </div>
+    </div>
+
+    <!-- Profile Section -->
+    <div id="profileView" class="section-view">
+      <div class="breadcrumb">
+        <a href="#" onclick="showSection('landing')">Dashboard</a>
+        <span>›</span>
+        <span>My Profile</span>
+      </div>
+
+      <div class="section-header">
+        <div class="page-header">
+          <h1>My Profile</h1>
+          <p>Update your personal information and contact details</p>
+        </div>
+        <div class="section-actions">
+          <button class="btn btn-secondary" onclick="showSection('landing')">← Back to Dashboard</button>
+        </div>
+      </div>
+
+      <div id="profileContainer">
+        <div class="loading">
+          <div class="loading-spinner"></div>
+          <p>Loading profile...</p>
+        </div>
+
+        <!-- Profile Form (hidden until loaded) -->
+        <form id="profileForm" style="display: none;">
+          <!-- Success/Error Messages -->
+          <div id="profileMessages" style="margin-bottom: 20px;"></div>
+
+          <!-- Personal Information -->
+          <div class="form-section">
+            <h3>Personal Information</h3>
+            <div class="form-grid">
+              <div class="form-group">
+                <label for="profile_name">Full Name *</label>
+                <input type="text" id="profile_name" name="name" required>
+                <span class="field-error" id="error_name"></span>
+              </div>
+
+              <div class="form-group">
+                <label for="profile_email">Email Address *</label>
+                <input type="email" id="profile_email" name="email" required>
+                <span class="field-error" id="error_email"></span>
+              </div>
+
+              <div class="form-group">
+                <label for="profile_mobile">Mobile Number *</label>
+                <input type="tel" id="profile_mobile" name="mobile_number" placeholder="07411 123456" required>
+                <span class="field-error" id="error_mobile_number"></span>
+              </div>
+
+              <div class="form-group">
+                <label for="profile_dob">Date of Birth</label>
+                <input type="date" id="profile_dob" name="date_of_birth">
+                <span class="field-error" id="error_date_of_birth"></span>
+              </div>
+            </div>
+          </div>
+
+          <!-- Address -->
+          <div class="form-section">
+            <h3>Address</h3>
+            <div class="form-grid">
+              <div class="form-group full-width">
+                <label for="profile_street">Street Address</label>
+                <input type="text" id="profile_street" name="street_address">
+                <span class="field-error" id="error_street_address"></span>
+              </div>
+
+              <div class="form-group">
+                <label for="profile_town">Town/City</label>
+                <input type="text" id="profile_town" name="town">
+                <span class="field-error" id="error_town"></span>
+              </div>
+
+              <div class="form-group">
+                <label for="profile_postcode">Postcode</label>
+                <input type="text" id="profile_postcode" name="postcode" placeholder="SW1A 1AA">
+                <span class="field-error" id="error_postcode"></span>
+              </div>
+
+              <div class="form-group">
+                <label for="profile_country">Country</label>
+                <input type="text" id="profile_country" name="country" value="United Kingdom" readonly>
+                <span class="field-error" id="error_country"></span>
+              </div>
+            </div>
+          </div>
+
+          <!-- Vehicle Information -->
+          <div class="form-section">
+            <h3>Vehicle Information</h3>
+            <div class="form-grid">
+              <div class="form-group">
+                <label for="profile_car_reg">Registration Number</label>
+                <input type="text" id="profile_car_reg" name="car_registration_number" placeholder="AB12 CDE" style="text-transform: uppercase;">
+                <span class="field-error" id="error_car_registration_number"></span>
+              </div>
+
+              <div class="form-group">
+                <label for="profile_car_make">Make</label>
+                <input type="text" id="profile_car_make" name="car_make" placeholder="e.g., Toyota">
+                <span class="field-error" id="error_car_make"></span>
+              </div>
+
+              <div class="form-group">
+                <label for="profile_car_model">Model</label>
+                <input type="text" id="profile_car_model" name="car_model" placeholder="e.g., Corolla">
+                <span class="field-error" id="error_car_model"></span>
+              </div>
+
+              <div class="form-group">
+                <label for="profile_car_color">Colour</label>
+                <input type="text" id="profile_car_color" name="car_color" placeholder="e.g., Silver">
+                <span class="field-error" id="error_car_color"></span>
+              </div>
+            </div>
+          </div>
+
+          <!-- Insurance Information -->
+          <div class="form-section">
+            <h3>Insurance Details</h3>
+            <div class="form-grid">
+              <div class="form-group">
+                <label for="profile_insurance_company">Insurance Company</label>
+                <input type="text" id="profile_insurance_company" name="insurance_company_name" placeholder="e.g., Direct Line">
+                <span class="field-error" id="error_insurance_company_name"></span>
+              </div>
+
+              <div class="form-group">
+                <label for="profile_insurance_policy">Policy Number</label>
+                <input type="text" id="profile_insurance_policy" name="insurance_policy_number">
+                <span class="field-error" id="error_insurance_policy_number"></span>
+              </div>
+            </div>
+          </div>
+
+          <!-- Driving License -->
+          <div class="form-section">
+            <h3>Driving License</h3>
+            <div class="form-grid">
+              <div class="form-group">
+                <label for="profile_license_number">License Number</label>
+                <input type="text" id="profile_license_number" name="driving_license_number">
+                <span class="field-error" id="error_driving_license_number"></span>
+              </div>
+
+              <div class="form-group">
+                <label for="profile_license_issue">Issue Date</label>
+                <input type="date" id="profile_license_issue" name="driving_license_issue_date">
+                <span class="field-error" id="error_driving_license_issue_date"></span>
+              </div>
+
+              <div class="form-group">
+                <label for="profile_license_expiry">Expiry Date</label>
+                <input type="date" id="profile_license_expiry" name="driving_license_expiry_date">
+                <span class="field-error" id="error_driving_license_expiry_date"></span>
+              </div>
+            </div>
+          </div>
+
+          <!-- Form Actions -->
+          <div class="form-actions">
+            <button type="button" class="btn btn-secondary" onclick="showSection('landing')">Cancel</button>
+            <button type="submit" class="btn btn-primary">Save Changes</button>
+          </div>
+        </form>
+      </div>
+    </div>
+
+  </div>
+
+  <!-- Image View Modal -->
+  <div id="imageModal" class="modal">
+    <div class="modal-content">
+      <div class="modal-header">
+        <h2 id="modalTitle">Image</h2>
+        <button class="modal-close" onclick="closeModal()">&times;</button>
+      </div>
+      <div class="modal-body">
+        <img id="modalImage" class="modal-image" src="" alt="">
+        <div id="modalMeta" class="item-meta"></div>
+      </div>
+      <div class="modal-footer">
+        <button class="btn btn-secondary" onclick="closeModal()">Close</button>
+        <button class="btn btn-primary" onclick="downloadCurrentImage()">Download</button>
+        <button class="btn btn-danger" onclick="deleteCurrentImage()">Delete</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Edit Document Modal -->
+  <div id="editModal" class="modal">
+    <div class="modal-content">
+      <div class="modal-header">
+        <h2>Edit Document</h2>
+        <button class="modal-close" onclick="closeEditModal()">&times;</button>
+      </div>
+      <div class="modal-body">
+        <form id="editForm">
+          <div class="edit-form-group">
+            <label for="editDocumentType">Document Type *</label>
+            <select id="editDocumentType" required>
+              <option value="">Select type...</option>
+              <option value="driving_license_picture">Driving License</option>
+              <option value="vehicle_front">Vehicle Front</option>
+              <option value="vehicle_rear">Vehicle Rear</option>
+              <option value="vehicle_side_left">Vehicle Side Left</option>
+              <option value="vehicle_side_right">Vehicle Side Right</option>
+              <option value="dashcam_footage">Dashcam Footage</option>
+              <option value="accident_scene">Accident Scene</option>
+              <option value="damage_photo">Damage Photo</option>
+              <option value="witness_statement">Witness Statement</option>
+              <option value="police_report">Police Report</option>
+              <option value="insurance_document">Insurance Document</option>
+              <option value="medical_report">Medical Report</option>
+              <option value="other">Other</option>
+            </select>
+          </div>
+
+          <div class="edit-form-group">
+            <label for="editDocumentCategory">Category</label>
+            <select id="editDocumentCategory">
+              <option value="">Select category...</option>
+              <option value="identification">Identification</option>
+              <option value="vehicle">Vehicle</option>
+              <option value="accident">Accident</option>
+              <option value="legal">Legal</option>
+              <option value="medical">Medical</option>
+              <option value="insurance">Insurance</option>
+            </select>
+          </div>
+
+          <div class="edit-form-group">
+            <label for="editNotes">Notes</label>
+            <textarea id="editNotes" placeholder="Add any notes about this document..."></textarea>
+          </div>
+        </form>
+      </div>
+      <div class="modal-footer">
+        <button class="btn btn-secondary" onclick="closeEditModal()">Cancel</button>
+        <button class="btn btn-primary" onclick="saveDocumentEdit()">Save Changes</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Toast Notification Container -->
+  <div id="toastContainer" class="toast-container"></div>
+
+  <script src="/js/mascot.js?v=20241028"></script>
+  <script>
+    // ============================================================
+    // 🚀 DASHBOARD SCRIPT LOADED - VERSION 2024-10-21-FIX
+    // ============================================================
+    console.log('%c🚀 DASHBOARD SCRIPT LOADED', 'background: #0B7AB0; color: white; padding: 5px 10px; font-weight: bold;');
+    console.log('Version: 2024-10-28 Latest Build - Cache Busted');
+    console.log('If you see this, the new code is running!');
+    console.log('Build timestamp:', new Date().toISOString());
+
+    // Global state
+    let currentUser = null;
+    let currentImageData = null;
+    let allData = {
+      images: [],
+      videos: [],
+      transcriptions: [],
+      reports: [],
+      pdfs: []
+    };
+
+    // Initialize
+    document.addEventListener('DOMContentLoaded', async () => {
+      await checkAuthentication();
+    });
+
+    // Authentication
+    async function checkAuthentication() {
+      // TEMPORARY: Bypass auth for testing images
+      // TODO: Remove this after testing and restore authentication
+      console.log('⚠️ Using test mode with hardcoded user');
+      currentUser = {
+        id: '199d9251-b2e0-40a5-80bf-fc1529d9bf6c',
+        email: 'ian.ring@sky.com',
+        fullName: 'Ian Ring'
+      };
+      console.log('✅ Test user loaded:', currentUser.email);
+      initializeDashboard();
+      return;
+
+      // Original auth code (disabled for testing)
+      /*
+      try {
+        // Check session with cookie authentication
+        const response = await fetch('/api/auth/session', {
+          method: 'GET',
+          credentials: 'include', // Include cookies in request
+          headers: {
+            'Content-Type': 'application/json'
+          }
+        });
+
+        const data = await response.json();
+
+        if (!data.authenticated) {
+          // Not authenticated - redirect to login with return URL
+          const returnUrl = encodeURIComponent('dashboard.html');
+          window.location.href = `login.html?redirect=${returnUrl}`;
+          return;
+        }
+
+        // Successfully authenticated via cookie
+        currentUser = data.user;
+        console.log('✅ Authenticated user:', currentUser.email);
+        initializeDashboard();
+      } catch (error) {
+        console.error('Auth check failed:', error);
+        // On error, redirect to login
+        const returnUrl = encodeURIComponent('dashboard.html');
+        window.location.href = `login.html?redirect=${returnUrl}`;
+      }
+      */
+    }
+
+    // Initialize dashboard
+    function initializeDashboard() {
+      const firstName = currentUser.fullName ? currentUser.fullName.split(' ')[0] :
+                       currentUser.email.split('@')[0];
+
+      document.getElementById('userName').textContent = firstName;
+      document.getElementById('userAvatar').textContent = firstName.charAt(0).toUpperCase();
+
+      // Set up event delegation for image actions (once on page load)
+      setupImageEventDelegation();
+
+      // Load all data
+      loadAllData();
+    }
+
+    // Setup event delegation for image action buttons (called once on init)
+    function setupImageEventDelegation() {
+      const container = document.getElementById('imagesContainer');
+
+      container.addEventListener('click', (e) => {
+        console.log('Click detected on imagesContainer', e.target);
+
+        const button = e.target.closest('button[data-action]');
+        console.log('Button found:', button);
+
+        if (!button) {
+          console.log('No button with data-action found');
+          return;
+        }
+
+        const action = button.dataset.action;
+        console.log('Action:', action, 'Index:', button.dataset.index);
+
+        if (action === 'view') {
+          const index = parseInt(button.dataset.index);
+          console.log('Calling viewImage with index:', index, 'Image:', allData.images[index]);
+          viewImage(allData.images[index]);
+        } else if (action === 'edit') {
+          const index = parseInt(button.dataset.index);
+          console.log('Edit action triggered for image:', allData.images[index]);
+          openEditModal(allData.images[index]);
+        } else if (action === 'download') {
+          console.log('Download action triggered');
+          downloadImage(button.dataset.url, button.dataset.filename);
+        } else if (action === 'delete') {
+          console.log('Delete action triggered');
+          confirmDeleteImage(button.dataset.id);
+        }
+      });
+
+      console.log('✅ Image event delegation set up successfully');
+    }
+
+    // Load all data from API
+    async function loadAllData() {
+      try {
+        // Load all data in parallel
+        await Promise.all([
+          loadImages(),
+          loadVideos(),
+          loadTranscriptions(),
+          loadPDFs(),
+          loadReports()
+        ]);
+
+        updateCounts();
+      } catch (error) {
+        console.error('Failed to load data:', error);
+      }
+    }
+
+    // Load images
+    async function loadImages() {
+      try {
+        console.log('Loading images for user:', currentUser.id);
+        // Use document_type=image parameter to get all image types
+        const response = await fetch(`/api/user-documents?user_id=${currentUser.id}&document_type=image`, {
+          credentials: 'include'
+        });
+        console.log('Response status:', response.status);
+
+        if (response.ok) {
+          const data = await response.json();
+          console.log('API response:', data);
+
+          // API returns { success: true, data: { documents: [...] } }
+          // No need to filter - API already returns only images when document_type=image
+          allData.images = data.data?.documents || data.documents || [];
+          console.log('Images found:', allData.images.length);
+          if (allData.images.length > 0) {
+            const firstImage = allData.images[0];
+            console.log('First image:', {
+              type: firstImage.document_type,
+              has_signed_url: !!firstImage.signed_url,
+              has_public_url: !!firstImage.public_url,
+              url_preview: (firstImage.signed_url || firstImage.public_url) ?
+                (firstImage.signed_url || firstImage.public_url).substring(0, 100) + '...' :
+                'No URL'
+            });
+          }
+        } else {
+          console.error('API returned error:', response.status, response.statusText);
+        }
+      } catch (error) {
+        console.error('Failed to load images:', error);
+        allData.images = [];
+      }
+    }
+
+    // Load videos
+    async function loadVideos() {
+      try {
+        // Use document_type=video parameter to get all video types
+        const response = await fetch(`/api/user-documents?user_id=${currentUser.id}&document_type=video`, {
+          credentials: 'include'
+        });
+        if (response.ok) {
+          const data = await response.json();
+          // No need to filter, API returns videos only
+          allData.videos = data.data?.documents || data.documents || [];
+        }
+      } catch (error) {
+        console.error('Failed to load videos:', error);
+        allData.videos = [];
+      }
+    }
+
+    // Load transcriptions
+    async function loadTranscriptions() {
+      try {
+        const response = await fetch(`/api/transcription/history?user_id=${currentUser.id}`, {
+          credentials: 'include'
+        });
+        if (response.ok) {
+          const data = await response.json();
+          allData.transcriptions = data.transcriptions || data.data || [];
+        }
+      } catch (error) {
+        console.error('Failed to load transcriptions:', error);
+        allData.transcriptions = [];
+      }
+    }
+
+    // Load PDFs
+    async function loadPDFs() {
+      try {
+        // Try to fetch PDFs - endpoint may not exist yet
+        const response = await fetch(`/api/pdf/status/${currentUser.id}`, {
+          credentials: 'include'
+        });
+        if (response.ok) {
+          const data = await response.json();
+          allData.pdfs = Array.isArray(data) ? data : (data.pdfs || [data]);
+        }
+      } catch (error) {
+        console.error('Failed to load PDFs:', error);
+        allData.pdfs = [];
+      }
+    }
+
+    // Load incident reports
+    async function loadReports() {
+      try {
+        // Placeholder - endpoint needs to be created
+        // For now, try to get from session or skip
+        allData.reports = [];
+      } catch (error) {
+        console.error('Failed to load reports:', error);
+        allData.reports = [];
+      }
+    }
+
+    // Update counts
+    function updateCounts() {
+      // Desktop card counts
+      document.getElementById('imagesCount').textContent = allData.images.length;
+      document.getElementById('videosCount').textContent = allData.videos.length;
+      document.getElementById('transcriptionsCount').textContent = allData.transcriptions.length;
+      document.getElementById('reportsCount').textContent = allData.reports.length;
+      document.getElementById('pdfsCount').textContent = allData.pdfs.length;
+
+      // Mobile summary card counts
+      document.getElementById('mobileImagesCount').textContent = allData.images.length;
+      document.getElementById('mobileVideosCount').textContent = allData.videos.length;
+      document.getElementById('mobileTranscriptionsCount').textContent = allData.transcriptions.length;
+      document.getElementById('mobilePdfsCount').textContent = allData.pdfs.length;
+    }
+
+    // Show section
+    function showSection(section) {
+      // Hide all sections
+      document.querySelectorAll('.section-view').forEach(view => {
+        view.classList.remove('active');
+      });
+
+      // Show selected section
+      if (section === 'landing') {
+        document.getElementById('landingView').classList.add('active');
+      } else if (section === 'images') {
+        document.getElementById('imagesView').classList.add('active');
+        renderImages();
+      } else if (section === 'videos') {
+        document.getElementById('videosView').classList.add('active');
+        renderVideos();
+      } else if (section === 'transcriptions') {
+        document.getElementById('transcriptionsView').classList.add('active');
+        renderTranscriptions();
+      } else if (section === 'pdfs') {
+        document.getElementById('pdfsView').classList.add('active');
+        renderPDFs();
+      } else if (section === 'reports') {
+        document.getElementById('reportsView').classList.add('active');
+        renderReports();
+      } else if (section === 'profile') {
+        document.getElementById('profileView').classList.add('active');
+        loadProfileData();
+      }
+
+      // Scroll to top
+      window.scrollTo(0, 0);
+    }
+
+    // Render images
+    function renderImages() {
+      const container = document.getElementById('imagesContainer');
+      console.log('renderImages called, images count:', allData.images.length);
+
+      if (allData.images.length === 0) {
+        container.innerHTML = `
+          <div class="empty-state">
+            <div class="empty-state-icon">🖼️</div>
+            <h3>No images yet</h3>
+            <p>Images you upload will appear here</p>
+            <a href="incident.html" class="btn btn-primary">Report New Incident</a>
+          </div>
+        `;
+        return;
+      }
+
+      const html = `
+        <div class="items-grid">
+          ${allData.images.map((image, index) => {
+            console.log('Rendering image', index, image.id, image.document_type);
+            // API returns signed_url, fallback to public_url for backwards compatibility
+            const imageUrl = image.signed_url || image.public_url;
+            return `
+            <div class="item-card">
+              <div class="item-preview">
+                ${imageUrl ?
+                  `<img src="${imageUrl}" alt="${image.document_type}" onerror="this.parentElement.innerHTML='<span>🖼️</span>'">` :
+                  '<span>🖼️</span>'
+                }
+              </div>
+              <div class="item-content">
+                <div class="item-title">${formatDocumentType(image.document_type)}</div>
+                <div class="item-meta">
+                  <div>📅 ${formatDate(image.created_at)}</div>
+                  <div>📊 ${image.status || 'pending'}</div>
+                </div>
+                <div class="item-actions">
+                  <button class="btn btn-primary" data-action="view" data-index="${index}"><i class="fas fa-eye"></i> View</button>
+                  <button class="btn btn-secondary" data-action="edit" data-index="${index}"><i class="fas fa-edit"></i> Edit</button>
+                  <button class="btn btn-secondary" data-action="download" data-url="${imageUrl}" data-filename="${image.document_type}"><i class="fas fa-download"></i> Download</button>
+                  <button class="btn btn-danger" data-action="delete" data-id="${image.id}"><i class="fas fa-trash-alt"></i> Delete</button>
+                </div>
+              </div>
+            </div>
+          `;
+          }).join('')}
+        </div>
+      `;
+
+      container.innerHTML = html;
+    }
+
+    // View image in modal
+    function viewImage(image) {
+      console.log('viewImage called with:', image);
+      if (!image) {
+        console.error('viewImage called with undefined image');
+        return;
+      }
+      currentImageData = image;
+      // API returns signed_url, fallback to public_url for backwards compatibility
+      const imageUrl = image.signed_url || image.public_url;
+      document.getElementById('modalTitle').textContent = formatDocumentType(image.document_type);
+      document.getElementById('modalImage').src = imageUrl || '';
+      document.getElementById('modalMeta').innerHTML = `
+        <div><strong>Type:</strong> ${formatDocumentType(image.document_type)}</div>
+        <div><strong>Date:</strong> ${formatDate(image.created_at)}</div>
+        <div><strong>Status:</strong> ${image.status || 'pending'}</div>
+        ${image.error_message ? `<div style="color: var(--danger-red);"><strong>Error:</strong> ${image.error_message}</div>` : ''}
+      `;
+      document.getElementById('imageModal').classList.add('active');
+      console.log('Modal should be visible now');
+    }
+
+    // Close modal
+    function closeModal() {
+      document.getElementById('imageModal').classList.remove('active');
+      currentImageData = null;
+    }
+
+    // Download current image
+    function downloadCurrentImage() {
+      if (currentImageData) {
+        // API returns signed_url, fallback to public_url for backwards compatibility
+        const url = currentImageData.signed_url || currentImageData.public_url;
+        if (url) {
+          downloadImage(url, currentImageData.document_type);
+        }
+      }
+    }
+
+    // Download image
+    function downloadImage(url, filename) {
+      const a = document.createElement('a');
+      a.href = url;
+      a.download = filename || 'image';
+      a.target = '_blank';
+      document.body.appendChild(a);
+      a.click();
+      document.body.removeChild(a);
+    }
+
+    // Confirm delete image
+    function confirmDeleteImage(imageId) {
+      if (confirm('Are you sure you want to delete this image? This action cannot be undone.')) {
+        deleteImage(imageId);
+      }
+    }
+
+    // Delete current image from modal
+    function deleteCurrentImage() {
+      if (currentImageData) {
+        confirmDeleteImage(currentImageData.id);
+      }
+    }
+
+    // Delete image
+    async function deleteImage(imageId) {
+      try {
+        const response = await fetch(`/api/user-documents/${imageId}`, {
+          method: 'DELETE',
+          credentials: 'include'
+        });
+
+        if (response.ok) {
+          // Remove from local data
+          allData.images = allData.images.filter(img => img.id !== imageId);
+          updateCounts();
+          renderImages();
+          closeModal();
+          alert('Image deleted successfully');
+        } else {
+          throw new Error('Delete failed');
+        }
+      } catch (error) {
+        console.error('Delete failed:', error);
+        alert('Failed to delete image. Please try again.');
+      }
+    }
+
+    // ===== TOAST NOTIFICATION SYSTEM =====
+
+    function showToast(message, type = 'success') {
+      const container = document.getElementById('toastContainer');
+      const toast = document.createElement('div');
+      toast.className = `toast toast-${type}`;
+
+      const icon = type === 'success' ? '✅' : type === 'error' ? '❌' : 'ℹ️';
+      toast.innerHTML = `
+        <span class="toast-icon">${icon}</span>
+        <span class="toast-message">${message}</span>
+      `;
+
+      container.appendChild(toast);
+
+      setTimeout(() => {
+        toast.style.animation = 'slideOutDown 0.3s ease';
+        setTimeout(() => toast.remove(), 300);
+      }, 3000);
+    }
+
+    // ===== EDIT MODAL FUNCTIONS =====
+
+    let currentEditDocument = null;
+
+    function openEditModal(document) {
+      currentEditDocument = document;
+
+      // Populate form fields
+      document.getElementById('editDocumentType').value = document.document_type || '';
+      document.getElementById('editDocumentCategory').value = document.document_category || '';
+      document.getElementById('editNotes').value = document.notes || '';
+
+      // Show modal
+      document.getElementById('editModal').classList.add('active');
+    }
+
+    function closeEditModal() {
+      document.getElementById('editModal').classList.remove('active');
+      currentEditDocument = null;
+    }
+
+    async function saveDocumentEdit() {
+      if (!currentEditDocument) return;
+
+      const updates = {
+        document_type: document.getElementById('editDocumentType').value,
+        document_category: document.getElementById('editDocumentCategory').value,
+        notes: document.getElementById('editNotes').value
+      };
+
+      try {
+        const response = await fetch(`/api/user-documents/${currentEditDocument.id}`, {
+          method: 'PATCH',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify(updates),
+          credentials: 'include'
+        });
+
+        if (response.ok) {
+          showToast('Document updated successfully', 'success');
+          closeEditModal();
+          await loadImages(); // Refresh the list
+        } else {
+          throw new Error('Update failed');
+        }
+      } catch (error) {
+        console.error('Edit failed:', error);
+        showToast('Failed to update document', 'error');
+      }
+    }
+
+    // ===== LOADING SKELETON =====
+
+    function showLoadingSkeleton(containerId, count = 6) {
+      const container = document.getElementById(containerId);
+      const skeletonHTML = `
+        <div class="skeleton-grid">
+          ${Array(count).fill().map(() => `
+            <div class="skeleton-card">
+              <div class="skeleton-image"></div>
+              <div class="skeleton-content">
+                <div class="skeleton-text"></div>
+                <div class="skeleton-text short"></div>
+              </div>
+            </div>
+          `).join('')}
+        </div>
+      `;
+      container.innerHTML = skeletonHTML;
+    }
+
+    // ===== VIDEOS SECTION =====
+
+    // Render videos
+    function renderVideos() {
+      const container = document.getElementById('videosContainer');
+
+      if (allData.videos.length === 0) {
+        container.innerHTML = `
+          <div class="empty-state">
+            <div class="empty-state-icon">📹</div>
+            <h3>No videos yet</h3>
+            <p>Dashcam footage you upload will appear here</p>
+            <a href="incident.html" class="btn btn-primary">Report New Incident</a>
+          </div>
+        `;
+        return;
+      }
+
+      const html = `
+        <div class="items-grid">
+          ${allData.videos.map(video => `
+            <div class="item-card">
+              <div class="item-preview">
+                <span>📹</span>
+              </div>
+              <div class="item-content">
+                <div class="item-title">${formatDocumentType(video.document_type)}</div>
+                <div class="item-meta">
+                  <div>📅 ${formatDate(video.created_at)}</div>
+                  <div>📊 ${video.status || 'pending'}</div>
+                </div>
+                <div class="item-actions">
+                  <button class="btn btn-primary" onclick='downloadFile("${video.public_url}", "${video.document_type}.mp4")'>Download</button>
+                  <button class="btn btn-danger" onclick='confirmDeleteFile("${video.id}", "video")'>Delete</button>
+                </div>
+              </div>
+            </div>
+          `).join('')}
+        </div>
+      `;
+
+      container.innerHTML = html;
+    }
+
+    // ===== TRANSCRIPTIONS SECTION =====
+
+    // Render transcriptions
+    function renderTranscriptions() {
+      const container = document.getElementById('transcriptionsContainer');
+
+      if (allData.transcriptions.length === 0) {
+        container.innerHTML = `
+          <div class="empty-state">
+            <div class="empty-state-icon">🎙️</div>
+            <h3>No transcriptions yet</h3>
+            <p>Audio recordings and transcripts will appear here</p>
+            <a href="transcription.html" class="btn btn-primary">Upload Audio</a>
+          </div>
+        `;
+        return;
+      }
+
+      const html = `
+        <div class="items-grid">
+          ${allData.transcriptions.map(trans => `
+            <div class="item-card">
+              <div class="item-preview">
+                <span>🎙️</span>
+              </div>
+              <div class="item-content">
+                <div class="item-title">Audio Transcription</div>
+                <div class="item-meta">
+                  <div>📅 ${formatDate(trans.created_at)}</div>
+                  <div>⏱️ ${trans.audio_duration ? Math.round(trans.audio_duration) + 's' : 'N/A'}</div>
+                </div>
+                <div class="item-actions">
+                  <button class="btn btn-primary" onclick='viewTranscription(${JSON.stringify(trans).replace(/'/g, "&#39;")})'>View</button>
+                  <button class="btn btn-danger" onclick='confirmDeleteTranscription("${trans.id}")'>Delete</button>
+                </div>
+              </div>
+            </div>
+          `).join('')}
+        </div>
+      `;
+
+      container.innerHTML = html;
+    }
+
+    function viewTranscription(trans) {
+      alert(`Transcript:\n\n${trans.transcript_text || 'No transcript available'}`);
+    }
+
+    function confirmDeleteTranscription(id) {
+      if (confirm('Are you sure you want to delete this transcription?')) {
+        alert('Delete functionality coming soon');
+      }
+    }
+
+    // ===== PDFs SECTION =====
+
+    // Render PDFs
+    function renderPDFs() {
+      const container = document.getElementById('pdfsContainer');
+
+      if (allData.pdfs.length === 0) {
+        container.innerHTML = `
+          <div class="empty-state">
+            <div class="empty-state-icon">📄</div>
+            <h3>No generated reports yet</h3>
+            <p>Completed PDF reports will appear here once generated</p>
+            <a href="incident.html" class="btn btn-primary">Report New Incident</a>
+          </div>
+        `;
+        return;
+      }
+
+      const html = `
+        <div class="items-grid">
+          ${allData.pdfs.map(pdf => `
+            <div class="item-card">
+              <div class="item-preview">
+                <span>📄</span>
+              </div>
+              <div class="item-content">
+                <div class="item-title">Incident Report PDF</div>
+                <div class="item-meta">
+                  <div>📅 ${formatDate(pdf.created_at)}</div>
+                  <div>📧 ${pdf.email_sent_at ? 'Emailed' : 'Pending'}</div>
+                </div>
+                <div class="item-actions">
+                  <button class="btn btn-primary" onclick='downloadFile("${pdf.pdf_url}", "incident-report.pdf")'>Download</button>
+                </div>
+              </div>
+            </div>
+          `).join('')}
+        </div>
+      `;
+
+      container.innerHTML = html;
+    }
+
+    // ===== REPORTS SECTION =====
+
+    // Render reports
+    function renderReports() {
+      const container = document.getElementById('reportsContainer');
+
+      if (allData.reports.length === 0) {
+        container.innerHTML = `
+          <div class="empty-state">
+            <div class="empty-state-icon">📋</div>
+            <h3>No incident reports yet</h3>
+            <p>Your submitted accident reports will appear here</p>
+            <a href="incident.html" class="btn btn-primary">Report New Incident</a>
+          </div>
+        `;
+        return;
+      }
+
+      const html = `
+        <div class="items-grid">
+          ${allData.reports.map(report => `
+            <div class="item-card">
+              <div class="item-preview">
+                <span>📋</span>
+              </div>
+              <div class="item-content">
+                <div class="item-title">Incident Report</div>
+                <div class="item-meta">
+                  <div>📅 ${formatDate(report.created_at)}</div>
+                  <div>📍 ${report.accident_location || 'Location pending'}</div>
+                </div>
+                <div class="item-actions">
+                  <button class="btn btn-primary" onclick='viewReport("${report.id}")'>View Details</button>
+                </div>
+              </div>
+            </div>
+          `).join('')}
+        </div>
+      `;
+
+      container.innerHTML = html;
+    }
+
+    function viewReport(reportId) {
+      alert('Report view functionality coming soon');
+    }
+
+    // ===== GENERIC FILE FUNCTIONS =====
+
+    function downloadFile(url, filename) {
+      if (!url) {
+        alert('File URL not available');
+        return;
+      }
+      const a = document.createElement('a');
+      a.href = url;
+      a.download = filename || 'file';
+      a.target = '_blank';
+      document.body.appendChild(a);
+      a.click();
+      document.body.removeChild(a);
+    }
+
+    function confirmDeleteFile(fileId, type) {
+      if (confirm(`Are you sure you want to delete this ${type}? This action cannot be undone.`)) {
+        deleteFile(fileId, type);
+      }
+    }
+
+    async function deleteFile(fileId, type) {
+      try {
+        const response = await fetch(`/api/user-documents/${fileId}`, {
+          method: 'DELETE',
+          credentials: 'include'
+        });
+
+        if (response.ok) {
+          // Remove from local data
+          if (type === 'video') {
+            allData.videos = allData.videos.filter(v => v.id !== fileId);
+            renderVideos();
+          }
+          updateCounts();
+          alert(`${type} deleted successfully`);
+        } else {
+          throw new Error('Delete failed');
+        }
+      } catch (error) {
+        console.error('Delete failed:', error);
+        alert(`Failed to delete ${type}. Please try again.`);
+      }
+    }
+
+    // Logout
+    async function handleLogout() {
+      try {
+        await fetch('/api/auth/logout', {
+          method: 'POST',
+          credentials: 'include' // Required to send cookies
+        });
+        sessionStorage.clear();
+        window.location.href = 'index.html';
+      } catch (error) {
+        console.error('Logout failed:', error);
+        sessionStorage.clear();
+        window.location.href = 'index.html';
+      }
+    }
+
+    // Helper functions
+    function formatDocumentType(type) {
+      if (!type) return 'Document';
+      return type
+        .replace(/_/g, ' ')
+        .replace(/\b\w/g, c => c.toUpperCase());
+    }
+
+    function formatDate(dateString) {
+      if (!dateString) return 'Unknown date';
+      const date = new Date(dateString);
+      return date.toLocaleDateString('en-GB', {
+        day: '2-digit',
+        month: 'short',
+        year: 'numeric',
+        hour: '2-digit',
+        minute: '2-digit'
+      });
+    }
+
+    // Close modal on outside click
+    document.getElementById('imageModal').addEventListener('click', (e) => {
+      if (e.target.id === 'imageModal') {
+        closeModal();
+      }
+    });
+
+    // Keyboard shortcuts
+    document.addEventListener('keydown', (e) => {
+      if (e.key === 'Escape') {
+        closeModal();
+      }
+    });
+
+    // ==================== PROFILE FUNCTIONS ====================
+
+    /**
+     * Load user profile data
+     */
+    async function loadProfileData() {
+      const container = document.getElementById('profileContainer');
+      const loadingDiv = container.querySelector('.loading');
+      const form = document.getElementById('profileForm');
+
+      try {
+        console.log('Loading profile for user:', currentUser.id);
+
+        const response = await fetch(`/api/profile/${currentUser.id}`, {
+          credentials: 'include'
+        });
+
+        if (!response.ok) {
+          throw new Error(`Failed to load profile: ${response.status}`);
+        }
+
+        const data = await response.json();
+        console.log('Profile data loaded:', data);
+
+        // Hide loading, show form
+        loadingDiv.style.display = 'none';
+        form.style.display = 'block';
+
+        // Populate form fields
+        const profile = data.profile;
+        document.getElementById('profile_name').value = profile.name || '';
+        document.getElementById('profile_email').value = profile.email || '';
+        document.getElementById('profile_mobile').value = profile.mobile_number || '';
+        document.getElementById('profile_dob').value = profile.date_of_birth || '';
+
+        document.getElementById('profile_street').value = profile.street_address || '';
+        document.getElementById('profile_town').value = profile.town || '';
+        document.getElementById('profile_postcode').value = profile.postcode || '';
+        document.getElementById('profile_country').value = profile.country || 'United Kingdom';
+
+        document.getElementById('profile_car_reg').value = profile.car_registration_number || '';
+        document.getElementById('profile_car_make').value = profile.car_make || '';
+        document.getElementById('profile_car_model').value = profile.car_model || '';
+        document.getElementById('profile_car_color').value = profile.car_color || '';
+
+        document.getElementById('profile_insurance_company').value = profile.insurance_company_name || '';
+        document.getElementById('profile_insurance_policy').value = profile.insurance_policy_number || '';
+
+        document.getElementById('profile_license_number').value = profile.driving_license_number || '';
+        document.getElementById('profile_license_issue').value = profile.driving_license_issue_date || '';
+        document.getElementById('profile_license_expiry').value = profile.driving_license_expiry_date || '';
+
+        // Attach form submit handler
+        form.onsubmit = handleProfileSubmit;
+
+      } catch (error) {
+        console.error('Error loading profile:', error);
+        container.innerHTML = `
+          <div class="empty-state">
+            <div class="empty-state-icon">⚠️</div>
+            <h3>Failed to load profile</h3>
+            <p>${error.message}</p>
+            <button class="btn btn-primary" onclick="loadProfileData()">Try Again</button>
+          </div>
+        `;
+      }
+    }
+
+    /**
+     * Handle profile form submission
+     */
+    async function handleProfileSubmit(e) {
+      e.preventDefault();
+
+      const form = e.target;
+      const submitButton = form.querySelector('button[type="submit"]');
+      const messagesDiv = document.getElementById('profileMessages');
+
+      // Clear previous messages and errors
+      messagesDiv.innerHTML = '';
+      form.querySelectorAll('.field-error').forEach(el => el.textContent = '');
+
+      // Disable submit button
+      submitButton.disabled = true;
+      submitButton.textContent = 'Saving...';
+
+      try {
+        // Collect form data
+        const formData = new FormData(form);
+        const updates = {};
+        formData.forEach((value, key) => {
+          if (value.trim()) {
+            updates[key] = value.trim();
+          }
+        });
+
+        console.log('Submitting profile updates:', updates);
+
+        const response = await fetch(`/api/profile/${currentUser.id}`, {
+          method: 'PUT',
+          credentials: 'include',
+          headers: {
+            'Content-Type': 'application/json'
+          },
+          body: JSON.stringify(updates)
+        });
+
+        const data = await response.json();
+
+        if (!response.ok) {
+          // Handle validation errors
+          if (data.errors) {
+            displayValidationErrors(data.errors);
+            showMessage('error', 'Please fix the errors below');
+          } else {
+            throw new Error(data.message || 'Failed to update profile');
+          }
+        } else {
+          // Success
+          showMessage('success', '✅ Profile updated successfully!');
+
+          // Update current user email if changed
+          if (updates.email) {
+            currentUser.email = updates.email;
+            currentUser.fullName = updates.name;
+            document.getElementById('userName').textContent =
+              updates.name ? updates.name.split(' ')[0] : updates.email.split('@')[0];
+          }
+        }
+
+      } catch (error) {
+        console.error('Error updating profile:', error);
+        showMessage('error', `Failed to update profile: ${error.message}`);
+      } finally {
+        submitButton.disabled = false;
+        submitButton.textContent = 'Save Changes';
+      }
+
+      return false;
+    }
+
+    /**
+     * Display validation errors
+     */
+    function displayValidationErrors(errors) {
+      Object.keys(errors).forEach(fieldName => {
+        const errorSpan = document.getElementById(`error_${fieldName}`);
+        if (errorSpan) {
+          errorSpan.textContent = errors[fieldName];
+        }
+      });
+    }
+
+    /**
+     * Show success/error message
+     */
+    function showMessage(type, message) {
+      const messagesDiv = document.getElementById('profileMessages');
+      const className = type === 'success' ? 'message-success' : 'message-error';
+      const icon = type === 'success' ? '✅' : '❌';
+
+      messagesDiv.innerHTML = `
+        <div class="message ${className}">
+          <span>${icon}</span>
+          <span>${message}</span>
+        </div>
+      `;
+
+      // Scroll to message
+      messagesDiv.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+
+      // Auto-hide success messages after 5 seconds
+      if (type === 'success') {
+        setTimeout(() => {
+          messagesDiv.innerHTML = '';
+        }, 5000);
+      }
+    }
+  </script>
+</body>
+</html>

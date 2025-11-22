@@ -51,12 +51,12 @@ async function testAdobePdfServices() {
   log('\nTest 2: Testing PDF compression (v4 SDK)...', 'blue');
   try {
     // Use the legal PDF template
-    const templatePath = path.join(__dirname, 'pdf-templates', 'Car-Crash-Lawyer-AI-Incident-Report.pdf');
+    const templatePath = path.join(__dirname, 'pdf-templates', 'Car-Crash-Lawyer-AI-incident-report-main.pdf');
 
     if (!fs.existsSync(templatePath)) {
       log('❌ Legal PDF template not found!', 'red');
       log(`   Expected location: ${templatePath}`, 'yellow');
-      log('   Please upload Car-Crash-Lawyer-AI-Incident-Report.pdf to pdf-templates/', 'yellow');
+      log('   Please upload Car-Crash-Lawyer-AI-incident-report-main.pdf to pdf-templates/', 'yellow');
       process.exit(1);
     }
 
@@ -64,7 +64,7 @@ async function testAdobePdfServices() {
     const stats = fs.statSync(templatePath);
     const originalSizeKB = (stats.size / 1024).toFixed(2);
 
-    log(`   Using legal template: Car-Crash-Lawyer-AI-Incident-Report.pdf`, 'blue');
+    log(`   Using legal template: Car-Crash-Lawyer-AI-incident-report-main.pdf`, 'blue');
     log(`   Original size: ${originalSizeKB} KB`, 'blue');
 
     // Create output directory

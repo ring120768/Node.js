@@ -1,0 +1,549 @@
+/**
+ * PDF Mockup Styles
+ * Based on Car Crash Lawyer AI Design System (CLAUDE.md)
+ *
+ * Purpose: Print-ready HTML mockups for 8.5" x 11" PDF pages
+ * Created: 2025-10-31
+ */
+
+/* ===========================
+   CSS VARIABLES - BRAND COLORS
+   =========================== */
+
+:root {
+  /* Brand Colors */
+  --deep-teal: #0E7490;
+  --deep-teal-dark: #0c6179;
+  --warm-beige: #E8DCC4;
+  --dark-gray: #4B5563;
+
+  /* Form Elements */
+  --steel-gray: #CFD2D7;
+  --cream-gray: #F5F1E8;
+  --silver: #C0C0C0;
+  --silver-hover: #B0B0B0;
+
+  /* Text Colors */
+  --text-dark: #333333;
+  --text-muted: #666666;
+  --white: #FFFFFF;
+
+  /* Status Colors */
+  --success-green: #10b981;
+  --danger-red: #ef4444;
+  --warning-orange: #f59e0b;
+
+  /* Border */
+  --border-color: #4B5563;
+
+  /* Spacing */
+  --page-margin: 50pt;
+  --section-padding: 20pt;
+  --field-gap: 12pt;
+  --checkbox-gap: 8pt;
+}
+
+/* ===========================
+   RESET & BASE STYLES
+   =========================== */
+
+* {
+  margin: 0;
+  padding: 0;
+  box-sizing: border-box;
+}
+
+body {
+  font-family: Arial, Helvetica, sans-serif;
+  font-size: 11pt;
+  color: var(--text-dark);
+  background: #f0f0f0;
+  padding: 20px;
+}
+
+/* ===========================
+   PAGE LAYOUT (Letter Size)
+   =========================== */
+
+.pdf-page {
+  width: 8.5in;
+  height: 11in;
+  background: var(--warm-beige);
+  margin: 0 auto 20px;
+  padding: 60pt 50pt 50pt 50pt;
+  box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
+  position: relative;
+  page-break-after: always;
+}
+
+@media print {
+  body {
+    background: white;
+    padding: 0;
+  }
+
+  .pdf-page {
+    margin: 0;
+    box-shadow: none;
+    page-break-after: always;
+  }
+
+  .no-print {
+    display: none !important;
+  }
+}
+
+/* ===========================
+   HEADER
+   =========================== */
+
+.pdf-header {
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  height: 80pt;
+  background: var(--warm-beige);
+  border-bottom: 2pt solid var(--deep-teal);
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 10pt 50pt;
+}
+
+.header-logo {
+  width: 50pt;
+  height: 50pt;
+  object-fit: contain;
+}
+
+.header-title {
+  flex: 1;
+  text-align: center;
+}
+
+.header-title h1 {
+  font-size: 16pt;
+  font-weight: bold;
+  color: var(--deep-teal);
+  margin: 0;
+  letter-spacing: 1pt;
+}
+
+.header-title p {
+  font-size: 11pt;
+  color: var(--text-muted);
+  margin: 2pt 0 0 0;
+}
+
+.header-page-number {
+  font-size: 9pt;
+  color: var(--text-muted);
+  white-space: nowrap;
+}
+
+/* ===========================
+   FOOTER
+   =========================== */
+
+.pdf-footer {
+  position: absolute;
+  bottom: 0;
+  left: 0;
+  right: 0;
+  height: 70pt;
+  background: var(--warm-beige);
+  border-top: 1pt solid var(--border-color);
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  padding: 10pt;
+}
+
+.footer-text {
+  font-size: 8pt;
+  color: var(--text-muted);
+  text-align: center;
+  line-height: 1.4;
+}
+
+.footer-logo {
+  height: 28pt;
+  margin-top: 8pt;
+  object-fit: contain;
+}
+
+/* ===========================
+   CONTENT AREA
+   =========================== */
+
+.pdf-content {
+  min-height: calc(11in - 130pt);
+}
+
+/* ===========================
+   SECTIONS
+   =========================== */
+
+.section {
+  background: var(--cream-gray);
+  border: 1pt solid var(--border-color);
+  border-radius: 4pt;
+  padding: var(--section-padding);
+  margin-bottom: 15pt;
+}
+
+.section-title {
+  font-size: 16pt;
+  font-weight: bold;
+  color: var(--text-dark);
+  margin-bottom: 15pt;
+  padding-bottom: 8pt;
+  border-bottom: 1pt solid var(--border-color);
+  display: flex;
+  align-items: center;
+}
+
+.section-title::before {
+  content: '▼';
+  margin-right: 8pt;
+  color: var(--deep-teal);
+  font-size: 14pt;
+}
+
+/* ===========================
+   FORM FIELDS
+   =========================== */
+
+.field-group {
+  margin-bottom: var(--field-gap);
+}
+
+.field-label {
+  font-size: 11pt;
+  font-weight: normal;
+  color: var(--text-dark);
+  display: block;
+  margin-bottom: 4pt;
+}
+
+.field-label.required::after {
+  content: ' *';
+  color: var(--danger-red);
+  font-weight: bold;
+}
+
+.field-help {
+  font-size: 9pt;
+  font-style: italic;
+  color: var(--text-muted);
+  margin-top: 2pt;
+  display: block;
+}
+
+/* Text Inputs */
+.field-input {
+  background: var(--steel-gray);
+  border: 1pt solid var(--border-color);
+  border-radius: 2pt;
+  padding: 8pt;
+  font-size: 11pt;
+  color: var(--text-dark);
+  font-family: Arial, Helvetica, sans-serif;
+  width: 100%;
+  height: 30pt;
+  display: block;
+}
+
+.field-input.short {
+  width: 150pt;
+}
+
+.field-input.medium {
+  width: 250pt;
+}
+
+.field-input.date {
+  width: 150pt;
+  font-family: 'Courier New', monospace;
+}
+
+.field-input.time {
+  width: 100pt;
+  font-family: 'Courier New', monospace;
+}
+
+.field-input.number {
+  width: 80pt;
+}
+
+/* Textareas */
+.field-textarea {
+  background: var(--steel-gray);
+  border: 1pt solid var(--border-color);
+  border-radius: 2pt;
+  padding: 8pt;
+  font-size: 11pt;
+  color: var(--text-dark);
+  font-family: Arial, Helvetica, sans-serif;
+  width: 100%;
+  min-height: 80pt;
+  resize: vertical;
+  display: block;
+}
+
+.field-textarea.small {
+  min-height: 60pt;
+}
+
+.field-textarea.large {
+  min-height: 150pt;
+}
+
+.field-textarea.extra-large {
+  min-height: 240pt;
+}
+
+/* Placeholders */
+.placeholder {
+  color: var(--text-muted);
+  font-style: italic;
+}
+
+/* ===========================
+   CHECKBOXES
+   =========================== */
+
+.checkbox-group {
+  display: grid;
+  grid-template-columns: repeat(2, 1fr);
+  gap: var(--checkbox-gap);
+  margin-top: 8pt;
+}
+
+.checkbox-group.three-column {
+  grid-template-columns: repeat(3, 1fr);
+}
+
+.checkbox-group.single-column {
+  grid-template-columns: 1fr;
+}
+
+.checkbox-item {
+  display: flex;
+  align-items: center;
+  padding: 6pt;
+  background: var(--cream-gray);
+  border-radius: 2pt;
+}
+
+.checkbox-box {
+  width: 16pt;
+  height: 16pt;
+  border: 1pt solid var(--border-color);
+  background: var(--cream-gray);
+  border-radius: 2pt;
+  margin-right: 8pt;
+  flex-shrink: 0;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 12pt;
+  font-weight: bold;
+  color: var(--success-green);
+}
+
+.checkbox-label {
+  font-size: 11pt;
+  color: var(--text-dark);
+  cursor: pointer;
+  user-select: none;
+}
+
+/* ===========================
+   RADIO BUTTONS
+   =========================== */
+
+.radio-group {
+  display: flex;
+  gap: 20pt;
+  margin-top: 8pt;
+  flex-wrap: wrap;
+}
+
+.radio-group.vertical {
+  flex-direction: column;
+  gap: 8pt;
+}
+
+.radio-item {
+  display: flex;
+  align-items: center;
+}
+
+.radio-circle {
+  width: 16pt;
+  height: 16pt;
+  border: 1pt solid var(--border-color);
+  background: var(--cream-gray);
+  border-radius: 50%;
+  margin-right: 8pt;
+  flex-shrink: 0;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.radio-circle::after {
+  content: '';
+  width: 8pt;
+  height: 8pt;
+  border-radius: 50%;
+  background: var(--success-green);
+  display: none;
+}
+
+.radio-circle.checked::after {
+  display: block;
+}
+
+.radio-label {
+  font-size: 11pt;
+  color: var(--text-dark);
+  cursor: pointer;
+  user-select: none;
+}
+
+/* ===========================
+   DROPDOWNS
+   =========================== */
+
+.field-dropdown {
+  background: var(--steel-gray);
+  border: 1pt solid var(--border-color);
+  border-radius: 2pt;
+  padding: 8pt;
+  font-size: 11pt;
+  color: var(--text-dark);
+  font-family: Arial, Helvetica, sans-serif;
+  width: 100%;
+  height: 30pt;
+  appearance: none;
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='8'%3E%3Cpath fill='%23333' d='M0 0l6 8 6-8z'/%3E%3C/svg%3E");
+  background-repeat: no-repeat;
+  background-position: right 8pt center;
+  padding-right: 30pt;
+}
+
+/* ===========================
+   FIELD LAYOUTS
+   =========================== */
+
+.field-row {
+  display: flex;
+  gap: 20pt;
+  align-items: flex-start;
+}
+
+.field-row .field-group {
+  flex: 1;
+}
+
+.field-inline {
+  display: flex;
+  align-items: center;
+  gap: 8pt;
+}
+
+/* ===========================
+   MULTI-COLUMN LAYOUTS
+   =========================== */
+
+.two-column {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 20pt;
+}
+
+.three-column {
+  display: grid;
+  grid-template-columns: 1fr 1fr 1fr;
+  gap: 15pt;
+}
+
+/* ===========================
+   UTILITY CLASSES
+   =========================== */
+
+.mb-small { margin-bottom: 8pt; }
+.mb-medium { margin-bottom: 12pt; }
+.mb-large { margin-bottom: 20pt; }
+
+.text-center { text-align: center; }
+.text-right { text-align: right; }
+
+.font-bold { font-weight: bold; }
+.font-italic { font-style: italic; }
+
+.color-teal { color: var(--deep-teal); }
+.color-muted { color: var(--text-muted); }
+.color-danger { color: var(--danger-red); }
+
+/* ===========================
+   PREVIEW/NAVIGATION (Not for print)
+   =========================== */
+
+.navigation {
+  text-align: center;
+  margin: 20px 0;
+  padding: 20px;
+  background: white;
+  border-radius: 8px;
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+}
+
+.navigation h2 {
+  color: var(--deep-teal);
+  margin-bottom: 15px;
+}
+
+.navigation a {
+  display: inline-block;
+  margin: 5px;
+  padding: 10px 20px;
+  background: var(--deep-teal);
+  color: white;
+  text-decoration: none;
+  border-radius: 4px;
+  transition: background 0.2s;
+}
+
+.navigation a:hover {
+  background: var(--deep-teal-dark);
+}
+
+.navigation a.current {
+  background: var(--success-green);
+}
+
+/* ===========================
+   PRINT OPTIMIZATIONS
+   =========================== */
+
+@page {
+  size: letter;
+  margin: 0;
+}
+
+@media print {
+  .pdf-page {
+    width: 8.5in;
+    height: 11in;
+    page-break-after: always;
+  }
+
+  .navigation {
+    display: none;
+  }
+}

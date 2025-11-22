@@ -56,7 +56,7 @@ async function backupIncident(incident) {
     // Fetch user info
     const { data: user } = await supabase
       .from('user_signup')
-      .select('email, first_name, last_name')
+      .select('email, name, surname')
       .eq('auth_user_id', incident.create_user_id)
       .single();
 
@@ -75,7 +75,7 @@ async function backupIncident(incident) {
       documents: documents || [],
       user_info: {
         email: user?.email || null,
-        name: user?.first_name ? `${user.first_name} ${user.last_name || ''}`.trim() : null
+        name: user?.name ? `${user.name} ${user.surname || ''}`.trim() : null
       },
       checksum: null // Will be calculated below
     };

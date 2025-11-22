@@ -1,0 +1,45 @@
+Field Number,Field Label,HTML Field ID,sessionStorage Key,Data Type,HTML Element Type,Required,Notes
+1,Full Name,other-driver-name,other_driver_name,text,input[type=text],Yes,Driver's full legal name
+2,Contact Number,other-driver-phone,other_driver_phone,text,input[type=tel],Yes,UK phone format (+44)
+3,Email Address,other-driver-email,other_driver_email,text,input[type=email],No,Optional contact method
+4,Driving License Number,other-driver-license,other_driver_license,text,input[type=text],No,UK driving license format
+5,Driver Address,other-driver-address,other_driver_address,text,textarea,No,Full postal address (CURRENT - not in master CSV)
+6,Vehicle Registration,other-license-plate,other_license_plate,text,input[type=text],Yes,UK registration plate format (AB12 CDE)
+7,Vehicle Make,other-vehicle-make,other_vehicle_make,text,input[type=text],Yes,Can be auto-filled via DVLA lookup
+8,Vehicle Model,other-vehicle-model,other_vehicle_model,text,input[type=text],Yes,Can be auto-filled via DVLA lookup
+9,Vehicle Colour,other-vehicle-color,other_vehicle_color,text,input[type=text],Yes,Can be auto-filled via DVLA lookup
+10,Vehicle Year,other-vehicle-year,other_vehicle_year,text,input[type=number],No,MISSING - needed for DVLA lookup
+11,Vehicle Fuel Type,other-vehicle-fuel-type,other_vehicle_fuel_type,text,select,No,MISSING - petrol/diesel/electric/hybrid (DVLA)
+12,Vehicle MOT Status,other-vehicle-mot-status,other_vehicle_mot_status,text,select,No,MISSING - valid/expired/no record (DVLA)
+13,Vehicle MOT Expiry,other-vehicle-mot-expiry,other_vehicle_mot_expiry,text,input[type=date],No,MISSING - DD/MM/YYYY format (DVLA)
+14,Vehicle Tax Status,other-vehicle-tax-status,other_vehicle_tax_status,text,select,No,MISSING - taxed/untaxed/SORN (DVLA)
+15,Vehicle Tax Due Date,other-vehicle-tax-due,other_vehicle_tax_due,text,input[type=date],No,MISSING - DD/MM/YYYY format (DVLA)
+16,Vehicle Insurance Status,other-vehicle-insurance-status,other_vehicle_insurance_status,text,select,No,MISSING - insured/no record (DVLA)
+17,Insurance Company,other-insurance-company,other_insurance_company,text,input[type=text],No,Name of insurer
+18,Policy Number,other-policy-number,other_policy_number,text,input[type=text],No,Insurance policy reference
+19,Policy Holder Name,other-policy-holder,other_policy_holder,text,input[type=text],No,MISSING - may differ from driver
+20,Policy Cover Type,other-policy-cover,other_policy_cover,text,select,No,Comprehensive/Third Party/Third Party Fire & Theft
+21,No Visible Damage,no-damage-checkbox,no_visible_damage,boolean,input[type=checkbox],No,True if no damage to other vehicle
+22,Point of Impact,other-point-of-impact,other_point_of_impact,array,multi-select checkboxes,No,Front/Rear/Driver Side/Passenger Side/etc
+23,Damage Description,other-damage-description,other_damage_description,text,textarea,No,MISSING - detailed description of damage
+24,Vehicle Number,N/A,vehicle_number,integer,N/A (auto-generated),N/A,Auto-incremented (2 = first other vehicle)
+25,Saved Timestamp,N/A,saved_at,timestamp,N/A (auto-generated),N/A,ISO 8601 format when saved
+
+Storage Notes:
+- First other vehicle (Vehicle 2) saved to incident_reports table
+- Additional vehicles (3+) saved to sessionStorage.additional_vehicles array
+- Backend should process additional_vehicles and save to incident_other_vehicles table
+- All fields should be available for both single and multiple vehicles
+
+Field Type Definitions:
+- text: String values (VARCHAR/TEXT in database)
+- boolean: True/false values (BOOLEAN in database)
+- array: Multiple selections stored as PostgreSQL TEXT[] array
+- integer: Whole numbers (INTEGER in database)
+- timestamp: ISO 8601 datetime (TIMESTAMP WITH TIME ZONE in database)
+
+Proposed Changes Based on User CSV:
+- Column H will contain final HTML field names to avoid conflicts
+- Column J will contain final field structure
+- User will manually add fields to Supabase and PDF
+- This CSV to be updated once user provides their specific naming convention

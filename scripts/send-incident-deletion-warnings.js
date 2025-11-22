@@ -125,7 +125,7 @@ async function sendWarningsForThreshold(daysThreshold) {
     // Get user email
     const { data: user, error: userError } = await supabase
       .from('user_signup')
-      .select('email, first_name, last_name')
+      .select('email, name, surname')
       .eq('auth_user_id', incident.create_user_id)
       .single();
 
@@ -136,8 +136,8 @@ async function sendWarningsForThreshold(daysThreshold) {
       continue;
     }
 
-    const userName = user.first_name
-      ? `${user.first_name} ${user.last_name || ''}`.trim()
+    const userName = user.name
+      ? `${user.name} ${user.surname || ''}`.trim()
       : user.email.split('@')[0];
 
     // Send warning email

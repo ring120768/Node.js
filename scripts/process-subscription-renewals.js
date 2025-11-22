@@ -101,8 +101,8 @@ async function renewSubscription(account) {
   console.log(`      New period: ${newStartDate.toLocaleDateString('en-GB')} - ${newEndDate.toLocaleDateString('en-GB')}`);
 
   // Send renewal confirmation email
-  const userName = account.first_name
-    ? `${account.first_name} ${account.last_name || ''}`.trim()
+  const userName = account.name
+    ? `${account.name} ${account.surname || ''}`.trim()
     : account.email.split('@')[0];
 
   const renewalData = {
@@ -149,8 +149,8 @@ async function processRenewals() {
       id,
       auth_user_id,
       email,
-      first_name,
-      last_name,
+      name,
+      surname,
       subscription_start_date,
       subscription_end_date,
       auto_renewal
@@ -207,8 +207,8 @@ async function retryFailedRenewals() {
       id,
       auth_user_id,
       email,
-      first_name,
-      last_name,
+      name,
+      surname,
       subscription_start_date,
       subscription_end_date
     `)
