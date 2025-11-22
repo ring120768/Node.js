@@ -1176,25 +1176,32 @@ class AdobePdfFormFillerService {
   /**
    * Compress the filled PDF to reduce file size
    *
+   * CRITICAL FIX (Nov 2025): Adobe PDF Services compression DISABLED
+   *
+   * Root cause: Adobe compression corrupts XRef table when compressing PDFs
+   * that were created by merging form-filled PDFs with Puppeteer-generated pages.
+   *
+   * Evidence:
+   * - Uncompressed PDF: 0 XRef errors, pages 13-19 visible (2985 KB)
+   * - Compressed PDF (MEDIUM): 8 XRef errors, pages 13-19 blank (1111 KB)
+   *
+   * The compression algorithm corrupts object references (entries 2195, 2196,
+   * 2176, 2182, 2185, 2187, 2191, 2192) preventing pages from rendering.
+   *
+   * Solution: Return uncompressed PDF. File size impact: ~2.9MB vs ~1.1MB
+   * This is acceptable tradeoff for working pages 13-19.
+   *
+   * Test: test-form-filling-no-compression.js
+   *
    * @param {Buffer} pdfBuffer - The filled PDF buffer
-   * @param {String} compressionLevel - 'LOW', 'MEDIUM', or 'HIGH'
-   * @returns {Promise<Buffer>} - Compressed PDF buffer
+   * @param {String} compressionLevel - 'LOW', 'MEDIUM', or 'HIGH' (IGNORED)
+   * @returns {Promise<Buffer>} - Original uncompressed PDF buffer
    */
   async compressPdf(pdfBuffer, compressionLevel = 'MEDIUM') {
-    try {
-      const adobePdfService = require('./adobePdfService');
-
-      if (adobePdfService.isReady()) {
-        logger.info(`🗜️ Compressing PDF (${compressionLevel} compression)...`);
-        return await adobePdfService.compressPdf(pdfBuffer, compressionLevel);
-      } else {
-        logger.warn('⚠️ Adobe compression not available, returning original PDF');
-        return pdfBuffer;
-      }
-    } catch (error) {
-      logger.error('Error compressing PDF:', error);
-      return pdfBuffer; // Return original if compression fails
-    }
+    // PERMANENTLY DISABLED - Adobe compression corrupts XRef table
+    logger.info('⚠️ PDF compression disabled (prevents XRef corruption)');
+    logger.info('   Returning uncompressed PDF to ensure pages 13-19 render correctly');
+    return pdfBuffer;
   }
 }
 
