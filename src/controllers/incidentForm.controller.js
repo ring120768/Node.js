@@ -19,6 +19,7 @@
 const { createClient } = require('@supabase/supabase-js');
 const logger = require('../utils/logger');
 const locationPhotoService = require('../services/locationPhotoService');
+const emailService = require('../../lib/emailService');
 
 // Use service role key for database writes
 const supabase = createClient(
@@ -105,7 +106,37 @@ async function submitIncidentForm(req, res) {
       userId
     });
 
-    // 3. Finalize map screenshot if present (Page 4)
+    // 3. Send 90-day retention notice email (non-blocking)
+    if (process.env.EMAIL_ENABLED === 'true') {
+      const deletionDate = new Date(Date.now() + 90 * 24 * 60 * 60 * 1000); // 90 days from now
+      const userEmail = req.user?.email;
+
+      if (userEmail) {
+        // Fire-and-forget: don't await, don't block submission response
+        emailService.sendIncident90DayNotice(userEmail, {
+          userName: req.user?.user_metadata?.full_name || 'User',
+          incidentId: incident.id,
+          submittedDate: new Date(),
+          deletionDate: deletionDate,
+          daysRemaining: 90,
+          exportUrl: `${process.env.APP_URL || 'https://carcrashlawyerai.co.uk'}/api/gdpr/export?userId=${userId}`
+        })
+          .then(result => {
+            if (result.success) {
+              logger.success('📧 90-day notice email sent', { incidentId: incident.id, messageId: result.messageId });
+            } else {
+              logger.warn('⚠️ 90-day notice email failed (non-critical)', { incidentId: incident.id, error: result.error });
+            }
+          })
+          .catch(error => {
+            logger.warn('⚠️ 90-day notice email error (non-critical)', { incidentId: incident.id, error: error.message });
+          });
+
+        logger.info('📧 90-day notice email queued', { incidentId: incident.id, userEmail });
+      }
+    }
+
+    // 4. Finalize map screenshot if present (Page 4)
     let mapScreenshotResults = null;
     if (formData.page4?.session_id && formData.page4?.map_screenshot_captured) {
       try {

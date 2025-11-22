@@ -12,6 +12,7 @@ const logger = require('../utils/logger');
 const config = require('../config');
 const gdprService = require('../services/gdprService');
 const { normalizeEmail } = require('../utils/emailNormalizer');
+const emailService = require('../../lib/emailService');
 
 // Import AuthService (uses ANON key for client operations)
 const AuthService = require('../../lib/services/authService');
@@ -162,6 +163,30 @@ async function signup(req, res) {
     } catch (auditError) {
       // Non-critical error - don't fail signup if audit log fails
       logger.warn('⚠️ GDPR audit log error (non-critical):', auditError.message);
+    }
+
+    // ========================================
+    // SEND WELCOME EMAIL (non-blocking)
+    // ========================================
+    if (process.env.EMAIL_ENABLED === 'true') {
+      // Fire-and-forget: don't await, don't block signup response
+      emailService.sendSubscriptionWelcome(email, {
+        userName: fullName,
+        subscriptionStartDate: new Date(),
+        subscriptionEndDate: new Date(Date.now() + 365 * 24 * 60 * 60 * 1000) // 1 year
+      })
+        .then(result => {
+          if (result.success) {
+            logger.success('📧 Welcome email sent', { userId, messageId: result.messageId });
+          } else {
+            logger.warn('⚠️ Welcome email failed (non-critical)', { userId, error: result.error });
+          }
+        })
+        .catch(error => {
+          logger.warn('⚠️ Welcome email error (non-critical)', { userId, error: error.message });
+        });
+
+      logger.info('📧 Welcome email queued', { userId, email });
     }
 
     // ========================================
