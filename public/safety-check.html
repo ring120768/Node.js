@@ -280,8 +280,9 @@
             try {
                 // Save to Supabase if we have necessary data
                 if (incidentData.userId || incidentData.what3wordsStoragePath) {
-                    const response = await fetch('/api/update-safety-status', {
+                    const response = await fetch('/api/safety-status', {
                         method: 'POST',
+                        credentials: 'include', // Send authentication cookies
                         headers: {
                             'Content-Type': 'application/json'
                         },
@@ -297,9 +298,15 @@
                     });
 
                     if (!response.ok) {
-                        console.error('Failed to save safety status');
+                        console.error('Failed to save safety status:', response.status, response.statusText);
+                        if (response.status === 401) {
+                            console.error('Authentication failed - user may not be logged in');
+                            // Alert user but don't block (they might be in emergency)
+                            console.warn('Safety status not saved due to authentication - will retry on form submission');
+                        }
                     } else {
-                        console.log('Safety status saved successfully');
+                        const result = await response.json();
+                        console.log('Safety status saved successfully:', result);
                     }
                 }
             } catch (error) {
@@ -320,8 +327,8 @@
                 incidentData: incidentData
             });
 
-            // Redirect to embedded Typeform page with scroll disabled
-            window.location.href = '/typeform-incident-report.html';
+            // Redirect to six point safety check page
+            window.location.href = '/six-point-safety-check.html';
         }
 
         // Setup emergency 999 button with what3words integration

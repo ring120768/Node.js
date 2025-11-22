@@ -1,0 +1,47 @@
+Field Number,Field Label,Proposed Field Name (Column J),HTML Element ID,Data Type,HTML Element Type,Required,Currently in HTML,Notes
+1,Full Name,other_full_name,other-full-name,text,input[type=text],Yes,No (currently: other-driver-name),Changed from other_driver_name
+2,Contact Number,other_contact_number,other-contact-number,text,input[type=tel],Yes,No (currently: other-driver-phone),Changed from other_driver_phone
+3,Email Address,other_email_address,other-email-address,text,input[type=email],No,No (currently: other-driver-email),Changed from other_driver_email
+4,Driving License Number,other_driving_license_number,other-driving-license-number,text,input[type=text],No,No (currently: other-driver-license),Changed from other_driver_license (note underscore)
+5,Vehicle Registration,other_vehicle_registration,other-vehicle-registration,text,input[type=text],Yes,No (currently: other-license-plate),Changed from other_license_plate - DVLA lookup trigger
+6,Vehicle Make (DVLA),other_vehicle_look_up_make,other-vehicle-look-up-make,text,input[type=text],Yes,No (currently: other-vehicle-make),NEW naming - DVLA auto-populated
+7,Vehicle Model (DVLA),other_vehicle_look_up_model,other-vehicle-look-up-model,text,input[type=text],Yes,No (currently: other-vehicle-model),NEW naming - DVLA auto-populated
+8,Vehicle Colour (DVLA),other_vehicle_look_up_colour,other-vehicle-look-up-colour,text,input[type=text],Yes,No (currently: other-vehicle-color),NEW naming - DVLA auto-populated (British spelling: colour)
+9,Vehicle Year (DVLA),other_vehicle_look_up_year,other-vehicle-look-up-year,text,input[type=number],No,No - MISSING,NEW field - DVLA auto-populated
+10,Vehicle Fuel Type (DVLA),other_vehicle_look_up_fuel_type,other-vehicle-look-up-fuel-type,text,select,No,No - MISSING,NEW field - petrol/diesel/electric/hybrid (DVLA)
+11,Vehicle MOT Status (DVLA),other_vehicle_look_up_mot_status,other-vehicle-look-up-mot-status,text,select,No,No - MISSING,NEW field - valid/expired/no record (DVLA)
+12,Vehicle MOT Expiry (DVLA),other_vehicle_look_up_mot_expiry_date,other-vehicle-look-up-mot-expiry-date,text,input[type=date],No,No - MISSING,NEW field - DD/MM/YYYY format (DVLA)
+13,Vehicle Tax Status (DVLA),other_vehicle_look_up_tax_status,other-vehicle-look-up-tax-status,text,select,No,No - MISSING,NEW field - taxed/untaxed/SORN (DVLA)
+14,Vehicle Tax Due Date (DVLA),other_vehicle_look_up_tax_due_date,other-vehicle-look-up-tax-due-date,text,input[type=date],No,No - MISSING,NEW field - DD/MM/YYYY format (DVLA)
+15,Vehicle Insurance Status (DVLA),other_vehicle_look_up_insurance_status,other-vehicle-look-up-insurance-status,text,select,No,No - MISSING,NEW field - insured/no record (DVLA)
+16,Insurance Company,other_drivers_insurance_company,other-drivers-insurance-company,text,input[type=text],No,No (currently: other-insurance-company),Changed from other_insurance_company
+17,Policy Number,other_drivers_policy_number,other-drivers-policy-number,text,input[type=text],No,No (currently: other-policy-number),Changed from other_policy_number
+18,Policy Holder Name,other_drivers_policy_holder_name,other-drivers-policy-holder-name,text,input[type=text],No,No (currently: other-policy-holder),Changed from other_policy_holder (may differ from driver)
+19,Policy Cover Type,other_drivers_policy_cover_type,other-drivers-policy-cover-type,text,select,No,No (currently: other-policy-cover),Changed from other_policy_cover - Comprehensive/Third Party/Third Party Fire & Theft
+20,Damage Description,describe_damage_to_vehicle,describe-damage-to-vehicle,text,textarea,No,No - MISSING,NEW field - detailed description of damage to other vehicle
+21,Point of Impact,other_point_of_impact,other-point-of-impact,array,multi-select checkboxes,No,Yes (no change),TEXT[] array - Front/Rear/Driver Side/Passenger Side/etc
+22,No Visible Damage,no_visible_damage,no-visible-damage-checkbox,boolean,input[type=checkbox],No,Yes (currently: no-damage-checkbox),Minor ID change for consistency
+
+Additional Vehicle Pattern (for vehicles 2, 3, 4+):
+- First vehicle uses: other_full_name, other_contact_number, etc.
+- Additional vehicles use: other_1_full_name, other_1_contact_number, etc. (for vehicle 2)
+- Pattern continues: other_2_full_name, other_2_contact_number, etc. (for vehicle 3)
+
+Field Type Definitions:
+- text: String values (VARCHAR/TEXT in database)
+- boolean: True/false values (BOOLEAN in database)
+- array: Multiple selections stored as PostgreSQL TEXT[] array
+
+Database Storage:
+- First other vehicle (Vehicle 2 in incident) → incident_reports table
+- Additional vehicles (3+ in incident) → incident_other_vehicles table
+- User will manually add these fields to Supabase and PDF
+
+Key Changes Summary:
+- ✅ Renamed 18 existing fields to match your naming convention
+- ✅ Added 7 new DVLA lookup fields (year, fuel, MOT, tax, insurance)
+- ✅ Added 1 new damage description field
+- ✅ Consistent naming: other_driver* → other_* or other_drivers_*
+- ✅ DVLA fields use other_vehicle_look_up_* prefix
+- ✅ British spelling: colour (not color)
+- ✅ Underscores for field names, hyphens for HTML IDs

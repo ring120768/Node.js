@@ -70,7 +70,7 @@ Store in Supabase & Email User
 
 1. **Adobe PDF Services SDK** - Already installed
 2. **Form Filler Service** - `/src/services/adobePdfFormFillerService.js`
-3. **PDF Template** - `/pdf-templates/Car-Crash-Lawyer-AI-Incident-Report.pdf`
+3. **PDF Template** - `/pdf-templates/Car-Crash-Lawyer-AI-incident-report-main.pdf`
 4. **Controller Integration** - Updated `/src/controllers/pdf.controller.js`
 
 ### What Happens Now
@@ -270,7 +270,7 @@ Adobe PDF filling failed, falling back to legacy method
 - `/src/controllers/pdf.controller.js` - Integration with PDF generation
 
 **Template:**
-- `/pdf-templates/Car-Crash-Lawyer-AI-Incident-Report.pdf` - Your legal PDF template
+- `/pdf-templates/Car-Crash-Lawyer-AI-incident-report-main.pdf` - Your legal PDF template
 
 **Configuration:**
 - `/credentials/pdfservices-api-credentials.json` - Adobe credentials (not in Git)

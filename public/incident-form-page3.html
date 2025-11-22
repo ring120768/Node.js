@@ -1,0 +1,980 @@
+<!DOCTYPE html>
+<html lang="en-GB">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+  <meta name="apple-mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+  <title>Accident Details - Page 3 of 12</title>
+
+  <style>
+    /* Design System Variables */
+    :root {
+      --grad-start: #0E7490;
+      --grad-end: #0c6179;
+      --accent: #0E7490;
+      --accent-hover: #0c6179;
+      --bg-light: #E8DCC4;
+      --text-dark: #333;
+      --text-muted: #666;
+      --border: #4B5563;
+      --button-bg: #C0C0C0;
+      --button-hover: #B0B0B0;
+      --input-bg: #CFD2D7;
+      --checkbox-bg: #F5F1E8;
+      --container-bg: #F5F1E8;
+      --success: #10b981;
+      --danger: #ef4444;
+      --warning: #f59e0b;
+    }
+
+    /* Reset & Base */
+    * {
+      margin: 0;
+      padding: 0;
+      box-sizing: border-box;
+      -webkit-tap-highlight-color: transparent;
+    }
+
+    html {
+      font-size: 16px;
+      -webkit-text-size-adjust: 100%;
+    }
+
+    body {
+      font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, Cantarell, sans-serif;
+      background: var(--bg-light);
+      color: var(--text-dark);
+      line-height: 1.6;
+      overflow-x: hidden;
+      padding-bottom: env(safe-area-inset-bottom, 20px);
+    }
+
+    /* Sticky Banner */
+    .banner {
+      background: linear-gradient(135deg, var(--grad-start) 0%, var(--grad-end) 100%);
+      padding: 20px 16px;
+      position: sticky;
+      top: 0;
+      z-index: 200;
+      box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+    }
+
+    @supports (padding-top: env(safe-area-inset-top)) {
+      .banner {
+        padding-top: max(20px, env(safe-area-inset-top));
+      }
+    }
+
+    .brand {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      text-align: center;
+      gap: 12px;
+    }
+
+    .brand .logo {
+      width: 80px;
+      height: 80px;
+      border-radius: 12px;
+      box-shadow: 0 4px 12px rgba(0,0,0,0.15);
+    }
+
+    .brand h1 {
+      font-size: 1.25rem;
+      font-weight: 700;
+      color: white;
+      text-shadow: 0 2px 4px rgba(0,0,0,0.1);
+    }
+
+    .brand .tagline {
+      font-size: 0.875rem;
+      color: rgba(255,255,255,0.95);
+      font-weight: 500;
+    }
+
+    /* Progress Bar */
+    .progress-container {
+      margin-top: 16px;
+      background: rgba(255,255,255,0.2);
+      border-radius: 20px;
+      height: 8px;
+      overflow: hidden;
+      backdrop-filter: blur(8px);
+    }
+
+    .progress-bar {
+      height: 100%;
+      background: white;
+      border-radius: 20px;
+      transition: width 0.3s ease;
+      width: 25%; /* Page 3 of 12 */
+    }
+
+    .progress-label {
+      text-align: center;
+      color: white;
+      font-size: 0.75rem;
+      margin-top: 8px;
+      font-weight: 600;
+    }
+
+    /* Main Container */
+    .container {
+      max-width: 600px;
+      margin: 0 auto;
+      padding: 24px 16px;
+    }
+
+    .page-header {
+      text-align: center;
+      margin-bottom: 32px;
+    }
+
+    .page-header h2 {
+      font-size: 1.5rem;
+      color: var(--text-dark);
+      margin-bottom: 8px;
+    }
+
+    .page-header p {
+      color: var(--text-muted);
+      font-size: 0.938rem;
+    }
+
+    /* Form Section */
+    .form-section {
+      background: var(--container-bg);
+      border-radius: 12px;
+      padding: 24px;
+      margin-bottom: 20px;
+      box-shadow: 0 2px 8px rgba(0,0,0,0.05);
+    }
+
+    .form-section h3 {
+      color: var(--accent);
+      font-size: 1.125rem;
+      margin-bottom: 20px;
+      display: flex;
+      align-items: center;
+      gap: 8px;
+    }
+
+    .form-group {
+      margin-bottom: 20px;
+    }
+
+    .form-group:last-child {
+      margin-bottom: 0;
+    }
+
+    .form-group label {
+      display: block;
+      font-weight: 600;
+      color: var(--text-dark);
+      margin-bottom: 8px;
+      font-size: 0.938rem;
+    }
+
+    .form-group label .required {
+      color: var(--danger);
+      margin-left: 4px;
+    }
+
+    .form-group input[type="text"],
+    .form-group input[type="date"],
+    .form-group input[type="time"],
+    .form-group input[type="number"],
+    .form-group select,
+    .form-group textarea {
+      width: 100%;
+      padding: 14px 16px;
+      border: 2px solid var(--border);
+      border-radius: 8px;
+      font-size: 16px;
+      font-family: inherit;
+      background: var(--input-bg);
+      transition: all 0.2s ease;
+    }
+
+    .form-group input:focus,
+    .form-group select:focus,
+    .form-group textarea:focus {
+      outline: none;
+      border-color: var(--accent);
+      box-shadow: 0 0 0 3px rgba(53, 122, 148, 0.1);
+    }
+
+    .form-group textarea {
+      min-height: 100px;
+      resize: vertical;
+    }
+
+    .form-group .help-text {
+      font-size: 0.813rem;
+      color: var(--text-muted);
+      margin-top: 6px;
+    }
+
+    /* Checkbox Group */
+    .checkbox-group {
+      display: flex;
+      flex-direction: column;
+      gap: 10px;
+    }
+
+    .checkbox-item {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+      padding: 12px 16px;
+      border: 2px solid var(--border);
+      border-radius: 8px;
+      background: var(--input-bg);
+      cursor: pointer;
+      transition: all 0.2s ease;
+    }
+
+    .checkbox-item:hover {
+      border-color: var(--accent);
+      background: rgba(53, 122, 148, 0.15);
+    }
+
+    .checkbox-item input[type="checkbox"] {
+      position: relative;
+      appearance: none;
+      -webkit-appearance: none;
+      width: 24px;
+      height: 24px;
+      min-width: 24px;
+      border: 2px solid var(--border);
+      border-radius: 6px;
+      background: var(--checkbox-bg);
+      cursor: pointer;
+      transition: all 0.2s ease;
+    }
+
+    .checkbox-item input[type="checkbox"]:checked {
+      background: var(--success);
+      border-color: var(--success);
+    }
+
+    .checkbox-item input[type="checkbox"]:checked::after {
+      content: '✓';
+      position: absolute;
+      top: 50%;
+      left: 50%;
+      transform: translate(-50%, -50%);
+      color: white;
+      font-size: 16px;
+      font-weight: 700;
+    }
+
+    .checkbox-item label {
+      flex: 1;
+      cursor: pointer;
+      margin: 0;
+      font-weight: 500;
+    }
+
+    /* Radio Group - Now styled like checkboxes for better UX */
+    .radio-group {
+      display: flex;
+      flex-direction: column;
+      gap: 10px;
+    }
+
+    .radio-group label {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+      padding: 12px 16px;
+      border: 2px solid var(--border);
+      border-radius: 8px;
+      background: var(--input-bg);
+      cursor: pointer;
+      transition: all 0.2s ease;
+      font-weight: 500;
+      margin-bottom: 0;
+    }
+
+    .radio-group label:hover {
+      border-color: var(--accent);
+      background: rgba(53, 122, 148, 0.15);
+    }
+
+    .radio-group input[type="checkbox"] {
+      position: relative;
+      appearance: none;
+      -webkit-appearance: none;
+      width: 24px;
+      height: 24px;
+      min-width: 24px;
+      border: 2px solid var(--border);
+      border-radius: 6px;
+      background: var(--checkbox-bg);
+      cursor: pointer;
+      transition: all 0.2s ease;
+    }
+
+    .radio-group input[type="checkbox"]:checked {
+      background: var(--success);
+      border-color: var(--success);
+    }
+
+    .radio-group input[type="checkbox"]:checked::after {
+      content: '✓';
+      position: absolute;
+      top: 50%;
+      left: 50%;
+      transform: translate(-50%, -50%);
+      color: white;
+      font-size: 16px;
+      font-weight: 700;
+    }
+
+    .radio-group input[type="checkbox"]:checked + span {
+      color: var(--accent);
+      font-weight: 600;
+    }
+
+    /* Navigation Buttons */
+    .nav-buttons {
+      display: flex;
+      gap: 12px;
+      margin-top: 32px;
+      padding-bottom: env(safe-area-inset-bottom, 0px);
+    }
+
+    .btn {
+      flex: 1;
+      padding: 16px 24px;
+      border: none;
+      border-radius: 12px;
+      font-size: 1rem;
+      font-weight: 600;
+      cursor: pointer;
+      transition: all 0.2s ease;
+      min-height: 56px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: 8px;
+    }
+
+    .btn-secondary {
+      background: white;
+      color: var(--grad-start);
+      border: 2px solid var(--grad-start);
+    }
+
+    .btn-secondary:hover {
+      background: rgba(46, 106, 157, 0.1);
+    }
+
+    .btn-primary {
+      background: var(--grad-start);
+      color: white;
+      border: none;
+      box-shadow: 0 4px 12px rgba(46, 106, 157, 0.3);
+    }
+
+    .btn-primary:hover {
+      background: #25547a;
+      transform: translateY(-2px);
+      box-shadow: 0 6px 16px rgba(46, 106, 157, 0.4);
+    }
+
+    .btn-primary:active {
+      transform: translateY(0);
+    }
+
+    /* Mobile Optimizations */
+    @media (max-width: 480px) {
+      .container {
+        padding: 16px 12px;
+      }
+
+      .page-header h2 {
+        font-size: 1.25rem;
+      }
+
+      .form-section {
+        padding: 20px 16px;
+      }
+    }
+
+    /* Touch Feedback */
+    @media (hover: none) {
+      .btn:active {
+        opacity: 0.8;
+      }
+    }
+  </style>
+</head>
+<body>
+  <!-- Sticky Banner -->
+  <div class="banner">
+    <div class="brand">
+      <img src="/images/logo.png" alt="Logo" class="logo">
+      <h1>Car Crash Lawyer AI</h1>
+      <p class="tagline">Legal Incident Report</p>
+    </div>
+    <div class="progress-container">
+      <div class="progress-bar"></div>
+    </div>
+    <div class="progress-label">Page 3 of 12</div>
+  </div>
+
+  <!-- Main Content -->
+  <div class="container">
+    <div class="page-header">
+      <h2>📅 Accident Details</h2>
+      <p>When and where did the accident occur?</p>
+    </div>
+
+    <!-- Section 4: Accident Date & Time -->
+    <div class="form-section">
+      <h3>🕐 Date & Time</h3>
+
+      <div class="form-group">
+        <label for="accident_date">
+          Date of Accident
+          <span class="required">*</span>
+        </label>
+        <input
+          type="date"
+          id="accident_date"
+          name="accident_date"
+          required
+        >
+        <p class="help-text">Select the date the accident occurred</p>
+      </div>
+
+      <div class="form-group">
+        <label for="accident_time">
+          Time of Accident
+          <span class="required">*</span>
+        </label>
+        <input
+          type="time"
+          id="accident_time"
+          name="accident_time"
+          required
+        >
+        <p class="help-text">24-hour format (e.g., 14:30)</p>
+      </div>
+
+    </div>
+
+    <!-- Section 5: Weather Conditions -->
+    <div class="form-section">
+      <h3>🌤️ Weather Conditions</h3>
+      <p class="help-text" style="margin-bottom: 16px;">
+        What were the weather conditions at the time of the accident? (Select all that apply)
+      </p>
+
+      <div class="checkbox-group">
+        <div class="checkbox-item">
+          <input type="checkbox" id="weather_bright_sunlight" name="weather_bright_sunlight" value="true">
+          <label for="weather_bright_sunlight">Bright Sunlight</label>
+        </div>
+        <div class="checkbox-item">
+          <input type="checkbox" id="weather_clear" name="weather_clear" value="true">
+          <label for="weather_clear">Clear and Dry</label>
+        </div>
+        <div class="checkbox-item">
+          <input type="checkbox" id="weather_cloudy" name="weather_cloudy" value="true">
+          <label for="weather_cloudy">Cloudy</label>
+        </div>
+        <div class="checkbox-item">
+          <input type="checkbox" id="weather_raining" name="weather_raining" value="true">
+          <label for="weather_raining">Raining</label>
+        </div>
+        <div class="checkbox-item">
+          <input type="checkbox" id="weather_heavy_rain" name="weather_heavy_rain" value="true">
+          <label for="weather_heavy_rain">Heavy Rain</label>
+        </div>
+        <div class="checkbox-item">
+          <input type="checkbox" id="weather_drizzle" name="weather_drizzle" value="true">
+          <label for="weather_drizzle">Drizzle</label>
+        </div>
+        <div class="checkbox-item">
+          <input type="checkbox" id="weather_fog" name="weather_fog" value="true">
+          <label for="weather_fog">Fog or Poor Visibility</label>
+        </div>
+        <div class="checkbox-item">
+          <input type="checkbox" id="weather_snow" name="weather_snow" value="true">
+          <label for="weather_snow">Snow</label>
+        </div>
+        <div class="checkbox-item">
+          <input type="checkbox" id="weather_ice" name="weather_ice" value="true">
+          <label for="weather_ice">Ice</label>
+        </div>
+        <div class="checkbox-item">
+          <input type="checkbox" id="weather_windy" name="weather_windy" value="true">
+          <label for="weather_windy">Windy</label>
+        </div>
+        <div class="checkbox-item">
+          <input type="checkbox" id="weather_hail" name="weather_hail" value="true">
+          <label for="weather_hail">Hail</label>
+        </div>
+        <div class="checkbox-item">
+          <input type="checkbox" id="weather_thunder_lightning" name="weather_thunder_lightning" value="true">
+          <label for="weather_thunder_lightning">Thunder/Lightning</label>
+        </div>
+      </div>
+    </div>
+
+    <!-- Section 6: Road Conditions -->
+    <div class="form-section">
+      <h3>🛣️ Road Conditions</h3>
+
+      <div class="form-group">
+        <label>
+          Road Surface Condition
+          <span class="required">*</span>
+        </label>
+        <p class="help-text" style="margin-bottom: 12px;">Select all that apply</p>
+        <div class="radio-group">
+          <label>
+            <input type="checkbox" name="road_condition_dry" value="true">
+            <span>Dry</span>
+          </label>
+          <label>
+            <input type="checkbox" name="road_condition_wet" value="true">
+            <span>Wet</span>
+          </label>
+          <label>
+            <input type="checkbox" name="road_condition_icy" value="true">
+            <span>Icy</span>
+          </label>
+          <label>
+            <input type="checkbox" name="road_condition_snow_covered" value="true">
+            <span>Snow-covered</span>
+          </label>
+          <label>
+            <input type="checkbox" name="road_condition_loose_surface" value="true">
+            <span>Loose surface (gravel, debris)</span>
+          </label>
+          <label>
+            <input type="checkbox" name="road_condition_slush_on_road" value="true">
+            <span>Slush on road</span>
+          </label>
+        </div>
+      </div>
+
+      <div class="form-group">
+        <label>
+          Road Type
+          <span class="required">*</span>
+        </label>
+        <p class="help-text" style="margin-bottom: 12px;">Select all that apply</p>
+        <div class="radio-group">
+          <label>
+            <input type="checkbox" name="road_type_motorway" value="true">
+            <span>Motorway</span>
+          </label>
+          <label>
+            <input type="checkbox" name="road_type_a_road" value="true">
+            <span>A-road</span>
+          </label>
+          <label>
+            <input type="checkbox" name="road_type_b_road" value="true">
+            <span>B-road</span>
+          </label>
+          <label>
+            <input type="checkbox" name="road_type_urban_street" value="true">
+            <span>Urban street</span>
+          </label>
+          <label>
+            <input type="checkbox" name="road_type_rural_road" value="true">
+            <span>Rural road</span>
+          </label>
+          <label>
+            <input type="checkbox" name="road_type_car_park" value="true">
+            <span>Car park</span>
+          </label>
+          <label>
+            <input type="checkbox" name="road_type_private_road" value="true">
+            <span>Private road</span>
+          </label>
+        </div>
+      </div>
+
+      <div class="form-group">
+        <label for="speed_limit">
+          Speed Limit (mph)
+        </label>
+        <select
+          id="speed_limit"
+          name="speed_limit"
+        >
+          <option value="">Select speed limit</option>
+          <option value="20">20 mph</option>
+          <option value="30">30 mph</option>
+          <option value="40">40 mph</option>
+          <option value="50">50 mph</option>
+          <option value="60">60 mph</option>
+          <option value="70">70 mph</option>
+          <option value="unknown">Unknown</option>
+        </select>
+        <p class="help-text">Select the posted speed limit</p>
+      </div>
+
+      <div class="form-group">
+        <label for="your_speed">
+          Your Estimated Speed (mph)
+        </label>
+        <input
+          type="number"
+          id="your_speed"
+          name="your_speed"
+          placeholder="e.g., 30"
+          min="0"
+          max="150"
+        >
+        <p class="help-text">Your approximate speed at the time of the accident</p>
+      </div>
+
+      <div class="form-group">
+        <label>
+          Traffic Conditions
+          <span class="required">*</span>
+        </label>
+        <p class="help-text" style="margin-bottom: 12px;">Select all that apply</p>
+        <div class="radio-group">
+          <label>
+            <input type="checkbox" name="traffic_conditions_heavy" value="true">
+            <span>Heavy</span>
+          </label>
+          <label>
+            <input type="checkbox" name="traffic_conditions_moderate" value="true">
+            <span>Moderate</span>
+          </label>
+          <label>
+            <input type="checkbox" name="traffic_conditions_light" value="true">
+            <span>Light</span>
+          </label>
+          <label>
+            <input type="checkbox" name="traffic_conditions_no_traffic" value="true">
+            <span>No traffic</span>
+          </label>
+        </div>
+      </div>
+
+      <div class="form-group">
+        <label>
+          Visibility
+          <span class="required">*</span>
+        </label>
+        <p class="help-text" style="margin-bottom: 12px;">Select all that apply</p>
+        <div class="radio-group">
+          <label>
+            <input type="checkbox" name="visibility_good" value="true">
+            <span>Good</span>
+          </label>
+          <label>
+            <input type="checkbox" name="visibility_poor" value="true">
+            <span>Poor</span>
+          </label>
+          <label>
+            <input type="checkbox" name="visibility_very_poor" value="true">
+            <span>Very poor</span>
+          </label>
+          <label>
+            <input type="checkbox" name="visibility_street_lights" value="true">
+            <span>Street lights</span>
+          </label>
+        </div>
+      </div>
+
+      <div class="form-group">
+        <label>
+          Were road markings visible?
+          <span class="required">*</span>
+        </label>
+        <p class="help-text" style="margin-bottom: 12px;">Select all that apply</p>
+        <div class="radio-group">
+          <label>
+            <input type="checkbox" name="road_markings_visible_yes" value="true">
+            <span>Yes</span>
+          </label>
+          <label>
+            <input type="checkbox" name="road_markings_visible_no" value="true">
+            <span>No</span>
+          </label>
+          <label>
+            <input type="checkbox" name="road_markings_visible_partially" value="true">
+            <span>Partially visible</span>
+          </label>
+        </div>
+      </div>
+    </div>
+
+    <!-- Navigation -->
+    <div class="nav-buttons">
+      <button type="button" class="btn btn-secondary" id="backBtn">
+        ← Back
+      </button>
+      <button type="button" class="btn btn-primary" id="nextBtn">
+        Continue →
+      </button>
+    </div>
+  </div>
+
+  <script>
+    // Elements
+    const backBtn = document.getElementById('backBtn');
+    const nextBtn = document.getElementById('nextBtn');
+
+    // Validate form
+    function validateForm() {
+      // Required fields
+      const accidentDate = document.getElementById('accident_date').value.trim();
+      const accidentTime = document.getElementById('accident_time').value.trim();
+
+      // Check if at least one checkbox is selected for each required group
+      const roadConditionChecked = document.querySelectorAll('input[name^="road_condition_"]:checked').length > 0;
+      const roadTypeChecked = document.querySelectorAll('input[name^="road_type_"]:checked').length > 0;
+      const trafficConditionsChecked = document.querySelectorAll('input[name^="traffic_conditions_"]:checked').length > 0;
+      const visibilityChecked = document.querySelectorAll('input[name^="visibility_"]:checked').length > 0;
+      const roadMarkingsChecked = document.querySelectorAll('input[name^="road_markings_visible_"]:checked').length > 0;
+
+      if (!accidentDate) {
+        alert('Please select the date of the accident.');
+        return false;
+      }
+
+      if (!accidentTime) {
+        alert('Please enter the time of the accident.');
+        return false;
+      }
+
+      if (!roadConditionChecked) {
+        alert('Please select at least one road surface condition.');
+        return false;
+      }
+
+      if (!roadTypeChecked) {
+        alert('Please select at least one road type.');
+        return false;
+      }
+
+      if (!trafficConditionsChecked) {
+        alert('Please select at least one traffic condition.');
+        return false;
+      }
+
+      if (!visibilityChecked) {
+        alert('Please select at least one visibility condition.');
+        return false;
+      }
+
+      if (!roadMarkingsChecked) {
+        alert('Please indicate if road markings were visible.');
+        return false;
+      }
+
+      return true;
+    }
+
+    // Save and proceed
+    nextBtn.addEventListener('click', function() {
+      if (!validateForm()) {
+        return;
+      }
+
+      // Collect weather conditions
+      const weatherConditions = {
+        weather_bright_sunlight: document.getElementById('weather_bright_sunlight').checked,
+        weather_clear: document.getElementById('weather_clear').checked,
+        weather_cloudy: document.getElementById('weather_cloudy').checked,
+        weather_raining: document.getElementById('weather_raining').checked,
+        weather_heavy_rain: document.getElementById('weather_heavy_rain').checked,
+        weather_drizzle: document.getElementById('weather_drizzle').checked,
+        weather_fog: document.getElementById('weather_fog').checked,
+        weather_snow: document.getElementById('weather_snow').checked,
+        weather_ice: document.getElementById('weather_ice').checked,
+        weather_windy: document.getElementById('weather_windy').checked,
+        weather_hail: document.getElementById('weather_hail').checked,
+        weather_thunder_lightning: document.getElementById('weather_thunder_lightning').checked
+      };
+
+      // Collect road conditions (checkboxes)
+      const roadConditions = {
+        road_condition_dry: document.querySelector('input[name="road_condition_dry"]').checked,
+        road_condition_wet: document.querySelector('input[name="road_condition_wet"]').checked,
+        road_condition_icy: document.querySelector('input[name="road_condition_icy"]').checked,
+        road_condition_snow_covered: document.querySelector('input[name="road_condition_snow_covered"]').checked,
+        road_condition_loose_surface: document.querySelector('input[name="road_condition_loose_surface"]').checked,
+        road_condition_slush_on_road: document.querySelector('input[name="road_condition_slush_on_road"]').checked
+      };
+
+      // Collect road types (checkboxes)
+      const roadTypes = {
+        road_type_motorway: document.querySelector('input[name="road_type_motorway"]').checked,
+        road_type_a_road: document.querySelector('input[name="road_type_a_road"]').checked,
+        road_type_b_road: document.querySelector('input[name="road_type_b_road"]').checked,
+        road_type_urban_street: document.querySelector('input[name="road_type_urban_street"]').checked,
+        road_type_rural_road: document.querySelector('input[name="road_type_rural_road"]').checked,
+        road_type_car_park: document.querySelector('input[name="road_type_car_park"]').checked,
+        road_type_private_road: document.querySelector('input[name="road_type_private_road"]').checked
+      };
+
+      // Collect traffic conditions (checkboxes)
+      const trafficConditions = {
+        traffic_conditions_heavy: document.querySelector('input[name="traffic_conditions_heavy"]').checked,
+        traffic_conditions_moderate: document.querySelector('input[name="traffic_conditions_moderate"]').checked,
+        traffic_conditions_light: document.querySelector('input[name="traffic_conditions_light"]').checked,
+        traffic_conditions_no_traffic: document.querySelector('input[name="traffic_conditions_no_traffic"]').checked
+      };
+
+      // Collect visibility (checkboxes)
+      const visibility = {
+        visibility_good: document.querySelector('input[name="visibility_good"]').checked,
+        visibility_poor: document.querySelector('input[name="visibility_poor"]').checked,
+        visibility_very_poor: document.querySelector('input[name="visibility_very_poor"]').checked,
+        visibility_street_lights: document.querySelector('input[name="visibility_street_lights"]').checked
+      };
+
+      // Collect road markings visibility (checkboxes)
+      const roadMarkings = {
+        road_markings_visible_yes: document.querySelector('input[name="road_markings_visible_yes"]').checked,
+        road_markings_visible_no: document.querySelector('input[name="road_markings_visible_no"]').checked,
+        road_markings_visible_partially: document.querySelector('input[name="road_markings_visible_partially"]').checked
+      };
+
+      // Save data to session storage
+      const pageData = {
+        accident_date: document.getElementById('accident_date').value.trim(),
+        accident_time: document.getElementById('accident_time').value.trim(),
+        ...weatherConditions,
+        ...roadConditions,
+        ...roadTypes,
+        speed_limit: document.getElementById('speed_limit').value.trim(),
+        your_speed: document.getElementById('your_speed').value.trim(),
+        ...trafficConditions,
+        ...visibility,
+        ...roadMarkings,
+        completed_at: new Date().toISOString()
+      };
+
+      sessionStorage.setItem('incident_page3', JSON.stringify(pageData));
+
+      console.log('✅ Page 3 saved:', pageData);
+
+      // Navigate to page 4
+      window.location.href = '/incident-form-page4.html';
+    });
+
+    // Back button
+    backBtn.addEventListener('click', function() {
+      window.location.href = '/incident-form-page2.html';
+    });
+
+    // Restore saved data if returning to this page
+    window.addEventListener('DOMContentLoaded', function() {
+      const saved = sessionStorage.getItem('incident_page3');
+      if (saved) {
+        try {
+          const data = JSON.parse(saved);
+
+          // Restore date & time
+          if (data.accident_date) {
+            document.getElementById('accident_date').value = data.accident_date;
+          }
+          if (data.accident_time) {
+            document.getElementById('accident_time').value = data.accident_time;
+          }
+
+          // Restore weather conditions
+          const weatherFields = [
+            'weather_bright_sunlight', 'weather_clear', 'weather_cloudy', 'weather_raining', 'weather_heavy_rain',
+            'weather_drizzle', 'weather_fog', 'weather_snow', 'weather_ice',
+            'weather_windy', 'weather_hail', 'weather_thunder_lightning'
+          ];
+          weatherFields.forEach(field => {
+            if (data[field]) {
+              const checkbox = document.getElementById(field);
+              if (checkbox) checkbox.checked = true;
+            }
+          });
+
+          // Restore road conditions (checkboxes)
+          const roadConditionFields = [
+            'road_condition_dry', 'road_condition_wet', 'road_condition_icy',
+            'road_condition_snow_covered', 'road_condition_loose_surface', 'road_condition_slush_on_road'
+          ];
+          roadConditionFields.forEach(field => {
+            if (data[field]) {
+              const checkbox = document.querySelector(`input[name="${field}"]`);
+              if (checkbox) checkbox.checked = true;
+            }
+          });
+
+          // Restore road types (checkboxes)
+          const roadTypeFields = [
+            'road_type_motorway', 'road_type_a_road', 'road_type_b_road',
+            'road_type_urban_street', 'road_type_rural_road', 'road_type_car_park', 'road_type_private_road'
+          ];
+          roadTypeFields.forEach(field => {
+            if (data[field]) {
+              const checkbox = document.querySelector(`input[name="${field}"]`);
+              if (checkbox) checkbox.checked = true;
+            }
+          });
+
+          if (data.speed_limit) {
+            document.getElementById('speed_limit').value = data.speed_limit;
+          }
+          if (data.your_speed) {
+            document.getElementById('your_speed').value = data.your_speed;
+          }
+
+          // Restore traffic conditions (checkboxes)
+          const trafficFields = [
+            'traffic_conditions_heavy', 'traffic_conditions_moderate',
+            'traffic_conditions_light', 'traffic_conditions_no_traffic'
+          ];
+          trafficFields.forEach(field => {
+            if (data[field]) {
+              const checkbox = document.querySelector(`input[name="${field}"]`);
+              if (checkbox) checkbox.checked = true;
+            }
+          });
+
+          // Restore visibility (checkboxes)
+          const visibilityFields = [
+            'visibility_good', 'visibility_poor', 'visibility_very_poor', 'visibility_street_lights'
+          ];
+          visibilityFields.forEach(field => {
+            if (data[field]) {
+              const checkbox = document.querySelector(`input[name="${field}"]`);
+              if (checkbox) checkbox.checked = true;
+            }
+          });
+
+          // Restore road markings (checkboxes)
+          const roadMarkingsFields = [
+            'road_markings_visible_yes', 'road_markings_visible_no', 'road_markings_visible_partially'
+          ];
+          roadMarkingsFields.forEach(field => {
+            if (data[field]) {
+              const checkbox = document.querySelector(`input[name="${field}"]`);
+              if (checkbox) checkbox.checked = true;
+            }
+          });
+
+          console.log('✅ Page 3 data restored');
+        } catch (e) {
+          console.error('Error restoring page 3 data:', e);
+        }
+      }
+    });
+
+    console.log('📋 Incident Form - Page 3: Accident Details loaded');
+  </script>
+</body>
+</html>

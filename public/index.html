@@ -191,14 +191,15 @@
             box-shadow: 0 4px 12px rgba(0, 0, 0, 0.2);
         }
 
-        .auth-btn.login {
+        .auth-btn.logout {
             background: transparent;
             color: white;
+            display: none; /* Hidden by default, shown when logged in */
         }
 
-        .auth-btn.login:hover {
-            background: white;
-            color: #0B7AB0;
+        .auth-btn.logout:hover {
+            background: rgba(255, 255, 255, 0.2);
+            color: white;
             transform: translateY(-2px);
             box-shadow: 0 6px 16px rgba(255, 255, 255, 0.3);
         }
@@ -497,6 +498,12 @@
             Try Demo
         </button>
 
+        <!-- USER GUIDE BUTTON -->
+        <button class="secondary-btn" id="userGuideBtn">
+            <span class="btn-icon">📖</span>
+            User Guide
+        </button>
+
         <!-- DIVIDER -->
         <div class="divider">
             <span>Account</span>
@@ -504,8 +511,8 @@
 
         <!-- AUTH BUTTONS -->
         <div class="auth-buttons">
-            <button class="auth-btn login" id="loginBtn">
-                🔑 Login
+            <button class="auth-btn logout" id="logoutBtn">
+                🚪 Logout
             </button>
             <button class="auth-btn signup" id="signupBtn">
                 ✨ Sign Up
@@ -526,6 +533,37 @@
                     <div class="spinner"></div>
                     <p>Getting your location...</p>
                 </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- USER GUIDE MODAL -->
+    <div class="modal-overlay" id="userGuideModal">
+        <div class="emergency-modal">
+            <div class="modal-header">
+                <h2>📖 User Guide</h2>
+                <p>Choose the guide you need</p>
+            </div>
+
+            <div id="guideContent">
+                <button class="secondary-btn" data-guide="signup" style="width: 100%; margin-bottom: 15px;">
+                    <span class="btn-icon">✨</span>
+                    Signup Guide
+                </button>
+
+                <button class="secondary-btn" data-guide="incident" style="width: 100%; margin-bottom: 15px;">
+                    <span class="btn-icon">📝</span>
+                    Incident Reports Guide
+                </button>
+
+                <button class="secondary-btn" data-guide="scenarios" style="width: 100%; margin-bottom: 20px;">
+                    <span class="btn-icon">🎭</span>
+                    Example Scenarios
+                </button>
+
+                <button class="cancel-btn" data-action="cancel-guide">
+                    Close
+                </button>
             </div>
         </div>
     </div>
@@ -701,54 +739,197 @@
             }
         });
 
-        // Navigate to incident report
-        async function navigateToIncident() {
-            console.log('📝 Incident button clicked');
-            try {
-                const response = await fetch('/api/auth/status', {
-                    credentials: 'include'
-                });
-                const data = await response.json();
-
-                console.log('🔍 Auth status check:', data);
-
-                if (data.authenticated) {
-                    console.log('✅ User authenticated, going to incident.html');
-                    window.location.href = '/incident.html';
-                } else {
-                    console.log('❌ User not authenticated, redirecting to login with redirect=incident.html');
-                    window.location.href = '/login.html?redirect=incident.html';
-                }
-            } catch (error) {
-                console.error('❌ Auth check failed:', error);
-                console.log('Redirecting to login with redirect=incident.html (fallback)');
-                window.location.href = '/login.html?redirect=incident.html';
-            }
+        // Navigate to incident report (seamless - server handles auth)
+        function navigateToIncident() {
+            console.log('📝 Incident button clicked - navigating to incident page');
+            window.location.href = '/incident.html';
         }
 
-        // Navigate to dashboard
-        async function navigateToDashboard() {
-            console.log('📋 Dashboard button clicked');
-            try {
-                const response = await fetch('/api/auth/status', {
-                    credentials: 'include'
-                });
-                const data = await response.json();
+        // Navigate to dashboard (seamless - server handles auth)
+        function navigateToDashboard() {
+            console.log('📋 Dashboard button clicked - navigating to dashboard');
+            console.log('🍪 Current cookies:', document.cookie);
+            console.log('🔗 Navigating to: /dashboard.html');
+            console.log('📍 Current location:', window.location.href);
+            window.location.href = '/dashboard.html';
+        }
 
-                console.log('🔍 Auth status check:', data);
+        // User Guide Modal Functions
+        function showGuideMenu() {
+            const userGuideModal = document.getElementById('userGuideModal');
+            const guideContent = document.getElementById('guideContent');
 
-                if (data.authenticated) {
-                    console.log('✅ User authenticated, going to dashboard.html');
-                    window.location.href = '/dashboard.html';
-                } else {
-                    console.log('❌ User not authenticated, redirecting to login with redirect=dashboard.html');
-                    window.location.href = '/login.html?redirect=dashboard.html';
-                }
-            } catch (error) {
-                console.error('❌ Auth check failed:', error);
-                console.log('Redirecting to login with redirect=dashboard.html (fallback)');
-                window.location.href = '/login.html?redirect=dashboard.html';
+            guideContent.innerHTML = `
+                <button class="secondary-btn" data-guide="signup" style="width: 100%; margin-bottom: 15px;">
+                    <span class="btn-icon">✨</span>
+                    Signup Guide
+                </button>
+
+                <button class="secondary-btn" data-guide="incident" style="width: 100%; margin-bottom: 15px;">
+                    <span class="btn-icon">📝</span>
+                    Incident Reports Guide
+                </button>
+
+                <button class="secondary-btn" data-guide="scenarios" style="width: 100%; margin-bottom: 20px;">
+                    <span class="btn-icon">🎭</span>
+                    Example Scenarios
+                </button>
+
+                <button class="cancel-btn" data-action="cancel-guide">
+                    Close
+                </button>
+            `;
+        }
+
+        function showGuideContent(type) {
+            const guideContent = document.getElementById('guideContent');
+
+            let content = '';
+
+            switch(type) {
+                case 'signup':
+                    content = `
+                        <div class="guide-section">
+                            <h3>📋 Signup Guide</h3>
+                            <div style="text-align: left; line-height: 1.6; margin: 20px 0;">
+                                <p><strong>Before You Start:</strong></p>
+                                <ul style="margin: 10px 0; padding-left: 20px;">
+                                    <li>Driving licence (photo)</li>
+                                    <li>Vehicle registration details</li>
+                                    <li>Insurance policy number</li>
+                                    <li>Vehicle photos ready</li>
+                                </ul>
+
+                                <p style="margin-top: 20px;"><strong>Steps:</strong></p>
+                                <ol style="margin: 10px 0; padding-left: 20px;">
+                                    <li><strong>Page 1:</strong> Create account with email & password</li>
+                                    <li><strong>Pages 2-3:</strong> Personal information & contact details</li>
+                                    <li><strong>Pages 4-5:</strong> Vehicle details & upload photos</li>
+                                    <li><strong>Pages 6-7:</strong> Insurance information</li>
+                                    <li><strong>Pages 8-9:</strong> Policyholder details (if different)</li>
+                                </ol>
+
+                                <p style="margin-top: 20px;"><strong>💡 Tips:</strong></p>
+                                <ul style="margin: 10px 0; padding-left: 20px;">
+                                    <li>Upload photos immediately - they save automatically</li>
+                                    <li>You can save and return later</li>
+                                    <li>Takes 15-30 minutes to complete</li>
+                                </ul>
+                            </div>
+
+                            <button class="secondary-btn" data-action="start-signup" style="width: 100%; margin-bottom: 15px;">
+                                ✨ Start Signup
+                            </button>
+
+                            <button class="cancel-btn" data-action="back-to-menu">
+                                ← Back to Menu
+                            </button>
+                        </div>
+                    `;
+                    break;
+
+                case 'incident':
+                    content = `
+                        <div class="guide-section">
+                            <h3>📝 Incident Report Guide</h3>
+                            <div style="text-align: left; line-height: 1.6; margin: 20px 0;">
+                                <p><strong>What You'll Document:</strong></p>
+                                <ul style="margin: 10px 0; padding-left: 20px;">
+                                    <li>Date, time, and location of accident</li>
+                                    <li>What happened (your account)</li>
+                                    <li>Vehicle damage photos</li>
+                                    <li>Injuries and medical details</li>
+                                    <li>Other vehicles and witnesses</li>
+                                    <li>Police and emergency services</li>
+                                    <li>Scene photos and conditions</li>
+                                </ul>
+
+                                <p style="margin-top: 20px;"><strong>🎤 AI Features:</strong></p>
+                                <ul style="margin: 10px 0; padding-left: 20px;">
+                                    <li>Voice transcription - speak instead of type</li>
+                                    <li>AI analysis of your case</li>
+                                    <li>Automatic legal recommendations</li>
+                                </ul>
+
+                                <p style="margin-top: 20px;"><strong>📄 Final Report:</strong></p>
+                                <ul style="margin: 10px 0; padding-left: 20px;">
+                                    <li>17-page professional PDF</li>
+                                    <li>All photos embedded</li>
+                                    <li>Ready for insurance/solicitor</li>
+                                    <li>Generated in 5 minutes</li>
+                                </ul>
+                            </div>
+
+                            <button class="secondary-btn" data-action="start-incident" style="width: 100%; margin-bottom: 15px;">
+                                📝 Start Incident Report
+                            </button>
+
+                            <button class="cancel-btn" data-action="back-to-menu">
+                                ← Back to Menu
+                            </button>
+                        </div>
+                    `;
+                    break;
+
+                case 'scenarios':
+                    content = `
+                        <div class="guide-section">
+                            <h3>🎭 Real Incident Examples</h3>
+                            <p style="margin: 10px 0; font-size: 0.95em; color: #666;">These are examples of how real people describe accidents. Your account should be detailed and in your own words.</p>
+                            <div style="text-align: left; line-height: 1.6; margin: 20px 0; max-height: 400px; overflow-y: auto;">
+
+                                <div style="margin-bottom: 20px; padding: 15px; background: #f5f5f5; border-radius: 8px;">
+                                    <h4 style="margin: 0 0 10px 0;">🚦 Roundabout Collision - Watford</h4>
+                                    <p style="margin: 5px 0; font-size: 0.9em; line-height: 1.5; font-style: italic;">"This morning, about half seven, I was approaching the roundabout at the junction of London Road and Station Road in Watford. It was pouring with rain, visibility wasn't great. I was indicating right to take the third exit. As I entered the roundabout, a white van came flying round from my right, didn't give way at all, just went straight into my driver's side. Absolutely smashed my door in, wing mirror's gone, front wheel arch is completely crumpled. The van driver was really aggressive, shouting that I should have given way to him, but I had right of way! I was already on the roundabout. There was a woman at the bus stop who saw everything, she gave me her number. The van's got damage to the passenger side, front wing and bumper. I called the police because he was being quite threatening. They came out, took statements from both of us and the witness. My door won't open properly now, had to get in from the passenger side. I'm okay physically, just a bit shaken up. The van's a white Ford Transit, plastering company logo on the side."</p>
+                                    <p style="margin: 10px 0 0 0; font-size: 0.85em; color: #0E7490;"><strong>✓ Good example:</strong> Specific location, time, weather, what happened, witness details, damage description, police involvement.</p>
+                                </div>
+
+                                <div style="margin-bottom: 20px; padding: 15px; background: #f5f5f5; border-radius: 8px;">
+                                    <h4 style="margin: 0 0 10px 0;">🚗 Rear-End Collision - M25</h4>
+                                    <p style="margin: 5px 0; font-size: 0.9em; line-height: 1.5; font-style: italic;">"I was in the middle lane of the M25 anticlockwise near junction 23, doing about 50mph because the traffic was heavy. The brake lights ahead came on suddenly and everyone started slowing. I braked smoothly and came to a complete stop. Maybe two seconds later, BANG! Massive impact from behind. My head snapped back, hit the headrest. The other driver, middle-aged bloke in a BMW, said he was looking at his satnav and didn't see the traffic had stopped. My boot's completely caved in, rear bumper hanging off, back window cracked. I've got pain in my neck and shoulders, feels like whiplash. The Highways Agency came and moved us to the hard shoulder. There were loads of cars around but I didn't get witness details - too shaken up. I went to A&E after, they gave me a collar and painkillers. His car had front-end damage, radiator leaking."</p>
+                                    <p style="margin: 10px 0 0 0; font-size: 0.85em; color: #0E7490;"><strong>✓ Good example:</strong> Speed, traffic conditions, injury description, medical attention sought, admission from other driver.</p>
+                                </div>
+
+                                <div style="margin-bottom: 20px; padding: 15px; background: #f5f5f5; border-radius: 8px;">
+                                    <h4 style="margin: 0 0 10px 0;">🛣️ Lane Change - A40 London</h4>
+                                    <p style="margin: 5px 0; font-size: 0.9em; line-height: 1.5; font-style: italic;">"Yesterday afternoon around 2:30, I was on the A40 Western Avenue heading into London, middle lane, doing about 40mph. Roads were wet from earlier rain but visibility was clear. This silver Ford Focus in the right lane suddenly swerved into my lane without any indication at all. I slammed on the brakes and hit my horn but they kept coming, clipped my front right wing. Made me veer left but I kept control. We both pulled onto the hard shoulder near Hanger Lane. The driver admitted she hadn't checked her blind spot properly. My front wing's scratched and dented, headlight cracked. Her rear left panel's got a big scrape and her rear light's smashed. No injuries thankfully. Got her details, insurance, took photos of both cars and the road markings. Should've got dashcam footage but my camera wasn't recording - need to sort that out."</p>
+                                    <p style="margin: 10px 0 0 0; font-size: 0.85em; color: #0E7490;"><strong>✓ Good example:</strong> Exact location, weather conditions, defensive action taken, admission from other driver, photos taken.</p>
+                                </div>
+
+                                <div style="margin-bottom: 20px; padding: 15px; background: #f5f5f5; border-radius: 8px;">
+                                    <h4 style="margin: 0 0 10px 0;">🅿️ Supermarket Car Park - Tesco</h4>
+                                    <p style="margin: 5px 0; font-size: 0.9em; line-height: 1.5; font-style: italic;">"I was reversing out of a space at Tesco Extra in Watford, Saturday lunchtime so it was absolutely rammed. I'd checked my mirrors, started reversing slowly with my reverse sensors beeping. Suddenly there's this massive crunch - another car reversed into me at the same time from the opposite side. We both stopped immediately. The other driver, elderly gentleman, very apologetic, said he didn't see me. My rear passenger door's got a massive dent, wheel arch's pushed in. His front passenger wing's crumpled. A lady who was loading her shopping saw the whole thing, said we both reversed at exactly the same time. She gave me her number. I got photos of both cars, the parking spaces, and the Tesco car park CCTV cameras - there's one right above where it happened. No injuries but my daughter's car seat's in that door area and I can't fit it in now. Had to leave the car there and get a taxi home."</p>
+                                    <p style="margin: 10px 0 0 0; font-size: 0.85em; color: #0E7490;"><strong>✓ Good example:</strong> Busy conditions noted, CCTV location documented, independent witness, impact on daily life mentioned.</p>
+                                </div>
+
+                                <div style="padding: 15px; background: #fff3cd; border-radius: 8px;">
+                                    <p style="margin: 0 0 10px 0; font-size: 0.9em;"><strong>⚠️ Important Tips:</strong></p>
+                                    <ul style="margin: 0; padding-left: 20px; font-size: 0.85em;">
+                                        <li>Be specific about time, location, weather</li>
+                                        <li>Describe what you did to avoid the accident</li>
+                                        <li>Note any admissions from the other driver</li>
+                                        <li>Get witness details immediately if possible</li>
+                                        <li>Note CCTV camera locations</li>
+                                        <li>Mention any injuries, even if minor</li>
+                                        <li>Never admit fault - just describe what happened</li>
+                                    </ul>
+                                </div>
+                            </div>
+
+                            <button class="cancel-btn" data-action="back-to-menu" style="margin-top: 15px;">
+                                ← Back to Menu
+                            </button>
+                        </div>
+                    `;
+                    break;
             }
+
+            guideContent.innerHTML = content;
+        }
+
+        function closeGuideModal() {
+            const userGuideModal = document.getElementById('userGuideModal');
+            userGuideModal.classList.remove('show');
         }
 
         // Add event listeners when page loads
@@ -759,8 +940,11 @@
             const incidentBtn = document.getElementById('incidentBtn');
             const dashboardBtn = document.getElementById('dashboardBtn');
             const demoBtn = document.getElementById('demoBtn');
-            const loginBtn = document.getElementById('loginBtn');
+            const logoutBtn = document.getElementById('logoutBtn');
             const signupBtn = document.getElementById('signupBtn');
+            const userGuideBtn = document.getElementById('userGuideBtn');
+            const userGuideModal = document.getElementById('userGuideModal');
+            const guideContent = document.getElementById('guideContent');
 
             if (incidentBtn) {
                 incidentBtn.addEventListener('click', function(e) {
@@ -787,13 +971,32 @@
                 console.log('✅ Demo button event listener added');
             }
 
-            if (loginBtn) {
-                loginBtn.addEventListener('click', function(e) {
+            if (logoutBtn) {
+                logoutBtn.addEventListener('click', async function(e) {
                     e.preventDefault();
-                    console.log('🔑 Login button clicked');
-                    window.location.href = '/login.html';
+                    console.log('🚪 Logout button clicked');
+
+                    try {
+                        const response = await fetch('/api/auth/logout', {
+                            method: 'POST',
+                            credentials: 'include'
+                        });
+
+                        if (response.ok) {
+                            console.log('✅ Logout successful');
+                            // Hide logout button, show signup button
+                            logoutBtn.style.display = 'none';
+                            if (signupBtn) signupBtn.style.display = 'inline-block';
+                            // Redirect to landing page
+                            window.location.href = '/index.html';
+                        } else {
+                            console.error('❌ Logout failed');
+                        }
+                    } catch (error) {
+                        console.error('❌ Logout error:', error);
+                    }
                 });
-                console.log('✅ Login button event listener added');
+                console.log('✅ Logout button event listener added');
             }
 
             if (signupBtn) {
@@ -803,6 +1006,144 @@
                     window.location.href = '/signup-form.html';
                 });
                 console.log('✅ Signup button event listener added');
+            }
+
+            if (userGuideBtn) {
+                userGuideBtn.addEventListener('click', function(e) {
+                    e.preventDefault();
+                    console.log('📖 User Guide button clicked');
+                    userGuideModal.classList.add('show');
+                    // Reset to main menu when opening
+                    showGuideMenu();
+                });
+                console.log('✅ User Guide button event listener added');
+            }
+
+            // Check session status and show/hide logout button
+            async function checkSession() {
+                console.log('🔍 Starting session check...');
+                console.log('🔍 Logout button element:', logoutBtn);
+                console.log('🔍 Signup button element:', signupBtn);
+
+                try {
+                    const response = await fetch('/api/auth/session', {
+                        method: 'GET',
+                        credentials: 'include'
+                    });
+
+                    console.log('🔍 Session API response status:', response.status);
+
+                    if (response.ok) {
+                        const data = await response.json();
+                        console.log('🔍 Session API response data:', data);
+
+                        if (data.authenticated && data.user) {
+                            // User is logged in - show logout button, hide signup
+                            console.log('✅ User authenticated:', data.user.email);
+                            console.log('🔍 Setting logout button to display: inline-block');
+                            if (logoutBtn) {
+                                logoutBtn.style.display = 'inline-block';
+                                console.log('🔍 Logout button display after setting:', logoutBtn.style.display);
+                                console.log('🔍 Logout button computed style:', window.getComputedStyle(logoutBtn).display);
+                            }
+                            if (signupBtn) {
+                                signupBtn.style.display = 'none';
+                                console.log('🔍 Signup button display after setting:', signupBtn.style.display);
+                            }
+                        } else {
+                            // User not logged in - hide logout button, show signup
+                            console.log('ℹ️ User not authenticated - data.authenticated:', data.authenticated);
+                            if (logoutBtn) {
+                                logoutBtn.style.display = 'none';
+                            }
+                            if (signupBtn) {
+                                signupBtn.style.display = 'inline-block';
+                            }
+                        }
+                    } else {
+                        // Error checking session - assume not logged in
+                        console.log('ℹ️ Session check failed with status:', response.status);
+                        if (logoutBtn) {
+                            logoutBtn.style.display = 'none';
+                        }
+                        if (signupBtn) {
+                            signupBtn.style.display = 'inline-block';
+                        }
+                    }
+                } catch (error) {
+                    console.error('❌ Session check error:', error);
+                    // On error, hide logout button, show signup
+                    if (logoutBtn) {
+                        logoutBtn.style.display = 'none';
+                    }
+                    if (signupBtn) {
+                        signupBtn.style.display = 'inline-block';
+                    }
+                }
+            }
+
+            // Run session check on page load
+            console.log('🔍 About to run checkSession on page load...');
+            checkSession();
+
+            // User Guide Modal Event Delegation
+            if (userGuideModal) {
+                // Close modal when clicking outside
+                userGuideModal.addEventListener('click', function(e) {
+                    if (e.target === userGuideModal) {
+                        closeGuideModal();
+                    }
+                });
+
+                // Handle button clicks inside modal
+                userGuideModal.addEventListener('click', function(e) {
+                    console.log('🔍 Modal clicked:', e.target);
+
+                    const button = e.target.closest('[data-guide], [data-action]');
+
+                    if (!button) {
+                        console.log('⚠️ No button found from target:', e.target);
+                        return;
+                    }
+
+                    console.log('✅ Button found:', button, 'data-action:', button.getAttribute('data-action'));
+
+                    // Handle guide selection buttons
+                    if (button.hasAttribute('data-guide')) {
+                        const guideType = button.getAttribute('data-guide');
+                        console.log('📖 Guide selected:', guideType);
+                        showGuideContent(guideType);
+                    }
+
+                    // Handle action buttons
+                    if (button.hasAttribute('data-action')) {
+                        const action = button.getAttribute('data-action');
+                        console.log('🎯 Action detected:', action);
+
+                        switch(action) {
+                            case 'cancel-guide':
+                                console.log('❌ Closing modal...');
+                                closeGuideModal();
+                                break;
+                            case 'back-to-menu':
+                                console.log('⬅️ Going back to menu...');
+                                showGuideMenu();
+                                break;
+                            case 'start-signup':
+                                console.log('✨ Navigating to signup form...');
+                                window.location.href = '/signup-form.html';
+                                break;
+                            case 'start-incident':
+                                console.log('📝 Navigating to incident report...');
+                                window.location.href = '/incident.html';
+                                break;
+                            default:
+                                console.log('⚠️ Unknown action:', action);
+                        }
+                    }
+                });
+
+                console.log('✅ User Guide modal event listeners added');
             }
 
             console.log('✅ Page fully loaded');
@@ -826,7 +1167,7 @@
             document.body.addEventListener('click', function(e) {
                 const target = e.target;
                 const text = target.textContent.trim();
-                
+
                 if (target.matches('.secondary-btn')) {
                     if (text.includes('Report an Incident')) {
                         e.preventDefault();
@@ -837,10 +1178,17 @@
                     } else if (text.includes('Try Demo')) {
                         e.preventDefault();
                         window.location.href = '/demo.html';
+                    } else if (text.includes('User Guide')) {
+                        e.preventDefault();
+                        if (userGuideModal) {
+                            userGuideModal.classList.add('show');
+                            showGuideMenu();
+                        }
                     }
-                } else if (target.matches('.auth-btn.login')) {
+                } else if (target.matches('.auth-btn.logout')) {
                     e.preventDefault();
-                    window.location.href = '/login.html';
+                    // Logout handler already attached above, this is just fallback
+                    if (logoutBtn) logoutBtn.click();
                 } else if (target.matches('.auth-btn.signup')) {
                     e.preventDefault();
                     window.location.href = '/signup-form.html';

@@ -15,9 +15,22 @@
 
         body {
             font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif;
-            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            background: linear-gradient(135deg, #0E7490 0%, #0c6179 100%);
             min-height: 100vh;
             padding: 20px;
+            opacity: 1;
+            animation: fadeIn 0.6s ease-in;
+        }
+
+        @keyframes fadeIn {
+            from {
+                opacity: 0;
+                transform: translateY(10px);
+            }
+            to {
+                opacity: 1;
+                transform: translateY(0);
+            }
         }
 
         .container {
@@ -562,33 +575,114 @@
         }
 
         /* AI Summary Section */
+        /* Enhanced Key Points Summary - Visual Upgrade */
+        .key-points {
+            list-style: none;
+            padding-left: 0;
+            counter-reset: key-point-counter;
+        }
+
+        .key-points li {
+            position: relative;
+            padding: 18px 20px 18px 60px;
+            margin-bottom: 16px;
+            background: linear-gradient(135deg, #e3f2fd 0%, #bbdefb 100%);
+            border-left: 5px solid #2196F3;
+            border-radius: 8px;
+            box-shadow: 0 3px 10px rgba(33, 150, 243, 0.15);
+            transition: all 0.3s ease;
+            animation: slideInFromLeft 0.5s ease-out backwards;
+            counter-increment: key-point-counter;
+            font-size: 15px;
+            line-height: 1.6;
+            color: #1565c0;
+        }
+
+        .key-points li:nth-child(1) { animation-delay: 0.1s; }
+        .key-points li:nth-child(2) { animation-delay: 0.2s; }
+        .key-points li:nth-child(3) { animation-delay: 0.3s; }
+        .key-points li:nth-child(4) { animation-delay: 0.4s; }
+        .key-points li:nth-child(5) { animation-delay: 0.5s; }
+        .key-points li:nth-child(6) { animation-delay: 0.6s; }
+        .key-points li:nth-child(7) { animation-delay: 0.7s; }
+        .key-points li:nth-child(8) { animation-delay: 0.8s; }
+
+        .key-points li::before {
+            content: "✓";
+            position: absolute;
+            left: 20px;
+            top: 50%;
+            transform: translateY(-50%);
+            width: 28px;
+            height: 28px;
+            background: #2196F3;
+            color: white;
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-weight: bold;
+            font-size: 16px;
+            box-shadow: 0 2px 6px rgba(33, 150, 243, 0.3);
+        }
+
+        .key-points li:hover {
+            transform: translateX(5px);
+            box-shadow: 0 5px 20px rgba(33, 150, 243, 0.25);
+            background: linear-gradient(135deg, #bbdefb 0%, #90caf9 100%);
+        }
+
+        @keyframes slideInFromLeft {
+            from {
+                opacity: 0;
+                transform: translateX(-30px);
+            }
+            to {
+                opacity: 1;
+                transform: translateX(0);
+            }
+        }
+
+        /* Enhanced Summary Section Container */
         #summarySection {
             display: none;
             margin-top: 30px;
-            padding: 25px;
-            background: linear-gradient(135deg, #f5f7fa 0%, #c3cfe2 100%);
+            padding: 30px;
+            background: linear-gradient(135deg, #f5f7fa 0%, #e8eef2 100%);
             border-radius: 12px;
+            box-shadow: 0 4px 15px rgba(0, 0, 0, 0.1);
+        }
+
+        #summarySection h2 {
+            color: #1565c0;
+            font-size: 24px;
+            margin-bottom: 20px;
+            text-align: center;
+            text-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
         }
 
         .summary-content {
             background: white;
-            padding: 20px;
-            border-radius: 8px;
+            padding: 25px;
+            border-radius: 10px;
             margin-bottom: 20px;
-            box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+            box-shadow: 0 3px 12px rgba(0,0,0,0.12);
         }
 
-        .key-points {
-            list-style: none;
-            padding-left: 0;
+        .summary-content h4 {
+            color: #2196F3;
+            font-size: 20px;
+            margin-bottom: 20px;
+            padding-bottom: 10px;
+            border-bottom: 2px solid #2196F3;
+            display: flex;
+            align-items: center;
+            gap: 10px;
         }
 
-        .key-points li {
-            padding: 10px 15px;
-            margin-bottom: 10px;
-            background: #e3f2fd;
-            border-left: 4px solid #2196F3;
-            border-radius: 4px;
+        .summary-content h4::before {
+            content: "📌";
+            font-size: 24px;
         }
 
         /* AI Review Section */
@@ -734,6 +828,152 @@
             text-align: center;
             color: #666;
             margin-top: 10px;
+            font-size: 15px;
+        }
+
+        /* AI Analysis Progress Indicator */
+        .ai-progress-container {
+            background: #f8f9fa;
+            border-radius: 12px;
+            padding: 20px;
+            margin: 20px 0;
+            box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+        }
+
+        .ai-progress-steps {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 15px;
+        }
+
+        .ai-step {
+            flex: 1;
+            text-align: center;
+            position: relative;
+        }
+
+        .ai-step:not(:last-child)::after {
+            content: '';
+            position: absolute;
+            top: 15px;
+            right: -50%;
+            width: 100%;
+            height: 2px;
+            background: #ddd;
+            z-index: 0;
+        }
+
+        .ai-step.active:not(:last-child)::after {
+            background: linear-gradient(90deg, #2196F3 0%, #ddd 100%);
+        }
+
+        .ai-step.complete:not(:last-child)::after {
+            background: #4CAF50;
+        }
+
+        .ai-step-circle {
+            width: 30px;
+            height: 30px;
+            border-radius: 50%;
+            background: #ddd;
+            color: #666;
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 14px;
+            font-weight: bold;
+            position: relative;
+            z-index: 1;
+            transition: all 0.3s ease;
+        }
+
+        .ai-step.active .ai-step-circle {
+            background: #2196F3;
+            color: white;
+            box-shadow: 0 0 0 4px rgba(33, 150, 243, 0.2);
+            animation: pulse 1.5s ease-in-out infinite;
+        }
+
+        .ai-step.complete .ai-step-circle {
+            background: #4CAF50;
+            color: white;
+        }
+
+        .ai-step-label {
+            font-size: 11px;
+            color: #666;
+            margin-top: 8px;
+            font-weight: 500;
+        }
+
+        .ai-step.active .ai-step-label {
+            color: #2196F3;
+            font-weight: 600;
+        }
+
+        .ai-step.complete .ai-step-label {
+            color: #4CAF50;
+        }
+
+        @keyframes pulse {
+            0%, 100% {
+                box-shadow: 0 0 0 4px rgba(33, 150, 243, 0.2);
+            }
+            50% {
+                box-shadow: 0 0 0 8px rgba(33, 150, 243, 0.1);
+            }
+        }
+
+        /* Analysis Complete Animation */
+        .analysis-complete-banner {
+            background: linear-gradient(135deg, #4CAF50, #45a049);
+            color: white;
+            padding: 20px;
+            border-radius: 12px;
+            margin: 20px 0;
+            text-align: center;
+            animation: slideInScale 0.5s ease-out;
+            box-shadow: 0 4px 15px rgba(76, 175, 80, 0.3);
+        }
+
+        .analysis-complete-banner h3 {
+            margin: 0 0 8px 0;
+            font-size: 20px;
+            color: white;
+        }
+
+        .analysis-complete-banner p {
+            margin: 0;
+            font-size: 14px;
+            opacity: 0.95;
+        }
+
+        @keyframes slideInScale {
+            0% {
+                opacity: 0;
+                transform: translateY(-20px) scale(0.95);
+            }
+            100% {
+                opacity: 1;
+                transform: translateY(0) scale(1);
+            }
+        }
+
+        /* Fade in animation for sections */
+        .fade-in {
+            animation: fadeIn 0.6s ease-out;
+        }
+
+        @keyframes fadeIn {
+            from {
+                opacity: 0;
+                transform: translateY(10px);
+            }
+            to {
+                opacity: 1;
+                transform: translateY(0);
+            }
         }
 
         /* Welcome Banner */
@@ -1086,6 +1326,70 @@
         }
 
         /* Responsive Design */
+        /* Hover Tooltip for Manual Typing Button */
+        .btn-with-tooltip {
+            position: relative;
+            display: inline-block;
+        }
+
+        .hover-tooltip {
+            position: absolute;
+            bottom: calc(100% + 12px);
+            left: 50%;
+            transform: translateX(-50%);
+            background: white;
+            border: 2px solid #2196F3;
+            border-radius: 12px;
+            padding: 16px;
+            box-shadow: 0 8px 24px rgba(0, 0, 0, 0.15);
+            opacity: 0;
+            visibility: hidden;
+            transition: all 0.3s ease;
+            z-index: 100;
+            width: 280px;
+            max-width: 90vw;
+            pointer-events: none;
+        }
+
+        .btn-with-tooltip:hover .hover-tooltip {
+            opacity: 1;
+            visibility: visible;
+            bottom: calc(100% + 16px);
+        }
+
+        .hover-tooltip-content {
+            display: flex;
+            flex-direction: column;
+            gap: 8px;
+        }
+
+        .hover-tooltip-title {
+            font-weight: 700;
+            color: #2196F3;
+            font-size: 0.875rem;
+            display: flex;
+            align-items: center;
+            gap: 6px;
+        }
+
+        .hover-tooltip-text {
+            font-size: 0.813rem;
+            color: #333;
+            line-height: 1.5;
+        }
+
+        .hover-tooltip-arrow {
+            position: absolute;
+            bottom: -8px;
+            left: 50%;
+            transform: translateX(-50%);
+            width: 0;
+            height: 0;
+            border-left: 8px solid transparent;
+            border-right: 8px solid transparent;
+            border-top: 8px solid #2196F3;
+        }
+
         @media (max-width: 768px) {
             .container {
                 padding: 20px;
@@ -1135,9 +1439,14 @@
             .countdown-text {
                 font-size: 18px;
             }
+
+            .hover-tooltip {
+                width: 260px;
+            }
         }
     </style>
     <link rel="stylesheet" href="/css/mascot.css">
+    <link rel="stylesheet" href="/css/mascot-loading.css">
 </head>
 <body>
     <!-- Microphone Check Modal -->
@@ -1297,21 +1606,47 @@
             </button>
         </div>
 
+        <!-- Manual Typing Button with Tooltip -->
+        <div style="text-align: center; margin: 20px 0;">
+            <div class="btn-with-tooltip">
+                <button id="typeOwnAccountBtn" class="btn" style="background: #6366f1; color: white;">
+                    ✍️ Type Your Own Account
+                </button>
+
+                <!-- Hover Tooltip -->
+                <div class="hover-tooltip">
+                    <div class="hover-tooltip-content">
+                        <div class="hover-tooltip-title">
+                            <span>💡</span>
+                            <span>Pro Tip</span>
+                        </div>
+                        <div class="hover-tooltip-text">
+                            if AI not available please manually type your own record of events!
+                        </div>
+                    </div>
+                    <div class="hover-tooltip-arrow"></div>
+                </div>
+            </div>
+        </div>
+
         <!-- Audio Playback -->
         <audio id="audioPlayback" controls></audio>
+
+        <!-- Transcription Loading -->
+        <div id="transcriptionLoadingContainer" style="display: none; margin: 20px 0;"></div>
 
         </div> <!-- End Tab Panel: Record -->
 
         <!-- Tab Panel: Transcription -->
         <div class="tab-panel" id="tab-transcription">
 
-        <!-- Transcription Result -->
-        <div id="transcriptionResult">
-            <h2>📝 <span id="userName">Your</span> Personal Statement</h2>
-            <div style="background: #e3f2fd; border-left: 4px solid #2196F3; padding: 12px 16px; margin-bottom: 15px; border-radius: 4px;">
-                <strong>💡 Tip:</strong> You can edit the transcription below to add details or correct any mistakes. Click in the box to start editing.
+        <!-- Voice Transcription (Optional) -->
+        <div id="transcriptionResult" style="margin-top: 30px;">
+            <h3>🎤 Voice Transcription (Optional)</h3>
+            <div style="background: #f0f4f8; border-left: 4px solid #718096; padding: 12px 16px; margin-bottom: 15px; border-radius: 4px;">
+                <strong>Voice Recording:</strong> Use the "Record" tab above to verbally describe the accident. Your audio will be transcribed and appear here as additional supporting detail.
             </div>
-            <div class="transcription-box" contenteditable="true" id="transcriptionText" placeholder="Your transcription will appear here..."></div>
+            <div class="transcription-box" contenteditable="true" id="transcriptionText" placeholder="Voice transcription will appear here if you use the recorder..."></div>
             <div class="char-count">
                 <span id="wordCount">0 words</span> | <span id="charCount">0 characters</span>
             </div>
@@ -1322,13 +1657,62 @@
                 💾 Save Changes
             </button>
             <button class="btn btn-primary" id="generateSummaryBtn" style="margin-top: 20px;">
-                🤖 Generate AI Analysis
+                🤖 Generate Comprehensive AI Analysis
             </button>
+            <p style="text-align: center; color: #666; margin-top: 10px; font-size: 13px; max-width: 600px; margin-left: auto; margin-right: auto;">
+                Generates a comprehensive closing statement narrative (Page 14), key points summary, and next steps guide (Page 15) using ALL your incident data
+            </p>
             <button class="btn btn-warning" id="clearDraftBtn" style="margin-top: 20px;">
                 🗑️ Clear Draft
             </button>
             <p style="text-align: center; color: #666; margin-top: 10px; font-size: 14px;">
                 You can edit the transcription above if needed
+            </p>
+        </div>
+
+        <!-- Full Accident Narrative -->
+        <div id="narrativeSection">
+            <h2>📝 Full Accident Narrative</h2>
+            <div style="background: #fff3cd; border-left: 4px solid #ffc107; padding: 12px 16px; margin-bottom: 15px; border-radius: 4px;">
+                <strong>📖 Your Comprehensive Account:</strong> Describe what happened from your perspective. Include what you saw, heard, felt, and any important details about the circumstances leading up to, during, and after the accident.
+            </div>
+
+            <div class="form-group">
+                <label for="accidentNarrative" style="font-weight: 600; margin-bottom: 8px; display: block;">
+                    Describe the accident in your own words
+                    <span style="color: #e53e3e;">*</span>
+                </label>
+                <p style="color: #666; font-size: 14px; margin-bottom: 12px;">
+                    <strong>What to include:</strong> Time and circumstances leading up to the accident, weather and road conditions, what you were doing, what the other vehicle(s) did, the moment of impact, immediate aftermath, injuries, and any conversations or observations.
+                </p>
+                <textarea
+                    id="accidentNarrative"
+                    name="accident_narrative"
+                    placeholder="Example: 'I was driving north on the A40 approaching the junction with Mill Road at approximately 35mph in light traffic. The weather was clear with good visibility. As I entered the junction on a green light, a silver Ford Focus traveling west on Mill Road suddenly accelerated through what appeared to be a red light on their side. I immediately braked hard but could not avoid the collision. The front of their vehicle struck the passenger side of my car with significant force...'
+
+Continue with: What happened immediately after impact? Any injuries you noticed? What did the other driver say or do? Who witnessed the accident? What emergency services attended? Any other relevant details?"
+                    maxlength="2000"
+                    rows="15"
+                    style="width: 100%; padding: 15px; border: 2px solid #cbd5e0; border-radius: 8px; font-size: 15px; font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif; line-height: 1.6; resize: vertical; min-height: 300px;"
+                ></textarea>
+                <div style="display: flex; justify-content: space-between; align-items: center; margin-top: 8px;">
+                    <span id="narrativeCharCount" style="color: #666; font-size: 14px;">0 / 2000 characters</span>
+                    <span id="narrativeWordCount" style="color: #666; font-size: 14px;">0 words</span>
+                </div>
+            </div>
+
+            <div style="background: #e3f2fd; border-left: 4px solid #2196F3; padding: 12px 16px; margin: 20px 0; border-radius: 4px;">
+                <strong>💡 Optional:</strong> You can also use the voice recorder below to verbally describe the accident. Your recording will be transcribed automatically and can supplement your written narrative.
+            </div>
+        </div>
+
+        <!-- Save and Continue Button - TRANSCRIPTION TAB -->
+        <div style="text-align: center; margin: 40px 0 20px 0; padding-top: 20px; border-top: 2px solid #e2e8f0;">
+            <button class="btn btn-success" id="saveAndContinueBtnTranscription" style="font-size: 18px; padding: 15px 40px;">
+                💾 Save & Continue to Declaration
+            </button>
+            <p style="color: #666; font-size: 14px; margin-top: 10px;">
+                Save your statement and continue to the legal declaration page
             </p>
         </div>
 
@@ -1397,12 +1781,43 @@
             </div>
         </div>
 
-        <!-- AI Summary Section -->
+        <!-- AI Analysis Progress Indicator -->
+        <div id="aiProgressContainer" class="ai-progress-container" style="display: none;">
+            <div class="ai-progress-steps">
+                <div class="ai-step" id="aiStep1">
+                    <div class="ai-step-circle">1</div>
+                    <div class="ai-step-label">Initial Summary</div>
+                </div>
+                <div class="ai-step" id="aiStep2">
+                    <div class="ai-step-circle">2</div>
+                    <div class="ai-step-label">Quality Review</div>
+                </div>
+                <div class="ai-step" id="aiStep3">
+                    <div class="ai-step-circle">3</div>
+                    <div class="ai-step-label">Comprehensive Narrative (Page 14)</div>
+                </div>
+                <div class="ai-step" id="aiStep4">
+                    <div class="ai-step-circle">4</div>
+                    <div class="ai-step-label">Next Steps Guide (Page 15)</div>
+                </div>
+            </div>
+            <div id="aiLoadingAnimation"></div>
+        </div>
+
+        <!-- Analysis Complete Banner (hidden by default) -->
+        <div id="analysisCompleteBanner" class="analysis-complete-banner" style="display: none;">
+            <h3>✨ Analysis Complete!</h3>
+            <p>Your personal statement has been analyzed and reviewed.</p>
+        </div>
+
+        <!-- Page 15 Preview: Key Points Summary -->
         <div id="summarySection">
-            <h2>🤖 Personal Statement Summary</h2>
-            <div class="summary-content">
-                <h4>Summary</h4>
-                <p id="summaryText" style="color: #555; line-height: 1.6;"></p>
+            <h2>📋 Page 15: Key Points Summary</h2>
+            <div style="background: #e3f2fd; padding: 15px; border-left: 4px solid #2196F3; margin-bottom: 15px; border-radius: 4px;">
+                <p style="margin: 0; color: #1565c0; font-size: 14px;">
+                    <strong>📋 PDF Page 15 Preview (Part 1)</strong><br>
+                    These bullet points will appear at the top of Page 15 in your PDF report, providing a concise summary of your incident.
+                </p>
             </div>
             <div class="summary-content">
                 <h4>Key Points</h4>
@@ -1432,20 +1847,33 @@
             </div>
         </div>
 
-        <!-- Combined Report Summary -->
+        <!-- Page 14 Preview: Comprehensive Closing Statement Narrative -->
         <div id="combinedReportSection">
             <div class="collapsible-header" data-target="combinedReportContent">
-                <h2 style="margin: 0;">📄 Complete Incident Overview</h2>
+                <h2 style="margin: 0;">📄 Page 14: Comprehensive Closing Statement</h2>
                 <span>▼</span>
             </div>
-            <div class="collapsible-content" id="combinedReportContent">
+            <div class="collapsible-content open" id="combinedReportContent">
+                <div style="background: #e8f5e9; padding: 15px; border-left: 4px solid #4CAF50; margin-bottom: 15px; border-radius: 4px;">
+                    <p style="margin: 0; color: #2e7d32; font-size: 14px;">
+                        <strong>📋 PDF Page 14 Preview</strong><br>
+                        This is the <strong>"centre piece"</strong> of your legal document - a comprehensive closing statement narrative
+                        generated using ALL data from pages 1-12 plus your personal statement. This narrative will appear on Page 14 of your PDF report.
+                    </p>
+                </div>
                 <div class="report-box" id="combinedReportText"></div>
             </div>
         </div>
 
-        <!-- Final AI Review with Next Steps -->
-        <div id="finalReviewSection">
-            <h2>✨ AL's Incident Report Review</h2>
+        <!-- Page 15 Preview: Next Steps Guide -->
+        <div id="finalReviewSection" style="display: none;">
+            <h2>📋 Page 15: Next Steps Guide</h2>
+            <div style="background: #e3f2fd; padding: 15px; border-left: 4px solid #2196F3; margin-bottom: 15px; border-radius: 4px;">
+                <p style="margin: 0; color: #1565c0; font-size: 14px;">
+                    <strong>📋 PDF Page 15 Preview (Part 2)</strong><br>
+                    These recommended next steps and legal considerations will appear below the key points on Page 15 of your PDF report.
+                </p>
+            </div>
             <div class="final-review-box">
                 <h3>Documentation Completeness Score</h3>
                 <div class="completeness-score" id="completenessScore">--</div>
@@ -1466,19 +1894,22 @@
                 </div>
             </div>
 
-            <!-- Save and Continue Button -->
-            <div style="text-align: center; margin: 30px 0 20px 0;">
-                <button class="btn btn-success" id="saveAndContinueBtn" style="font-size: 18px; padding: 15px 40px;">
-                    💾 Save & Continue to Declaration
-                </button>
-            </div>
-
             <div class="ai-disclaimer">
                 <strong>⚠️ AI-Generated Information Disclaimer</strong><br>
                 This analysis is generated by artificial intelligence for informational purposes only and does not constitute legal advice.
                 This tool is designed to help you organize your incident information for your personal records.
                 Always consult with a qualified solicitor for professional legal guidance specific to your situation.
             </div>
+        </div>
+
+        <!-- Save and Continue Button - ALWAYS VISIBLE -->
+        <div style="text-align: center; margin: 30px 0 20px 0;">
+            <button class="btn btn-success" id="saveAndContinueBtn" style="font-size: 18px; padding: 15px 40px;">
+                💾 Save & Continue to Declaration
+            </button>
+            <p style="color: #666; font-size: 14px; margin-top: 10px;">
+                Save your statement and continue to the legal declaration page
+            </p>
         </div>
 
         </div> <!-- End Tab Panel: Analysis -->
@@ -1589,16 +2020,28 @@
         // ===== TYPEFORM REDIRECT HANDLER =====
         function extractTypeformParams() {
             const urlParams = new URLSearchParams(window.location.search);
-            const user_id = urlParams.get('auth_user_id') ||
-                           urlParams.get('user_id') ||
-                           urlParams.get('userId') ||
-                           urlParams.get('create_user_id');
 
-            const incident_id = urlParams.get('incident_id');
+            // Check URL params first
+            let user_id = urlParams.get('auth_user_id') ||
+                         urlParams.get('user_id') ||
+                         urlParams.get('userId') ||
+                         urlParams.get('create_user_id');
 
-            console.log('📥 URL parameters:', {
+            let incident_id = urlParams.get('incident_id');
+
+            // Fallback to sessionStorage (for page 12 submissions)
+            if (!incident_id) {
+                incident_id = sessionStorage.getItem('submitted_incident_id');
+                if (incident_id) {
+                    console.log('📦 Retrieved incident_id from sessionStorage:', incident_id);
+                }
+            }
+
+            console.log('📥 Extracted parameters:', {
                 user_id,
                 incident_id,
+                source: urlParams.get('incident_id') ? 'URL params' :
+                        sessionStorage.getItem('submitted_incident_id') ? 'sessionStorage' : 'none',
                 fullUrl: window.location.href
             });
 
@@ -2015,6 +2458,7 @@
                 // Update UI
                 document.getElementById('pauseButton').style.display = 'none';
                 document.getElementById('stopButton').style.display = 'none';
+                MascotLoading.show('#transcriptionLoadingContainer', 'Transcribing your voice recording...', 'mascot');
                 document.getElementById('retryButton').style.display = 'inline-block';
                 document.getElementById('recordingStatus').style.display = 'none';
                 showStatus('Processing your recording...', 'info');
@@ -2160,20 +2604,42 @@
 
                 // Show detailed error message
                 let errorMessage = 'Failed to process recording. ';
+                let isRateLimit = false;
+
                 if (error.message) {
                     errorMessage += error.message;
+                    // Check if it's a rate limit error (not a billing issue)
+                    // Check both message text AND error code
+                    isRateLimit = error.message.includes('rate limit') ||
+                                 error.message.includes('Too many requests') ||
+                                 error.message.includes('OPENAI_RATE_LIMIT') ||
+                                 error.message.includes('NOT a billing issue');
                 } else {
                     errorMessage += 'Please try again.';
                 }
 
+                // For rate limit errors, show helpful retry message
+                if (isRateLimit) {
+                    errorMessage = '⏱️ Too many requests - OpenAI rate limit reached.\n\n' +
+                                  '💡 Your billing is FINE ($99+ credit remaining).\n\n' +
+                                  '✅ Just wait 10-15 seconds and click "Retry Upload" below.';
+                    // Show retry button for rate limits
+                    document.getElementById('retryButton').style.display = 'inline-block';
+                    document.getElementById('recordButton').style.display = 'none';
+                } else {
+                    // For other errors, show record button
+                    document.getElementById('recordButton').style.display = 'inline-block';
+                    document.getElementById('retryButton').style.display = 'none';
+                }
+
                 showStatus(errorMessage, 'error');
-                document.getElementById('recordButton').style.display = 'inline-block';
-                document.getElementById('retryButton').style.display = 'none';
             }
         }
 
         // ===== TRANSCRIPTION DISPLAY =====
         function showTranscription(text) {
+            // Hide transcription loading animation
+            MascotLoading.hide('#transcriptionLoadingContainer');
             currentTranscriptionText = text;
             document.getElementById('transcriptionText').textContent = text;
             document.getElementById('transcriptionResult').style.display = 'block';
@@ -2187,6 +2653,17 @@
 
             // Switch to Transcription tab
             switchTab('transcription');
+
+            // Auto-scroll to voice transcription section after tab switch completes
+            setTimeout(() => {
+                const transcriptionResult = document.getElementById('transcriptionResult');
+                if (transcriptionResult) {
+                    transcriptionResult.scrollIntoView({
+                        behavior: 'smooth',
+                        block: 'start'
+                    });
+                }
+            }, 300); // Small delay to ensure tab transition completes
         }
 
         async function fetchUserName() {
@@ -2205,10 +2682,34 @@
 
         function updateCharCount() {
             const text = document.getElementById('transcriptionText').textContent;
-            const words = text.trim().split(/\s+/).length;
+            const words = text.trim().split(/\s+/).filter(w => w.length > 0).length;
             const chars = text.length;
             document.getElementById('wordCount').textContent = `${words} words`;
             document.getElementById('charCount').textContent = `${chars} characters`;
+        }
+
+        function updateNarrativeCount() {
+            const text = document.getElementById('accidentNarrative').value;
+            const words = text.trim().split(/\s+/).filter(w => w.length > 0).length;
+            const chars = text.length;
+
+            const charCountEl = document.getElementById('narrativeCharCount');
+            const wordCountEl = document.getElementById('narrativeWordCount');
+
+            charCountEl.textContent = `${chars} / 2000 characters`;
+            wordCountEl.textContent = `${words} words`;
+
+            // Visual feedback for character limit
+            if (chars >= 1900) {
+                charCountEl.style.color = '#e53e3e';
+                charCountEl.style.fontWeight = '700';
+            } else if (chars >= 1600) {
+                charCountEl.style.color = '#f59e0b';
+                charCountEl.style.fontWeight = '600';
+            } else {
+                charCountEl.style.color = '#666';
+                charCountEl.style.fontWeight = '400';
+            }
         }
 
         // ===== AUTO-SAVE FUNCTIONALITY =====
@@ -2230,20 +2731,26 @@
         }
 
         function autoSaveDraft() {
-            const text = document.getElementById('transcriptionText').textContent;
+            const transcriptionText = document.getElementById('transcriptionText').textContent;
+            const narrativeText = document.getElementById('accidentNarrative').value;
 
             // Only save if text has changed
-            if (text !== currentTranscriptionText && text.trim().length > 0) {
+            if ((transcriptionText !== currentTranscriptionText && transcriptionText.trim().length > 0) ||
+                narrativeText.trim().length > 0) {
                 const indicator = document.getElementById('autoSaveIndicator');
                 indicator.textContent = 'Saving draft...';
                 indicator.className = 'auto-save-indicator saving';
 
-                // Save to localStorage
-                localStorage.setItem('draft_transcription', text);
+                // Save both to localStorage
+                localStorage.setItem('draft_transcription', transcriptionText);
+                localStorage.setItem('draft_narrative', narrativeText);
                 localStorage.setItem('draft_timestamp', Date.now());
                 localStorage.setItem('draft_userId', userId);
 
-                console.log('Draft auto-saved', { length: text.length });
+                console.log('Draft auto-saved', {
+                    transcriptionLength: transcriptionText.length,
+                    narrativeLength: narrativeText.length
+                });
 
                 // Update indicator
                 setTimeout(() => {
@@ -2254,11 +2761,12 @@
         }
 
         function restoreDraft() {
-            const savedDraft = localStorage.getItem('draft_transcription');
+            const savedTranscription = localStorage.getItem('draft_transcription');
+            const savedNarrative = localStorage.getItem('draft_narrative');
             const savedTimestamp = localStorage.getItem('draft_timestamp');
             const savedUserId = localStorage.getItem('draft_userId');
 
-            if (savedDraft && savedUserId === userId) {
+            if ((savedTranscription || savedNarrative) && savedUserId === userId) {
                 const savedDate = new Date(parseInt(savedTimestamp));
                 const minutesAgo = Math.floor((Date.now() - parseInt(savedTimestamp)) / 60000);
 
@@ -2276,9 +2784,15 @@
                 message += ' Would you like to restore it?';
 
                 if (confirm(message)) {
-                    document.getElementById('transcriptionText').textContent = savedDraft;
-                    document.getElementById('transcriptionResult').style.display = 'block';
-                    updateCharCount();
+                    if (savedTranscription) {
+                        document.getElementById('transcriptionText').textContent = savedTranscription;
+                        document.getElementById('transcriptionResult').style.display = 'block';
+                        updateCharCount();
+                    }
+                    if (savedNarrative) {
+                        document.getElementById('accidentNarrative').value = savedNarrative;
+                        updateNarrativeCount();
+                    }
                     showStatus('Draft restored successfully', 'success');
 
                     // Start auto-save
@@ -2288,26 +2802,50 @@
                 } else {
                     // Clear draft if user declines
                     localStorage.removeItem('draft_transcription');
+                    localStorage.removeItem('draft_narrative');
                     localStorage.removeItem('draft_timestamp');
                     localStorage.removeItem('draft_userId');
                 }
             }
         }
 
-        // Listen for changes in transcription box
+        // Listen for changes in transcription box and narrative
         document.addEventListener('DOMContentLoaded', () => {
             const transcriptionBox = document.getElementById('transcriptionText');
             if (transcriptionBox) {
                 transcriptionBox.addEventListener('input', updateCharCount);
             }
+
+            const narrativeBox = document.getElementById('accidentNarrative');
+            if (narrativeBox) {
+                narrativeBox.addEventListener('input', updateNarrativeCount);
+                // Initial count
+                updateNarrativeCount();
+            }
         });
 
         // ===== SAVE TRANSCRIPTION =====
         async function saveTranscription() {
-            const text = document.getElementById('transcriptionText').textContent;
+            const transcriptionText = document.getElementById('transcriptionText').textContent;
+            const narrativeText = document.getElementById('accidentNarrative').value;
+
+            // Combine narrative and voice transcription
+            let combinedStatement = '';
+            if (narrativeText.trim()) {
+                combinedStatement += '=== Full Accident Narrative ===\n\n' + narrativeText.trim();
+            }
+            if (transcriptionText.trim()) {
+                if (combinedStatement) combinedStatement += '\n\n';
+                combinedStatement += '=== Voice Transcription ===\n\n' + transcriptionText.trim();
+            }
+
+            if (!combinedStatement.trim()) {
+                showStatus('Please write your accident narrative before saving', 'error');
+                return;
+            }
 
             try {
-                showStatus('Saving changes...', 'info');
+                showStatus('Saving statement...', 'info');
 
                 const response = await fetch('/api/incident-reports/save-statement', {
                     method: 'POST',
@@ -2317,7 +2855,9 @@
                     body: JSON.stringify({
                         userId: userId,
                         incidentId: currentIncidentId,
-                        personalStatement: text
+                        personalStatement: combinedStatement,
+                        accidentNarrative: narrativeText,
+                        voiceTranscription: transcriptionText
                     }),
                     credentials: 'include'
                 });
@@ -2325,8 +2865,12 @@
                 const result = await response.json();
 
                 if (result.success) {
-                    currentTranscriptionText = text;
+                    currentTranscriptionText = transcriptionText;
                     showStatus('Statement saved successfully!', 'success');
+
+                    // Clear localStorage draft after successful save
+                    localStorage.removeItem('draft_transcription');
+                    localStorage.removeItem('draft_narrative');
                 } else {
                     throw new Error(result.error || 'Save failed');
                 }
@@ -2337,33 +2881,46 @@
             }
         }
 
-        // Clear draft from localStorage and textarea
+        // Clear draft from localStorage and textareas
         function clearDraft() {
-            if (confirm('Are you sure you want to clear the draft? This cannot be undone.')) {
+            if (confirm('Are you sure you want to clear all drafts? This cannot be undone.')) {
                 // Clear localStorage
-                localStorage.removeItem('transcriptionDraft');
+                localStorage.removeItem('draft_transcription');
+                localStorage.removeItem('draft_narrative');
+                localStorage.removeItem('draft_timestamp');
+                localStorage.removeItem('draft_userId');
 
-                // Clear textarea
+                // Clear both fields
                 const transcriptionText = document.getElementById('transcriptionText');
+                const narrativeText = document.getElementById('accidentNarrative');
                 transcriptionText.textContent = '';
+                narrativeText.value = '';
 
                 // Update counters
                 updateCharCount();
+                updateNarrativeCount();
 
                 // Show confirmation
-                showStatus('Draft cleared successfully', 'success');
+                showStatus('Drafts cleared successfully', 'success');
                 console.log('✅ Draft cleared from localStorage');
             }
         }
 
         // ===== SAVE AND CONTINUE TO DECLARATION =====
         async function saveAndContinue() {
-            const text = document.getElementById('transcriptionText').textContent;
+            const transcriptionText = document.getElementById('transcriptionText').textContent;
+            const narrativeText = document.getElementById('accidentNarrative').value;
 
-            if (!text || text.trim().length === 0) {
-                showStatus('Please record or enter a statement first.', 'warning');
+            if ((!narrativeText || narrativeText.trim().length === 0) &&
+                (!transcriptionText || transcriptionText.trim().length === 0)) {
+                showStatus('Please write your accident narrative before continuing.', 'warning');
                 return;
             }
+
+            // Combine narrative and transcription (prioritize narrative)
+            const combinedStatement = narrativeText.trim()
+                ? narrativeText.trim()
+                : transcriptionText.trim();
 
             try {
                 showStatus('Saving your statement...', 'info');
@@ -2376,7 +2933,7 @@
                     body: JSON.stringify({
                         userId: userId,
                         incidentId: currentIncidentId,
-                        personalStatement: text
+                        personalStatement: combinedStatement
                     }),
                     credentials: 'include'
                 });
@@ -2390,9 +2947,9 @@
                     // Clear auto-save draft since we're moving to next page
                     localStorage.removeItem('transcriptionDraft');
 
-                    // Redirect to report completion page to add witnesses/vehicles
+                    // Redirect to declaration page
                     setTimeout(() => {
-                        window.location.href = '/report-complete.html';
+                        window.location.href = '/declaration.html';
                     }, 1500);
                 } else {
                     throw new Error(result.error || 'Failed to save statement');
@@ -2416,9 +2973,44 @@
                 updateProgress('step-summary', 'active');
                 showStatus('Generating AI analysis...', 'info');
 
-                // Show loading spinners
-                document.getElementById('summarySection').style.display = 'block';
-                document.getElementById('summaryText').innerHTML = '<div class="spinner"></div><div class="loading-text">Analyzing your statement...</div>';
+                // Show progress indicator
+                const progressContainer = document.getElementById('aiProgressContainer');
+                const completeBanner = document.getElementById('analysisCompleteBanner');
+                progressContainer.style.display = 'block';
+                completeBanner.style.display = 'none';
+                MascotLoading.show('#aiLoadingAnimation', 'Initializing comprehensive AI analysis...', 'mascot');
+
+                // Hide analysis sections initially
+                document.getElementById('summarySection').style.display = 'none';
+                document.getElementById('reviewSection').style.display = 'none';
+                document.getElementById('combinedReportSection').style.display = 'none';
+                document.getElementById('finalReviewSection').style.display = 'none';
+
+                // Simulate progress through steps (estimate ~7s per step)
+                const progressSteps = [
+                    { step: 1, text: 'Generating summary and key points...', delay: 0 },
+                    { step: 2, text: 'Reviewing statement quality...', delay: 7000 },
+                    { step: 3, text: 'Creating comprehensive report...', delay: 14000 },
+                    { step: 4, text: 'Finalizing recommendations...', delay: 21000 }
+                ];
+
+                const progressInterval = setInterval(() => {
+                    const now = Date.now();
+                    const elapsed = now - analysisStartTime;
+
+                    for (const ps of progressSteps) {
+                        if (elapsed >= ps.delay && !progressTracking[ps.step]) {
+                            updateAIStep(ps.step, 'active', ps.text);
+                            progressTracking[ps.step] = true;
+                        }
+                    }
+                }, 500);
+
+                let analysisStartTime = Date.now();
+                let progressTracking = {};
+
+                // Start first step immediately
+                updateAIStep(1, 'active', 'Generating summary and key points...');
 
                 const response = await fetch('/api/ai/analyze-statement', {
                     method: 'POST',
@@ -2433,10 +3025,30 @@
                     credentials: 'include'
                 });
 
+                clearInterval(progressInterval);
+
                 const result = await response.json();
 
                 if (result.success) {
-                    displayAIAnalysis(result.analysis);
+                    // Mark all steps complete
+                    for (let i = 1; i <= 4; i++) {
+                        updateAIStep(i, 'complete');
+                    }
+
+                    // Show completion banner
+                    setTimeout(() => {
+                        progressContainer.style.display = 'none';
+                        completeBanner.style.display = 'block';
+
+                        // Display analysis with fade-in animation
+                        displayAIAnalysis(result.analysis);
+
+                        // Hide completion banner after 3 seconds
+                        setTimeout(() => {
+                            completeBanner.style.display = 'none';
+                        }, 3000);
+                    }, 500);
+
                     updateProgress('step-summary', 'complete');
                     showStatus('AI analysis complete!', 'success');
                 } else {
@@ -2446,12 +3058,38 @@
             } catch (error) {
                 console.error('AI analysis error:', error);
                 showStatus('Failed to generate AI analysis. Please try again.', 'error');
-                document.getElementById('summarySection').style.display = 'none';
+                document.getElementById('aiProgressContainer').style.display = 'none';
+                document.getElementById('analysisCompleteBanner').style.display = 'none';
+            }
+        }
+
+        // Helper function to update AI progress steps
+        function updateAIStep(stepNumber, status, text) {
+            const step = document.getElementById(`aiStep${stepNumber}`);
+
+            if (status === 'active') {
+                // Remove active from all steps
+                for (let i = 1; i <= 4; i++) {
+                    document.getElementById(`aiStep${i}`).classList.remove('active');
+                }
+                // Add active to current step
+                step.classList.add('active');
+                if (text) MascotLoading.updateMessage('#aiLoadingAnimation', text);
+            } else if (status === 'complete') {
+                step.classList.remove('active');
+                step.classList.add('complete');
+                // Replace number with checkmark
+                const circle = step.querySelector('.ai-step-circle');
+                circle.textContent = '✓';
             }
         }
 
         function displayAIAnalysis(analysis) {
-            // Display Summary
+            // Display Summary with fade-in animation
+            const summarySection = document.getElementById('summarySection');
+            summarySection.style.display = 'block';
+            summarySection.classList.add('fade-in');
+
             document.getElementById('summaryText').innerHTML = analysis.summary || 'No summary available.';
 
             // Display Key Points
@@ -2465,9 +3103,11 @@
                 });
             }
 
-            // Display AI Review
+            // Display AI Review with fade-in animation
             if (analysis.review) {
-                document.getElementById('reviewSection').style.display = 'block';
+                const reviewSection = document.getElementById('reviewSection');
+                reviewSection.style.display = 'block';
+                reviewSection.classList.add('fade-in');
                 document.getElementById('qualityAssessment').textContent = analysis.review.quality || '';
 
                 const missingInfoDiv = document.getElementById('missingInfo');
@@ -2497,15 +3137,19 @@
                 }
             }
 
-            // Display Combined Report (if Typeform data available)
+            // Display Combined Report (if Typeform data available) with fade-in animation
             if (analysis.combinedReport) {
-                document.getElementById('combinedReportSection').style.display = 'block';
+                const combinedSection = document.getElementById('combinedReportSection');
+                combinedSection.style.display = 'block';
+                combinedSection.classList.add('fade-in');
                 document.getElementById('combinedReportText').innerHTML = analysis.combinedReport;
             }
 
-            // Display Final Review
+            // Display Final Review with fade-in animation
             if (analysis.finalReview) {
-                document.getElementById('finalReviewSection').style.display = 'block';
+                const finalSection = document.getElementById('finalReviewSection');
+                finalSection.style.display = 'block';
+                finalSection.classList.add('fade-in');
                 document.getElementById('completenessScore').textContent =
                     analysis.finalReview.completenessScore + '%';
 
@@ -2680,6 +3324,12 @@
 
                 // User is authenticated! Get userId from session
                 userId = data.user.id;
+
+                // CRITICAL: Update localStorage and sessionStorage with authenticated user ID
+                // This ensures consistency between the userId variable and stored values
+                localStorage.setItem('create_user_id', userId);
+                sessionStorage.setItem('userId', userId);
+
                 console.log('✅ User authenticated:', {
                     userId,
                     email: data.user.email
@@ -2713,7 +3363,37 @@
             updateNetworkStatus();
 
             // Check for saved draft
-            restoreDraft();
+            // restoreDraft(); // DISABLED: Auto-restore dialog after form submission was confusing
+
+            // Auto-show transcription if redirected from incident.html
+            const shouldShowTranscription = sessionStorage.getItem('show_transcription_on_load');
+            const latestTranscription = sessionStorage.getItem('latest_transcription');
+
+            if (shouldShowTranscription === 'true' && latestTranscription) {
+                console.log('📝 Auto-showing latest transcription from incident.html');
+
+                // Show the transcription immediately with animation
+                setTimeout(() => {
+                    document.getElementById('transcriptionText').textContent = latestTranscription;
+                    document.getElementById('transcriptionResult').style.display = 'block';
+
+                    // Switch to transcription tab
+                    switchTab('transcription');
+
+                    // Scroll to transcription with smooth animation
+                    document.getElementById('transcriptionResult').scrollIntoView({
+                        behavior: 'smooth',
+                        block: 'start'
+                    });
+
+                    // Show success message
+                    showStatus('✅ Your transcription is ready! You can edit it below if needed.', 'success');
+
+                    // Clear the flags so it doesn't auto-show again on refresh
+                    sessionStorage.removeItem('show_transcription_on_load');
+                    sessionStorage.removeItem('latest_transcription');
+                }, 300); // Small delay for smooth transition
+            }
 
             // Set up event listeners
             document.getElementById('recordButton').addEventListener('click', startRecording);
@@ -2726,7 +3406,13 @@
             document.getElementById('generateSummaryBtn').addEventListener('click', generateAIAnalysis);
             document.getElementById('clearDraftBtn').addEventListener('click', clearDraft);
             document.getElementById('saveAndContinueBtn').addEventListener('click', saveAndContinue);
+            document.getElementById('saveAndContinueBtnTranscription').addEventListener('click', saveAndContinue);
             document.getElementById('securityBadge').addEventListener('click', openSecurityModal);
+
+            // Type Your Own Account button - switches to Transcription tab
+            document.getElementById('typeOwnAccountBtn').addEventListener('click', () => {
+                switchTab('transcription');
+            });
 
             // Tab navigation event listeners (CSP compliant)
             document.querySelectorAll('.tab-button').forEach(button => {
@@ -2770,5 +3456,6 @@
         });
     </script>
     <script src="/js/mascot.js"></script>
+    <script src="/js/mascot-loading.js"></script>
 </body>
 </html>

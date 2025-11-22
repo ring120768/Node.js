@@ -1,0 +1,67 @@
+Page,UI Field Name,Storage Key Used,Expected Storage Key,Database Column,Status,Severity,Notes
+5,usual_vehicle,localStorage:page5_data,sessionStorage:incident_page5,usual_vehicle,MISMATCH,CRITICAL,Wrong storage type AND wrong key name
+5,vehicle_license_plate,localStorage:page5_data,sessionStorage:incident_page5,vehicle_license_plate,MISMATCH,CRITICAL,Field exists in controller but never received
+5,dvla_make,localStorage:page5_data,sessionStorage:incident_page5,dvla_make,MISMATCH,CRITICAL,DVLA lookup data lost
+5,dvla_model,localStorage:page5_data,sessionStorage:incident_page5,dvla_model,MISMATCH,CRITICAL,DVLA lookup data lost
+5,dvla_colour,localStorage:page5_data,sessionStorage:incident_page5,dvla_colour,MISMATCH,CRITICAL,DVLA lookup data lost
+5,dvla_year,localStorage:page5_data,sessionStorage:incident_page5,dvla_year,MISMATCH,CRITICAL,DVLA lookup data lost
+5,dvla_fuel_type,localStorage:page5_data,sessionStorage:incident_page5,dvla_fuel_type,MISMATCH,CRITICAL,DVLA lookup data lost
+5,dvla_mot_status,localStorage:page5_data,sessionStorage:incident_page5,dvla_mot_status,MISMATCH,CRITICAL,DVLA lookup data lost
+5,dvla_mot_expiry,localStorage:page5_data,sessionStorage:incident_page5,dvla_mot_expiry,MISMATCH,CRITICAL,DVLA lookup data lost
+5,dvla_tax_status,localStorage:page5_data,sessionStorage:incident_page5,dvla_tax_status,MISMATCH,CRITICAL,DVLA lookup data lost
+5,dvla_tax_due_date,localStorage:page5_data,sessionStorage:incident_page5,dvla_tax_due_date,MISMATCH,CRITICAL,DVLA lookup data lost
+5,dvla_insurance_status,localStorage:page5_data,sessionStorage:incident_page5,dvla_insurance_status,MISMATCH,CRITICAL,DVLA lookup data lost
+5,no_damage,localStorage:page5_data,sessionStorage:incident_page5,no_damage,MISMATCH,CRITICAL,Boolean flag lost
+5,damage_to_your_vehicle,localStorage:page5_data,sessionStorage:incident_page5,damage_to_your_vehicle,MISMATCH,CRITICAL,Text description lost
+5,impact_point_front,localStorage:page5_data,sessionStorage:incident_page5,impact_point_front,MISMATCH,CRITICAL,Impact point lost
+5,impact_point_front_driver,localStorage:page5_data,sessionStorage:incident_page5,impact_point_front_driver,MISMATCH,CRITICAL,Impact point lost
+5,impact_point_front_passenger,localStorage:page5_data,sessionStorage:incident_page5,impact_point_front_passenger,MISMATCH,CRITICAL,Impact point lost
+5,impact_point_driver_side,localStorage:page5_data,sessionStorage:incident_page5,impact_point_driver_side,MISMATCH,CRITICAL,Impact point lost
+5,impact_point_passenger_side,localStorage:page5_data,sessionStorage:incident_page5,impact_point_passenger_side,MISMATCH,CRITICAL,Impact point lost
+5,impact_point_rear_driver,localStorage:page5_data,sessionStorage:incident_page5,impact_point_rear_driver,MISMATCH,CRITICAL,Impact point lost
+5,impact_point_rear_passenger,localStorage:page5_data,sessionStorage:incident_page5,impact_point_rear_passenger,MISMATCH,CRITICAL,Impact point lost
+5,impact_point_rear,localStorage:page5_data,sessionStorage:incident_page5,impact_point_rear,MISMATCH,CRITICAL,Impact point lost
+5,impact_point_roof,localStorage:page5_data,sessionStorage:incident_page5,impact_point_roof,MISMATCH,CRITICAL,Impact point lost
+5,impact_point_undercarriage,localStorage:page5_data,sessionStorage:incident_page5,impact_point_undercarriage,MISMATCH,CRITICAL,Impact point lost
+5,vehicle_driveable,localStorage:page5_data,sessionStorage:incident_page5,vehicle_driveable,MISMATCH,CRITICAL,Driveable status lost
+5,manual_make,localStorage:page5_data,sessionStorage:incident_page5,manual_make,MISMATCH,CRITICAL,Manual entry lost if no DVLA data
+5,manual_model,localStorage:page5_data,sessionStorage:incident_page5,manual_model,MISMATCH,CRITICAL,Manual entry lost if no DVLA data
+5,manual_colour,localStorage:page5_data,sessionStorage:incident_page5,manual_colour,MISMATCH,CRITICAL,Manual entry lost if no DVLA data
+5,manual_year,localStorage:page5_data,sessionStorage:incident_page5,manual_year,MISMATCH,CRITICAL,Manual entry lost if no DVLA data
+7,other_full_name,sessionStorage:incident_page7,sessionStorage:incident_page7,other_full_name,MATCH,WORKING,Correctly saved and loaded ✅
+7,other_contact_number,sessionStorage:incident_page7,sessionStorage:incident_page7,other_contact_number,MATCH,WORKING,Correctly saved and loaded ✅
+7,other_email_address,sessionStorage:incident_page7,sessionStorage:incident_page7,other_email_address,MATCH,WORKING,Correctly saved and loaded ✅
+7,other_driving_license_number,sessionStorage:incident_page7,sessionStorage:incident_page7,other_driving_license_number,MATCH,WORKING,Correctly saved and loaded ✅
+7,other_vehicle_registration,sessionStorage:incident_page7,sessionStorage:incident_page7,other_vehicle_registration,MATCH,WORKING,Correctly saved and loaded ✅
+7,other_vehicle_look_up_make,sessionStorage:incident_page7,sessionStorage:incident_page7,other_vehicle_look_up_make,MATCH,WORKING,DVLA data saved correctly ✅
+7,other_vehicle_look_up_model,sessionStorage:incident_page7,sessionStorage:incident_page7,other_vehicle_look_up_model,MATCH,WORKING,DVLA data saved correctly ✅
+7,other_vehicle_look_up_colour,sessionStorage:incident_page7,sessionStorage:incident_page7,other_vehicle_look_up_colour,MATCH,WORKING,DVLA data saved correctly ✅
+7,other_vehicle_look_up_year,sessionStorage:incident_page7,sessionStorage:incident_page7,other_vehicle_look_up_year,MATCH,WORKING,DVLA data saved correctly ✅
+7,other_vehicle_look_up_fuel_type,sessionStorage:incident_page7,sessionStorage:incident_page7,other_vehicle_look_up_fuel_type,MATCH,WORKING,DVLA data saved correctly ✅
+7,other_vehicle_look_up_mot_status,sessionStorage:incident_page7,sessionStorage:incident_page7,other_vehicle_look_up_mot_status,MATCH,WORKING,DVLA data saved correctly ✅
+7,other_vehicle_look_up_mot_expiry_date,sessionStorage:incident_page7,sessionStorage:incident_page7,other_vehicle_look_up_mot_expiry_date,MATCH,WORKING,DVLA data saved correctly ✅
+7,other_vehicle_look_up_tax_status,sessionStorage:incident_page7,sessionStorage:incident_page7,other_vehicle_look_up_tax_status,MATCH,WORKING,DVLA data saved correctly ✅
+7,other_vehicle_look_up_tax_due_date,sessionStorage:incident_page7,sessionStorage:incident_page7,other_vehicle_look_up_tax_due_date,MATCH,WORKING,DVLA data saved correctly ✅
+7,other_vehicle_look_up_insurance_status,sessionStorage:incident_page7,sessionStorage:incident_page7,other_vehicle_look_up_insurance_status,MATCH,WORKING,DVLA data saved correctly ✅
+7,other_drivers_insurance_company,sessionStorage:incident_page7,sessionStorage:incident_page7,other_drivers_insurance_company,MATCH,WORKING,Insurance data saved ✅
+7,other_drivers_policy_number,sessionStorage:incident_page7,sessionStorage:incident_page7,other_drivers_policy_number,MATCH,WORKING,Insurance data saved ✅
+7,other_drivers_policy_holder_name,sessionStorage:incident_page7,sessionStorage:incident_page7,other_drivers_policy_holder_name,MATCH,WORKING,Insurance data saved ✅
+7,other_drivers_policy_cover_type,sessionStorage:incident_page7,sessionStorage:incident_page7,other_drivers_policy_cover_type,MATCH,WORKING,Insurance data saved ✅
+7,no_visible_damage,sessionStorage:incident_page7,sessionStorage:incident_page7,no_visible_damage,MATCH,WORKING,Boolean flag saved ✅
+7,describe_damage_to_vehicle,sessionStorage:incident_page7,sessionStorage:incident_page7,describe_damage_to_vehicle,MATCH,WORKING,Damage description saved ✅
+9,witnesses_present,localStorage:page9_data,sessionStorage:incident_page9,witnesses_present,MISMATCH,CRITICAL,Boolean flag lost
+9,witness_name,localStorage:page9_data,sessionStorage:incident_page9,witness_name,MISMATCH,CRITICAL,Witness name lost
+9,witness_mobile_number,localStorage:page9_data,sessionStorage:incident_page9,witness_mobile_number,MISMATCH,CRITICAL,Contact number lost
+9,witness_email_address,localStorage:page9_data,sessionStorage:incident_page9,witness_email_address,MISMATCH,CRITICAL,Email address lost
+9,witness_statement,localStorage:page9_data,sessionStorage:incident_page9,witness_statement,MISMATCH,CRITICAL,Witness testimony lost
+9,additional_witnesses,sessionStorage:additional_witnesses,sessionStorage:additional_witnesses,N/A (processed separately),MATCH,WORKING,Additional witnesses saved correctly ✅
+10,police_attended,localStorage:page10_data,sessionStorage:incident_page10,police_attended,MISMATCH,CRITICAL,Boolean flag lost
+10,accident_ref_number,localStorage:page10_data,sessionStorage:incident_page10,accident_ref_number,MISMATCH,CRITICAL,Police incident number lost
+10,police_force,localStorage:page10_data,sessionStorage:incident_page10,police_force,MISMATCH,CRITICAL,Police force name lost
+10,officer_name,localStorage:page10_data,sessionStorage:incident_page10,officer_name,MISMATCH,CRITICAL,Officer name lost
+10,officer_badge,localStorage:page10_data,sessionStorage:incident_page10,officer_badge,MISMATCH,CRITICAL,Badge number lost
+10,user_breath_test,localStorage:page10_data,sessionStorage:incident_page10,user_breath_test,MISMATCH,CRITICAL,Breath test result lost
+10,other_breath_test,localStorage:page10_data,sessionStorage:incident_page10,other_breath_test,MISMATCH,CRITICAL,Other driver test lost
+10,airbags_deployed,localStorage:page10_data,sessionStorage:incident_page10,airbags_deployed,MISMATCH,CRITICAL,Safety data lost
+10,seatbelts_worn,localStorage:page10_data,sessionStorage:incident_page10,seatbelts_worn,MISMATCH,CRITICAL,Safety data lost
+10,seatbelt_reason,localStorage:page10_data,sessionStorage:incident_page10,seatbelt_reason,MISMATCH,CRITICAL,Safety explanation lost

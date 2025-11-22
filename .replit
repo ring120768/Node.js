@@ -26,8 +26,12 @@ deploymentTarget = "autoscale"
 ignorePorts = false
 
 [[ports]]
-localPort = 5000
+localPort = 3000
 externalPort = 80
+
+[[ports]]
+localPort = 5000
+externalPort = 5000
 
 [[ports]]
 localPort = 5001
@@ -61,7 +65,7 @@ mode = "sequential"
 [[workflows.workflow.tasks]]
 task = "shell.exec"
 args = "bash start-replit.sh"
-waitForPort = 5000
+waitForPort = 3000
 
 [workflows.workflow.metadata]
 outputType = "webview"
@@ -83,7 +87,7 @@ mode = "sequential"
 [[workflows.workflow.tasks]]
 task = "shell.exec"
 args = "node server.js"
-waitForPort = 5000
+waitForPort = 3000
 
 [workflows.workflow.metadata]
 outputType = "webview"
@@ -113,7 +117,7 @@ mode = "sequential"
 
 [[workflows.workflow.tasks]]
 task = "shell.exec"
-args = "curl -s http://localhost:5000/healthz || echo \"Server not responding\""
+args = "curl -s http://localhost:3000/healthz || echo \"Server not responding\""
 
 [[workflows.workflow]]
 name = "Test Dashboard Images"

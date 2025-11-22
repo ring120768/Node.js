@@ -18,13 +18,37 @@ const logger = require('../utils/logger');
 const config = require('../config');
 
 class ImageProcessorV2 {
-  constructor(supabaseClient) {
+  constructor(supabaseClient, websocketService = null) {
     if (!supabaseClient) {
       throw new Error('Supabase client is required for ImageProcessorV2');
     }
     this.supabase = supabaseClient;
+    this.websocketService = websocketService;
     this.initialized = true;
     logger.info('✅ ImageProcessorV2 service initialized with user_documents support');
+  }
+
+  /**
+   * Emit WebSocket update for image processing
+   * @param {string} userId - User ID
+   * @param {string} type - Message type
+   * @param {Object} data - Update data
+   */
+  emitWebSocketUpdate(userId, type, data) {
+    if (this.websocketService && this.websocketService.broadcastImageProcessingUpdate) {
+      try {
+        this.websocketService.broadcastImageProcessingUpdate(userId, {
+          type,
+          ...data
+        });
+      } catch (error) {
+        logger.warn('Failed to emit WebSocket update', {
+          error: error.message,
+          userId,
+          type
+        });
+      }
+    }
   }
 
   /**
@@ -63,13 +87,28 @@ class ImageProcessorV2 {
         associated_with = null,
         associated_id = null,
         original_checksum_sha256 = null,
-        current_checksum_sha256 = null
+        current_checksum_sha256 = null,
+        // NEW: Signed URL fields for direct uploads
+        public_url = null,
+        signed_url = null,
+        signed_url_expires_at = null
       } = data;
 
       // Validate required fields
       if (!create_user_id || !document_type) {
         throw new Error('Missing required fields: create_user_id, document_type');
       }
+
+      logger.info('🔍 DEBUG: createDocumentRecord called with URL parameters', {
+        userId: create_user_id,
+        documentType: document_type,
+        status,
+        public_url: public_url ? 'PRESENT' : 'NULL',
+        signed_url: signed_url ? 'PRESENT' : 'NULL',
+        signed_url_expires_at: signed_url_expires_at ? 'PRESENT' : 'NULL',
+        signed_url_length: signed_url?.length || 0,
+        public_url_length: public_url?.length || 0
+      });
 
       const documentRecord = {
         create_user_id,
@@ -94,6 +133,10 @@ class ImageProcessorV2 {
         original_checksum_sha256,
         current_checksum_sha256,
         checksum_algorithm: original_checksum_sha256 ? 'sha256' : null,
+        // NEW: Signed URL fields for direct uploads
+        public_url,
+        signed_url,
+        signed_url_expires_at,
         metadata: {
           ...metadata,
           processor_version: '2.1.0', // Updated for dual retention support
@@ -102,10 +145,12 @@ class ImageProcessorV2 {
         }
       };
 
-      logger.info('Creating document record', {
+      logger.info('🔍 DEBUG: Document record object prepared for database insert', {
         userId: create_user_id,
         documentType: document_type,
-        status
+        hasPublicUrl: !!documentRecord.public_url,
+        hasSignedUrl: !!documentRecord.signed_url,
+        hasSignedUrlExpiry: !!documentRecord.signed_url_expires_at
       });
 
       const { data: record, error } = await this.supabase
@@ -123,10 +168,13 @@ class ImageProcessorV2 {
         throw error;
       }
 
-      logger.info('✅ Document record created', {
+      logger.info('✅ DEBUG: Document record created in database', {
         id: record.id,
         documentType: record.document_type,
-        status: record.status
+        status: record.status,
+        public_url_in_db: record.public_url ? 'PRESENT' : 'NULL',
+        signed_url_in_db: record.signed_url ? 'PRESENT' : 'NULL',
+        signed_url_expires_at_in_db: record.signed_url_expires_at ? 'PRESENT' : 'NULL'
       });
 
       return record;
@@ -551,6 +599,13 @@ class ImageProcessorV2 {
         associatedWith
       });
 
+      // Emit WebSocket: Image processing started
+      this.emitWebSocketUpdate(userId, config.constants.WS_MESSAGE_TYPES.IMAGE_PROCESSING_STARTED, {
+        documentId,
+        documentType: imageType,
+        status: 'pending'
+      });
+
       // Step 2: Download image from Typeform
       const { buffer, contentType, fileName, fileSize } = await this.downloadFromUrl(
         typeformUrl,
@@ -591,8 +646,10 @@ class ImageProcessorV2 {
         documentId
       );
 
-      // Step 5: Generate signed URL
-      const signedUrl = await this.getSignedUrl(fullStoragePath, 86400); // 24 hours
+      // Step 5: Generate signed URL (12 months expiry to match subscription period)
+      const signedUrlExpirySeconds = 31536000; // 365 days (12 months)
+      const signedUrl = await this.getSignedUrl(fullStoragePath, signedUrlExpirySeconds);
+      const signedUrlExpiresAt = new Date(Date.now() + (signedUrlExpirySeconds * 1000));
 
       // Step 6: Mark as completed
       const processingEndTime = Date.now();
@@ -601,7 +658,9 @@ class ImageProcessorV2 {
 
       await this.updateDocumentRecord(documentId, {
         status: 'completed',
-        public_url: signedUrl,
+        public_url: signedUrl, // Keep for backwards compatibility
+        signed_url: signedUrl, // NEW: Store in signed_url field for PDF generation
+        signed_url_expires_at: signedUrlExpiresAt.toISOString(), // NEW: Track expiry
         processing_completed_at: new Date().toISOString(),
         processing_duration_ms: processingDuration
       });
@@ -613,6 +672,15 @@ class ImageProcessorV2 {
         storagePath: fullStoragePath,
         processingDuration: `${processingDuration}ms`,
         checksum: checksum.substring(0, 16) + '...'
+      });
+
+      // Emit WebSocket: Image processed successfully
+      this.emitWebSocketUpdate(userId, config.constants.WS_MESSAGE_TYPES.IMAGE_PROCESSED, {
+        documentId,
+        documentType: imageType,
+        status: 'completed',
+        signedUrl,
+        processingDuration
       });
 
       return {
@@ -639,6 +707,14 @@ class ImageProcessorV2 {
             status: 'failed',
             error_message: error.message,
             error_code: 'PROCESSING_ERROR'
+          });
+
+          // Emit WebSocket: Image processing failed
+          this.emitWebSocketUpdate(userId, config.constants.WS_MESSAGE_TYPES.IMAGE_PROCESSING_FAILED, {
+            documentId,
+            documentType: imageType,
+            status: 'failed',
+            error: error.message
           });
         } catch (updateError) {
           logger.error('Failed to update document status to failed', {

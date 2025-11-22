@@ -1,0 +1,42 @@
+Field_Number,Field_Name,HTML_Type,Input_Name,Supabase_Column,Data_Type,Required,Default_Value,Category,Generated_By_JS,Notes
+1,accident_date,Date Input,accident_date,incident_date,DATE,Yes,NULL,Date & Time,No,Date the accident occurred
+2,accident_time,Time Input,accident_time,incident_time,TIME,Yes,NULL,Date & Time,No,Time the accident occurred (24-hour format)
+3,weather_bright_sunlight,Checkbox,weather_bright_sunlight,N/A,BOOLEAN,No,FALSE,Weather,No,Bright sunlight condition (not mapped in backend)
+4,weather_clear,Checkbox,weather_clear,weather_clear,BOOLEAN,No,FALSE,Weather,No,Clear and dry weather
+5,weather_cloudy,Checkbox,weather_cloudy,N/A,BOOLEAN,No,FALSE,Weather,No,Cloudy condition (not mapped in backend)
+6,weather_raining,Checkbox,weather_raining,weather_rain,BOOLEAN,No,FALSE,Weather,No,Raining weather
+7,weather_heavy_rain,Checkbox,weather_heavy_rain,N/A,BOOLEAN,No,FALSE,Weather,No,Heavy rain (not mapped in backend)
+8,weather_drizzle,Checkbox,weather_drizzle,N/A,BOOLEAN,No,FALSE,Weather,No,Drizzle (not mapped in backend)
+9,weather_fog,Checkbox,weather_fog,weather_fog,BOOLEAN,No,FALSE,Weather,No,Fog or poor visibility
+10,weather_snow,Checkbox,weather_snow,weather_snow,BOOLEAN,No,FALSE,Weather,No,Snow weather
+11,weather_ice,Checkbox,weather_ice,weather_ice_frost,BOOLEAN,No,FALSE,Weather,No,Ice/frost conditions
+12,weather_windy,Checkbox,weather_windy,weather_wind,BOOLEAN,No,FALSE,Weather,No,Windy conditions
+13,weather_hail,Checkbox,weather_hail,N/A,BOOLEAN,No,FALSE,Weather,No,Hail (not mapped in backend)
+14,weather_thunder_lightning,Checkbox,weather_thunder_lightning,N/A,BOOLEAN,No,FALSE,Weather,No,Thunder/lightning (not mapped in backend)
+15,road_condition_dry,Checkbox,road_condition_dry,road_condition_dry,BOOLEAN,Group Required,FALSE,Road Conditions,No,Dry road surface
+16,road_condition_wet,Checkbox,road_condition_wet,road_condition_wet,BOOLEAN,Group Required,FALSE,Road Conditions,No,Wet road surface
+17,road_condition_icy,Checkbox,road_condition_icy,road_condition_icy,BOOLEAN,Group Required,FALSE,Road Conditions,No,Icy road surface
+18,road_condition_snow_covered,Checkbox,road_condition_snow_covered,road_condition_snow,BOOLEAN,Group Required,FALSE,Road Conditions,No,Snow-covered road
+19,road_condition_loose_surface,Checkbox,road_condition_loose_surface,road_condition_debris,BOOLEAN,Group Required,FALSE,Road Conditions,No,Loose surface (gravel/debris)
+20,road_condition_slush_on_road,Checkbox,road_condition_slush_on_road,road_condition_slush_road,BOOLEAN,Group Required,FALSE,Road Conditions,No,Slush on road
+21,road_type_motorway,Checkbox,road_type_motorway,road_type_motorway,BOOLEAN,Group Required,FALSE,Road Type,No,Motorway road type
+22,road_type_a_road,Checkbox,road_type_a_road,road_type_a_road,BOOLEAN,Group Required,FALSE,Road Type,No,A-road
+23,road_type_b_road,Checkbox,road_type_b_road,road_type_b_road,BOOLEAN,Group Required,FALSE,Road Type,No,B-road
+24,road_type_urban_street,Checkbox,road_type_urban_street,road_type_urban,BOOLEAN,Group Required,FALSE,Road Type,No,Urban street
+25,road_type_rural_road,Checkbox,road_type_rural_road,road_type_rural,BOOLEAN,Group Required,FALSE,Road Type,No,Rural road
+26,road_type_car_park,Checkbox,road_type_car_park,N/A,BOOLEAN,Group Required,FALSE,Road Type,No,Car park (not mapped in backend)
+27,road_type_private_road,Checkbox,road_type_private_road,road_type_private_road,BOOLEAN,Group Required,FALSE,Road Type,No,Private road
+28,speed_limit,Select Dropdown,speed_limit,speed_limit,TEXT,No,NULL,Road Conditions,No,"Posted speed limit (20-70 mph or 'unknown')"
+29,your_speed,Number Input,your_speed,your_speed,INTEGER,No,NULL,Road Conditions,No,User's estimated speed (0-150 mph)
+30,traffic_conditions_heavy,Checkbox,traffic_conditions_heavy,N/A,BOOLEAN,Group Required,FALSE,Traffic,No,Heavy traffic (not mapped in backend)
+31,traffic_conditions_moderate,Checkbox,traffic_conditions_moderate,N/A,BOOLEAN,Group Required,FALSE,Traffic,No,Moderate traffic (not mapped in backend)
+32,traffic_conditions_light,Checkbox,traffic_conditions_light,N/A,BOOLEAN,Group Required,FALSE,Traffic,No,Light traffic (not mapped in backend)
+33,traffic_conditions_no_traffic,Checkbox,traffic_conditions_no_traffic,N/A,BOOLEAN,Group Required,FALSE,Traffic,No,No traffic (not mapped in backend)
+34,visibility_good,Checkbox,visibility_good,visibility_good,BOOLEAN,Group Required,FALSE,Visibility,No,Good visibility
+35,visibility_poor,Checkbox,visibility_poor,visibility_poor,BOOLEAN,Group Required,FALSE,Visibility,No,Poor visibility
+36,visibility_very_poor,Checkbox,visibility_very_poor,N/A,BOOLEAN,Group Required,FALSE,Visibility,No,Very poor visibility (not mapped in backend)
+37,visibility_street_lights,Checkbox,visibility_street_lights,visibility_street_lights,BOOLEAN,Group Required,FALSE,Visibility,No,Street lights present
+38,road_markings_visible_yes,Checkbox,road_markings_visible_yes,N/A,BOOLEAN,Group Required,FALSE,Road Markings,No,Road markings visible (not mapped in backend)
+39,road_markings_visible_no,Checkbox,road_markings_visible_no,N/A,BOOLEAN,Group Required,FALSE,Road Markings,No,Road markings not visible (not mapped)
+40,road_markings_visible_partially,Checkbox,road_markings_visible_partially,N/A,BOOLEAN,Group Required,FALSE,Road Markings,No,Road markings partially visible (not mapped)
+41,completed_at,N/A (Generated),N/A,N/A,TIMESTAMP,No,NULL,System,Yes,"JavaScript-generated timestamp (new Date().toISOString())"

@@ -105,6 +105,7 @@ async function requireAuth(req, res, next) {
           httpOnly: true,
           secure: true, // Always true - matches login controller
           sameSite: 'none', // Required for Replit subdomains - matches login controller
+          path: '/', // CRITICAL: Make cookie available site-wide for API endpoints
           maxAge: cookieMaxAge
         });
 
@@ -112,6 +113,7 @@ async function requireAuth(req, res, next) {
           httpOnly: true,
           secure: true, // Always true - matches login controller
           sameSite: 'none', // Required for Replit subdomains - matches login controller
+          path: '/', // CRITICAL: Make cookie available site-wide
           maxAge: cookieMaxAge
         });
 
@@ -216,6 +218,7 @@ async function optionalAuth(req, res, next) {
           httpOnly: true,
           secure: true, // Always true - matches login controller
           sameSite: 'none', // Required for Replit subdomains - matches login controller
+          path: '/', // CRITICAL: Make cookie available site-wide for API endpoints
           maxAge: cookieMaxAge
         });
 
@@ -223,6 +226,7 @@ async function optionalAuth(req, res, next) {
           httpOnly: true,
           secure: true, // Always true - matches login controller
           sameSite: 'none', // Required for Replit subdomains - matches login controller
+          path: '/', // CRITICAL: Make cookie available site-wide
           maxAge: cookieMaxAge
         });
 

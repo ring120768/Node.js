@@ -1,0 +1,620 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Manage Images - Car Crash Lawyer AI</title>
+    <link rel="stylesheet" href="/css/design-system.css">
+    <style>
+        .image-category {
+            background: var(--container-bg);
+            border-radius: 12px;
+            padding: 1.5rem;
+            margin-bottom: 1.5rem;
+        }
+
+        .category-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 1rem;
+            padding-bottom: 0.75rem;
+            border-bottom: 2px solid var(--border);
+        }
+
+        .category-title {
+            font-size: 1.25rem;
+            font-weight: 600;
+            color: var(--text-dark);
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+        }
+
+        .image-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
+            gap: 1rem;
+        }
+
+        .image-card {
+            background: white;
+            border-radius: 8px;
+            padding: 0.75rem;
+            border: 2px solid var(--border);
+            position: relative;
+            transition: all 0.2s;
+        }
+
+        .image-card:hover {
+            border-color: var(--accent);
+            transform: translateY(-2px);
+            box-shadow: 0 4px 8px rgba(0,0,0,0.1);
+        }
+
+        .image-preview {
+            width: 100%;
+            height: 150px;
+            object-fit: cover;
+            border-radius: 6px;
+            margin-bottom: 0.5rem;
+            background: var(--input-bg);
+        }
+
+        .image-placeholder {
+            width: 100%;
+            height: 150px;
+            border-radius: 6px;
+            background: var(--input-bg);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            color: var(--text-muted);
+            font-size: 2rem;
+            margin-bottom: 0.5rem;
+        }
+
+        .image-label {
+            font-size: 0.875rem;
+            font-weight: 500;
+            color: var(--text-dark);
+            margin-bottom: 0.25rem;
+        }
+
+        .image-status {
+            font-size: 0.75rem;
+            color: var(--text-muted);
+        }
+
+        .image-actions {
+            display: flex;
+            gap: 0.5rem;
+            margin-top: 0.5rem;
+        }
+
+        .btn-small {
+            padding: 0.4rem 0.75rem;
+            font-size: 0.75rem;
+            border-radius: 6px;
+            border: none;
+            cursor: pointer;
+            transition: all 0.2s;
+            flex: 1;
+        }
+
+        .btn-upload {
+            background: var(--accent);
+            color: white;
+        }
+
+        .btn-upload:hover {
+            background: var(--accent-hover);
+        }
+
+        .btn-replace {
+            background: var(--warning);
+            color: white;
+        }
+
+        .btn-replace:hover {
+            opacity: 0.9;
+        }
+
+        .btn-delete {
+            background: var(--danger);
+            color: white;
+        }
+
+        .btn-delete:hover {
+            opacity: 0.9;
+        }
+
+        .upload-zone {
+            border: 2px dashed var(--border);
+            border-radius: 8px;
+            padding: 2rem;
+            text-align: center;
+            background: var(--input-bg);
+            cursor: pointer;
+            transition: all 0.2s;
+        }
+
+        .upload-zone:hover, .upload-zone.drag-over {
+            border-color: var(--accent);
+            background: var(--container-bg);
+        }
+
+        .upload-icon {
+            font-size: 3rem;
+            margin-bottom: 1rem;
+        }
+
+        .upload-text {
+            font-size: 1rem;
+            color: var(--text-dark);
+            margin-bottom: 0.5rem;
+        }
+
+        .upload-hint {
+            font-size: 0.875rem;
+            color: var(--text-muted);
+        }
+
+        .progress-bar {
+            width: 100%;
+            height: 8px;
+            background: var(--input-bg);
+            border-radius: 4px;
+            overflow: hidden;
+            margin-top: 0.5rem;
+        }
+
+        .progress-fill {
+            height: 100%;
+            background: var(--accent);
+            transition: width 0.3s;
+        }
+
+        input[type="file"] {
+            display: none;
+        }
+
+        .modal {
+            display: none;
+            position: fixed;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background: rgba(0, 0, 0, 0.5);
+            backdrop-filter: blur(4px);
+            z-index: 1000;
+            align-items: center;
+            justify-content: center;
+            padding: 1rem;
+        }
+
+        .modal.active {
+            display: flex;
+        }
+
+        .modal-content {
+            background: white;
+            border-radius: 12px;
+            padding: 2rem;
+            max-width: 500px;
+            width: 100%;
+            box-shadow: 0 20px 25px -5px rgba(0, 0, 0, 0.1);
+        }
+
+        .modal-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 1.5rem;
+        }
+
+        .modal-title {
+            font-size: 1.5rem;
+            font-weight: 600;
+        }
+
+        .modal-close {
+            background: none;
+            border: none;
+            font-size: 1.5rem;
+            cursor: pointer;
+            color: var(--text-muted);
+        }
+
+        .toast {
+            position: fixed;
+            bottom: 2rem;
+            right: 2rem;
+            background: white;
+            padding: 1rem 1.5rem;
+            border-radius: 8px;
+            box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.1);
+            border-left: 4px solid var(--accent);
+            display: none;
+            align-items: center;
+            gap: 1rem;
+            z-index: 2000;
+            min-width: 300px;
+        }
+
+        .toast.active {
+            display: flex;
+        }
+
+        .toast.success {
+            border-left-color: var(--success);
+        }
+
+        .toast.error {
+            border-left-color: var(--danger);
+        }
+    </style>
+</head>
+<body>
+    <!-- Header -->
+    <header class="page-header">
+        <div class="header-content">
+            <button class="back-btn" onclick="window.location.href='/dashboard.html'">
+                ← Back to Dashboard
+            </button>
+            <h1>Manage Images</h1>
+        </div>
+    </header>
+
+    <!-- Main Content -->
+    <main class="container" style="max-width: 1200px; margin: 2rem auto; padding: 0 1rem;">
+        <div class="help-text" style="background: #e0f2fe; padding: 1rem; border-radius: 8px; margin-bottom: 2rem;">
+            📸 <strong>Tip:</strong> Upload images with a better internet connection, or replace/add photos you couldn't upload on your phone.
+        </div>
+
+        <!-- Signup Images -->
+        <div class="image-category">
+            <div class="category-header">
+                <h2 class="category-title">
+                    <span>🚗</span> Signup Images (Vehicle & License)
+                </h2>
+            </div>
+            <div class="image-grid" id="signupImages"></div>
+        </div>
+
+        <!-- Incident Images -->
+        <div class="image-category">
+            <div class="category-header">
+                <h2 class="category-title">
+                    <span>📍</span> Location Map
+                </h2>
+            </div>
+            <div class="image-grid" id="locationImages"></div>
+        </div>
+
+        <div class="image-category">
+            <div class="category-header">
+                <h2 class="category-title">
+                    <span>📸</span> Scene Photos (Up to 3)
+                </h2>
+            </div>
+            <div class="image-grid" id="sceneImages"></div>
+        </div>
+
+        <div class="image-category">
+            <div class="category-header">
+                <h2 class="category-title">
+                    <span>💥</span> Vehicle Damage Photos (Up to 5)
+                </h2>
+            </div>
+            <div class="image-grid" id="damageImages"></div>
+        </div>
+
+        <div class="image-category">
+            <div class="category-header">
+                <h2 class="category-title">
+                    <span>🚙</span> Other Vehicle Photos (Up to 5)
+                </h2>
+            </div>
+            <div class="image-grid" id="otherVehicleImages"></div>
+        </div>
+    </main>
+
+    <!-- Upload Modal -->
+    <div id="uploadModal" class="modal">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h3 class="modal-title" id="modalTitle">Upload Image</h3>
+                <button class="modal-close" onclick="hideUploadModal()">×</button>
+            </div>
+            <div class="upload-zone" id="dropZone">
+                <div class="upload-icon">📤</div>
+                <div class="upload-text">Drag & drop or click to select</div>
+                <div class="upload-hint">Supports JPG, PNG (max 10MB)</div>
+                <input type="file" id="fileInput" accept="image/*">
+            </div>
+            <div id="uploadProgress" style="display: none; margin-top: 1rem;">
+                <div class="progress-bar">
+                    <div class="progress-fill" id="progressFill" style="width: 0%"></div>
+                </div>
+                <p style="text-align: center; margin-top: 0.5rem; color: var(--text-muted);" id="progressText">Uploading...</p>
+            </div>
+        </div>
+    </div>
+
+    <!-- Toast Notification -->
+    <div id="toast" class="toast">
+        <span id="toastIcon">✓</span>
+        <div id="toastMessage"></div>
+    </div>
+
+    <script>
+        let currentImageType = null;
+        let currentReplacingId = null;
+        let userImages = [];
+
+        const imageCategories = {
+            signup: {
+                types: ['driving_license_picture', 'vehicle_front_image', 'vehicle_driver_side_image', 'vehicle_passenger_side_image', 'vehicle_back_image'],
+                labels: ['Driving License', 'Vehicle Front', 'Vehicle Driver Side', 'Vehicle Passenger Side', 'Vehicle Back'],
+                category: 'user_signup'
+            },
+            location: {
+                types: ['location_map_screenshot'],
+                labels: ['Location Map'],
+                category: 'incident_report'
+            },
+            scene: {
+                types: ['scene_photo'],
+                labels: ['Scene Photo'],
+                category: 'incident_report',
+                max: 3
+            },
+            damage: {
+                types: ['vehicle_damage_photo'],
+                labels: ['Damage Photo'],
+                category: 'incident_report',
+                max: 5
+            },
+            otherVehicle: {
+                types: ['other_vehicle_photo'],
+                labels: ['Other Vehicle Photo'],
+                category: 'incident_report',
+                max: 5
+            }
+        };
+
+        // Load images on page load
+        async function loadImages() {
+            try {
+                const response = await fetch('/api/user-documents', {
+                    credentials: 'include'
+                });
+
+                if (!response.ok) {
+                    throw new Error('Failed to load images');
+                }
+
+                const data = await response.json();
+                userImages = data.documents || [];
+
+                renderAllCategories();
+            } catch (error) {
+                console.error('Error loading images:', error);
+                showToast('Failed to load images: ' + error.message, 'error');
+            }
+        }
+
+        function renderAllCategories() {
+            renderCategory('signup', 'signupImages');
+            renderCategory('location', 'locationImages');
+            renderCategory('scene', 'sceneImages');
+            renderCategory('damage', 'damageImages');
+            renderCategory('otherVehicle', 'otherVehicleImages');
+        }
+
+        function renderCategory(categoryKey, containerId) {
+            const category = imageCategories[categoryKey];
+            const container = document.getElementById(containerId);
+
+            let html = '';
+
+            if (category.max) {
+                // Multiple images (scene, damage, other vehicle)
+                const categoryImages = userImages.filter(img => category.types.includes(img.document_type));
+
+                for (let i = 0; i < category.max; i++) {
+                    const existingImage = categoryImages[i];
+                    html += renderImageCard(existingImage, category.types[0], `${category.labels[0]} ${i + 1}`, categoryKey);
+                }
+            } else {
+                // Single or fixed images (signup, location)
+                category.types.forEach((type, index) => {
+                    const existingImage = userImages.find(img => img.document_type === type);
+                    html += renderImageCard(existingImage, type, category.labels[index], categoryKey);
+                });
+            }
+
+            container.innerHTML = html;
+        }
+
+        function renderImageCard(image, documentType, label, categoryKey) {
+            const imageId = image?.id || '';
+            const hasImage = !!image;
+            const imageUrl = image?.signed_url || '';
+            const status = image?.status || 'empty';
+
+            return `
+                <div class="image-card">
+                    ${hasImage ?
+                        `<img src="${imageUrl}" class="image-preview" alt="${label}">` :
+                        `<div class="image-placeholder">📷</div>`
+                    }
+                    <div class="image-label">${label}</div>
+                    <div class="image-status">
+                        ${hasImage ?
+                            `<span style="color: var(--success);">✓ Uploaded</span>` :
+                            `<span style="color: var(--text-muted);">No image</span>`
+                        }
+                    </div>
+                    <div class="image-actions">
+                        ${hasImage ?
+                            `<button class="btn-small btn-replace" onclick="replaceImage('${imageId}', '${documentType}', '${categoryKey}')">Replace</button>
+                             <button class="btn-small btn-delete" onclick="deleteImage('${imageId}')">Delete</button>` :
+                            `<button class="btn-small btn-upload" onclick="uploadNewImage('${documentType}', '${categoryKey}')">Upload</button>`
+                        }
+                    </div>
+                </div>
+            `;
+        }
+
+        function uploadNewImage(documentType, categoryKey) {
+            currentImageType = documentType;
+            currentReplacingId = null;
+            document.getElementById('modalTitle').textContent = `Upload ${documentType.replace(/_/g, ' ')}`;
+            showUploadModal();
+        }
+
+        function replaceImage(imageId, documentType, categoryKey) {
+            currentImageType = documentType;
+            currentReplacingId = imageId;
+            document.getElementById('modalTitle').textContent = `Replace Image`;
+            showUploadModal();
+        }
+
+        async function deleteImage(imageId) {
+            if (!confirm('Are you sure you want to delete this image?')) return;
+
+            try {
+                const response = await fetch(`/api/user-documents/${imageId}`, {
+                    method: 'DELETE',
+                    credentials: 'include'
+                });
+
+                if (!response.ok) {
+                    throw new Error('Failed to delete image');
+                }
+
+                showToast('Image deleted successfully', 'success');
+                await loadImages(); // Reload images
+            } catch (error) {
+                console.error('Error deleting image:', error);
+                showToast('Failed to delete image: ' + error.message, 'error');
+            }
+        }
+
+        // File upload handling
+        const dropZone = document.getElementById('dropZone');
+        const fileInput = document.getElementById('fileInput');
+
+        dropZone.addEventListener('click', () => fileInput.click());
+
+        dropZone.addEventListener('dragover', (e) => {
+            e.preventDefault();
+            dropZone.classList.add('drag-over');
+        });
+
+        dropZone.addEventListener('dragleave', () => {
+            dropZone.classList.remove('drag-over');
+        });
+
+        dropZone.addEventListener('drop', (e) => {
+            e.preventDefault();
+            dropZone.classList.remove('drag-over');
+
+            const files = e.dataTransfer.files;
+            if (files.length > 0) {
+                handleFileUpload(files[0]);
+            }
+        });
+
+        fileInput.addEventListener('change', (e) => {
+            if (e.target.files.length > 0) {
+                handleFileUpload(e.target.files[0]);
+            }
+        });
+
+        async function handleFileUpload(file) {
+            // Validate file
+            if (!file.type.startsWith('image/')) {
+                showToast('Please select an image file', 'error');
+                return;
+            }
+
+            if (file.size > 10 * 1024 * 1024) {
+                showToast('File size must be under 10MB', 'error');
+                return;
+            }
+
+            try {
+                // Show progress
+                document.getElementById('uploadProgress').style.display = 'block';
+                document.getElementById('progressFill').style.width = '0%';
+                document.getElementById('progressText').textContent = 'Uploading...';
+
+                // Create form data
+                const formData = new FormData();
+                formData.append('file', file);
+                formData.append('document_type', currentImageType);
+                if (currentReplacingId) {
+                    formData.append('replacing_id', currentReplacingId);
+                }
+
+                // Upload
+                const response = await fetch('/api/images/dashboard-upload', {
+                    method: 'POST',
+                    credentials: 'include',
+                    body: formData
+                });
+
+                if (!response.ok) {
+                    const error = await response.json();
+                    throw new Error(error.error || 'Upload failed');
+                }
+
+                document.getElementById('progressFill').style.width = '100%';
+                document.getElementById('progressText').textContent = 'Upload complete!';
+
+                showToast('Image uploaded successfully!', 'success');
+                hideUploadModal();
+
+                // Reload images
+                await loadImages();
+
+            } catch (error) {
+                console.error('Upload error:', error);
+                showToast('Upload failed: ' + error.message, 'error');
+                document.getElementById('uploadProgress').style.display = 'none';
+            }
+        }
+
+        function showUploadModal() {
+            document.getElementById('uploadModal').classList.add('active');
+            fileInput.value = '';
+            document.getElementById('uploadProgress').style.display = 'none';
+        }
+
+        function hideUploadModal() {
+            document.getElementById('uploadModal').classList.remove('active');
+        }
+
+        function showToast(message, type = 'success') {
+            const toast = document.getElementById('toast');
+            const icon = document.getElementById('toastIcon');
+            const messageEl = document.getElementById('toastMessage');
+
+            icon.textContent = type === 'success' ? '✓' : '✕';
+            messageEl.textContent = message;
+            toast.className = 'toast active ' + type;
+
+            setTimeout(() => {
+                toast.classList.remove('active');
+            }, 5000);
+        }
+
+        // Initialize
+        loadImages();
+    </script>
+</body>
+</html>

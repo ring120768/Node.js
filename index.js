@@ -37,6 +37,40 @@ console.log(`🔧 [PID:${process.pid}] Starting from: ${__filename}`);
 // Environment validation
 require('dotenv').config();
 
+// TEMPORARY: Override credentials from .env file
+const fs = require('fs');
+const path = require('path');
+const envPath = path.join(__dirname, '.env');
+if (fs.existsSync(envPath)) {
+  const envContent = fs.readFileSync(envPath, 'utf8');
+
+  // Load OpenAI API key (rotated)
+  const openaiMatch = envContent.match(/OPENAI_API_KEY=(.+)/);
+  if (openaiMatch && openaiMatch[1]) {
+    process.env.OPENAI_API_KEY = openaiMatch[1].trim();
+    console.log('✅ Loaded updated OpenAI API key from .env');
+  }
+
+  // Load Supabase credentials (if missing from Replit Secrets)
+  const supabaseUrlMatch = envContent.match(/SUPABASE_URL=(.+)/);
+  if (supabaseUrlMatch && supabaseUrlMatch[1]) {
+    process.env.SUPABASE_URL = supabaseUrlMatch[1].trim();
+  }
+
+  const supabaseKeyMatch = envContent.match(/SUPABASE_SERVICE_ROLE_KEY=(.+)/);
+  if (supabaseKeyMatch && supabaseKeyMatch[1]) {
+    process.env.SUPABASE_SERVICE_ROLE_KEY = supabaseKeyMatch[1].trim();
+    console.log('✅ Loaded Supabase credentials from .env');
+  }
+
+  // Load PORT override
+  const portMatch = envContent.match(/PORT=(.+)/);
+  if (portMatch && portMatch[1]) {
+    process.env.PORT = portMatch[1].trim();
+    console.log(`✅ Loaded PORT from .env: ${process.env.PORT}`);
+  }
+}
+
 // ==================== PORT DISCIPLINE ====================
 
 const PORT = Number(process.env.PORT) || 5000;
@@ -149,8 +183,7 @@ function displayStartupBanner() {
   const services = {
     supabase: !!(config.supabase.url && config.supabase.serviceKey && config.supabase.anonKey),
     openai: !!(config.openai.enabled && config.openai.apiKey),
-    github_webhook: !!process.env.GITHUB_WEBHOOK_SECRET,
-    typeform_webhook: !!process.env.WEBHOOK_API_KEY
+    github_webhook: !!process.env.GITHUB_WEBHOOK_SECRET
   };
 
   const urls = process.env.REPL_SLUG && process.env.REPL_OWNER
@@ -166,7 +199,6 @@ function displayStartupBanner() {
   logger.info(`   ${services.supabase ? '✅' : '❌'} Supabase Database`);
   logger.info(`   ${services.openai ? '✅' : '❌'} OpenAI API`);
   logger.info(`   ${services.github_webhook ? '✅' : '❌'} GitHub Webhooks`);
-  logger.info(`   ${services.typeform_webhook ? '✅' : '❌'} Typeform/Zapier Webhooks`);
   logger.info('\n⚡ System Ready!');
   logger.info('='.repeat(60) + '\n');
 }

@@ -11,7 +11,7 @@ You asked: *"is it possible for us to automatically fill the placeholders in the
 ## Summary of Changes
 
 ### 1. PDF Template Copied to Project
-**Location:** `/pdf-templates/Car-Crash-Lawyer-AI-Incident-Report.pdf`
+**Location:** `/pdf-templates/Car-Crash-Lawyer-AI-incident-report-main.pdf`
 
 Your professionally designed 17-page legal document is now part of your project.
 
@@ -329,7 +329,7 @@ The system has built-in reliability:
 |------|------|---------|
 | **Service** | `/src/services/adobePdfFormFillerService.js` | Main form filling service |
 | **Controller** | `/src/controllers/pdf.controller.js` | PDF generation endpoint |
-| **Template** | `/pdf-templates/Car-Crash-Lawyer-AI-Incident-Report.pdf` | Your legal PDF template |
+| **Template** | `/pdf-templates/Car-Crash-Lawyer-AI-incident-report-main.pdf` | Your legal PDF template |
 | **Test Script** | `/test-form-filling.js` | Test form filling |
 | **Credentials** | `/credentials/pdfservices-api-credentials.json` | Adobe credentials (not in Git) |
 
@@ -383,7 +383,7 @@ Adobe PDF filling failed, falling back to legacy method
 ```
 ❌ Template file not found
 ```
-**Solution:** Verify `/pdf-templates/Car-Crash-Lawyer-AI-Incident-Report.pdf` exists
+**Solution:** Verify `/pdf-templates/Car-Crash-Lawyer-AI-incident-report-main.pdf` exists
 
 **Issue:** User not found
 ```
@@ -441,6 +441,34 @@ POST /api/pdf/generate
 
 ---
 
+## Recent Updates (2025-10-28)
+
+### Security Wall Implementation (Phase 1)
+
+**What was added:**
+- Server-side page authentication middleware (`src/middleware/pageAuth.js`)
+- Protected pages: `dashboard.html`, `transcription-status.html`, `incident.html`
+- Session validation happens before HTML is served
+- Cannot be bypassed by modifying JavaScript
+
+**Why this matters:**
+- Sensitive user data protected at server level
+- Authentication verified using Supabase Auth API
+- Proper 401 responses for unauthorized access
+- Works even if JavaScript is disabled
+
+**Testing:**
+```bash
+node test-security-wall.js
+```
+
+**Documentation:**
+- See `README.md#security-architecture` for overview
+- See `ARCHITECTURE.md#page-authentication` for technical details
+- See `CLAUDE.md#page-protection-pattern` for implementation guide
+
+---
+
 ## 🎉 Congratulations!
 
 You've successfully replaced your Zapier + PDFco workflow with a direct Adobe integration!
@@ -455,5 +483,5 @@ Your 17-page legal document is now automatically filled with data from Supabase,
 
 ---
 
-**Last Updated:** 2025-10-18
-**Version:** 1.0
+**Last Updated:** 2025-10-28
+**Version:** 2.1.0

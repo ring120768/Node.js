@@ -1,0 +1,335 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Page 7 Debug Tool</title>
+  <style>
+    body {
+      font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+      max-width: 1200px;
+      margin: 40px auto;
+      padding: 20px;
+      background: #f5f5f5;
+    }
+    .debug-panel {
+      background: white;
+      border-radius: 8px;
+      padding: 24px;
+      margin-bottom: 20px;
+      box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+    }
+    h1 {
+      color: #0E7490;
+      margin-top: 0;
+    }
+    h2 {
+      color: #333;
+      border-bottom: 2px solid #0E7490;
+      padding-bottom: 8px;
+    }
+    .status {
+      display: inline-block;
+      padding: 4px 12px;
+      border-radius: 4px;
+      font-weight: 600;
+      margin-left: 12px;
+    }
+    .status.ok {
+      background: #10b981;
+      color: white;
+    }
+    .status.error {
+      background: #ef4444;
+      color: white;
+    }
+    .status.warning {
+      background: #f59e0b;
+      color: white;
+    }
+    pre {
+      background: #f8f9fa;
+      border: 1px solid #dee2e6;
+      border-radius: 4px;
+      padding: 16px;
+      overflow-x: auto;
+      font-size: 13px;
+    }
+    button {
+      background: #0E7490;
+      color: white;
+      border: none;
+      padding: 12px 24px;
+      border-radius: 6px;
+      cursor: pointer;
+      font-size: 14px;
+      font-weight: 600;
+      margin-right: 12px;
+      margin-bottom: 12px;
+    }
+    button:hover {
+      background: #0c6179;
+    }
+    .field-list {
+      display: grid;
+      grid-template-columns: repeat(auto-fill, minmax(250px, 1fr));
+      gap: 12px;
+      margin-top: 12px;
+    }
+    .field-item {
+      background: #f8f9fa;
+      padding: 12px;
+      border-radius: 4px;
+      border-left: 3px solid #ccc;
+    }
+    .field-item.has-data {
+      border-left-color: #10b981;
+    }
+    .field-item.no-data {
+      border-left-color: #ef4444;
+    }
+    .field-name {
+      font-weight: 600;
+      color: #333;
+      margin-bottom: 4px;
+    }
+    .field-value {
+      color: #666;
+      font-size: 13px;
+      word-break: break-all;
+    }
+  </style>
+</head>
+<body>
+  <h1>🔍 Page 7 Debugging Tool</h1>
+
+  <div class="debug-panel">
+    <h2>1. SessionStorage Check</h2>
+    <button onclick="checkSessionStorage()">Check SessionStorage</button>
+    <button onclick="clearSessionStorage()">Clear All SessionStorage</button>
+    <div id="session-storage-result"></div>
+  </div>
+
+  <div class="debug-panel">
+    <h2>2. Page 7 Data Inspection</h2>
+    <button onclick="inspectPage7Data()">Inspect Page 7 Data</button>
+    <div id="page7-data-result"></div>
+  </div>
+
+  <div class="debug-panel">
+    <h2>3. Form Submission Test</h2>
+    <p>This simulates what page 12 does when collecting all page data.</p>
+    <button onclick="testFormCollection()">Simulate Form Collection</button>
+    <div id="form-collection-result"></div>
+  </div>
+
+  <div class="debug-panel">
+    <h2>4. Database Check</h2>
+    <p>Enter your user ID to check database records:</p>
+    <input type="text" id="user-id" placeholder="User UUID" style="width: 300px; padding: 8px; margin-right: 12px; border: 1px solid #ccc; border-radius: 4px;">
+    <button onclick="checkDatabase()">Check Database</button>
+    <div id="database-result"></div>
+  </div>
+
+  <div class="debug-panel">
+    <h2>5. Recommendations</h2>
+    <div id="recommendations"></div>
+  </div>
+
+  <script>
+    // 1. Check SessionStorage
+    function checkSessionStorage() {
+      const result = document.getElementById('session-storage-result');
+      const keys = Object.keys(sessionStorage);
+
+      let html = '<h3>SessionStorage Keys Found:</h3>';
+      html += `<p>Total keys: ${keys.length}</p>`;
+
+      if (keys.length === 0) {
+        html += '<p class="status error">No sessionStorage data found!</p>';
+      } else {
+        html += '<ul>';
+        keys.forEach(key => {
+          const value = sessionStorage.getItem(key);
+          const size = new Blob([value]).size;
+          html += `<li><strong>${key}</strong> (${size} bytes)</li>`;
+        });
+        html += '</ul>';
+      }
+
+      result.innerHTML = html;
+    }
+
+    function clearSessionStorage() {
+      if (confirm('This will clear ALL sessionStorage data. Continue?')) {
+        sessionStorage.clear();
+        alert('✅ SessionStorage cleared!');
+        checkSessionStorage();
+      }
+    }
+
+    // 2. Inspect Page 7 Data
+    function inspectPage7Data() {
+      const result = document.getElementById('page7-data-result');
+      const page7Data = sessionStorage.getItem('incident_page7');
+
+      let html = '<h3>Page 7 Data:</h3>';
+
+      if (!page7Data) {
+        html += '<p class="status error">No page 7 data found in sessionStorage!</p>';
+        html += '<p>Possible causes:</p>';
+        html += '<ul>';
+        html += '<li>Page 7 was skipped using "Skip This Section" button</li>';
+        html += '<li>Form was not submitted (Next button not clicked)</li>';
+        html += '<li>JavaScript error occurred during save</li>';
+        html += '<li>Browser cleared sessionStorage</li>';
+        html += '</ul>';
+      } else {
+        try {
+          const data = JSON.parse(page7Data);
+          const fields = [
+            'other_full_name',
+            'other_contact_number',
+            'other_email_address',
+            'other_driving_license_number',
+            'other_vehicle_registration',
+            'other_drivers_insurance_company',
+            'other_drivers_policy_number',
+            'other_drivers_policy_holder_name',
+            'other_drivers_policy_cover_type',
+            'describe_damage_to_vehicle',
+            'no_visible_damage'
+          ];
+
+          let populatedCount = 0;
+          html += '<div class="field-list">';
+
+          // Check for skip flag
+          if (data.no_other_vehicles) {
+            html += '<p class="status warning">⚠️ Page 7 was SKIPPED (no_other_vehicles = true)</p>';
+          }
+
+          fields.forEach(field => {
+            const value = data[field];
+            const hasData = value !== null && value !== undefined && value !== '';
+            if (hasData) populatedCount++;
+
+            html += `<div class="field-item ${hasData ? 'has-data' : 'no-data'}">`;
+            html += `<div class="field-name">${field}</div>`;
+            html += `<div class="field-value">${hasData ? (typeof value === 'boolean' ? value.toString() : value) : '(empty)'}</div>`;
+            html += '</div>';
+          });
+
+          html += '</div>';
+          html += `<p><strong>Summary:</strong> ${populatedCount}/${fields.length} fields populated</p>`;
+
+          // Show raw data
+          html += '<h4>Raw Data:</h4>';
+          html += `<pre>${JSON.stringify(data, null, 2)}</pre>`;
+
+        } catch (e) {
+          html += `<p class="status error">Error parsing page 7 data: ${e.message}</p>`;
+        }
+      }
+
+      result.innerHTML = html;
+    }
+
+    // 3. Test Form Collection
+    function testFormCollection() {
+      const result = document.getElementById('form-collection-result');
+
+      let html = '<h3>Form Collection Test (Page 12 Simulation):</h3>';
+
+      // This is what page 12 does
+      const formData = {};
+      for (let i = 1; i <= 12; i++) {
+        const pageData = sessionStorage.getItem(`incident_page${i}`);
+        if (pageData) {
+          formData[`page${i}`] = JSON.parse(pageData);
+        }
+      }
+
+      html += `<p>Pages collected: ${Object.keys(formData).length}/12</p>`;
+
+      if (formData.page7) {
+        html += '<p class="status ok">✅ Page 7 data WILL be included in submission!</p>';
+        html += `<pre>${JSON.stringify(formData.page7, null, 2)}</pre>`;
+      } else {
+        html += '<p class="status error">❌ Page 7 data NOT found - will NOT be submitted!</p>';
+      }
+
+      result.innerHTML = html;
+    }
+
+    // 4. Check Database
+    async function checkDatabase() {
+      const userId = document.getElementById('user-id').value.trim();
+      const result = document.getElementById('database-result');
+
+      if (!userId) {
+        alert('Please enter a user UUID');
+        return;
+      }
+
+      result.innerHTML = '<p>Checking database... (This requires the verification script to be run separately)</p>';
+      result.innerHTML += `<p>Run this command in terminal:</p>`;
+      result.innerHTML += `<pre>node scripts/verify-pages-7-9-data.js ${userId}</pre>`;
+      result.innerHTML += `<p>Or test just page 7 mappings:</p>`;
+      result.innerHTML += `<pre>node scripts/test-field-mappings.js ${userId}</pre>`;
+    }
+
+    // 5. Generate Recommendations
+    function generateRecommendations() {
+      const recommendations = document.getElementById('recommendations');
+      const page7Data = sessionStorage.getItem('incident_page7');
+
+      let html = '<h3>Recommended Actions:</h3>';
+      html += '<ol>';
+
+      if (!page7Data) {
+        html += '<li class="status error">Page 7 data is missing from sessionStorage</li>';
+        html += '<ul>';
+        html += '<li>Go to <a href="/incident-form-page7-other-vehicle.html">Page 7</a> and fill out the form</li>';
+        html += '<li>Click "Next" to save the data (don\'t click "Skip This Section")</li>';
+        html += '<li>Return here and run "Inspect Page 7 Data" again</li>';
+        html += '</ul>';
+      } else {
+        const data = JSON.parse(page7Data);
+        if (data.no_other_vehicles) {
+          html += '<li class="status warning">Page 7 was intentionally skipped</li>';
+          html += '<ul>';
+          html += '<li>If other vehicles WERE involved, go back to Page 7 and fill out the form</li>';
+          html += '<li>If no other vehicles were involved, this is correct behavior</li>';
+          html += '</ul>';
+        } else {
+          html += '<li class="status ok">Page 7 data exists in sessionStorage</li>';
+          html += '<ul>';
+          html += '<li>Complete the remaining pages of the form</li>';
+          html += '<li>On Page 12, click "Submit Incident Report"</li>';
+          html += '<li>After submission, use the database check scripts to verify data was saved</li>';
+          html += '</ul>';
+        }
+      }
+
+      html += '<li>If page 7 data is in sessionStorage but NOT in database after submission:</li>';
+      html += '<ul>';
+      html += '<li>Check browser console (F12) for JavaScript errors during submission</li>';
+      html += '<li>Check network tab (F12) to see if /api/incident-form/submit request succeeded</li>';
+      html += '<li>Check server logs for any errors during processing</li>';
+      html += '</ul>';
+
+      html += '</ol>';
+
+      recommendations.innerHTML = html;
+    }
+
+    // Auto-run checks on load
+    window.addEventListener('load', () => {
+      checkSessionStorage();
+      inspectPage7Data();
+      generateRecommendations();
+    });
+  </script>
+</body>
+</html>

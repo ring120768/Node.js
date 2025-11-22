@@ -41,14 +41,40 @@ async function getEmergencyContact(req, res) {
 
     logger.info('Fetching emergency contact', { userId });
 
+    // DEBUG: Log query details before execution
+    logger.info('About to execute Supabase query', {
+      userId,
+      table: 'user_signup',
+      columns: 'emergency_contact, name, surname',
+      filter: 'create_user_id'
+    });
+
     const { data, error } = await supabase
       .from('user_signup')
-      .select('emergency_contact_number, emergency_contact, first_name, last_name')
+      .select('emergency_contact, name, surname')
       .eq('create_user_id', userId)
       .single();
 
+    // DEBUG: Log query results
+    logger.info('Supabase query completed', {
+      userId,
+      hasData: !!data,
+      hasError: !!error,
+      errorDetails: error ? JSON.stringify(error) : 'none',
+      dataKeys: data ? Object.keys(data) : 'none',
+      dataValues: data ? JSON.stringify(data) : 'none'
+    });
+
     if (error) {
       logger.error('Error fetching emergency contact:', error);
+      // DEBUG: Log detailed error structure
+      logger.error('Full error object:', {
+        code: error.code,
+        message: error.message,
+        details: error.details,
+        hint: error.hint,
+        fullError: JSON.stringify(error)
+      });
       return sendError(res, 404, 'User not found', 'USER_NOT_FOUND');
     }
 
@@ -57,8 +83,8 @@ async function getEmergencyContact(req, res) {
     }
 
     // Parse emergency_contact if it's in pipe-delimited format
-    let contactNumber = data.emergency_contact_number;
-    if (!contactNumber && data.emergency_contact) {
+    let contactNumber = null;
+    if (data.emergency_contact) {
       // Parse pipe-delimited format: "Name | Phone | Email | Company"
       if (data.emergency_contact.includes('|')) {
         const parts = data.emergency_contact.split('|').map(part => part.trim());
@@ -68,7 +94,7 @@ async function getEmergencyContact(req, res) {
       }
     }
 
-    const userName = `${data.first_name || ''} ${data.last_name || ''}`.trim() || 'User';
+    const userName = `${data.name || ''} ${data.surname || ''}`.trim() || 'User';
 
     await gdprService.logActivity(userId, 'EMERGENCY_CONTACT_ACCESSED', {
       has_contact: !!contactNumber,
@@ -136,7 +162,7 @@ async function updateEmergencyContact(req, res) {
     const { data, error } = await supabase
       .from('user_signup')
       .update({
-        emergency_contact_number: emergencyContact,
+        emergency_contact: emergencyContact,
         updated_at: new Date().toISOString()
       })
       .eq('create_user_id', userId)
@@ -208,7 +234,7 @@ async function getEmergencyContacts(req, res) {
 
     const { data, error } = await supabase
       .from('user_signup')
-      .select('emergency_contact, emergency_contact_number, recovery_breakdown_number')
+      .select('emergency_contact, recovery_breakdown_number')
       .eq('create_user_id', userId)
       .single();
 
@@ -218,8 +244,8 @@ async function getEmergencyContacts(req, res) {
     }
 
     // Parse emergency_contact if it's in pipe-delimited format
-    let emergencyContactNumber = data.emergency_contact_number;
-    if (!emergencyContactNumber && data.emergency_contact) {
+    let emergencyContactNumber = null;
+    if (data.emergency_contact) {
       emergencyContactNumber = parseEmergencyContact(data.emergency_contact);
       logger.info('Parsed emergency contact from pipe-delimited format', {
         original: data.emergency_contact,
@@ -289,9 +315,162 @@ async function logEmergencyCall(req, res) {
   }
 }
 
+/**
+ * Save Emergency Audio Recording (AI Eavesdropper)
+ * POST /api/emergency/audio
+ * Body: { userId, incidentId, audioFile, transcriptionText, recordedAt }
+ */
+async function saveEmergencyAudio(req, res) {
+  if (!supabase) {
+    return sendError(res, 503, 'Service not configured', 'SERVICE_UNAVAILABLE');
+  }
+
+  try {
+    const { userId, incidentId, audioUrl, transcriptionText, recordedAt } = req.body;
+
+    if (!userId) {
+      return sendError(res, 400, 'User ID required', 'MISSING_USER_ID');
+    }
+
+    if (!transcriptionText) {
+      return sendError(res, 400, 'Transcription text required', 'MISSING_TRANSCRIPTION');
+    }
+
+    logger.info('Saving emergency audio recording', {
+      userId,
+      incidentId,
+      hasTranscription: !!transcriptionText,
+      recordedAt
+    });
+
+    // Save to ai_listening_transcripts table
+    const { data, error } = await supabase
+      .from('ai_listening_transcripts')
+      .insert({
+        create_user_id: userId,
+        incident_id: incidentId || null,
+        audio_url: audioUrl || null,
+        transcription_text: transcriptionText,
+        recorded_at: recordedAt || new Date().toISOString(),
+        created_at: new Date().toISOString(),
+        updated_at: new Date().toISOString()
+      })
+      .select()
+      .single();
+
+    if (error) {
+      logger.error('Failed to save emergency audio', error);
+      return sendError(res, 500, 'Failed to save emergency recording', 'SAVE_FAILED');
+    }
+
+    // Log GDPR activity
+    await gdprService.logActivity(userId, 'EMERGENCY_AUDIO_SAVED', {
+      recording_id: data.id,
+      incident_id: incidentId,
+      has_audio_file: !!audioUrl
+    }, req);
+
+    logger.success('Emergency audio saved successfully', {
+      recordingId: data.id,
+      userId
+    });
+
+    res.json({
+      success: true,
+      message: 'Emergency recording saved successfully',
+      recordingId: data.id,
+      timestamp: new Date().toISOString(),
+      requestId: req.requestId
+    });
+
+  } catch (error) {
+    logger.error('Error saving emergency audio', error);
+    sendError(res, 500, 'Failed to save emergency recording', 'INTERNAL_ERROR');
+  }
+}
+
+/**
+ * Get Emergency Audio Recordings
+ * GET /api/emergency/audio/:userId
+ */
+async function getEmergencyAudio(req, res) {
+  if (!supabase) {
+    return sendError(res, 503, 'Service not configured', 'SERVICE_UNAVAILABLE');
+  }
+
+  try {
+    const { userId } = req.params;
+    const { incidentId } = req.query;
+
+    const validation = validateUserId(userId);
+    if (!validation.valid) {
+      return sendError(res, 400, validation.error, 'INVALID_USER_ID');
+    }
+
+    logger.info('Fetching emergency audio recordings', { userId, incidentId });
+
+    let query = supabase
+      .from('ai_listening_transcripts')
+      .select('*')
+      .eq('create_user_id', userId)
+      .order('recorded_at', { ascending: false });
+
+    // Filter by incident if provided
+    if (incidentId) {
+      query = query.eq('incident_id', incidentId);
+    }
+
+    const { data, error } = await query;
+
+    if (error) {
+      logger.error('Error fetching emergency audio', error);
+      return sendError(res, 500, 'Failed to fetch recordings', 'FETCH_FAILED');
+    }
+
+    // Generate fresh signed URLs for audio files
+    const recordingsWithUrls = await Promise.all(
+      (data || []).map(async (recording) => {
+        if (recording.audio_storage_path) {
+          const { data: signedData, error: signedError } = await supabase.storage
+            .from('incident-audio')
+            .createSignedUrl(recording.audio_storage_path, 31536000); // 365 days
+
+          if (signedData && !signedError) {
+            recording.audio_url = signedData.signedUrl;
+          }
+        }
+        return recording;
+      })
+    );
+
+    await gdprService.logActivity(userId, 'EMERGENCY_AUDIO_ACCESSED', {
+      count: recordingsWithUrls.length,
+      incident_id: incidentId
+    }, req);
+
+    logger.info('Emergency audio recordings retrieved', {
+      userId,
+      count: recordingsWithUrls.length
+    });
+
+    res.json({
+      success: true,
+      recordings: recordingsWithUrls,
+      count: recordingsWithUrls.length,
+      requestId: req.requestId
+    });
+
+  } catch (error) {
+    logger.error('Error in get emergency audio endpoint', error);
+    sendError(res, 500, 'Failed to fetch recordings', 'INTERNAL_ERROR');
+  }
+}
+
 module.exports = {
   getEmergencyContact,
   updateEmergencyContact,
   getEmergencyContacts,
-  logEmergencyCall
+  logEmergencyCall,
+  saveEmergencyAudio,
+  getEmergencyAudio
 };

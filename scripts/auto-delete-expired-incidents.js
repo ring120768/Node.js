@@ -79,13 +79,13 @@ async function deleteExpiredIncidents() {
       // Get user info for notification email
       const { data: user, error: userError } = await supabase
         .from('user_signup')
-        .select('email, first_name, last_name, subscription_end_date')
+        .select('email, name, surname, subscription_end_date')
         .eq('auth_user_id', incident.create_user_id)
         .single();
 
       if (!userError && user) {
-        const userName = user.first_name
-          ? `${user.first_name} ${user.last_name || ''}`.trim()
+        const userName = user.name
+          ? `${user.name} ${user.surname || ''}`.trim()
           : user.email.split('@')[0];
 
         // Send deletion confirmation email

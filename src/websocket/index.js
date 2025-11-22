@@ -358,6 +358,54 @@ function setTranscriptionStatus(queueId, status) {
 }
 
 /**
+ * Broadcast image processing update to user
+ * @param {string} userId - User ID
+ * @param {Object} data - Image processing data
+ */
+function broadcastImageProcessingUpdate(userId, data) {
+  const message = {
+    type: data.type || config.constants.WS_MESSAGE_TYPES.IMAGE_PROCESSED,
+    timestamp: new Date().toISOString(),
+    ...data
+  };
+
+  broadcastToUser(userId, message);
+  logger.debug('Broadcasted image processing update', { userId, documentId: data.documentId });
+}
+
+/**
+ * Broadcast PDF generation update to user
+ * @param {string} userId - User ID
+ * @param {Object} data - PDF generation data
+ */
+function broadcastPDFGenerationUpdate(userId, data) {
+  const message = {
+    type: data.type || config.constants.WS_MESSAGE_TYPES.PDF_GENERATED,
+    timestamp: new Date().toISOString(),
+    ...data
+  };
+
+  broadcastToUser(userId, message);
+  logger.debug('Broadcasted PDF generation update', { userId, reportId: data.reportId });
+}
+
+/**
+ * Broadcast generic status update to user
+ * @param {string} userId - User ID
+ * @param {Object} data - Status update data
+ */
+function broadcastStatusUpdate(userId, data) {
+  const message = {
+    type: config.constants.WS_MESSAGE_TYPES.STATUS_UPDATE,
+    timestamp: new Date().toISOString(),
+    ...data
+  };
+
+  broadcastToUser(userId, message);
+  logger.debug('Broadcasted status update', { userId, updateType: data.updateType });
+}
+
+/**
  * Get WebSocket server stats
  */
 function getWebSocketStats() {
@@ -405,6 +453,9 @@ module.exports = {
   handleRealtimeSummaryUpdate,
   getTranscriptionStatus,
   setTranscriptionStatus,
+  broadcastImageProcessingUpdate,
+  broadcastPDFGenerationUpdate,
+  broadcastStatusUpdate,
   getWebSocketStats,
   closeWebSocket
 };

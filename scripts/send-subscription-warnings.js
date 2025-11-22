@@ -85,8 +85,8 @@ async function send30DayRenewalWarnings() {
       id,
       auth_user_id,
       email,
-      first_name,
-      last_name,
+      name,
+      surname,
       subscription_start_date,
       subscription_end_date,
       subscription_status,
@@ -118,8 +118,8 @@ async function send30DayRenewalWarnings() {
       continue;
     }
 
-    const userName = subscription.first_name
-      ? `${subscription.first_name} ${subscription.last_name || ''}`.trim()
+    const userName = subscription.name
+      ? `${subscription.name} ${subscription.surname || ''}`.trim()
       : subscription.email.split('@')[0];
 
     // Calculate renewal amount (default £99, can be customized)

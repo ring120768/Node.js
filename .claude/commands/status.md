@@ -15,7 +15,7 @@ Run comprehensive checks on all services and integrations.
 
 2. **Check Adobe PDF Services**
    - Check if credentials exist: `ls -la credentials/pdfservices-api-credentials.json`
-   - Check if template exists: `ls -la pdf-templates/Car-Crash-Lawyer-AI-Incident-Report.pdf`
+   - Check if template exists: `ls -la pdf-templates/Car-Crash-Lawyer-AI-incident-report-main.pdf`
    - Test if service is ready: `node -e "console.log('Adobe Ready:', require('./src/services/adobePdfFormFillerService').isReady())"`
 
 3. **Check Supabase Connection**

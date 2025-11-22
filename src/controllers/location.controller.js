@@ -52,6 +52,34 @@ async function convertToWhat3Words(req, res) {
         data.error?.message || 'Failed to convert coordinates');
     }
 
+    // Fetch detailed address from OpenStreetMap Nominatim (reverse geocoding)
+    let addressDetails = {};
+    try {
+      const nominatimUrl = `https://nominatim.openstreetmap.org/reverse?format=json&lat=${latitude}&lon=${longitude}&addressdetails=1`;
+      const nominatimResponse = await axios.get(nominatimUrl, {
+        timeout: 5000,
+        headers: {
+          'User-Agent': 'CarCrashLawyerAI/1.0' // Required by Nominatim
+        }
+      });
+
+      if (nominatimResponse.data && nominatimResponse.data.address) {
+        const addr = nominatimResponse.data.address;
+        addressDetails = {
+          road: addr.road || null,
+          houseNumber: addr.house_number || null,
+          suburb: addr.suburb || addr.neighbourhood || null,
+          city: addr.city || addr.town || addr.village || null,
+          county: addr.county || null,
+          postcode: addr.postcode || null,
+          displayName: nominatimResponse.data.display_name || null
+        };
+      }
+    } catch (geocodeError) {
+      // Non-critical error - continue without detailed address
+      logger.warn('Nominatim geocoding failed:', geocodeError.message);
+    }
+
     res.json({
       success: true,
       words: data.words,
@@ -62,7 +90,8 @@ async function convertToWhat3Words(req, res) {
       nearestPlace: data.nearestPlace || null,
       country: data.country || null,
       language: data.language || 'en',
-      map: data.map || null,
+      // Include detailed address from reverse geocoding
+      address: addressDetails,
       requestId: req.requestId
     });
   } catch (error) {
@@ -295,6 +324,34 @@ async function convertToWhat3WordsPost(req, res) {
 
     logger.success('what3words conversion successful', { words: data.words });
 
+    // Fetch detailed address from OpenStreetMap Nominatim (reverse geocoding)
+    let addressDetails = {};
+    try {
+      const nominatimUrl = `https://nominatim.openstreetmap.org/reverse?format=json&lat=${lat}&lon=${lng}&addressdetails=1`;
+      const nominatimResponse = await axios.get(nominatimUrl, {
+        timeout: 5000,
+        headers: {
+          'User-Agent': 'CarCrashLawyerAI/1.0' // Required by Nominatim
+        }
+      });
+
+      if (nominatimResponse.data && nominatimResponse.data.address) {
+        const addr = nominatimResponse.data.address;
+        addressDetails = {
+          road: addr.road || null,
+          houseNumber: addr.house_number || null,
+          suburb: addr.suburb || addr.neighbourhood || null,
+          city: addr.city || addr.town || addr.village || null,
+          county: addr.county || null,
+          postcode: addr.postcode || null,
+          displayName: nominatimResponse.data.display_name || null
+        };
+      }
+    } catch (geocodeError) {
+      // Non-critical error - continue without detailed address
+      logger.warn('Nominatim geocoding failed:', geocodeError.message);
+    }
+
     res.json({
       success: true,
       words: data.words,
@@ -305,6 +362,8 @@ async function convertToWhat3WordsPost(req, res) {
       nearestPlace: data.nearestPlace || null,
       country: data.country || null,
       language: data.language || 'en',
+      // Include detailed address from reverse geocoding
+      address: addressDetails,
       requestId: req.requestId
     });
   } catch (error) {

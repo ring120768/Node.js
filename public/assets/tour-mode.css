@@ -1,0 +1,172 @@
+/**
+ * Tour Mode - Hands-Free Demo System
+ * Brand-safe, accessible spotlight tour with auto-playing cursor and captions
+ * Version: 1.0.0
+ */
+
+/* ============================================
+   CSS VARIABLES - Theme here
+   ============================================ */
+:root {
+  --tour-overlay-bg: rgba(0, 0, 0, 0.55);
+  --tour-caption-bg: #ffffff;
+  --tour-caption-fg: #111111;
+  --tour-shadow: 0 10px 30px rgba(0, 0, 0, 0.2);
+  --tour-font: system-ui, -apple-system, Segoe UI, Roboto, Ubuntu, sans-serif;
+  --tour-radius: 12px;
+  --tour-cursor-color: #0E7490; /* Deep teal from design system */
+  --tour-cursor-ring: rgba(14, 116, 144, 0.3);
+}
+
+/* ============================================
+   OVERLAY - Spotlight effect
+   ============================================ */
+.tour-overlay {
+  position: fixed;
+  top: 0;
+  left: 0;
+  width: 100vw;
+  height: 100vh;
+  background: var(--tour-overlay-bg);
+  z-index: 9998;
+  pointer-events: none;
+  /* Spotlight via clip-path - will be updated by JS */
+  clip-path: circle(0px at 50% 50%);
+  transition: clip-path 0.8s cubic-bezier(0.4, 0.0, 0.2, 1);
+}
+
+/* Reduced motion: instant transitions */
+@media (prefers-reduced-motion: reduce) {
+  .tour-overlay {
+    transition: clip-path 0.2s linear;
+  }
+}
+
+/* ============================================
+   CAPTION - Dialog card
+   ============================================ */
+.tour-caption {
+  position: fixed;
+  background: var(--tour-caption-bg);
+  color: var(--tour-caption-fg);
+  padding: 16px 20px;
+  border-radius: var(--tour-radius);
+  box-shadow: var(--tour-shadow);
+  font-family: var(--tour-font);
+  font-size: 16px;
+  line-height: 1.5;
+  max-width: 320px;
+  z-index: 9999;
+  opacity: 0;
+  transform: translateY(10px);
+  transition: opacity 0.4s ease, transform 0.4s ease;
+  pointer-events: none;
+}
+
+.tour-caption.visible {
+  opacity: 1;
+  transform: translateY(0);
+}
+
+/* End message styling */
+.tour-caption.end-message {
+  left: 50%;
+  top: 50%;
+  transform: translate(-50%, -50%);
+  max-width: 400px;
+  text-align: center;
+  font-size: 18px;
+  font-weight: 500;
+  padding: 24px 32px;
+}
+
+.tour-caption.end-message.visible {
+  transform: translate(-50%, -50%);
+}
+
+/* Mobile responsive */
+@media (max-width: 640px) {
+  .tour-caption {
+    max-width: 280px;
+    font-size: 14px;
+    padding: 12px 16px;
+  }
+
+  .tour-caption.end-message {
+    max-width: 90%;
+    font-size: 16px;
+    padding: 20px 24px;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .tour-caption {
+    transition: opacity 0.2s linear;
+  }
+}
+
+/* ============================================
+   CURSOR - Fake animated cursor
+   ============================================ */
+.tour-cursor {
+  position: fixed;
+  width: 20px;
+  height: 20px;
+  background: var(--tour-cursor-color);
+  border-radius: 50%;
+  z-index: 10000;
+  pointer-events: none;
+  opacity: 0;
+  box-shadow: 0 0 0 0 var(--tour-cursor-ring);
+  transition: left 0.8s cubic-bezier(0.4, 0.0, 0.2, 1),
+              top 0.8s cubic-bezier(0.4, 0.0, 0.2, 1),
+              opacity 0.3s ease;
+}
+
+.tour-cursor.visible {
+  opacity: 1;
+}
+
+/* Pulse animation on arrival */
+.tour-cursor.pulse {
+  animation: tour-cursor-pulse 0.6s ease-out;
+}
+
+@keyframes tour-cursor-pulse {
+  0% {
+    box-shadow: 0 0 0 0 var(--tour-cursor-ring);
+  }
+  50% {
+    box-shadow: 0 0 0 20px rgba(14, 116, 144, 0);
+  }
+  100% {
+    box-shadow: 0 0 0 0 rgba(14, 116, 144, 0);
+  }
+}
+
+/* Reduced motion: disable cursor movement animation */
+@media (prefers-reduced-motion: reduce) {
+  .tour-cursor {
+    transition: opacity 0.2s linear;
+    animation: none !important;
+  }
+
+  .tour-cursor.pulse {
+    animation: none;
+  }
+}
+
+/* ============================================
+   UTILITY CLASSES
+   ============================================ */
+.tour-hidden {
+  display: none !important;
+}
+
+/* Ensure tour elements are above everything */
+.tour-overlay,
+.tour-caption,
+.tour-cursor {
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+}

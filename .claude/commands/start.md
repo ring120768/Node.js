@@ -29,7 +29,7 @@ You are working on **Car Crash Lawyer AI** - a Node.js web application that help
 **Adobe PDF Integration:**
 - Check if credentials exist: `ls -la credentials/`
 - Service file: `src/services/adobePdfFormFillerService.js`
-- Template: `pdf-templates/Car-Crash-Lawyer-AI-Incident-Report.pdf`
+- Template: `pdf-templates/Car-Crash-Lawyer-AI-incident-report-main.pdf`
 - Status: Run `node -e "console.log(require('./src/services/adobePdfFormFillerService').isReady())"`
 
 **Supabase Connection:**
