@@ -32,7 +32,24 @@ node test-what3words.js                 # Test what3words API integration
 # Field Validation & Reconciliation
 node scripts/verify-field-mappings.js   # Validate PDF→DB mappings
 node scripts/reconcile-all-tables.js    # Check data integrity
+
+# Storage & Photo Testing
+node check-storage-contents.js          # Verify Supabase Storage
+node check-orphaned-files.js            # Find orphaned uploads
+node verify-finalized-photos.js         # Verify photo persistence
+node check-user-documents-records.js    # Check document records
+
+# Page-Specific Debugging
+node debug-page5.html                   # Debug specific form pages
+node debug-page7.html
 ```
+
+**Note:** Several bash commands are auto-approved and don't require confirmation:
+- `node test-form-filling.js` - These are whitelisted in the permissions
+- `git` commands (status, commit, reset with specific patterns)
+- `node -e` for quick checks
+
+See `README.md` for initial setup instructions and environment configuration.
 
 ---
 
@@ -83,13 +100,14 @@ User authentication happens on **Page 1**, NOT at the end of signup.
 Page 1: signup-auth.html
   → POST /auth/signup (creates Supabase Auth user)
   → Sets cookies: access_token, refresh_token
-  → User is AUTHENTICATED for Pages 2-9
+  → User is AUTHENTICATED for Pages 2-12
 
-Pages 2-9: signup-form.html
+Pages 2-12: incident-form-page1.html through page12.html
+  → 12 separate pages for comprehensive incident details
   → Images upload immediately: POST /api/images/temp-upload
   → Stored in temp_uploads table (24hr expiry)
 
-Page 9: Final Submission
+Page 12: Final Submission
   → POST /api/signup/submit
   → Moves temp files to permanent storage
 ```
@@ -249,6 +267,65 @@ if (!config.what3words.apiKey) {
 
 ---
 
+### 9. AI Analysis Integration (Pages 13-18)
+
+**Recent Addition (Nov 2025):** PDF now includes AI-powered legal analysis and transcription summary.
+
+```javascript
+// AI analysis flow for PDF Pages 13-18
+Pages 13-14: AI Incident Analysis
+  → Automatic generation via OpenAI GPT-4
+  → Legal-grade analysis with factual, sincere tone
+  → Stored in incident_reports (ai_* fields)
+
+Page 15: Emergency Audio Transcription
+  → OpenAI Whisper API transcription
+  → Personal statement from user
+  → Stored in ai_transcription table
+
+Pages 16-17: Evidence URLs & DVLA Reports
+  → Image URLs from Supabase Storage
+  → Auto-fit font sizing for long URLs
+  → DVLA vehicle information if available
+
+Page 18: Comprehensive AI Analysis
+  → Closing statement format
+  → Liability assessment
+  → Evidence summary
+  → Legal recommendations
+```
+
+**Key Fields Added to `incident_reports`:**
+```sql
+-- AI Analysis fields (added Nov 2025 via migration 027)
+ai_incident_summary TEXT
+ai_liability_assessment TEXT
+ai_vehicle_damage_analysis TEXT
+ai_injury_assessment TEXT
+ai_witness_credibility TEXT
+ai_evidence_quality TEXT
+ai_recommendations TEXT
+ai_closing_statement TEXT
+```
+
+**Pattern:** Single API call generates all AI analysis sections, stored directly in `incident_reports` table (simplified architecture).
+
+**Critical Implementation Details:**
+- ✅ GPT-4 generates factual, sincere assessments (no "courtroom theatrics")
+- ✅ Auto-fit font sizing for AI-generated long-form text
+- ✅ Simplified schema: AI fields in main table, not separate junction table
+- ✅ Emergency audio transcription integrated on Page 15
+
+**Migration:** `migrations/027_add_ai_analysis_fields.sql`
+
+**Documentation:**
+- `ARCHITECTURAL_PLAN_PAGES_13-18.md` - Complete architectural design
+- `PAGES_13-18_IMPLEMENTATION_SUMMARY.md` - Implementation status
+
+**Test:** Test AI analysis generation as part of complete PDF generation flow
+
+---
+
 ## High-Level Request Flow
 
 ```
@@ -302,19 +379,20 @@ await supabase
 | Table | Purpose | Primary Key | Critical Fields |
 |-------|---------|-------------|-----------------|
 | `user_signup` | Personal info, vehicle, insurance | `create_user_id` (UUID) | `email`, `gdpr_consent` |
-| `incident_reports` | Accident details (160+ columns) | `id` | `create_user_id` (indexed) |
+| `incident_reports` | Accident details (170+ columns including AI fields) | `id` | `create_user_id` (indexed), `ai_*` fields |
 | `incident_other_vehicles` | Other vehicles involved (65+ columns) | `id` | `create_user_id`, `vehicle_index` |
 | `incident_witnesses` | Witness information (30+ columns) | `id` | `create_user_id`, `witness_index` |
 | `user_documents` | Images, processing status | `id` | `status`, `retry_count`, `public_url` |
 | `temp_uploads` | Temporary uploads (24hr expiry) | `id` | `session_id`, `created_at` |
 | `ai_transcription` | OpenAI Whisper transcripts | `id` | `create_user_id`, `transcript_text` |
 
-### Recent Schema Changes (2025-10-30 to 2025-11-03)
+### Recent Schema Changes (2025-10-30 to 2025-11-20)
 
-**Migration context:** Transitioning from Typeform (160+ fields) to in-house HTML forms (99+ fields).
+**Migration context:** Transitioning from Typeform (160+ fields) to in-house HTML forms (99+ fields), plus AI analysis integration.
 
 **Major additions:**
 - 64 new fields across multiple tables for medical details, safety conditions, legal declarations
+- 8 AI analysis fields for GPT-4 generated legal assessments (Nov 2025)
 - TEXT[] array columns for multi-select checkboxes (medical symptoms, weather conditions, road features)
 - New tables: `incident_other_vehicles`, `incident_witnesses` (normalized from incident_reports)
 
@@ -322,6 +400,7 @@ await supabase
 - `001_add_new_pdf_fields.sql` - Added 25 single-value columns
 - `002_add_missing_ui_fields.sql` - Added medical/safety arrays
 - `006_add_page_four_columns.sql` - Added vehicle damage/conditions columns
+- `027_add_ai_analysis_fields.sql` - Added AI analysis fields for Pages 13-18
 - See `/migrations` folder for complete migration history with rollback scripts
 
 **Migration pattern:**
@@ -355,17 +434,18 @@ COMMIT;
 
 ```javascript
 // PDF field mapping follows this pattern:
-Page 1-12 → pdfFieldMapper.js → Database Tables
+Pages 1-18 → pdfFieldMapper.js → Database Tables
   ↓
 Supports:
 - Single-value fields (TEXT, DATE, BOOLEAN)
 - Array fields (TEXT[] for checkboxes)
 - Normalized tables (other_vehicles, witnesses)
 - Image references (Supabase Storage URLs)
+- AI-generated content (auto-fit font sizing)
 ```
 
 **Critical Tables:**
-- `incident_reports` - Main accident details (160+ columns including arrays)
+- `incident_reports` - Main accident details (170+ columns including arrays and AI fields)
 - `incident_other_vehicles` - Up to 5 other vehicles (65+ columns each)
 - `incident_witnesses` - Up to 3 witnesses (30+ columns each)
 
@@ -399,6 +479,17 @@ pdfFields['vehicle_damage_photo_1'] = signedUrl1;
 pdfFields['vehicle_damage_photo_2'] = signedUrl2;
 ```
 
+**AI Analysis Field Handling:**
+```javascript
+// AI-generated long-form text with auto-fit font sizing
+pdfFields['ai_incident_summary'] = incidentData.ai_incident_summary;
+pdfFields['ai_liability_assessment'] = incidentData.ai_liability_assessment;
+pdfFields['ai_closing_statement'] = incidentData.ai_closing_statement;
+
+// Auto-fit font sizing applied in PDF template for long text fields
+// URLs use font size 6-8 with multiline wrapping
+```
+
 **Validation:**
 ```bash
 # Test complete PDF generation pipeline
@@ -411,7 +502,7 @@ node scripts/verify-field-mappings.js
 node scripts/reconcile-all-tables.js
 ```
 
-**Master Documentation:** `MASTER_PDF_FIELD_MAPPING.csv` contains definitive PDF field → database column mappings for all 12 pages.
+**Master Documentation:** `MASTER_PDF_FIELD_MAPPING.csv` contains definitive PDF field → database column mappings for all 18 pages.
 
 ---
 
@@ -440,8 +531,11 @@ POST   /api/transcription/transcribe  → Upload audio (OpenAI Whisper)
 GET    /api/transcription/history     → Get transcription history
 GET    /api/transcription/:id         → Get specific transcription
 
+AI Analysis:
+POST   /api/ai/analyze-incident  → Generate AI analysis (GPT-4)
+
 PDF:
-POST   /api/pdf/generate         → Generate 17-page PDF report (150+ fields)
+POST   /api/pdf/generate         → Generate 18-page PDF report (170+ fields)
 
 Location:
 POST   /api/location/what3words  → Convert coordinates to words
@@ -473,7 +567,7 @@ POST   /webhooks/typeform        → Typeform submissions (signature verified)
 SUPABASE_URL=https://xxx.supabase.co
 SUPABASE_ANON_KEY=xxx                # Client-side auth
 SUPABASE_SERVICE_ROLE_KEY=xxx        # Server-side (bypasses RLS for webhooks)
-OPENAI_API_KEY=sk-xxx                # Transcription/summarization
+OPENAI_API_KEY=sk-xxx                # Transcription/summarization/AI analysis
 TYPEFORM_WEBHOOK_SECRET=xxx          # HMAC signature verification
 ```
 
@@ -663,11 +757,11 @@ index.js            # HTTP server + WebSocket initialization + graceful shutdown
 
 ## Design System & Branding
 
-### Color Palette (Pages 2-11)
+### Color Palette
 
 **Purpose**: Consistent, accessible color scheme optimized for users in stressful situations (accident victims).
 
-#### Primary Colors
+#### Primary Colors (Pages 2-11)
 
 | Color Name | Hex Code | Usage | CSS Variable |
 |------------|----------|-------|--------------|
@@ -676,7 +770,7 @@ index.js            # HTTP server + WebSocket initialization + graceful shutdown
 | **Warm Beige** | `#E8DCC4` | Page background | `--bg-light` |
 | **Dark Gray** | `#4B5563` | Borders, dividers | `--border` |
 
-#### Form Elements
+#### Form Elements (Pages 2-11)
 
 | Color Name | Hex Code | Usage | CSS Variable |
 |------------|----------|-------|--------------|
@@ -685,13 +779,20 @@ index.js            # HTTP server + WebSocket initialization + graceful shutdown
 | **Silver** | `#C0C0C0` | Button backgrounds | `--button-bg` |
 | **Silver Hover** | `#B0B0B0` | Button hover state | `--button-hover` |
 
-**IMPORTANT**: Pages 1 and 12 use a **different color scheme** (Blue `#2e6a9d` instead of Deep Teal) as a **deliberate design choice** for impact and attention. DO NOT change Page 1 or Page 12 colors to match Pages 2-11.
+#### Page-Specific Styling
+
+**IMPORTANT Color Scheme Variations:**
+- **Pages 1 & 12:** Blue (`#2e6a9d`) - Deliberate design choice for impact and attention
+- **Pages 2-11:** Deep Teal (`#0E7490`) - Consistent form styling
+- **Pages 13-18:** White background - Legal document format (PDF-embedded only, no HTML forms)
+
+**DO NOT** change Page 1 or Page 12 colors to match Pages 2-11, or Pages 13-18 styling. These are intentional design decisions.
 
 **Accessibility Rating**: 🏆 **A+ (92/100)** - WCAG 2.1 AA: 95% compliant, AAA: 70% compliant
 
 ---
 
-## Recent Work Context (2025-10-30 to 2025-11-16)
+## Recent Work Context (2025-10-30 to 2025-11-20)
 
 ### Field Reconciliation Project (Complete ✅)
 
@@ -727,7 +828,47 @@ node scripts/reconcile-all-tables.js     # Check data integrity
 - `lib/generators/pdfFieldMapper.js` - PDF mapping logic (Pages 1-12)
 - `migrations/` - 7-phase migration with rollback scripts
 
-**Next Phase:** Ready for production deployment with staged rollout strategy
+---
+
+### AI Analysis Integration (Complete ✅)
+
+**Goal:** Add OpenAI-powered legal document analysis for PDF Pages 13-18.
+
+**Status:** ✅ Integration complete, all AI fields operational
+
+**Implementation (Nov 2025):**
+1. **Architecture Redesign:** Simplified schema with AI fields directly in `incident_reports`
+2. **GPT-4 Integration:** Factual, sincere legal analysis (no "courtroom theatrics")
+3. **Emergency Transcription:** Whisper API transcription on Page 15
+4. **Auto-fit Fonts:** Dynamic font sizing for AI-generated long-form text
+5. **Evidence URLs:** Image references with multiline wrapping (Pages 16-17)
+
+**Critical Achievements:**
+- ✅ Single API call generates all AI analysis sections
+- ✅ Simplified database schema (8 AI fields in main table)
+- ✅ Auto-fit font sizing for long URLs and AI text
+- ✅ Emergency audio transcription integration
+- ✅ Legal-grade closing statement generation
+
+**Key Files:**
+- `ARCHITECTURAL_PLAN_PAGES_13-18.md` - Complete architectural design
+- `PAGES_13-18_IMPLEMENTATION_SUMMARY.md` - Implementation status
+- `migrations/027_add_ai_analysis_fields.sql` - AI field migration
+- `lib/generators/pdfFieldMapper.js` - Extended for Pages 13-18
+
+**AI Analysis Fields (8 total):**
+```sql
+ai_incident_summary          -- Overall incident summary
+ai_liability_assessment      -- Fault and liability analysis
+ai_vehicle_damage_analysis   -- Vehicle damage assessment
+ai_injury_assessment         -- Injury severity and causation
+ai_witness_credibility       -- Witness statement analysis
+ai_evidence_quality          -- Evidence strength evaluation
+ai_recommendations           -- Legal action recommendations
+ai_closing_statement         -- Comprehensive closing statement
+```
+
+**Next Phase:** Production deployment with AI analysis fully operational
 
 **Branch:** `feat/audit-prep`
 
@@ -749,7 +890,7 @@ node scripts/reconcile-all-tables.js     # Check data integrity
 
 ---
 
-**Last Updated:** 2025-11-18
+**Last Updated:** 2025-11-21
 **Version:** 2.0.1
 **Current Branch:** feat/audit-prep
 **Maintained By:** Claude Code
