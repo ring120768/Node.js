@@ -64,7 +64,7 @@ if (fs.existsSync(envPath)) {
   }
 
   // Load PORT override
-  const portMatch = envContent.match(/PORT=(.+)/);
+  const portMatch = envContent.match(/^PORT=(.+)/m);
   if (portMatch && portMatch[1]) {
     process.env.PORT = portMatch[1].trim();
     console.log(`✅ Loaded PORT from .env: ${process.env.PORT}`);
@@ -399,10 +399,10 @@ server.listen(PORT, HOST, (err) => {
     logger.error(`❌ [PID:${process.pid}] Failed to start server:`, err);
     process.exit(1);
   }
-  
+
   logger.success(`✅ [PID:${process.pid}] Server listening on ${HOST}:${PORT}`);
   logger.info(`🌐 Server accessible at: http://${HOST}:${PORT}`);
-  
+
   // Verify server is actually accessible
   const testUrl = `http://localhost:${PORT}/healthz`;
   setTimeout(async () => {
@@ -413,6 +413,6 @@ server.listen(PORT, HOST, (err) => {
       logger.warn(`⚠️ Health check failed: ${error.message}`);
     }
   }, 1000);
-  
+
   displayStartupBanner();
 });
