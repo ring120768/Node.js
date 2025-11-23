@@ -18,6 +18,7 @@
         <div class="demo-header">
             <h1>🚗 Car Crash Lawyer AI</h1>
             <p>Interactive Product Demo</p>
+            <a href="/index.html" class="home-button">← Return to Home</a>
         </div>
 
         <div class="demo-content">
@@ -35,16 +36,16 @@
                     <button class="start-button">Start Signup Tour</button>
                 </div>
 
-                <div class="tour-card" id="incidentTourCard">
-                    <h3>📝 Incident Report Tour</h3>
-                    <p>Discover our AI-powered incident reporting features</p>
+                <div class="tour-card" id="storylaneDemoCard">
+                    <h3>📝 Incident Report Demo</h3>
+                    <p>Experience our full incident reporting workflow</p>
                     <ul>
                         <li>What3Words location</li>
                         <li>AI photo analysis</li>
                         <li>Legal-grade PDFs</li>
-                        <li>90-day retention</li>
+                        <li>Interactive walkthrough</li>
                     </ul>
-                    <button class="start-button">Start Incident Tour</button>
+                    <button class="start-button">Launch Interactive Demo</button>
                 </div>
             </div>
 
@@ -277,14 +278,16 @@
         // CSP-compliant event listeners (no inline onclick handlers)
         document.addEventListener('DOMContentLoaded', () => {
             const signupCard = document.getElementById('signupTourCard');
-            const incidentCard = document.getElementById('incidentTourCard');
+            const storylaneCard = document.getElementById('storylaneDemoCard');
 
             if (signupCard) {
                 signupCard.addEventListener('click', startSignupTour);
             }
 
-            if (incidentCard) {
-                incidentCard.addEventListener('click', startIncidentTour);
+            if (storylaneCard) {
+                storylaneCard.addEventListener('click', () => {
+                    window.open('https://app.storylane.io/share/ubrqqcebbbbk', '_blank');
+                });
             }
         });
     </script>
