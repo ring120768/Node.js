@@ -222,6 +222,48 @@ nixPkgs = ["ca-certificates", "libX11", "libXcomposite"]
 nixPkgs = ["cacert", "xorg.libX11", "xorg.libXcomposite"]
 ```
 
+### Error: SSL Certificate Conflict (Duplicate Chromium)
+**Error Message:**
+```
+error: Unable to build profile. There is a conflict for the following files:
+         /nix/store/4cn5s8950q4ldkwmzs9cgyssp62lhf9m-nss-cacert-3.107/etc/ssl/certs/ca-no-trust-rules-bundle.crt
+         /nix/store/y2zh06pccwcvz43xwgd8mr8pbqflkqww-nss-cacert-3.107/etc/ssl/certs/ca-no-trust-rules-bundle.crt
+```
+
+**Root Cause:**
+- Railway auto-detects Puppeteer in `package.json` and installs Chromium via apt-get
+- This conflicts with our Nix-based Chromium installation
+- Both installations include `nss-cacert` package in different Nix store paths
+- Result: SSL certificate files appear twice, causing build failure
+
+**Evidence from Build Log:**
+```dockerfile
+RUN sudo apt-get update && sudo apt-get install -y --no-install-recommends \
+  libnss3 libatk1.0-0 libatk-bridge2.0-0 libcups2 libgbm1 libasound2t64 \
+  libpangocairo-1.0-0 libxss1 libgtk-3-0 libxshmfence1 libglu1 chromium
+```
+
+**Fix Applied:**
+Added `aptPkgs = []` to `nixpacks.toml` to disable apt provider:
+```toml
+[phases.setup]
+nixPkgs = [
+  "nodejs_18",
+  "chromium",
+  # ... other packages
+]
+
+# Disable apt packages to prevent Railway from auto-installing Chromium
+# We're handling all dependencies via Nix packages above
+aptPkgs = []
+```
+
+**Why This Works:**
+- Setting `aptPkgs = []` tells Nixpacks to skip the apt provider entirely
+- Railway will no longer auto-install Chromium via apt-get
+- Only one Chromium installation (via Nix) remains
+- No SSL certificate conflicts
+
 ### Error: "Cannot find module 'puppeteer'"
 **Fix:** Run `npm install` to add Puppeteer to `package.json` dependencies (already present)
 

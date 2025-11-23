@@ -38,6 +38,10 @@ nixPkgs = [
   "systemd"
 ]
 
+# Disable apt packages to prevent Railway from auto-installing Chromium
+# We're handling all dependencies via Nix packages above
+aptPkgs = []
+
 [phases.install]
 cmds = ["npm ci"]
 
