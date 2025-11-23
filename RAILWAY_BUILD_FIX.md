@@ -262,7 +262,48 @@ aptPkgs = []
 - Setting `aptPkgs = []` tells Nixpacks to skip the apt provider entirely
 - Railway will no longer auto-install Chromium via apt-get
 - Only one Chromium installation (via Nix) remains
-- No SSL certificate conflicts
+- Prevents duplicate package conflicts
+
+### Error: SSL Certificate Conflict (nss and cacert packages)
+**Error Message:**
+```
+error: Unable to build profile. There is a conflict for the following files:
+         /nix/store/4cn5s8950q4ldkwmzs9cgyssp62lhf9m-nss-cacert-3.107/etc/ssl/certs/ca-bundle.crt
+         /nix/store/y2zh06pccwcvz43xwgd8mr8pbqflkqww-nss-cacert-3.107/etc/ssl/certs/ca-bundle.crt
+```
+
+**Root Cause:**
+- After fixing duplicate Chromium installation, a new conflict emerged
+- Both `nss` and `cacert` packages in our nixPkgs list pull in `nss-cacert-3.107` as a transitive dependency
+- This creates TWO copies of `nss-cacert` in different Nix store paths:
+  - `/nix/store/4cn5s8950q4ldkwmzs9cgyssp62lhf9m-nss-cacert-3.107`
+  - `/nix/store/y2zh06pccwcvz43xwgd8mr8pbqflkqww-nss-cacert-3.107`
+- Nix cannot build the environment profile when multiple packages provide the same files
+- Result: SSL certificate bundles appear in duplicate paths, causing build failure
+
+**Fix Applied (commit 39c4bec):**
+Removed `cacert` from nixPkgs array since `nss` already provides SSL certificates:
+```toml
+# ❌ WRONG (causes conflict)
+nixPkgs = [
+  "nss",
+  "cacert",  # Both provide nss-cacert-3.107
+  ...
+]
+
+# ✅ CORRECT (nss provides SSL certs)
+nixPkgs = [
+  "nss",
+  # Removed "cacert" - nss already provides necessary SSL certificates
+  ...
+]
+```
+
+**Why This Works:**
+- `nss` package includes `nss-cacert` for SSL certificate verification
+- Chromium uses `nss` for network security, doesn't need separate `cacert`
+- Single source of SSL certificates eliminates path conflicts
+- Nix can successfully build the environment profile
 
 ### Error: "Cannot find module 'puppeteer'"
 **Fix:** Run `npm install` to add Puppeteer to `package.json` dependencies (already present)
