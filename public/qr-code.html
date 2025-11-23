@@ -1,0 +1,407 @@
+<!DOCTYPE html>
+<html lang="en-GB">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Car Crash Lawyer AI - QR Code</title>
+    <meta name="description" content="Scan the QR code to access Car Crash Lawyer AI instantly on your mobile device">
+    <link rel="icon" type="image/x-icon" href="/images/favicon.ico">
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif;
+            background: linear-gradient(135deg, #0E7490 0%, #0c6179 100%);
+            min-height: 100vh;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            padding: 20px;
+        }
+
+        .container {
+            background: white;
+            border-radius: 20px;
+            padding: 40px;
+            box-shadow: 0 20px 60px rgba(0, 0, 0, 0.3);
+            text-align: center;
+            max-width: 600px;
+            width: 100%;
+            animation: slideUp 0.5s ease-out;
+        }
+
+        @keyframes slideUp {
+            from {
+                opacity: 0;
+                transform: translateY(30px);
+            }
+            to {
+                opacity: 1;
+                transform: translateY(0);
+            }
+        }
+
+        .logo {
+            font-size: 48px;
+            margin-bottom: 10px;
+        }
+
+        h1 {
+            color: #0E7490;
+            margin-bottom: 10px;
+            font-size: 28px;
+            font-weight: 700;
+        }
+
+        .subtitle {
+            color: #4B5563;
+            margin-bottom: 30px;
+            font-size: 16px;
+            line-height: 1.5;
+        }
+
+        #qrCodeContainer {
+            margin: 30px 0;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            min-height: 350px;
+        }
+
+        #qrCode {
+            max-width: 320px;
+            width: 100%;
+            height: auto;
+            border: 4px solid #0E7490;
+            border-radius: 15px;
+            padding: 15px;
+            background: white;
+            box-shadow: 0 4px 12px rgba(14, 116, 144, 0.2);
+            transition: transform 0.3s ease, box-shadow 0.3s ease;
+        }
+
+        #qrCode:hover {
+            transform: scale(1.05);
+            box-shadow: 0 8px 24px rgba(14, 116, 144, 0.3);
+        }
+
+        .loading {
+            color: #0E7490;
+            font-size: 18px;
+            font-weight: 600;
+        }
+
+        .instructions {
+            background: #E8DCC4;
+            padding: 25px;
+            border-radius: 12px;
+            margin-top: 30px;
+            text-align: left;
+        }
+
+        .instructions h3 {
+            color: #0E7490;
+            margin-top: 0;
+            margin-bottom: 15px;
+            font-size: 20px;
+            font-weight: 700;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+
+        .instruction-item {
+            margin: 12px 0;
+            padding-left: 10px;
+            border-left: 3px solid #0E7490;
+        }
+
+        .instruction-item strong {
+            color: #0E7490;
+            display: block;
+            margin-bottom: 4px;
+        }
+
+        .instruction-item p {
+            color: #4B5563;
+            margin: 0;
+            font-size: 14px;
+            line-height: 1.5;
+        }
+
+        .button-group {
+            display: flex;
+            gap: 12px;
+            margin-top: 25px;
+            flex-wrap: wrap;
+            justify-content: center;
+        }
+
+        .btn {
+            padding: 14px 28px;
+            border-radius: 10px;
+            border: none;
+            font-size: 15px;
+            font-weight: 600;
+            cursor: pointer;
+            text-decoration: none;
+            display: inline-flex;
+            align-items: center;
+            gap: 8px;
+            transition: all 0.2s ease;
+            font-family: inherit;
+        }
+
+        .btn-primary {
+            background: #0E7490;
+            color: white;
+        }
+
+        .btn-primary:hover {
+            background: #0c6179;
+            transform: translateY(-2px);
+            box-shadow: 0 4px 12px rgba(14, 116, 144, 0.3);
+        }
+
+        .btn-secondary {
+            background: #C0C0C0;
+            color: #333;
+        }
+
+        .btn-secondary:hover {
+            background: #B0B0B0;
+            transform: translateY(-2px);
+            box-shadow: 0 4px 12px rgba(192, 192, 192, 0.3);
+        }
+
+        .btn-outline {
+            background: transparent;
+            color: #0E7490;
+            border: 2px solid #0E7490;
+        }
+
+        .btn-outline:hover {
+            background: #0E7490;
+            color: white;
+            transform: translateY(-2px);
+        }
+
+        .url-display {
+            background: #F5F1E8;
+            padding: 15px;
+            border-radius: 8px;
+            margin: 20px 0;
+            font-size: 14px;
+            color: #4B5563;
+            word-break: break-all;
+            font-family: 'Courier New', monospace;
+        }
+
+        .stats {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
+            gap: 15px;
+            margin-top: 20px;
+        }
+
+        .stat-card {
+            background: #F5F1E8;
+            padding: 15px;
+            border-radius: 8px;
+            text-align: center;
+        }
+
+        .stat-label {
+            font-size: 12px;
+            color: #4B5563;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+            margin-bottom: 5px;
+        }
+
+        .stat-value {
+            font-size: 18px;
+            font-weight: 700;
+            color: #0E7490;
+        }
+
+        @media (max-width: 600px) {
+            .container {
+                padding: 30px 20px;
+            }
+
+            h1 {
+                font-size: 24px;
+            }
+
+            .logo {
+                font-size: 40px;
+            }
+
+            #qrCode {
+                max-width: 280px;
+            }
+
+            .button-group {
+                flex-direction: column;
+            }
+
+            .btn {
+                width: 100%;
+                justify-content: center;
+            }
+        }
+
+        .error {
+            color: #dc2626;
+            background: #fee;
+            padding: 15px;
+            border-radius: 8px;
+            margin: 20px 0;
+            border-left: 4px solid #dc2626;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="logo">🚗</div>
+        <h1>Car Crash Lawyer AI</h1>
+        <p class="subtitle">Scan the QR code to access the app instantly on your mobile device</p>
+
+        <div id="qrCodeContainer">
+            <div class="loading">Generating QR code...</div>
+        </div>
+
+        <div id="urlDisplay" class="url-display" style="display: none;"></div>
+
+        <div class="button-group">
+            <a href="/api/qr/app?download=true" class="btn btn-primary" download>
+                📥 Download PNG
+            </a>
+            <a href="/api/qr/app?format=svg&download=true" class="btn btn-secondary" download>
+                📥 Download SVG
+            </a>
+            <button id="copyUrlBtn" class="btn btn-outline" style="display: none;">
+                📋 Copy URL
+            </button>
+        </div>
+
+        <div class="stats" id="stats" style="display: none;">
+            <div class="stat-card">
+                <div class="stat-label">Format</div>
+                <div class="stat-value">PNG</div>
+            </div>
+            <div class="stat-card">
+                <div class="stat-label">Size</div>
+                <div class="stat-value" id="qrSize">300x300</div>
+            </div>
+            <div class="stat-card">
+                <div class="stat-label">Error Correction</div>
+                <div class="stat-value">High (30%)</div>
+            </div>
+        </div>
+
+        <div class="instructions">
+            <h3>📱 How to Use This QR Code</h3>
+
+            <div class="instruction-item">
+                <strong>For Mobile Users:</strong>
+                <p>Open your phone's camera app and point it at the QR code. A notification will appear – tap it to open Car Crash Lawyer AI instantly.</p>
+            </div>
+
+            <div class="instruction-item">
+                <strong>For Marketing Materials:</strong>
+                <p>Download the QR code and add it to flyers, business cards, posters, or vehicle signage. Perfect for roadside assistance or legal offices.</p>
+            </div>
+
+            <div class="instruction-item">
+                <strong>For Print Media:</strong>
+                <p>Use the SVG format for print materials to ensure the highest quality at any size. PNG is perfect for digital displays and websites.</p>
+            </div>
+
+            <div class="instruction-item">
+                <strong>For Social Sharing:</strong>
+                <p>Download and share on social media, WhatsApp, or email. Makes it easy for accident victims to access legal help immediately.</p>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // Load QR code
+        const qrImage = new Image();
+        const container = document.getElementById('qrCodeContainer');
+        const urlDisplay = document.getElementById('urlDisplay');
+        const copyBtn = document.getElementById('copyUrlBtn');
+        const statsDiv = document.getElementById('stats');
+
+        qrImage.id = 'qrCode';
+        qrImage.alt = 'Car Crash Lawyer AI QR Code';
+
+        qrImage.onload = () => {
+            container.innerHTML = '';
+            container.appendChild(qrImage);
+            statsDiv.style.display = 'grid';
+            fetchAppInfo();
+        };
+
+        qrImage.onerror = () => {
+            container.innerHTML = '<div class="error">❌ Failed to load QR code. Please refresh the page or contact support.</div>';
+        };
+
+        qrImage.src = '/api/qr/app';
+
+        // Fetch app URL info
+        async function fetchAppInfo() {
+            try {
+                const response = await fetch('/api/qr/info');
+                const data = await response.json();
+
+                if (data.success) {
+                    urlDisplay.textContent = data.url;
+                    urlDisplay.style.display = 'block';
+                    copyBtn.style.display = 'inline-flex';
+
+                    // Store URL for copying
+                    copyBtn.dataset.url = data.url;
+                }
+            } catch (error) {
+                console.error('Failed to fetch app info:', error);
+            }
+        }
+
+        // Copy URL to clipboard
+        copyBtn.addEventListener('click', async () => {
+            const url = copyBtn.dataset.url;
+            try {
+                await navigator.clipboard.writeText(url);
+                const originalText = copyBtn.innerHTML;
+                copyBtn.innerHTML = '✅ Copied!';
+                copyBtn.style.background = '#27ae60';
+                copyBtn.style.color = 'white';
+                copyBtn.style.borderColor = '#27ae60';
+
+                setTimeout(() => {
+                    copyBtn.innerHTML = originalText;
+                    copyBtn.style.background = '';
+                    copyBtn.style.color = '';
+                    copyBtn.style.borderColor = '';
+                }, 2000);
+            } catch (error) {
+                alert('Failed to copy URL. Please copy it manually from below.');
+            }
+        });
+
+        // Keyboard shortcut: Ctrl/Cmd + K to copy URL
+        document.addEventListener('keydown', (e) => {
+            if ((e.ctrlKey || e.metaKey) && e.key === 'k') {
+                e.preventDefault();
+                copyBtn.click();
+            }
+        });
+    </script>
+</body>
+</html>

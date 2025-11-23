@@ -36,6 +36,7 @@ const incidentFormRoutes = require('./incidentForm.routes'); // NEW: Multi-page 
 
 // GitHub webhooks are mounted in app.js via webhook.routes.js (not imported here)
 const locationRoutes = require('./location.routes');
+const qrRoutes = require('./qr'); // NEW: QR code generation for app
 const debugRoutes = require('./debug.routes');
 const healthRoutes = require('./health.routes');
 
@@ -341,6 +342,7 @@ router.use('/api/incident-form', incidentFormRoutes); // NEW: Multi-page inciden
 // Note: Webhook routes are mounted directly in app.js for raw body handling
 // GitHub webhooks are mounted in app.js via webhook.routes.js (not here)
 router.use('/api/location', locationRoutes);
+router.use('/api/qr', qrRoutes); // NEW: QR code generation for app (public access)
 router.use('/api/debug', debugRoutes);
 
 // ==================== LEGACY REDIRECTS ====================
