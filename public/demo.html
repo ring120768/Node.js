@@ -1,6 +1,6 @@
-
 <!DOCTYPE html>
 <html lang="en">
+
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
@@ -9,7 +9,7 @@
     <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
 
     <!-- Driver.js for Interactive Tour -->
-    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/driver.js@1.3.1/dist/driver.css"/>
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/driver.js@1.3.1/dist/driver.css" />
 
     <style>
         body {
@@ -17,75 +17,89 @@
             background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
             min-height: 100vh;
         }
-        .glass-effect { 
-            background: rgba(255,255,255,0.25); 
-            backdrop-filter: blur(10px); 
-            border-radius: 16px; 
-            border: 1px solid rgba(255,255,255,0.18);
+
+        .glass-effect {
+            background: rgba(255, 255, 255, 0.25);
+            backdrop-filter: blur(10px);
+            border-radius: 16px;
+            border: 1px solid rgba(255, 255, 255, 0.18);
         }
-        .location-container { 
-            background: rgba(255,255,255,0.95); 
-            border-radius: 12px; 
-            padding: 20px; 
-            margin: 20px 0; 
-            box-shadow: 0 8px 32px rgba(0,0,0,0.1);
+
+        .location-container {
+            background: rgba(255, 255, 255, 0.95);
+            border-radius: 12px;
+            padding: 20px;
+            margin: 20px 0;
+            box-shadow: 0 8px 32px rgba(0, 0, 0, 0.1);
         }
-        #map { 
-            height: 300px; 
-            width: 100%; 
-            border-radius: 8px; 
-            margin: 15px 0; 
+
+        #map {
+            height: 300px;
+            width: 100%;
+            border-radius: 8px;
+            margin: 15px 0;
         }
-        .what3words-display { 
-            background: #e74c3c; 
-            color: white; 
-            padding: 15px; 
-            border-radius: 8px; 
-            text-align: center; 
-            font-size: 24px; 
-            font-weight: bold; 
-            margin: 15px 0; 
+
+        .what3words-display {
+            background: #e74c3c;
+            color: white;
+            padding: 15px;
+            border-radius: 8px;
+            text-align: center;
+            font-size: 24px;
+            font-weight: bold;
+            margin: 15px 0;
             box-shadow: 0 4px 15px rgba(231, 76, 60, 0.3);
         }
-        .location-accuracy { 
-            background: #27ae60; 
-            color: white; 
-            padding: 10px; 
-            border-radius: 6px; 
-            font-size: 14px; 
-            margin: 10px 0; 
+
+        .location-accuracy {
+            background: #27ae60;
+            color: white;
+            padding: 10px;
+            border-radius: 6px;
+            font-size: 14px;
+            margin: 10px 0;
         }
-        .btn-findme { 
-            background: #3498db; 
-            color: white; 
-            padding: 16px 40px; 
-            border: none; 
-            border-radius: 12px; 
-            font-size: 1.4rem; 
-            font-weight: bold; 
-            cursor: pointer; 
-            box-shadow: 0 4px 15px rgba(52,152,219,0.3);
+
+        .btn-findme {
+            background: #3498db;
+            color: white;
+            padding: 16px 40px;
+            border: none;
+            border-radius: 12px;
+            font-size: 1.4rem;
+            font-weight: bold;
+            cursor: pointer;
+            box-shadow: 0 4px 15px rgba(52, 152, 219, 0.3);
             transition: all 0.3s ease;
             min-width: 200px;
         }
-        .btn-findme:hover { 
-            background: #2980b9; 
+
+        .btn-findme:hover {
+            background: #2980b9;
             transform: translateY(-2px);
-            box-shadow: 0 6px 20px rgba(52,152,219,0.4);
+            box-shadow: 0 6px 20px rgba(52, 152, 219, 0.4);
         }
-        .loading-spinner { 
-            display: none; 
-            width: 20px; 
-            height: 20px; 
-            border: 2px solid #f3f3f3; 
-            border-top: 2px solid #3498db; 
-            border-radius: 50%; 
-            animation: spin 1s linear infinite; 
+
+        .loading-spinner {
+            display: none;
+            width: 20px;
+            height: 20px;
+            border: 2px solid #f3f3f3;
+            border-top: 2px solid #3498db;
+            border-radius: 50%;
+            animation: spin 1s linear infinite;
             margin: 0 auto;
         }
-        @keyframes spin { 
-            0% { transform: rotate(0deg);} 
-            100% { transform: rotate(360deg);} 
+
+        @keyframes spin {
+            0% {
+                transform: rotate(0deg);
+            }
+
+            100% {
+                transform: rotate(360deg);
+            }
         }
 
         /* Navigation Bar */
@@ -133,11 +147,11 @@
 
         /* Typeform container */
         .typeform-container {
-            background: rgba(255,255,255,0.95);
+            background: rgba(255, 255, 255, 0.95);
             border-radius: 12px;
             padding: 20px;
             margin: 20px 0;
-            box-shadow: 0 8px 32px rgba(0,0,0,0.1);
+            box-shadow: 0 8px 32px rgba(0, 0, 0, 0.1);
         }
 
         .typeform-container iframe {
@@ -147,7 +161,9 @@
             border-radius: 8px;
         }
 
-        .hide { display: none; }
+        .hide {
+            display: none;
+        }
 
         /* Custom Driver.js Styling */
         .driver-popover {
@@ -222,8 +238,15 @@
         }
 
         @keyframes pulse {
-            0%, 100% { transform: scale(1); }
-            50% { transform: scale(1.05); }
+
+            0%,
+            100% {
+                transform: scale(1);
+            }
+
+            50% {
+                transform: scale(1.05);
+            }
         }
 
         .tour-btn:hover {
@@ -231,7 +254,9 @@
             transform: translateY(-1px) !important;
         }
     </style>
-    <link rel="stylesheet" href="/css/mascot.css"></head>
+    <link rel="stylesheet" href="/css/mascot.css">
+</head>
+
 <body class="min-h-screen">
     <!-- Navigation Bar -->
     <div class="nav">
@@ -265,10 +290,11 @@
                     </button>
                 </div>
 
-                <!-- Continue to Demo Form Button -->
+                <!-- Continue to Interactive Demo Button -->
                 <div>
-                    <button id="continueToFormBtn" class="btn-findme" style="background: #27ae60;" onmouseover="this.style.background='#229954'" onmouseout="this.style.background='#27ae60'">
-                        📝 Continue to Demo Form
+                    <button id="continueToFormBtn" class="btn-findme" style="background: #27ae60;"
+                        onmouseover="this.style.background='#229954'" onmouseout="this.style.background='#27ae60'">
+                        🎯 Start Interactive Demo
                     </button>
                 </div>
             </div>
@@ -280,9 +306,11 @@
             <div class="loading-spinner" id="loadingSpinner"></div>
             <div id="locationInfo" style="display: none;">
                 <!-- Address Display - Moved above map header -->
-                <div class="mt-4 mb-4" style="background: #f8f9fa; padding: 15px; border-radius: 8px; border-left: 4px solid #3498db;">
+                <div class="mt-4 mb-4"
+                    style="background: #f8f9fa; padding: 15px; border-radius: 8px; border-left: 4px solid #3498db;">
                     <label class="block text-lg font-bold text-gray-800 mb-2">📍 Full Address:</label>
-                    <input type="text" id="fullAddress" class="w-full px-3 py-3 border border-gray-300 rounded-md text-lg font-medium" readonly>
+                    <input type="text" id="fullAddress"
+                        class="w-full px-3 py-3 border border-gray-300 rounded-md text-lg font-medium" readonly>
                 </div>
 
                 <div id="what3wordsDisplay" class="what3words-display">
@@ -296,11 +324,13 @@
                 <div class="grid grid-cols-1 md:grid-cols-2 gap-4 mt-4">
                     <div>
                         <label class="block text-sm font-medium text-gray-700 mb-1">Latitude:</label>
-                        <input type="text" id="latitude" class="w-full px-3 py-2 border border-gray-300 rounded-md" readonly>
+                        <input type="text" id="latitude" class="w-full px-3 py-2 border border-gray-300 rounded-md"
+                            readonly>
                     </div>
                     <div>
                         <label class="block text-sm font-medium text-gray-700 mb-1">Longitude:</label>
-                        <input type="text" id="longitude" class="w-full px-3 py-2 border border-gray-300 rounded-md" readonly>
+                        <input type="text" id="longitude" class="w-full px-3 py-2 border border-gray-300 rounded-md"
+                            readonly>
                     </div>
                 </div>
             </div>
@@ -320,7 +350,7 @@
     <script>
         let map, marker, accuracyCircle, userLocation = null;
 
-        document.getElementById('findMeBtn').onclick = function() {
+        document.getElementById('findMeBtn').onclick = function () {
             const loading = document.getElementById('loadingSpinner');
             const locationContainer = document.getElementById('locationContainer');
             const locationInfo = document.getElementById('locationInfo');
@@ -405,44 +435,16 @@
             }, { enableHighAccuracy: true, timeout: 10000, maximumAge: 300000 });
         };
 
-        // Open Typeform with location data
+        // Redirect to Interactive Demo Tour (replaces Typeform)
         function showTypeform() {
-            // Get location data if available
-            const lat = document.getElementById('latitude')?.value || '';
-            const lng = document.getElementById('longitude')?.value || '';
-            const address = document.getElementById('fullAddress')?.value || '';
-            const what3words = document.getElementById('what3wordsText')?.textContent || '';
-
-            // Build typeform URL with demo parameters - CHANGED TO NEW FORM
-            let typeformUrl = 'https://form.typeform.com/to/XMBB3Xhq';
-            const params = new URLSearchParams();
-
-            // Add demo identifier
-            params.append('demo', 'true');
-
-            if (lat && lng) {
-                params.append('latitude', lat);
-                params.append('longitude', lng);
-            }
-            if (address && address !== 'Demo address location') {
-                params.append('address', encodeURIComponent(address));
-            }
-            if (what3words && what3words !== '///loading.location.words' && what3words !== '///demo.location.example') {
-                params.append('what3words', encodeURIComponent(what3words));
-            }
-
-            if (params.toString()) {
-                typeformUrl += '?' + params.toString();
-            }
-
-            // Open typeform in new window
-            console.log('Opening demo Typeform:', typeformUrl);
-            window.open(typeformUrl, '_blank');
+            // Redirect to the new interactive demo tour page
+            console.log('Redirecting to interactive demo tour');
+            window.location.href = '/demo-tour.html';
         }
 
         // Continue to Demo Form button handler
-        document.getElementById('continueToFormBtn').onclick = function() {
-            console.log('Continue to Demo Form clicked');
+        document.getElementById('continueToFormBtn').onclick = function () {
+            console.log('Continue to Demo Tour clicked');
             showTypeform();
         };
 
@@ -527,5 +529,7 @@
             }, 1000); // 1 second delay to let page load
         }
     </script>
-    <script src="/js/mascot.js"></script></body>
+    <script src="/js/mascot.js"></script>
+</body>
+
 </html>
