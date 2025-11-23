@@ -287,7 +287,7 @@
         <div class="demo-content">
             <!-- Tour Selection -->
             <div class="tour-selector" id="tourSelector">
-                <div class="tour-card" onclick="startSignupTour()">
+                <div class="tour-card" id="signupTourCard">
                     <h3>👤 User Signup Tour</h3>
                     <p>See how easy it is to create an account and get started</p>
                     <ul>
@@ -299,7 +299,7 @@
                     <button class="start-button">Start Signup Tour</button>
                 </div>
 
-                <div class="tour-card" onclick="startIncidentTour()">
+                <div class="tour-card" id="incidentTourCard">
                     <h3>📝 Incident Report Tour</h3>
                     <p>Discover our AI-powered incident reporting features</p>
                     <ul>
@@ -533,6 +533,20 @@
             document.getElementById('incidentMockup').classList.remove('active');
             document.getElementById('incidentForm').classList.remove('active');
         }
+
+        // CSP-compliant event listeners (no inline onclick handlers)
+        document.addEventListener('DOMContentLoaded', () => {
+            const signupCard = document.getElementById('signupTourCard');
+            const incidentCard = document.getElementById('incidentTourCard');
+
+            if (signupCard) {
+                signupCard.addEventListener('click', startSignupTour);
+            }
+
+            if (incidentCard) {
+                incidentCard.addEventListener('click', startIncidentTour);
+            }
+        });
     </script>
 </body>
 </html>
