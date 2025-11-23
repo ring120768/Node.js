@@ -9,7 +9,6 @@ nixPkgs = [
   "nss",
   "freetype",
   "harfbuzz",
-  "cacert",
   "fontconfig",
   "xorg.libX11",
   "xorg.libXcomposite",
