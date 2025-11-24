@@ -4,6 +4,12 @@
  * ✅ NO DIRECT TABLE WRITES - Uses storage and Auth metadata only
  */
 
+// Polyfill for File API (required by OpenAI SDK for file uploads)
+if (!globalThis.File) {
+  const { File } = require('node:buffer');
+  globalThis.File = File;
+}
+
 const OpenAI = require('openai');
 const { sendError } = require('../utils/response');
 const logger = require('../utils/logger');
