@@ -286,7 +286,13 @@
 
             if (storylaneCard) {
                 storylaneCard.addEventListener('click', () => {
-                    window.open('https://app.storylane.io/share/za7b5xvgzsrk', '_blank');
+                    const url = 'https://app.storylane.io/share/za7b5xvgzsrk';
+                    // Mobile-friendly: Try popup, fallback to same-tab if blocked
+                    const popup = window.open(url, '_blank');
+                    if (!popup || popup.closed || typeof popup.closed === 'undefined') {
+                        // Popup blocked - open in same tab (mobile-friendly)
+                        window.location.href = url;
+                    }
                 });
             }
         });
