@@ -773,7 +773,151 @@ async function savePersonalStatement(req, res) {
   }
 }
 
+/**
+ * Get existing AI analysis for an incident
+ * GET /api/ai/analysis/:incidentId
+ */
+async function getAnalysis(req, res) {
+  try {
+    const { incidentId } = req.params;
+
+    if (!incidentId) {
+      return sendError(res, 400, 'Incident ID is required', 'MISSING_INCIDENT_ID');
+    }
+
+    logger.info('Fetching AI analysis', { incidentId });
+
+    // Fetch stored analysis from incident_reports table
+    const { data, error } = await supabase
+      .from('incident_reports')
+      .select(`
+        voice_transcription,
+        analysis_metadata,
+        quality_review,
+        ai_summary,
+        closing_statement,
+        final_review
+      `)
+      .eq('id', incidentId)
+      .is('deleted_at', null)
+      .single();
+
+    if (error) {
+      logger.error('Failed to fetch analysis', { error: error.message, incidentId });
+      return sendError(res, 404, 'Incident not found', 'INCIDENT_NOT_FOUND');
+    }
+
+    // Check if analysis exists
+    if (!data.ai_summary && !data.closing_statement) {
+      logger.info('No analysis found for incident', { incidentId });
+      return res.json({
+        success: true,
+        analysis: null,
+        message: 'No analysis available yet'
+      });
+    }
+
+    // Reconstruct analysis object from stored data
+    const analysis = reconstructAnalysisObject(data);
+
+    logger.success('AI analysis retrieved', {
+      incidentId,
+      hasAnalysis: !!analysis,
+      wordCount: analysis.combinedReport ? analysis.combinedReport.split(/\s+/).length : 0
+    });
+
+    res.json({
+      success: true,
+      analysis: analysis
+    });
+
+  } catch (error) {
+    logger.error('Get analysis error', {
+      error: error.message,
+      stack: error.stack,
+      incidentId: req.params?.incidentId
+    });
+    sendError(res, 500, 'Failed to retrieve analysis', 'RETRIEVAL_ERROR');
+  }
+}
+
+/**
+ * Reconstruct analysis object from database columns
+ * Reverses the storage format used by storeAIAnalysis()
+ */
+function reconstructAnalysisObject(data) {
+  const analysis = {};
+
+  // Extract summary and key points from ai_summary
+  if (data.ai_summary) {
+    const summaryParts = data.ai_summary.split('\n\nKey Points:\n');
+    analysis.summary = summaryParts[0] || '';
+
+    if (summaryParts.length > 1) {
+      // Parse key points from bullet list
+      analysis.keyPoints = summaryParts[1]
+        .split('\n')
+        .filter(line => line.trim().startsWith('•'))
+        .map(line => line.replace(/^•\s*/, '').trim());
+    } else {
+      analysis.keyPoints = [];
+    }
+  }
+
+  // Reconstruct review object from quality_review
+  if (data.quality_review) {
+    analysis.review = {
+      quality: data.quality_review,
+      missingInfo: [],
+      suggestions: []
+    };
+  }
+
+  // Add combined report (Page 14 narrative)
+  if (data.closing_statement) {
+    analysis.combinedReport = data.closing_statement;
+  }
+
+  // Reconstruct final review from final_review text
+  if (data.final_review) {
+    analysis.finalReview = parseFinalReview(data.final_review);
+  }
+
+  return analysis;
+}
+
+/**
+ * Parse final_review text back into structured object
+ */
+function parseFinalReview(finalReviewText) {
+  const finalReview = {};
+
+  // Extract strengths section
+  const strengthsMatch = finalReviewText.match(/Strengths:\n([\s\S]*?)\n\nNext Steps:/);
+  if (strengthsMatch) {
+    finalReview.strengths = strengthsMatch[1].trim();
+  }
+
+  // Extract next steps
+  const nextStepsMatch = finalReviewText.match(/Next Steps:\n([\s\S]*?)\n\nLegal Considerations:/);
+  if (nextStepsMatch) {
+    finalReview.nextSteps = nextStepsMatch[1]
+      .split('\n')
+      .filter(line => line.match(/^\d+\./))
+      .map(line => line.replace(/^\d+\.\s*/, '').trim());
+  }
+
+  // Extract legal considerations
+  const legalMatch = finalReviewText.match(/Legal Considerations:\n([\s\S]*?)$/);
+  if (legalMatch) {
+    finalReview.legalConsiderations = legalMatch[1].trim();
+  }
+
+  return finalReview;
+}
+
 module.exports = {
   analyzeStatement,
-  savePersonalStatement
+  savePersonalStatement,
+  getAnalysis
 };
