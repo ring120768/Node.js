@@ -9,7 +9,8 @@ const { authenticateUser } = require('../middleware/auth');
 
 // Import controller functions
 const {
-  analyzeStatement
+  analyzeStatement,
+  getAnalysis
 } = require('../controllers/ai.controller');
 
 const router = express.Router();
@@ -54,5 +55,31 @@ router.use(apiLimiter);
  * }
  */
 router.post('/analyze-statement', analyzeStatement);
+
+/**
+ * GET /api/ai/analysis/:incidentId
+ * Retrieve existing AI analysis for an incident
+ *
+ * Returns:
+ * {
+ *   success: true,
+ *   analysis: {
+ *     summary: string,
+ *     keyPoints: string[],
+ *     review: {
+ *       quality: string,
+ *       missingInfo: string[],
+ *       suggestions: string[]
+ *     },
+ *     combinedReport: string (HTML),
+ *     finalReview: {
+ *       strengths: string (HTML),
+ *       nextSteps: string[],
+ *       legalConsiderations: string (HTML)
+ *     }
+ *   } | null
+ * }
+ */
+router.get('/analysis/:incidentId', getAnalysis);
 
 module.exports = router;

@@ -2871,6 +2871,14 @@ Continue with: What happened immediately after impact? Any injuries you noticed?
                     // Clear localStorage draft after successful save
                     localStorage.removeItem('draft_transcription');
                     localStorage.removeItem('draft_narrative');
+
+                    // Auto-fetch existing analysis after saving transcription
+                    if (currentIncidentId) {
+                        console.log('🔍 Checking for existing AI analysis after save');
+                        setTimeout(() => {
+                            fetchExistingAnalysis();
+                        }, 1000); // Small delay to allow backend processing
+                    }
                 } else {
                     throw new Error(result.error || 'Save failed');
                 }
@@ -3247,6 +3255,54 @@ Continue with: What happened immediately after impact? Any injuries you noticed?
             switchTab('analysis');
         }
 
+        // ===== FETCH EXISTING ANALYSIS =====
+        /**
+         * Fetch existing AI analysis from backend (if already generated)
+         * This allows users to view analysis without manual button click
+         */
+        async function fetchExistingAnalysis() {
+            if (!currentIncidentId) {
+                console.log('No incident ID available, skipping analysis fetch');
+                return;
+            }
+
+            try {
+                console.log('🔍 Fetching existing analysis for incident:', currentIncidentId);
+
+                const response = await fetch(`/api/ai/analysis/${currentIncidentId}`, {
+                    method: 'GET',
+                    credentials: 'include',
+                    headers: {
+                        'Content-Type': 'application/json'
+                    }
+                });
+
+                if (!response.ok) {
+                    console.error('Failed to fetch analysis:', response.status);
+                    return;
+                }
+
+                const result = await response.json();
+
+                if (result.success && result.analysis) {
+                    console.log('✅ Existing analysis found, displaying it');
+                    displayAIAnalysis(result.analysis);
+
+                    // Update button text to indicate regeneration
+                    const generateBtn = document.getElementById('generateSummaryBtn');
+                    if (generateBtn) {
+                        generateBtn.innerHTML = '🔄 Regenerate AI Analysis';
+                        generateBtn.title = 'Click to regenerate the AI analysis with updated data';
+                    }
+                } else {
+                    console.log('ℹ️ No existing analysis found for this incident');
+                }
+            } catch (error) {
+                console.error('Error fetching existing analysis:', error);
+                // Don't show error to user - analysis just won't appear automatically
+            }
+        }
+
         // ===== COLLAPSIBLE SECTIONS =====
         function toggleSection(sectionId) {
             const content = document.getElementById(sectionId);
@@ -3283,6 +3339,11 @@ Continue with: What happened immediately after impact? Any injuries you noticed?
             }
 
             console.log(`Switched to ${tabName} tab`);
+
+            // Auto-fetch existing analysis when switching to analysis tab
+            if (tabName === 'analysis' && currentIncidentId) {
+                fetchExistingAnalysis();
+            }
         }
 
         // ===== SECURITY MODAL =====
@@ -3361,6 +3422,15 @@ Continue with: What happened immediately after impact? Any injuries you noticed?
             // Initialize components
             initializeVisualizer();
             updateNetworkStatus();
+
+            // Auto-fetch existing analysis if incident ID present
+            if (currentIncidentId) {
+                console.log('🔍 Checking for existing AI analysis on page load');
+                // Small delay to ensure UI is ready
+                setTimeout(() => {
+                    fetchExistingAnalysis();
+                }, 500);
+            }
 
             // Check for saved draft
             // restoreDraft(); // DISABLED: Auto-restore dialog after form submission was confusing
