@@ -36,7 +36,24 @@ const strictLimiter = rateLimit({
   skip: (req) => req.path.startsWith('/webhooks/')
 });
 
+/**
+ * Generous rate limiter for read-only operations
+ * 15 minutes window, 500 requests per IP
+ * Used for GET endpoints like fetching analysis data
+ */
+const readOnlyLimiter = rateLimit({
+  windowMs: 15 * 60 * 1000, // 15 minutes
+  max: 500, // 500 requests - generous for auto-fetch behavior
+  message: 'Too many read requests from this IP, please try again later.',
+  standardHeaders: true,
+  legacyHeaders: false,
+  trustProxy: true,
+  validate: { trustProxy: false },
+  skip: (req) => req.path.startsWith('/webhooks/')
+});
+
 module.exports = {
   apiLimiter,
-  strictLimiter
+  strictLimiter,
+  readOnlyLimiter
 };

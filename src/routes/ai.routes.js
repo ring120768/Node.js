@@ -4,7 +4,7 @@
  */
 
 const express = require('express');
-const { apiLimiter } = require('../middleware/rateLimit');
+const { apiLimiter, readOnlyLimiter } = require('../middleware/rateLimit');
 const { authenticateUser } = require('../middleware/auth');
 
 // Import controller functions
@@ -15,15 +15,13 @@ const {
 
 const router = express.Router();
 
-// Apply rate limiting to AI routes (generous limits for AI operations)
-router.use(apiLimiter);
-
 // Apply authentication middleware (optional - can work without auth)
 // router.use(authenticateUser);
 
 /**
  * POST /api/ai/analyze-statement
  * Analyze personal statement with AI
+ * Rate limited: 100 requests per 15 minutes (write operation)
  *
  * Body:
  * {
@@ -54,11 +52,12 @@ router.use(apiLimiter);
  *   }
  * }
  */
-router.post('/analyze-statement', analyzeStatement);
+router.post('/analyze-statement', apiLimiter, analyzeStatement);
 
 /**
  * GET /api/ai/analysis/:incidentId
  * Retrieve existing AI analysis for an incident
+ * Rate limited: 500 requests per 15 minutes (read-only operation)
  *
  * Returns:
  * {
@@ -80,6 +79,6 @@ router.post('/analyze-statement', analyzeStatement);
  *   } | null
  * }
  */
-router.get('/analysis/:incidentId', getAnalysis);
+router.get('/analysis/:incidentId', readOnlyLimiter, getAnalysis);
 
 module.exports = router;
