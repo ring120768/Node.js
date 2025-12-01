@@ -3056,6 +3056,10 @@ Continue with: What happened immediately after impact? Any injuries you noticed?
                         progressContainer.style.display = 'none';
                         completeBanner.style.display = 'block';
 
+                        // Cache the newly generated analysis
+                        cachedAnalysis = result.analysis;
+                        cachedIncidentId = currentIncidentId;
+
                         // Display analysis with fade-in animation
                         displayAIAnalysis(result.analysis);
 
@@ -3264,13 +3268,32 @@ Continue with: What happened immediately after impact? Any injuries you noticed?
         }
 
         // ===== FETCH EXISTING ANALYSIS =====
+        // Client-side cache to prevent redundant API calls
+        let cachedAnalysis = null;
+        let cachedIncidentId = null;
+
         /**
          * Fetch existing AI analysis from backend (if already generated)
          * This allows users to view analysis without manual button click
+         * Includes client-side caching to reduce API calls
          */
-        async function fetchExistingAnalysis() {
+        async function fetchExistingAnalysis(forceRefresh = false) {
             if (!currentIncidentId) {
                 console.log('No incident ID available, skipping analysis fetch');
+                return;
+            }
+
+            // Return cached data if available (unless force refresh requested)
+            if (!forceRefresh && cachedAnalysis && cachedIncidentId === currentIncidentId) {
+                console.log('📦 Using cached analysis data (no API call needed)');
+                displayAIAnalysis(cachedAnalysis);
+
+                // Update button text
+                const generateBtn = document.getElementById('generateSummaryBtn');
+                if (generateBtn) {
+                    generateBtn.innerHTML = '🔄 Regenerate AI Analysis';
+                    generateBtn.title = 'Click to regenerate the AI analysis with updated data';
+                }
                 return;
             }
 
@@ -3294,6 +3317,11 @@ Continue with: What happened immediately after impact? Any injuries you noticed?
 
                 if (result.success && result.analysis) {
                     console.log('✅ Existing analysis found, displaying it');
+
+                    // Cache the analysis data
+                    cachedAnalysis = result.analysis;
+                    cachedIncidentId = currentIncidentId;
+
                     displayAIAnalysis(result.analysis);
 
                     // Update button text to indicate regeneration
