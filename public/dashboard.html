@@ -555,9 +555,62 @@
                 padding: var(--spacing-md);
             }
 
+            .header {
+                padding: var(--spacing-md);
+            }
+
             .header-content {
                 flex-direction: column;
                 align-items: flex-start;
+                width: 100%;
+            }
+
+            .header-left {
+                width: 100%;
+                margin-bottom: var(--spacing-sm);
+            }
+
+            .logo {
+                font-size: 1.5rem;
+            }
+
+            .header-title h1 {
+                font-size: 1.25rem;
+            }
+
+            .header-subtitle {
+                font-size: 0.75rem;
+            }
+
+            .header-actions {
+                width: 100%;
+                flex-wrap: wrap;
+                justify-content: flex-start;
+                gap: var(--spacing-xs);
+            }
+
+            .user-badge {
+                width: 100%;
+                justify-content: center;
+                padding: var(--spacing-xs) var(--spacing-sm);
+                font-size: 0.75rem;
+                order: -1; /* Move to top */
+            }
+
+            .user-badge span:last-child {
+                /* Email text */
+                overflow: hidden;
+                text-overflow: ellipsis;
+                white-space: nowrap;
+                max-width: 200px;
+            }
+
+            .btn {
+                flex: 1;
+                min-width: 120px;
+                justify-content: center;
+                font-size: 0.813rem;
+                padding: var(--spacing-xs) var(--spacing-sm);
             }
 
             .stats-grid {
@@ -570,6 +623,175 @@
 
             .card {
                 padding: var(--spacing-md);
+            }
+
+            /* Modal adjustments for mobile */
+            .modal {
+                padding: var(--spacing-sm);
+            }
+
+            .modal-content {
+                padding: var(--spacing-md);
+                max-width: 100%;
+            }
+
+            .modal-icon {
+                font-size: 2rem;
+            }
+
+            .modal-title {
+                font-size: 1.25rem;
+            }
+
+            .modal-footer {
+                flex-direction: column;
+                gap: var(--spacing-sm);
+            }
+
+            .modal-footer .btn {
+                width: 100%;
+                min-width: auto;
+            }
+
+            /* Toast notification adjustments */
+            .toast {
+                left: var(--spacing-sm);
+                right: var(--spacing-sm);
+                bottom: var(--spacing-md);
+                min-width: auto;
+                max-width: calc(100vw - var(--spacing-md) * 2);
+            }
+
+            /* Timeline adjustments */
+            .timeline {
+                padding-left: var(--spacing-md);
+            }
+
+            .timeline-item {
+                padding-left: var(--spacing-md);
+            }
+
+            .timeline-item::before {
+                left: -20px;
+                width: 10px;
+                height: 10px;
+            }
+
+            .timeline-meta {
+                flex-wrap: wrap;
+                gap: var(--spacing-sm);
+            }
+
+            /* Chart container height reduction */
+            .chart-container {
+                height: 250px;
+            }
+
+            /* Action buttons */
+            .action-btn {
+                padding: var(--spacing-sm);
+            }
+
+            .action-icon {
+                width: 50px;
+                height: 50px;
+                font-size: 1.75rem;
+            }
+
+            .action-content h3 {
+                font-size: 0.9rem;
+            }
+
+            .action-content p {
+                font-size: 0.75rem;
+            }
+        }
+
+        @media (max-width: 480px) {
+            .header {
+                padding: var(--spacing-sm);
+            }
+
+            .logo {
+                font-size: 1.25rem;
+            }
+
+            .header-title h1 {
+                font-size: 1.1rem;
+            }
+
+            .header-subtitle {
+                font-size: 0.7rem;
+            }
+
+            .user-badge span:last-child {
+                max-width: 150px;
+            }
+
+            .btn {
+                font-size: 0.75rem;
+                padding: 0.5rem 0.75rem;
+            }
+
+            .btn span {
+                /* Hide emoji on very small screens for more space */
+                display: none;
+            }
+
+            /* Further reduce modal padding on very small screens */
+            .modal-content {
+                padding: var(--spacing-sm);
+            }
+
+            .modal-icon {
+                font-size: 1.75rem;
+            }
+
+            .modal-title {
+                font-size: 1.1rem;
+            }
+
+            /* Toast on very small screens */
+            .toast {
+                padding: var(--spacing-sm) var(--spacing-md);
+                font-size: 0.875rem;
+            }
+
+            .toast-icon {
+                font-size: 1.25rem;
+            }
+
+            /* Chart height on phones */
+            .chart-container {
+                height: 200px;
+            }
+
+            /* Reduce stat card padding */
+            .stat-card {
+                padding: var(--spacing-sm);
+            }
+
+            .stat-value {
+                font-size: 1.75rem;
+            }
+
+            .stat-label {
+                font-size: 0.75rem;
+            }
+
+            /* Action buttons on phones */
+            .action-icon {
+                width: 45px;
+                height: 45px;
+                font-size: 1.5rem;
+            }
+
+            .action-content h3 {
+                font-size: 0.85rem;
+            }
+
+            .action-content p {
+                font-size: 0.7rem;
             }
         }
 
