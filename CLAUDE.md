@@ -53,6 +53,27 @@ See `README.md` for initial setup instructions and environment configuration.
 
 ---
 
+## 🚀 Launch Readiness
+
+**IMPORTANT:** Before deploying to production or starting App Store development:
+
+📋 **Review:** `WEB_APP_LAUNCH_CHECKLIST.md` - Comprehensive pre-launch checklist
+
+This checklist covers:
+- Core features completion (90% done)
+- Testing & QA (browser compatibility, mobile responsiveness)
+- Security audit & GDPR compliance
+- Documentation & legal requirements
+- Deployment readiness
+- Post-launch monitoring
+- Capacitor/App Store timeline (after web launch)
+
+**Development Strategy:** Finish web app → Launch web version → Add Capacitor → Submit to App Store
+
+**Current Status:** ~90% complete, focusing on web launch first
+
+---
+
 ## Project Overview
 
 **Car Crash Lawyer AI** - GDPR-compliant Node.js web application for UK traffic accident victims to complete legal incident reports.
