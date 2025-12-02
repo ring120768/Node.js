@@ -191,13 +191,12 @@
             box-shadow: 0 4px 12px rgba(0, 0, 0, 0.2);
         }
 
-        .auth-btn.logout {
+        .auth-btn.homepage {
             background: transparent;
             color: white;
-            display: none; /* Hidden by default, shown when logged in */
         }
 
-        .auth-btn.logout:hover {
+        .auth-btn.homepage:hover {
             background: rgba(255, 255, 255, 0.2);
             color: white;
             transform: translateY(-2px);
@@ -527,8 +526,8 @@
 
         <!-- AUTH BUTTONS -->
         <div class="auth-buttons">
-            <button class="auth-btn logout" id="logoutBtn">
-                🚪 Logout
+            <button class="auth-btn homepage" id="homepageBtn">
+                🏠 Homepage
             </button>
             <button class="auth-btn signup" id="signupBtn">
                 ✨ Sign Up
@@ -956,7 +955,7 @@
             const incidentBtn = document.getElementById('incidentBtn');
             const dashboardBtn = document.getElementById('dashboardBtn');
             const demoBtn = document.getElementById('demoBtn');
-            const logoutBtn = document.getElementById('logoutBtn');
+            const homepageBtn = document.getElementById('homepageBtn');
             const signupBtn = document.getElementById('signupBtn');
             const userGuideBtn = document.getElementById('userGuideBtn');
             const userGuideModal = document.getElementById('userGuideModal');
@@ -987,32 +986,13 @@
                 console.log('✅ Demo button event listener added');
             }
 
-            if (logoutBtn) {
-                logoutBtn.addEventListener('click', async function(e) {
+            if (homepageBtn) {
+                homepageBtn.addEventListener('click', function(e) {
                     e.preventDefault();
-                    console.log('🚪 Logout button clicked');
-
-                    try {
-                        const response = await fetch('/api/auth/logout', {
-                            method: 'POST',
-                            credentials: 'include'
-                        });
-
-                        if (response.ok) {
-                            console.log('✅ Logout successful');
-                            // Hide logout button, show signup button
-                            logoutBtn.style.display = 'none';
-                            if (signupBtn) signupBtn.style.display = 'inline-block';
-                            // Redirect to landing page
-                            window.location.href = '/index.html';
-                        } else {
-                            console.error('❌ Logout failed');
-                        }
-                    } catch (error) {
-                        console.error('❌ Logout error:', error);
-                    }
+                    console.log('🏠 Homepage button clicked');
+                    window.location.href = '/index.html';
                 });
-                console.log('✅ Logout button event listener added');
+                console.log('✅ Homepage button event listener added');
             }
 
             if (signupBtn) {
