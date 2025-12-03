@@ -45,8 +45,9 @@ aptPkgs = []
 cmds = ["npm ci"]
 
 [start]
-cmd = "npm start"
+# Use startup script to find Chromium binary and set PUPPETEER_EXECUTABLE_PATH
+cmd = "./scripts/find-chromium.sh npm start"
 
 [variables]
+# Skip Puppeteer's Chromium download - we use Nix-provided Chromium
 PUPPETEER_SKIP_CHROMIUM_DOWNLOAD = "true"
-PUPPETEER_EXECUTABLE_PATH = "/nix/store/*-chromium-*/bin/chromium"
