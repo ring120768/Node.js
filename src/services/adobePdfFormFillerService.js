@@ -552,16 +552,17 @@ class AdobePdfFormFillerService {
     // ========================================
     // PAGE 3: Personal Documentation (Images)
     // ========================================
-    // Image URLs from user_documents table, mapped by dataFetcher using ACTUAL PDF field names
+    // Image URLs from user_documents table, mapped by dataFetcher using SHORT keys
+    // CRITICAL FIX: dataFetcher.js maps to SHORT keys (e.g., 'driving_license', NOT 'driving_license_picture')
     // Mapping examples:
-    //   DB: driving_license_picture → PDF: driving_license_picture
-    //   DB: vehicle_front_image → PDF: vehicle_picture_front
-    // FIX: Use fixed 6pt font as requested (was auto-fitting 4-10pt causing font too big)
-    setFieldTextWithFixedFont('driving_license_picture', data.imageUrls?.driving_license_picture || '', 6);
-    setFieldTextWithFixedFont('vehicle_picture_front', data.imageUrls?.vehicle_picture_front || '', 6);
-    setFieldTextWithFixedFont('vehicle_picture_driver_side', data.imageUrls?.vehicle_picture_driver_side || '', 6);
-    setFieldTextWithFixedFont('vehicle_picture_passenger_side', data.imageUrls?.vehicle_picture_passenger_side || '', 6);
-    setFieldTextWithFixedFont('vehicle_picture_back', data.imageUrls?.vehicle_picture_back || '', 6);
+    //   DB document_type: driving_license_picture → imageUrls key: 'driving_license' → PDF field: driving_license_picture
+    //   DB document_type: vehicle_front_image → imageUrls key: 'vehicle_front' → PDF field: vehicle_picture_front
+    // FIX: Use SHORT keys from dataFetcher.js to match recent refactoring (2025-12-05)
+    setFieldTextWithFixedFont('driving_license_picture', data.imageUrls?.driving_license || '', 6);
+    setFieldTextWithFixedFont('vehicle_picture_front', data.imageUrls?.vehicle_front || '', 6);
+    setFieldTextWithFixedFont('vehicle_picture_driver_side', data.imageUrls?.vehicle_driver_side || '', 6);
+    setFieldTextWithFixedFont('vehicle_picture_passenger_side', data.imageUrls?.vehicle_passenger_side || '', 6);
+    setFieldTextWithFixedFont('vehicle_picture_back', data.imageUrls?.vehicle_back || '', 6);
 
     // ========================================
     // PAGE 4: Form Metadata & Safety Assessment
@@ -951,7 +952,15 @@ class AdobePdfFormFillerService {
 
     // Scene images (3 fields) - includes location screenshot
     // FIX: Use ACTUAL PDF field names (not scene_images_path_*)
-    setUrlFieldWithAutoFitFont('location_map_screenshot', data.imageUrls?.location_map_screenshot || '');  // what3words location screenshot
+
+    // DEBUG: Check what3words/location_map_screenshot mapping
+    console.log('\n🔍 DEBUG - What3Words URL Mapping:');
+    console.log('  imageUrls object keys:', Object.keys(data.imageUrls || {}));
+    console.log('  imageUrls.what3words:', data.imageUrls?.what3words || '[UNDEFINED]');
+    console.log('  imageUrls.location_map_screenshot:', data.imageUrls?.location_map_screenshot || '[UNDEFINED]');
+
+    // FIX: Use correct key name from dataFetcher (what3words, not location_map_screenshot)
+    setUrlFieldWithAutoFitFont('location_map_screenshot', data.imageUrls?.what3words || '');  // PDF field: location_map_screenshot ← reads from imageUrls.what3words
     setUrlFieldWithAutoFitFont('scene_photo_1_url', data.imageUrls?.scene_photo_1_url || '');  // scene_overview
     setUrlFieldWithAutoFitFont('scene_photo_2_url', data.imageUrls?.scene_photo_2_url || '');  // scene_overview_2
     setUrlFieldWithAutoFitFont('scene_photo_3_url', data.imageUrls?.scene_photo_3_url || '');  // scene_overview_3
