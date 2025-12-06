@@ -237,26 +237,29 @@ function prepareFormDataForRestAPI(allData) {
   // Original implementation in adobePdfFormFillerService.js lines 239-243, 467-478
 
   if (allData.imageUrls) {
-    // Page 2 - Driver's License & Vehicle Photos
-    formData.driving_license_url = allData.imageUrls.driving_license || '';
-    formData.vehicle_front_url = allData.imageUrls.vehicle_front || '';
-    formData.vehicle_driver_side_url = allData.imageUrls.vehicle_driver_side || '';
-    formData.vehicle_passenger_side_url = allData.imageUrls.vehicle_passenger_side || '';
-    formData.vehicle_back_url = allData.imageUrls.vehicle_back || '';
+    // Page 3 - Driver's License & Vehicle Photos
+    // CRITICAL FIX (2025-12-05): Use correct PDF field names (matching test service)
+    // PDF template expects: driving_license_picture, NOT driving_license_url
+    formData.driving_license_picture = allData.imageUrls.driving_license || '';
+    formData.vehicle_picture_front = allData.imageUrls.vehicle_front || '';
+    formData.vehicle_picture_driver_side = allData.imageUrls.vehicle_driver_side || '';
+    formData.vehicle_picture_passenger_side = allData.imageUrls.vehicle_passenger_side || '';
+    formData.vehicle_picture_back = allData.imageUrls.vehicle_back || '';
 
     // Pages 11-12 - Evidence Collection URLs
-    formData.documents_url = allData.imageUrls.document || incident?.file_url_documents || '';
-    formData.documents_url_1 = allData.imageUrls.document_2 || incident?.file_url_documents_1 || '';
-    formData.record_account_url = allData.imageUrls.audio_account || incident?.file_url_record_detailed_account_of_what_happened || '';
-    formData.what3words_url = allData.imageUrls.what3words_screenshot || allData.imageUrls.what3words || incident?.file_url_what3words || '';
-    formData.scene_overview_url = allData.imageUrls.scene_overview || incident?.file_url_scene_overview || '';
-    formData.scene_overview_url_1 = allData.imageUrls.scene_overview_2 || incident?.file_url_scene_overview_1 || '';
-    formData.other_vehicle_url = allData.imageUrls.other_vehicle_photo || allData.imageUrls.other_vehicle || incident?.file_url_other_vehicle || '';
-    formData.other_vehicle_url_1 = allData.imageUrls.other_vehicle_photo_2 || allData.imageUrls.other_vehicle_2 || incident?.file_url_other_vehicle_1 || '';
-    formData.vehicle_damage_url = allData.imageUrls.vehicle_damage || incident?.file_url_vehicle_damage || '';
-    formData.vehicle_damage_url_1 = allData.imageUrls.vehicle_damage_2 || incident?.file_url_vehicle_damage_1 || '';
-    formData.vehicle_damage_url_2 = allData.imageUrls.vehicle_damage_3 || incident?.file_url_vehicle_damage_2 || '';
-    formData.spare_url = incident?.file_url_spare || '';
+    // CRITICAL FIX (2025-12-05): Use correct PDF field names (file_url_*, NOT shortened *_url)
+    formData.file_url_documents = allData.imageUrls.document || incident?.file_url_documents || '';
+    formData.file_url_documents_1 = allData.imageUrls.document_2 || incident?.file_url_documents_1 || '';
+    formData.file_url_record_detailed_account_of_what_happened = allData.imageUrls.audio_account || incident?.file_url_record_detailed_account_of_what_happened || '';
+    formData.file_url_what3words = allData.imageUrls.what3words_screenshot || allData.imageUrls.what3words || incident?.file_url_what3words || '';
+    formData.file_url_scene_overview = allData.imageUrls.scene_overview || incident?.file_url_scene_overview || '';
+    formData.file_url_scene_overview_1 = allData.imageUrls.scene_overview_2 || incident?.file_url_scene_overview_1 || '';
+    formData.file_url_other_vehicle = allData.imageUrls.other_vehicle_photo || allData.imageUrls.other_vehicle || incident?.file_url_other_vehicle || '';
+    formData.file_url_other_vehicle_1 = allData.imageUrls.other_vehicle_photo_2 || allData.imageUrls.other_vehicle_2 || incident?.file_url_other_vehicle_1 || '';
+    formData.file_url_vehicle_damage = allData.imageUrls.vehicle_damage || incident?.file_url_vehicle_damage || '';
+    formData.file_url_vehicle_damage_1 = allData.imageUrls.vehicle_damage_2 || incident?.file_url_vehicle_damage_1 || '';
+    formData.file_url_vehicle_damage_2 = allData.imageUrls.vehicle_damage_3 || incident?.file_url_vehicle_damage_2 || '';
+    formData.file_url_spare = incident?.file_url_spare || '';
   }
 
   return formData;
