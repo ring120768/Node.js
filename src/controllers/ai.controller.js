@@ -1164,23 +1164,33 @@ async function generateFormDataSummary(userId, incidentId) {
     if (incidentError) throw incidentError;
     if (!incidentData) throw new Error('Incident report not found');
 
-    // Fetch other vehicles
+    // Fetch other vehicles (optional data - may not exist for all incidents)
     const { data: otherVehicles, error: vehiclesError } = await supabase
       .from('incident_other_vehicles')
       .select('*')
-      .eq('create_user_id', userId)
-      .order('vehicle_index', { ascending: true });
+      .eq('create_user_id', userId);
 
-    if (vehiclesError) throw vehiclesError;
+    if (vehiclesError) {
+      logger.warn('[Phase 1 AI] Error fetching other vehicles (non-fatal):', vehiclesError.message);
+    }
 
-    // Fetch witnesses
-    const { data: witnesses, error: witnessesError } = await supabase
-      .from('incident_witnesses')
-      .select('*')
-      .eq('create_user_id', userId)
-      .order('witness_index', { ascending: true });
+    // Fetch witnesses (optional data - table may not exist or incident may have no witnesses)
+    let witnesses = [];
+    try {
+      const { data: witnessData, error: witnessesError } = await supabase
+        .from('incident_witnesses')
+        .select('*')
+        .eq('create_user_id', userId);
 
-    if (witnessesError) throw witnessesError;
+      if (witnessesError) {
+        logger.warn('[Phase 1 AI] Error fetching witnesses (non-fatal):', witnessesError.message);
+      } else {
+        witnesses = witnessData || [];
+      }
+    } catch (error) {
+      // Table may not exist - this is non-fatal, witnesses are optional
+      logger.warn('[Phase 1 AI] Witnesses table not available (non-fatal):', error.message);
+    }
 
     // Step 2: Build comprehensive data structure (160+ fields)
     logger.info('[Phase 1 AI] Building comprehensive data structure...');
