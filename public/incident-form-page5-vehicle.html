@@ -648,6 +648,11 @@
           <span class="detail-label">Fuel Type</span>
           <span class="detail-value" id="vehicle-fuel">-</span>
         </div>
+
+        <!-- Button to show manual entry (for incomplete DVLA data) -->
+        <button type="button" id="show-manual-entry-override-btn" style="margin-top: 16px; width: 100%; padding: 12px; background: var(--button-bg); color: var(--accent); border: 2px solid var(--accent); border-radius: 8px; font-weight: 600; cursor: pointer;">
+          ✏️ Edit or Complete Vehicle Details
+        </button>
       </div>
 
       <!-- Error Message -->
@@ -985,6 +990,40 @@
     document.getElementById('manual-entry-btn').addEventListener('click', function() {
       document.getElementById('manual-entry-form').style.display = 'block';
       this.style.display = 'none'; // Hide the button after clicking
+    });
+
+    // Manual Entry Override Button - Show manual entry form even after successful DVLA lookup
+    document.getElementById('show-manual-entry-override-btn').addEventListener('click', function() {
+      // Pre-populate manual entry fields with DVLA data (if available)
+      if (vehicleData.make) {
+        document.getElementById('manual-make').value = vehicleData.make;
+      }
+      if (vehicleData.model) {
+        document.getElementById('manual-model').value = vehicleData.model;
+      }
+      if (vehicleData.colour) {
+        document.getElementById('manual-colour').value = vehicleData.colour;
+      }
+      if (vehicleData.yearOfManufacture) {
+        document.getElementById('manual-year').value = vehicleData.yearOfManufacture;
+      }
+      if (vehicleData.fuelType) {
+        document.getElementById('manual-fuel').value = vehicleData.fuelType;
+      }
+
+      // Show manual entry section
+      document.getElementById('manual-entry-section').style.display = 'block';
+      document.getElementById('manual-entry-form').style.display = 'block';
+      document.getElementById('manual-entry-btn').style.display = 'none';
+
+      // Hide vehicle details display (will be re-shown after save)
+      document.getElementById('vehicle-details').style.display = 'none';
+
+      // Show info alert
+      const alertDiv = document.querySelector('#manual-entry-form .alert-info span:last-child');
+      if (alertDiv) {
+        alertDiv.textContent = 'Edit the vehicle details below. You can complete any missing information (like Model) or correct any inaccuracies.';
+      }
     });
 
     // Save Manual Entry - Populate vehicleData and show details
