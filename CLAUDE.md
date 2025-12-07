@@ -244,7 +244,47 @@ function gracefulShutdown(signal) {
 
 ---
 
-### 7. Real-Time Updates Architecture
+### 7. Mobile File Upload Pattern
+
+**Problem:** Mobile browsers lose file handles when app backgrounds, causing ERR_UPLOAD_FILE_CHANGED
+
+**Solution:** Immediate upload to temporary storage, then persist on form submission
+
+```javascript
+// Pattern: Immediate Temp Upload (src/controllers/tempImageUpload.controller.js)
+POST /api/images/temp-upload
+  ↓
+1. Upload to temp_uploads table (24hr expiry)
+2. Store session_id for tracking
+3. Return temp_upload_id to frontend
+  ↓
+Frontend stores temp_upload_id in form data
+  ↓
+POST /api/signup/submit (or /api/incident-form/*)
+  ↓
+4. Move from temp_uploads to user_documents
+5. Update storage bucket: temp-uploads → user-documents
+6. Generate permanent API URL
+7. Delete temp_upload record
+
+// Cleanup: Cron job runs daily to delete temp_uploads > 24 hours
+```
+
+**Why this works:**
+- File uploaded immediately while handle is valid
+- Survives app backgrounding
+- Session-based tracking (no auth required for temp upload)
+- Automatic cleanup prevents storage bloat
+
+**Tables:**
+- `temp_uploads` - Temporary storage (24hr TTL)
+- `user_documents` - Permanent storage (7yr retention)
+
+**Test:** Upload image on mobile, background app, return → file still available
+
+---
+
+### 8. Real-Time Updates Architecture
 
 ```javascript
 // Backend (src/app.js - initializeRealtime())
@@ -261,7 +301,7 @@ Frontend Updates (dashboard.html, transcription-status.html)
 
 ---
 
-### 8. what3words Location Integration
+### 9. what3words Location Integration
 
 **Pattern:** Graceful fallback when API key unavailable.
 
@@ -288,7 +328,7 @@ if (!config.what3words.apiKey) {
 
 ---
 
-### 9. AI Analysis Integration (Pages 13-18)
+### 10. AI Analysis Integration (Pages 13-18)
 
 **Recent Addition (Nov 2025):** PDF now includes AI-powered legal analysis and transcription summary.
 
@@ -537,15 +577,32 @@ POST   /auth/signup              → User registration (creates Supabase Auth us
 POST   /auth/login               → User login
 POST   /auth/logout              → Logout (clear cookies)
 
-Signup Flow:
+Signup Flow (Custom HTML Forms):
 POST   /api/signup/submit        → Final signup submission
+POST   /api/incident-form/*      → Multi-page incident form (Pages 1-12)
 POST   /api/images/temp-upload   → Immediate image upload (mobile-friendly)
+POST   /api/images/upload        → Post-signup image upload
 
 User Data:
 GET    /api/user-documents       → Get user's documents
+GET    /api/user-documents/:uuid/download → Download document (permanent API URL)
 GET    /api/incident-reports     → Get user's incident reports
 GET    /api/profile              → Get user profile
 POST   /api/profile              → Update profile
+
+Safety & Assessment:
+GET    /api/safety-status/:userId     → Get safety check status
+POST   /api/safety-status/:userId     → Update safety check status
+
+Witnesses & Other Vehicles:
+GET    /api/witnesses/:userId          → Get witnesses
+POST   /api/witnesses/:userId          → Create/update witness
+GET    /api/other-vehicles/:userId     → Get other vehicles
+POST   /api/other-vehicles/:userId     → Create/update other vehicle
+
+DVLA Integration:
+GET    /api/dvla/lookup?registration=XX11XXX  → UK vehicle lookup (GET-friendly)
+POST   /api/other-vehicles/dvla-lookup        → DVLA lookup (POST, in context)
 
 Transcription:
 POST   /api/transcription/transcribe  → Upload audio (OpenAI Whisper)
@@ -570,12 +627,16 @@ POST   /api/gdpr/delete-account  → Request account deletion
 Health:
 GET    /api/health               → Basic health check
 GET    /api/readyz               → Readiness (with DB check)
+GET    /system-status            → Visual system status page
 
 Webhooks:
-POST   /webhooks/typeform        → Typeform submissions (signature verified)
+POST   /webhooks/github          → GitHub repository events (signature verified)
+GET    /webhooks/debug           → Webhook configuration status
 ```
 
 **Authentication:** All `/api/*` endpoints require `requireAuth` middleware (except webhooks)
+
+**Note:** Typeform webhooks have been removed. Application now uses in-house HTML forms (Pages 1-12).
 
 ---
 
@@ -589,7 +650,7 @@ SUPABASE_URL=https://xxx.supabase.co
 SUPABASE_ANON_KEY=xxx                # Client-side auth
 SUPABASE_SERVICE_ROLE_KEY=xxx        # Server-side (bypasses RLS for webhooks)
 OPENAI_API_KEY=sk-xxx                # Transcription/summarization/AI analysis
-TYPEFORM_WEBHOOK_SECRET=xxx          # HMAC signature verification
+GITHUB_WEBHOOK_SECRET=xxx            # HMAC signature verification
 ```
 
 **Optional (graceful fallback):**
