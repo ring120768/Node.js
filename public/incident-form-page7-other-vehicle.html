@@ -668,6 +668,84 @@
         <span>⚠️</span>
         <span id="lookup-error-message">Vehicle not found. Please check the registration number.</span>
       </div>
+
+      <!-- Manual Entry Link -->
+      <div style="margin-top: 16px; text-align: center;">
+        <button type="button" id="show-manual-other-vehicle-btn" class="btn-link" style="background: none; border: none; color: var(--accent); cursor: pointer; text-decoration: underline; font-size: 0.875rem;">
+          Can't find registration? Enter vehicle details manually
+        </button>
+      </div>
+    </div>
+
+    <!-- Manual Vehicle Details (Hidden by default) -->
+    <div class="form-section" id="manual-other-vehicle-section" style="display: none;">
+      <div class="section-title">
+        <span class="section-icon">✏️</span>
+        <span>Manual Vehicle Details</span>
+      </div>
+
+      <div class="alert alert-info">
+        <span>ℹ️</span>
+        <span>Enter the other vehicle's details manually if registration lookup is unavailable.</span>
+      </div>
+
+      <div class="form-group">
+        <label for="other-vehicle-look-up-make-manual" class="form-label">
+          Make
+          <span style="color: #f59e0b; font-size: 0.875rem;">(Recommended)</span>
+        </label>
+        <input
+          type="text"
+          id="other-vehicle-look-up-make-manual"
+          name="other_vehicle_look_up_make"
+          placeholder="e.g., BMW, Toyota, Ford"
+        >
+      </div>
+
+      <div class="form-group">
+        <label for="other-vehicle-look-up-model-manual" class="form-label">
+          Model
+          <span style="color: #f59e0b; font-size: 0.875rem;">(Recommended)</span>
+        </label>
+        <input
+          type="text"
+          id="other-vehicle-look-up-model-manual"
+          name="other_vehicle_look_up_model"
+          placeholder="e.g., 3 Series, Corolla, Focus"
+        >
+      </div>
+
+      <div class="form-group">
+        <label for="other-vehicle-look-up-colour-manual" class="form-label">
+          Colour
+          <span style="color: var(--text-muted); font-size: 0.875rem;">(Optional)</span>
+        </label>
+        <input
+          type="text"
+          id="other-vehicle-look-up-colour-manual"
+          name="other_vehicle_look_up_colour"
+          placeholder="e.g., Blue, Red, Silver"
+        >
+      </div>
+
+      <div class="form-group">
+        <label for="other-vehicle-look-up-year-manual" class="form-label">
+          Year of Manufacture
+          <span style="color: var(--text-muted); font-size: 0.875rem;">(Optional)</span>
+        </label>
+        <input
+          type="number"
+          id="other-vehicle-look-up-year-manual"
+          name="other_vehicle_look_up_year"
+          placeholder="e.g., 2020"
+          min="1900"
+          max="2025"
+        >
+      </div>
+
+      <button type="button" id="hide-manual-other-vehicle-btn" class="btn-link" style="background: none; border: none; color: var(--accent); cursor: pointer; text-decoration: underline; font-size: 0.875rem; margin-top: 8px;">
+        ← Back to registration lookup
+      </button>
     </div>
 
     <!-- Other Vehicle Status & Warnings -->
@@ -1116,6 +1194,17 @@
       }
     });
 
+    // Manual Vehicle Entry Toggle
+    document.getElementById('show-manual-other-vehicle-btn').addEventListener('click', () => {
+      document.getElementById('manual-other-vehicle-section').style.display = 'block';
+      document.getElementById('show-manual-other-vehicle-btn').style.display = 'none';
+    });
+
+    document.getElementById('hide-manual-other-vehicle-btn').addEventListener('click', () => {
+      document.getElementById('manual-other-vehicle-section').style.display = 'none';
+      document.getElementById('show-manual-other-vehicle-btn').style.display = 'block';
+    });
+
     // Form Validation
     function validateForm() {
       const driverName = document.getElementById('other-full-name').value.trim();
@@ -1191,6 +1280,12 @@
         other_email_address: document.getElementById('other-email-address').value,
         other_driving_license_number: document.getElementById('other-driving-license-number').value,
         other_vehicle_registration: document.getElementById('other-vehicle-registration').value,
+        // Manual vehicle entry fields (using same database fields as DVLA lookup)
+        other_vehicle_look_up_make_manual: document.getElementById('other-vehicle-look-up-make-manual').value,
+        other_vehicle_look_up_model_manual: document.getElementById('other-vehicle-look-up-model-manual').value,
+        other_vehicle_look_up_colour_manual: document.getElementById('other-vehicle-look-up-colour-manual').value,
+        other_vehicle_look_up_year_manual: document.getElementById('other-vehicle-look-up-year-manual').value,
+        // Insurance fields
         other_drivers_insurance_company: document.getElementById('other-drivers-insurance-company').value,
         other_drivers_policy_number: document.getElementById('other-drivers-policy-number').value,
         other_drivers_policy_holder_name: document.getElementById('other-drivers-policy-holder-name').value,
@@ -1240,6 +1335,23 @@
         }
         if (data.other_drivers_policy_cover_type || data.other_policy_cover) {
           document.getElementById('other-drivers-policy-cover-type').value = data.other_drivers_policy_cover_type || data.other_policy_cover;
+        }
+
+        // Restore manual vehicle entry fields (backward compatible with old naming)
+        if (data.other_vehicle_look_up_make_manual || data.other_vehicle_manual_make) {
+          document.getElementById('other-vehicle-look-up-make-manual').value = data.other_vehicle_look_up_make_manual || data.other_vehicle_manual_make;
+          // Show manual section if manual data exists
+          document.getElementById('manual-other-vehicle-section').style.display = 'block';
+          document.getElementById('show-manual-other-vehicle-btn').style.display = 'none';
+        }
+        if (data.other_vehicle_look_up_model_manual || data.other_vehicle_manual_model) {
+          document.getElementById('other-vehicle-look-up-model-manual').value = data.other_vehicle_look_up_model_manual || data.other_vehicle_manual_model;
+        }
+        if (data.other_vehicle_look_up_colour_manual || data.other_vehicle_manual_colour) {
+          document.getElementById('other-vehicle-look-up-colour-manual').value = data.other_vehicle_look_up_colour_manual || data.other_vehicle_manual_colour;
+        }
+        if (data.other_vehicle_look_up_year_manual || data.other_vehicle_manual_year) {
+          document.getElementById('other-vehicle-look-up-year-manual').value = data.other_vehicle_look_up_year_manual || data.other_vehicle_manual_year;
         }
 
         // Restore damage description
@@ -1386,6 +1498,11 @@
         other_vehicle_look_up_colour: document.getElementById('other-vehicle-look-up-colour').textContent,
         other_vehicle_look_up_year: document.getElementById('other-vehicle-look-up-year').textContent,
         other_vehicle_look_up_fuel_type: document.getElementById('other-vehicle-look-up-fuel-type').textContent,
+        // Manual vehicle entry fields (using same database fields as DVLA lookup)
+        other_vehicle_look_up_make_manual: document.getElementById('other-vehicle-look-up-make-manual').value,
+        other_vehicle_look_up_model_manual: document.getElementById('other-vehicle-look-up-model-manual').value,
+        other_vehicle_look_up_colour_manual: document.getElementById('other-vehicle-look-up-colour-manual').value,
+        other_vehicle_look_up_year_manual: document.getElementById('other-vehicle-look-up-year-manual').value,
         other_vehicle_look_up_mot_status: document.getElementById('other-vehicle-look-up-mot-status').textContent,
         other_vehicle_look_up_mot_expiry_date: document.getElementById('other-vehicle-look-up-mot-expiry-date').textContent,
         other_vehicle_look_up_tax_status: document.getElementById('other-vehicle-look-up-tax-status').textContent,
