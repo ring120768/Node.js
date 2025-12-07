@@ -97,12 +97,23 @@ class DVLAService {
       );
 
       // DVLA returns vehicle data in response.data
+      // Log warning if model is missing (helps track incomplete DVLA data)
+      if (!response.data.model) {
+        logger.warn('DVLA API returned no model data', {
+          registration: response.data.registrationNumber,
+          make: response.data.make,
+          monthOfFirstRegistration: response.data.monthOfFirstRegistration
+        });
+      }
+
       return {
         success: true,
         data: {
           registration: response.data.registrationNumber,
           make: response.data.make,
-          model: response.data.model || response.data.monthOfFirstRegistration,
+          // FIX: Don't fallback to monthOfFirstRegistration (contains date data, not model name)
+          // Previously: model || monthOfFirstRegistration caused year/month data in model field
+          model: response.data.model || null,
           color: response.data.colour,
           year_of_manufacture: response.data.yearOfManufacture,
           fuel_type: response.data.fuelType,
