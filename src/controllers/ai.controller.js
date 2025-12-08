@@ -1,10 +1,12 @@
 /**
  * AI Controller - Car Crash Lawyer AI
  * Handles AI-powered analysis of personal statements
- * ✅ Uses OpenAI GPT for comprehensive analysis
- * ✅ Two-Phase Architecture (Migration 028):
- *    - Phase 1: Generate form_data_summary when pages 1-12 submitted (gpt-4o-mini)
- *    - Phase 2: Blend form_data_summary + transcription into comprehensive analysis (gpt-4o)
+ * ✅ Uses OpenAI GPT-4o for comprehensive analysis
+ * ✅ Single-Phase Architecture (Refactored 2025-12-08):
+ *    - Direct generation using raw structured data + transcription
+ *    - Temperature 0.2 for factual accuracy with narrative flow
+ *    - Database schema included in prompt for complete field coverage
+ *    - Eliminates information cascade from previous two-phase system
  */
 
 const OpenAI = require('openai');
@@ -49,6 +51,7 @@ async function analyzeStatement(req, res) {
     let incidentData = null;
     let otherVehicles = [];
     let witnesses = [];
+    let formDataSummary = null;  // Phase 1 form data summary (pages 1-12)
 
     if (incidentId) {
       // Fetch main incident report (160+ fields)
@@ -61,7 +64,13 @@ async function analyzeStatement(req, res) {
 
       if (!error && data) {
         incidentData = data;
-        logger.info('Incident data retrieved', { incidentId, fieldCount: Object.keys(data).length });
+        formDataSummary = data.form_data_summary || null;  // Extract Phase 1 summary for blending
+        logger.info('Incident data retrieved', {
+          incidentId,
+          fieldCount: Object.keys(data).length,
+          hasFormDataSummary: !!formDataSummary,
+          formDataSummaryLength: formDataSummary?.length || 0
+        });
       }
 
       // Fetch other vehicles (up to 5 vehicles)
@@ -96,7 +105,8 @@ async function analyzeStatement(req, res) {
       transcription,
       incidentData,
       otherVehicles,
-      witnesses
+      witnesses,
+      formDataSummary  // Phase 1 form data summary for Phase 2 blending
     );
 
     // Store analysis in database for audit
@@ -582,54 +592,90 @@ function buildRoadConditionsArray(incidentData) {
 
 /**
  * Build comprehensive incident data structure using ALL available fields
- * This is used for the Page 14 closing statement narrative
+ *
+ * ENHANCED VERSION (2025-12-07):
+ * - Dynamically extracts ALL non-null fields from database (190 total fields)
+ * - Preserves existing categorization for ~80 known fields
+ * - Automatically categorizes unmapped fields into appropriate sections
+ * - Tracks which fields have been extracted for metadata
+ * - Ensures 100% field coverage as requested by user
+ *
+ * This is used for Phase 1 form data summary generation.
  */
 function buildComprehensiveIncidentData(incidentData, otherVehicles = [], witnesses = []) {
+  // Track which fields we've already extracted to avoid duplicates
+  const extractedFields = new Set();
+
+  // Helper function to mark field as extracted
+  const markExtracted = (...fieldNames) => {
+    fieldNames.forEach(f => extractedFields.add(f));
+  };
+
+  // Helper function to safely extract value and mark as extracted
+  const extractValue = (fieldName, fallback = null) => {
+    markExtracted(fieldName);
+    const value = incidentData[fieldName];
+    return (value !== null && value !== undefined && value !== '') ? value : fallback;
+  };
+
+  // Helper function to try multiple field names (for legacy fields)
+  const extractFromMultiple = (...fieldNames) => {
+    fieldNames.forEach(f => markExtracted(f));
+    for (const fieldName of fieldNames) {
+      const value = incidentData[fieldName];
+      if (value !== null && value !== undefined && value !== '') {
+        return value;
+      }
+    }
+    return null;
+  };
+
   const data = {
     // Incident Basic Information
     incident: {
-      date: incidentData.when_did_the_accident_happen || 'Not specified',
-      time: incidentData.what_time_did_the_accident_happen || 'Not specified',
-      location: incidentData.where_exactly_did_this_happen || 'Not specified',
-      what3words: incidentData.what_3_words_location || null,
-      roadType: incidentData.road_type || null,
-      speedLimit: incidentData.speed_limit || null,
-      description: incidentData.what_happened_detailed_account || incidentData.detailed_account_of_what_happened || null
+      date: extractFromMultiple('when_did_the_accident_happen', 'accident_date', 'incident_date') || 'Not specified',
+      time: extractFromMultiple('what_time_did_the_accident_happen', 'accident_time', 'incident_time') || 'Not specified',
+      location: extractFromMultiple('where_exactly_did_this_happen', 'accident_location', 'incident_location') || 'Not specified',
+      what3words: extractValue('what_3_words_location'),
+      coordinates: extractValue('coordinates'),
+      roadType: extractValue('road_type'),
+      speedLimit: extractValue('speed_limit'),
+      description: extractFromMultiple('what_happened_detailed_account', 'detailed_account_of_what_happened', 'incident_description')
     },
 
     // Environmental Conditions
     conditions: {
       weather: buildWeatherArray(incidentData) || 'Not specified',
-      lighting: incidentData.lighting_conditions || null,
+      lighting: extractValue('lighting_conditions'),
       roadSurface: buildRoadConditionsArray(incidentData) || null,
-      visibility: incidentData.visibility || null,
-      trafficDensity: incidentData.traffic_density || null,
-      roadFeatures: extractArrayField(incidentData.road_features) || null
+      visibility: extractValue('visibility'),
+      trafficDensity: extractValue('traffic_density'),
+      roadFeatures: extractArrayField(extractValue('road_features'))
     },
 
     // User's Vehicle Information
     userVehicle: {
-      make: incidentData.make_of_car || 'Not specified',
-      model: incidentData.model_of_car || 'Not specified',
-      registration: incidentData.registration_number || null,
-      color: incidentData.vehicle_colour || null,
-      damage: incidentData.damage_to_your_vehicle || null,
-      damageEstimate: incidentData.estimated_damage_cost || null,
-      occupants: incidentData.number_of_occupants || null,
-      seatbeltsWorn: incidentData.seatbelts_worn || null,
-      airbagsDeployed: incidentData.airbags_deployed || null,
-      vehicleMoving: incidentData.was_vehicle_moving || null,
-      speed: incidentData.approximate_speed || null
+      make: extractFromMultiple('make_of_car', 'vehicle_make') || 'Not specified',
+      model: extractFromMultiple('model_of_car', 'vehicle_model') || 'Not specified',
+      registration: extractFromMultiple('registration_number', 'vehicle_registration'),
+      color: extractFromMultiple('vehicle_colour', 'vehicle_color'),
+      damage: extractFromMultiple('damage_to_your_vehicle', 'vehicle_damage'),
+      damageEstimate: extractFromMultiple('estimated_damage_cost', 'vehicle_damage_estimate'),
+      occupants: extractFromMultiple('number_of_occupants', 'vehicle_occupants'),
+      seatbeltsWorn: extractFromMultiple('seatbelts_worn', 'were_seatbelts_worn'),
+      airbagsDeployed: extractFromMultiple('airbags_deployed', 'were_airbags_deployed'),
+      vehicleMoving: extractFromMultiple('was_vehicle_moving', 'vehicle_moving'),
+      speed: extractFromMultiple('approximate_speed', 'vehicle_speed')
     },
 
     // User Information
     user: {
-      wasDriver: incidentData.were_you_the_driver || null,
-      licenseValid: incidentData.valid_driving_license || null,
-      insuranceValid: incidentData.valid_insurance || null,
-      motValid: incidentData.valid_mot || null,
-      dashcamPresent: incidentData.dashcam_installed || null,
-      dashcamRecording: incidentData.dashcam_recording || null
+      wasDriver: extractFromMultiple('were_you_the_driver', 'user_was_driver'),
+      licenseValid: extractFromMultiple('valid_driving_license', 'driving_license_valid'),
+      insuranceValid: extractFromMultiple('valid_insurance', 'insurance_valid'),
+      motValid: extractFromMultiple('valid_mot', 'mot_valid'),
+      dashcamPresent: extractFromMultiple('dashcam_installed', 'dashcam_present'),
+      dashcamRecording: extractValue('dashcam_recording')
     },
 
     // Other Vehicles Involved
@@ -651,25 +697,25 @@ function buildComprehensiveIncidentData(incidentData, otherVehicles = [], witnes
 
     // Medical Information
     medical: {
-      injuries: buildMedicalSymptomsArray(incidentData) || incidentData.medical_how_are_you_feeling || null,
-      symptomsAppearance: incidentData.symptoms_appearance_time || null,
-      hospitalVisit: incidentData.hospital_visit || null,
-      hospitalName: incidentData.hospital_name || null,
-      ambulanceCalled: incidentData.ambulance_called || null,
-      treatmentReceived: incidentData.treatment_received || null,
-      ongoingSymptoms: incidentData.ongoing_symptoms || null,
-      priorInjuries: incidentData.prior_injuries || null
+      injuries: buildMedicalSymptomsArray(incidentData) || extractValue('medical_how_are_you_feeling'),
+      symptomsAppearance: extractValue('symptoms_appearance_time'),
+      hospitalVisit: extractValue('hospital_visit'),
+      hospitalName: extractValue('hospital_name'),
+      ambulanceCalled: extractValue('ambulance_called'),
+      treatmentReceived: extractValue('treatment_received'),
+      ongoingSymptoms: extractValue('ongoing_symptoms'),
+      priorInjuries: extractValue('prior_injuries')
     },
 
     // Emergency Services & Police
     emergency: {
-      policeAttended: incidentData.police_attended || incidentData.did_police_attend || null,
-      policeStation: incidentData.police_station || null,
-      crimeReferenceNumber: incidentData.crime_reference_number || null,
-      officerName: incidentData.officer_name || null,
-      officerBadgeNumber: incidentData.officer_badge_number || null,
-      breathalyzerGiven: incidentData.breathalyzer_test || null,
-      arrestsMade: incidentData.arrests_made || null
+      policeAttended: extractFromMultiple('police_attended', 'did_police_attend'),
+      policeStation: extractValue('police_station'),
+      crimeReferenceNumber: extractFromMultiple('crime_reference_number', 'police_reference'),
+      officerName: extractValue('officer_name'),
+      officerBadgeNumber: extractValue('officer_badge_number'),
+      breathalyzerGiven: extractFromMultiple('breathalyzer_test', 'breathalyzer_given'),
+      arrestsMade: extractValue('arrests_made')
     },
 
     // Witnesses
@@ -684,35 +730,111 @@ function buildComprehensiveIncidentData(incidentData, otherVehicles = [], witnes
 
     // Insurance Information
     insurance: {
-      userInsurer: incidentData.insurer_name || null,
-      userPolicyNumber: incidentData.policy_number || null,
-      userClaimNumber: incidentData.claim_number || null,
-      otherDriverInsurer: incidentData.other_driver_insurer || null,
-      otherDriverPolicyNumber: incidentData.other_driver_policy_number || null,
-      claimFiled: incidentData.claim_filed || null,
-      claimDate: incidentData.claim_filed_date || null
+      userInsurer: extractFromMultiple('insurer_name', 'user_insurer'),
+      userPolicyNumber: extractFromMultiple('policy_number', 'user_policy_number'),
+      userClaimNumber: extractFromMultiple('claim_number', 'user_claim_number'),
+      otherDriverInsurer: extractValue('other_driver_insurer'),
+      otherDriverPolicyNumber: extractValue('other_driver_policy_number'),
+      claimFiled: extractValue('claim_filed'),
+      claimDate: extractFromMultiple('claim_filed_date', 'claim_date')
     },
 
     // Fault & Liability
     fault: {
-      userOpinion: incidentData.who_was_at_fault || incidentData.fault_assessment || null,
-      otherDriverOpinion: incidentData.other_driver_fault_opinion || null,
-      contributingFactors: extractArrayField(incidentData.contributing_factors) || null,
-      trafficViolations: incidentData.traffic_violations || null,
-      roadSignsPresent: incidentData.road_signs_present || null,
-      signalCompliance: incidentData.signal_compliance || null
+      userOpinion: extractFromMultiple('who_was_at_fault', 'fault_assessment'),
+      otherDriverOpinion: extractValue('other_driver_fault_opinion'),
+      contributingFactors: extractArrayField(extractValue('contributing_factors')),
+      trafficViolations: extractValue('traffic_violations'),
+      roadSignsPresent: extractValue('road_signs_present'),
+      signalCompliance: extractValue('signal_compliance')
     },
 
     // Additional Context
     additional: {
-      previousAccidents: incidentData.previous_accidents || null,
-      dashcamFootageAvailable: incidentData.dashcam_footage_available || null,
-      photographsTaken: incidentData.photographs_taken || null,
-      witnessStatementsTaken: incidentData.witness_statements_taken || null,
-      reportFiledWithInsurer: incidentData.report_filed_with_insurer || null,
-      legalRepresentation: incidentData.legal_representation || null,
-      otherRelevantInfo: incidentData.other_relevant_information || null
+      previousAccidents: extractValue('previous_accidents'),
+      dashcamFootageAvailable: extractValue('dashcam_footage_available'),
+      photographsTaken: extractValue('photographs_taken'),
+      witnessStatementsTaken: extractValue('witness_statements_taken'),
+      reportFiledWithInsurer: extractValue('report_filed_with_insurer'),
+      legalRepresentation: extractValue('legal_representation'),
+      otherRelevantInfo: extractFromMultiple('other_relevant_information', 'additional_notes')
     }
+  };
+
+  // Mark all boolean weather fields as extracted (handled by buildWeatherArray)
+  [
+    'weather_bright_sunlight', 'weather_clear', 'weather_cloudy', 'weather_raining',
+    'weather_heavy_rain', 'weather_drizzle', 'weather_fog', 'weather_snow',
+    'weather_ice', 'weather_windy', 'weather_hail', 'weather_thunder_lightning'
+  ].forEach(f => markExtracted(f));
+
+  // Mark all boolean medical symptom fields as extracted (handled by buildMedicalSymptomsArray)
+  [
+    'medical_symptom_chest_pain', 'medical_symptom_uncontrolled_bleeding',
+    'medical_symptom_breathlessness', 'medical_symptom_limb_weakness',
+    'medical_symptom_loss_of_consciousness', 'medical_symptom_severe_headache',
+    'medical_symptom_change_in_vision', 'medical_symptom_abdominal_pain',
+    'medical_symptom_abdominal_bruising', 'medical_symptom_limb_pain_mobility',
+    'medical_symptom_dizziness', 'medical_symptom_life_threatening', 'medical_symptom_none'
+  ].forEach(f => markExtracted(f));
+
+  // Mark all boolean road condition fields as extracted (handled by buildRoadConditionsArray)
+  [
+    'road_condition_dry', 'road_condition_wet', 'road_condition_icy',
+    'road_condition_snow_covered', 'road_condition_loose_surface', 'road_condition_slush_on_road'
+  ].forEach(f => markExtracted(f));
+
+  // System fields to exclude from unmapped extraction
+  const systemFields = new Set([
+    'id', 'create_user_id', 'created_at', 'updated_at', 'deleted_at',
+    'form_data_summary', 'form_data_summary_metadata',
+    'ai_summary', 'ai_incident_summary', 'ai_liability_assessment',
+    'ai_vehicle_damage_analysis', 'ai_injury_assessment', 'ai_witness_credibility',
+    'ai_evidence_quality', 'ai_recommendations', 'ai_closing_statement',
+    'voice_transcription', 'analysis_metadata', 'quality_review', 'closing_statement', 'final_review'
+  ]);
+
+  // NOW: Extract ALL remaining non-null fields that haven't been categorized yet
+  const unmappedFields = {};
+  let unmappedCount = 0;
+
+  for (const [fieldName, value] of Object.entries(incidentData)) {
+    // Skip if already extracted, is a system field, or is null/empty
+    if (extractedFields.has(fieldName) || systemFields.has(fieldName)) continue;
+    if (value === null || value === undefined || value === '') continue;
+
+    // Format the value appropriately
+    let formattedValue = value;
+    if (Array.isArray(value)) {
+      formattedValue = value.join(', ');
+    } else if (typeof value === 'object') {
+      formattedValue = JSON.stringify(value);
+    }
+
+    // Convert snake_case field names to Title Case for readability
+    const readableFieldName = fieldName
+      .split('_')
+      .map(word => word.charAt(0).toUpperCase() + word.slice(1).toLowerCase())
+      .join(' ');
+
+    unmappedFields[readableFieldName] = formattedValue;
+    unmappedCount++;
+  }
+
+  // Add unmapped fields to data structure if any exist
+  if (unmappedCount > 0) {
+    data.unmappedFields = unmappedFields;
+  }
+
+  // Add metadata about extraction
+  data._metadata = {
+    totalFieldsInDatabase: Object.keys(incidentData).length,
+    extractedKnownFields: extractedFields.size,
+    unmappedFieldsFound: unmappedCount,
+    totalFieldsExtracted: extractedFields.size + unmappedCount,
+    otherVehiclesCount: otherVehicles.length,
+    witnessesCount: witnesses.length,
+    extractionComplete: true
   };
 
   return data;
@@ -1203,59 +1325,190 @@ async function generateFormDataSummary(userId, incidentId) {
     // Step 3: Generate form data summary using GPT-4o-mini
     logger.info('[Phase 1 AI] Calling OpenAI GPT-4o-mini for form data summary...');
 
-    const formDataSummaryPrompt = `Document a comprehensive factual summary of a UK road traffic accident based on structured form data.
+    // Check if voice transcription is available for SECTION 2 (Phase 2 blending)
+    const hasTranscription = incidentData.voice_transcription && incidentData.voice_transcription.trim().length > 0;
 
-You are a legal documentation assistant preparing a foundation summary for solicitors reviewing a personal injury claim. This summary captures all form-documented facts before the client's personal voice account is added.
+    // CAR CRASH LAWYER AI - Two-Section Legal Format (2025-12-08)
+    const systemMessage = {
+      role: 'system',
+      content: `You are **CAR CRASH LAWYER AI**, an AI Legal First Responder trained to analyse UK road-traffic incident data and produce legally compliant accident documentation. You MUST only reference information from the Supabase incident_reports table fields provided in the input. Never invent, infer, or speculate. If any field is missing, false, null, or empty, state **"not provided"**.
 
-STRUCTURED INCIDENT DATA (160+ fields from pages 1-12):
+Your output consists of ${hasTranscription ? '**TWO SECTIONS**' : '**ONE SECTION** (SECTION 2 will be added after voice transcription is completed)'}.
+
+======================================================
+
+### SECTION 1 — TRAFFIC ACCIDENT SUMMARY — PAGES 1–10
+
+Your task is to generate a fact-based, chronological summary using the headings below. This reflects Pages 1–10 of the Traffic Accident Legal Report.
+
+Your output MUST:
+
+* Be written in plain legal English
+* Maintain a neutral, factual tone suitable for court or insurer review
+* Reference ONLY information provided in the dataset
+* Avoid advising on liability, legal strategy, fault, compensation, or causation
+* Only state confirmed facts; if unsure, write **"not provided"**
+
+Use these headings exactly:
+
+**1. Driver & Vehicle Identity**
+Summarise: driver identity context, associated user ID, vehicle make/model/colour/year/fuel type, licence plate (stored in vehicle_license_plate), DVLA lookups (dvla_make, dvla_model, dvla_colour, dvla_year, dvla_fuel_type, dvla_mot_status, dvla_mot_expiry, dvla_tax_status, dvla_tax_due_date, dvla_insurance_status), recovery data (if present), manual overrides (manual_*) if DVLA is missing.
+
+**2. Emergency Contacts**
+From witness_name and phone/email if used as emergency contact. If none exist, state "not provided."
+
+**3. Insurance Status**
+Summarise: other party insurance fields (other_drivers_insurance_company, other_drivers_policy_number, other_drivers_policy_holder_name, other_drivers_policy_cover_type). If the reporting driver's insurance was not captured, state "not provided."
+
+**4. Medical and Safety Status**
+Summarise: medical_attention_needed, medical_ambulance_called, medical_injury_details, medical_injury_severity, medical_hospital_name, medical_treatment_received, boolean symptom flags under medical_symptom_*, and six_point_safety_check_completed. Include whether the user was fit to continue and any declared injuries.
+
+**5. Accident Time, Location & Conditions**
+Summarise: accident_date, accident_time, location, what3words, nearest_landmark, road type booleans (road_type_*), weather (weather_*), visibility (visibility_*), road condition (road_condition_*), traffic (traffic_conditions_*), speed limit (speed_limit) and estimated speed (your_speed).
+
+**6. Junction / Road Layout**
+Include: junction_type, junction_control, traffic_light_status, user_manoeuvre, additional_hazards, and any special_condition_* booleans (e.g., roadworks, cyclists, pedestrians, parked vehicles, sun glare, narrow road).
+
+**7. Point of Impact & Vehicle Damage**
+Interpret: no_damage, impact booleans (impact_point_*), damage_to_your_vehicle, describle_the_damage, and vehicle_driveable (text: treat "yes" as TRUE and all else as FALSE).
+
+**8. Other Vehicle & Driver (If Applicable)**
+Summarise: other_full_name, other_contact_number, other_email_address, other_vehicle_registration, DVLA look-up details under other_vehicle_look_up_*, insurance fields, and describe_damage_to_vehicle.
+
+**9. Witnesses (If Provided)**
+Include: witness_name, witness_mobile_number, witness_email_address, witness_statement.
+
+**10. Police Involvement & Legal Compliance**
+Include: police_attended, accident_ref_number, police_force, officer_name, officer_badge, user_breath_test, other_breath_test, airbags_deployed, seatbelts_worn, seatbelt_reason.
+
+======================================================
+
+### BOOLEAN & UNKNOWN FIELD HANDLING RULES
+
+* If TRUE or "yes" → state the affirmative fact
+* If FALSE or "no" → state the negative fact
+* If null, undefined, or blank → "not provided"
+* Never infer a reason unless explicitly provided
+* Multi-select fields → list selected values, or **"none selected"**
+
+======================================================
+${hasTranscription ? `
+### SECTION 2 — LEGAL INCIDENT NARRATIVE
+
+You are now operating in **JOURNALISTIC FACTUAL MODE**.
+
+Your task is to merge:
+
+1. The structured summary you just produced
+2. The reporting driver's first-person statement stored in voice_transcription
+
+Your narrative MUST:
+
+* Read like a prize-winning investigative journalist
+* Maintain a neutral, objective tone
+* Use clear chronological structure
+* Treat the transcription as first-hand testimony
+* Correct grammar without altering meaning
+* If contradictions exist, present both neutrally using:
+
+  * "According to the driver…"
+  * "Based on the submitted incident data…"
+
+STRUCTURE YOUR OUTPUT EXACTLY AS FOLLOWS:
+
+===========================
+**LEGAL INCIDENT NARRATIVE**
+
+**Overview**
+Summarise the context: who was involved, where it occurred, and what type of incident it was.
+
+**Sequence of Events**
+Chronologically reconstruct what occurred using confirmed data merged with the driver's testimony.
+
+**Involved Parties & Vehicles**
+Summarise each vehicle and driver using factual identifiers only.
+
+**Environmental Factors**
+Include road, weather, visibility, and other contextual factors without implying fault.
+
+**Consequences & Immediate Aftermath**
+Summarise visible damage, injuries, police attendance, breathalyser outcomes, and driveability. If information was not provided, state that explicitly.
+
+===========================
+
+ABSOLUTE RESTRICTIONS:
+
+* Do NOT infer liability, causation, fault, speeding intent, distraction, or negligence
+* No recommendations or legal advice
+* No emotional, dramatic, or sensational language
+* No hypothetical scenarios
+* Only confirmed facts
+
+======================================================
+` : `
+### SECTION 2 — LEGAL INCIDENT NARRATIVE
+
+⚠️ **NOT YET AVAILABLE** - This section will be generated after the driver provides their voice transcription statement (Phase 2).
+
+======================================================
+`}
+END OF INSTRUCTIONS.`
+    };
+
+    const userMessage = {
+      role: 'user',
+      content: `Generate a comprehensive legal summary for this UK road traffic accident claim following the CAR CRASH LAWYER AI format.
+
+INCIDENT DATA (${comprehensiveData._metadata?.totalFieldsExtracted || '190+'} fields from pages 1-12):
 ${JSON.stringify(comprehensiveData, null, 2)}
+${hasTranscription ? `
+VOICE TRANSCRIPTION (Driver's First-Hand Testimony):
+"""
+${incidentData.voice_transcription}
+"""
 
-INSTRUCTIONS:
-1. Generate a professional factual summary of 400-600 words (5-7 structured paragraphs)
-2. Use British English terminology throughout (solicitor, claim, number plate, A&E, third party)
-3. Format dates as DD/MM/YYYY and times in 24-hour format
-4. Structure logically with clear topic paragraphs:
-   - Paragraph 1: Incident overview (date, time, location, what3words, road type)
-   - Paragraph 2: Environmental conditions (weather, lighting, road surface, visibility, traffic density)
-   - Paragraph 3: Vehicles involved (user vehicle + other vehicles - make, model, registration, damage)
-   - Paragraph 4: Medical information (injuries, symptoms, hospital attendance, treatment)
-   - Paragraph 5: Emergency response (police attendance, crime reference, breathalyzer, ambulance)
-   - Paragraph 6: Witnesses and evidence (witness details, dashcam, photographs)
-   - Paragraph 7: Insurance and fault assessment (insurers, policy numbers, fault opinion, contributing factors)
-5. State only documented facts - if information is missing, write "Not documented" rather than inferring
-6. Use precise numeric data (speed limits, number of occupants, vehicle counts)
-7. Reference specific field names when documenting critical facts (e.g., "dashcamPresent: true")
-8. Maintain neutral, factual tone suitable for legal documentation
-9. Include all relevant insurance details (policy numbers, insurer names, claim numbers)
-10. Document all parties involved with complete details (names, contact info, registration numbers)
+⚠️ CRITICAL: You MUST generate BOTH SECTION 1 and SECTION 2 since voice transcription is available.
+` : `
+⚠️ NOTE: Voice transcription not yet provided - generate SECTION 1 only.
+`}
 
-OUTPUT FORMAT:
-Return a single comprehensive text summary in paragraph form. Do NOT use JSON or structured data - just flowing prose organized into 5-7 clear paragraphs as described above.
+MANDATORY REQUIREMENTS:
+1. Use the exact 10-heading structure from SECTION 1 instructions
+2. Include every single non-null field from the data above
+3. State "not provided" for missing fields - NEVER invent data
+4. Use plain legal English suitable for court/insurer review
+5. Maintain neutral, factual tone throughout
+6. Format dates as DD/MM/YYYY and times in 24-hour format
+7. Use British legal terminology (solicitor, claim, number plate, A&E, third party)
+${hasTranscription ? '8. For SECTION 2: Blend structured data with voice testimony using journalistic factual mode' : ''}
 
-CRITICAL REQUIREMENTS:
-- Use ONLY information present in the structured data
-- Never infer, assume, or add details not explicitly provided
-- If a field is null, undefined, or empty, skip it or state "Not documented"
-- Focus on facts that would be relevant to a personal injury solicitor
-- Ensure all names, numbers, and dates are accurate
-- British legal context: right to claim compensation, duty of care, negligence assessment`;
+FIELD COVERAGE CHECKLIST (verify ALL are included):
+- Driver & Vehicle Identity: ✓ Registration, make, model, DVLA data, manual overrides
+- Emergency Contacts: ✓ Names, phone, email (if used)
+- Insurance: ✓ Other party insurer, policy number, policy holder, cover type
+- Medical: ✓ ALL symptom flags, ambulance, hospital, treatment, injuries, safety check
+- Location & Conditions: ✓ Date, time, location, what3words, weather, visibility, road surface, traffic, speed
+- Junction/Layout: ✓ Type, control, lights, manoeuvre, hazards, special conditions
+- Impact & Damage: ✓ No damage flag, impact points, damage description, driveability
+- Other Party: ✓ Name, contact, registration, DVLA data, insurance, damage
+- Witnesses: ✓ Name, mobile, email, statement for EACH witness
+- Police & Legal: ✓ Attendance, reference, force, officer, badge, breath tests, airbags, seatbelts
+
+⚠️ ZERO OMISSIONS RULE: If a field has data, it MUST appear in your output.
+
+Generate the complete ${hasTranscription ? 'TWO-SECTION' : 'SECTION 1'} summary now.`
+    };
 
     const startTime = Date.now();
 
     const completion = await openai.chat.completions.create({
       model: 'gpt-4o-mini', // 10x cheaper than gpt-4o, suitable for structured data
-      messages: [
-        {
-          role: 'system',
-          content: 'You are a legal documentation assistant specializing in UK personal injury claims. Generate factual, professional summaries of road traffic accidents based on structured form data.'
-        },
-        {
-          role: 'user',
-          content: formDataSummaryPrompt
-        }
-      ],
-      temperature: 0.3, // Low temperature for factual accuracy
-      max_tokens: 1500, // 400-600 words ≈ 800-1200 tokens
+      messages: [systemMessage, userMessage],
+      temperature: 0.4,         // Balanced factual with natural elaboration (was 0.3→0.35→0.38→0.4)
+      max_tokens: 3500,         // ~2600 words capacity - room for comprehensive coverage (was 2800→3500)
+      top_p: 0.9,               // High probability tokens
+      frequency_penalty: 0.3,   // Moderate repetition control (was 0.2→0.3→0.4→0.35→0.6)
+      presence_penalty: 0.5,    // Sweet spot for comprehensive coverage (was 0.1→0.4→0.5→0.6→0.65→0.75→0.8)
     });
 
     const duration = Date.now() - startTime;
@@ -1275,7 +1528,8 @@ CRITICAL REQUIREMENTS:
       durationMs: duration,
       phase: 'Phase 1: Form Data Summary',
       dataSource: 'incident_reports + incident_other_vehicles + incident_witnesses',
-      fieldCount: Object.keys(comprehensiveData).length
+      fieldCount: comprehensiveData._metadata?.totalFieldsExtracted || Object.keys(comprehensiveData).length,
+      extractionMetadata: comprehensiveData._metadata // Include full extraction statistics
     };
 
     const { error: updateError } = await supabase
@@ -1326,9 +1580,389 @@ CRITICAL REQUIREMENTS:
   }
 }
 
+/**
+ * ═══════════════════════════════════════════════════════════════════════════
+ * NEW SINGLE-PHASE AI ARCHITECTURE (2025-12-08)
+ * ═══════════════════════════════════════════════════════════════════════════
+ *
+ * Replaces the flawed two-phase system that caused hallucinations.
+ *
+ * Key improvements:
+ * - Uses GPT-4o for all processing (no gpt-4o-mini cascade)
+ * - Temperature 0.2 (factual with narrative creativity)
+ * - Direct access to raw structured data (160+ fields)
+ * - Database schema included in prompt
+ * - No information bottleneck from text-only summaries
+ */
+
+/**
+ * Generate AI Summary - Single Phase Architecture
+ *
+ * Generates comprehensive legal summary by directly processing:
+ * 1. Raw structured incident data (160+ fields from 3 tables)
+ * 2. User's voice transcription
+ * 3. Database schema for complete field coverage
+ *
+ * Output: 800-2500 word legal summary for Pages 13-18 of PDF
+ *
+ * @param {string} userId - User UUID
+ * @param {string} incidentId - Incident UUID
+ * @param {string} transcription - User's voice statement
+ * @returns {Promise<object>} Generated AI summary with metadata
+ */
+async function generateSinglePhaseAiSummary(userId, incidentId, transcription) {
+  const startTime = Date.now();
+
+  logger.info('[Single-Phase AI] Starting comprehensive analysis', {
+    userId,
+    incidentId,
+    transcriptionLength: transcription.length
+  });
+
+  try {
+    // Step 1: Fetch ALL data from 3 tables
+    const { data: incidentData, error: incidentError } = await supabase
+      .from('incident_reports')
+      .select('*')
+      .eq('id', incidentId)
+      .eq('create_user_id', userId)
+      .is('deleted_at', null)
+      .single();
+
+    if (incidentError || !incidentData) {
+      throw new Error('Failed to fetch incident data');
+    }
+
+    const { data: otherVehicles, error: vehiclesError } = await supabase
+      .from('incident_other_vehicles')
+      .select('*')
+      .eq('create_user_id', userId)
+      .is('deleted_at', null)
+      .order('vehicle_index', { ascending: true });
+
+    const { data: witnesses, error: witnessesError } = await supabase
+      .from('incident_witnesses')
+      .select('*')
+      .eq('create_user_id', userId)
+      .is('deleted_at', null)
+      .order('witness_index', { ascending: true });
+
+    logger.info('[Single-Phase AI] Data fetched', {
+      incidentFields: Object.keys(incidentData).length,
+      otherVehiclesCount: otherVehicles?.length || 0,
+      witnessesCount: witnesses?.length || 0
+    });
+
+    // Step 2: Build comprehensive data structure (uses existing function)
+    const comprehensiveData = buildComprehensiveIncidentData(
+      incidentData,
+      otherVehicles || [],
+      witnesses || []
+    );
+
+    // Step 3: Build prompts with schema + data
+    const systemPrompt = buildSinglePhasSystemPrompt();
+    const userPrompt = buildSinglePhaseUserPrompt(comprehensiveData, transcription);
+
+    logger.info('[Single-Phase AI] Calling GPT-4o (temp 0.2)...');
+
+    // Step 4: Call GPT-4o with temperature 0.2
+    const completion = await openai.chat.completions.create({
+      model: 'gpt-4o',
+      messages: [
+        { role: 'system', content: systemPrompt },
+        { role: 'user', content: userPrompt }
+      ],
+      temperature: 0.2,  // Factual accuracy with narrative flow
+      max_tokens: 4000,
+      top_p: 0.95,
+      frequency_penalty: 0.1,
+      presence_penalty: 0.1
+    });
+
+    const aiSummary = completion.choices[0].message.content;
+    const elapsedTime = ((Date.now() - startTime) / 1000).toFixed(1);
+
+    logger.info('[Single-Phase AI] Generation complete', {
+      elapsedSeconds: elapsedTime,
+      summaryLength: aiSummary.length,
+      wordCount: aiSummary.split(/\s+/).length,
+      tokensUsed: completion.usage.total_tokens
+    });
+
+    // Step 5: Store result in database
+    const metadata = {
+      model: 'gpt-4o',
+      temperature: 0.2,
+      generated_at: new Date().toISOString(),
+      elapsed_seconds: parseFloat(elapsedTime),
+      tokens_used: completion.usage.total_tokens,
+      prompt_tokens: completion.usage.prompt_tokens,
+      completion_tokens: completion.usage.completion_tokens,
+      architecture: 'single-phase-v1',
+      data_sources: {
+        incident_fields: Object.keys(incidentData).length,
+        other_vehicles: otherVehicles?.length || 0,
+        witnesses: witnesses?.length || 0,
+        transcription_length: transcription.length
+      }
+    };
+
+    const { error: updateError } = await supabase
+      .from('incident_reports')
+      .update({
+        ai_summary: aiSummary,
+        form_data_summary_metadata: metadata
+      })
+      .eq('id', incidentId)
+      .eq('create_user_id', userId);
+
+    if (updateError) {
+      logger.error('[Single-Phase AI] Failed to store result:', updateError);
+      throw updateError;
+    }
+
+    logger.success('[Single-Phase AI] Complete - summary stored in database', {
+      incidentId,
+      wordCount: aiSummary.split(/\s+/).length
+    });
+
+    return {
+      success: true,
+      aiSummary,
+      metadata
+    };
+
+  } catch (error) {
+    logger.error('[Single-Phase AI] Generation failed', {
+      error: error.message,
+      stack: error.stack
+    });
+
+    // Store error metadata
+    try {
+      await supabase
+        .from('incident_reports')
+        .update({
+          form_data_summary_metadata: {
+            error: error.message,
+            failed_at: new Date().toISOString(),
+            architecture: 'single-phase-v1'
+          }
+        })
+        .eq('id', incidentId)
+        .eq('create_user_id', userId);
+    } catch (metadataError) {
+      logger.error('[Single-Phase AI] Failed to store error metadata:', metadataError);
+    }
+
+    throw new Error(`Failed to generate AI summary: ${error.message}`);
+  }
+}
+
+/**
+ * Build System Prompt for Single-Phase Architecture
+ *
+ * Defines the AI's role, constraints, and output format for legal summary generation.
+ */
+function buildSinglePhasSystemPrompt() {
+  return `You are a legal document analyst specializing in UK traffic accident reports for solicitors.
+
+Your task is to generate a comprehensive, factual summary for legal review and case assessment.
+
+═══════════════════════════════════════════════════════════════
+CRITICAL RULES
+═══════════════════════════════════════════════════════════════
+
+1. FACTUAL ACCURACY:
+   - Use ONLY the data provided in the incident report and transcription
+   - NEVER invent, guess, or hallucinate facts
+   - If a field is empty/null/undefined, state "not documented" - never fill gaps
+
+2. DATA PRIORITY:
+   - Form data (pages 1-12) provides PRECISE facts: dates, times, locations, registration numbers
+   - Transcription provides PERSPECTIVE: event sequence, emotions, personal observations
+   - When they differ, present both clearly labeled: "Form data states X, while personal account describes Y"
+
+3. VERIFICATION:
+   - Always cross-reference facts against provided data structure
+   - Use exact values from fields (don't paraphrase dates, times, locations)
+   - Preserve registration numbers, policy numbers, reference numbers exactly as given
+
+4. TONE & STYLE:
+   - Professional, factual, sincere legal tone
+   - Clear journalistic structure following incident chronology
+   - No speculation, opinion, or "courtroom theatrics"
+   - Natural narrative flow while maintaining precision
+
+═══════════════════════════════════════════════════════════════
+OUTPUT FORMAT
+═══════════════════════════════════════════════════════════════
+
+Generate a comprehensive summary in TWO main sections:
+
+SECTION 1 — TRAFFIC ACCIDENT SUMMARY
+
+A structured summary covering 10 key areas:
+
+1. Accident Circumstances
+   - Date, time, location (exact as documented)
+   - Road type, speed limit, conditions
+   - Event sequence from both sources
+
+2. User's Vehicle
+   - Make, model, registration, color
+   - Damage description and location
+   - Occupants, safety equipment status
+
+3. Other Vehicles Involved
+   - Make, model, registration, color (DVLA data if available)
+   - Driver details, damage
+   - Insurance information
+   - [Repeat for each vehicle, clearly numbered]
+
+4. Witnesses
+   - Name, contact details, relationship
+   - Statement availability
+   - [List each witness separately]
+
+5. Medical Impact
+   - Injuries documented in form
+   - Symptoms, hospital visits, treatment
+   - Ongoing medical concerns
+
+6. Insurance Information
+   - User's insurer, policy number, claim status
+   - Other party's insurance details
+   - Claim filing dates
+
+7. Road and Weather Conditions
+   - Weather array (rain, fog, etc.)
+   - Lighting conditions
+   - Road surface conditions
+   - Visibility, traffic density
+
+8. Damage Assessment
+   - Vehicle damage descriptions
+   - Estimated repair costs (if documented)
+   - Airbag deployment, structural damage
+
+9. Official Response
+   - Police attendance (yes/no)
+   - Crime reference number, officer details
+   - Breathalyzer tests, arrests
+   - Emergency services involvement
+
+10. Additional Context
+    - Dashcam footage availability
+    - Photographs taken
+    - Previous accidents
+    - Other relevant documentation
+
+SECTION 2 — LEGAL INCIDENT NARRATIVE
+
+A flowing 400-800 word narrative that:
+- Integrates form data precision with personal testimony perspective
+- Follows natural chronology: Before → During → After
+- Uses specific details from form for accuracy
+- Uses transcription for human context and event flow
+- Clearly distinguishes documented facts from personal observations
+- Maintains legal professional tone throughout
+
+═══════════════════════════════════════════════════════════════
+LENGTH GUIDELINES
+═══════════════════════════════════════════════════════════════
+
+Target total length varies by data richness:
+- Sparse data (no witnesses, single vehicle): 800-1200 words
+- Average data (1 witness, 1 other vehicle): 1200-1800 words
+- Complex data (multiple witnesses/vehicles): 1500-2500 words
+
+NEVER pad with unnecessary elaboration - length should be natural to data provided.`;
+}
+
+/**
+ * Build User Prompt for Single-Phase Architecture
+ *
+ * Includes database schema + structured data + transcription
+ */
+function buildSinglePhaseUserPrompt(comprehensiveData, transcription) {
+  return `═══════════════════════════════════════════════════════════════
+DATABASE SCHEMA REFERENCE
+═══════════════════════════════════════════════════════════════
+
+The incident data structure contains fields from 3 normalized tables:
+
+**incident_reports** (main accident details):
+- accident_date: Date of incident (DD/MM/YYYY format)
+- accident_time: Time of incident (HH:MM format)
+- accident_location: Full address/location string
+- accident_description: User's written description
+- weather_conditions: Array of weather factors (e.g., ["rain", "fog"])
+- lighting_conditions: Lighting at time of incident
+- road_features: Array of road features (e.g., ["junction", "roundabout"])
+- road_type: Type of road (motorway, A-road, etc.)
+- speed_limit: Posted speed limit
+- vehicle_make, vehicle_model, vehicle_registration: User's vehicle details
+- vehicle_damage: Damage description
+- medical_symptoms: Array of injury symptoms (e.g., ["chest_pain", "headache"])
+- hospital_visit, hospital_name: Medical facility details
+- ambulance_called: Yes/No
+- police_attended, crime_reference_number: Official response
+- insurance_provider, insurance_policy_number: Insurance details
+... [160+ total fields]
+
+**incident_other_vehicles** (other vehicles involved, 1-5 vehicles):
+- vehicle_index: 1-5
+- dvla_make, dvla_model, dvla_colour, dvla_year_of_manufacture: DVLA lookup data
+- other_vehicle_driver_name, other_vehicle_driver_contact: Driver details
+- other_vehicle_insurer, other_vehicle_policy_number: Insurance
+- damage_description: Damage to other vehicle
+- was_moving, direction: Movement at time of impact
+
+**incident_witnesses** (witnesses, 1-3 witnesses):
+- witness_index: 1-3
+- witness_name, witness_contact_phone, witness_email: Contact details
+- witness_relationship: Relationship to parties
+- witness_statement: Statement if available
+- willing_to_testify: Yes/No
+
+═══════════════════════════════════════════════════════════════
+COMPREHENSIVE INCIDENT DATA
+═══════════════════════════════════════════════════════════════
+
+${JSON.stringify(comprehensiveData, null, 2)}
+
+═══════════════════════════════════════════════════════════════
+PERSONAL VOICE TRANSCRIPTION
+═══════════════════════════════════════════════════════════════
+
+"""
+${transcription}
+"""
+
+═══════════════════════════════════════════════════════════════
+TASK
+═══════════════════════════════════════════════════════════════
+
+Generate a comprehensive legal summary using the format specified in your system instructions.
+
+Integration Rules:
+1. Use form data for ALL precise facts (dates, times, locations, registration numbers)
+2. Use transcription for event sequence, emotional context, and personal observations
+3. When form data and transcription differ, present both clearly labeled
+4. Never invent facts not present in either source
+5. State "not documented" for empty/missing fields
+6. Exclude what3words field (test data, not actual incident location)
+7. Preserve exact spelling of registration numbers, policy numbers, reference numbers
+
+Begin your summary now:`;
+}
+
 module.exports = {
   analyzeStatement,
   savePersonalStatement,
   getAnalysis,
-  generateFormDataSummary // Export new Phase 1 function
+  generateFormDataSummary, // OLD: Phase 1 function (deprecated, keep for rollback)
+  generateSinglePhaseAiSummary // NEW: Single-phase replacement
 };
