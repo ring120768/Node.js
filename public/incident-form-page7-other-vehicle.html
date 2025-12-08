@@ -1151,6 +1151,21 @@
           document.getElementById('other-vehicle-look-up-year').textContent = data.vehicle.yearOfManufacture || '-';
           document.getElementById('other-vehicle-look-up-fuel-type').textContent = data.vehicle.fuelType || '-';
 
+          // Auto-populate manual entry fields with DVLA data
+          // This allows users to see what data was retrieved and supplement missing fields
+          if (data.vehicle.make) {
+            document.getElementById('other-vehicle-look-up-make-manual').value = data.vehicle.make;
+          }
+          if (data.vehicle.model) {
+            document.getElementById('other-vehicle-look-up-model-manual').value = data.vehicle.model;
+          }
+          if (data.vehicle.colour) {
+            document.getElementById('other-vehicle-look-up-colour-manual').value = data.vehicle.colour;
+          }
+          if (data.vehicle.yearOfManufacture) {
+            document.getElementById('other-vehicle-look-up-year-manual').value = data.vehicle.yearOfManufacture;
+          }
+
           // Display MOT status
           const motStatus = document.getElementById('other-vehicle-look-up-mot-status');
           if (data.vehicle.motStatus) {
@@ -1174,6 +1189,18 @@
           }
 
           vehicleDetails.style.display = 'block';
+
+          // Show manual section and focus model field if DVLA didn't return model data
+          if (!data.vehicle.model) {
+            document.getElementById('manual-other-vehicle-section').style.display = 'block';
+            document.getElementById('show-manual-other-vehicle-btn').style.display = 'none';
+            // Focus the model field to draw attention after a short delay
+            setTimeout(() => {
+              document.getElementById('other-vehicle-look-up-model-manual').focus();
+              // Scroll to the manual section smoothly
+              document.getElementById('manual-other-vehicle-section').scrollIntoView({ behavior: 'smooth', block: 'center' });
+            }, 300);
+          }
 
           // Check for warnings
           checkForWarnings(data.vehicle);
