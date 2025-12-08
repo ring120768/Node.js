@@ -1,14 +1,15 @@
 /**
- * Test Phase 1: Form Data Summary Generation
+ * Test Single-Phase AI Summary Generation
  *
- * Tests the generateFormDataSummary() function that creates AI summaries
- * of structured form data (pages 1-12) before transcription.
+ * Tests the generateSinglePhaseAiSummary() function that creates comprehensive
+ * AI summaries of structured form data (160+ fields) + voice transcription
+ * using GPT-4o with direct data access (no information bottleneck).
  *
  * Usage: node test-phase1-form-summary.js [user-uuid]
  */
 
 const { createClient } = require('@supabase/supabase-js');
-const { generateFormDataSummary } = require('./src/controllers/ai.controller');
+const { generateSinglePhaseAiSummary } = require('./src/controllers/ai.controller');
 require('dotenv').config();
 
 // Create Supabase client
@@ -23,8 +24,8 @@ const supabase = createClient(
   }
 );
 
-async function testPhase1FormSummary(userId = null) {
-  console.log('🧪 Testing Phase 1: Form Data Summary Generation');
+async function testSinglePhaseAiSummary(userId = null) {
+  console.log('🧪 Testing Single-Phase AI Summary Generation');
   console.log('═══════════════════════════════════════════════\n');
 
   try {
@@ -91,20 +92,26 @@ async function testPhase1FormSummary(userId = null) {
     console.log(`   🚗 Other vehicles: ${otherVehicles?.length || 0}`);
     console.log(`   👥 Witnesses: ${witnesses?.length || 0}`);
 
-    // Check if form_data_summary already exists
-    if (incidentData.form_data_summary) {
-      console.log(`\n   ⚠️  Form data summary already exists (${incidentData.form_data_summary.length} chars)`);
+    // Get voice transcription if available
+    const transcription = incidentData.voice_transcription || '';
+    console.log(`   🎙️  Voice transcription: ${transcription ? transcription.length + ' chars' : 'No transcription'}`);
+
+    // Check if ai_summary already exists
+    if (incidentData.ai_summary) {
+      console.log(`\n   ⚠️  AI summary already exists (${incidentData.ai_summary.length} chars)`);
       console.log(`   📊 Metadata: ${JSON.stringify(incidentData.form_data_summary_metadata, null, 2)}`);
       console.log(`\n   Would you like to regenerate? (This test will continue anyway for demonstration)\n`);
     }
 
-    // Step 3: Generate Phase 1 form data summary
-    console.log('📋 Step 3: Generating Phase 1 form data summary with GPT-4o-mini...');
-    console.log('   ⏳ This may take 10-15 seconds...\n');
+    // Step 3: Generate single-phase AI summary
+    console.log('📋 Step 3: Generating AI summary with GPT-4o (single-phase architecture)...');
+    console.log('   This will process 160+ form fields + voice transcription');
+    console.log('   Temperature: 0.2 (factual accuracy)');
+    console.log('   ⏳ This may take 30-60 seconds...\n');
 
     const startTime = Date.now();
 
-    const result = await generateFormDataSummary(testUserId, incidentData.id);
+    const result = await generateSinglePhaseAiSummary(testUserId, incidentData.id, transcription);
 
     const duration = ((Date.now() - startTime) / 1000).toFixed(2);
 
@@ -113,10 +120,10 @@ async function testPhase1FormSummary(userId = null) {
     // Step 4: Display results
     console.log('📋 Step 4: Results\n');
     console.log('━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━');
-    console.log('📝 FORM DATA SUMMARY (Phase 1)');
+    console.log('📝 AI SUMMARY (Single-Phase Architecture)');
     console.log('━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━\n');
 
-    console.log(result.summary);
+    console.log(result.aiSummary);
 
     console.log('\n━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━');
     console.log('📊 METADATA');
@@ -129,7 +136,7 @@ async function testPhase1FormSummary(userId = null) {
 
     const { data: updatedIncident, error: verifyError } = await supabase
       .from('incident_reports')
-      .select('form_data_summary, form_data_summary_metadata')
+      .select('ai_summary, form_data_summary_metadata')
       .eq('id', incidentData.id)
       .single();
 
@@ -137,10 +144,10 @@ async function testPhase1FormSummary(userId = null) {
       throw new Error(`Failed to verify database update: ${verifyError.message}`);
     }
 
-    if (updatedIncident.form_data_summary) {
-      console.log(`   ✅ form_data_summary stored: ${updatedIncident.form_data_summary.length} characters`);
+    if (updatedIncident.ai_summary) {
+      console.log(`   ✅ ai_summary stored: ${updatedIncident.ai_summary.length} characters`);
     } else {
-      console.log(`   ❌ form_data_summary NOT stored in database`);
+      console.log(`   ❌ ai_summary NOT stored in database`);
     }
 
     if (updatedIncident.form_data_summary_metadata) {
@@ -151,27 +158,31 @@ async function testPhase1FormSummary(userId = null) {
 
     // Step 6: Analysis
     console.log('\n━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━');
-    console.log('✅ PHASE 1 TEST COMPLETE');
+    console.log('✅ SINGLE-PHASE AI TEST COMPLETE');
     console.log('━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━\n');
 
     console.log('📊 Summary Statistics:');
     console.log(`   - Generation time: ${duration} seconds`);
-    console.log(`   - Summary length: ${result.summary.length} characters`);
+    console.log(`   - Summary length: ${result.aiSummary.length} characters`);
+    console.log(`   - Word count: ${result.aiSummary.split(/\s+/).length} words`);
     console.log(`   - Model used: ${result.metadata.model}`);
+    console.log(`   - Architecture: ${result.metadata.architecture}`);
+    console.log(`   - Temperature: ${result.metadata.temperature}`);
     console.log(`   - Tokens used: ${result.metadata.totalTokens}`);
-    console.log(`   - Cost estimate: ~$${((result.metadata.totalTokens / 1000000) * 0.15).toFixed(4)} USD`);
+    console.log(`   - Cost estimate: ~$${((result.metadata.totalTokens / 1000000) * 2.50).toFixed(4)} USD`);
 
     console.log('\n🎯 Next Steps:');
-    console.log('   1. Review the summary above - does it capture all form data?');
-    console.log('   2. Test Phase 2 blended analysis with transcription');
-    console.log(`   3. Run: node test-form-filling.js ${testUserId}`);
+    console.log('   1. Review the summary above for factual accuracy');
+    console.log('   2. Check that form data takes priority over transcription');
+    console.log(`   3. Test PDF generation: node test-form-filling.js ${testUserId}`);
+    console.log('   4. Verify Page 15 displays both SECTION 1 & SECTION 2');
     console.log('');
 
     return {
       success: true,
       userId: testUserId,
       incidentId: incidentData.id,
-      summary: result.summary,
+      summary: result.aiSummary,
       metadata: result.metadata
     };
 
