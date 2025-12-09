@@ -141,6 +141,7 @@ function createApp() {
    * not just in client-side JavaScript.
    */
   const { pageAuth } = require('./middleware/pageAuth');
+  const { requireProfile } = require('./middleware/requireProfile');
 
   // Protected pages (require authentication)
   app.get('/dashboard.html', pageAuth, (req, res) => {
@@ -160,51 +161,52 @@ function createApp() {
   });
 
   // Protect all incident form pages (Page 1-12)
-  app.get('/incident-form-page1.html', pageAuth, (req, res) => {
+  // requireProfile ensures user has completed profile before accessing forms
+  app.get('/incident-form-page1.html', pageAuth, requireProfile, (req, res) => {
     res.sendFile(path.join(__dirname, '../public/incident-form-page1.html'));
   });
 
-  app.get('/incident-form-page2.html', pageAuth, (req, res) => {
+  app.get('/incident-form-page2.html', pageAuth, requireProfile, (req, res) => {
     res.sendFile(path.join(__dirname, '../public/incident-form-page2.html'));
   });
 
-  app.get('/incident-form-page3.html', pageAuth, (req, res) => {
+  app.get('/incident-form-page3.html', pageAuth, requireProfile, (req, res) => {
     res.sendFile(path.join(__dirname, '../public/incident-form-page3.html'));
   });
 
-  app.get('/incident-form-page4.html', pageAuth, (req, res) => {
+  app.get('/incident-form-page4.html', pageAuth, requireProfile, (req, res) => {
     res.sendFile(path.join(__dirname, '../public/incident-form-page4.html'));
   });
 
-  app.get('/incident-form-page4a-vehicle-extended.html', pageAuth, (req, res) => {
+  app.get('/incident-form-page4a-vehicle-extended.html', pageAuth, requireProfile, (req, res) => {
     res.sendFile(path.join(__dirname, '../public/incident-form-page4a-vehicle-extended.html'));
   });
 
-  app.get('/incident-form-page5.html', pageAuth, (req, res) => {
+  app.get('/incident-form-page5.html', pageAuth, requireProfile, (req, res) => {
     res.sendFile(path.join(__dirname, '../public/incident-form-page5.html'));
   });
 
-  app.get('/incident-form-page6.html', pageAuth, (req, res) => {
+  app.get('/incident-form-page6.html', pageAuth, requireProfile, (req, res) => {
     res.sendFile(path.join(__dirname, '../public/incident-form-page6.html'));
   });
 
-  app.get('/incident-form-page7.html', pageAuth, (req, res) => {
+  app.get('/incident-form-page7.html', pageAuth, requireProfile, (req, res) => {
     res.sendFile(path.join(__dirname, '../public/incident-form-page7.html'));
   });
 
-  app.get('/incident-form-page8.html', pageAuth, (req, res) => {
+  app.get('/incident-form-page8.html', pageAuth, requireProfile, (req, res) => {
     res.sendFile(path.join(__dirname, '../public/incident-form-page8.html'));
   });
 
-  app.get('/incident-form-page9.html', pageAuth, (req, res) => {
+  app.get('/incident-form-page9.html', pageAuth, requireProfile, (req, res) => {
     res.sendFile(path.join(__dirname, '../public/incident-form-page9.html'));
   });
 
-  app.get('/incident-form-page10.html', pageAuth, (req, res) => {
+  app.get('/incident-form-page10.html', pageAuth, requireProfile, (req, res) => {
     res.sendFile(path.join(__dirname, '../public/incident-form-page10.html'));
   });
 
-  app.get('/incident-form-page12.html', pageAuth, (req, res) => {
+  app.get('/incident-form-page12.html', pageAuth, requireProfile, (req, res) => {
     // Force no-cache to ensure users get latest fixes
     res.setHeader('Cache-Control', 'no-cache, no-store, must-revalidate, private, max-age=0');
     res.setHeader('Pragma', 'no-cache');
