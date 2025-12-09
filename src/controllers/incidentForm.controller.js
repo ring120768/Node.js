@@ -605,9 +605,14 @@ function buildIncidentData(userId, formData) {
     dvla_year: page5.dvla_vehicle_data?.yearOfManufacture || null,
     dvla_fuel_type: page5.dvla_vehicle_data?.fuelType || null,
     dvla_mot_status: page5.dvla_vehicle_data?.motStatus || null,
-    dvla_mot_expiry: page5.dvla_vehicle_data?.motExpiryDate || null,  // Note: column is dvla_mot_expiry (no _date)
+    // Convert "Not Available" to null for DATE columns
+    dvla_mot_expiry: (page5.dvla_vehicle_data?.motExpiryDate && page5.dvla_vehicle_data.motExpiryDate !== 'Not Available')
+      ? page5.dvla_vehicle_data.motExpiryDate
+      : null,
     dvla_tax_status: page5.dvla_vehicle_data?.taxStatus || null,
-    dvla_tax_due_date: page5.dvla_vehicle_data?.taxDueDate || null,
+    dvla_tax_due_date: (page5.dvla_vehicle_data?.taxDueDate && page5.dvla_vehicle_data.taxDueDate !== 'Not Available')
+      ? page5.dvla_vehicle_data.taxDueDate
+      : null,
     dvla_insurance_status: page5.dvla_vehicle_data?.insuranceStatus || null,
 
     // No Damage checkbox (1 field)
