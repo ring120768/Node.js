@@ -532,6 +532,9 @@
             <button class="auth-btn signup" id="signupBtn">
                 ✨ Sign Up
             </button>
+            <button class="auth-btn logout" id="logoutBtn" style="display: none;">
+                🚪 Logout
+            </button>
         </div>
     </div>
 
@@ -957,6 +960,7 @@
             const demoBtn = document.getElementById('demoBtn');
             const homepageBtn = document.getElementById('homepageBtn');
             const signupBtn = document.getElementById('signupBtn');
+            const logoutBtn = document.getElementById('logoutBtn');
             const userGuideBtn = document.getElementById('userGuideBtn');
             const userGuideModal = document.getElementById('userGuideModal');
             const guideContent = document.getElementById('guideContent');
@@ -1002,6 +1006,35 @@
                     window.location.href = '/signup-form.html';
                 });
                 console.log('✅ Signup button event listener added');
+            }
+
+            if (logoutBtn) {
+                logoutBtn.addEventListener('click', async function(e) {
+                    e.preventDefault();
+                    console.log('🚪 Logout button clicked');
+
+                    try {
+                        const response = await fetch('/api/auth/logout', {
+                            method: 'POST',
+                            credentials: 'include'
+                        });
+
+                        if (response.ok) {
+                            console.log('✅ Logged out successfully');
+                            // Clear any cached data
+                            sessionStorage.clear();
+                            // Redirect to homepage
+                            window.location.href = '/index.html';
+                        } else {
+                            console.error('❌ Logout failed:', response.status);
+                            alert('Logout failed. Please try again.');
+                        }
+                    } catch (error) {
+                        console.error('❌ Logout error:', error);
+                        alert('An error occurred during logout. Please try again.');
+                    }
+                });
+                console.log('✅ Logout button event listener added');
             }
 
             if (userGuideBtn) {
