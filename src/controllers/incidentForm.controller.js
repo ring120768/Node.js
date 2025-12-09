@@ -299,7 +299,34 @@ async function submitIncidentForm(req, res) {
       }
     }
 
-    // 7. Save witnesses to incident_witnesses table (Page 9)
+    // 7. Finalize scene photos if present (Page 11)
+    let scenePhotoResults = null;
+    if (formData.page11?.session_id) {
+      try {
+        scenePhotoResults = await locationPhotoService.finalizePhotosByType(
+          userId,
+          incident.id,
+          formData.page11.session_id,
+          'scene_photo',           // field_name in temp_uploads
+          'scene-photos',          // storage category
+          'scene_photo'            // document_type in user_documents
+        );
+
+        logger.info('Scene photos finalized', {
+          incidentId: incident.id,
+          photoCount: scenePhotoResults.successCount,
+          errors: scenePhotoResults.errorCount
+        });
+      } catch (photoError) {
+        logger.error('Failed to finalize scene photos (non-critical)', {
+          incidentId: incident.id,
+          error: photoError.message
+        });
+        // Don't fail the submission - photos can be re-processed
+      }
+    }
+
+    // 8. Save witnesses to incident_witnesses table (Page 9)
     let witnessResults = null;
     if (formData.page9?.witnesses_present === 'yes') {
       try {
@@ -654,15 +681,15 @@ function buildIncidentData(userId, formData) {
     witness_statement: page9.witness_statement || null,
 
     // Page 10: Police Details & Safety Equipment
-    police_attended: page10.police_attended === 'yes',
+    police_attended: page10.police_attended || null,           // Were police present (yes/no)
     accident_ref_number: page10.accident_ref_number || null,  // Police CAD/reference number
     police_force: page10.police_force || null,                // Police force name
     officer_name: page10.officer_name || null,                // Officer's name
     officer_badge: page10.officer_badge || null,              // Officer's badge/collar number
     user_breath_test: page10.user_breath_test || null,        // User's breath test result
     other_breath_test: page10.other_breath_test || null,      // Other driver's breath test
-    airbags_deployed: page10.airbags_deployed === 'yes',      // Were airbags deployed (boolean)
-    seatbelts_worn: page10.seatbelts_worn || null,            // Were seatbelts worn - maps to actual DB column
+    airbags_deployed: page10.airbags_deployed || null,        // Were airbags deployed (yes/no)
+    seatbelts_worn: page10.seatbelts_worn || null,            // Were seatbelts worn (yes/no)
     seatbelt_reason: page10.seatbelts_worn === 'no' ? page10.seatbelt_reason : null,  // Reason if not worn
 
     // Page 12: Final Medical Check
