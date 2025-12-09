@@ -222,6 +222,21 @@ function createApp() {
     res.sendFile(path.join(__dirname, '../public/declaration.html'));
   });
 
+  // CRITICAL: Protect report.html - contains user's incident reports
+  app.get('/report.html', pageAuth, (req, res) => {
+    res.sendFile(path.join(__dirname, '../public/report.html'));
+  });
+
+  // Protect image management page
+  app.get('/manage-images.html', pageAuth, (req, res) => {
+    res.sendFile(path.join(__dirname, '../public/manage-images.html'));
+  });
+
+  // Protect alternative dashboard versions
+  app.get('/dashboard-v2.html', pageAuth, (req, res) => {
+    res.sendFile(path.join(__dirname, '../public/dashboard-v2.html'));
+  });
+
   // Cache control for HTML (MUST be before express.static to work)
   // Sets aggressive cache prevention headers for all HTML files
   app.use((req, res, next) => {
