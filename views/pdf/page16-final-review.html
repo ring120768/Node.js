@@ -1,0 +1,283 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Page 16 - Final Review & Next Steps</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        @page {
+            size: A4;
+            margin: 12mm;
+        }
+
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, Cantarell, sans-serif;
+            background: linear-gradient(135deg, #0E7490 0%, #0c6179 100%);
+            min-height: auto;
+            padding: 15px;
+            -webkit-print-color-adjust: exact;
+            print-color-adjust: exact;
+        }
+
+        .container {
+            max-width: 1000px;
+            margin: 0 auto;
+            background: white;
+            border-radius: 12px;
+            box-shadow: 0 10px 40px rgba(0,0,0,0.2);
+            padding: 25px;
+            page-break-inside: avoid;
+        }
+
+        h1 {
+            color: #0E7490;
+            margin-bottom: 10px;
+            font-size: 28px;
+            font-weight: 600;
+        }
+
+        .page-number {
+            color: #6B7280;
+            font-size: 14px;
+            margin-bottom: 20px;
+            font-weight: 500;
+        }
+
+        .section {
+            margin-bottom: 20px;
+        }
+
+        .section-title {
+            color: #0E7490;
+            font-size: 18px;
+            font-weight: 600;
+            margin-bottom: 12px;
+            padding-bottom: 6px;
+            border-bottom: 2px solid #E5E7EB;
+        }
+
+        .info-box {
+            background: #ECFDF5;
+            border-left: 4px solid #10B981;
+            padding: 12px;
+            margin: 12px 0;
+            border-radius: 4px;
+            font-size: 13px;
+            color: #1F2937;
+            line-height: 1.6;
+        }
+
+        .review-box {
+            background: white;
+            padding: 18px;
+            border: 2px solid #E5E7EB;
+            border-radius: 8px;
+            margin: 12px 0;
+            box-shadow: 0 2px 8px rgba(0,0,0,0.05);
+        }
+
+        .review-content {
+            color: #1F2937;
+            line-height: 1.6;
+            font-size: 14px;
+            white-space: pre-wrap;
+            word-wrap: break-word;
+        }
+
+        .review-content h3 {
+            color: #0E7490;
+            font-size: 16px;
+            margin: 15px 0 10px 0;
+            font-weight: 600;
+        }
+
+        .review-content h4 {
+            color: #374151;
+            font-size: 15px;
+            margin: 12px 0 8px 0;
+            font-weight: 600;
+        }
+
+        .next-steps-list {
+            counter-reset: step-counter;
+            list-style: none;
+            padding-left: 0;
+            margin: 12px 0;
+        }
+
+        .next-steps-list li {
+            counter-increment: step-counter;
+            padding: 12px;
+            margin-bottom: 10px;
+            background: #F9FAFB;
+            border-left: 4px solid #0E7490;
+            border-radius: 4px;
+            position: relative;
+            padding-left: 45px;
+        }
+
+        .next-steps-list li:before {
+            content: counter(step-counter);
+            position: absolute;
+            left: 12px;
+            top: 12px;
+            background: #0E7490;
+            color: white;
+            width: 24px;
+            height: 24px;
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-weight: bold;
+            font-size: 13px;
+        }
+
+        .next-steps-list li strong {
+            color: #0E7490;
+            display: block;
+            margin-bottom: 4px;
+            font-size: 15px;
+        }
+
+        .next-steps-list li p {
+            color: #4B5563;
+            line-height: 1.6;
+            margin: 0;
+        }
+
+        .recommendations {
+            background: #FEF3C7;
+            border-left: 4px solid #F59E0B;
+            padding: 15px;
+            margin: 12px 0;
+            border-radius: 4px;
+        }
+
+        .recommendations h3 {
+            color: #78350F;
+            font-size: 16px;
+            margin-bottom: 10px;
+        }
+
+        .recommendations ul {
+            list-style: none;
+            padding-left: 0;
+        }
+
+        .recommendations li {
+            padding: 6px 0;
+            padding-left: 25px;
+            position: relative;
+            color: #78350F;
+            line-height: 1.6;
+        }
+
+        .recommendations li:before {
+            content: "⚠️";
+            position: absolute;
+            left: 0;
+            font-size: 14px;
+        }
+
+        .empty-state {
+            text-align: center;
+            padding: 20px;
+            color: #9CA3AF;
+            font-style: italic;
+        }
+
+        .completion-notice {
+            background: #DBEAFE;
+            border: 2px solid #3B82F6;
+            border-radius: 8px;
+            padding: 15px;
+            margin: 15px 0;
+            text-align: center;
+        }
+
+        .completion-notice h3 {
+            color: #1E40AF;
+            font-size: 18px;
+            margin-bottom: 8px;
+        }
+
+        .completion-notice p {
+            color: #1F2937;
+            line-height: 1.6;
+        }
+
+        @media print {
+            body {
+                background: linear-gradient(135deg, #0E7490 0%, #0c6179 100%);
+                -webkit-print-color-adjust: exact;
+                print-color-adjust: exact;
+            }
+
+            .container {
+                box-shadow: none;
+                page-break-after: always;
+            }
+
+            .review-box {
+                box-shadow: none;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>Car Crash Lawyer AI</h1>
+        <div class="page-number">Page 16 of 18</div>
+
+        <!-- Section: Final Review -->
+        <div class="section">
+            <div class="section-title">Final Review & Next Steps</div>
+
+            <div class="info-box">
+                <strong>✓ Report Complete:</strong> Your incident report has been generated and analyzed. This section
+                provides recommendations for next steps and important considerations for your case moving forward.
+            </div>
+
+            {{#if final_review}}
+            <div class="review-box">
+                <div class="review-content">{{{final_review}}}</div>
+            </div>
+            {{else}}
+            <div class="empty-state">
+                Final review has not been generated yet. Please generate AI analysis to populate this section.
+            </div>
+            {{/if}}
+
+            <!-- Completion Notice -->
+            <div class="completion-notice">
+                <h3>📋 Report Completion</h3>
+                <p>
+                    This incident report has been compiled using information you provided across pages 1-12
+                    and enhanced with AI analysis on pages 13-16. Please review all sections carefully and
+                    consult with a qualified legal professional before proceeding with any legal action.
+                </p>
+            </div>
+
+            <!-- Legal Disclaimer -->
+            <div class="recommendations">
+                <h3>Important Legal Disclaimers</h3>
+                <ul>
+                    <li>This AI-generated analysis is based solely on the information you provided</li>
+                    <li>Accuracy depends on the completeness and correctness of your input</li>
+                    <li>This report does not constitute legal advice</li>
+                    <li>Consult with a qualified solicitor before taking legal action</li>
+                    <li>Keep all original documentation and evidence secure</li>
+                    <li>Do not modify this report after generation - it may affect validity</li>
+                </ul>
+            </div>
+        </div>
+    </div>
+</body>
+</html>
