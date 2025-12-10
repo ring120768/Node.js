@@ -1,0 +1,224 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Page 15 - AI Summary & Key Points</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        @page {
+            size: A4;
+            margin: 12mm;
+        }
+
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, Cantarell, sans-serif;
+            background: linear-gradient(135deg, #0E7490 0%, #0c6179 100%);
+            min-height: auto;
+            padding: 15px;
+            -webkit-print-color-adjust: exact;
+            print-color-adjust: exact;
+        }
+
+        .container {
+            max-width: 1000px;
+            margin: 0 auto;
+            background: white;
+            border-radius: 12px;
+            box-shadow: 0 10px 40px rgba(0,0,0,0.2);
+            padding: 25px;
+            /* Allow content to span multiple pages if needed */
+            page-break-inside: auto;
+        }
+
+        /* Ensure page break after the entire section, not just container */
+        .container:after {
+            content: "";
+            display: block;
+            page-break-after: always;
+        }
+
+        h1 {
+            color: #0E7490;
+            margin-bottom: 10px;
+            font-size: 28px;
+            font-weight: 600;
+        }
+
+        .page-number {
+            color: #6B7280;
+            font-size: 14px;
+            margin-bottom: 20px;
+            font-weight: 500;
+        }
+
+        .section {
+            margin-bottom: 20px;
+        }
+
+        .section-title {
+            color: #0E7490;
+            font-size: 18px;
+            font-weight: 600;
+            margin-bottom: 12px;
+            padding-bottom: 6px;
+            border-bottom: 2px solid #E5E7EB;
+        }
+
+        .info-box {
+            background: #EFF6FF;
+            border-left: 4px solid #3B82F6;
+            padding: 12px;
+            margin: 12px 0;
+            border-radius: 4px;
+            font-size: 13px;
+            color: #1F2937;
+            line-height: 1.6;
+        }
+
+        .summary-box {
+            background: #F9FAFB;
+            border: 2px solid #E5E7EB;
+            border-radius: 8px;
+            padding: 18px;
+            margin: 12px 0;
+            /* Allow box to span multiple pages if content is long */
+            page-break-inside: auto;
+        }
+
+        .summary-content {
+            color: #1F2937;
+            line-height: 1.6;
+            font-size: 14px;
+            white-space: pre-wrap;
+            word-wrap: break-word;
+            /* Allow content to break across pages */
+            page-break-inside: auto;
+        }
+
+        .summary-content h3 {
+            color: #0E7490;
+            font-size: 16px;
+            margin: 15px 0 10px 0;
+            font-weight: 600;
+        }
+
+        .summary-content ul {
+            list-style: none;
+            padding-left: 0;
+            margin: 12px 0;
+        }
+
+        .summary-content li {
+            padding: 6px 0;
+            padding-left: 25px;
+            position: relative;
+            color: #4B5563;
+            line-height: 1.6;
+        }
+
+        .summary-content li:before {
+            content: "•";
+            position: absolute;
+            left: 8px;
+            color: #0E7490;
+            font-weight: bold;
+            font-size: 18px;
+        }
+
+        .summary-content p {
+            margin-bottom: 12px;
+        }
+
+        .summary-content strong {
+            color: #0E7490;
+            font-weight: 600;
+        }
+
+        .key-points-grid {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 15px;
+            margin: 12px 0;
+        }
+
+        .key-point-card {
+            background: white;
+            border: 2px solid #E5E7EB;
+            border-radius: 8px;
+            padding: 15px;
+            box-shadow: 0 1px 3px rgba(0,0,0,0.1);
+        }
+
+        .key-point-card h4 {
+            color: #0E7490;
+            font-size: 15px;
+            margin-bottom: 8px;
+            font-weight: 600;
+        }
+
+        .key-point-card p {
+            color: #4B5563;
+            font-size: 13px;
+            line-height: 1.6;
+        }
+
+        .empty-state {
+            text-align: center;
+            padding: 20px;
+            color: #9CA3AF;
+            font-style: italic;
+        }
+
+        @media print {
+            body {
+                background: linear-gradient(135deg, #0E7490 0%, #0c6179 100%);
+                -webkit-print-color-adjust: exact;
+                print-color-adjust: exact;
+                min-height: 0; /* Allow content to span multiple pages */
+            }
+
+            .container {
+                box-shadow: none;
+            }
+
+            .summary-box,
+            .key-point-card {
+                box-shadow: none;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>Car Crash Lawyer AI</h1>
+        <div class="page-number">Page 15 of 18</div>
+
+        <!-- Section: AI Summary -->
+        <div class="section">
+            <div class="section-title">AI-Generated Summary & Key Points</div>
+
+            <div class="info-box">
+                <strong>Summary Overview:</strong> This section provides a concise summary of the incident with key points
+                extracted from your complete report. The AI has analyzed all provided information to identify the most
+                important facts and circumstances of your case.
+            </div>
+
+            {{#if ai_summary}}
+            <div class="summary-box">
+                <div class="summary-content">{{{ai_summary}}}</div>
+            </div>
+            {{else}}
+            <div class="empty-state">
+                AI summary has not been generated yet. Please generate AI analysis to populate this section.
+            </div>
+            {{/if}}
+        </div>
+    </div>
+</body>
+</html>
