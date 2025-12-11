@@ -14,7 +14,7 @@ const { createClient } = require('@supabase/supabase-js');
 // Import PDF generation modules with error handling
 let fetchAllData, generatePDF, sendEmails;
 try {
-  fetchAllData = require('../../lib/data/dataFetcher').fetchAllData;
+  fetchAllData = require('../../lib/dataFetcher').fetchAllData;  // Fixed path - was lib/data/dataFetcher
   generatePDF = require('../../lib/pdfGenerator').generatePDF; // Legacy fallback implementation
   sendEmails = require('../../lib/emailService').sendEmails; // ✅ Uses configured Hostinger SMTP service
 } catch (error) {
@@ -523,5 +523,6 @@ async function downloadPdf(req, res) {
 module.exports = {
   generatePdf,
   getPdfStatus,
-  downloadPdf
+  downloadPdf,
+  generateUserPDF  // Required by incidentForm.controller for post-submission email
 };
