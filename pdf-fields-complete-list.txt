@@ -1,0 +1,224 @@
+=== TEXT FIELDS (120) ===
+  1. Date69_af_date
+  2. accident_date
+  3. accident_ref_number
+  4. accident_time
+  5. additional_hazards
+  6. additional_witnesses
+  7. ai_summary
+  8. analysis_metadata
+  9. car_registration_number
+ 10. closing_statement
+ 11. country
+ 12. cover_type
+ 13. damage_to_your_vehicle
+ 14. date_of_birth
+ 15. describe-damage-to-vehicle
+ 16. driving_license_number
+ 17. driving_license_picture
+ 18. dvla_colour
+ 19. dvla_fuel_type
+ 20. dvla_make
+ 21. dvla_model
+ 22. dvla_mot_expiry
+ 23. dvla_mot_status
+ 24. dvla_tax_due_date
+ 25. dvla_tax_status
+ 26. dvla_year
+ 27. email
+ 28. emergency_audio_transcription
+ 29. emergency_contact_name
+ 30. emergency_contact_number
+ 31. emergency_recording_timestamp
+ 32. final_review
+ 33. further_medical_attention_needed
+ 34. id
+ 35. insurance_company
+ 36. junction_control
+ 37. junction_type
+ 38. location
+ 39. location_map_screenshot
+ 40. medical_attention_from_who
+ 41. medical_hospital_name
+ 42. medical_how_are_you_feeling
+ 43. medical_injury_details
+ 44. medical_injury_severity
+ 45. medical_treatment_recieved
+ 46. mobile
+ 47. name
+ 48. nearest_landmark
+ 49. officer_badge
+ 50. officer_name
+ 51. open
+ 52. other-contact-number
+ 53. other-drivers-insurance-company
+ 54. other-drivers-policy-cover-type
+ 55. other-drivers-policy-holder-name
+ 56. other-drivers-policy-number
+ 57. other-driving-license-number
+ 58. other-email-address
+ 59. other-full-name
+ 60. other-vehicle-look-up-colour
+ 61. other-vehicle-look-up-fuel-type
+ 62. other-vehicle-look-up-insurance-status
+ 63. other-vehicle-look-up-make
+ 64. other-vehicle-look-up-model
+ 65. other-vehicle-look-up-mot-expiry-date
+ 66. other-vehicle-look-up-mot-status
+ 67. other-vehicle-look-up-tax-due-date
+ 68. other-vehicle-look-up-tax-status
+ 69. other-vehicle-look-up-year
+ 70. other-vehicle-registration
+ 71. other_breath_test
+ 72. other_driver_vehicle_marked_for_export
+ 73. other_vehicle_photo_1_url
+ 74. other_vehicle_photo_2_url
+ 75. other_vehicle_photo_3_url
+ 76. police_force
+ 77. policy_holder
+ 78. policy_number
+ 79. postcode
+ 80. quality_review
+ 81. recovery_breakdown_email
+ 82. recovery_breakdown_number
+ 83. recovery_company
+ 84. scene_photo_1_url
+ 85. scene_photo_2_url
+ 86. scene_photo_3_url
+ 87. seatbelt_reason
+ 88. speed_limit
+ 89. street
+ 90. street_name_optional
+ 91. subscription_start_date
+ 92. surname
+ 93. town
+ 94. traffic_light_status
+ 95. user_breath_test
+ 96. user_manoeuvre
+ 97. vehicle_colour
+ 98. vehicle_condition
+ 99. vehicle_damage_photo_1_url
+100. vehicle_damage_photo_2_url
+101. vehicle_damage_photo_3_url
+102. vehicle_damage_photo_4_url
+103. vehicle_damage_photo_5_url
+104. vehicle_license_plate
+105. vehicle_make
+106. vehicle_model
+107. vehicle_picture_back
+108. vehicle_picture_driver_side
+109. vehicle_picture_front
+110. vehicle_picture_passenger_side
+111. voice_transcription
+112. what3words
+113. witness_email_2
+114. witness_email_address
+115. witness_mobile_number
+116. witness_name
+117. witness_number
+118. witness_statement
+119. witness_statement_2
+120. your_speed
+
+=== CHECKBOX FIELDS (92) ===
+  1. airbags_deployed
+  2. airbags_deployed_no
+  3. driving_your_usual_vehicle_no
+  4. final_feeling
+  5. impact_point_driver_side
+  6. impact_point_front
+  7. impact_point_front_driver
+  8. impact_point_front_passenger
+  9. impact_point_passenger_side
+ 10. impact_point_rear
+ 11. impact_point_rear_driver
+ 12. impact_point_rear_passenger
+ 13. impact_point_roof
+ 14. impact_point_under_carriage
+ 15. medical_ambulance_called
+ 16. medical_attention_needed
+ 17. medical_symptom_abdominal_bruising
+ 18. medical_symptom_abdominal_pain
+ 19. medical_symptom_breathlessness
+ 20. medical_symptom_change_in_vision
+ 21. medical_symptom_chest_pain
+ 22. medical_symptom_dizziness
+ 23. medical_symptom_life _threatening
+ 24. medical_symptom_limb_pain_mobilty
+ 25. medical_symptom_limb_weakness
+ 26. medical_symptom_loss_of_consciousness
+ 27. medical_symptom_none
+ 28. medical_symptom_severe_headache
+ 29. medical_symptom_uncontrolled_bleeding
+ 30. no-visible-damage
+ 31. no_damage
+ 32. no_it_needed_to_be_towed
+ 33. police_attend
+ 34. police_attended
+ 35. road_condition_dry
+ 36. road_condition_icy
+ 37. road_condition_loose_surface
+ 38. road_condition_slush_on_road
+ 39. road_condition_snow_covered
+ 40. road_condition_wet
+ 41. road_markings_visible_partially
+ 42. road_markings_vsible_no
+ 43. road_markings_vsible_yes
+ 44. road_type_a_road
+ 45. road_type_b_road
+ 46. road_type_car_park
+ 47. road_type_motorway
+ 48. road_type_private_road
+ 49. road_type_rural
+ 50. road_type_urban
+ 51. seatbelt_worn
+ 52. seatbelt_worn_no
+ 53. six_point_safety_check_completed
+ 54. special_condition_animals
+ 55. special_condition_crossing
+ 56. special_condition_cyclists
+ 57. special_condition_narrow_road
+ 58. special_condition_oil_spills
+ 59. special_condition_parked_vehicles
+ 60. special_condition_pedestrians
+ 61. special_condition_potholes
+ 62. special_condition_roadworks
+ 63. special_condition_school_zone
+ 64. special_condition_traffic_calming
+ 65. special_condition_workmen
+ 66. traffic_conditions_heavy
+ 67. traffic_conditions_light
+ 68. traffic_conditions_moderate
+ 69. traffic_conditions_no_traffic
+ 70. unsure _did_not_attempt
+ 71. usual_vehicle
+ 72. visibility_large_vehicle
+ 73. visibility_poor
+ 74. visibility_restricted_structure
+ 75. visibility_sun_glare
+ 76. visibility_very_poor
+ 77. visibilty_good
+ 78. visibilty_street_lights
+ 79. weather_bright_sunlight
+ 80. weather_clear
+ 81. weather_cloudy
+ 82. weather_drizzle
+ 83. weather_dusk
+ 84. weather_fog
+ 85. weather_hail
+ 86. weather_heavy_rain
+ 87. weather_raining
+ 88. weather_snow
+ 89. weather_thunder_lightening
+ 90. weather_windy
+ 91. witnesses_present
+ 92. yes_i_drove_it_away
+
+=== OTHER FIELDS (1) ===
+  1. Signature70
+
+=== TOTALS ===
+Text: 120
+Checkbox: 92
+Other: 1
+Total: 213
