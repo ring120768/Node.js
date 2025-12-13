@@ -362,27 +362,11 @@ async function generateUserPDF(create_user_id, source = 'direct') {
   if (aiTranscription) allData.aiTranscription = aiTranscription;
   if (aiSummary) allData.aiSummary = aiSummary;
 
-  // Try to use Adobe REST API Form Filler first (validated with 43-field whitelist)
-  let pdfBuffer;
-  if (adobeRestFormFiller.isReady()) {
-    logger.info('📄 Using Adobe REST API Form Filler (validated with 43-field whitelist)');
-    try {
-      // Prepare flat form data for REST API
-      const formData = prepareFormDataForRestAPI(allData);
-      logger.info(`  Prepared ${Object.keys(formData).length} fields for Adobe REST API`);
-
-      // Fill form using validated REST API service
-      pdfBuffer = await adobeRestFormFiller.fillForm(formData);
-
-      logger.success('✅ Adobe REST API form filled successfully (zero validation errors expected)');
-    } catch (adobeError) {
-      logger.error('Adobe REST API filling failed, falling back to legacy method:', adobeError);
-      pdfBuffer = await generatePDF(allData);
-    }
-  } else {
-    logger.info('📄 Adobe REST API not configured, using legacy PDF generation method');
-    pdfBuffer = await generatePDF(allData);
-  }
+  // CRITICAL: Always use comprehensive hybrid pipeline for 100% data coverage
+  // Adobe REST API only handles ~43 fields; hybrid pipeline handles all 200+ fields
+  // including AI pages 13-18, witnesses, vehicles, DVLA data, and emergency appendix
+  logger.info('📄 Using comprehensive hybrid PDF pipeline (100% data coverage)');
+  let pdfBuffer = await generatePDF(allData);
 
   const storedForm = await storeCompletedForm(create_user_id, pdfBuffer, allData);
   const emailResult = await sendEmails(allData.user.email, pdfBuffer, create_user_id);
