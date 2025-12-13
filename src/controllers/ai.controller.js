@@ -78,6 +78,7 @@ async function analyzeStatement(req, res) {
         .from('incident_other_vehicles')
         .select('*')
         .eq('create_user_id', userId)
+        .eq('incident_id', incidentId)  // CRITICAL: Filter by current incident only
         .is('deleted_at', null)
         .order('vehicle_index', { ascending: true });
 
@@ -91,6 +92,7 @@ async function analyzeStatement(req, res) {
         .from('incident_witnesses')
         .select('*')
         .eq('create_user_id', userId)
+        .eq('incident_id', incidentId)  // CRITICAL: Filter by current incident only
         .is('deleted_at', null)
         .order('witness_index', { ascending: true });
 
@@ -1290,7 +1292,8 @@ async function generateFormDataSummary(userId, incidentId) {
     const { data: otherVehicles, error: vehiclesError } = await supabase
       .from('incident_other_vehicles')
       .select('*')
-      .eq('create_user_id', userId);
+      .eq('create_user_id', userId)
+      .eq('incident_id', incidentId);  // CRITICAL: Filter by current incident only
 
     if (vehiclesError) {
       logger.warn('[Phase 1 AI] Error fetching other vehicles (non-fatal):', vehiclesError.message);
@@ -1302,7 +1305,8 @@ async function generateFormDataSummary(userId, incidentId) {
       const { data: witnessData, error: witnessesError } = await supabase
         .from('incident_witnesses')
         .select('*')
-        .eq('create_user_id', userId);
+        .eq('create_user_id', userId)
+        .eq('incident_id', incidentId);  // CRITICAL: Filter by current incident only
 
       if (witnessesError) {
         logger.warn('[Phase 1 AI] Error fetching witnesses (non-fatal):', witnessesError.message);
@@ -1637,6 +1641,7 @@ async function generateSinglePhaseAiSummary(userId, incidentId, transcription) {
       .from('incident_other_vehicles')
       .select('*')
       .eq('create_user_id', userId)
+      .eq('incident_id', incidentId)  // CRITICAL: Filter by current incident only
       .is('deleted_at', null)
       .order('vehicle_index', { ascending: true });
 
@@ -1644,6 +1649,7 @@ async function generateSinglePhaseAiSummary(userId, incidentId, transcription) {
       .from('incident_witnesses')
       .select('*')
       .eq('create_user_id', userId)
+      .eq('incident_id', incidentId)  // CRITICAL: Filter by current incident only
       .is('deleted_at', null)
       .order('witness_index', { ascending: true });
 
