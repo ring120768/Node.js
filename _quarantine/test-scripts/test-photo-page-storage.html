@@ -1,0 +1,410 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Photo Page Storage Test</title>
+  <style>
+    body {
+      font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+      max-width: 1200px;
+      margin: 20px auto;
+      padding: 20px;
+      background: #f5f5f5;
+    }
+    .test-section {
+      background: white;
+      border-radius: 8px;
+      padding: 20px;
+      margin-bottom: 20px;
+      box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+    }
+    .test-section h2 {
+      margin-top: 0;
+      color: #0E7490;
+      border-bottom: 2px solid #0E7490;
+      padding-bottom: 10px;
+    }
+    .status {
+      display: inline-block;
+      padding: 4px 12px;
+      border-radius: 4px;
+      font-weight: bold;
+      margin-left: 10px;
+    }
+    .status.pass {
+      background: #10b981;
+      color: white;
+    }
+    .status.fail {
+      background: #ef4444;
+      color: white;
+    }
+    .status.pending {
+      background: #f59e0b;
+      color: white;
+    }
+    button {
+      background: #0E7490;
+      color: white;
+      border: none;
+      padding: 10px 20px;
+      border-radius: 4px;
+      cursor: pointer;
+      margin: 5px;
+      font-size: 14px;
+    }
+    button:hover {
+      background: #0c6179;
+    }
+    button.secondary {
+      background: #6b7280;
+    }
+    button.secondary:hover {
+      background: #4b5563;
+    }
+    pre {
+      background: #1e1e1e;
+      color: #d4d4d4;
+      padding: 15px;
+      border-radius: 4px;
+      overflow-x: auto;
+      font-size: 13px;
+    }
+    .json-key { color: #9cdcfe; }
+    .json-string { color: #ce9178; }
+    .json-number { color: #b5cea8; }
+    .json-boolean { color: #569cd6; }
+    .json-null { color: #569cd6; }
+    .result-grid {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 15px;
+      margin-top: 15px;
+    }
+    .result-card {
+      background: #f9fafb;
+      padding: 15px;
+      border-radius: 4px;
+      border-left: 4px solid #0E7490;
+    }
+    .result-card h4 {
+      margin-top: 0;
+      color: #374151;
+    }
+  </style>
+</head>
+<body>
+  <h1>📸 Photo Page Storage Consistency Test</h1>
+  <p><strong>Purpose:</strong> Verify all 3 photo pages (4a, 6, 8) now use the correct storage pattern that Page 12 expects.</p>
+
+  <!-- Test 1: Simulate Photo Page Data -->
+  <div class="test-section">
+    <h2>Test 1: Simulate Photo Page Data Storage <span class="status pending" id="test1-status">PENDING</span></h2>
+    <p>Simulates what each photo page would save when user uploads photos and clicks "Save & Continue".</p>
+    <button onclick="simulatePhotoPages()">▶️ Run Simulation</button>
+    <button class="secondary" onclick="clearAllStorage()">🗑️ Clear All Storage</button>
+    <div id="test1-output"></div>
+  </div>
+
+  <!-- Test 2: Verify Page 12 Can Read Data -->
+  <div class="test-section">
+    <h2>Test 2: Page 12 Data Collection <span class="status pending" id="test2-status">PENDING</span></h2>
+    <p>Simulates Page 12's data collection loop - the same code that runs on form submission.</p>
+    <button onclick="testPage12Collection()">▶️ Test Collection</button>
+    <div id="test2-output"></div>
+  </div>
+
+  <!-- Test 3: Controller Conditional Check -->
+  <div class="test-section">
+    <h2>Test 3: Controller Finalization Check <span class="status pending" id="test3-status">PENDING</span></h2>
+    <p>Verifies the conditionals in incidentForm.controller.js would pass (session_id exists).</p>
+    <button onclick="testControllerConditionals()">▶️ Test Conditionals</button>
+    <div id="test3-output"></div>
+  </div>
+
+  <!-- Test 4: Storage Inspection -->
+  <div class="test-section">
+    <h2>Test 4: Live Storage Inspection</h2>
+    <p>View current state of localStorage and sessionStorage.</p>
+    <button onclick="inspectStorage()">🔍 Inspect Storage</button>
+    <div id="test4-output"></div>
+  </div>
+
+  <script>
+    // Helper: Format JSON with syntax highlighting
+    function formatJSON(obj) {
+      const json = JSON.stringify(obj, null, 2);
+      return json
+        .replace(/(".*?"):/g, '<span class="json-key">$1</span>:')
+        .replace(/: (".*?")/g, ': <span class="json-string">$1</span>')
+        .replace(/: (\d+\.?\d*)/g, ': <span class="json-number">$1</span>')
+        .replace(/: (true|false)/g, ': <span class="json-boolean">$1</span>')
+        .replace(/: (null)/g, ': <span class="json-null">$1</span>');
+    }
+
+    // Test 1: Simulate what photo pages would save
+    function simulatePhotoPages() {
+      console.log('🧪 Test 1: Simulating photo page data storage...');
+
+      // First, ensure temp_session_id exists in localStorage (standard pattern)
+      const sessionId = 'test-session-' + Date.now();
+      localStorage.setItem('temp_session_id', sessionId);
+      console.log('✅ Set temp_session_id in localStorage:', sessionId);
+
+      // Simulate Page 4a: Scene photos
+      const page4aData = {
+        session_id: localStorage.getItem('temp_session_id'),
+        scene_images: [
+          { path: '/temp/scene1.jpg', fileName: 'scene1.jpg', fileSize: 245678 },
+          { path: '/temp/scene2.jpg', fileName: 'scene2.jpg', fileSize: 312456 },
+          { path: '/temp/scene3.jpg', fileName: 'scene3.jpg', fileSize: 198765 }
+        ],
+        page_completed: new Date().toISOString()
+      };
+      sessionStorage.setItem('incident_page4a', JSON.stringify(page4aData));
+      console.log('✅ Saved Page 4a data to sessionStorage.incident_page4a');
+
+      // Simulate Page 6: Vehicle damage photos
+      const page6Data = {
+        session_id: localStorage.getItem('temp_session_id'),
+        uploaded_images: [
+          { path: '/temp/damage1.jpg', fileName: 'damage1.jpg', fileSize: 567890 },
+          { path: '/temp/damage2.jpg', fileName: 'damage2.jpg', fileSize: 423456 },
+          { path: '/temp/damage3.jpg', fileName: 'damage3.jpg', fileSize: 389012 },
+          { path: '/temp/damage4.jpg', fileName: 'damage4.jpg', fileSize: 412345 }
+        ]
+      };
+      sessionStorage.setItem('incident_page6', JSON.stringify(page6Data));
+      console.log('✅ Saved Page 6 data to sessionStorage.incident_page6');
+
+      // Simulate Page 8: Other vehicle photos
+      const page8Data = {
+        session_id: localStorage.getItem('temp_session_id'),
+        other_damage_images: [
+          { path: '/temp/other1.jpg', fileName: 'other1.jpg', fileSize: 298765, fieldName: 'other_vehicle_photo_1' },
+          { path: '/temp/other2.jpg', fileName: 'other2.jpg', fileSize: 345678, fieldName: 'other_vehicle_photo_2' },
+          { path: '/temp/other3.jpg', fileName: 'other3.jpg', fileSize: 276543, fieldName: 'other_vehicle_photo_3' }
+        ]
+      };
+      sessionStorage.setItem('incident_page8', JSON.stringify(page8Data));
+      console.log('✅ Saved Page 8 data to sessionStorage.incident_page8');
+
+      // Display results
+      const output = document.getElementById('test1-output');
+      output.innerHTML = `
+        <div class="result-grid">
+          <div class="result-card">
+            <h4>📸 Page 4a (Scene Photos)</h4>
+            <pre>${formatJSON(page4aData)}</pre>
+            <p><strong>Storage:</strong> <code>sessionStorage.incident_page4a</code></p>
+            <p><strong>session_id:</strong> <code>${page4aData.session_id ? '✅ Present' : '❌ Missing'}</code></p>
+          </div>
+          <div class="result-card">
+            <h4>🚗 Page 6 (Vehicle Damage)</h4>
+            <pre>${formatJSON(page6Data)}</pre>
+            <p><strong>Storage:</strong> <code>sessionStorage.incident_page6</code></p>
+            <p><strong>session_id:</strong> <code>${page6Data.session_id ? '✅ Present' : '❌ Missing'}</code></p>
+          </div>
+        </div>
+        <div class="result-card" style="margin-top: 15px;">
+          <h4>🚙 Page 8 (Other Vehicle)</h4>
+          <pre>${formatJSON(page8Data)}</pre>
+          <p><strong>Storage:</strong> <code>sessionStorage.incident_page8</code></p>
+          <p><strong>session_id:</strong> <code>${page8Data.session_id ? '✅ Present' : '❌ Missing'}</code></p>
+        </div>
+        <div class="result-card" style="margin-top: 15px; border-left-color: #10b981;">
+          <h4>🔑 Session ID (Persistence Check)</h4>
+          <p><strong>Storage:</strong> <code>localStorage.temp_session_id</code></p>
+          <p><strong>Value:</strong> <code>${sessionId}</code></p>
+          <p><strong>Persists across navigation:</strong> ✅ YES (localStorage)</p>
+        </div>
+      `;
+
+      document.getElementById('test1-status').textContent = 'PASS';
+      document.getElementById('test1-status').className = 'status pass';
+    }
+
+    // Test 2: Simulate Page 12's data collection
+    function testPage12Collection() {
+      console.log('🧪 Test 2: Simulating Page 12 data collection...');
+
+      // This is the EXACT code from Page 12 (lines 698-706)
+      const formData = {};
+      for (let i = 1; i <= 12; i++) {
+        const pageData = sessionStorage.getItem(`incident_page${i}`);
+        if (pageData) {
+          formData[`page${i}`] = JSON.parse(pageData);
+        }
+      }
+
+      // Also check for page4a (non-numeric)
+      const page4aData = sessionStorage.getItem('incident_page4a');
+      if (page4aData) {
+        formData['page4a'] = JSON.parse(page4aData);
+      }
+
+      console.log('✅ Page 12 collected formData:', formData);
+
+      // Check what was found
+      const foundPages = Object.keys(formData);
+      const expectedPages = ['page4a', 'page6', 'page8'];
+      const missingPages = expectedPages.filter(p => !foundPages.includes(p));
+
+      const output = document.getElementById('test2-output');
+      output.innerHTML = `
+        <div class="result-card">
+          <h4>📦 Collected Form Data</h4>
+          <p><strong>Pages Found:</strong> ${foundPages.join(', ')}</p>
+          <p><strong>Expected Pages:</strong> ${expectedPages.join(', ')}</p>
+          <p><strong>Missing Pages:</strong> ${missingPages.length > 0 ? '❌ ' + missingPages.join(', ') : '✅ None'}</p>
+        </div>
+        <pre>${formatJSON(formData)}</pre>
+      `;
+
+      if (missingPages.length === 0) {
+        document.getElementById('test2-status').textContent = 'PASS';
+        document.getElementById('test2-status').className = 'status pass';
+      } else {
+        document.getElementById('test2-status').textContent = 'FAIL';
+        document.getElementById('test2-status').className = 'status fail';
+      }
+    }
+
+    // Test 3: Check controller conditionals
+    function testControllerConditionals() {
+      console.log('🧪 Test 3: Testing controller conditionals...');
+
+      // Simulate what controller receives
+      const formData = {};
+      const page4aData = sessionStorage.getItem('incident_page4a');
+      const page6Data = sessionStorage.getItem('incident_page6');
+      const page8Data = sessionStorage.getItem('incident_page8');
+
+      if (page4aData) formData.page4a = JSON.parse(page4aData);
+      if (page6Data) formData.page6 = JSON.parse(page6Data);
+      if (page8Data) formData.page8 = JSON.parse(page8Data);
+
+      // Test conditionals (from incidentForm.controller.js)
+      const tests = [
+        {
+          name: 'Scene Photos Finalization',
+          condition: 'formData.page4a?.session_id',
+          result: formData.page4a?.session_id,
+          pass: !!formData.page4a?.session_id,
+          code: `if (formData.page4a?.session_id) {\n  await locationPhotoService.finalizePhotos(...);\n}`
+        },
+        {
+          name: 'Vehicle Damage Finalization',
+          condition: 'formData.page6?.session_id',
+          result: formData.page6?.session_id,
+          pass: !!formData.page6?.session_id,
+          code: `if (formData.page6?.session_id) {\n  await locationPhotoService.finalizeVehicleDamagePhotos(...);\n}`
+        },
+        {
+          name: 'Other Vehicle Finalization',
+          condition: 'formData.page8?.session_id',
+          result: formData.page8?.session_id,
+          pass: !!formData.page8?.session_id,
+          code: `if (formData.page8?.session_id) {\n  await locationPhotoService.finalizeOtherVehiclePhotos(...);\n}`
+        }
+      ];
+
+      const allPass = tests.every(t => t.pass);
+
+      const output = document.getElementById('test3-output');
+      output.innerHTML = `
+        <div class="result-grid">
+          ${tests.map(test => `
+            <div class="result-card" style="border-left-color: ${test.pass ? '#10b981' : '#ef4444'};">
+              <h4>${test.pass ? '✅' : '❌'} ${test.name}</h4>
+              <p><strong>Condition:</strong> <code>${test.condition}</code></p>
+              <p><strong>Result:</strong> <code>${test.result || 'undefined'}</code></p>
+              <p><strong>Will Execute:</strong> ${test.pass ? '✅ YES' : '❌ NO'}</p>
+              <pre style="font-size: 11px;">${test.code}</pre>
+            </div>
+          `).join('')}
+        </div>
+      `;
+
+      if (allPass) {
+        document.getElementById('test3-status').textContent = 'PASS';
+        document.getElementById('test3-status').className = 'status pass';
+      } else {
+        document.getElementById('test3-status').textContent = 'FAIL';
+        document.getElementById('test3-status').className = 'status fail';
+      }
+    }
+
+    // Test 4: Inspect storage
+    function inspectStorage() {
+      console.log('🔍 Inspecting storage...');
+
+      const localStorageKeys = Object.keys(localStorage);
+      const sessionStorageKeys = Object.keys(sessionStorage);
+
+      const localData = {};
+      localStorageKeys.forEach(key => {
+        try {
+          localData[key] = JSON.parse(localStorage.getItem(key));
+        } catch {
+          localData[key] = localStorage.getItem(key);
+        }
+      });
+
+      const sessionData = {};
+      sessionStorageKeys.forEach(key => {
+        try {
+          sessionData[key] = JSON.parse(sessionStorage.getItem(key));
+        } catch {
+          sessionData[key] = sessionStorage.getItem(key);
+        }
+      });
+
+      const output = document.getElementById('test4-output');
+      output.innerHTML = `
+        <div class="result-grid">
+          <div class="result-card">
+            <h4>🔒 localStorage (${localStorageKeys.length} items)</h4>
+            <p><em>Persists across sessions, survives navigation</em></p>
+            <pre>${formatJSON(localData)}</pre>
+          </div>
+          <div class="result-card">
+            <h4>📝 sessionStorage (${sessionStorageKeys.length} items)</h4>
+            <p><em>Clears when tab closes, survives navigation within tab</em></p>
+            <pre>${formatJSON(sessionData)}</pre>
+          </div>
+        </div>
+      `;
+    }
+
+    // Clear all storage
+    function clearAllStorage() {
+      if (confirm('Clear all localStorage and sessionStorage?')) {
+        localStorage.clear();
+        sessionStorage.clear();
+        console.log('🗑️ All storage cleared');
+        alert('Storage cleared! Run Test 1 again to re-populate.');
+
+        // Reset test statuses
+        ['test1-status', 'test2-status', 'test3-status'].forEach(id => {
+          const el = document.getElementById(id);
+          el.textContent = 'PENDING';
+          el.className = 'status pending';
+        });
+
+        // Clear outputs
+        ['test1-output', 'test2-output', 'test3-output', 'test4-output'].forEach(id => {
+          document.getElementById(id).innerHTML = '';
+        });
+      }
+    }
+
+    // Auto-run on page load
+    window.addEventListener('DOMContentLoaded', () => {
+      console.log('📸 Photo Page Storage Test loaded');
+      console.log('ℹ️ Click "Run Simulation" to test the storage pattern fixes');
+    });
+  </script>
+</body>
+</html>

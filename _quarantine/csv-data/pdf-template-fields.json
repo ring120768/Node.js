@@ -1,0 +1,2821 @@
+{
+  "summary": {
+    "totalFields": 213,
+    "byType": {
+      "text": 120,
+      "checkbox": 92,
+      "radio": 0,
+      "dropdown": 0,
+      "button": 0,
+      "other": 1
+    },
+    "extractedAt": "2025-12-12T13:17:33.999Z",
+    "pdfPath": "/Users/ianring/Ian.ring Dropbox/Ian Ring/Car Crash Lawyer/PDFco/App ready/PDF fillabe/Final PDF/Car-Crash-Lawyer-AI-incident-report-main.pdf",
+    "pageCount": 18
+  },
+  "fieldInventory": [
+    {
+      "name": "accident_date",
+      "type": "text",
+      "maxLength": "unlimited",
+      "multiline": false,
+      "readOnly": false
+    },
+    {
+      "name": "accident_ref_number",
+      "type": "text",
+      "maxLength": "unlimited",
+      "multiline": false,
+      "readOnly": false
+    },
+    {
+      "name": "accident_time",
+      "type": "text",
+      "maxLength": "unlimited",
+      "multiline": false,
+      "readOnly": false
+    },
+    {
+      "name": "additional_hazards",
+      "type": "text",
+      "maxLength": "unlimited",
+      "multiline": false,
+      "readOnly": false
+    },
+    {
+      "name": "additional_witnesses",
+      "type": "text",
+      "maxLength": "unlimited",
+      "multiline": false,
+      "readOnly": false
+    },
+    {
+      "name": "ai_summary",
+      "type": "text",
+      "maxLength": "unlimited",
+      "multiline": false,
+      "readOnly": false
+    },
+    {
+      "name": "airbags_deployed",
+      "type": "checkbox",
+      "checked": false,
+      "readOnly": false
+    },
+    {
+      "name": "airbags_deployed_no",
+      "type": "checkbox",
+      "checked": false,
+      "readOnly": false
+    },
+    {
+      "name": "analysis_metadata",
+      "type": "text",
+      "maxLength": "unlimited",
+      "multiline": false,
+      "readOnly": false
+    },
+    {
+      "name": "car_registration_number",
+      "type": "text",
+      "maxLength": "unlimited",
+      "multiline": false,
+      "readOnly": false
+    },
+    {
+      "name": "closing_statement",
+      "type": "text",
+      "maxLength": "unlimited",
+      "multiline": false,
+      "readOnly": false
+    },
+    {
+      "name": "country",
+      "type": "text",
+      "maxLength": "unlimited",
+      "multiline": false,
+      "readOnly": false
+    },
+    {
+      "name": "cover_type",
+      "type": "text",
+      "maxLength": "unlimited",
+      "multiline": false,
+      "readOnly": false
+    },
+    {
+      "name": "damage_to_your_vehicle",
+      "type": "text",
+      "maxLength": "unlimited",
+      "multiline": false,
+      "readOnly": false
+    },
+    {
+      "name": "date_of_birth",
+      "type": "text",
+      "maxLength": "unlimited",
+      "multiline": false,
+      "readOnly": false
+    },
+    {
+      "name": "Date69_af_date",
+      "type": "text",
+      "maxLength": "unlimited",
+      "multiline": false,
+      "readOnly": false
+    },
+    {
+      "name": "describe-damage-to-vehicle",
+      "type": "text",
+      "maxLength": "unlimited",
+      "multiline": true,
+      "readOnly": false
+    },
+    {
+      "name": "driving_license_number",
+      "type": "text",
+      "maxLength": "unlimited",
+      "multiline": false,
+      "readOnly": false
+    },
+    {
+      "name": "driving_license_picture",
+      "type": "text",
+      "maxLength": "unlimited",
+      "multiline": true,
+      "readOnly": false
+    },
+    {
+      "name": "driving_your_usual_vehicle_no",
+      "type": "checkbox",
+      "checked": false,
+      "readOnly": false
+    },
+    {
+      "name": "dvla_colour",
+      "type": "text",
+      "maxLength": "unlimited",
+      "multiline": false,
+      "readOnly": false
+    },
+    {
+      "name": "dvla_fuel_type",
+      "type": "text",
+      "maxLength": "unlimited",
+      "multiline": false,
+      "readOnly": false
+    },
+    {
+      "name": "dvla_make",
+      "type": "text",
+      "maxLength": "unlimited",
+      "multiline": false,
+      "readOnly": false
+    },
+    {
+      "name": "dvla_model",
+      "type": "text",
+      "maxLength": "unlimited",
+      "multiline": false,
+      "readOnly": false
+    },
+    {
+      "name": "dvla_mot_expiry",
+      "type": "text",
+      "maxLength": "unlimited",
+      "multiline": false,
+      "readOnly": false
+    },
+    {
+      "name": "dvla_mot_status",
+      "type": "text",
+      "maxLength": "unlimited",
+      "multiline": false,
+      "readOnly": false
+    },
+    {
+      "name": "dvla_tax_due_date",
+      "type": "text",
+      "maxLength": "unlimited",
+      "multiline": false,
+      "readOnly": false
+    },
+    {
+      "name": "dvla_tax_status",
+      "type": "text",
+      "maxLength": "unlimited",
+      "multiline": false,
+      "readOnly": false
+    },
+    {
+      "name": "dvla_year",
+      "type": "text",
+      "maxLength": "unlimited",
+      "multiline": false,
+      "readOnly": false
+    },
+    {
+      "name": "email",
+      "type": "text",
+      "maxLength": "unlimited",
+      "multiline": false,
+      "readOnly": false
+    },
+    {
+      "name": "emergency_audio_transcription",
+      "type": "text",
+      "maxLength": "unlimited",
+      "multiline": false,
+      "readOnly": false
+    },
+    {
+      "name": "emergency_contact_name",
+      "type": "text",
+      "maxLength": "unlimited",
+      "multiline": false,
+      "readOnly": false
+    },
+    {
+      "name": "emergency_contact_number",
+      "type": "text",
+      "maxLength": "unlimited",
+      "multiline": false,
+      "readOnly": false
+    },
+    {
+      "name": "emergency_recording_timestamp",
+      "type": "text",
+      "maxLength": "unlimited",
+      "multiline": false,
+      "readOnly": false
+    },
+    {
+      "name": "final_feeling",
+      "type": "checkbox",
+      "checked": false,
+      "readOnly": false
+    },
+    {
+      "name": "final_review",
+      "type": "text",
+      "maxLength": "unlimited",
+      "multiline": true,
+      "readOnly": false
+    },
+    {
+      "name": "further_medical_attention_needed",
+      "type": "text",
+      "maxLength": "unlimited",
+      "multiline": false,
+      "readOnly": false
+    },
+    {
+      "name": "id",
+      "type": "text",
+      "maxLength": "unlimited",
+      "multiline": false,
+      "readOnly": false
+    },
+    {
+      "name": "impact_point_driver_side",
+      "type": "checkbox",
+      "checked": false,
+      "readOnly": false
+    },
+    {
+      "name": "impact_point_front",
+      "type": "checkbox",
+      "checked": false,
+      "readOnly": false
+    },
+    {
+      "name": "impact_point_front_driver",
+      "type": "checkbox",
+      "checked": false,
+      "readOnly": false
+    },
+    {
+      "name": "impact_point_front_passenger",
+      "type": "checkbox",
+      "checked": false,
+      "readOnly": false
+    },
+    {
+      "name": "impact_point_passenger_side",
+      "type": "checkbox",
+      "checked": false,
+      "readOnly": false
+    },
+    {
+      "name": "impact_point_rear",
+      "type": "checkbox",
+      "checked": false,
+      "readOnly": false
+    },
+    {
+      "name": "impact_point_rear_driver",
+      "type": "checkbox",
+      "checked": false,
+      "readOnly": false
+    },
+    {
+      "name": "impact_point_rear_passenger",
+      "type": "checkbox",
+      "checked": false,
+      "readOnly": false
+    },
+    {
+      "name": "impact_point_roof",
+      "type": "checkbox",
+      "checked": false,
+      "readOnly": false
+    },
+    {
+      "name": "impact_point_under_carriage",
+      "type": "checkbox",
+      "checked": false,
+      "readOnly": false
+    },
+    {
+      "name": "insurance_company",
+      "type": "text",
+      "maxLength": "unlimited",
+      "multiline": false,
+      "readOnly": false
+    },
+    {
+      "name": "junction_control",
+      "type": "text",
+      "maxLength": "unlimited",
+      "multiline": false,
+      "readOnly": false
+    },
+    {
+      "name": "junction_type",
+      "type": "text",
+      "maxLength": "unlimited",
+      "multiline": false,
+      "readOnly": false
+    },
+    {
+      "name": "location",
+      "type": "text",
+      "maxLength": "unlimited",
+      "multiline": false,
+      "readOnly": false
+    },
+    {
+      "name": "location_map_screenshot",
+      "type": "text",
+      "maxLength": "unlimited",
+      "multiline": true,
+      "readOnly": false
+    },
+    {
+      "name": "medical_ambulance_called",
+      "type": "checkbox",
+      "checked": false,
+      "readOnly": false
+    },
+    {
+      "name": "medical_attention_from_who",
+      "type": "text",
+      "maxLength": "unlimited",
+      "multiline": false,
+      "readOnly": false
+    },
+    {
+      "name": "medical_attention_needed",
+      "type": "checkbox",
+      "checked": false,
+      "readOnly": false
+    },
+    {
+      "name": "medical_hospital_name",
+      "type": "text",
+      "maxLength": "unlimited",
+      "multiline": false,
+      "readOnly": false
+    },
+    {
+      "name": "medical_how_are_you_feeling",
+      "type": "text",
+      "maxLength": "unlimited",
+      "multiline": false,
+      "readOnly": false
+    },
+    {
+      "name": "medical_injury_details",
+      "type": "text",
+      "maxLength": "unlimited",
+      "multiline": false,
+      "readOnly": false
+    },
+    {
+      "name": "medical_injury_severity",
+      "type": "text",
+      "maxLength": "unlimited",
+      "multiline": false,
+      "readOnly": false
+    },
+    {
+      "name": "medical_symptom_abdominal_bruising",
+      "type": "checkbox",
+      "checked": false,
+      "readOnly": false
+    },
+    {
+      "name": "medical_symptom_abdominal_pain",
+      "type": "checkbox",
+      "checked": false,
+      "readOnly": false
+    },
+    {
+      "name": "medical_symptom_breathlessness",
+      "type": "checkbox",
+      "checked": false,
+      "readOnly": false
+    },
+    {
+      "name": "medical_symptom_change_in_vision",
+      "type": "checkbox",
+      "checked": false,
+      "readOnly": false
+    },
+    {
+      "name": "medical_symptom_chest_pain",
+      "type": "checkbox",
+      "checked": false,
+      "readOnly": false
+    },
+    {
+      "name": "medical_symptom_dizziness",
+      "type": "checkbox",
+      "checked": false,
+      "readOnly": false
+    },
+    {
+      "name": "medical_symptom_life _threatening",
+      "type": "checkbox",
+      "checked": false,
+      "readOnly": false
+    },
+    {
+      "name": "medical_symptom_limb_pain_mobilty",
+      "type": "checkbox",
+      "checked": false,
+      "readOnly": false
+    },
+    {
+      "name": "medical_symptom_limb_weakness",
+      "type": "checkbox",
+      "checked": false,
+      "readOnly": false
+    },
+    {
+      "name": "medical_symptom_loss_of_consciousness",
+      "type": "checkbox",
+      "checked": false,
+      "readOnly": false
+    },
+    {
+      "name": "medical_symptom_none",
+      "type": "checkbox",
+      "checked": false,
+      "readOnly": false
+    },
+    {
+      "name": "medical_symptom_severe_headache",
+      "type": "checkbox",
+      "checked": false,
+      "readOnly": false
+    },
+    {
+      "name": "medical_symptom_uncontrolled_bleeding",
+      "type": "checkbox",
+      "checked": false,
+      "readOnly": false
+    },
+    {
+      "name": "medical_treatment_recieved",
+      "type": "text",
+      "maxLength": "unlimited",
+      "multiline": false,
+      "readOnly": false
+    },
+    {
+      "name": "mobile",
+      "type": "text",
+      "maxLength": "unlimited",
+      "multiline": false,
+      "readOnly": false
+    },
+    {
+      "name": "name",
+      "type": "text",
+      "maxLength": "unlimited",
+      "multiline": false,
+      "readOnly": false
+    },
+    {
+      "name": "nearest_landmark",
+      "type": "text",
+      "maxLength": "unlimited",
+      "multiline": false,
+      "readOnly": false
+    },
+    {
+      "name": "no_damage",
+      "type": "checkbox",
+      "checked": false,
+      "readOnly": false
+    },
+    {
+      "name": "no_it_needed_to_be_towed",
+      "type": "checkbox",
+      "checked": false,
+      "readOnly": false
+    },
+    {
+      "name": "no-visible-damage",
+      "type": "checkbox",
+      "checked": false,
+      "readOnly": false
+    },
+    {
+      "name": "officer_badge",
+      "type": "text",
+      "maxLength": "unlimited",
+      "multiline": false,
+      "readOnly": false
+    },
+    {
+      "name": "officer_name",
+      "type": "text",
+      "maxLength": "unlimited",
+      "multiline": false,
+      "readOnly": false
+    },
+    {
+      "name": "open",
+      "type": "text",
+      "maxLength": "unlimited",
+      "multiline": true,
+      "readOnly": false
+    },
+    {
+      "name": "other_breath_test",
+      "type": "text",
+      "maxLength": "unlimited",
+      "multiline": false,
+      "readOnly": false
+    },
+    {
+      "name": "other_driver_vehicle_marked_for_export",
+      "type": "text",
+      "maxLength": "unlimited",
+      "multiline": false,
+      "readOnly": false
+    },
+    {
+      "name": "other_vehicle_photo_1_url",
+      "type": "text",
+      "maxLength": "unlimited",
+      "multiline": true,
+      "readOnly": false
+    },
+    {
+      "name": "other_vehicle_photo_2_url",
+      "type": "text",
+      "maxLength": "unlimited",
+      "multiline": true,
+      "readOnly": false
+    },
+    {
+      "name": "other_vehicle_photo_3_url",
+      "type": "text",
+      "maxLength": "unlimited",
+      "multiline": true,
+      "readOnly": false
+    },
+    {
+      "name": "other-contact-number",
+      "type": "text",
+      "maxLength": "unlimited",
+      "multiline": false,
+      "readOnly": false
+    },
+    {
+      "name": "other-drivers-insurance-company",
+      "type": "text",
+      "maxLength": "unlimited",
+      "multiline": false,
+      "readOnly": false
+    },
+    {
+      "name": "other-drivers-policy-cover-type",
+      "type": "text",
+      "maxLength": "unlimited",
+      "multiline": false,
+      "readOnly": false
+    },
+    {
+      "name": "other-drivers-policy-holder-name",
+      "type": "text",
+      "maxLength": "unlimited",
+      "multiline": false,
+      "readOnly": false
+    },
+    {
+      "name": "other-drivers-policy-number",
+      "type": "text",
+      "maxLength": "unlimited",
+      "multiline": false,
+      "readOnly": false
+    },
+    {
+      "name": "other-driving-license-number",
+      "type": "text",
+      "maxLength": "unlimited",
+      "multiline": false,
+      "readOnly": false
+    },
+    {
+      "name": "other-email-address",
+      "type": "text",
+      "maxLength": "unlimited",
+      "multiline": false,
+      "readOnly": false
+    },
+    {
+      "name": "other-full-name",
+      "type": "text",
+      "maxLength": "unlimited",
+      "multiline": false,
+      "readOnly": false
+    },
+    {
+      "name": "other-vehicle-look-up-colour",
+      "type": "text",
+      "maxLength": "unlimited",
+      "multiline": false,
+      "readOnly": false
+    },
+    {
+      "name": "other-vehicle-look-up-fuel-type",
+      "type": "text",
+      "maxLength": "unlimited",
+      "multiline": false,
+      "readOnly": false
+    },
+    {
+      "name": "other-vehicle-look-up-insurance-status",
+      "type": "text",
+      "maxLength": "unlimited",
+      "multiline": false,
+      "readOnly": false
+    },
+    {
+      "name": "other-vehicle-look-up-make",
+      "type": "text",
+      "maxLength": "unlimited",
+      "multiline": false,
+      "readOnly": false
+    },
+    {
+      "name": "other-vehicle-look-up-model",
+      "type": "text",
+      "maxLength": "unlimited",
+      "multiline": false,
+      "readOnly": false
+    },
+    {
+      "name": "other-vehicle-look-up-mot-expiry-date",
+      "type": "text",
+      "maxLength": "unlimited",
+      "multiline": false,
+      "readOnly": false
+    },
+    {
+      "name": "other-vehicle-look-up-mot-status",
+      "type": "text",
+      "maxLength": "unlimited",
+      "multiline": false,
+      "readOnly": false
+    },
+    {
+      "name": "other-vehicle-look-up-tax-due-date",
+      "type": "text",
+      "maxLength": "unlimited",
+      "multiline": false,
+      "readOnly": false
+    },
+    {
+      "name": "other-vehicle-look-up-tax-status",
+      "type": "text",
+      "maxLength": "unlimited",
+      "multiline": false,
+      "readOnly": false
+    },
+    {
+      "name": "other-vehicle-look-up-year",
+      "type": "text",
+      "maxLength": "unlimited",
+      "multiline": false,
+      "readOnly": false
+    },
+    {
+      "name": "other-vehicle-registration",
+      "type": "text",
+      "maxLength": "unlimited",
+      "multiline": false,
+      "readOnly": false
+    },
+    {
+      "name": "police_attend",
+      "type": "checkbox",
+      "checked": false,
+      "readOnly": false
+    },
+    {
+      "name": "police_attended",
+      "type": "checkbox",
+      "checked": false,
+      "readOnly": false
+    },
+    {
+      "name": "police_force",
+      "type": "text",
+      "maxLength": "unlimited",
+      "multiline": false,
+      "readOnly": false
+    },
+    {
+      "name": "policy_holder",
+      "type": "text",
+      "maxLength": "unlimited",
+      "multiline": false,
+      "readOnly": false
+    },
+    {
+      "name": "policy_number",
+      "type": "text",
+      "maxLength": "unlimited",
+      "multiline": false,
+      "readOnly": false
+    },
+    {
+      "name": "postcode",
+      "type": "text",
+      "maxLength": "unlimited",
+      "multiline": false,
+      "readOnly": false
+    },
+    {
+      "name": "quality_review",
+      "type": "text",
+      "maxLength": "unlimited",
+      "multiline": false,
+      "readOnly": false
+    },
+    {
+      "name": "recovery_breakdown_email",
+      "type": "text",
+      "maxLength": "unlimited",
+      "multiline": false,
+      "readOnly": false
+    },
+    {
+      "name": "recovery_breakdown_number",
+      "type": "text",
+      "maxLength": "unlimited",
+      "multiline": false,
+      "readOnly": false
+    },
+    {
+      "name": "recovery_company",
+      "type": "text",
+      "maxLength": "unlimited",
+      "multiline": false,
+      "readOnly": false
+    },
+    {
+      "name": "road_condition_dry",
+      "type": "checkbox",
+      "checked": false,
+      "readOnly": false
+    },
+    {
+      "name": "road_condition_icy",
+      "type": "checkbox",
+      "checked": false,
+      "readOnly": false
+    },
+    {
+      "name": "road_condition_loose_surface",
+      "type": "checkbox",
+      "checked": false,
+      "readOnly": false
+    },
+    {
+      "name": "road_condition_slush_on_road",
+      "type": "checkbox",
+      "checked": false,
+      "readOnly": false
+    },
+    {
+      "name": "road_condition_snow_covered",
+      "type": "checkbox",
+      "checked": false,
+      "readOnly": false
+    },
+    {
+      "name": "road_condition_wet",
+      "type": "checkbox",
+      "checked": false,
+      "readOnly": false
+    },
+    {
+      "name": "road_markings_visible_partially",
+      "type": "checkbox",
+      "checked": false,
+      "readOnly": false
+    },
+    {
+      "name": "road_markings_vsible_no",
+      "type": "checkbox",
+      "checked": false,
+      "readOnly": false
+    },
+    {
+      "name": "road_markings_vsible_yes",
+      "type": "checkbox",
+      "checked": false,
+      "readOnly": false
+    },
+    {
+      "name": "road_type_a_road",
+      "type": "checkbox",
+      "checked": false,
+      "readOnly": false
+    },
+    {
+      "name": "road_type_b_road",
+      "type": "checkbox",
+      "checked": false,
+      "readOnly": false
+    },
+    {
+      "name": "road_type_car_park",
+      "type": "checkbox",
+      "checked": false,
+      "readOnly": false
+    },
+    {
+      "name": "road_type_motorway",
+      "type": "checkbox",
+      "checked": false,
+      "readOnly": false
+    },
+    {
+      "name": "road_type_private_road",
+      "type": "checkbox",
+      "checked": false,
+      "readOnly": false
+    },
+    {
+      "name": "road_type_rural",
+      "type": "checkbox",
+      "checked": false,
+      "readOnly": false
+    },
+    {
+      "name": "road_type_urban",
+      "type": "checkbox",
+      "checked": false,
+      "readOnly": false
+    },
+    {
+      "name": "scene_photo_1_url",
+      "type": "text",
+      "maxLength": "unlimited",
+      "multiline": true,
+      "readOnly": false
+    },
+    {
+      "name": "scene_photo_2_url",
+      "type": "text",
+      "maxLength": "unlimited",
+      "multiline": true,
+      "readOnly": false
+    },
+    {
+      "name": "scene_photo_3_url",
+      "type": "text",
+      "maxLength": "unlimited",
+      "multiline": true,
+      "readOnly": false
+    },
+    {
+      "name": "seatbelt_reason",
+      "type": "text",
+      "maxLength": "unlimited",
+      "multiline": true,
+      "readOnly": false
+    },
+    {
+      "name": "seatbelt_worn",
+      "type": "checkbox",
+      "checked": false,
+      "readOnly": false
+    },
+    {
+      "name": "seatbelt_worn_no",
+      "type": "checkbox",
+      "checked": false,
+      "readOnly": false
+    },
+    {
+      "name": "Signature70",
+      "type": "unknown"
+    },
+    {
+      "name": "six_point_safety_check_completed",
+      "type": "checkbox",
+      "checked": false,
+      "readOnly": false
+    },
+    {
+      "name": "special_condition_animals",
+      "type": "checkbox",
+      "checked": false,
+      "readOnly": false
+    },
+    {
+      "name": "special_condition_crossing",
+      "type": "checkbox",
+      "checked": false,
+      "readOnly": false
+    },
+    {
+      "name": "special_condition_cyclists",
+      "type": "checkbox",
+      "checked": false,
+      "readOnly": false
+    },
+    {
+      "name": "special_condition_narrow_road",
+      "type": "checkbox",
+      "checked": false,
+      "readOnly": false
+    },
+    {
+      "name": "special_condition_oil_spills",
+      "type": "checkbox",
+      "checked": false,
+      "readOnly": false
+    },
+    {
+      "name": "special_condition_parked_vehicles",
+      "type": "checkbox",
+      "checked": false,
+      "readOnly": false
+    },
+    {
+      "name": "special_condition_pedestrians",
+      "type": "checkbox",
+      "checked": false,
+      "readOnly": false
+    },
+    {
+      "name": "special_condition_potholes",
+      "type": "checkbox",
+      "checked": false,
+      "readOnly": false
+    },
+    {
+      "name": "special_condition_roadworks",
+      "type": "checkbox",
+      "checked": false,
+      "readOnly": false
+    },
+    {
+      "name": "special_condition_school_zone",
+      "type": "checkbox",
+      "checked": false,
+      "readOnly": false
+    },
+    {
+      "name": "special_condition_traffic_calming",
+      "type": "checkbox",
+      "checked": false,
+      "readOnly": false
+    },
+    {
+      "name": "special_condition_workmen",
+      "type": "checkbox",
+      "checked": false,
+      "readOnly": false
+    },
+    {
+      "name": "speed_limit",
+      "type": "text",
+      "maxLength": "unlimited",
+      "multiline": false,
+      "readOnly": false
+    },
+    {
+      "name": "street",
+      "type": "text",
+      "maxLength": "unlimited",
+      "multiline": false,
+      "readOnly": false
+    },
+    {
+      "name": "street_name_optional",
+      "type": "text",
+      "maxLength": "unlimited",
+      "multiline": false,
+      "readOnly": false
+    },
+    {
+      "name": "subscription_start_date",
+      "type": "text",
+      "maxLength": "unlimited",
+      "multiline": false,
+      "readOnly": false
+    },
+    {
+      "name": "surname",
+      "type": "text",
+      "maxLength": "unlimited",
+      "multiline": false,
+      "readOnly": false
+    },
+    {
+      "name": "town",
+      "type": "text",
+      "maxLength": "unlimited",
+      "multiline": false,
+      "readOnly": false
+    },
+    {
+      "name": "traffic_conditions_heavy",
+      "type": "checkbox",
+      "checked": false,
+      "readOnly": false
+    },
+    {
+      "name": "traffic_conditions_light",
+      "type": "checkbox",
+      "checked": false,
+      "readOnly": false
+    },
+    {
+      "name": "traffic_conditions_moderate",
+      "type": "checkbox",
+      "checked": false,
+      "readOnly": false
+    },
+    {
+      "name": "traffic_conditions_no_traffic",
+      "type": "checkbox",
+      "checked": false,
+      "readOnly": false
+    },
+    {
+      "name": "traffic_light_status",
+      "type": "text",
+      "maxLength": "unlimited",
+      "multiline": false,
+      "readOnly": false
+    },
+    {
+      "name": "unsure _did_not_attempt",
+      "type": "checkbox",
+      "checked": false,
+      "readOnly": false
+    },
+    {
+      "name": "user_breath_test",
+      "type": "text",
+      "maxLength": "unlimited",
+      "multiline": false,
+      "readOnly": false
+    },
+    {
+      "name": "user_manoeuvre",
+      "type": "text",
+      "maxLength": "unlimited",
+      "multiline": false,
+      "readOnly": false
+    },
+    {
+      "name": "usual_vehicle",
+      "type": "checkbox",
+      "checked": false,
+      "readOnly": false
+    },
+    {
+      "name": "vehicle_colour",
+      "type": "text",
+      "maxLength": "unlimited",
+      "multiline": false,
+      "readOnly": false
+    },
+    {
+      "name": "vehicle_condition",
+      "type": "text",
+      "maxLength": "unlimited",
+      "multiline": false,
+      "readOnly": false
+    },
+    {
+      "name": "vehicle_damage_photo_1_url",
+      "type": "text",
+      "maxLength": "unlimited",
+      "multiline": true,
+      "readOnly": false
+    },
+    {
+      "name": "vehicle_damage_photo_2_url",
+      "type": "text",
+      "maxLength": "unlimited",
+      "multiline": true,
+      "readOnly": false
+    },
+    {
+      "name": "vehicle_damage_photo_3_url",
+      "type": "text",
+      "maxLength": "unlimited",
+      "multiline": true,
+      "readOnly": false
+    },
+    {
+      "name": "vehicle_damage_photo_4_url",
+      "type": "text",
+      "maxLength": "unlimited",
+      "multiline": true,
+      "readOnly": false
+    },
+    {
+      "name": "vehicle_damage_photo_5_url",
+      "type": "text",
+      "maxLength": "unlimited",
+      "multiline": false,
+      "readOnly": false
+    },
+    {
+      "name": "vehicle_license_plate",
+      "type": "text",
+      "maxLength": "unlimited",
+      "multiline": false,
+      "readOnly": false
+    },
+    {
+      "name": "vehicle_make",
+      "type": "text",
+      "maxLength": "unlimited",
+      "multiline": false,
+      "readOnly": false
+    },
+    {
+      "name": "vehicle_model",
+      "type": "text",
+      "maxLength": "unlimited",
+      "multiline": false,
+      "readOnly": false
+    },
+    {
+      "name": "vehicle_picture_back",
+      "type": "text",
+      "maxLength": "unlimited",
+      "multiline": true,
+      "readOnly": false
+    },
+    {
+      "name": "vehicle_picture_driver_side",
+      "type": "text",
+      "maxLength": "unlimited",
+      "multiline": true,
+      "readOnly": false
+    },
+    {
+      "name": "vehicle_picture_front",
+      "type": "text",
+      "maxLength": "unlimited",
+      "multiline": true,
+      "readOnly": false
+    },
+    {
+      "name": "vehicle_picture_passenger_side",
+      "type": "text",
+      "maxLength": "unlimited",
+      "multiline": true,
+      "readOnly": false
+    },
+    {
+      "name": "visibility_large_vehicle",
+      "type": "checkbox",
+      "checked": false,
+      "readOnly": false
+    },
+    {
+      "name": "visibility_poor",
+      "type": "checkbox",
+      "checked": false,
+      "readOnly": false
+    },
+    {
+      "name": "visibility_restricted_structure",
+      "type": "checkbox",
+      "checked": false,
+      "readOnly": false
+    },
+    {
+      "name": "visibility_sun_glare",
+      "type": "checkbox",
+      "checked": false,
+      "readOnly": false
+    },
+    {
+      "name": "visibility_very_poor",
+      "type": "checkbox",
+      "checked": false,
+      "readOnly": false
+    },
+    {
+      "name": "visibilty_good",
+      "type": "checkbox",
+      "checked": false,
+      "readOnly": false
+    },
+    {
+      "name": "visibilty_street_lights",
+      "type": "checkbox",
+      "checked": false,
+      "readOnly": false
+    },
+    {
+      "name": "voice_transcription",
+      "type": "text",
+      "maxLength": "unlimited",
+      "multiline": false,
+      "readOnly": false
+    },
+    {
+      "name": "weather_bright_sunlight",
+      "type": "checkbox",
+      "checked": false,
+      "readOnly": false
+    },
+    {
+      "name": "weather_clear",
+      "type": "checkbox",
+      "checked": false,
+      "readOnly": false
+    },
+    {
+      "name": "weather_cloudy",
+      "type": "checkbox",
+      "checked": false,
+      "readOnly": false
+    },
+    {
+      "name": "weather_drizzle",
+      "type": "checkbox",
+      "checked": false,
+      "readOnly": false
+    },
+    {
+      "name": "weather_dusk",
+      "type": "checkbox",
+      "checked": false,
+      "readOnly": false
+    },
+    {
+      "name": "weather_fog",
+      "type": "checkbox",
+      "checked": false,
+      "readOnly": false
+    },
+    {
+      "name": "weather_hail",
+      "type": "checkbox",
+      "checked": false,
+      "readOnly": false
+    },
+    {
+      "name": "weather_heavy_rain",
+      "type": "checkbox",
+      "checked": false,
+      "readOnly": false
+    },
+    {
+      "name": "weather_raining",
+      "type": "checkbox",
+      "checked": false,
+      "readOnly": false
+    },
+    {
+      "name": "weather_snow",
+      "type": "checkbox",
+      "checked": false,
+      "readOnly": false
+    },
+    {
+      "name": "weather_thunder_lightening",
+      "type": "checkbox",
+      "checked": false,
+      "readOnly": false
+    },
+    {
+      "name": "weather_windy",
+      "type": "checkbox",
+      "checked": false,
+      "readOnly": false
+    },
+    {
+      "name": "what3words",
+      "type": "text",
+      "maxLength": "unlimited",
+      "multiline": false,
+      "readOnly": false
+    },
+    {
+      "name": "witness_email_2",
+      "type": "text",
+      "maxLength": "unlimited",
+      "multiline": false,
+      "readOnly": false
+    },
+    {
+      "name": "witness_email_address",
+      "type": "text",
+      "maxLength": "unlimited",
+      "multiline": false,
+      "readOnly": false
+    },
+    {
+      "name": "witness_mobile_number",
+      "type": "text",
+      "maxLength": "unlimited",
+      "multiline": false,
+      "readOnly": false
+    },
+    {
+      "name": "witness_name",
+      "type": "text",
+      "maxLength": "unlimited",
+      "multiline": false,
+      "readOnly": false
+    },
+    {
+      "name": "witness_number",
+      "type": "text",
+      "maxLength": "unlimited",
+      "multiline": false,
+      "readOnly": false
+    },
+    {
+      "name": "witness_statement",
+      "type": "text",
+      "maxLength": "unlimited",
+      "multiline": true,
+      "readOnly": false
+    },
+    {
+      "name": "witness_statement_2",
+      "type": "text",
+      "maxLength": "unlimited",
+      "multiline": true,
+      "readOnly": false
+    },
+    {
+      "name": "witnesses_present",
+      "type": "checkbox",
+      "checked": false,
+      "readOnly": false
+    },
+    {
+      "name": "yes_i_drove_it_away",
+      "type": "checkbox",
+      "checked": false,
+      "readOnly": false
+    },
+    {
+      "name": "your_speed",
+      "type": "text",
+      "maxLength": "unlimited",
+      "multiline": false,
+      "readOnly": false
+    }
+  ],
+  "fieldsByType": {
+    "text": [
+      {
+        "name": "email",
+        "type": "text",
+        "maxLength": "unlimited",
+        "multiline": false,
+        "readOnly": false
+      },
+      {
+        "name": "mobile",
+        "type": "text",
+        "maxLength": "unlimited",
+        "multiline": false,
+        "readOnly": false
+      },
+      {
+        "name": "street",
+        "type": "text",
+        "maxLength": "unlimited",
+        "multiline": false,
+        "readOnly": false
+      },
+      {
+        "name": "town",
+        "type": "text",
+        "maxLength": "unlimited",
+        "multiline": false,
+        "readOnly": false
+      },
+      {
+        "name": "street_name_optional",
+        "type": "text",
+        "maxLength": "unlimited",
+        "multiline": false,
+        "readOnly": false
+      },
+      {
+        "name": "postcode",
+        "type": "text",
+        "maxLength": "unlimited",
+        "multiline": false,
+        "readOnly": false
+      },
+      {
+        "name": "country",
+        "type": "text",
+        "maxLength": "unlimited",
+        "multiline": false,
+        "readOnly": false
+      },
+      {
+        "name": "driving_license_number",
+        "type": "text",
+        "maxLength": "unlimited",
+        "multiline": false,
+        "readOnly": false
+      },
+      {
+        "name": "car_registration_number",
+        "type": "text",
+        "maxLength": "unlimited",
+        "multiline": false,
+        "readOnly": false
+      },
+      {
+        "name": "vehicle_model",
+        "type": "text",
+        "maxLength": "unlimited",
+        "multiline": false,
+        "readOnly": false
+      },
+      {
+        "name": "vehicle_colour",
+        "type": "text",
+        "maxLength": "unlimited",
+        "multiline": false,
+        "readOnly": false
+      },
+      {
+        "name": "vehicle_condition",
+        "type": "text",
+        "maxLength": "unlimited",
+        "multiline": false,
+        "readOnly": false
+      },
+      {
+        "name": "recovery_company",
+        "type": "text",
+        "maxLength": "unlimited",
+        "multiline": false,
+        "readOnly": false
+      },
+      {
+        "name": "recovery_breakdown_number",
+        "type": "text",
+        "maxLength": "unlimited",
+        "multiline": false,
+        "readOnly": false
+      },
+      {
+        "name": "insurance_company",
+        "type": "text",
+        "maxLength": "unlimited",
+        "multiline": false,
+        "readOnly": false
+      },
+      {
+        "name": "policy_number",
+        "type": "text",
+        "maxLength": "unlimited",
+        "multiline": false,
+        "readOnly": false
+      },
+      {
+        "name": "cover_type",
+        "type": "text",
+        "maxLength": "unlimited",
+        "multiline": false,
+        "readOnly": false
+      },
+      {
+        "name": "recovery_breakdown_email",
+        "type": "text",
+        "maxLength": "unlimited",
+        "multiline": false,
+        "readOnly": false
+      },
+      {
+        "name": "policy_holder",
+        "type": "text",
+        "maxLength": "unlimited",
+        "multiline": false,
+        "readOnly": false
+      },
+      {
+        "name": "vehicle_picture_front",
+        "type": "text",
+        "maxLength": "unlimited",
+        "multiline": true,
+        "readOnly": false
+      },
+      {
+        "name": "driving_license_picture",
+        "type": "text",
+        "maxLength": "unlimited",
+        "multiline": true,
+        "readOnly": false
+      },
+      {
+        "name": "vehicle_picture_driver_side",
+        "type": "text",
+        "maxLength": "unlimited",
+        "multiline": true,
+        "readOnly": false
+      },
+      {
+        "name": "vehicle_picture_passenger_side",
+        "type": "text",
+        "maxLength": "unlimited",
+        "multiline": true,
+        "readOnly": false
+      },
+      {
+        "name": "vehicle_picture_back",
+        "type": "text",
+        "maxLength": "unlimited",
+        "multiline": true,
+        "readOnly": false
+      },
+      {
+        "name": "medical_how_are_you_feeling",
+        "type": "text",
+        "maxLength": "unlimited",
+        "multiline": false,
+        "readOnly": false
+      },
+      {
+        "name": "medical_attention_from_who",
+        "type": "text",
+        "maxLength": "unlimited",
+        "multiline": false,
+        "readOnly": false
+      },
+      {
+        "name": "speed_limit",
+        "type": "text",
+        "maxLength": "unlimited",
+        "multiline": false,
+        "readOnly": false
+      },
+      {
+        "name": "nearest_landmark",
+        "type": "text",
+        "maxLength": "unlimited",
+        "multiline": false,
+        "readOnly": false
+      },
+      {
+        "name": "other_driver_vehicle_marked_for_export",
+        "type": "text",
+        "maxLength": "unlimited",
+        "multiline": false,
+        "readOnly": false
+      },
+      {
+        "name": "witness_name",
+        "type": "text",
+        "maxLength": "unlimited",
+        "multiline": false,
+        "readOnly": false
+      },
+      {
+        "name": "witness_statement",
+        "type": "text",
+        "maxLength": "unlimited",
+        "multiline": true,
+        "readOnly": false
+      },
+      {
+        "name": "witness_statement_2",
+        "type": "text",
+        "maxLength": "unlimited",
+        "multiline": true,
+        "readOnly": false
+      },
+      {
+        "name": "other_breath_test",
+        "type": "text",
+        "maxLength": "unlimited",
+        "multiline": false,
+        "readOnly": false
+      },
+      {
+        "name": "Date69_af_date",
+        "type": "text",
+        "maxLength": "unlimited",
+        "multiline": false,
+        "readOnly": false
+      },
+      {
+        "name": "name",
+        "type": "text",
+        "maxLength": "unlimited",
+        "multiline": false,
+        "readOnly": false
+      },
+      {
+        "name": "surname",
+        "type": "text",
+        "maxLength": "unlimited",
+        "multiline": false,
+        "readOnly": false
+      },
+      {
+        "name": "id",
+        "type": "text",
+        "maxLength": "unlimited",
+        "multiline": false,
+        "readOnly": false
+      },
+      {
+        "name": "date_of_birth",
+        "type": "text",
+        "maxLength": "unlimited",
+        "multiline": false,
+        "readOnly": false
+      },
+      {
+        "name": "emergency_contact_name",
+        "type": "text",
+        "maxLength": "unlimited",
+        "multiline": false,
+        "readOnly": false
+      },
+      {
+        "name": "emergency_contact_number",
+        "type": "text",
+        "maxLength": "unlimited",
+        "multiline": false,
+        "readOnly": false
+      },
+      {
+        "name": "medical_injury_severity",
+        "type": "text",
+        "maxLength": "unlimited",
+        "multiline": false,
+        "readOnly": false
+      },
+      {
+        "name": "medical_injury_details",
+        "type": "text",
+        "maxLength": "unlimited",
+        "multiline": false,
+        "readOnly": false
+      },
+      {
+        "name": "medical_hospital_name",
+        "type": "text",
+        "maxLength": "unlimited",
+        "multiline": false,
+        "readOnly": false
+      },
+      {
+        "name": "accident_date",
+        "type": "text",
+        "maxLength": "unlimited",
+        "multiline": false,
+        "readOnly": false
+      },
+      {
+        "name": "accident_time",
+        "type": "text",
+        "maxLength": "unlimited",
+        "multiline": false,
+        "readOnly": false
+      },
+      {
+        "name": "your_speed",
+        "type": "text",
+        "maxLength": "unlimited",
+        "multiline": false,
+        "readOnly": false
+      },
+      {
+        "name": "what3words",
+        "type": "text",
+        "maxLength": "unlimited",
+        "multiline": false,
+        "readOnly": false
+      },
+      {
+        "name": "location",
+        "type": "text",
+        "maxLength": "unlimited",
+        "multiline": false,
+        "readOnly": false
+      },
+      {
+        "name": "vehicle_make",
+        "type": "text",
+        "maxLength": "unlimited",
+        "multiline": false,
+        "readOnly": false
+      },
+      {
+        "name": "other-full-name",
+        "type": "text",
+        "maxLength": "unlimited",
+        "multiline": false,
+        "readOnly": false
+      },
+      {
+        "name": "other-contact-number",
+        "type": "text",
+        "maxLength": "unlimited",
+        "multiline": false,
+        "readOnly": false
+      },
+      {
+        "name": "other-email-address",
+        "type": "text",
+        "maxLength": "unlimited",
+        "multiline": false,
+        "readOnly": false
+      },
+      {
+        "name": "other-vehicle-look-up-make",
+        "type": "text",
+        "maxLength": "unlimited",
+        "multiline": false,
+        "readOnly": false
+      },
+      {
+        "name": "other-vehicle-registration",
+        "type": "text",
+        "maxLength": "unlimited",
+        "multiline": false,
+        "readOnly": false
+      },
+      {
+        "name": "other-vehicle-look-up-model",
+        "type": "text",
+        "maxLength": "unlimited",
+        "multiline": false,
+        "readOnly": false
+      },
+      {
+        "name": "other-vehicle-look-up-colour",
+        "type": "text",
+        "maxLength": "unlimited",
+        "multiline": false,
+        "readOnly": false
+      },
+      {
+        "name": "other-vehicle-look-up-fuel-type",
+        "type": "text",
+        "maxLength": "unlimited",
+        "multiline": false,
+        "readOnly": false
+      },
+      {
+        "name": "other-vehicle-look-up-year",
+        "type": "text",
+        "maxLength": "unlimited",
+        "multiline": false,
+        "readOnly": false
+      },
+      {
+        "name": "other-vehicle-look-up-mot-status",
+        "type": "text",
+        "maxLength": "unlimited",
+        "multiline": false,
+        "readOnly": false
+      },
+      {
+        "name": "other-vehicle-look-up-tax-status",
+        "type": "text",
+        "maxLength": "unlimited",
+        "multiline": false,
+        "readOnly": false
+      },
+      {
+        "name": "other-vehicle-look-up-mot-expiry-date",
+        "type": "text",
+        "maxLength": "unlimited",
+        "multiline": false,
+        "readOnly": false
+      },
+      {
+        "name": "other-driving-license-number",
+        "type": "text",
+        "maxLength": "unlimited",
+        "multiline": false,
+        "readOnly": false
+      },
+      {
+        "name": "other-drivers-insurance-company",
+        "type": "text",
+        "maxLength": "unlimited",
+        "multiline": false,
+        "readOnly": false
+      },
+      {
+        "name": "other-vehicle-look-up-tax-due-date",
+        "type": "text",
+        "maxLength": "unlimited",
+        "multiline": false,
+        "readOnly": false
+      },
+      {
+        "name": "other-drivers-policy-number",
+        "type": "text",
+        "maxLength": "unlimited",
+        "multiline": false,
+        "readOnly": false
+      },
+      {
+        "name": "other-drivers-policy-holder-name",
+        "type": "text",
+        "maxLength": "unlimited",
+        "multiline": false,
+        "readOnly": false
+      },
+      {
+        "name": "other-drivers-policy-cover-type",
+        "type": "text",
+        "maxLength": "unlimited",
+        "multiline": false,
+        "readOnly": false
+      },
+      {
+        "name": "other-vehicle-look-up-insurance-status",
+        "type": "text",
+        "maxLength": "unlimited",
+        "multiline": false,
+        "readOnly": false
+      },
+      {
+        "name": "describe-damage-to-vehicle",
+        "type": "text",
+        "maxLength": "unlimited",
+        "multiline": true,
+        "readOnly": false
+      },
+      {
+        "name": "witness_email_2",
+        "type": "text",
+        "maxLength": "unlimited",
+        "multiline": false,
+        "readOnly": false
+      },
+      {
+        "name": "accident_ref_number",
+        "type": "text",
+        "maxLength": "unlimited",
+        "multiline": false,
+        "readOnly": false
+      },
+      {
+        "name": "officer_name",
+        "type": "text",
+        "maxLength": "unlimited",
+        "multiline": false,
+        "readOnly": false
+      },
+      {
+        "name": "police_force",
+        "type": "text",
+        "maxLength": "unlimited",
+        "multiline": false,
+        "readOnly": false
+      },
+      {
+        "name": "officer_badge",
+        "type": "text",
+        "maxLength": "unlimited",
+        "multiline": false,
+        "readOnly": false
+      },
+      {
+        "name": "user_breath_test",
+        "type": "text",
+        "maxLength": "unlimited",
+        "multiline": false,
+        "readOnly": false
+      },
+      {
+        "name": "seatbelt_reason",
+        "type": "text",
+        "maxLength": "unlimited",
+        "multiline": true,
+        "readOnly": false
+      },
+      {
+        "name": "emergency_audio_transcription",
+        "type": "text",
+        "maxLength": "unlimited",
+        "multiline": false,
+        "readOnly": false
+      },
+      {
+        "name": "emergency_recording_timestamp",
+        "type": "text",
+        "maxLength": "unlimited",
+        "multiline": false,
+        "readOnly": false
+      },
+      {
+        "name": "medical_treatment_recieved",
+        "type": "text",
+        "maxLength": "unlimited",
+        "multiline": false,
+        "readOnly": false
+      },
+      {
+        "name": "further_medical_attention_needed",
+        "type": "text",
+        "maxLength": "unlimited",
+        "multiline": false,
+        "readOnly": false
+      },
+      {
+        "name": "junction_type",
+        "type": "text",
+        "maxLength": "unlimited",
+        "multiline": false,
+        "readOnly": false
+      },
+      {
+        "name": "junction_control",
+        "type": "text",
+        "maxLength": "unlimited",
+        "multiline": false,
+        "readOnly": false
+      },
+      {
+        "name": "user_manoeuvre",
+        "type": "text",
+        "maxLength": "unlimited",
+        "multiline": false,
+        "readOnly": false
+      },
+      {
+        "name": "traffic_light_status",
+        "type": "text",
+        "maxLength": "unlimited",
+        "multiline": false,
+        "readOnly": false
+      },
+      {
+        "name": "additional_hazards",
+        "type": "text",
+        "maxLength": "unlimited",
+        "multiline": false,
+        "readOnly": false
+      },
+      {
+        "name": "vehicle_license_plate",
+        "type": "text",
+        "maxLength": "unlimited",
+        "multiline": false,
+        "readOnly": false
+      },
+      {
+        "name": "dvla_make",
+        "type": "text",
+        "maxLength": "unlimited",
+        "multiline": false,
+        "readOnly": false
+      },
+      {
+        "name": "dvla_model",
+        "type": "text",
+        "maxLength": "unlimited",
+        "multiline": false,
+        "readOnly": false
+      },
+      {
+        "name": "dvla_colour",
+        "type": "text",
+        "maxLength": "unlimited",
+        "multiline": false,
+        "readOnly": false
+      },
+      {
+        "name": "dvla_year",
+        "type": "text",
+        "maxLength": "unlimited",
+        "multiline": false,
+        "readOnly": false
+      },
+      {
+        "name": "dvla_fuel_type",
+        "type": "text",
+        "maxLength": "unlimited",
+        "multiline": false,
+        "readOnly": false
+      },
+      {
+        "name": "dvla_mot_status",
+        "type": "text",
+        "maxLength": "unlimited",
+        "multiline": false,
+        "readOnly": false
+      },
+      {
+        "name": "dvla_mot_expiry",
+        "type": "text",
+        "maxLength": "unlimited",
+        "multiline": false,
+        "readOnly": false
+      },
+      {
+        "name": "dvla_tax_status",
+        "type": "text",
+        "maxLength": "unlimited",
+        "multiline": false,
+        "readOnly": false
+      },
+      {
+        "name": "dvla_tax_due_date",
+        "type": "text",
+        "maxLength": "unlimited",
+        "multiline": false,
+        "readOnly": false
+      },
+      {
+        "name": "witness_mobile_number",
+        "type": "text",
+        "maxLength": "unlimited",
+        "multiline": false,
+        "readOnly": false
+      },
+      {
+        "name": "witness_email_address",
+        "type": "text",
+        "maxLength": "unlimited",
+        "multiline": false,
+        "readOnly": false
+      },
+      {
+        "name": "additional_witnesses",
+        "type": "text",
+        "maxLength": "unlimited",
+        "multiline": false,
+        "readOnly": false
+      },
+      {
+        "name": "witness_number",
+        "type": "text",
+        "maxLength": "unlimited",
+        "multiline": false,
+        "readOnly": false
+      },
+      {
+        "name": "subscription_start_date",
+        "type": "text",
+        "maxLength": "unlimited",
+        "multiline": false,
+        "readOnly": false
+      },
+      {
+        "name": "damage_to_your_vehicle",
+        "type": "text",
+        "maxLength": "unlimited",
+        "multiline": false,
+        "readOnly": false
+      },
+      {
+        "name": "vehicle_damage_photo_1_url",
+        "type": "text",
+        "maxLength": "unlimited",
+        "multiline": true,
+        "readOnly": false
+      },
+      {
+        "name": "vehicle_damage_photo_2_url",
+        "type": "text",
+        "maxLength": "unlimited",
+        "multiline": true,
+        "readOnly": false
+      },
+      {
+        "name": "vehicle_damage_photo_3_url",
+        "type": "text",
+        "maxLength": "unlimited",
+        "multiline": true,
+        "readOnly": false
+      },
+      {
+        "name": "vehicle_damage_photo_4_url",
+        "type": "text",
+        "maxLength": "unlimited",
+        "multiline": true,
+        "readOnly": false
+      },
+      {
+        "name": "location_map_screenshot",
+        "type": "text",
+        "maxLength": "unlimited",
+        "multiline": true,
+        "readOnly": false
+      },
+      {
+        "name": "scene_photo_1_url",
+        "type": "text",
+        "maxLength": "unlimited",
+        "multiline": true,
+        "readOnly": false
+      },
+      {
+        "name": "scene_photo_2_url",
+        "type": "text",
+        "maxLength": "unlimited",
+        "multiline": true,
+        "readOnly": false
+      },
+      {
+        "name": "scene_photo_3_url",
+        "type": "text",
+        "maxLength": "unlimited",
+        "multiline": true,
+        "readOnly": false
+      },
+      {
+        "name": "other_vehicle_photo_1_url",
+        "type": "text",
+        "maxLength": "unlimited",
+        "multiline": true,
+        "readOnly": false
+      },
+      {
+        "name": "other_vehicle_photo_2_url",
+        "type": "text",
+        "maxLength": "unlimited",
+        "multiline": true,
+        "readOnly": false
+      },
+      {
+        "name": "other_vehicle_photo_3_url",
+        "type": "text",
+        "maxLength": "unlimited",
+        "multiline": true,
+        "readOnly": false
+      },
+      {
+        "name": "vehicle_damage_photo_5_url",
+        "type": "text",
+        "maxLength": "unlimited",
+        "multiline": false,
+        "readOnly": false
+      },
+      {
+        "name": "open",
+        "type": "text",
+        "maxLength": "unlimited",
+        "multiline": true,
+        "readOnly": false
+      },
+      {
+        "name": "voice_transcription",
+        "type": "text",
+        "maxLength": "unlimited",
+        "multiline": false,
+        "readOnly": false
+      },
+      {
+        "name": "ai_summary",
+        "type": "text",
+        "maxLength": "unlimited",
+        "multiline": false,
+        "readOnly": false
+      },
+      {
+        "name": "final_review",
+        "type": "text",
+        "maxLength": "unlimited",
+        "multiline": true,
+        "readOnly": false
+      },
+      {
+        "name": "closing_statement",
+        "type": "text",
+        "maxLength": "unlimited",
+        "multiline": false,
+        "readOnly": false
+      },
+      {
+        "name": "quality_review",
+        "type": "text",
+        "maxLength": "unlimited",
+        "multiline": false,
+        "readOnly": false
+      },
+      {
+        "name": "analysis_metadata",
+        "type": "text",
+        "maxLength": "unlimited",
+        "multiline": false,
+        "readOnly": false
+      }
+    ],
+    "checkbox": [
+      {
+        "name": "weather_heavy_rain",
+        "type": "checkbox",
+        "checked": false,
+        "readOnly": false
+      },
+      {
+        "name": "weather_fog",
+        "type": "checkbox",
+        "checked": false,
+        "readOnly": false
+      },
+      {
+        "name": "weather_snow",
+        "type": "checkbox",
+        "checked": false,
+        "readOnly": false
+      },
+      {
+        "name": "weather_thunder_lightening",
+        "type": "checkbox",
+        "checked": false,
+        "readOnly": false
+      },
+      {
+        "name": "weather_drizzle",
+        "type": "checkbox",
+        "checked": false,
+        "readOnly": false
+      },
+      {
+        "name": "weather_raining",
+        "type": "checkbox",
+        "checked": false,
+        "readOnly": false
+      },
+      {
+        "name": "weather_windy",
+        "type": "checkbox",
+        "checked": false,
+        "readOnly": false
+      },
+      {
+        "name": "weather_dusk",
+        "type": "checkbox",
+        "checked": false,
+        "readOnly": false
+      },
+      {
+        "name": "road_type_motorway",
+        "type": "checkbox",
+        "checked": false,
+        "readOnly": false
+      },
+      {
+        "name": "road_type_urban",
+        "type": "checkbox",
+        "checked": false,
+        "readOnly": false
+      },
+      {
+        "name": "road_type_rural",
+        "type": "checkbox",
+        "checked": false,
+        "readOnly": false
+      },
+      {
+        "name": "road_type_car_park",
+        "type": "checkbox",
+        "checked": false,
+        "readOnly": false
+      },
+      {
+        "name": "traffic_conditions_heavy",
+        "type": "checkbox",
+        "checked": false,
+        "readOnly": false
+      },
+      {
+        "name": "road_type_private_road",
+        "type": "checkbox",
+        "checked": false,
+        "readOnly": false
+      },
+      {
+        "name": "traffic_conditions_moderate",
+        "type": "checkbox",
+        "checked": false,
+        "readOnly": false
+      },
+      {
+        "name": "road_type_a_road",
+        "type": "checkbox",
+        "checked": false,
+        "readOnly": false
+      },
+      {
+        "name": "road_type_b_road",
+        "type": "checkbox",
+        "checked": false,
+        "readOnly": false
+      },
+      {
+        "name": "traffic_conditions_light",
+        "type": "checkbox",
+        "checked": false,
+        "readOnly": false
+      },
+      {
+        "name": "traffic_conditions_no_traffic",
+        "type": "checkbox",
+        "checked": false,
+        "readOnly": false
+      },
+      {
+        "name": "driving_your_usual_vehicle_no",
+        "type": "checkbox",
+        "checked": false,
+        "readOnly": false
+      },
+      {
+        "name": "no_it_needed_to_be_towed",
+        "type": "checkbox",
+        "checked": false,
+        "readOnly": false
+      },
+      {
+        "name": "unsure _did_not_attempt",
+        "type": "checkbox",
+        "checked": false,
+        "readOnly": false
+      },
+      {
+        "name": "yes_i_drove_it_away",
+        "type": "checkbox",
+        "checked": false,
+        "readOnly": false
+      },
+      {
+        "name": "airbags_deployed",
+        "type": "checkbox",
+        "checked": false,
+        "readOnly": false
+      },
+      {
+        "name": "visibility_very_poor",
+        "type": "checkbox",
+        "checked": false,
+        "readOnly": false
+      },
+      {
+        "name": "weather_hail",
+        "type": "checkbox",
+        "checked": false,
+        "readOnly": false
+      },
+      {
+        "name": "medical_symptom_dizziness",
+        "type": "checkbox",
+        "checked": false,
+        "readOnly": false
+      },
+      {
+        "name": "medical_symptom_life _threatening",
+        "type": "checkbox",
+        "checked": false,
+        "readOnly": false
+      },
+      {
+        "name": "medical_symptom_uncontrolled_bleeding",
+        "type": "checkbox",
+        "checked": false,
+        "readOnly": false
+      },
+      {
+        "name": "medical_symptom_abdominal_bruising",
+        "type": "checkbox",
+        "checked": false,
+        "readOnly": false
+      },
+      {
+        "name": "medical_symptom_chest_pain",
+        "type": "checkbox",
+        "checked": false,
+        "readOnly": false
+      },
+      {
+        "name": "medical_symptom_severe_headache",
+        "type": "checkbox",
+        "checked": false,
+        "readOnly": false
+      },
+      {
+        "name": "medical_symptom_abdominal_pain",
+        "type": "checkbox",
+        "checked": false,
+        "readOnly": false
+      },
+      {
+        "name": "medical_symptom_limb_weakness",
+        "type": "checkbox",
+        "checked": false,
+        "readOnly": false
+      },
+      {
+        "name": "medical_symptom_loss_of_consciousness",
+        "type": "checkbox",
+        "checked": false,
+        "readOnly": false
+      },
+      {
+        "name": "medical_symptom_breathlessness",
+        "type": "checkbox",
+        "checked": false,
+        "readOnly": false
+      },
+      {
+        "name": "medical_symptom_none",
+        "type": "checkbox",
+        "checked": false,
+        "readOnly": false
+      },
+      {
+        "name": "medical_ambulance_called",
+        "type": "checkbox",
+        "checked": false,
+        "readOnly": false
+      },
+      {
+        "name": "weather_cloudy",
+        "type": "checkbox",
+        "checked": false,
+        "readOnly": false
+      },
+      {
+        "name": "weather_clear",
+        "type": "checkbox",
+        "checked": false,
+        "readOnly": false
+      },
+      {
+        "name": "weather_bright_sunlight",
+        "type": "checkbox",
+        "checked": false,
+        "readOnly": false
+      },
+      {
+        "name": "road_condition_wet",
+        "type": "checkbox",
+        "checked": false,
+        "readOnly": false
+      },
+      {
+        "name": "road_condition_loose_surface",
+        "type": "checkbox",
+        "checked": false,
+        "readOnly": false
+      },
+      {
+        "name": "road_condition_snow_covered",
+        "type": "checkbox",
+        "checked": false,
+        "readOnly": false
+      },
+      {
+        "name": "road_condition_slush_on_road",
+        "type": "checkbox",
+        "checked": false,
+        "readOnly": false
+      },
+      {
+        "name": "road_condition_dry",
+        "type": "checkbox",
+        "checked": false,
+        "readOnly": false
+      },
+      {
+        "name": "road_condition_icy",
+        "type": "checkbox",
+        "checked": false,
+        "readOnly": false
+      },
+      {
+        "name": "road_markings_vsible_yes",
+        "type": "checkbox",
+        "checked": false,
+        "readOnly": false
+      },
+      {
+        "name": "road_markings_vsible_no",
+        "type": "checkbox",
+        "checked": false,
+        "readOnly": false
+      },
+      {
+        "name": "road_markings_visible_partially",
+        "type": "checkbox",
+        "checked": false,
+        "readOnly": false
+      },
+      {
+        "name": "no_damage",
+        "type": "checkbox",
+        "checked": false,
+        "readOnly": false
+      },
+      {
+        "name": "impact_point_front",
+        "type": "checkbox",
+        "checked": false,
+        "readOnly": false
+      },
+      {
+        "name": "impact_point_rear",
+        "type": "checkbox",
+        "checked": false,
+        "readOnly": false
+      },
+      {
+        "name": "impact_point_roof",
+        "type": "checkbox",
+        "checked": false,
+        "readOnly": false
+      },
+      {
+        "name": "impact_point_rear_passenger",
+        "type": "checkbox",
+        "checked": false,
+        "readOnly": false
+      },
+      {
+        "name": "impact_point_passenger_side",
+        "type": "checkbox",
+        "checked": false,
+        "readOnly": false
+      },
+      {
+        "name": "impact_point_driver_side",
+        "type": "checkbox",
+        "checked": false,
+        "readOnly": false
+      },
+      {
+        "name": "impact_point_rear_driver",
+        "type": "checkbox",
+        "checked": false,
+        "readOnly": false
+      },
+      {
+        "name": "impact_point_front_passenger",
+        "type": "checkbox",
+        "checked": false,
+        "readOnly": false
+      },
+      {
+        "name": "impact_point_front_driver",
+        "type": "checkbox",
+        "checked": false,
+        "readOnly": false
+      },
+      {
+        "name": "police_attended",
+        "type": "checkbox",
+        "checked": false,
+        "readOnly": false
+      },
+      {
+        "name": "police_attend",
+        "type": "checkbox",
+        "checked": false,
+        "readOnly": false
+      },
+      {
+        "name": "seatbelt_worn",
+        "type": "checkbox",
+        "checked": false,
+        "readOnly": false
+      },
+      {
+        "name": "seatbelt_worn_no",
+        "type": "checkbox",
+        "checked": false,
+        "readOnly": false
+      },
+      {
+        "name": "medical_symptom_limb_pain_mobilty",
+        "type": "checkbox",
+        "checked": false,
+        "readOnly": false
+      },
+      {
+        "name": "medical_attention_needed",
+        "type": "checkbox",
+        "checked": false,
+        "readOnly": false
+      },
+      {
+        "name": "visibilty_street_lights",
+        "type": "checkbox",
+        "checked": false,
+        "readOnly": false
+      },
+      {
+        "name": "special_condition_roadworks",
+        "type": "checkbox",
+        "checked": false,
+        "readOnly": false
+      },
+      {
+        "name": "special_condition_workmen",
+        "type": "checkbox",
+        "checked": false,
+        "readOnly": false
+      },
+      {
+        "name": "special_condition_cyclists",
+        "type": "checkbox",
+        "checked": false,
+        "readOnly": false
+      },
+      {
+        "name": "special_condition_pedestrians",
+        "type": "checkbox",
+        "checked": false,
+        "readOnly": false
+      },
+      {
+        "name": "special_condition_traffic_calming",
+        "type": "checkbox",
+        "checked": false,
+        "readOnly": false
+      },
+      {
+        "name": "special_condition_oil_spills",
+        "type": "checkbox",
+        "checked": false,
+        "readOnly": false
+      },
+      {
+        "name": "special_condition_potholes",
+        "type": "checkbox",
+        "checked": false,
+        "readOnly": false
+      },
+      {
+        "name": "special_condition_crossing",
+        "type": "checkbox",
+        "checked": false,
+        "readOnly": false
+      },
+      {
+        "name": "special_condition_school_zone",
+        "type": "checkbox",
+        "checked": false,
+        "readOnly": false
+      },
+      {
+        "name": "visibility_sun_glare",
+        "type": "checkbox",
+        "checked": false,
+        "readOnly": false
+      },
+      {
+        "name": "special_condition_animals",
+        "type": "checkbox",
+        "checked": false,
+        "readOnly": false
+      },
+      {
+        "name": "visibility_restricted_structure",
+        "type": "checkbox",
+        "checked": false,
+        "readOnly": false
+      },
+      {
+        "name": "special_condition_parked_vehicles",
+        "type": "checkbox",
+        "checked": false,
+        "readOnly": false
+      },
+      {
+        "name": "visibility_large_vehicle",
+        "type": "checkbox",
+        "checked": false,
+        "readOnly": false
+      },
+      {
+        "name": "special_condition_narrow_road",
+        "type": "checkbox",
+        "checked": false,
+        "readOnly": false
+      },
+      {
+        "name": "usual_vehicle",
+        "type": "checkbox",
+        "checked": false,
+        "readOnly": false
+      },
+      {
+        "name": "no-visible-damage",
+        "type": "checkbox",
+        "checked": false,
+        "readOnly": false
+      },
+      {
+        "name": "witnesses_present",
+        "type": "checkbox",
+        "checked": false,
+        "readOnly": false
+      },
+      {
+        "name": "airbags_deployed_no",
+        "type": "checkbox",
+        "checked": false,
+        "readOnly": false
+      },
+      {
+        "name": "impact_point_under_carriage",
+        "type": "checkbox",
+        "checked": false,
+        "readOnly": false
+      },
+      {
+        "name": "visibilty_good",
+        "type": "checkbox",
+        "checked": false,
+        "readOnly": false
+      },
+      {
+        "name": "visibility_poor",
+        "type": "checkbox",
+        "checked": false,
+        "readOnly": false
+      },
+      {
+        "name": "medical_symptom_change_in_vision",
+        "type": "checkbox",
+        "checked": false,
+        "readOnly": false
+      },
+      {
+        "name": "six_point_safety_check_completed",
+        "type": "checkbox",
+        "checked": false,
+        "readOnly": false
+      },
+      {
+        "name": "final_feeling",
+        "type": "checkbox",
+        "checked": false,
+        "readOnly": false
+      }
+    ],
+    "radio": [],
+    "dropdown": [],
+    "button": [],
+    "other": [
+      {
+        "name": "Signature70",
+        "type": "unknown"
+      }
+    ]
+  }
+}

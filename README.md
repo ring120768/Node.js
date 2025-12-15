@@ -386,6 +386,11 @@ All coding standards, security requirements, and workflows are documented in [`.
 - Complete code (no placeholders)
 - Documentation updates mandatory
 
+### Agent & Contributor Guide
+
+- Review [`AGENTS.md`](AGENTS.md) before each session for the current repository structure, required commands, security expectations, and the hand-off process between Claude Code and Codex.
+- When sharing work between agents, log executed commands and pending checks in your PR description or session notes so the next run can pick up immediately.
+
 ---
 
 ## 🐛 Troubleshooting

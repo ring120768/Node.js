@@ -339,28 +339,13 @@ async function generateUserPDF(create_user_id, source = 'direct') {
     throw new Error('User not found or missing email');
   }
 
-  const [
-    { data: aiTranscription },
-    { data: aiSummary }
-  ] = await Promise.all([
-    supabase
-      .from('ai_transcription')
-      .select('*')
-      .eq('create_user_id', create_user_id)
-      .order('created_at', { ascending: false })
-      .limit(1)
-      .single(),
-    supabase
-      .from('ai_summary')
-      .select('*')
-      .eq('create_user_id', create_user_id)
-      .order('created_at', { ascending: false })
-      .limit(1)
-      .single()
-  ]);
-
-  if (aiTranscription) allData.aiTranscription = aiTranscription;
-  if (aiSummary) allData.aiSummary = aiSummary;
+  // CRITICAL FIX: DO NOT query ai_transcription or ai_summary tables separately
+  // These tables don't have incident_id foreign keys and may return OLD data from previous incidents
+  // All AI fields are already in allData.currentIncident from fetchAllData():
+  //   - voice_transcription (Page 13)
+  //   - ai_summary (Page 15)
+  //   - closing_statement, final_review, quality_review (Pages 16-18)
+  // fetchAllData() correctly uses incident_reports.voice_transcription from LATEST incident
 
   // CRITICAL: Always use comprehensive hybrid pipeline for 100% data coverage
   // Adobe REST API only handles ~43 fields; hybrid pipeline handles all 200+ fields

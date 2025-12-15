@@ -1,440 +1,198 @@
-# PDF Field Population Analysis
+# PDF Field Analysis - Collision & Mapping Issues
 
-**Generated:** 2025-10-23
-**Purpose:** Comprehensive analysis of PDF form fields vs. database data
+**Date**: 2025-12-15
+**PDF Template**: Car-Crash-Lawyer-AI-incident-report-main.pdf
+**Total Fields**: 213 AcroForm fields extracted
 
 ---
 
 ## Executive Summary
 
-### PDF Templates Analyzed
-
-1. **Main Incident Report:** `Car-Crash-Lawyer-AI-incident-report.pdf`
-   - **Total Fields:** 168 (130 text, 36 checkboxes, 2 signatures)
-
-2. **Additional Vehicles/Witnesses:** `Car Crash Lawyer AI Incident Report other vehicles and witness.pdf`
-   - **Total Fields:** 24 (all text)
-
-**Grand Total:** 192 form fields across both PDFs
-
-### Test Data Status
-
-**Database Fields Populated:**
-- User Signup: 63 fields
-- Incident Report: 105 fields
-- **Total in Database:** 168 fields
-
-**PDF Generation Test Results:**
-- ✅ PDF generated successfully (1961 KB)
-- ✅ Data fetched from Supabase
-- ⚠️ ~60 field mapping warnings (field name mismatches)
+Extracted all 213 form fields from the PDF template to identify exact field names and analyze collision issues identified in the OpenAI Codex audit. Key findings reveal that the "license plate collision" is actually intentional field reuse (working as designed), and we have clear paths forward for the 5 identified fixes.
 
 ---
 
-## Detailed Field Analysis
+## Critical Field Mappings
 
-### Main PDF: 168 Fields
+### 1. License Plate Field (NO BUG - Working as Intended)
 
-#### 1. Personal Information (17 fields)
-**PDF Fields:**
-```
-- create_user_id              ✅ Populated
-- driver_name                 ✅ Populated (maps to 'name')
-- name                        ✅ Populated
-- surname                     ✅ Populated
-- email                       ✅ Populated
-- mobile                      ✅ Populated
-- street                      ✅ Populated (maps to 'street_address')
-- street_address_optional     ✅ Populated
-- town                        ✅ Populated
-- postcode                    ✅ Populated
-- country                     ✅ Populated
-- driving_license_number      ✅ Populated
-- driving_license_picture     ❌ URL field - not populated in test
-- emergency_contact           ✅ Populated (pipe-delimited format)
-- user_id                     ✅ Populated (same as create_user_id)
-- form_id                     ❌ Not in test data
-- submit_date                 ❌ Not in test data
-```
+**PDF Field**: `vehicle_license_plate` (appears once in form)
 
-#### 2. Vehicle Information - User's Vehicle (20 fields)
-**PDF Fields:**
+**Usage Pattern**:
+- **Page 1**: Written with signup data (user_signup.vehicle_license_plate)
+- **Page 7**: Written AGAIN with incident data (incident_reports.vehicle_license_plate)
+- **Behavior**: Last write wins - incident data overrides signup data ✅
+
+**User Clarification**: "Template re-uses fields however the incident report gives the user a chance to update this information for example he may have bought or borrowed a car"
+
+**Conclusion**: No fix needed. This is working as designed.
+
+---
+
+### 2. Date Fields (REQUIRES FIX #4)
+
+**7 Date Fields Found**:
 ```
-- license_plate                  ✅ Populated (maps to 'car_registration_number')
-- license_plate_number           ✅ Populated
-- vehicle_license_plate          ✅ Populated
-- vehicle_make                   ✅ Populated
-- make_of_car                    ✅ Populated
-- model_of_car                   ✅ Populated
-- vehicle_model                  ✅ Populated
-- vehicle_colour                 ✅ Populated
-- user_colour                    ✅ Populated
-- vehicle_condition              ✅ Populated
-- user_registration_number       ✅ From DVLA lookup
-- user_make                      ✅ From DVLA lookup
-- user_fuel_type                 ✅ From DVLA lookup
-- user_year_of_manufacture       ✅ From DVLA lookup
-- user_month_of_manufacture      ✅ From DVLA lookup
-- user_vehicle_co2_emissions     ✅ From DVLA lookup
-- user_vehicle_engine_capacity   ✅ From DVLA lookup
-- user_mot_status                ✅ From DVLA lookup
-- user_mot_expiry                ✅ From DVLA lookup
-- user_tax_status                ✅ From DVLA lookup
+Date69_af_date                           - Page 17 (Declaration/Submission Date)
+date_of_birth                            - Page 1 (User DOB)
+accident_date                            - Accident occurrence date
+other-vehicle-look-up-mot-expiry-date    - Other vehicle MOT
+other-vehicle-look-up-tax-due-date       - Other vehicle tax
+dvla_tax_due_date                        - User vehicle tax
+subscription_start_date                  - Page 2 (Signup Date) ⚠️
 ```
 
-**Note:** DVLA fields populated from `dvla_vehicle_info_new` table.
+**Current Issue**:
+- `Date69_af_date` is written TWICE in pdfGenerator.js (lines 134-139 and line 527)
+- Need to separate:
+  - **Page 2**: `subscription_start_date` = user signup date
+  - **Page 17**: `Date69_af_date` = incident submission date
 
-#### 3. Insurance Details (5 fields)
-```
-- insurance_company           ✅ Populated
-- policy_number               ✅ Populated
-- policy_holder               ✅ Populated
-- cover_type                  ✅ Populated
-- i_agree_to_share_my_data    ❌ Not in test (GDPR field)
-```
+**Business Logic**: Compare signup vs submission dates for premium charge detection (same-day = reactive use)
 
-#### 4. Recovery/Breakdown (3 fields)
-```
-- recovery_company              ❌ Not in minimal test data
-- recovery_breakdown_number     ❌ Not in minimal test data
-- recovery_breakdown_email      ❌ Not in minimal test data
-```
+**Fix Required**: Ensure both dates are populated separately in pdfGenerator.js
 
-#### 5. Vehicle Images (4 URL fields)
+---
+
+### 3. Audio/Transcription Fields (REQUIRES FIX #2)
+
+**2 Audio Fields Found**:
 ```
-- vehicle_picture_front          ❌ No images in test data
-- vehicle_picture_driver_side    ❌ No images in test data
-- vehicle_picture_passenger_side ❌ No images in test data
-- vehicle_picture_back           ❌ No images in test data
+emergency_audio_transcription            - Main transcription field
+voice_transcription                      - Alternative transcription field
 ```
 
-#### 6. Safety Check (3 checkbox fields)
+**Current Issue**:
+- Database column: `audio_account`
+- lib/dataFetcher.js:278 INCORRECTLY rewrites to `audio_recording`
+- pdfGenerator.js:426 expects `audio_account`
+
+**Fix Required**: Remove the rewrite at dataFetcher.js:278 to preserve `audio_account` naming
+
+---
+
+### 4. Witness Fields (REQUIRES FIX #1)
+
+**9 Witness Fields Found**:
 ```
-- are_you_safe                 ❌ Not in minimal test data
-- six_point_safety_check       ❌ Not in minimal test data
-- call_emergency_contact       ❌ Not in minimal test data
+witness_name                             - Witness #1 name
+witness_mobile_number                    - Witness #1 phone
+witness_email_address                    - Witness #1 email
+witness_statement                        - Witness #1 statement
+
+witness_statement_2                      - Witness #2 statement
+witness_email_2                          - Witness #2 email
+witness_number                           - Witness #2 phone
+additional_witnesses                     - Additional witness info
+
+witnesses_present                        - Checkbox (yes/no)
 ```
 
-#### 7. Medical Information (12 checkbox fields)
-```
-- medical_attention               ❌ Not in test (boolean expected)
-- medical_how_are_you_feeling     ✅ Text field populated
-- medical_chest_pain              ❌ Not in test
-- medical_uncontrolled_bleeding   ❌ Not in test
-- medical_breathlessness          ❌ Not in test
-- medical_limb_weakness           ❌ Not in test
-- medical_loss_of_consciousness   ❌ Not in test
-- medical_severe_headache         ❌ Not in test
-- medical_abdominal_bruising      ❌ Not in test
-- medical_change_in_vision        ❌ Not in test
-- medical_abdominal_pain          ❌ Not in test
-- medical_limb_pain               ❌ Not in test
-- medical_none_of_these           ❌ Not in test
-- medical_attention_from_who      ❌ Not in test
-- further_medical_attention       ❌ Not in test
-- medical_please_be_completely_honest  ❌ Not in test
-```
+**Current Issue**:
+- lib/dataFetcher.js:78-118 builds witnesses from OLD incident_reports columns
+- Database now has normalized `incident_witnesses` table (migration 024)
+- pdfGenerator.js:398-418 expects witness data structure
 
-**Issue:** Test data has `medical_how_are_you_feeling` as text, but PDF expects individual symptom checkboxes.
+**Fix Required**: Migrate dataFetcher.js to query incident_witnesses table instead of old columns
 
-#### 8. Accident Details (13 fields)
-```
-- when_did_the_accident_happen        ❌ Field mismatch (DB has different name)
-- what_time_did_the_accident_happen   ❌ Field mismatch
-- where_exactly_did_this_happen       ✅ Populated
-- detailed_account_of_what_happened   ✅ Populated
-- direction_and_speed                 ❌ Not in test
-- impact                              ❌ Not in test
-- reason_no_seatbelts                 ❌ Not in test
-- wearing_seatbelts                   ❌ Not in test (checkbox)
-- airbags_deployed                    ❌ Not in test (checkbox)
-- damage_to_your_vehicle              ✅ Populated (text: "Yes")
-- damage_caused_by_accident           ✅ Populated
-- any_damage_prior_to_accident        ❌ Not in test
-- anything_else                       ❌ Not in test
-```
-
-#### 9. Weather Conditions (11 checkbox fields)
-```
-- weather_conditions                  ❌ Text field, not in test
-- weather_clear_and_dry               ❌ Checkbox not in test
-- weather_bright_daylight             ❌ Checkbox not in test
-- weather_overcast                    ❌ Checkbox not in test
-- weather_fog                         ❌ Checkbox not in test
-- weather_light_rain                  ❌ Checkbox not in test
-- weather_heavy_rain                  ❌ Checkbox not in test
-- weather_wet_road                    ❌ Checkbox not in test
-- weather_snow                        ❌ Checkbox not in test
-- weather_snow_on_road                ❌ Checkbox not in test
-- weather_dusk                        ❌ Checkbox not in test
-- weather_street_lights               ❌ Checkbox not in test
-```
-
-**Issue:** Supabase has individual weather boolean columns, PDF has checkboxes - mapping needed.
-
-#### 10. Road Information (6 fields)
-```
-- road_type                           ❌ Not in test
-- speed_limit                         ❌ Not in test
-- junction_information                ❌ Not in test
-- junction_information_crossroads     ❌ Not in test
-- junction_information_roundabout     ❌ Not in test (but test mentions roundabout)
-- junction_information_t_junction     ❌ Not in test
-- junction_information_traffic_lights ❌ Not in test
-- special_conditions                  ❌ Not in test
-- special_conditions_roadworks        ❌ Not in test
-- special_conditions_oil_spills       ❌ Not in test
-- special_conditions_defective_road   ❌ Not in test
-- special_conditions_workman          ❌ Not in test
-```
-
-#### 11. Other Vehicle/Driver (30 fields)
-```
-- other_drivers_name                  ✅ Populated
-- other_drivers_number                ✅ Populated
-- other_drivers_address               ❌ Not in test
-- other_registration_number           ✅ Populated (maps to 'vehicle_license_plate')
-- other_make_of_car                   ❌ Not in test
-- other_make_of_vehicle               ❌ Not in test
-- other_model_of_vehicle              ❌ Not in test
-- other_colour_of_car                 ❌ Not in test
-- other_insurance_company             ✅ Populated
-- other_policy_holder                 ❌ Not in test
-- other_policy_number                 ❌ Not in test
-- other_policy_cover                  ❌ Not in test
-- other_damage_accident               ❌ Not in test
-- other_damage_prior                  ❌ Not in test
-- other_breath_test                   ❌ Not in test (checkbox)
-```
-
-**DVLA Fields for Other Vehicle (15 fields):**
-```
-- other_fuel_type
-- other_year_of_manufacture
-- other_month_of_manufacture
-- other_co2_emissions
-- other_engine_capacity
-- other_mot_status
-- other_mot_expiry
-- other_tax_status
-- other_tax_due_date
-- other_marked_for_export
-- other_type_approval
-- other_wheelplan
-- other_revenue_weight
-- other_vehicle_last_v5c_issued
-```
-**All ❌ - Not in test, would require DVLA lookup for other vehicle**
-
-#### 12. Police Information (5 fields)
-```
-- did_police_attend                 ❌ Not in test (checkbox)
-- accident_reference_number         ❌ Not in test
-- police_officers_name              ❌ Not in test
-- police_officer_badge_number       ❌ Not in test
-- police_force_details              ❌ Not in test
-- breath_test                       ❌ Not in test (checkbox)
-```
-
-#### 13. Witness Information (2 fields)
-```
-- any_witness                       ❌ Not in test (checkbox)
-- witness_contact_information       ❌ Not in test
-```
-
-#### 14. File URLs / Evidence (10 fields)
-```
-- file_url_documents                ❌ No images in test
-- file_url_documents_1              ❌ No images in test
-- file_url_scene_overview           ❌ No images in test
-- file_url_scene_overview_1         ❌ No images in test
-- file_url_other_vehicle            ❌ No images in test
-- file_url_other_vehicle_1          ❌ No images in test
-- file_url_vehicle_damage           ❌ No images in test
-- file_url_vehicle_damage_1         ❌ No images in test
-- file_url_vehicle_damage_2         ❌ No images in test
-- file_url_what3words               ❌ No images in test
-- file_url_record_detailed_account_of_what_happened  ❌ No audio in test
-```
-
-#### 15. AI-Generated Content (2 fields)
-```
-- ai_summary_of_accident_data                    ❌ No AI summary in test
-- ai_summary_of_accident_data_transcription      ❌ No AI transcription in test
-```
-
-#### 16. Recovery/Upgrade (2 checkbox fields)
-```
-- call_your_recovery                ❌ Not in test
-- upgrade_to_premium                ❌ Not in test
-```
-
-#### 17. Declaration (3 fields)
-```
-- declaration                       ❌ Not in test
-- Signature138                      ❌ Signature field (cannot be filled programmatically)
-- subscription_start_date           ❌ Signature field (cannot be filled programmatically)
-- Date139_af_date                   ❌ Not in test
-- Check Box137                      ❌ Not in test (checkbox)
+**Schema Reference** (incident_witnesses table):
+```sql
+- id (uuid, primary key)
+- incident_report_id (uuid, foreign key)
+- witness_name (text)
+- witness_phone (text)
+- witness_email (text)
+- witness_statement (text)
+- created_at (timestamptz)
+- updated_at (timestamptz)
 ```
 
 ---
 
-### Additional PDF: 24 Fields
+### 5. Photo/Image URL Fields (REQUIRES FIX #5)
 
-**Additional Vehicle #2+ (19 fields):**
+**16 Numbered Photo Fields Found**:
+
+**Vehicle Damage Photos** (5 fields):
 ```
-- additional_registration_number    ❌ Only 1 other vehicle in test
-- additional_driver_name
-- additional_driver_address
-- additional_driver_email
-- additional_driver_mobile
-- additional_make_of_vehicle
-- additional_model_of_vehicle
-- additional_vehicle_colour
-- additional_vehicle_year
-- additional_insurance_company
-- additional_policy_holder
-- additional_policy_cover
-- additional_fuel_type
-- additional_mot_status
-- additional_mot_expiry_date
-- additional_tax_status
-- additional_tax_due_date
-- additional_marked_for_export
+vehicle_damage_photo_1_url
+vehicle_damage_photo_2_url
+vehicle_damage_photo_3_url
+vehicle_damage_photo_4_url
+vehicle_damage_photo_5_url
 ```
 
-**Additional Witnesses (5 fields):**
+**Scene Photos** (3 fields):
 ```
-- witness_name                      ❌ No witnesses in test
-- witness_address
-- witness_email
-- witness_mobile
-- Witness Statement
-- create_user_id                    ✅ Would be populated
+scene_photo_1_url
+scene_photo_2_url
+scene_photo_3_url
 ```
+
+**Other Vehicle Photos** (3 fields):
+```
+other_vehicle_photo_1_url
+other_vehicle_photo_2_url
+other_vehicle_photo_3_url
+```
+
+**Personal Documentation Photos** (5 fields):
+```
+vehicle_picture_front
+vehicle_picture_driver_side
+vehicle_picture_passenger_side
+vehicle_picture_back
+driving_license_picture
+```
+
+**Current Issue**:
+- lib/dataFetcher.js:285-289 GENERATES numbered keys (e.g., vehicle_damage_photo_1_url)
+- lib/pdfGenerator.js DOES NOT consume the numbered keys
+- Adobe PDF Services supports multi-photo numbering (adobePdfFormFillerService.js:1067-1072)
+
+**Fix Required**: Update pdfGenerator.js to consume numbered photo keys and map to corresponding PDF fields
 
 ---
 
-## Summary Statistics
+## Implementation Priority
 
-### Field Population Status
-
-**Main PDF (168 fields):**
-- ✅ **Populated:** ~45 fields (27%)
-  - All personal information
-  - Basic vehicle details
-  - User DVLA data
-  - Basic accident details (location, description)
-  - One other driver's basic info
-
-- ❌ **Not Populated:** ~123 fields (73%)
-  - Medical symptom checkboxes (12 fields)
-  - Weather condition checkboxes (11 fields)
-  - Road/junction details (12 fields)
-  - Other vehicle DVLA data (15 fields)
-  - Police information (5 fields)
-  - Witness information (2 fields)
-  - Image URLs (14 fields)
-  - AI content (2 fields)
-  - Safety checks (3 fields)
-  - Recovery/premium options (2 fields)
-  - Signatures (2 fields - can't be filled programmatically)
-  - Various optional details (40+ fields)
-
-**Additional PDF (24 fields):**
-- ✅ **Populated:** 1 field (create_user_id only)
-- ❌ **Not Populated:** 23 fields (need multiple vehicles/witnesses)
-
-**Total Across Both PDFs:**
-- ✅ **Populated:** ~46 of 192 fields (24%)
-- ❌ **Not Populated:** ~146 of 192 fields (76%)
+1. **Fix #1 (Witness Migration)** - Breaking change, migrate to incident_witnesses table
+2. **Fix #2 (Audio Naming)** - Simple rename, remove dataFetcher.js:278 rewrite
+3. **Fix #3 (License Plate)** - NO FIX NEEDED, working as designed
+4. **Fix #4 (Date Separation)** - Ensure subscription_start_date and Date69_af_date are both written
+5. **Fix #5 (Multi-Photo)** - Update pdfGenerator.js to consume numbered photo keys
 
 ---
 
-## Field Name Mapping Issues
+## Files Requiring Changes
 
-### Discrepancies Between Code and PDF
+### lib/dataFetcher.js (Lines 15-320)
+- **Lines 78-118**: Witness data building (migrate to incident_witnesses table)
+- **Line 278**: Audio field rewrite (remove audio_account → audio_recording)
+- **Lines 285-289**: Multi-photo numbering (already generates numbered keys ✅)
 
-The `lib/pdfGenerator.js` code uses field names that don't exist in the actual PDF:
-
-**Missing Fields (attempted by code, not in PDF):**
-```
-- accident_date              → PDF uses: when_did_the_accident_happen
-- accident_time              → PDF uses: what_time_did_the_accident_happen
-- accident_location          → PDF uses: where_exactly_did_this_happen
-- other_driver_name          → PDF uses: other_drivers_name
-- other_driver_number        → PDF uses: other_drivers_number
-- other_make                 → PDF uses: other_make_of_car / other_make_of_vehicle
-- other_model                → PDF uses: other_model_of_vehicle
-- other_license              → PDF uses: other_registration_number
-- other_insurance            → PDF uses: other_insurance_company
-- police_attended            → PDF uses: did_police_attend (checkbox)
-- witness_present            → PDF uses: any_witness (checkbox)
-- safe_ready                 → PDF uses: are_you_safe (checkbox)
-```
+### lib/pdfGenerator.js (Lines 1-566)
+- **Lines 134-139**: Date69_af_date first write (Page 2 - change to subscription_start_date)
+- **Line 527**: Date69_af_date second write (Page 17 - keep as declaration date)
+- **Line 426**: Audio field read (expects audio_account ✅)
+- **Lines 398-418**: Witness mapping (update to expect incident_witnesses rows)
+- **Photo mapping**: Add logic to consume numbered photo keys
 
 ---
 
-## Recommendations
+## Validation Strategy
 
-### 1. Update Field Mapping in Code
-
-Update `lib/pdfGenerator.js` to use correct PDF field names:
-
-```javascript
-// Current (wrong):
-setFieldText('accident_date', incident.when_did_the_accident_happen);
-
-// Should be:
-setFieldText('when_did_the_accident_happen', incident.when_did_the_accident_happen);
-```
-
-### 2. Create Complete Test Scenarios
-
-Based on TYPEFORM_QUESTIONS_REFERENCE.md, create test data with:
-- All medical symptom checkboxes
-- All weather condition checkboxes
-- Complete road/junction information
-- Police attendance details
-- Witness information
-- Image URLs
-- Audio transcription data
-- AI summary data
-
-### 3. Handle Checkboxes Properly
-
-Many Supabase boolean fields map to PDF checkboxes:
-
-```javascript
-// Example for weather conditions:
-checkField('weather_clear_and_dry', data.currentIncident.weather_clear_and_dry);
-checkField('weather_heavy_rain', data.currentIncident.weather_heavy_rain);
-```
-
-### 4. Additional Vehicles/Witnesses PDF
-
-Implement logic to:
-- Detect when there are 2+ other vehicles
-- Detect when there are witnesses
-- Generate the additional PDF automatically
-- Attach it to the main report
+After implementing fixes:
+1. Run `node pdf-mapping.js` to verify field mapping correctness
+2. User will perform full manual user test
+3. Verify premium charge detection (same-day signup vs submission)
+4. Verify multi-photo numbering works with Adobe PDF Services
 
 ---
 
-## Next Steps
+## Notes
 
-1. ✅ **Extract PDF field names** - COMPLETED
-2. ⏳ **Update lib/pdfGenerator.js** - Use correct field names
-3. ⏳ **Create comprehensive test scenarios** - All 131+ incident fields
-4. ⏳ **Test checkbox mapping** - Verify boolean → checkbox conversion
-5. ⏳ **Implement additional PDF generation** - For extra vehicles/witnesses
-6. ⏳ **Update ADOBE_FORM_FILLING_GUIDE.md** - Document correct mappings
-
----
-
-**Last Updated:** 2025-10-23
-**Files Analyzed:**
-- `/Users/ianring/Ian.ring Dropbox/.../Car-Crash-Lawyer-AI-incident-report.pdf`
-- `/Users/ianring/Ian.ring Dropbox/.../Car Crash Lawyer AI Incident Report other vehicles and witness.pdf`
-- Test Data: `test-scenario-1-1761217633109`
+- All test data has been cleaned (0 records in all tables)
+- Breaking changes are acceptable per user confirmation
+- No backward compatibility needed
+- Page detection in field extraction didn't work (all showed "Unknown"), but field names are accurate

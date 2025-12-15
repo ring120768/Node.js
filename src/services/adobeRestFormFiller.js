@@ -385,6 +385,25 @@ class AdobeRestFormFillerService {
       const formData = this.prepareFormData(data);
       logger.info(`  Form data prepared: ${Object.keys(formData).length} fields with values`);
 
+      // DEBUG: Check what3words_url specifically
+      logger.info('\n🔍 DEBUG - URL Fields in formData sent to Adobe:');
+      const urlFields = Object.keys(formData).filter(key => key.includes('_url'));
+      logger.info(`   Total URL fields: ${urlFields.length}`);
+      urlFields.forEach(key => {
+        const value = formData[key];
+        const preview = value ? (typeof value === 'string' ? value.substring(0, 100) + '...' : String(value)) : '[EMPTY]';
+        logger.info(`   ${key}: ${preview}`);
+      });
+
+      // Specifically check what3words_url
+      if (formData.hasOwnProperty('what3words_url')) {
+        logger.info(`\n✅ what3words_url EXISTS in formData`);
+        logger.info(`   Value: ${formData.what3words_url ? formData.what3words_url.substring(0, 150) : '[EMPTY STRING]'}`);
+      } else {
+        logger.error(`\n❌ what3words_url NOT FOUND in formData`);
+        logger.error(`   This means prepareFormData() filtered it out or it was never in the input data`);
+      }
+
       // Submit form filling job
       logger.info('🚀 Submitting form filling job to Adobe...');
       const jobResponse = await axios.post(
