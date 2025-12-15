@@ -3263,8 +3263,8 @@ Continue with: What happened immediately after impact? Any injuries you noticed?
                 });
             }
 
-            // Switch to Analysis tab
-            switchTab('analysis');
+            // Tab switching is handled separately to avoid recursion
+            // (removed switchTab call that was causing infinite loop)
         }
 
         // ===== FETCH EXISTING ANALYSIS =====
