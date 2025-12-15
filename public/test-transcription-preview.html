@@ -1,0 +1,245 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Transcription Preview - Car Crash Lawyer AI</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, Cantarell, sans-serif;
+            background: linear-gradient(135deg, #0E7490 0%, #0c6179 100%);
+            min-height: 100vh;
+            padding: 20px;
+        }
+
+        .container {
+            max-width: 900px;
+            margin: 0 auto;
+            background: white;
+            border-radius: 12px;
+            box-shadow: 0 10px 40px rgba(0,0,0,0.2);
+            padding: 40px;
+        }
+
+        h1 {
+            color: #0E7490;
+            margin-bottom: 10px;
+            font-size: 28px;
+        }
+
+        .subtitle {
+            color: #6B7280;
+            margin-bottom: 30px;
+            font-size: 16px;
+        }
+
+        /* Transcription Section */
+        #transcriptionResult {
+            margin-top: 30px;
+        }
+
+        #transcriptionResult h3 {
+            color: #374151;
+            margin-bottom: 15px;
+            font-size: 20px;
+        }
+
+        .transcription-box {
+            background: #F9FAFB;
+            border: 2px solid #E5E7EB;
+            border-radius: 8px;
+            padding: 20px;
+            min-height: 200px;
+            font-size: 16px;
+            line-height: 1.8;
+            color: #1F2937;
+            transition: all 0.3s ease;
+            white-space: pre-wrap;
+            word-wrap: break-word;
+        }
+
+        .transcription-box:focus {
+            outline: none;
+            border-color: #0E7490;
+            box-shadow: 0 0 0 3px rgba(14, 116, 144, 0.1);
+        }
+
+        .info-box {
+            background: #EFF6FF;
+            border-left: 4px solid #3B82F6;
+            padding: 15px;
+            margin: 20px 0;
+            border-radius: 4px;
+        }
+
+        .info-box p {
+            color: #1E40AF;
+            font-size: 14px;
+            line-height: 1.6;
+        }
+
+        .btn {
+            background: #0E7490;
+            color: white;
+            border: none;
+            padding: 12px 30px;
+            font-size: 16px;
+            border-radius: 6px;
+            cursor: pointer;
+            margin-top: 20px;
+            margin-right: 10px;
+            transition: all 0.3s ease;
+            font-weight: 500;
+        }
+
+        .btn:hover {
+            background: #0c6179;
+            transform: translateY(-2px);
+            box-shadow: 0 4px 12px rgba(14, 116, 144, 0.3);
+        }
+
+        .btn-success {
+            background: #10B981;
+        }
+
+        .btn-success:hover {
+            background: #059669;
+        }
+
+        .stats {
+            display: flex;
+            gap: 20px;
+            margin: 20px 0;
+            flex-wrap: wrap;
+        }
+
+        .stat-box {
+            background: #F3F4F6;
+            padding: 15px 20px;
+            border-radius: 8px;
+            flex: 1;
+            min-width: 200px;
+        }
+
+        .stat-label {
+            color: #6B7280;
+            font-size: 14px;
+            margin-bottom: 5px;
+        }
+
+        .stat-value {
+            color: #1F2937;
+            font-size: 24px;
+            font-weight: 600;
+        }
+
+        .preview-badge {
+            display: inline-block;
+            background: #FEF3C7;
+            color: #92400E;
+            padding: 6px 12px;
+            border-radius: 20px;
+            font-size: 14px;
+            font-weight: 500;
+            margin-bottom: 20px;
+        }
+
+        .fade-in {
+            animation: fadeIn 0.5s ease-in;
+        }
+
+        @keyframes fadeIn {
+            from {
+                opacity: 0;
+                transform: translateY(10px);
+            }
+            to {
+                opacity: 1;
+                transform: translateY(0);
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <span class="preview-badge">🔍 PREVIEW MODE</span>
+        <h1>📝 Voice Transcription Preview</h1>
+        <p class="subtitle">This is how your transcription will appear in the Transcription Status page</p>
+
+        <div class="stats">
+            <div class="stat-box">
+                <div class="stat-label">Character Count</div>
+                <div class="stat-value" id="charCount">0</div>
+            </div>
+            <div class="stat-box">
+                <div class="stat-label">Word Count</div>
+                <div class="stat-value" id="wordCount">0</div>
+            </div>
+            <div class="stat-box">
+                <div class="stat-label">Estimated Reading Time</div>
+                <div class="stat-value" id="readTime">0 min</div>
+            </div>
+        </div>
+
+        <div id="transcriptionResult" class="fade-in">
+            <h3>🎤 Voice Transcription (Optional)</h3>
+
+            <div class="info-box">
+                <p>
+                    <strong>✏️ Editable Content</strong><br>
+                    You can edit the transcription below if needed. The text box is fully editable - click inside to make changes, add details, or correct any errors.
+                </p>
+            </div>
+
+            <div class="transcription-box" contenteditable="true" id="transcriptionText">This morning, about half seven, I was approaching the roundabout at the junction of London Road and Station Road in Watford. It was pouring with rain, visibility wasn't great. I was indicating right to take the third exit. As I entered the roundabout, a white van came flying round from my right, didn't give way at all, just went straight into my driver's side. Absolutely smashed my door in, wing mirror's gone, front wheel arch is completely crumpled. The van driver was really aggressive, shouting that I should have given way to him, but I had right of way! I was already on the roundabout. There was a woman at the bus stop who saw everything, she gave me her number. The van's got damage to the passenger side, front wing and bumper. I called the police because he was being quite threatening. They came out, took statements from both of us and the witness. My door won't open properly now, had to get in from the passenger side. I'm okay physically, just a bit shaken up. The van's a white Ford Transit, plastering company logo on the side.</div>
+
+            <button class="btn" data-action="save">💾 Save Transcription</button>
+            <button class="btn btn-success" data-action="continue">🤖 Save & Continue to AI Analysis</button>
+        </div>
+    </div>
+
+    <script>
+        // Update statistics
+        function updateStats() {
+            const text = document.getElementById('transcriptionText').textContent;
+            const charCount = text.length;
+            const wordCount = text.trim().split(/\s+/).filter(word => word.length > 0).length;
+            const readTime = Math.ceil(wordCount / 200); // Average reading speed: 200 words/min
+
+            document.getElementById('charCount').textContent = charCount.toLocaleString();
+            document.getElementById('wordCount').textContent = wordCount.toLocaleString();
+            document.getElementById('readTime').textContent = readTime + ' min';
+        }
+
+        // Update on load
+        updateStats();
+
+        // Update on edit
+        document.getElementById('transcriptionText').addEventListener('input', updateStats);
+
+        // Add focus highlight
+        const transcriptionBox = document.getElementById('transcriptionText');
+        transcriptionBox.addEventListener('focus', function() {
+            this.style.borderColor = '#0E7490';
+        });
+        transcriptionBox.addEventListener('blur', function() {
+            this.style.borderColor = '#E5E7EB';
+        });
+
+        // Event delegation for button clicks (CSP-compliant)
+        document.addEventListener('click', (e) => {
+            if (e.target.dataset.action === 'save') {
+                alert('In the real interface, this would save your transcription to the database.');
+            } else if (e.target.dataset.action === 'continue') {
+                alert('In the real interface, this would trigger AI analysis with GPT-4o to generate:\n\n1. Summary & Key Points\n2. Quality Review\n3. Page 14 Closing Statement\n4. Final Review with Next Steps');
+            }
+        });
+    </script>
+</body>
+</html>

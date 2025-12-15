@@ -166,7 +166,7 @@ class AdobePdfFormFillerService {
         voice_transcription: incident.voice_transcription,
         analysis_metadata: incident.analysis_metadata,
         quality_review: incident.quality_review,
-        ai_summary: incident.form_data_summary,  // ✅ FIX: Use new CAR CRASH LAWYER AI format
+        ai_summary: incident.ai_summary,  // ✅ FIXED: Use ai_summary field (single-phase architecture)
         closing_statement: incident.closing_statement,
         final_review: incident.final_review
       });
@@ -905,6 +905,10 @@ class AdobePdfFormFillerService {
     // Damage details (PDF uses hyphens for some fields!)
     checkField('no_damage', incident.no_damage);
     checkField('no-visible-damage', incident.no_visible_damage);
+
+    // FIX: Map "open" field (likely related to vehicle condition or accessibility)
+    checkField('open', incident.open);
+
     setFieldText('damage_to_your_vehicle', incident.damage_to_your_vehicle);
     setFieldText('describe-damage-to-vehicle', incident.describe_damage_to_vehicle);
     setFieldText('describle_the_damage', incident.describle_the_damage);  // DB: describle_the_damage (NEW field with typo) → PDF: describle_the_damage
@@ -949,6 +953,9 @@ class AdobePdfFormFillerService {
     setFieldText('other-drivers-policy-holder-name', incident.other_drivers_policy_holder_name);
     setFieldText('other-drivers-policy-cover-type', incident.other_drivers_policy_cover_type);
 
+    // FIX: Map other_driver_vehicle_marked_for_export field
+    checkField('other_driver_vehicle_marked_for_export', incident.other_driver_vehicle_marked_for_export);
+
     // PDF REVISION 4: Field restored in new template with max 14pt font requirement
     // User confirmed field exists in new PDF template: /Users/ianring/Ian.ring\ Dropbox/...
     // FIX: Uncommented and set max 14pt font as requested
@@ -982,7 +989,16 @@ class AdobePdfFormFillerService {
       setFieldText('witness_mobile_number_2', witness2.witness_mobile_number || '');
       setFieldText('witness_email_address_2', witness2.witness_email_address || '');
       setFieldTextWithMaxFont('witness_statement_2', witness2.witness_statement || '', 14);  // Max 14pt font
+
+      // FIX: Map witness_email_2 (PDF field name variation)
+      setFieldText('witness_email_2', witness2.witness_email_address || '');
+
+      // FIX: Map witness_number (witness numbering for PDF)
+      setFieldText('witness_number', String(witness2.witness_number || 2));
     }
+
+    // FIX: Map additional_witnesses field (text field for extra witnesses beyond 2)
+    setFieldText('additional_witnesses', incident.additional_witnesses || '');
 
     // ========================================
     // PAGE 10: Police Involvement
@@ -995,6 +1011,10 @@ class AdobePdfFormFillerService {
     // Database stores: police_attended = true/false
     // PDF has yes/no checkbox pair: police_attended (yes) + police_attended_no (no)
     checkFieldPair('police_attended', 'police_attended_no', incident.police_attended);
+
+    // FIX: Map police_attend field (alternative field name for police attendance)
+    checkField('police_attend', incident.police_attended);
+
     setFieldText('police_force', incident.police_force);
     setFieldText('accident_ref_number', incident.accident_ref_number);
     setFieldText('officer_name', incident.officer_name);

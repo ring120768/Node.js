@@ -1,0 +1,81 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <meta charset="UTF-8">
+  <style>
+    body {
+      font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, Cantarell, sans-serif;
+      line-height: 1.6;
+      color: #333;
+      max-width: 600px;
+      margin: 0 auto;
+      padding: 20px;
+    }
+    .header {
+      background: linear-gradient(135deg, #0E7490 0%, #0c6179 100%);
+      color: white;
+      padding: 30px;
+      border-radius: 12px 12px 0 0;
+      text-align: center;
+    }
+    .header h1 {
+      margin: 0;
+      font-size: 24px;
+    }
+    .content {
+      background: white;
+      padding: 30px;
+      border: 1px solid #e5e7eb;
+      border-top: none;
+      border-radius: 0 0 12px 12px;
+    }
+    .button {
+      display: inline-block;
+      background: #0E7490;
+      color: white;
+      padding: 12px 24px;
+      text-decoration: none;
+      border-radius: 6px;
+      margin: 20px 0;
+    }
+    .footer {
+      text-align: center;
+      margin-top: 30px;
+      color: #6B7280;
+      font-size: 14px;
+    }
+  </style>
+</head>
+<body>
+  <div class="header">
+    <h1>🚗 Your Incident Report is Ready</h1>
+  </div>
+
+  <div class="content">
+    <p>Dear {{userName}},</p>
+
+    <p>Your comprehensive incident report has been generated and is attached to this email.</p>
+
+    <p><strong>What's included:</strong></p>
+    <ul>
+      <li>Complete accident details (18 pages)</li>
+      <li>All form responses and uploaded images</li>
+      <li>AI-generated analysis and recommendations</li>
+      <li>Voice transcription (if provided)</li>
+    </ul>
+
+    <p>This PDF contains all the information you provided during the incident reporting process.</p>
+
+    <a href="{{reportLink}}" class="button">View Dashboard →</a>
+
+    <p style="margin-top: 30px; padding-top: 20px; border-top: 1px solid #e5e7eb; color: #6B7280; font-size: 14px;">
+      <strong>Important:</strong> This report is for your records. Please review it carefully and keep it safe for legal purposes.
+    </p>
+  </div>
+
+  <div class="footer">
+    <p>© {{currentYear}} Car Crash Lawyer AI. All rights reserved.</p>
+    <p>This is an automated message. Please do not reply to this email.</p>
+  </div>
+</body>
+</html>

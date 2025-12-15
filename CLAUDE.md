@@ -4,6 +4,46 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 ---
 
+## Node.js Version Management
+
+**Required:** Node.js 18.18+ (specified in `.nvmrc`)
+
+```bash
+# Align Node version with project (uses Node 18.20.0 from .nvmrc)
+nvm use
+npm install  # Respects package-lock.json
+```
+
+---
+
+## First Time Setup
+
+Before running the application for the first time:
+
+```bash
+# 1. Set up environment
+cp .env.example .env          # Copy environment template
+# Edit .env with your credentials
+
+# 2. Install dependencies
+nvm use                       # Use correct Node version
+npm install
+
+# 3. Verify services
+node scripts/test-supabase-client.js   # Test database connection
+node test-adobe-pdf.js                  # Test Adobe PDF (optional)
+
+# 4. Start development
+npm run dev
+```
+
+**Required Services:**
+- Supabase project (database, auth, storage)
+- OpenAI API key (transcription)
+- Adobe PDF credentials in `/credentials/` (optional - falls back to pdf-lib)
+
+---
+
 ## Quick Start Commands
 
 ```bash
@@ -17,6 +57,15 @@ npm test -- path/to/test.test.js  # Run single test file
 npm run test:watch       # Run tests in watch mode (re-runs on file changes)
 npm run lint             # ESLint code linting
 npm run format           # Prettier code formatting
+
+# Additional Quality Checks
+npm run validate:lockfile      # Prevent dependency drift
+npm run validate:pdf-mapping   # Verify PDF field mappings
+npm run depcheck               # Find unused dependencies
+npm run deps:update            # Update minor versions safely
+npm run audit                  # Security audit (moderate+ level)
+npm run health                 # System health check script
+npm run clean                  # Clean temp files and caches
 
 # Health Checks
 curl http://localhost:5000/api/health   # Basic health check
@@ -35,6 +84,116 @@ node scripts/reconcile-all-tables.js    # Check data integrity
 **Note:** Several bash commands are auto-approved and don't require confirmation. See permissions policy in global `.claude/CLAUDE.md`.
 
 See `README.md` for initial setup instructions and environment configuration.
+
+---
+
+## Development Workflow
+
+Recommended workflow for a typical development session:
+
+```bash
+# 1. Start fresh session
+git status                    # Check current state
+npm install                   # Ensure dependencies up to date
+npm run validate:lockfile     # Verify package-lock.json sync
+
+# 2. Start development server
+npm run dev                   # Nodemon with hot reload
+
+# 3. Make changes
+[edit files]
+
+# 4. Validate changes
+npm run lint                  # Check code style
+npm test                      # Run tests with coverage (60% minimum)
+npm run validate:pdf-mapping  # If PDF changes made
+
+# 5. Commit changes
+git add .
+git commit -m "type: description"
+# Types: feat, fix, docs, refactor, test, chore
+```
+
+**Common Development Tasks:**
+
+```bash
+# Run specific test file
+npm test -- src/middleware/__tests__/errorHandler.test.js
+
+# Run tests matching pattern
+npm test -- --testPathPattern=cors
+
+# Watch mode (re-runs on changes)
+npm run test:watch
+
+# Fix a common issue: EADDRINUSE (port already in use)
+lsof -ti:5000 | xargs kill -9    # Kill process on port 5000
+# Or: npm run dev (singleton protection handles it)
+```
+
+---
+
+## Migration Workflow
+
+**Pattern:** Forward migration with rollback scripts for safe schema evolution.
+
+### Migration File Structure
+
+Each migration consists of two files:
+```
+migrations/
+├── 001_migration_name.sql          # Forward migration (apply changes)
+└── 001_migration_name_rollback.sql # Rollback (undo changes)
+```
+
+### Creating a New Migration
+
+```bash
+# 1. Create forward migration
+migrations/NNN_descriptive_name.sql
+
+# 2. Create corresponding rollback
+migrations/NNN_descriptive_name_rollback.sql
+
+# 3. Test forward migration
+psql -h <host> -U <user> -d <db> -f migrations/NNN_descriptive_name.sql
+
+# 4. Test rollback immediately
+psql -h <host> -U <user> -d <db> -f migrations/NNN_descriptive_name_rollback.sql
+
+# 5. Re-apply forward migration
+psql -h <host> -U <user> -d <db> -f migrations/NNN_descriptive_name.sql
+```
+
+### Migration Best Practices
+
+**DO:**
+- ✅ Always create rollback scripts for every migration
+- ✅ Test rollback immediately after applying forward migration
+- ✅ Use sequential numbering (001, 002, 003...)
+- ✅ Make migrations idempotent where possible (`IF NOT EXISTS`, `IF EXISTS`)
+- ✅ Include comments explaining why the change is needed
+
+**DON'T:**
+- ❌ Modify existing migration files after they've been applied to production
+- ❌ Skip rollback testing (data loss risk!)
+- ❌ Bundle unrelated schema changes in one migration
+
+### Example Migration Pattern
+
+```sql
+-- Forward: 028_add_ai_fields_to_incident_reports.sql
+ALTER TABLE incident_reports
+  ADD COLUMN IF NOT EXISTS ai_incident_summary TEXT,
+  ADD COLUMN IF NOT EXISTS ai_liability_assessment TEXT;
+
+-- Rollback: 028_add_ai_fields_to_incident_reports_rollback.sql
+ALTER TABLE incident_reports
+  DROP COLUMN IF EXISTS ai_incident_summary,
+  DROP COLUMN IF EXISTS ai_liability_assessment;
+```
+
+**Note:** Some migrations in the archive (e.g., `_quarantine/migration-scripts/`) were one-time execution scripts. Active migration logic lives in `/migrations` folder.
 
 ---
 
@@ -187,7 +346,32 @@ function gracefulShutdown(signal) {
 
 ---
 
-### 6. Mobile File Upload Pattern
+### 6. Scheduled Tasks (Cron Jobs)
+
+**Pattern:** Automated cleanup and maintenance tasks using node-cron.
+
+```javascript
+// Managed by: src/services/cronManager.js (if exists)
+
+// Daily cleanup: temp_uploads older than 24 hours
+Schedule: Daily at 2:00 AM GMT
+Purpose: Delete abandoned temporary uploads
+Prevents: Storage bloat from incomplete signups
+Table: temp_uploads (session-based, 24hr TTL)
+
+// Cleanup runs on:
+DELETE FROM temp_uploads
+WHERE created_at < NOW() - INTERVAL '24 hours';
+```
+
+**Important:**
+- Cron jobs stop during graceful shutdown (no orphaned processes)
+- Manual cleanup: Delete temp files via `/api/admin/cleanup` (if implemented)
+- Monitor storage usage: Supabase Dashboard → Storage
+
+---
+
+### 7. Mobile File Upload Pattern
 
 **Problem:** Mobile browsers lose file handles when app backgrounds, causing ERR_UPLOAD_FILE_CHANGED
 
@@ -225,72 +409,57 @@ POST /api/signup/submit (or /api/incident-form/*)
 
 ---
 
-### 7. Single-Phase AI Summary Architecture
+### 8. AI Analysis Architecture
 
-**CRITICAL:** AI summary generation uses single-phase architecture with direct data access to prevent hallucinations.
+**CRITICAL:** AI analysis generation uses GPT-4o for comprehensive legal assessment after form data capture.
 
 ```javascript
-// Single-Phase AI Generation (GPT-4o, temp 0.2)
+// AI Analysis Flow (GPT-4o, temp 0.2)
 Database (3 tables: incident_reports, incident_other_vehicles, incident_witnesses)
   ↓
 buildComprehensiveIncidentData()  // Fetch all 160+ fields
   ↓
 JSON (structured data)
   ↓
-generateSinglePhaseAiSummary(userId, incidentId, transcription)
+POST /api/ai/analyze-incident
   → GPT-4o receives raw structured JSON + database schema
   → Temperature 0.2 for factual accuracy
-  → Generates comprehensive ai_summary field (800-2500 words)
+  → Generates 8 AI analysis fields
   → Takes 30-60 seconds
-  → Stores result in incident_reports.ai_summary
+  → Stores results in incident_reports (ai_* columns)
 ```
 
 **Why this architecture:**
 - **Direct Data Access:** GPT-4o receives raw structured data (160+ fields from 3 tables)
-- **Database Schema Included:** Explicit field definitions prevent omissions
+- **Post-Submission Processing:** AI runs after form data saved (prevents timeout data loss)
 - **Factual Accuracy:** Temperature 0.2 ensures no hallucinations or invented facts
 - **Source Attribution:** Clearly distinguishes form data (facts) vs transcription (perspective)
-- **No Information Bottleneck:** Unlike old two-phase, AI sees all source data directly
 
-**Key Database Fields:**
+**Key Database Fields (8 AI Analysis Columns):**
 ```sql
--- AI Summary Storage
-ai_summary TEXT                  -- Comprehensive single-phase summary (800-2500 words)
-form_data_summary_metadata JSONB -- Generation metadata (model, tokens, architecture)
-voice_transcription TEXT         -- User's audio statement (optional)
-
--- Additional AI Analysis (8 fields)
-ai_incident_summary          -- Overall incident summary
-ai_liability_assessment      -- Fault and liability analysis
-ai_vehicle_damage_analysis   -- Vehicle damage assessment
-ai_injury_assessment         -- Injury severity and causation
-ai_witness_credibility       -- Witness statement analysis
-ai_evidence_quality          -- Evidence strength evaluation
-ai_recommendations           -- Legal action recommendations
-ai_closing_statement         -- Comprehensive closing statement
+ai_incident_summary TEXT         -- Overall incident summary
+ai_liability_assessment TEXT     -- Fault and liability analysis
+ai_vehicle_damage_analysis TEXT  -- Vehicle damage assessment
+ai_injury_assessment TEXT        -- Injury severity and causation
+ai_witness_credibility TEXT      -- Witness statement analysis
+ai_evidence_quality TEXT         -- Evidence strength evaluation
+ai_recommendations TEXT          -- Legal action recommendations
+ai_closing_statement TEXT        -- Comprehensive closing statement
 ```
 
 **Output Format:**
-- **SECTION 1:** 10 structured subsections (Accident Circumstances, Vehicles, Witnesses, Medical, etc.)
-- **SECTION 2:** 400-800 word narrative integrating form data + transcription
+- **8 Distinct Fields:** Each field contains focused analysis (100-500 words per field)
+- **PDF Integration:** Pages 13-18 display AI analysis alongside form data
 
 **Implementation Files:**
-- `src/controllers/ai.controller.js` - `generateSinglePhaseAiSummary()` function (lines 1583-1968)
-- `migrations/027_add_ai_analysis_fields.sql` - AI field migration
+- `src/controllers/ai.controller.js` - AI analysis endpoint and generation logic
+- `migrations/028_add_ai_fields_to_incident_reports.sql` - AI field migration
 
-**Manual Generation Scripts:**
-```bash
-# Generate AI summary for specific user
-node fix-missing-phase1-summary.js        # For missing summaries
-node test-phase1-form-summary.js [uuid]   # Test generation
-node audit-ai-summary-completeness.js     # Audit field coverage
-```
-
-**Test:** Generate PDF with `node test-form-filling.js [user-uuid]` to verify Page 15 displays both SECTION 1 & SECTION 2
+**Test:** Generate PDF with `node test-form-filling.js [user-uuid]` to verify Pages 13-18 display AI analysis
 
 ---
 
-### 8. Real-Time Updates Architecture
+### 9. Real-Time Updates Architecture
 
 ```javascript
 // Backend (src/app.js - initializeRealtime())
@@ -307,7 +476,7 @@ Frontend Updates (dashboard.html, transcription-status.html)
 
 ---
 
-### 9. what3words Location Integration
+### 10. what3words Location Integration
 
 **Pattern:** Graceful fallback when API key unavailable.
 
@@ -335,7 +504,7 @@ if (!config.what3words.apiKey) {
 ## High-Level Request Flow
 
 ```
-Internet → index.js (HTTP server + WebSocket)
+Internet → index.js (HTTP server + WebSocket initialization)
          ↓
       src/app.js (Express app)
          ↓
@@ -351,6 +520,8 @@ Internet → index.js (HTTP server + WebSocket)
          ↓
       External APIs / Supabase
 ```
+
+**Note:** WebSocket initialization happens in `index.js` after HTTP server creation, not in the middleware stack. The initialized WebSocket server is then attached to `app.locals.websocketServer` for access throughout the application.
 
 ---
 
@@ -404,7 +575,7 @@ await supabase
 
 **Critical migrations:**
 - `001_add_new_pdf_fields.sql` - Added 25 single-value columns
-- `027_add_ai_analysis_fields.sql` - Added AI analysis fields for Pages 13-18
+- `028_add_ai_fields_to_incident_reports.sql` - Added AI analysis fields for Pages 13-18
 - See `/migrations` folder for complete migration history with rollback scripts
 
 **Field mapping documentation:**
@@ -417,11 +588,11 @@ await supabase
 
 ## PDF Field Mapping Architecture
 
-**Pattern:** Centralized mapping in `lib/generators/pdfFieldMapper.js`
+**Pattern:** PDF field mapping implemented in PDF generation services.
 
 ```javascript
-// PDF field mapping follows this pattern:
-Pages 1-18 → pdfFieldMapper.js → Database Tables
+// PDF field mapping flow:
+Pages 1-18 → PDF Generation Service → Database Tables
   ↓
 Supports:
 - Single-value fields (TEXT, DATE, BOOLEAN)
@@ -430,6 +601,8 @@ Supports:
 - Image references (Supabase Storage URLs)
 - AI-generated content (auto-fit font sizing)
 ```
+
+**Note:** Field mapping logic is distributed across PDF generation controllers and services in `src/controllers/` and `src/services/`.
 
 **Critical Tables:**
 - `incident_reports` - Main accident details (170+ columns including arrays and AI fields)
@@ -610,6 +783,74 @@ document.addEventListener('click', (e) => {
 
 ---
 
+## Debugging Quick Reference
+
+### Common Errors & Solutions
+
+**EADDRINUSE: Port already in use**
+```bash
+# Find and kill process on port 5000
+lsof -ti:5000 | xargs kill -9
+
+# Or: npm run dev handles this automatically (singleton protection)
+```
+
+**Webhook signature verification failed**
+```bash
+# Verify webhook secret matches
+echo $TYPEFORM_WEBHOOK_SECRET
+# Check Typeform settings match .env
+```
+
+**Supabase connection failed**
+```bash
+# Test database connection
+node scripts/test-supabase-client.js
+
+# Verify environment variables
+echo $SUPABASE_URL
+echo $SUPABASE_SERVICE_ROLE_KEY
+```
+
+### Debugging Tools
+
+**Check application logs:**
+```bash
+npm run dev                              # Console output shows all logs
+npm run health                           # System health status
+curl http://localhost:5000/api/readyz   # Service readiness check
+```
+
+**Test specific integrations:**
+```bash
+node test-form-filling.js [uuid]         # Test complete PDF pipeline
+node test-security-wall.js               # Test authentication
+node test-adobe-pdf.js                   # Test Adobe PDF services
+node scripts/test-supabase-client.js     # Test database
+```
+
+**Database queries:**
+```sql
+-- Check recent incident reports
+SELECT create_user_id, created_at FROM incident_reports
+ORDER BY created_at DESC LIMIT 5;
+
+-- Check temp uploads (should auto-delete after 24hr)
+SELECT id, session_id, created_at FROM temp_uploads
+WHERE created_at > NOW() - INTERVAL '24 hours';
+
+-- Check user documents processing status
+SELECT id, status, retry_count, created_at FROM user_documents
+WHERE status != 'completed' ORDER BY created_at DESC;
+```
+
+**External service dashboards:**
+- Supabase: Dashboard → Logs, Storage, Database
+- Adobe PDF: https://www.adobe.io/console → Usage
+- OpenAI: https://platform.openai.com → Usage
+
+---
+
 ## Testing Guidelines
 
 ### Test Organization
@@ -621,6 +862,29 @@ document.addEventListener('click', (e) => {
   /routes
     /__tests__              # Route integration tests
 ```
+
+### Coverage Requirements
+
+**Minimum thresholds enforced by Jest:**
+
+```javascript
+// jest.config.js
+coverageThreshold: {
+  global: {
+    branches: 60,       // 60% of code branches covered
+    functions: 60,      // 60% of functions tested
+    lines: 60,          // 60% of lines executed
+    statements: 60      // 60% of statements executed
+  }
+}
+```
+
+**⚠️ IMPORTANT:** Tests will fail if coverage drops below 60% for any metric. Run `npm test` before committing to verify coverage gates pass.
+
+**Coverage reporting:**
+- HTML report: `coverage/lcov-report/index.html` (open in browser)
+- Terminal summary: Displayed after `npm test`
+- CI/CD: Coverage gates enforced in automated tests
 
 ### Running Tests
 
@@ -661,8 +925,10 @@ node scripts/test-supabase-client.js    # Verify Supabase connection
 
 ## File Organization
 
+### Directory Structure
+
 ```
-/src
+/src                # Application core (web server, API endpoints)
   /controllers      # Request handlers (thin layer)
   /middleware       # Auth, CORS, error handling, validation
     /__tests__      # Middleware unit tests (Jest)
@@ -674,22 +940,58 @@ node scripts/test-supabase-client.js    # Verify Supabase connection
   /config           # Configuration (index.js)
   app.js            # Express app setup (middleware, routes)
 
-/public
+/lib                # Shared utilities (reusable across projects)
+  /services         # Cross-cutting services (email, GDPR)
+  /data             # Database query abstractions (dataFetcher.js)
+  /generators       # Template generators (email, PDF)
+
+/public             # Static assets served by Express
   /components       # Reusable UI components
-  /js               # Utilities, initializers
+  /js               # Client-side utilities, initializers
   /css              # Styling (design-system.css)
   *.html            # Page templates (incident-form-page1.html through page12.html)
-
-/lib
-  /services         # Shared services (email, GDPR)
-  /data             # Database queries (dataFetcher.js)
-  /generators       # Email templates, PDF utilities
 
 /migrations         # Database migrations (numbered, with rollbacks)
 /scripts            # Utility scripts (field extraction, testing, analysis)
 
 index.js            # HTTP server + WebSocket initialization + graceful shutdown
 ```
+
+### `/src` vs `/lib` Distinction
+
+**IMPORTANT:** Understand when to use each directory:
+
+#### `/src` - Application Core
+**Purpose:** Code specific to this application (Car Crash Lawyer AI)
+**Characteristics:**
+- Tightly coupled to application domain (traffic accidents, legal reports)
+- References specific database tables (`incident_reports`, `user_signup`)
+- Implements HTTP routes and API endpoints
+- Uses application-specific business logic
+
+**Examples:**
+- `src/controllers/incident.controller.js` - Handles incident report endpoints
+- `src/services/pdfService.js` - Generates 18-page legal PDF reports
+- `src/middleware/pageAuth.js` - Authentication for protected HTML pages
+
+#### `/lib` - Shared Utilities
+**Purpose:** Generic, reusable code that could be extracted to npm packages
+**Characteristics:**
+- Domain-agnostic (email sending, GDPR compliance, data fetching)
+- No direct references to application-specific tables
+- Could be reused in other projects
+- Accepts configuration/dependencies via parameters
+
+**Examples:**
+- `lib/services/emailService.js` - Generic email sending (Nodemailer wrapper)
+- `lib/services/gdprService.js` - GDPR compliance utilities (data export, deletion)
+- `lib/data/dataFetcher.js` - Generic database query builder
+
+**When in Doubt:**
+- If it references `incident_reports` or other domain tables → `/src`
+- If it could be used in any Node.js project → `/lib`
+- If it handles HTTP requests → `/src/controllers` or `/src/routes`
+- If it's a generic utility → `/lib`
 
 ---
 
@@ -714,30 +1016,6 @@ index.js            # HTTP server + WebSocket initialization + graceful shutdown
 
 ## Recent Work Context
 
-### Two-Phase AI Summary Architecture (Complete ✅)
-
-**Goal:** Prevent form data loss during AI analysis generation by splitting into two phases.
-
-**Status:** ✅ Integration complete, 100% data retention achieved
-
-**Implementation (Nov-Dec 2025):**
-1. **Phase 1 - Basic Data Capture:** Save form data immediately (< 2s)
-2. **Phase 2 - AI Analysis:** Generate AI summaries after submission (30-60s)
-3. **Result:** No more timeout-related data loss
-
-**Critical Achievements:**
-- ✅ 100% data retention (was ~40% before due to timeouts)
-- ✅ User experience improved (fast form submissions)
-- ✅ AI analysis still comprehensive (8 fields, GPT-4)
-- ✅ Proper error handling and retry logic
-
-**Key Files:**
-- `src/controllers/ai.controller.js` - Phase 2 endpoint
-- `src/services/aiService.js` - GPT-4 integration
-- `migrations/027_add_ai_analysis_fields.sql` - AI fields
-
-**Test:** `node test-form-filling.js [user-uuid]`
-
 ### Field Reconciliation Project (Complete ✅)
 
 **Goal:** Transition from Typeform to in-house HTML forms while maintaining data integrity.
@@ -754,7 +1032,7 @@ index.js            # HTTP server + WebSocket initialization + graceful shutdown
 **Key Files:**
 - `COMPREHENSIVE_FIELD_MAPPING_PLAN.md` - Complete 64-field analysis
 - `MASTER_PDF_FIELD_MAPPING.csv` - Definitive PDF→DB field mappings
-- `lib/generators/pdfFieldMapper.js` - PDF mapping logic
+- PDF mapping logic distributed across `src/controllers/` and `src/services/`
 
 ---
 
@@ -774,7 +1052,23 @@ index.js            # HTTP server + WebSocket initialization + graceful shutdown
 
 ---
 
-**Last Updated:** 2025-12-08
+**Last Updated:** 2025-12-15
 **Version:** 2.0.1
 **Current Branch:** feat/audit-prep
 **Maintained By:** Claude Code
+
+**Recent Updates (2025-12-15):**
+- Added First Time Setup section with environment configuration checklist
+- Added Development Workflow section with daily development patterns
+- Added Scheduled Tasks (Cron Jobs) documentation for temp_uploads cleanup
+- Added Debugging Quick Reference with common errors and solutions
+- Expanded Quick Start Commands with audit, health, and clean scripts
+- Fixed section numbering after adding Cron Jobs section (6→10)
+
+**Previous Updates (2025-12-14):**
+- Added Node.js version management section (nvm workflow)
+- Added migration workflow with forward/rollback pattern
+- Clarified `/src` vs `/lib` file organization distinction
+- Added test coverage requirements (60% thresholds)
+- Expanded quality check commands (validate:lockfile, validate:pdf-mapping, depcheck)
+- Legacy file cleanup: 610 files quarantined to `_quarantine/` directory

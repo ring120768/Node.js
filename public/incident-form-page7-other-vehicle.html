@@ -1301,17 +1301,26 @@
 
     // Auto-save
     function autoSave() {
+      // Merge manual fields into vehicleData object for backend consistency
+      const mergedVehicleData = {
+        ...vehicleData,
+        // Override with manual entries if provided (takes precedence over DVLA data)
+        make: document.getElementById('other-vehicle-look-up-make-manual').value || vehicleData?.make,
+        model: document.getElementById('other-vehicle-look-up-model-manual').value || vehicleData?.model,
+        colour: document.getElementById('other-vehicle-look-up-colour-manual').value || vehicleData?.colour,
+        yearOfManufacture: document.getElementById('other-vehicle-look-up-year-manual').value || vehicleData?.yearOfManufacture
+      };
+
       const formData = {
         other_full_name: document.getElementById('other-full-name').value,
         other_contact_number: document.getElementById('other-contact-number').value,
         other_email_address: document.getElementById('other-email-address').value,
         other_driving_license_number: document.getElementById('other-driving-license-number').value,
         other_vehicle_registration: document.getElementById('other-vehicle-registration').value,
-        // Manual vehicle entry fields (using same database fields as DVLA lookup)
-        other_vehicle_look_up_make_manual: document.getElementById('other-vehicle-look-up-make-manual').value,
-        other_vehicle_look_up_model_manual: document.getElementById('other-vehicle-look-up-model-manual').value,
-        other_vehicle_look_up_colour_manual: document.getElementById('other-vehicle-look-up-colour-manual').value,
-        other_vehicle_look_up_year_manual: document.getElementById('other-vehicle-look-up-year-manual').value,
+
+        // Use merged vehicle data (DVLA + manual overrides)
+        vehicle_data: mergedVehicleData,
+
         // Insurance fields
         other_drivers_insurance_company: document.getElementById('other-drivers-insurance-company').value,
         other_drivers_policy_number: document.getElementById('other-drivers-policy-number').value,
@@ -1319,7 +1328,6 @@
         other_drivers_policy_cover_type: document.getElementById('other-drivers-policy-cover-type').value,
         describe_damage_to_vehicle: describeDamageToVehicle.value,
         no_visible_damage: noDamageCheckbox.checked,
-        vehicle_data: vehicleData,
         warnings: warnings
       };
 
@@ -1455,6 +1463,7 @@
 
     // Modal continue button - proceed to next page
     modalContinueBtn.addEventListener('click', () => {
+      autoSave();  // Defensive save before navigation
       advisoryModal.style.display = 'none';
       document.body.style.overflow = 'auto';
       window.location.href = '/incident-form-page8-other-damage-images.html';

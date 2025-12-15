@@ -1,0 +1,2326 @@
+{
+  "totalFields": 213,
+  "fieldsByPage": {
+    "Unknown": [
+      {
+        "name": "email",
+        "type": "PDFTextField",
+        "page": "Unknown"
+      },
+      {
+        "name": "mobile",
+        "type": "PDFTextField",
+        "page": "Unknown"
+      },
+      {
+        "name": "street",
+        "type": "PDFTextField",
+        "page": "Unknown"
+      },
+      {
+        "name": "town",
+        "type": "PDFTextField",
+        "page": "Unknown"
+      },
+      {
+        "name": "street_name_optional",
+        "type": "PDFTextField",
+        "page": "Unknown"
+      },
+      {
+        "name": "postcode",
+        "type": "PDFTextField",
+        "page": "Unknown"
+      },
+      {
+        "name": "country",
+        "type": "PDFTextField",
+        "page": "Unknown"
+      },
+      {
+        "name": "driving_license_number",
+        "type": "PDFTextField",
+        "page": "Unknown"
+      },
+      {
+        "name": "car_registration_number",
+        "type": "PDFTextField",
+        "page": "Unknown"
+      },
+      {
+        "name": "vehicle_model",
+        "type": "PDFTextField",
+        "page": "Unknown"
+      },
+      {
+        "name": "vehicle_colour",
+        "type": "PDFTextField",
+        "page": "Unknown"
+      },
+      {
+        "name": "vehicle_condition",
+        "type": "PDFTextField",
+        "page": "Unknown"
+      },
+      {
+        "name": "recovery_company",
+        "type": "PDFTextField",
+        "page": "Unknown"
+      },
+      {
+        "name": "recovery_breakdown_number",
+        "type": "PDFTextField",
+        "page": "Unknown"
+      },
+      {
+        "name": "insurance_company",
+        "type": "PDFTextField",
+        "page": "Unknown"
+      },
+      {
+        "name": "policy_number",
+        "type": "PDFTextField",
+        "page": "Unknown"
+      },
+      {
+        "name": "cover_type",
+        "type": "PDFTextField",
+        "page": "Unknown"
+      },
+      {
+        "name": "recovery_breakdown_email",
+        "type": "PDFTextField",
+        "page": "Unknown"
+      },
+      {
+        "name": "policy_holder",
+        "type": "PDFTextField",
+        "page": "Unknown"
+      },
+      {
+        "name": "vehicle_picture_front",
+        "type": "PDFTextField",
+        "page": "Unknown"
+      },
+      {
+        "name": "driving_license_picture",
+        "type": "PDFTextField",
+        "page": "Unknown"
+      },
+      {
+        "name": "vehicle_picture_driver_side",
+        "type": "PDFTextField",
+        "page": "Unknown"
+      },
+      {
+        "name": "vehicle_picture_passenger_side",
+        "type": "PDFTextField",
+        "page": "Unknown"
+      },
+      {
+        "name": "vehicle_picture_back",
+        "type": "PDFTextField",
+        "page": "Unknown"
+      },
+      {
+        "name": "medical_how_are_you_feeling",
+        "type": "PDFTextField",
+        "page": "Unknown"
+      },
+      {
+        "name": "medical_attention_from_who",
+        "type": "PDFTextField",
+        "page": "Unknown"
+      },
+      {
+        "name": "weather_heavy_rain",
+        "type": "PDFCheckBox",
+        "page": "Unknown"
+      },
+      {
+        "name": "weather_fog",
+        "type": "PDFCheckBox",
+        "page": "Unknown"
+      },
+      {
+        "name": "weather_snow",
+        "type": "PDFCheckBox",
+        "page": "Unknown"
+      },
+      {
+        "name": "weather_thunder_lightening",
+        "type": "PDFCheckBox",
+        "page": "Unknown"
+      },
+      {
+        "name": "speed_limit",
+        "type": "PDFTextField",
+        "page": "Unknown"
+      },
+      {
+        "name": "weather_drizzle",
+        "type": "PDFCheckBox",
+        "page": "Unknown"
+      },
+      {
+        "name": "weather_raining",
+        "type": "PDFCheckBox",
+        "page": "Unknown"
+      },
+      {
+        "name": "weather_windy",
+        "type": "PDFCheckBox",
+        "page": "Unknown"
+      },
+      {
+        "name": "weather_dusk",
+        "type": "PDFCheckBox",
+        "page": "Unknown"
+      },
+      {
+        "name": "road_type_motorway",
+        "type": "PDFCheckBox",
+        "page": "Unknown"
+      },
+      {
+        "name": "road_type_urban",
+        "type": "PDFCheckBox",
+        "page": "Unknown"
+      },
+      {
+        "name": "road_type_rural",
+        "type": "PDFCheckBox",
+        "page": "Unknown"
+      },
+      {
+        "name": "road_type_car_park",
+        "type": "PDFCheckBox",
+        "page": "Unknown"
+      },
+      {
+        "name": "traffic_conditions_heavy",
+        "type": "PDFCheckBox",
+        "page": "Unknown"
+      },
+      {
+        "name": "road_type_private_road",
+        "type": "PDFCheckBox",
+        "page": "Unknown"
+      },
+      {
+        "name": "traffic_conditions_moderate",
+        "type": "PDFCheckBox",
+        "page": "Unknown"
+      },
+      {
+        "name": "road_type_a_road",
+        "type": "PDFCheckBox",
+        "page": "Unknown"
+      },
+      {
+        "name": "road_type_b_road",
+        "type": "PDFCheckBox",
+        "page": "Unknown"
+      },
+      {
+        "name": "traffic_conditions_light",
+        "type": "PDFCheckBox",
+        "page": "Unknown"
+      },
+      {
+        "name": "traffic_conditions_no_traffic",
+        "type": "PDFCheckBox",
+        "page": "Unknown"
+      },
+      {
+        "name": "nearest_landmark",
+        "type": "PDFTextField",
+        "page": "Unknown"
+      },
+      {
+        "name": "driving_your_usual_vehicle_no",
+        "type": "PDFCheckBox",
+        "page": "Unknown"
+      },
+      {
+        "name": "no_it_needed_to_be_towed",
+        "type": "PDFCheckBox",
+        "page": "Unknown"
+      },
+      {
+        "name": "unsure _did_not_attempt",
+        "type": "PDFCheckBox",
+        "page": "Unknown"
+      },
+      {
+        "name": "yes_i_drove_it_away",
+        "type": "PDFCheckBox",
+        "page": "Unknown"
+      },
+      {
+        "name": "other_driver_vehicle_marked_for_export",
+        "type": "PDFTextField",
+        "page": "Unknown"
+      },
+      {
+        "name": "witness_name",
+        "type": "PDFTextField",
+        "page": "Unknown"
+      },
+      {
+        "name": "witness_statement",
+        "type": "PDFTextField",
+        "page": "Unknown"
+      },
+      {
+        "name": "witness_statement_2",
+        "type": "PDFTextField",
+        "page": "Unknown"
+      },
+      {
+        "name": "other_breath_test",
+        "type": "PDFTextField",
+        "page": "Unknown"
+      },
+      {
+        "name": "airbags_deployed",
+        "type": "PDFCheckBox",
+        "page": "Unknown"
+      },
+      {
+        "name": "Date69_af_date",
+        "type": "PDFTextField",
+        "page": "Unknown"
+      },
+      {
+        "name": "Signature70",
+        "type": "PDFSignature",
+        "page": "Unknown"
+      },
+      {
+        "name": "name",
+        "type": "PDFTextField",
+        "page": "Unknown"
+      },
+      {
+        "name": "surname",
+        "type": "PDFTextField",
+        "page": "Unknown"
+      },
+      {
+        "name": "id",
+        "type": "PDFTextField",
+        "page": "Unknown"
+      },
+      {
+        "name": "visibility_very_poor",
+        "type": "PDFCheckBox",
+        "page": "Unknown"
+      },
+      {
+        "name": "weather_hail",
+        "type": "PDFCheckBox",
+        "page": "Unknown"
+      },
+      {
+        "name": "date_of_birth",
+        "type": "PDFTextField",
+        "page": "Unknown"
+      },
+      {
+        "name": "emergency_contact_name",
+        "type": "PDFTextField",
+        "page": "Unknown"
+      },
+      {
+        "name": "emergency_contact_number",
+        "type": "PDFTextField",
+        "page": "Unknown"
+      },
+      {
+        "name": "medical_symptom_dizziness",
+        "type": "PDFCheckBox",
+        "page": "Unknown"
+      },
+      {
+        "name": "medical_symptom_life _threatening",
+        "type": "PDFCheckBox",
+        "page": "Unknown"
+      },
+      {
+        "name": "medical_symptom_uncontrolled_bleeding",
+        "type": "PDFCheckBox",
+        "page": "Unknown"
+      },
+      {
+        "name": "medical_injury_severity",
+        "type": "PDFTextField",
+        "page": "Unknown"
+      },
+      {
+        "name": "medical_symptom_abdominal_bruising",
+        "type": "PDFCheckBox",
+        "page": "Unknown"
+      },
+      {
+        "name": "medical_symptom_chest_pain",
+        "type": "PDFCheckBox",
+        "page": "Unknown"
+      },
+      {
+        "name": "medical_symptom_severe_headache",
+        "type": "PDFCheckBox",
+        "page": "Unknown"
+      },
+      {
+        "name": "medical_symptom_abdominal_pain",
+        "type": "PDFCheckBox",
+        "page": "Unknown"
+      },
+      {
+        "name": "medical_symptom_limb_weakness",
+        "type": "PDFCheckBox",
+        "page": "Unknown"
+      },
+      {
+        "name": "medical_symptom_loss_of_consciousness",
+        "type": "PDFCheckBox",
+        "page": "Unknown"
+      },
+      {
+        "name": "medical_injury_details",
+        "type": "PDFTextField",
+        "page": "Unknown"
+      },
+      {
+        "name": "medical_symptom_breathlessness",
+        "type": "PDFCheckBox",
+        "page": "Unknown"
+      },
+      {
+        "name": "medical_symptom_none",
+        "type": "PDFCheckBox",
+        "page": "Unknown"
+      },
+      {
+        "name": "medical_ambulance_called",
+        "type": "PDFCheckBox",
+        "page": "Unknown"
+      },
+      {
+        "name": "medical_hospital_name",
+        "type": "PDFTextField",
+        "page": "Unknown"
+      },
+      {
+        "name": "accident_date",
+        "type": "PDFTextField",
+        "page": "Unknown"
+      },
+      {
+        "name": "accident_time",
+        "type": "PDFTextField",
+        "page": "Unknown"
+      },
+      {
+        "name": "weather_cloudy",
+        "type": "PDFCheckBox",
+        "page": "Unknown"
+      },
+      {
+        "name": "weather_clear",
+        "type": "PDFCheckBox",
+        "page": "Unknown"
+      },
+      {
+        "name": "weather_bright_sunlight",
+        "type": "PDFCheckBox",
+        "page": "Unknown"
+      },
+      {
+        "name": "road_condition_wet",
+        "type": "PDFCheckBox",
+        "page": "Unknown"
+      },
+      {
+        "name": "road_condition_loose_surface",
+        "type": "PDFCheckBox",
+        "page": "Unknown"
+      },
+      {
+        "name": "road_condition_snow_covered",
+        "type": "PDFCheckBox",
+        "page": "Unknown"
+      },
+      {
+        "name": "road_condition_slush_on_road",
+        "type": "PDFCheckBox",
+        "page": "Unknown"
+      },
+      {
+        "name": "road_condition_dry",
+        "type": "PDFCheckBox",
+        "page": "Unknown"
+      },
+      {
+        "name": "road_condition_icy",
+        "type": "PDFCheckBox",
+        "page": "Unknown"
+      },
+      {
+        "name": "your_speed",
+        "type": "PDFTextField",
+        "page": "Unknown"
+      },
+      {
+        "name": "road_markings_vsible_yes",
+        "type": "PDFCheckBox",
+        "page": "Unknown"
+      },
+      {
+        "name": "road_markings_vsible_no",
+        "type": "PDFCheckBox",
+        "page": "Unknown"
+      },
+      {
+        "name": "road_markings_visible_partially",
+        "type": "PDFCheckBox",
+        "page": "Unknown"
+      },
+      {
+        "name": "what3words",
+        "type": "PDFTextField",
+        "page": "Unknown"
+      },
+      {
+        "name": "location",
+        "type": "PDFTextField",
+        "page": "Unknown"
+      },
+      {
+        "name": "vehicle_make",
+        "type": "PDFTextField",
+        "page": "Unknown"
+      },
+      {
+        "name": "no_damage",
+        "type": "PDFCheckBox",
+        "page": "Unknown"
+      },
+      {
+        "name": "impact_point_front",
+        "type": "PDFCheckBox",
+        "page": "Unknown"
+      },
+      {
+        "name": "impact_point_rear",
+        "type": "PDFCheckBox",
+        "page": "Unknown"
+      },
+      {
+        "name": "impact_point_roof",
+        "type": "PDFCheckBox",
+        "page": "Unknown"
+      },
+      {
+        "name": "impact_point_rear_passenger",
+        "type": "PDFCheckBox",
+        "page": "Unknown"
+      },
+      {
+        "name": "impact_point_passenger_side",
+        "type": "PDFCheckBox",
+        "page": "Unknown"
+      },
+      {
+        "name": "impact_point_driver_side",
+        "type": "PDFCheckBox",
+        "page": "Unknown"
+      },
+      {
+        "name": "impact_point_rear_driver",
+        "type": "PDFCheckBox",
+        "page": "Unknown"
+      },
+      {
+        "name": "impact_point_front_passenger",
+        "type": "PDFCheckBox",
+        "page": "Unknown"
+      },
+      {
+        "name": "impact_point_front_driver",
+        "type": "PDFCheckBox",
+        "page": "Unknown"
+      },
+      {
+        "name": "other-full-name",
+        "type": "PDFTextField",
+        "page": "Unknown"
+      },
+      {
+        "name": "other-contact-number",
+        "type": "PDFTextField",
+        "page": "Unknown"
+      },
+      {
+        "name": "other-email-address",
+        "type": "PDFTextField",
+        "page": "Unknown"
+      },
+      {
+        "name": "other-vehicle-look-up-make",
+        "type": "PDFTextField",
+        "page": "Unknown"
+      },
+      {
+        "name": "other-vehicle-registration",
+        "type": "PDFTextField",
+        "page": "Unknown"
+      },
+      {
+        "name": "other-vehicle-look-up-model",
+        "type": "PDFTextField",
+        "page": "Unknown"
+      },
+      {
+        "name": "other-vehicle-look-up-colour",
+        "type": "PDFTextField",
+        "page": "Unknown"
+      },
+      {
+        "name": "other-vehicle-look-up-fuel-type",
+        "type": "PDFTextField",
+        "page": "Unknown"
+      },
+      {
+        "name": "other-vehicle-look-up-year",
+        "type": "PDFTextField",
+        "page": "Unknown"
+      },
+      {
+        "name": "other-vehicle-look-up-mot-status",
+        "type": "PDFTextField",
+        "page": "Unknown"
+      },
+      {
+        "name": "other-vehicle-look-up-tax-status",
+        "type": "PDFTextField",
+        "page": "Unknown"
+      },
+      {
+        "name": "other-vehicle-look-up-mot-expiry-date",
+        "type": "PDFTextField",
+        "page": "Unknown"
+      },
+      {
+        "name": "other-driving-license-number",
+        "type": "PDFTextField",
+        "page": "Unknown"
+      },
+      {
+        "name": "other-drivers-insurance-company",
+        "type": "PDFTextField",
+        "page": "Unknown"
+      },
+      {
+        "name": "other-vehicle-look-up-tax-due-date",
+        "type": "PDFTextField",
+        "page": "Unknown"
+      },
+      {
+        "name": "other-drivers-policy-number",
+        "type": "PDFTextField",
+        "page": "Unknown"
+      },
+      {
+        "name": "other-drivers-policy-holder-name",
+        "type": "PDFTextField",
+        "page": "Unknown"
+      },
+      {
+        "name": "other-drivers-policy-cover-type",
+        "type": "PDFTextField",
+        "page": "Unknown"
+      },
+      {
+        "name": "other-vehicle-look-up-insurance-status",
+        "type": "PDFTextField",
+        "page": "Unknown"
+      },
+      {
+        "name": "describe-damage-to-vehicle",
+        "type": "PDFTextField",
+        "page": "Unknown"
+      },
+      {
+        "name": "witness_email_2",
+        "type": "PDFTextField",
+        "page": "Unknown"
+      },
+      {
+        "name": "police_attended",
+        "type": "PDFCheckBox",
+        "page": "Unknown"
+      },
+      {
+        "name": "accident_ref_number",
+        "type": "PDFTextField",
+        "page": "Unknown"
+      },
+      {
+        "name": "officer_name",
+        "type": "PDFTextField",
+        "page": "Unknown"
+      },
+      {
+        "name": "police_force",
+        "type": "PDFTextField",
+        "page": "Unknown"
+      },
+      {
+        "name": "officer_badge",
+        "type": "PDFTextField",
+        "page": "Unknown"
+      },
+      {
+        "name": "user_breath_test",
+        "type": "PDFTextField",
+        "page": "Unknown"
+      },
+      {
+        "name": "seatbelt_reason",
+        "type": "PDFTextField",
+        "page": "Unknown"
+      },
+      {
+        "name": "police_attend",
+        "type": "PDFCheckBox",
+        "page": "Unknown"
+      },
+      {
+        "name": "seatbelt_worn",
+        "type": "PDFCheckBox",
+        "page": "Unknown"
+      },
+      {
+        "name": "seatbelt_worn_no",
+        "type": "PDFCheckBox",
+        "page": "Unknown"
+      },
+      {
+        "name": "emergency_audio_transcription",
+        "type": "PDFTextField",
+        "page": "Unknown"
+      },
+      {
+        "name": "emergency_recording_timestamp",
+        "type": "PDFTextField",
+        "page": "Unknown"
+      },
+      {
+        "name": "medical_treatment_recieved",
+        "type": "PDFTextField",
+        "page": "Unknown"
+      },
+      {
+        "name": "medical_symptom_limb_pain_mobilty",
+        "type": "PDFCheckBox",
+        "page": "Unknown"
+      },
+      {
+        "name": "further_medical_attention_needed",
+        "type": "PDFTextField",
+        "page": "Unknown"
+      },
+      {
+        "name": "medical_attention_needed",
+        "type": "PDFCheckBox",
+        "page": "Unknown"
+      },
+      {
+        "name": "visibilty_street_lights",
+        "type": "PDFCheckBox",
+        "page": "Unknown"
+      },
+      {
+        "name": "junction_type",
+        "type": "PDFTextField",
+        "page": "Unknown"
+      },
+      {
+        "name": "junction_control",
+        "type": "PDFTextField",
+        "page": "Unknown"
+      },
+      {
+        "name": "user_manoeuvre",
+        "type": "PDFTextField",
+        "page": "Unknown"
+      },
+      {
+        "name": "traffic_light_status",
+        "type": "PDFTextField",
+        "page": "Unknown"
+      },
+      {
+        "name": "special_condition_roadworks",
+        "type": "PDFCheckBox",
+        "page": "Unknown"
+      },
+      {
+        "name": "special_condition_workmen",
+        "type": "PDFCheckBox",
+        "page": "Unknown"
+      },
+      {
+        "name": "special_condition_cyclists",
+        "type": "PDFCheckBox",
+        "page": "Unknown"
+      },
+      {
+        "name": "special_condition_pedestrians",
+        "type": "PDFCheckBox",
+        "page": "Unknown"
+      },
+      {
+        "name": "special_condition_traffic_calming",
+        "type": "PDFCheckBox",
+        "page": "Unknown"
+      },
+      {
+        "name": "special_condition_oil_spills",
+        "type": "PDFCheckBox",
+        "page": "Unknown"
+      },
+      {
+        "name": "special_condition_potholes",
+        "type": "PDFCheckBox",
+        "page": "Unknown"
+      },
+      {
+        "name": "special_condition_crossing",
+        "type": "PDFCheckBox",
+        "page": "Unknown"
+      },
+      {
+        "name": "special_condition_school_zone",
+        "type": "PDFCheckBox",
+        "page": "Unknown"
+      },
+      {
+        "name": "visibility_sun_glare",
+        "type": "PDFCheckBox",
+        "page": "Unknown"
+      },
+      {
+        "name": "special_condition_animals",
+        "type": "PDFCheckBox",
+        "page": "Unknown"
+      },
+      {
+        "name": "visibility_restricted_structure",
+        "type": "PDFCheckBox",
+        "page": "Unknown"
+      },
+      {
+        "name": "special_condition_parked_vehicles",
+        "type": "PDFCheckBox",
+        "page": "Unknown"
+      },
+      {
+        "name": "visibility_large_vehicle",
+        "type": "PDFCheckBox",
+        "page": "Unknown"
+      },
+      {
+        "name": "special_condition_narrow_road",
+        "type": "PDFCheckBox",
+        "page": "Unknown"
+      },
+      {
+        "name": "additional_hazards",
+        "type": "PDFTextField",
+        "page": "Unknown"
+      },
+      {
+        "name": "usual_vehicle",
+        "type": "PDFCheckBox",
+        "page": "Unknown"
+      },
+      {
+        "name": "vehicle_license_plate",
+        "type": "PDFTextField",
+        "page": "Unknown"
+      },
+      {
+        "name": "dvla_make",
+        "type": "PDFTextField",
+        "page": "Unknown"
+      },
+      {
+        "name": "dvla_model",
+        "type": "PDFTextField",
+        "page": "Unknown"
+      },
+      {
+        "name": "dvla_colour",
+        "type": "PDFTextField",
+        "page": "Unknown"
+      },
+      {
+        "name": "dvla_year",
+        "type": "PDFTextField",
+        "page": "Unknown"
+      },
+      {
+        "name": "dvla_fuel_type",
+        "type": "PDFTextField",
+        "page": "Unknown"
+      },
+      {
+        "name": "dvla_mot_status",
+        "type": "PDFTextField",
+        "page": "Unknown"
+      },
+      {
+        "name": "dvla_mot_expiry",
+        "type": "PDFTextField",
+        "page": "Unknown"
+      },
+      {
+        "name": "dvla_tax_status",
+        "type": "PDFTextField",
+        "page": "Unknown"
+      },
+      {
+        "name": "dvla_tax_due_date",
+        "type": "PDFTextField",
+        "page": "Unknown"
+      },
+      {
+        "name": "no-visible-damage",
+        "type": "PDFCheckBox",
+        "page": "Unknown"
+      },
+      {
+        "name": "witness_mobile_number",
+        "type": "PDFTextField",
+        "page": "Unknown"
+      },
+      {
+        "name": "witness_email_address",
+        "type": "PDFTextField",
+        "page": "Unknown"
+      },
+      {
+        "name": "additional_witnesses",
+        "type": "PDFTextField",
+        "page": "Unknown"
+      },
+      {
+        "name": "witness_number",
+        "type": "PDFTextField",
+        "page": "Unknown"
+      },
+      {
+        "name": "witnesses_present",
+        "type": "PDFCheckBox",
+        "page": "Unknown"
+      },
+      {
+        "name": "airbags_deployed_no",
+        "type": "PDFCheckBox",
+        "page": "Unknown"
+      },
+      {
+        "name": "impact_point_under_carriage",
+        "type": "PDFCheckBox",
+        "page": "Unknown"
+      },
+      {
+        "name": "visibilty_good",
+        "type": "PDFCheckBox",
+        "page": "Unknown"
+      },
+      {
+        "name": "visibility_poor",
+        "type": "PDFCheckBox",
+        "page": "Unknown"
+      },
+      {
+        "name": "medical_symptom_change_in_vision",
+        "type": "PDFCheckBox",
+        "page": "Unknown"
+      },
+      {
+        "name": "six_point_safety_check_completed",
+        "type": "PDFCheckBox",
+        "page": "Unknown"
+      },
+      {
+        "name": "subscription_start_date",
+        "type": "PDFTextField",
+        "page": "Unknown"
+      },
+      {
+        "name": "damage_to_your_vehicle",
+        "type": "PDFTextField",
+        "page": "Unknown"
+      },
+      {
+        "name": "vehicle_damage_photo_1_url",
+        "type": "PDFTextField",
+        "page": "Unknown"
+      },
+      {
+        "name": "vehicle_damage_photo_2_url",
+        "type": "PDFTextField",
+        "page": "Unknown"
+      },
+      {
+        "name": "vehicle_damage_photo_3_url",
+        "type": "PDFTextField",
+        "page": "Unknown"
+      },
+      {
+        "name": "vehicle_damage_photo_4_url",
+        "type": "PDFTextField",
+        "page": "Unknown"
+      },
+      {
+        "name": "location_map_screenshot",
+        "type": "PDFTextField",
+        "page": "Unknown"
+      },
+      {
+        "name": "scene_photo_1_url",
+        "type": "PDFTextField",
+        "page": "Unknown"
+      },
+      {
+        "name": "scene_photo_2_url",
+        "type": "PDFTextField",
+        "page": "Unknown"
+      },
+      {
+        "name": "scene_photo_3_url",
+        "type": "PDFTextField",
+        "page": "Unknown"
+      },
+      {
+        "name": "other_vehicle_photo_1_url",
+        "type": "PDFTextField",
+        "page": "Unknown"
+      },
+      {
+        "name": "other_vehicle_photo_2_url",
+        "type": "PDFTextField",
+        "page": "Unknown"
+      },
+      {
+        "name": "other_vehicle_photo_3_url",
+        "type": "PDFTextField",
+        "page": "Unknown"
+      },
+      {
+        "name": "vehicle_damage_photo_5_url",
+        "type": "PDFTextField",
+        "page": "Unknown"
+      },
+      {
+        "name": "open",
+        "type": "PDFTextField",
+        "page": "Unknown"
+      },
+      {
+        "name": "final_feeling",
+        "type": "PDFCheckBox",
+        "page": "Unknown"
+      },
+      {
+        "name": "voice_transcription",
+        "type": "PDFTextField",
+        "page": "Unknown"
+      },
+      {
+        "name": "ai_summary",
+        "type": "PDFTextField",
+        "page": "Unknown"
+      },
+      {
+        "name": "final_review",
+        "type": "PDFTextField",
+        "page": "Unknown"
+      },
+      {
+        "name": "closing_statement",
+        "type": "PDFTextField",
+        "page": "Unknown"
+      },
+      {
+        "name": "quality_review",
+        "type": "PDFTextField",
+        "page": "Unknown"
+      },
+      {
+        "name": "analysis_metadata",
+        "type": "PDFTextField",
+        "page": "Unknown"
+      }
+    ]
+  },
+  "allFields": [
+    {
+      "name": "email",
+      "type": "PDFTextField",
+      "page": "Unknown"
+    },
+    {
+      "name": "mobile",
+      "type": "PDFTextField",
+      "page": "Unknown"
+    },
+    {
+      "name": "street",
+      "type": "PDFTextField",
+      "page": "Unknown"
+    },
+    {
+      "name": "town",
+      "type": "PDFTextField",
+      "page": "Unknown"
+    },
+    {
+      "name": "street_name_optional",
+      "type": "PDFTextField",
+      "page": "Unknown"
+    },
+    {
+      "name": "postcode",
+      "type": "PDFTextField",
+      "page": "Unknown"
+    },
+    {
+      "name": "country",
+      "type": "PDFTextField",
+      "page": "Unknown"
+    },
+    {
+      "name": "driving_license_number",
+      "type": "PDFTextField",
+      "page": "Unknown"
+    },
+    {
+      "name": "car_registration_number",
+      "type": "PDFTextField",
+      "page": "Unknown"
+    },
+    {
+      "name": "vehicle_model",
+      "type": "PDFTextField",
+      "page": "Unknown"
+    },
+    {
+      "name": "vehicle_colour",
+      "type": "PDFTextField",
+      "page": "Unknown"
+    },
+    {
+      "name": "vehicle_condition",
+      "type": "PDFTextField",
+      "page": "Unknown"
+    },
+    {
+      "name": "recovery_company",
+      "type": "PDFTextField",
+      "page": "Unknown"
+    },
+    {
+      "name": "recovery_breakdown_number",
+      "type": "PDFTextField",
+      "page": "Unknown"
+    },
+    {
+      "name": "insurance_company",
+      "type": "PDFTextField",
+      "page": "Unknown"
+    },
+    {
+      "name": "policy_number",
+      "type": "PDFTextField",
+      "page": "Unknown"
+    },
+    {
+      "name": "cover_type",
+      "type": "PDFTextField",
+      "page": "Unknown"
+    },
+    {
+      "name": "recovery_breakdown_email",
+      "type": "PDFTextField",
+      "page": "Unknown"
+    },
+    {
+      "name": "policy_holder",
+      "type": "PDFTextField",
+      "page": "Unknown"
+    },
+    {
+      "name": "vehicle_picture_front",
+      "type": "PDFTextField",
+      "page": "Unknown"
+    },
+    {
+      "name": "driving_license_picture",
+      "type": "PDFTextField",
+      "page": "Unknown"
+    },
+    {
+      "name": "vehicle_picture_driver_side",
+      "type": "PDFTextField",
+      "page": "Unknown"
+    },
+    {
+      "name": "vehicle_picture_passenger_side",
+      "type": "PDFTextField",
+      "page": "Unknown"
+    },
+    {
+      "name": "vehicle_picture_back",
+      "type": "PDFTextField",
+      "page": "Unknown"
+    },
+    {
+      "name": "medical_how_are_you_feeling",
+      "type": "PDFTextField",
+      "page": "Unknown"
+    },
+    {
+      "name": "medical_attention_from_who",
+      "type": "PDFTextField",
+      "page": "Unknown"
+    },
+    {
+      "name": "weather_heavy_rain",
+      "type": "PDFCheckBox",
+      "page": "Unknown"
+    },
+    {
+      "name": "weather_fog",
+      "type": "PDFCheckBox",
+      "page": "Unknown"
+    },
+    {
+      "name": "weather_snow",
+      "type": "PDFCheckBox",
+      "page": "Unknown"
+    },
+    {
+      "name": "weather_thunder_lightening",
+      "type": "PDFCheckBox",
+      "page": "Unknown"
+    },
+    {
+      "name": "speed_limit",
+      "type": "PDFTextField",
+      "page": "Unknown"
+    },
+    {
+      "name": "weather_drizzle",
+      "type": "PDFCheckBox",
+      "page": "Unknown"
+    },
+    {
+      "name": "weather_raining",
+      "type": "PDFCheckBox",
+      "page": "Unknown"
+    },
+    {
+      "name": "weather_windy",
+      "type": "PDFCheckBox",
+      "page": "Unknown"
+    },
+    {
+      "name": "weather_dusk",
+      "type": "PDFCheckBox",
+      "page": "Unknown"
+    },
+    {
+      "name": "road_type_motorway",
+      "type": "PDFCheckBox",
+      "page": "Unknown"
+    },
+    {
+      "name": "road_type_urban",
+      "type": "PDFCheckBox",
+      "page": "Unknown"
+    },
+    {
+      "name": "road_type_rural",
+      "type": "PDFCheckBox",
+      "page": "Unknown"
+    },
+    {
+      "name": "road_type_car_park",
+      "type": "PDFCheckBox",
+      "page": "Unknown"
+    },
+    {
+      "name": "traffic_conditions_heavy",
+      "type": "PDFCheckBox",
+      "page": "Unknown"
+    },
+    {
+      "name": "road_type_private_road",
+      "type": "PDFCheckBox",
+      "page": "Unknown"
+    },
+    {
+      "name": "traffic_conditions_moderate",
+      "type": "PDFCheckBox",
+      "page": "Unknown"
+    },
+    {
+      "name": "road_type_a_road",
+      "type": "PDFCheckBox",
+      "page": "Unknown"
+    },
+    {
+      "name": "road_type_b_road",
+      "type": "PDFCheckBox",
+      "page": "Unknown"
+    },
+    {
+      "name": "traffic_conditions_light",
+      "type": "PDFCheckBox",
+      "page": "Unknown"
+    },
+    {
+      "name": "traffic_conditions_no_traffic",
+      "type": "PDFCheckBox",
+      "page": "Unknown"
+    },
+    {
+      "name": "nearest_landmark",
+      "type": "PDFTextField",
+      "page": "Unknown"
+    },
+    {
+      "name": "driving_your_usual_vehicle_no",
+      "type": "PDFCheckBox",
+      "page": "Unknown"
+    },
+    {
+      "name": "no_it_needed_to_be_towed",
+      "type": "PDFCheckBox",
+      "page": "Unknown"
+    },
+    {
+      "name": "unsure _did_not_attempt",
+      "type": "PDFCheckBox",
+      "page": "Unknown"
+    },
+    {
+      "name": "yes_i_drove_it_away",
+      "type": "PDFCheckBox",
+      "page": "Unknown"
+    },
+    {
+      "name": "other_driver_vehicle_marked_for_export",
+      "type": "PDFTextField",
+      "page": "Unknown"
+    },
+    {
+      "name": "witness_name",
+      "type": "PDFTextField",
+      "page": "Unknown"
+    },
+    {
+      "name": "witness_statement",
+      "type": "PDFTextField",
+      "page": "Unknown"
+    },
+    {
+      "name": "witness_statement_2",
+      "type": "PDFTextField",
+      "page": "Unknown"
+    },
+    {
+      "name": "other_breath_test",
+      "type": "PDFTextField",
+      "page": "Unknown"
+    },
+    {
+      "name": "airbags_deployed",
+      "type": "PDFCheckBox",
+      "page": "Unknown"
+    },
+    {
+      "name": "Date69_af_date",
+      "type": "PDFTextField",
+      "page": "Unknown"
+    },
+    {
+      "name": "Signature70",
+      "type": "PDFSignature",
+      "page": "Unknown"
+    },
+    {
+      "name": "name",
+      "type": "PDFTextField",
+      "page": "Unknown"
+    },
+    {
+      "name": "surname",
+      "type": "PDFTextField",
+      "page": "Unknown"
+    },
+    {
+      "name": "id",
+      "type": "PDFTextField",
+      "page": "Unknown"
+    },
+    {
+      "name": "visibility_very_poor",
+      "type": "PDFCheckBox",
+      "page": "Unknown"
+    },
+    {
+      "name": "weather_hail",
+      "type": "PDFCheckBox",
+      "page": "Unknown"
+    },
+    {
+      "name": "date_of_birth",
+      "type": "PDFTextField",
+      "page": "Unknown"
+    },
+    {
+      "name": "emergency_contact_name",
+      "type": "PDFTextField",
+      "page": "Unknown"
+    },
+    {
+      "name": "emergency_contact_number",
+      "type": "PDFTextField",
+      "page": "Unknown"
+    },
+    {
+      "name": "medical_symptom_dizziness",
+      "type": "PDFCheckBox",
+      "page": "Unknown"
+    },
+    {
+      "name": "medical_symptom_life _threatening",
+      "type": "PDFCheckBox",
+      "page": "Unknown"
+    },
+    {
+      "name": "medical_symptom_uncontrolled_bleeding",
+      "type": "PDFCheckBox",
+      "page": "Unknown"
+    },
+    {
+      "name": "medical_injury_severity",
+      "type": "PDFTextField",
+      "page": "Unknown"
+    },
+    {
+      "name": "medical_symptom_abdominal_bruising",
+      "type": "PDFCheckBox",
+      "page": "Unknown"
+    },
+    {
+      "name": "medical_symptom_chest_pain",
+      "type": "PDFCheckBox",
+      "page": "Unknown"
+    },
+    {
+      "name": "medical_symptom_severe_headache",
+      "type": "PDFCheckBox",
+      "page": "Unknown"
+    },
+    {
+      "name": "medical_symptom_abdominal_pain",
+      "type": "PDFCheckBox",
+      "page": "Unknown"
+    },
+    {
+      "name": "medical_symptom_limb_weakness",
+      "type": "PDFCheckBox",
+      "page": "Unknown"
+    },
+    {
+      "name": "medical_symptom_loss_of_consciousness",
+      "type": "PDFCheckBox",
+      "page": "Unknown"
+    },
+    {
+      "name": "medical_injury_details",
+      "type": "PDFTextField",
+      "page": "Unknown"
+    },
+    {
+      "name": "medical_symptom_breathlessness",
+      "type": "PDFCheckBox",
+      "page": "Unknown"
+    },
+    {
+      "name": "medical_symptom_none",
+      "type": "PDFCheckBox",
+      "page": "Unknown"
+    },
+    {
+      "name": "medical_ambulance_called",
+      "type": "PDFCheckBox",
+      "page": "Unknown"
+    },
+    {
+      "name": "medical_hospital_name",
+      "type": "PDFTextField",
+      "page": "Unknown"
+    },
+    {
+      "name": "accident_date",
+      "type": "PDFTextField",
+      "page": "Unknown"
+    },
+    {
+      "name": "accident_time",
+      "type": "PDFTextField",
+      "page": "Unknown"
+    },
+    {
+      "name": "weather_cloudy",
+      "type": "PDFCheckBox",
+      "page": "Unknown"
+    },
+    {
+      "name": "weather_clear",
+      "type": "PDFCheckBox",
+      "page": "Unknown"
+    },
+    {
+      "name": "weather_bright_sunlight",
+      "type": "PDFCheckBox",
+      "page": "Unknown"
+    },
+    {
+      "name": "road_condition_wet",
+      "type": "PDFCheckBox",
+      "page": "Unknown"
+    },
+    {
+      "name": "road_condition_loose_surface",
+      "type": "PDFCheckBox",
+      "page": "Unknown"
+    },
+    {
+      "name": "road_condition_snow_covered",
+      "type": "PDFCheckBox",
+      "page": "Unknown"
+    },
+    {
+      "name": "road_condition_slush_on_road",
+      "type": "PDFCheckBox",
+      "page": "Unknown"
+    },
+    {
+      "name": "road_condition_dry",
+      "type": "PDFCheckBox",
+      "page": "Unknown"
+    },
+    {
+      "name": "road_condition_icy",
+      "type": "PDFCheckBox",
+      "page": "Unknown"
+    },
+    {
+      "name": "your_speed",
+      "type": "PDFTextField",
+      "page": "Unknown"
+    },
+    {
+      "name": "road_markings_vsible_yes",
+      "type": "PDFCheckBox",
+      "page": "Unknown"
+    },
+    {
+      "name": "road_markings_vsible_no",
+      "type": "PDFCheckBox",
+      "page": "Unknown"
+    },
+    {
+      "name": "road_markings_visible_partially",
+      "type": "PDFCheckBox",
+      "page": "Unknown"
+    },
+    {
+      "name": "what3words",
+      "type": "PDFTextField",
+      "page": "Unknown"
+    },
+    {
+      "name": "location",
+      "type": "PDFTextField",
+      "page": "Unknown"
+    },
+    {
+      "name": "vehicle_make",
+      "type": "PDFTextField",
+      "page": "Unknown"
+    },
+    {
+      "name": "no_damage",
+      "type": "PDFCheckBox",
+      "page": "Unknown"
+    },
+    {
+      "name": "impact_point_front",
+      "type": "PDFCheckBox",
+      "page": "Unknown"
+    },
+    {
+      "name": "impact_point_rear",
+      "type": "PDFCheckBox",
+      "page": "Unknown"
+    },
+    {
+      "name": "impact_point_roof",
+      "type": "PDFCheckBox",
+      "page": "Unknown"
+    },
+    {
+      "name": "impact_point_rear_passenger",
+      "type": "PDFCheckBox",
+      "page": "Unknown"
+    },
+    {
+      "name": "impact_point_passenger_side",
+      "type": "PDFCheckBox",
+      "page": "Unknown"
+    },
+    {
+      "name": "impact_point_driver_side",
+      "type": "PDFCheckBox",
+      "page": "Unknown"
+    },
+    {
+      "name": "impact_point_rear_driver",
+      "type": "PDFCheckBox",
+      "page": "Unknown"
+    },
+    {
+      "name": "impact_point_front_passenger",
+      "type": "PDFCheckBox",
+      "page": "Unknown"
+    },
+    {
+      "name": "impact_point_front_driver",
+      "type": "PDFCheckBox",
+      "page": "Unknown"
+    },
+    {
+      "name": "other-full-name",
+      "type": "PDFTextField",
+      "page": "Unknown"
+    },
+    {
+      "name": "other-contact-number",
+      "type": "PDFTextField",
+      "page": "Unknown"
+    },
+    {
+      "name": "other-email-address",
+      "type": "PDFTextField",
+      "page": "Unknown"
+    },
+    {
+      "name": "other-vehicle-look-up-make",
+      "type": "PDFTextField",
+      "page": "Unknown"
+    },
+    {
+      "name": "other-vehicle-registration",
+      "type": "PDFTextField",
+      "page": "Unknown"
+    },
+    {
+      "name": "other-vehicle-look-up-model",
+      "type": "PDFTextField",
+      "page": "Unknown"
+    },
+    {
+      "name": "other-vehicle-look-up-colour",
+      "type": "PDFTextField",
+      "page": "Unknown"
+    },
+    {
+      "name": "other-vehicle-look-up-fuel-type",
+      "type": "PDFTextField",
+      "page": "Unknown"
+    },
+    {
+      "name": "other-vehicle-look-up-year",
+      "type": "PDFTextField",
+      "page": "Unknown"
+    },
+    {
+      "name": "other-vehicle-look-up-mot-status",
+      "type": "PDFTextField",
+      "page": "Unknown"
+    },
+    {
+      "name": "other-vehicle-look-up-tax-status",
+      "type": "PDFTextField",
+      "page": "Unknown"
+    },
+    {
+      "name": "other-vehicle-look-up-mot-expiry-date",
+      "type": "PDFTextField",
+      "page": "Unknown"
+    },
+    {
+      "name": "other-driving-license-number",
+      "type": "PDFTextField",
+      "page": "Unknown"
+    },
+    {
+      "name": "other-drivers-insurance-company",
+      "type": "PDFTextField",
+      "page": "Unknown"
+    },
+    {
+      "name": "other-vehicle-look-up-tax-due-date",
+      "type": "PDFTextField",
+      "page": "Unknown"
+    },
+    {
+      "name": "other-drivers-policy-number",
+      "type": "PDFTextField",
+      "page": "Unknown"
+    },
+    {
+      "name": "other-drivers-policy-holder-name",
+      "type": "PDFTextField",
+      "page": "Unknown"
+    },
+    {
+      "name": "other-drivers-policy-cover-type",
+      "type": "PDFTextField",
+      "page": "Unknown"
+    },
+    {
+      "name": "other-vehicle-look-up-insurance-status",
+      "type": "PDFTextField",
+      "page": "Unknown"
+    },
+    {
+      "name": "describe-damage-to-vehicle",
+      "type": "PDFTextField",
+      "page": "Unknown"
+    },
+    {
+      "name": "witness_email_2",
+      "type": "PDFTextField",
+      "page": "Unknown"
+    },
+    {
+      "name": "police_attended",
+      "type": "PDFCheckBox",
+      "page": "Unknown"
+    },
+    {
+      "name": "accident_ref_number",
+      "type": "PDFTextField",
+      "page": "Unknown"
+    },
+    {
+      "name": "officer_name",
+      "type": "PDFTextField",
+      "page": "Unknown"
+    },
+    {
+      "name": "police_force",
+      "type": "PDFTextField",
+      "page": "Unknown"
+    },
+    {
+      "name": "officer_badge",
+      "type": "PDFTextField",
+      "page": "Unknown"
+    },
+    {
+      "name": "user_breath_test",
+      "type": "PDFTextField",
+      "page": "Unknown"
+    },
+    {
+      "name": "seatbelt_reason",
+      "type": "PDFTextField",
+      "page": "Unknown"
+    },
+    {
+      "name": "police_attend",
+      "type": "PDFCheckBox",
+      "page": "Unknown"
+    },
+    {
+      "name": "seatbelt_worn",
+      "type": "PDFCheckBox",
+      "page": "Unknown"
+    },
+    {
+      "name": "seatbelt_worn_no",
+      "type": "PDFCheckBox",
+      "page": "Unknown"
+    },
+    {
+      "name": "emergency_audio_transcription",
+      "type": "PDFTextField",
+      "page": "Unknown"
+    },
+    {
+      "name": "emergency_recording_timestamp",
+      "type": "PDFTextField",
+      "page": "Unknown"
+    },
+    {
+      "name": "medical_treatment_recieved",
+      "type": "PDFTextField",
+      "page": "Unknown"
+    },
+    {
+      "name": "medical_symptom_limb_pain_mobilty",
+      "type": "PDFCheckBox",
+      "page": "Unknown"
+    },
+    {
+      "name": "further_medical_attention_needed",
+      "type": "PDFTextField",
+      "page": "Unknown"
+    },
+    {
+      "name": "medical_attention_needed",
+      "type": "PDFCheckBox",
+      "page": "Unknown"
+    },
+    {
+      "name": "visibilty_street_lights",
+      "type": "PDFCheckBox",
+      "page": "Unknown"
+    },
+    {
+      "name": "junction_type",
+      "type": "PDFTextField",
+      "page": "Unknown"
+    },
+    {
+      "name": "junction_control",
+      "type": "PDFTextField",
+      "page": "Unknown"
+    },
+    {
+      "name": "user_manoeuvre",
+      "type": "PDFTextField",
+      "page": "Unknown"
+    },
+    {
+      "name": "traffic_light_status",
+      "type": "PDFTextField",
+      "page": "Unknown"
+    },
+    {
+      "name": "special_condition_roadworks",
+      "type": "PDFCheckBox",
+      "page": "Unknown"
+    },
+    {
+      "name": "special_condition_workmen",
+      "type": "PDFCheckBox",
+      "page": "Unknown"
+    },
+    {
+      "name": "special_condition_cyclists",
+      "type": "PDFCheckBox",
+      "page": "Unknown"
+    },
+    {
+      "name": "special_condition_pedestrians",
+      "type": "PDFCheckBox",
+      "page": "Unknown"
+    },
+    {
+      "name": "special_condition_traffic_calming",
+      "type": "PDFCheckBox",
+      "page": "Unknown"
+    },
+    {
+      "name": "special_condition_oil_spills",
+      "type": "PDFCheckBox",
+      "page": "Unknown"
+    },
+    {
+      "name": "special_condition_potholes",
+      "type": "PDFCheckBox",
+      "page": "Unknown"
+    },
+    {
+      "name": "special_condition_crossing",
+      "type": "PDFCheckBox",
+      "page": "Unknown"
+    },
+    {
+      "name": "special_condition_school_zone",
+      "type": "PDFCheckBox",
+      "page": "Unknown"
+    },
+    {
+      "name": "visibility_sun_glare",
+      "type": "PDFCheckBox",
+      "page": "Unknown"
+    },
+    {
+      "name": "special_condition_animals",
+      "type": "PDFCheckBox",
+      "page": "Unknown"
+    },
+    {
+      "name": "visibility_restricted_structure",
+      "type": "PDFCheckBox",
+      "page": "Unknown"
+    },
+    {
+      "name": "special_condition_parked_vehicles",
+      "type": "PDFCheckBox",
+      "page": "Unknown"
+    },
+    {
+      "name": "visibility_large_vehicle",
+      "type": "PDFCheckBox",
+      "page": "Unknown"
+    },
+    {
+      "name": "special_condition_narrow_road",
+      "type": "PDFCheckBox",
+      "page": "Unknown"
+    },
+    {
+      "name": "additional_hazards",
+      "type": "PDFTextField",
+      "page": "Unknown"
+    },
+    {
+      "name": "usual_vehicle",
+      "type": "PDFCheckBox",
+      "page": "Unknown"
+    },
+    {
+      "name": "vehicle_license_plate",
+      "type": "PDFTextField",
+      "page": "Unknown"
+    },
+    {
+      "name": "dvla_make",
+      "type": "PDFTextField",
+      "page": "Unknown"
+    },
+    {
+      "name": "dvla_model",
+      "type": "PDFTextField",
+      "page": "Unknown"
+    },
+    {
+      "name": "dvla_colour",
+      "type": "PDFTextField",
+      "page": "Unknown"
+    },
+    {
+      "name": "dvla_year",
+      "type": "PDFTextField",
+      "page": "Unknown"
+    },
+    {
+      "name": "dvla_fuel_type",
+      "type": "PDFTextField",
+      "page": "Unknown"
+    },
+    {
+      "name": "dvla_mot_status",
+      "type": "PDFTextField",
+      "page": "Unknown"
+    },
+    {
+      "name": "dvla_mot_expiry",
+      "type": "PDFTextField",
+      "page": "Unknown"
+    },
+    {
+      "name": "dvla_tax_status",
+      "type": "PDFTextField",
+      "page": "Unknown"
+    },
+    {
+      "name": "dvla_tax_due_date",
+      "type": "PDFTextField",
+      "page": "Unknown"
+    },
+    {
+      "name": "no-visible-damage",
+      "type": "PDFCheckBox",
+      "page": "Unknown"
+    },
+    {
+      "name": "witness_mobile_number",
+      "type": "PDFTextField",
+      "page": "Unknown"
+    },
+    {
+      "name": "witness_email_address",
+      "type": "PDFTextField",
+      "page": "Unknown"
+    },
+    {
+      "name": "additional_witnesses",
+      "type": "PDFTextField",
+      "page": "Unknown"
+    },
+    {
+      "name": "witness_number",
+      "type": "PDFTextField",
+      "page": "Unknown"
+    },
+    {
+      "name": "witnesses_present",
+      "type": "PDFCheckBox",
+      "page": "Unknown"
+    },
+    {
+      "name": "airbags_deployed_no",
+      "type": "PDFCheckBox",
+      "page": "Unknown"
+    },
+    {
+      "name": "impact_point_under_carriage",
+      "type": "PDFCheckBox",
+      "page": "Unknown"
+    },
+    {
+      "name": "visibilty_good",
+      "type": "PDFCheckBox",
+      "page": "Unknown"
+    },
+    {
+      "name": "visibility_poor",
+      "type": "PDFCheckBox",
+      "page": "Unknown"
+    },
+    {
+      "name": "medical_symptom_change_in_vision",
+      "type": "PDFCheckBox",
+      "page": "Unknown"
+    },
+    {
+      "name": "six_point_safety_check_completed",
+      "type": "PDFCheckBox",
+      "page": "Unknown"
+    },
+    {
+      "name": "subscription_start_date",
+      "type": "PDFTextField",
+      "page": "Unknown"
+    },
+    {
+      "name": "damage_to_your_vehicle",
+      "type": "PDFTextField",
+      "page": "Unknown"
+    },
+    {
+      "name": "vehicle_damage_photo_1_url",
+      "type": "PDFTextField",
+      "page": "Unknown"
+    },
+    {
+      "name": "vehicle_damage_photo_2_url",
+      "type": "PDFTextField",
+      "page": "Unknown"
+    },
+    {
+      "name": "vehicle_damage_photo_3_url",
+      "type": "PDFTextField",
+      "page": "Unknown"
+    },
+    {
+      "name": "vehicle_damage_photo_4_url",
+      "type": "PDFTextField",
+      "page": "Unknown"
+    },
+    {
+      "name": "location_map_screenshot",
+      "type": "PDFTextField",
+      "page": "Unknown"
+    },
+    {
+      "name": "scene_photo_1_url",
+      "type": "PDFTextField",
+      "page": "Unknown"
+    },
+    {
+      "name": "scene_photo_2_url",
+      "type": "PDFTextField",
+      "page": "Unknown"
+    },
+    {
+      "name": "scene_photo_3_url",
+      "type": "PDFTextField",
+      "page": "Unknown"
+    },
+    {
+      "name": "other_vehicle_photo_1_url",
+      "type": "PDFTextField",
+      "page": "Unknown"
+    },
+    {
+      "name": "other_vehicle_photo_2_url",
+      "type": "PDFTextField",
+      "page": "Unknown"
+    },
+    {
+      "name": "other_vehicle_photo_3_url",
+      "type": "PDFTextField",
+      "page": "Unknown"
+    },
+    {
+      "name": "vehicle_damage_photo_5_url",
+      "type": "PDFTextField",
+      "page": "Unknown"
+    },
+    {
+      "name": "open",
+      "type": "PDFTextField",
+      "page": "Unknown"
+    },
+    {
+      "name": "final_feeling",
+      "type": "PDFCheckBox",
+      "page": "Unknown"
+    },
+    {
+      "name": "voice_transcription",
+      "type": "PDFTextField",
+      "page": "Unknown"
+    },
+    {
+      "name": "ai_summary",
+      "type": "PDFTextField",
+      "page": "Unknown"
+    },
+    {
+      "name": "final_review",
+      "type": "PDFTextField",
+      "page": "Unknown"
+    },
+    {
+      "name": "closing_statement",
+      "type": "PDFTextField",
+      "page": "Unknown"
+    },
+    {
+      "name": "quality_review",
+      "type": "PDFTextField",
+      "page": "Unknown"
+    },
+    {
+      "name": "analysis_metadata",
+      "type": "PDFTextField",
+      "page": "Unknown"
+    }
+  ],
+  "collisionAnalysis": {
+    "licensePlateFields": [
+      {
+        "name": "vehicle_license_plate",
+        "type": "PDFTextField",
+        "page": "Unknown"
+      }
+    ],
+    "dateFields": [
+      {
+        "name": "Date69_af_date",
+        "type": "PDFTextField",
+        "page": "Unknown"
+      },
+      {
+        "name": "date_of_birth",
+        "type": "PDFTextField",
+        "page": "Unknown"
+      },
+      {
+        "name": "accident_date",
+        "type": "PDFTextField",
+        "page": "Unknown"
+      },
+      {
+        "name": "other-vehicle-look-up-mot-expiry-date",
+        "type": "PDFTextField",
+        "page": "Unknown"
+      },
+      {
+        "name": "other-vehicle-look-up-tax-due-date",
+        "type": "PDFTextField",
+        "page": "Unknown"
+      },
+      {
+        "name": "dvla_tax_due_date",
+        "type": "PDFTextField",
+        "page": "Unknown"
+      },
+      {
+        "name": "subscription_start_date",
+        "type": "PDFTextField",
+        "page": "Unknown"
+      }
+    ],
+    "audioFields": [
+      {
+        "name": "emergency_audio_transcription",
+        "type": "PDFTextField",
+        "page": "Unknown"
+      },
+      {
+        "name": "voice_transcription",
+        "type": "PDFTextField",
+        "page": "Unknown"
+      }
+    ],
+    "witnessFields": [
+      {
+        "name": "witness_name",
+        "type": "PDFTextField",
+        "page": "Unknown"
+      },
+      {
+        "name": "witness_statement",
+        "type": "PDFTextField",
+        "page": "Unknown"
+      },
+      {
+        "name": "witness_statement_2",
+        "type": "PDFTextField",
+        "page": "Unknown"
+      },
+      {
+        "name": "witness_email_2",
+        "type": "PDFTextField",
+        "page": "Unknown"
+      },
+      {
+        "name": "witness_mobile_number",
+        "type": "PDFTextField",
+        "page": "Unknown"
+      },
+      {
+        "name": "witness_email_address",
+        "type": "PDFTextField",
+        "page": "Unknown"
+      },
+      {
+        "name": "additional_witnesses",
+        "type": "PDFTextField",
+        "page": "Unknown"
+      },
+      {
+        "name": "witness_number",
+        "type": "PDFTextField",
+        "page": "Unknown"
+      },
+      {
+        "name": "witnesses_present",
+        "type": "PDFCheckBox",
+        "page": "Unknown"
+      }
+    ],
+    "imageFields": [
+      {
+        "name": "vehicle_picture_front",
+        "type": "PDFTextField",
+        "page": "Unknown"
+      },
+      {
+        "name": "driving_license_picture",
+        "type": "PDFTextField",
+        "page": "Unknown"
+      },
+      {
+        "name": "vehicle_picture_driver_side",
+        "type": "PDFTextField",
+        "page": "Unknown"
+      },
+      {
+        "name": "vehicle_picture_passenger_side",
+        "type": "PDFTextField",
+        "page": "Unknown"
+      },
+      {
+        "name": "vehicle_picture_back",
+        "type": "PDFTextField",
+        "page": "Unknown"
+      },
+      {
+        "name": "vehicle_damage_photo_1_url",
+        "type": "PDFTextField",
+        "page": "Unknown"
+      },
+      {
+        "name": "vehicle_damage_photo_2_url",
+        "type": "PDFTextField",
+        "page": "Unknown"
+      },
+      {
+        "name": "vehicle_damage_photo_3_url",
+        "type": "PDFTextField",
+        "page": "Unknown"
+      },
+      {
+        "name": "vehicle_damage_photo_4_url",
+        "type": "PDFTextField",
+        "page": "Unknown"
+      },
+      {
+        "name": "scene_photo_1_url",
+        "type": "PDFTextField",
+        "page": "Unknown"
+      },
+      {
+        "name": "scene_photo_2_url",
+        "type": "PDFTextField",
+        "page": "Unknown"
+      },
+      {
+        "name": "scene_photo_3_url",
+        "type": "PDFTextField",
+        "page": "Unknown"
+      },
+      {
+        "name": "other_vehicle_photo_1_url",
+        "type": "PDFTextField",
+        "page": "Unknown"
+      },
+      {
+        "name": "other_vehicle_photo_2_url",
+        "type": "PDFTextField",
+        "page": "Unknown"
+      },
+      {
+        "name": "other_vehicle_photo_3_url",
+        "type": "PDFTextField",
+        "page": "Unknown"
+      },
+      {
+        "name": "vehicle_damage_photo_5_url",
+        "type": "PDFTextField",
+        "page": "Unknown"
+      }
+    ]
+  }
+}

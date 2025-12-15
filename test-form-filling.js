@@ -71,6 +71,37 @@ async function testFormFilling() {
     log(`   Incidents: ${allData.metadata?.total_incidents || 0}`, 'green');
     log(`   Images: ${allData.metadata?.total_images || 0}`, 'green');
 
+    // DEBUG: Show imageUrls object for what3words investigation
+    log('\n📸 DEBUG - Image URLs Object:', 'cyan');
+    if (allData.imageUrls) {
+      const imageUrlKeys = Object.keys(allData.imageUrls);
+      log(`   Total keys: ${imageUrlKeys.length}`, 'cyan');
+
+      // Show all keys
+      log('\n   All imageUrls keys:', 'yellow');
+      imageUrlKeys.forEach(key => {
+        const url = allData.imageUrls[key];
+        const urlPreview = url ? url.substring(0, 80) + '...' : '[EMPTY]';
+        log(`      ${key}: ${urlPreview}`, 'green');
+      });
+
+      // Check specifically for what3words-related keys
+      log('\n   🔍 What3Words investigation:', 'yellow');
+      const what3wordsKeys = ['what3words', 'what3words_screenshot', 'location_map_screenshot'];
+      what3wordsKeys.forEach(key => {
+        if (allData.imageUrls.hasOwnProperty(key)) {
+          log(`      ✅ Found key "${key}": ${allData.imageUrls[key] ? 'HAS VALUE' : 'EMPTY'}`, 'green');
+          if (allData.imageUrls[key]) {
+            log(`         URL: ${allData.imageUrls[key].substring(0, 120)}...`, 'cyan');
+          }
+        } else {
+          log(`      ❌ Key "${key}" NOT FOUND in imageUrls object`, 'red');
+        }
+      });
+    } else {
+      log('   ⚠️ allData.imageUrls is null/undefined', 'red');
+    }
+
     // Fill the PDF form
     log('\nTest 3: Filling PDF form with user data...', 'blue');
 

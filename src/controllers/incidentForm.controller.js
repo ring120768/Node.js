@@ -136,7 +136,28 @@ async function submitIncidentForm(req, res) {
       }
     }
 
-    // 4. Finalize map screenshot if present (Page 4)
+    // 4. Generate PDF and email to user + accounts (non-blocking)
+    const pdfController = require('./pdf.controller');
+    pdfController.generateUserPDF(userId, 'incident-form-submission')
+      .then(result => {
+        logger.success('📧 PDF generated and emailed', {
+          userId,
+          incidentId: incident.id,
+          emailSent: result.email_sent,
+          formId: result.form_id
+        });
+      })
+      .catch(error => {
+        logger.error('⚠️ PDF generation failed (non-critical)', {
+          userId,
+          incidentId: incident.id,
+          error: error.message
+        });
+      });
+
+    logger.info('📧 PDF generation queued', { incidentId: incident.id, userId });
+
+    // 5. Finalize map screenshot if present (Page 4)
     let mapScreenshotResults = null;
     if (formData.page4?.session_id && formData.page4?.map_screenshot_captured) {
       try {

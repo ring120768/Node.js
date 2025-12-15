@@ -20,7 +20,8 @@
     "deps:update": "ncu -u --target minor",
     "test": "jest --coverage",
     "test:watch": "jest --watch",
-    "validate:lockfile": "npm install --package-lock-only && git diff --exit-code package-lock.json || (echo '❌ package-lock.json is out of sync! Run: npm install --package-lock-only' && exit 1)"
+    "validate:lockfile": "npm install --package-lock-only && git diff --exit-code package-lock.json || (echo '❌ package-lock.json is out of sync! Run: npm install --package-lock-only' && exit 1)",
+    "validate:pdf-mapping": "node verify-complete-pdf-mapping.js"
   },
   "dependencies": {
     "@adobe/pdfservices-node-sdk": "^4.1.0",

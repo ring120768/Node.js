@@ -32,16 +32,11 @@
             border-radius: 12px;
             box-shadow: 0 10px 40px rgba(0,0,0,0.2);
             padding: 25px;
-            /* Allow content to span multiple pages if needed */
+            /* CRITICAL: Allow container to span multiple pages for long content */
             page-break-inside: auto;
         }
 
-        /* Ensure page break after the entire section, not just container */
-        .container:after {
-            content: "";
-            display: block;
-            page-break-after: always;
-        }
+        /* Removed forced page break to allow multi-page AI summaries */
 
         h1 {
             color: #0E7490;
@@ -185,9 +180,18 @@
 
             .container {
                 box-shadow: none;
+                page-break-inside: auto; /* Explicit: allow multi-page breaks */
             }
 
-            .summary-box,
+            .summary-box {
+                box-shadow: none;
+                page-break-inside: auto; /* Allow summary box to break across pages */
+            }
+
+            .summary-content {
+                page-break-inside: auto; /* Allow content to flow across pages */
+            }
+
             .key-point-card {
                 box-shadow: none;
             }
