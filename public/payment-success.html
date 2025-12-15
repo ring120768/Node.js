@@ -487,16 +487,6 @@
                     <span class="btn-icon">📞</span>
                     <span>Call 999 - Emergency Services</span>
                 </button>
-
-                <button class="emergency-btn amber" id="callRecoveryBtn">
-                    <span class="btn-icon">🚗</span>
-                    <span>Call Recovery Service</span>
-                </button>
-
-                <button class="emergency-btn green" id="callEmergencyBtn">
-                    <span class="btn-icon">👤</span>
-                    <span>Call Emergency Contact</span>
-                </button>
             </div>
         </div>
 
@@ -670,38 +660,6 @@
                     window.location.href = `tel:${emergencyNumber}`;
                 }
             };
-
-            // Recovery Service
-            if (emergencyContacts?.recovery_breakdown_number) {
-                console.log('✅ Recovery button enabled with number:', emergencyContacts.recovery_breakdown_number);
-                document.getElementById('callRecoveryBtn').onclick = function() {
-                    console.log('📞 Calling recovery:', emergencyContacts.recovery_breakdown_number);
-                    if (confirm(`Call recovery service: ${emergencyContacts.recovery_breakdown_number}?`)) {
-                        window.location.href = `tel:${emergencyContacts.recovery_breakdown_number}`;
-                    }
-                };
-            } else {
-                console.log('❌ Recovery button disabled - no number available');
-                document.getElementById('callRecoveryBtn').onclick = function() {
-                    alert('No recovery service number available. Please update your profile.');
-                };
-            }
-
-            // Emergency Contact
-            if (emergencyContacts?.emergency_contact) {
-                console.log('✅ Emergency contact button enabled with number:', emergencyContacts.emergency_contact);
-                document.getElementById('callEmergencyBtn').onclick = function() {
-                    console.log('📞 Calling emergency contact:', emergencyContacts.emergency_contact);
-                    if (confirm(`Call emergency contact: ${emergencyContacts.emergency_contact}?`)) {
-                        window.location.href = `tel:${emergencyContacts.emergency_contact}`;
-                    }
-                };
-            } else {
-                console.log('❌ Emergency contact button disabled - no contact available');
-                document.getElementById('callEmergencyBtn').onclick = function() {
-                    alert('No emergency contact available. Please update your profile.');
-                };
-            }
         }
 
         // Handle checklist checkboxes with localStorage persistence
