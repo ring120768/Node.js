@@ -527,10 +527,10 @@
             </div>
         </div>
 
-        <!-- Additional Reports Section -->
+        <!-- Homepage Navigation -->
         <div class="card">
             <button class="find-me-btn" id="newReportBtn">
-                📝 Report an Incident
+                🏠 Homepage
             </button>
         </div>
 
@@ -798,11 +798,7 @@
 
         // ===== NAVIGATION FUNCTIONS =====
         function startNewReport() {
-            if (userId) {
-                window.location.href = `/incident.html?user_id=${userId}`;
-            } else {
-                window.location.href = '/incident.html';
-            }
+            window.location.href = '/';
         }
 
         function goToDashboard() {
