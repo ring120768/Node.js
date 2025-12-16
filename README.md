@@ -146,8 +146,7 @@ See [CLAUDE.md](CLAUDE.md#page-protection-pattern) for implementation details.
 │   └── utils/               # Helpers, validators
 ├── lib/
 │   ├── dataFetcher.js       # Fetch data from Supabase
-│   ├── pdfGenerator.js      # Legacy PDF generation (fallback)
-│   └── generators/          # PDF & email generation
+│   └── generators/          # Email templates
 ├── public/                  # Frontend HTML files
 │   ├── index.html           # Landing page
 │   ├── transcription-status.html

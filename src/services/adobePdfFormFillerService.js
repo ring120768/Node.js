@@ -343,6 +343,8 @@ class AdobePdfFormFillerService {
     const user = data.user || {};
     const incident = data.currentIncident || {};
     const metadata = data.metadata || {};
+    const emergencyRecordingStart = user.safety_status_timestamp || incident.emergency_recording_timestamp || '';
+    const emergencyRecordingEnd = data.emergencyAudio?.recorded_at || '';
 
     // Helper functions
     const setFieldText = (fieldName, value) => {
@@ -614,8 +616,7 @@ class AdobePdfFormFillerService {
     if (user.subscription_start_date) {
       const signupDate = new Date(user.subscription_start_date).toLocaleDateString('en-GB');  // DD/MM/YYYY format
 
-      // Both fields show the same signup date
-      setFieldText('Date69_af_date', signupDate);  // DB: subscription_start_date → PDF: Date69_af_date
+      // Only map to subscription_start_date (Date69_af_date is reserved for the declaration on page 17)
       setFieldText('subscription_start_date', signupDate);  // DB: subscription_start_date → PDF: subscription_start_date (was "time_stamp")
     }
 
@@ -638,8 +639,8 @@ class AdobePdfFormFillerService {
     // PAGE 4: Form Metadata & Safety Assessment
     // ========================================
     setFieldText('id', metadata.create_user_id);  // user_id → id
-    setFieldText('form_id', incident.id);
-    setFieldText('submit_date', incident.created_at);
+    // REMOVED: form_id - field does not exist in PDF template
+    // REMOVED: submit_date - field does not exist in PDF template
 
     // Immediate Safety Assessment - Map to PDF field names
     // FIX: Changed from 'are_you_safe_and_ready_to_complete_this_form' (deleted column) to 'final_feeling'
@@ -659,13 +660,18 @@ class AdobePdfFormFillerService {
 
     // FIX: PDF field is "final_feeling", not "are_you_safe"
     checkField('final_feeling', isSafe);  // DB: incident.final_feeling → PDF: final_feeling (checkbox for "Are you safe and ready to complete this form?")
-    setFieldText('emergency_recording_timestamp', user.safety_status_timestamp);  // DB: user.safety_status_timestamp → PDF: emergency_recording_timestamp
-    checkField('medical_attention_needed', incident.medical_attention_required === true || incident.medical_attention_required === 'Yes');  // DB: BOOLEAN (or legacy TEXT "Yes")
+    // emergency_recording_timestamp is rendered on Page 18 with start/end context (see Page 18 section)
+    const medicalAttentionRequired = incident.medical_attention_required;
+    const medicalAttentionNeeded = incident.medical_attention_needed;
+    const medicalAttentionValue = medicalAttentionNeeded !== undefined && medicalAttentionNeeded !== null
+      ? medicalAttentionNeeded
+      : medicalAttentionRequired;  // Preserve both values by preferring the later field
+    checkField('medical_attention_needed', medicalAttentionValue);
     setFieldText('medical_how_are_you_feeling', incident.final_feeling);  // DB: final_feeling (from safety-check.html) → PDF: medical_how_are_you_feeling
     setFieldText('medical_attention_from_who', incident.medical_attention_from_who);
     setFieldText('further_medical_attention_needed', incident.medical_further_attention);  // medical_further → further_medical_attention_needed
     checkField('six_point_safety_check_completed', incident.six_point_safety_check_completed === true || incident.six_point_safety_check_completed === 'Yes');  // PDF REVISION 3: six_point_safety_check → six_point_safety_check_completed
-    checkField('emergency_contact_made', incident.emergency_contact_made === true || incident.emergency_contact_made === 'Yes');  // DB: BOOLEAN (or legacy TEXT "Yes")
+    // REMOVED: emergency_contact_made - field does not exist in PDF template
 
     // PAGE 4: Medical and Injury Assessment
     // IMPORTANT: Use incident.medical_symptom_* columns (not old Typeform columns!)
@@ -724,7 +730,6 @@ class AdobePdfFormFillerService {
     setFieldTextWithMaxFont('seatbelt_reason', incident.seatbelt_reason, 16);  // Max 16pt font to prevent gigantic text
 
     // Medical attention
-    checkField('medical_attention_needed', incident.medical_attention_needed);
     setFieldText('medical_injury_details', incident.medical_injury_details);
     setFieldText('medical_injury_severity', incident.medical_injury_severity);
     setFieldText('medical_hospital_name', incident.medical_hospital_name);
@@ -749,7 +754,7 @@ class AdobePdfFormFillerService {
     checkField('weather_drizzle', incident.weather_drizzle);
     checkField('weather_fog', incident.weather_fog);
     checkField('weather_snow', incident.weather_snow);
-    checkField('weather_ice', incident.weather_ice);
+    // REMOVED: weather_ice - field does not exist in PDF template
     checkField('weather_windy', incident.weather_windy);
     checkField('weather_hail', incident.weather_hail);
     checkField('weather_thunder_lightening', incident.weather_thunder_lightning);  // PDF has typo: "lightening" not "lightning"
@@ -831,10 +836,10 @@ class AdobePdfFormFillerService {
     setFieldText('traffic_light_status', incident.traffic_light_status);
     setFieldText('user_manoeuvre', incident.user_manoeuvre);
 
-    // Visibility detail (5 checkboxes)
-    checkField('visibility_clear', incident.visibility_clear);
+    // Visibility detail (3 checkboxes - 2 fields removed as they don't exist in PDF)
+    // REMOVED: visibility_clear - field does not exist in PDF template
     checkField('visibility_restricted_structure', incident.visibility_restricted_structure);
-    checkField('visibility_restricted_bend', incident.visibility_restricted_bend);
+    // REMOVED: visibility_restricted_bend - field does not exist in PDF template
     checkField('visibility_large_vehicle', incident.visibility_large_vehicle);
     checkField('visibility_sun_glare', incident.visibility_sun_glare);
 
@@ -882,13 +887,10 @@ class AdobePdfFormFillerService {
     setFieldText('dvla_mot_expiry', incident.dvla_mot_expiry);
     setFieldText('dvla_tax_status', incident.dvla_tax_status);
     setFieldText('dvla_tax_due_date', incident.dvla_tax_due_date);
-    setFieldText('dvla_insurance_status', incident.dvla_insurance_status);
+    // REMOVED: dvla_insurance_status - field does not exist in PDF template
 
-    // Manual vehicle entry (fallback when DVLA lookup fails)
-    setFieldText('manual_make', incident.manual_make);
-    setFieldText('manual_model', incident.manual_model);
-    setFieldText('manual_colour', incident.manual_colour);
-    setFieldText('manual_year', incident.manual_year);
+    // Manual vehicle entry fields removed - they don't exist in PDF template
+    // REMOVED: manual_make, manual_model, manual_colour, manual_year
 
     // Impact points (10 checkboxes)
     checkField('impact_point_front', incident.impact_point_front);
@@ -911,7 +913,7 @@ class AdobePdfFormFillerService {
 
     setFieldText('damage_to_your_vehicle', incident.damage_to_your_vehicle);
     setFieldText('describe-damage-to-vehicle', incident.describe_damage_to_vehicle);
-    setFieldText('describle_the_damage', incident.describle_the_damage);  // DB: describle_the_damage (NEW field with typo) → PDF: describle_the_damage
+    // REMOVED: describle_the_damage - field does not exist in PDF template (typo field)
 
     // PDF REVISION 3: Vehicle driveability field names changed
     // Old: vehicle_driveable_yes / vehicle_driveable_no / vehicle_driveable_unsure
@@ -956,12 +958,7 @@ class AdobePdfFormFillerService {
     // FIX: Map other_driver_vehicle_marked_for_export field
     checkField('other_driver_vehicle_marked_for_export', incident.other_driver_vehicle_marked_for_export);
 
-    // PDF REVISION 4: Field restored in new template with max 14pt font requirement
-    // User confirmed field exists in new PDF template: /Users/ianring/Ian.ring\ Dropbox/...
-    // FIX: Uncommented and set max 14pt font as requested
-    if (data.vehicles && data.vehicles[0] && data.vehicles[0].damage_description) {
-      setFieldTextWithMaxFont('describe_the_damage_to_the_other_vehicle', data.vehicles[0].damage_description, 14);
-    }
+    // REMOVED: describe_the_damage_to_the_other_vehicle - field does not exist in PDF template
 
     // ========================================
     // PAGE 9: Witnesses
@@ -969,9 +966,9 @@ class AdobePdfFormFillerService {
     //                   witness_email_address, witness_statement
     // ========================================
 
-    // FIX: Use checkFieldPair to ensure only one checkbox is checked at a time
     // Database stores: witnesses_present = 'yes' or 'no'
-    checkFieldPair('witnesses_present', 'witnesses_present_no', incident.witnesses_present === 'yes');
+    // NOTE: witnesses_present_no field does not exist in PDF template
+    checkField('witnesses_present', incident.witnesses_present === 'yes');
 
     // Witness 1 (apply 14pt max font size to statement to prevent huge text)
     if (data.witnesses && data.witnesses[0]) {
@@ -983,17 +980,16 @@ class AdobePdfFormFillerService {
     }
 
     // Witness 2 (apply 14pt max font size to statement)
+    // NOTE: witness_name_2, witness_mobile_number_2, witness_email_address_2 do not exist in PDF template
     if (data.witnesses && data.witnesses[1]) {
       const witness2 = data.witnesses[1];
-      setFieldText('witness_name_2', witness2.witness_name || '');
-      setFieldText('witness_mobile_number_2', witness2.witness_mobile_number || '');
-      setFieldText('witness_email_address_2', witness2.witness_email_address || '');
+      // REMOVED: witness_name_2, witness_mobile_number_2, witness_email_address_2 - fields do not exist in PDF
       setFieldTextWithMaxFont('witness_statement_2', witness2.witness_statement || '', 14);  // Max 14pt font
 
-      // FIX: Map witness_email_2 (PDF field name variation)
+      // Map witness_email_2 (this field DOES exist in PDF)
       setFieldText('witness_email_2', witness2.witness_email_address || '');
 
-      // FIX: Map witness_number (witness numbering for PDF)
+      // Map witness_number (witness numbering for PDF)
       setFieldText('witness_number', String(witness2.witness_number || 2));
     }
 
@@ -1007,10 +1003,9 @@ class AdobePdfFormFillerService {
     //                   other_breath_test
     // ========================================
 
-    // FIX: Use checkFieldPair to ensure only one checkbox is checked at a time
     // Database stores: police_attended = true/false
-    // PDF has yes/no checkbox pair: police_attended (yes) + police_attended_no (no)
-    checkFieldPair('police_attended', 'police_attended_no', incident.police_attended);
+    // NOTE: police_attended_no field does not exist in PDF template
+    checkField('police_attended', incident.police_attended);
 
     // FIX: Map police_attend field (alternative field name for police attendance)
     checkField('police_attend', incident.police_attended);
@@ -1027,7 +1022,6 @@ class AdobePdfFormFillerService {
     // Database columns: final_feeling, form_completed_at
     // ========================================
 
-    setFieldText('final_feeling', incident.final_feeling);
     setFieldText('form_completed_at', incident.form_completed_at || incident.updated_at || incident.created_at);
 
     // ========================================
@@ -1037,8 +1031,8 @@ class AdobePdfFormFillerService {
     // PDF has 18 total image fields - mapped from database document_type values
     // Auto-fit font size based on field dimensions and URL length
 
-    // Audio recording (1 field)
-    setUrlFieldWithAutoFitFont('file_url_record_detailed_account_of_what_happened', data.imageUrls?.file_url_record_detailed_account_of_what_happened || '');
+    // Audio recording field removed - does not exist in PDF template
+    // REMOVED: file_url_record_detailed_account_of_what_happened
 
     // Scene images (3 fields) - includes location screenshot
     // FIX: Use ACTUAL PDF field names (not scene_images_path_*)
@@ -1055,13 +1049,11 @@ class AdobePdfFormFillerService {
     setUrlFieldWithAutoFitFont('scene_photo_2_url', data.imageUrls?.scene_photo_2_url || '');  // scene_overview_2
     setUrlFieldWithAutoFitFont('scene_photo_3_url', data.imageUrls?.scene_photo_3_url || '');  // scene_overview_3
 
-    // Other vehicle photos (5 fields)
-    // FIX: Add _url suffix to match actual PDF field names
+    // Other vehicle photos (3 fields - photos 4 and 5 don't exist in PDF template)
     setUrlFieldWithAutoFitFont('other_vehicle_photo_1_url', data.imageUrls?.other_vehicle_photo_1_url || '');
     setUrlFieldWithAutoFitFont('other_vehicle_photo_2_url', data.imageUrls?.other_vehicle_photo_2_url || '');
     setUrlFieldWithAutoFitFont('other_vehicle_photo_3_url', data.imageUrls?.other_vehicle_photo_3_url || '');
-    setUrlFieldWithAutoFitFont('other_vehicle_photo_4_url', data.imageUrls?.other_vehicle_photo_4_url || '');
-    setUrlFieldWithAutoFitFont('other_vehicle_photo_5_url', data.imageUrls?.other_vehicle_photo_5_url || '');
+    // REMOVED: other_vehicle_photo_4_url, other_vehicle_photo_5_url - fields do not exist in PDF template
 
     // Vehicle damage photos (5 fields)
     // FIX: Use vehicle_damage_photo_N_url (not vehicle_damage_path_N)
@@ -1122,8 +1114,11 @@ class AdobePdfFormFillerService {
     // Data source: ai_listening_transcripts table → data.emergencyAudio
     // LEGAL REQUIREMENT: TEXT ONLY - No URLs allowed in legal document
     const emergencyTranscription = data.emergencyAudio?.transcription_text || '';
-    const emergencyTimestamp = data.emergencyAudio?.recorded_at || '';
     const emergencyDuration = data.emergencyAudio?.duration_seconds || null;
+    const emergencyTimestampParts = [];
+    if (emergencyRecordingStart) emergencyTimestampParts.push(`Start: ${emergencyRecordingStart}`);
+    if (emergencyRecordingEnd) emergencyTimestampParts.push(`End: ${emergencyRecordingEnd}`);
+    const emergencyTimestampDisplay = emergencyTimestampParts.join(' | ');
 
     // Add transcription text with disclaimer
     let emergencyContent = '';
@@ -1133,8 +1128,8 @@ class AdobePdfFormFillerService {
       // Add metadata footer
       emergencyContent += '─'.repeat(60) + '\n';
       emergencyContent += 'RECORDING INFORMATION:\n';
-      if (emergencyTimestamp) {
-        emergencyContent += `Recorded: ${new Date(emergencyTimestamp).toLocaleString('en-GB', {
+      if (emergencyRecordingEnd) {
+        emergencyContent += `Recorded: ${new Date(emergencyRecordingEnd).toLocaleString('en-GB', {
           dateStyle: 'full',
           timeStyle: 'long',
           timeZone: 'Europe/London'
@@ -1150,7 +1145,8 @@ class AdobePdfFormFillerService {
     }
 
     setFieldText('emergency_audio_transcription', emergencyContent.trim());
-    setFieldText('emergency_recording_timestamp', emergencyTimestamp);
+    // Include both the start (incident.html) and end (Page 18) timestamps
+    setFieldText('emergency_recording_timestamp', emergencyTimestampDisplay);
 
     console.log(`   ✅ Page 18 (Emergency Audio Transcription): ${emergencyTranscription ? emergencyTranscription.length + ' chars' : 'No data'}`);
 

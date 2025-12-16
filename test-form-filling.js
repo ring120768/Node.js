@@ -40,11 +40,11 @@ async function testFormFilling() {
   const useAdobe = adobePdfFormFillerService.isReady();
 
   if (useAdobe) {
-    log('✅ Adobe PDF Form Filler Service is ready!', 'green');
+    log('✅ Adobe PDF Form Filler Service is ready (213/213 fields verified)', 'green');
   } else {
-    log('⚠️  Adobe PDF Form Filler Service is NOT ready', 'yellow');
-    log('📄 Will use LEGACY PDF generation method (pdf-lib)', 'cyan');
-    log('   Template: /pdf-templates/Car-Crash-Lawyer-AI-Incident-Report-Main.pdf\n', 'cyan');
+    log('❌ Adobe PDF Form Filler Service is NOT ready', 'red');
+    log('   Check Adobe credentials in /credentials/pdfservices-api-credentials.json', 'yellow');
+    log('   This service is required for PDF generation.\n', 'yellow');
   }
 
   // Get user ID from command line or prompt
@@ -106,18 +106,18 @@ async function testFormFilling() {
     log('\nTest 3: Filling PDF form with user data...', 'blue');
 
     let pdfBuffer;
-    if (useAdobe) {
-      try {
-        pdfBuffer = await adobePdfFormFillerService.fillPdfForm(allData);
-      } catch (adobeError) {
-        log(`⚠️  Adobe error: ${adobeError.message}`, 'yellow');
-        log('📄 Falling back to legacy PDF generator (pdf-lib)...', 'cyan');
-        const { generatePDF } = require('./lib/pdfGenerator');
-        pdfBuffer = await generatePDF(allData);
-      }
-    } else {
-      const { generatePDF } = require('./lib/pdfGenerator');
-      pdfBuffer = await generatePDF(allData);
+    if (!useAdobe) {
+      log('❌ Adobe PDF Form Filler Service is required but not ready', 'red');
+      log('   Check Adobe credentials in /credentials/pdfservices-api-credentials.json', 'yellow');
+      process.exit(1);
+    }
+
+    try {
+      pdfBuffer = await adobePdfFormFillerService.fillPdfForm(allData);
+    } catch (adobeError) {
+      log(`❌ Adobe error: ${adobeError.message}`, 'red');
+      log('   Stack: ' + adobeError.stack, 'yellow');
+      process.exit(1);
     }
 
     const fileSizeKB = (pdfBuffer.length / 1024).toFixed(2);

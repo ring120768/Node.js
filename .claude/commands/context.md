@@ -48,7 +48,7 @@ Based on recent commits and file changes:
 
 **Data:**
 - `lib/dataFetcher.js` - Fetch from Supabase
-- `lib/pdfGenerator.js` - Legacy PDF generation (fallback)
+- `src/services/adobePdfFormFillerService.js` - PDF generation (213 fields)
 
 ## Current Status (Quick Check)
 

@@ -1,0 +1,325 @@
+PDF Page,Database Table,Database Column,PDF Field Name,Field Type,Notes
+# PAGE 1: Personal Information
+1,user_signup,name,name,text,First name
+1,user_signup,surname,surname,text,Last name
+1,user_signup,email,email,text,Email address
+1,user_signup,mobile,mobile,text,Mobile phone
+1,user_signup,street_address,street,text,Street address
+1,user_signup,street_address_optional,street_name_optional,text,Address label (Home/Work etc)
+1,user_signup,town,town,text,Town/City
+1,user_signup,postcode,postcode,text,Postcode
+1,user_signup,country,country,text,Country
+1,user_signup,driving_license_number,driving_license_number,text,Driving license number
+1,user_signup,date_of_birth,date_of_birth,text,Date of birth
+1,user_signup,car_registration_number,car_registration_number,text,Vehicle registration
+1,user_signup,vehicle_make,vehicle_make,text,Vehicle make
+1,user_signup,vehicle_model,vehicle_model,text,Vehicle model
+1,user_signup,vehicle_colour,vehicle_colour,text,Vehicle colour
+1,user_signup,vehicle_condition,vehicle_condition,text,Vehicle condition
+1,user_signup,recovery_company,recovery_company,text,Recovery company name
+1,user_signup,recovery_breakdown_number,recovery_breakdown_number,text,Breakdown number
+1,user_signup,recovery_breakdown_email,recovery_breakdown_email,text,Breakdown email
+
+# PAGE 2: Emergency Contact & Insurance
+2,user_signup,emergency_contact,emergency_contact_name,text,Parsed from pipe-delimited format (Name|Phone|Email|Relationship)
+2,user_signup,emergency_contact,emergency_contact_number,text,Parsed from pipe-delimited format
+2,user_signup,insurance_company,insurance_company,text,Insurance company
+2,user_signup,policy_number,policy_number,text,Policy number
+2,user_signup,policy_holder,policy_holder,text,Policy holder name
+2,user_signup,cover_type,cover_type,text,Type of cover
+2,user_signup,subscription_start_date,Date69_af_date,text,Signup date (DD/MM/YYYY format)
+2,user_signup,subscription_start_date,subscription_start_date,text,Signup date (was named time_stamp)
+
+# PAGE 3: Personal Documentation (Images)
+3,user_documents,driving_license_picture,driving_license_picture,text,URL - Auto-fit font size 6pt
+3,user_documents,vehicle_front_image,vehicle_picture_front,text,URL - Auto-fit font size 6pt
+3,user_documents,vehicle_driver_side_image,vehicle_picture_driver_side,text,URL - Auto-fit font size 6pt
+3,user_documents,vehicle_passenger_side_image,vehicle_picture_passenger_side,text,URL - Auto-fit font size 6pt
+3,user_documents,vehicle_back_image,vehicle_picture_back,text,URL - Auto-fit font size 6pt
+
+# PAGE 4: Form Metadata & Safety Assessment
+4,metadata,create_user_id,id,text,User UUID
+4,incident_reports,final_feeling,final_feeling,checkbox,Safety check (derived from final_feeling text)
+4,user_signup,safety_status_timestamp,emergency_recording_timestamp,text,Safety status timestamp
+4,incident_reports,medical_attention_required,medical_attention_needed,checkbox,Boolean or legacy TEXT Yes
+4,incident_reports,final_feeling,medical_how_are_you_feeling,text,How user is feeling
+4,incident_reports,medical_attention_from_who,medical_attention_from_who,text,Medical attention provider
+4,incident_reports,medical_further_attention,further_medical_attention_needed,text,Further medical attention
+4,incident_reports,six_point_safety_check_completed,six_point_safety_check_completed,checkbox,Six point check completed
+# REMOVED: form_id, submit_date, emergency_contact_made - PDF fields do not exist in template
+
+# PAGE 4: Medical Symptoms (Checkboxes)
+4,incident_reports,medical_symptom_chest_pain,medical_symptom_chest_pain,checkbox,Chest pain symptom
+4,incident_reports,medical_symptom_uncontrolled_bleeding,medical_symptom_uncontrolled_bleeding,checkbox,Uncontrolled bleeding
+4,incident_reports,medical_symptom_breathlessness,medical_symptom_breathlessness,checkbox,Breathlessness
+4,incident_reports,medical_symptom_limb_weakness,medical_symptom_limb_weakness,checkbox,Limb weakness
+4,incident_reports,medical_symptom_loss_of_consciousness,medical_symptom_loss_of_consciousness,checkbox,Loss of consciousness
+4,incident_reports,medical_symptom_severe_headache,medical_symptom_severe_headache,checkbox,Severe headache
+4,incident_reports,medical_symptom_abdominal_bruising,medical_symptom_abdominal_bruising,checkbox,Abdominal bruising
+4,incident_reports,medical_symptom_change_in_vision,medical_symptom_change_in_vision,checkbox,Change in vision
+4,incident_reports,medical_symptom_abdominal_pain,medical_symptom_abdominal_pain,checkbox,Abdominal pain
+4,incident_reports,medical_symptom_limb_pain_mobility,medical_symptom_limb_pain_mobilty,checkbox,Limb pain/mobility - PDF has typo mobilty
+4,incident_reports,medical_symptom_life_threatening,medical_symptom_life _threatening,checkbox,Life threatening - PDF has space before underscore
+4,incident_reports,medical_symptom_dizziness,medical_symptom_dizziness,checkbox,Dizziness
+4,incident_reports,medical_symptom_none,medical_symptom_none,checkbox,No symptoms
+4,incident_reports,medical_conditions_summary,medical_injury_details,text,OR medical_injury_details - injury description
+
+# PAGE 4: Accident Date/Time/Location
+4,incident_reports,accident_date,accident_date,text,Accident date
+4,incident_reports,accident_time,accident_time,text,Accident time
+4,incident_reports,location,location,text,Location description
+4,incident_reports,what3words,what3words,text,What3Words address
+4,incident_reports,nearest_landmark,nearest_landmark,text,Nearest landmark
+
+# PAGE 4: Safety Equipment
+4,incident_reports,airbags_deployed,airbags_deployed,checkbox,Airbags deployed yes
+4,incident_reports,airbags_deployed,airbags_deployed_no,checkbox,Airbags deployed no (inverse)
+4,incident_reports,seatbelts_worn,seatbelt_worn,checkbox,Seatbelt worn yes - DB is plural PDF is singular
+4,incident_reports,seatbelts_worn,seatbelt_worn_no,checkbox,Seatbelt worn no (inverse)
+4,incident_reports,seatbelt_reason,seatbelt_reason,text,Reason if seatbelt not worn - Max 16pt font
+
+# PAGE 4: Medical Details
+4,incident_reports,medical_attention_needed,medical_attention_needed,checkbox,Medical attention needed
+4,incident_reports,medical_injury_details,medical_injury_details,text,Injury details
+4,incident_reports,medical_injury_severity,medical_injury_severity,text,Injury severity
+4,incident_reports,medical_hospital_name,medical_hospital_name,text,Hospital name
+4,incident_reports,medical_ambulance_called,medical_ambulance_called,checkbox,Ambulance called
+4,incident_reports,medical_treatment_received,medical_treatment_received,text,Treatment received
+4,incident_reports,medical_treatment_received,medical_treatment_recieved,text,Treatment received - PDF has typo recieved
+
+# PAGE 5: Weather Conditions (12 Checkboxes)
+5,incident_reports,weather_bright_sunlight,weather_bright_sunlight,checkbox,Bright sunlight
+5,incident_reports,weather_clear,weather_clear,checkbox,Clear weather
+5,incident_reports,weather_cloudy,weather_cloudy,checkbox,Cloudy
+5,incident_reports,weather_raining,weather_raining,checkbox,Raining
+5,incident_reports,weather_heavy_rain,weather_heavy_rain,checkbox,Heavy rain
+5,incident_reports,weather_drizzle,weather_drizzle,checkbox,Drizzle
+5,incident_reports,weather_fog,weather_fog,checkbox,Fog
+5,incident_reports,weather_snow,weather_snow,checkbox,Snow
+# REMOVED: weather_ice - PDF field does not exist in template
+5,incident_reports,weather_windy,weather_windy,checkbox,Windy
+5,incident_reports,weather_hail,weather_hail,checkbox,Hail
+5,incident_reports,weather_thunder_lightning,weather_thunder_lightening,checkbox,Thunder/lightning - PDF has typo lightening
+5,incident_reports,weather_dusk,weather_dusk,checkbox,Dusk conditions
+
+# PAGE 5: Road Surface Conditions (6 Checkboxes)
+5,incident_reports,road_condition_dry,road_condition_dry,checkbox,Dry road
+5,incident_reports,road_condition_wet,road_condition_wet,checkbox,Wet road
+5,incident_reports,road_condition_icy,road_condition_icy,checkbox,Icy road
+5,incident_reports,road_condition_snow_covered,road_condition_snow_covered,checkbox,Snow covered
+5,incident_reports,road_condition_loose_surface,road_condition_loose_surface,checkbox,Loose surface
+5,incident_reports,road_condition_slush_on_road,road_condition_slush_on_road,checkbox,Slush on road
+
+# PAGE 5: Road Type (7 Checkboxes)
+5,incident_reports,road_type_motorway,road_type_motorway,checkbox,Motorway
+5,incident_reports,road_type_a_road,road_type_a_road,checkbox,A road
+5,incident_reports,road_type_b_road,road_type_b_road,checkbox,B road
+5,incident_reports,road_type_urban_street,road_type_urban,checkbox,Urban street - DB has _street suffix
+5,incident_reports,road_type_rural_road,road_type_rural,checkbox,Rural road - DB has _road suffix
+5,incident_reports,road_type_car_park,road_type_car_park,checkbox,Car park
+5,incident_reports,road_type_private_road,road_type_private_road,checkbox,Private road
+
+# PAGE 6: Speed & Traffic
+6,incident_reports,speed_limit,speed_limit,text,Posted speed limit
+6,incident_reports,your_speed,your_speed,text,Your estimated speed
+
+# PAGE 6: Traffic Conditions (4 Checkboxes)
+6,incident_reports,traffic_conditions_heavy,traffic_conditions_heavy,checkbox,Heavy traffic
+6,incident_reports,traffic_conditions_moderate,traffic_conditions_moderate,checkbox,Moderate traffic
+6,incident_reports,traffic_conditions_light,traffic_conditions_light,checkbox,Light traffic
+6,incident_reports,traffic_conditions_no_traffic,traffic_conditions_no_traffic,checkbox,No traffic
+
+# PAGE 6: Visibility (4 Checkboxes)
+6,incident_reports,visibility_good,visibilty_good,checkbox,Good visibility - PDF has typo visibilty
+6,incident_reports,visibility_poor,visibility_poor,checkbox,Poor visibility
+6,incident_reports,visibility_very_poor,visibility_very_poor,checkbox,Very poor visibility
+6,incident_reports,visibility_street_lights,visibilty_street_lights,checkbox,Street lights - PDF has typo visibilty
+
+# PAGE 6: Road Markings (3 Radio Buttons)
+6,incident_reports,road_markings_visible_yes,road_markings_vsible_yes,checkbox,Markings visible yes - PDF has typo vsible
+6,incident_reports,road_markings_visible_no,road_markings_vsible_no,checkbox,Markings visible no - PDF has typo vsible
+6,incident_reports,road_markings_visible_partially,road_markings_visible_partially,checkbox,Markings partially visible
+
+# PAGE 6: Junction Details
+6,incident_reports,junction_type,junction_type,text,Type of junction
+6,incident_reports,junction_control,junction_control,text,Junction control type
+6,incident_reports,traffic_light_status,traffic_light_status,text,Traffic light status
+6,incident_reports,user_manoeuvre,user_manoeuvre,text,User manoeuvre
+
+# PAGE 6: Visibility Detail (3 Checkboxes - visibility_clear and visibility_restricted_bend removed)
+6,incident_reports,visibility_restricted_structure,visibility_restricted_structure,checkbox,Restricted by structure
+6,incident_reports,visibility_large_vehicle,visibility_large_vehicle,checkbox,Restricted by large vehicle
+6,incident_reports,visibility_sun_glare,visibility_sun_glare,checkbox,Sun glare
+# REMOVED: visibility_clear, visibility_restricted_bend - PDF fields do not exist in template
+
+# PAGE 6: Special Conditions/Hazards (12 Checkboxes)
+6,incident_reports,special_condition_roadworks,special_condition_roadworks,checkbox,Roadworks
+6,incident_reports,special_condition_workmen,special_condition_workmen,checkbox,Workmen present
+6,incident_reports,special_condition_cyclists,special_condition_cyclists,checkbox,Cyclists
+6,incident_reports,special_condition_pedestrians,special_condition_pedestrians,checkbox,Pedestrians
+6,incident_reports,special_condition_traffic_calming,special_condition_traffic_calming,checkbox,Traffic calming
+6,incident_reports,special_condition_parked_vehicles,special_condition_parked_vehicles,checkbox,Parked vehicles
+6,incident_reports,special_condition_crossing,special_condition_crossing,checkbox,Crossing
+6,incident_reports,special_condition_school_zone,special_condition_school_zone,checkbox,School zone
+6,incident_reports,special_condition_narrow_road,special_condition_narrow_road,checkbox,Narrow road
+6,incident_reports,special_condition_potholes,special_condition_potholes,checkbox,Potholes
+6,incident_reports,special_condition_oil_spills,special_condition_oil_spills,checkbox,Oil spills
+6,incident_reports,special_condition_animals,special_condition_animals,checkbox,Animals
+6,incident_reports,additional_hazards,additional_hazards,text,Additional hazards text
+
+# PAGE 7: Your Vehicle Details (DVLA Data)
+7,incident_reports,usual_vehicle,usual_vehicle,checkbox,Driving usual vehicle yes - checkFieldPair
+7,incident_reports,usual_vehicle,driving_your_usual_vehicle_no,checkbox,Driving usual vehicle no - checkFieldPair
+7,incident_reports,vehicle_license_plate,vehicle_license_plate,text,Registration for DVLA lookup
+7,incident_reports,dvla_make,dvla_make,text,DVLA make
+7,incident_reports,dvla_model,dvla_model,text,DVLA model
+7,incident_reports,dvla_colour,dvla_colour,text,DVLA colour
+7,incident_reports,dvla_year,dvla_year,text,DVLA year
+7,incident_reports,dvla_fuel_type,dvla_fuel_type,text,DVLA fuel type
+7,incident_reports,dvla_mot_status,dvla_mot_status,text,DVLA MOT status
+7,incident_reports,dvla_mot_expiry,dvla_mot_expiry,text,DVLA MOT expiry
+7,incident_reports,dvla_tax_status,dvla_tax_status,text,DVLA tax status
+7,incident_reports,dvla_tax_due_date,dvla_tax_due_date,text,DVLA tax due date
+# REMOVED: dvla_insurance_status, manual_make, manual_model, manual_colour, manual_year - PDF fields do not exist in template
+
+# PAGE 7: Impact Points (10 Checkboxes)
+7,incident_reports,impact_point_front,impact_point_front,checkbox,Front impact
+7,incident_reports,impact_point_front_driver,impact_point_front_driver,checkbox,Front driver impact
+7,incident_reports,impact_point_front_passenger,impact_point_front_passenger,checkbox,Front passenger impact
+7,incident_reports,impact_point_driver_side,impact_point_driver_side,checkbox,Driver side impact
+7,incident_reports,impact_point_passenger_side,impact_point_passenger_side,checkbox,Passenger side impact
+7,incident_reports,impact_point_rear_driver,impact_point_rear_driver,checkbox,Rear driver impact
+7,incident_reports,impact_point_rear_passenger,impact_point_rear_passenger,checkbox,Rear passenger impact
+7,incident_reports,impact_point_rear,impact_point_rear,checkbox,Rear impact
+7,incident_reports,impact_point_roof,impact_point_roof,checkbox,Roof impact
+7,incident_reports,impact_point_undercarriage,impact_point_under_carriage,checkbox,Undercarriage - PDF has underscore position change
+
+# PAGE 7: Damage Details
+7,incident_reports,no_damage,no_damage,checkbox,No damage
+7,incident_reports,no_visible_damage,no-visible-damage,checkbox,No visible damage - PDF uses hyphen
+7,incident_reports,open,open,checkbox,Vehicle open/accessible
+7,incident_reports,damage_to_your_vehicle,damage_to_your_vehicle,text,Damage description
+7,incident_reports,describe_damage_to_vehicle,describe-damage-to-vehicle,text,Damage description - PDF uses hyphens
+# REMOVED: describle_the_damage - PDF field does not exist in template
+
+# PAGE 7: Vehicle Driveability
+7,incident_reports,vehicle_driveable,yes_i_drove_it_away,checkbox,Driveable yes - PDF Revision 3 field name
+7,incident_reports,vehicle_driveable,no_it_needed_to_be_towed,checkbox,Driveable no - PDF Revision 3 field name
+7,incident_reports,vehicle_driveable,unsure _did_not_attempt,checkbox,Driveable unsure - PDF has space before underscore
+
+# PAGE 8: Other Vehicle Information (Uses HYPHENS not underscores!)
+8,incident_reports,other_full_name,other-full-name,text,Other driver full name
+8,incident_reports,other_contact_number,other-contact-number,text,Other driver contact number
+8,incident_reports,other_email_address,other-email-address,text,Other driver email
+8,incident_reports,other_driving_license_number,other-driving-license-number,text,Other driver license number
+
+# PAGE 8: Other Vehicle DVLA Data (Uses HYPHENS!)
+8,incident_reports,other_vehicle_registration,other-vehicle-registration,text,Other vehicle registration
+8,incident_reports,other_vehicle_look_up_make,other-vehicle-look-up-make,text,Other vehicle make
+8,incident_reports,other_vehicle_look_up_model,other-vehicle-look-up-model,text,Other vehicle model
+8,incident_reports,other_vehicle_look_up_colour,other-vehicle-look-up-colour,text,Other vehicle colour
+8,incident_reports,other_vehicle_look_up_year,other-vehicle-look-up-year,text,Other vehicle year
+8,incident_reports,other_vehicle_look_up_fuel_type,other-vehicle-look-up-fuel-type,text,Other vehicle fuel type
+8,incident_reports,other_vehicle_look_up_mot_status,other-vehicle-look-up-mot-status,text,Other vehicle MOT status
+8,incident_reports,other_vehicle_look_up_mot_expiry_date,other-vehicle-look-up-mot-expiry-date,text,Other vehicle MOT expiry
+8,incident_reports,other_vehicle_look_up_tax_status,other-vehicle-look-up-tax-status,text,Other vehicle tax status
+8,incident_reports,other_vehicle_look_up_tax_due_date,other-vehicle-look-up-tax-due-date,text,Other vehicle tax due date
+8,incident_reports,other_vehicle_look_up_insurance_status,other-vehicle-look-up-insurance-status,text,Other vehicle insurance status
+
+# PAGE 8: Other Driver Insurance (Uses HYPHENS!)
+8,incident_reports,other_drivers_insurance_company,other-drivers-insurance-company,text,Other driver insurance company
+8,incident_reports,other_drivers_policy_number,other-drivers-policy-number,text,Other driver policy number
+8,incident_reports,other_drivers_policy_holder_name,other-drivers-policy-holder-name,text,Other driver policy holder
+8,incident_reports,other_drivers_policy_cover_type,other-drivers-policy-cover-type,text,Other driver cover type
+8,incident_reports,other_driver_vehicle_marked_for_export,other_driver_vehicle_marked_for_export,checkbox,Vehicle marked for export
+# REMOVED: describe_the_damage_to_the_other_vehicle - PDF field does not exist in template
+
+# PAGE 9: Witnesses
+9,incident_reports,witnesses_present,witnesses_present,checkbox,Witnesses present yes
+# REMOVED: witnesses_present_no - PDF field does not exist in template
+
+# PAGE 9: Witness 1
+9,incident_witnesses,witness_name,witness_name,text,Witness 1 name
+9,incident_witnesses,witness_mobile_number,witness_mobile_number,text,Witness 1 mobile
+9,incident_witnesses,witness_email_address,witness_email_address,text,Witness 1 email
+9,incident_witnesses,witness_statement,witness_statement,text,Witness 1 statement - Max 14pt font
+
+# PAGE 9: Witness 2 - These fields exist in the PDF
+9,incident_witnesses,witness_email_address,witness_email_2,text,Witness 2 email
+9,incident_witnesses,witness_statement,witness_statement_2,text,Witness 2 statement - Max 14pt font
+9,incident_witnesses,witness_number,witness_number,text,Witness number
+9,incident_reports,additional_witnesses,additional_witnesses,text,Additional witnesses beyond 2
+# REMOVED: witness_name_2, witness_mobile_number_2, witness_email_address_2 - PDF fields do not exist in template
+
+# PAGE 10: Police Involvement
+10,incident_reports,police_attended,police_attended,checkbox,Police attended yes
+10,incident_reports,police_attended,police_attend,checkbox,Police attended - alternate field name
+# REMOVED: police_attended_no - PDF field does not exist in template
+10,incident_reports,police_force,police_force,text,Police force name
+10,incident_reports,accident_ref_number,accident_ref_number,text,Police accident reference
+10,incident_reports,officer_name,officer_name,text,Officer name
+10,incident_reports,officer_badge,officer_badge,text,Officer badge number
+10,incident_reports,user_breath_test,user_breath_test,text,User breath test result
+10,incident_reports,other_breath_test,other_breath_test,text,Other driver breath test
+
+# PAGE 11-12: Evidence Collection (Images)
+# REMOVED: file_url_record_detailed_account_of_what_happened - PDF field does not exist in template
+11,user_documents,what3words,location_map_screenshot,text,What3Words location screenshot URL
+11,user_documents,scene_photo_1_url,scene_photo_1_url,text,Scene photo 1 URL
+11,user_documents,scene_photo_2_url,scene_photo_2_url,text,Scene photo 2 URL
+11,user_documents,scene_photo_3_url,scene_photo_3_url,text,Scene photo 3 URL
+12,user_documents,other_vehicle_photo_1_url,other_vehicle_photo_1_url,text,Other vehicle photo 1 URL
+12,user_documents,other_vehicle_photo_2_url,other_vehicle_photo_2_url,text,Other vehicle photo 2 URL
+12,user_documents,other_vehicle_photo_3_url,other_vehicle_photo_3_url,text,Other vehicle photo 3 URL
+# REMOVED: other_vehicle_photo_4_url, other_vehicle_photo_5_url - PDF fields do not exist in template
+12,user_documents,vehicle_damage_photo_1_url,vehicle_damage_photo_1_url,text,Vehicle damage photo 1 URL
+12,user_documents,vehicle_damage_photo_2_url,vehicle_damage_photo_2_url,text,Vehicle damage photo 2 URL
+12,user_documents,vehicle_damage_photo_3_url,vehicle_damage_photo_3_url,text,Vehicle damage photo 3 URL
+12,user_documents,vehicle_damage_photo_4_url,vehicle_damage_photo_4_url,text,Vehicle damage photo 4 URL
+12,user_documents,vehicle_damage_photo_5_url,vehicle_damage_photo_5_url,text,Vehicle damage photo 5 URL
+
+# PAGE 12: Final Feeling
+12,incident_reports,final_feeling,final_feeling,text,Final feeling text
+12,incident_reports,form_completed_at,form_completed_at,text,Form completion timestamp (or updated_at or created_at)
+
+# PAGES 13-16: AI Analysis Fields (GPT-4o Generated - HTML Rendered)
+13,incident_reports,voice_transcription,voice_transcription,text,Voice transcription from audio
+13,incident_reports,analysis_metadata,analysis_metadata,text,AI model info and timestamp
+13,incident_reports,quality_review,quality_review,text,AI quality review
+14,incident_reports,ai_summary,ai_summary,text,AI generated summary
+15,incident_reports,closing_statement,closing_statement,text,AI closing statement
+16,incident_reports,final_review,final_review,text,AI final review
+
+# PAGE 17: Legal Documentation and Declaration
+17,user_signup,name + surname,Signature70,text,Digital signature (concatenated name)
+17,computed,current date,Date69_af_date,text,Declaration date (DD/MM/YYYY)
+
+# PAGE 18: AI Eavesdropper (Emergency Audio)
+18,ai_listening_transcripts,transcription_text,emergency_audio_transcription,text,Emergency audio transcription with metadata
+18,ai_listening_transcripts,recorded_at,emergency_recording_timestamp,text,Emergency recording timestamp
+
+# APPENDIX: Dynamic Pages (Witnesses)
+W,incident_witnesses,witness_name,Witness Name,text,Additional witness name
+W,incident_witnesses,witness_address,Witness Address,text,Additional witness address
+W,incident_witnesses,witness_mobile_number,Witness Mobile,text,Additional witness mobile
+W,incident_witnesses,witness_email_address,Witness Email,text,Additional witness email
+W,incident_witnesses,witness_statement,Witness Statement,text,Additional witness statement
+
+# APPENDIX: Dynamic Pages (Vehicles)
+V,incident_other_vehicles,driver_name,Additional Driver Name,text,Additional driver name
+V,incident_other_vehicles,driver_address,Additional Driver Adress,text,Additional driver address - Template has typo
+V,incident_other_vehicles,driver_phone,Additional Driver Mobile,text,Additional driver mobile
+V,incident_other_vehicles,vehicle_license_plate,Additional registration Number,text,Additional vehicle registration
+V,incident_other_vehicles,vehicle_make,Additional Make of Vehicle,text,Additional vehicle make
+V,incident_other_vehicles,vehicle_model,Additional Model of Vehicle,text,Additional vehicle model
+V,incident_other_vehicles,vehicle_color,Additional Vehicle Colour,text,Additional vehicle colour
+V,incident_other_vehicles,vehicle_year_of_manufacture,Additional Vehicle Year,text,Additional vehicle year
+V,incident_other_vehicles,insurance_company,Additional Insurance Company,text,Additional insurance company
+V,incident_other_vehicles,policy_cover,Additional Policy Cover,text,Additional policy cover
+V,incident_other_vehicles,policy_holder,Additional Policy Holder,text,Additional policy holder
+V,incident_other_vehicles,mot_status,Additional MOT status:,text,Additional MOT status
+V,incident_other_vehicles,mot_expiry_date,Additional MOT expiry Date,text,Additional MOT expiry
+V,incident_other_vehicles,tax_status,Additional Tax Status,text,Additional tax status
+V,incident_other_vehicles,tax_due_date,Additional Tax expiry Date,text,Additional tax expiry
+V,incident_other_vehicles,fuel_type,Additional Fuel Type,text,Additional fuel type
+V,incident_other_vehicles,engine_capacity,Additional Engine Capacity,text,Additional engine capacity

@@ -634,65 +634,28 @@
       }
     }
 
-    // Add Another Witness handler
+    // Add Another Witness handler - Coming Soon feature
     document.getElementById('add-witness-btn').addEventListener('click', () => {
-      // Get existing additional witnesses
-      let additionalWitnesses = [];
-      const stored = sessionStorage.getItem('additional_witnesses');
-      if (stored) {
-        try {
-          additionalWitnesses = JSON.parse(stored);
-        } catch (e) {
-          console.error('Error parsing additional witnesses:', e);
-          additionalWitnesses = [];
-        }
-      }
+      // Show "Coming Soon" message
+      const comingSoonMsg = document.createElement('div');
+      comingSoonMsg.style.cssText = 'position: fixed; top: 50%; left: 50%; transform: translate(-50%, -50%); background: linear-gradient(135deg, #0E7490 0%, #0c6179 100%); color: white; padding: 32px 48px; border-radius: 16px; box-shadow: 0 8px 32px rgba(0,0,0,0.3); z-index: 1001; text-align: center; max-width: 400px;';
+      comingSoonMsg.innerHTML = `
+        <div style="font-size: 2.5rem; margin-bottom: 16px;">🚧</div>
+        <div style="font-size: 1.25rem; font-weight: 700; margin-bottom: 12px;">Coming Soon</div>
+        <div style="font-size: 0.95rem; opacity: 0.9; line-height: 1.5;">Support for multiple additional witnesses will be available in the final development release.</div>
+        <div style="margin-top: 20px; font-size: 0.85rem; opacity: 0.7;">For now, please include details of additional witnesses in your incident description.</div>
+        <button onclick="this.parentElement.remove()" style="margin-top: 24px; padding: 12px 32px; background: white; color: #0E7490; border: none; border-radius: 8px; font-weight: 600; cursor: pointer; font-size: 1rem;">Ok</button>
+      `;
 
-      // Save current witness data
-      const currentWitnessData = {
-        witness_number: additionalWitnesses.length + 2, // Witness 1 is primary, 2+ are additional
-        witness_name: witnessNameInput.value,
-        witness_mobile_number: witnessPhoneInput.value,
-        witness_email_address: witnessEmailInput.value,
-        witness_statement: witnessStatementTextarea.value,
-        saved_at: new Date().toISOString()
-      };
+      // Add backdrop
+      const backdrop = document.createElement('div');
+      backdrop.style.cssText = 'position: fixed; top: 0; left: 0; right: 0; bottom: 0; background: rgba(0,0,0,0.5); z-index: 1000;';
+      backdrop.onclick = () => { backdrop.remove(); comingSoonMsg.remove(); };
 
-      additionalWitnesses.push(currentWitnessData);
-      sessionStorage.setItem('additional_witnesses', JSON.stringify(additionalWitnesses));
+      document.body.appendChild(backdrop);
+      document.body.appendChild(comingSoonMsg);
 
-      console.log(`✅ Witness ${currentWitnessData.witness_number} saved. Total witnesses: ${additionalWitnesses.length + 1}`);
-
-      // Show confirmation message
-      const witnessNum = currentWitnessData.witness_number;
-      const confirmMsg = document.createElement('div');
-      confirmMsg.style.cssText = 'position: fixed; top: 80px; left: 50%; transform: translateX(-50%); background: var(--success); color: white; padding: 16px 24px; border-radius: 12px; box-shadow: 0 4px 16px rgba(0,0,0,0.2); z-index: 1000; font-weight: 600;';
-      confirmMsg.innerHTML = `<span style="font-size: 1.2rem; margin-right: 8px;">✓</span> Witness ${witnessNum} saved! Now add witness ${witnessNum + 1}`;
-      document.body.appendChild(confirmMsg);
-
-      setTimeout(() => {
-        confirmMsg.remove();
-      }, 2000);
-
-      // Clear form for next witness
-      witnessNameInput.value = '';
-      witnessPhoneInput.value = '';
-      witnessEmailInput.value = '';
-      witnessStatementTextarea.value = '';
-      statementCharCounter.textContent = '0 / 1000 characters';
-
-      // Reset validation
-      validateForm();
-
-      // Update button text to show count
-      const addBtn = document.getElementById('add-witness-btn');
-      const existingBadge = addBtn.querySelector('span:last-child');
-      if (existingBadge.textContent === 'Add Another Witness') {
-        existingBadge.textContent = `Add Witness ${witnessNum + 1}`;
-      }
-
-      // Scroll to top smoothly
-      window.scrollTo({ top: 0, behavior: 'smooth' });
+      console.log('ℹ️ Add Another Witness: Coming soon in final development');
     });
 
     // Navigation

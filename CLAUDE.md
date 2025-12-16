@@ -323,6 +323,43 @@ try {
 
 ---
 
+## Avoiding Over-Engineering
+
+**Principle:** Fix the actual problem, not imaginary ones.
+
+### Before Adding Code, Ask:
+
+1. **Does the existing system already handle this?** (Check dataFetcher, services, existing patterns)
+2. **Am I duplicating data?** (One source of truth - don't write to multiple tables for the same purpose)
+3. **Is this a fallback for a path that already works?** (If primary path works, don't add redundant fallbacks)
+4. **Am I solving today's problem or a hypothetical future one?**
+
+### Red Flags (Stop and Reconsider):
+
+- Adding columns to store data that's already accessible elsewhere
+- Writing to multiple tables when one would suffice
+- Creating "just in case" fallback mechanisms
+- Adding abstraction layers for single-use code
+- "Future-proofing" without a concrete requirement
+
+### Quality Improvements ARE Welcome:
+
+| ✅ Do | ❌ Don't |
+|-------|----------|
+| Fix actual bugs affecting users | Add fallbacks for bugs that don't exist |
+| Improve error messages for debugging | Add logging for every possible state |
+| Simplify complex code paths | Add complexity "for safety" |
+| Remove dead/redundant code | Keep code "just in case" |
+| Add tests for real failure modes | Test hypothetical edge cases |
+
+### The Litmus Test:
+
+> "If I remove this code, will something actually break for a real user?"
+>
+> If the answer is "no" or "I'm not sure", the code probably shouldn't exist.
+
+---
+
 ## Git Workflow
 
 **Format:** `type: description`
@@ -342,6 +379,35 @@ PRs should include: lint output, test output, and note any migrations or PDF map
 - Pages 13-18: White - Legal document format (PDF only)
 
 Do not "fix" these to match - they're deliberate design choices.
+
+---
+
+## Future Work: Witnesses & Vehicles Appendix
+
+**Status:** Planned (not yet implemented)
+
+**Background:** The main incident report PDF (18 pages, 213 fields) currently includes basic witness and other vehicle fields. However, complex incidents may involve multiple witnesses and vehicles that exceed the main form's capacity.
+
+**Plan:**
+- Create a **separate appendix PDF** for detailed witnesses and vehicles data
+- Use existing template: `pdf-templates/Car-Crash-Lawyer-AI-Witness-Vehicle-Template.pdf`
+- The main PDF will continue to capture primary witness/vehicle info
+- Appendix will be generated only when additional entries exist in:
+  - `incident_witnesses` table (multiple witnesses)
+  - `incident_other_vehicles` table (multiple vehicles)
+
+**Code Reference:**
+- Methods already exist in `src/services/adobePdfFormFillerService.js`:
+  - `appendWitnessPages()` - Template for witness appendix pages
+  - `appendVehiclePages()` - Template for vehicle appendix pages
+- These are currently not called from the main generation flow
+
+**Data Collection:**
+- Database tables `incident_witnesses` and `incident_other_vehicles` are **fully functional**
+- Data collection process is complete and should NOT be modified
+- Only PDF generation needs implementing when this feature is prioritised
+
+**Added:** 2025-12-16 | **Priority:** Future enhancement
 
 ---
 

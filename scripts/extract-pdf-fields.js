@@ -160,9 +160,9 @@ async function extractPdfFields() {
 
     log('\n💡 Next Steps:', 'yellow');
     log('   1. Open EXTRACTED_PDF_FIELDS.csv to see all fields', 'yellow');
-    log('   2. Compare against lib/pdfGenerator.js field mappings', 'yellow');
+    log('   2. Compare against adobePdfFormFillerService.js field mappings', 'yellow');
     log('   3. Identify unmapped fields', 'yellow');
-    log('   4. Update pdfGenerator.js with correct field names\n', 'yellow');
+    log('   4. Update adobePdfFormFillerService.js with correct field names\n', 'yellow');
 
   } catch (error) {
     log('\n❌ Error extracting fields:', 'red');
