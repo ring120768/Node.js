@@ -705,6 +705,24 @@
             }
           }
 
+          // FIX: Include page4a (location photos with scene photos)
+          const page4aData = sessionStorage.getItem('incident_page4a');
+          if (page4aData) {
+            formData.page4a = JSON.parse(page4aData);
+            console.log('✅ Page 4a (scene photos) data included:', formData.page4a);
+          } else {
+            console.log('⚠️ No page 4a data found in sessionStorage');
+          }
+
+          // Include six-point safety check data (from six-point-safety-check.html)
+          const safetyCheckData = sessionStorage.getItem('six_point_safety_check');
+          if (safetyCheckData) {
+            formData.six_point_safety_check = JSON.parse(safetyCheckData);
+            console.log('✅ Six-point safety check data included:', formData.six_point_safety_check);
+          } else {
+            console.log('⚠️ No six-point safety check data found in sessionStorage');
+          }
+
           // Also merge any form_data
           const mergedData = sessionStorage.getItem('incident_form_data');
           if (mergedData) {
