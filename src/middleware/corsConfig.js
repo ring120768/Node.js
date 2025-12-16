@@ -56,19 +56,17 @@ function isOriginAllowed(origin) {
     }
   }
 
-  // Allow Replit subdomains (secure patterns only - HTTPS required)
-  if (process.env.CORS_ALLOW_REPLIT_SUBDOMAINS === 'true') {
-    // Match: https://[alphanumeric-hyphens].replit.app or .replit.dev
-    // Also match: https://[id].riker.replit.dev (new Replit domain format)
-    const replitPatterns = [
-      /^https:\/\/[a-z0-9-]+\.replit\.(app|dev)$/,
-      /^https:\/\/[a-z0-9-]+\.[a-z]+\.replit\.dev$/,  // Matches subdomain.riker.replit.dev format
-      /^https:\/\/[a-z0-9-]+\.replit\.co$/  // Legacy format
+  // Allow Railway subdomains (secure patterns only - HTTPS required)
+  if (process.env.CORS_ALLOW_RAILWAY_SUBDOMAINS === 'true') {
+    // Match: https://[alphanumeric-hyphens].up.railway.app
+    const railwayPatterns = [
+      /^https:\/\/[a-z0-9-]+\.up\.railway\.app$/,
+      /^https:\/\/[a-z0-9-]+\.railway\.app$/
     ];
 
-    const isReplitDomain = replitPatterns.some(pattern => pattern.test(origin));
-    if (isReplitDomain) {
-      logger.info(`CORS: Allowed Replit subdomain: ${origin}`);
+    const isRailwayDomain = railwayPatterns.some(pattern => pattern.test(origin));
+    if (isRailwayDomain) {
+      logger.info(`CORS: Allowed Railway subdomain: ${origin}`);
       return true;
     }
   }
@@ -169,7 +167,7 @@ function getCorsConfigSummary() {
     development: {
       nodeEnv: process.env.NODE_ENV,
       allowLocalhost: process.env.CORS_ALLOW_LOCALHOST === 'true',
-      allowReplitSubdomains: process.env.CORS_ALLOW_REPLIT_SUBDOMAINS === 'true'
+      allowRailwaySubdomains: process.env.CORS_ALLOW_RAILWAY_SUBDOMAINS === 'true'
     },
     security: {
       credentialsAllowed: corsOptions.credentials,

@@ -21,7 +21,7 @@ router.get('/healthz', (req, res) => {
     agentRunning: !!global.__AGENT_RUNNING__ && agentService ? agentService.isRunning : false,
     version: process.env.npm_package_version || '1.0.0',
     environment: process.env.NODE_ENV || 'development',
-    commit: process.env.REPL_SLUG || 'unknown'
+    commit: process.env.RAILWAY_GIT_COMMIT_SHA || process.env.GIT_COMMIT || 'unknown'
   };
   
   res.status(200).json(health);

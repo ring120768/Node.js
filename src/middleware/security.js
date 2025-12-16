@@ -16,13 +16,12 @@ const logger = require('../utils/logger');
 const corsOptions = {
   origin: (origin, callback) => {
     const allowedOrigins = [
-      'https://workspace.ring120768.repl.co',
-      'https://workspace.ring120768.replit.app',
-      'https://workspace.ring120768.replit.dev',
+      'https://carcrashlawyerai.co.uk',
+      'https://www.carcrashlawyerai.co.uk',
+      'https://carcrashlawyerai.up.railway.app',
       'https://form.typeform.com',
       'https://typeform.com',
       'https://api.typeform.com'
-      // Removed wildcard patterns for security: /.typeform.com$/, /.zapier.com$/, /.replit.co$/,
     ];
 
     // Add localhost origins only in development/test environments
@@ -76,7 +75,7 @@ const helmetOptions = {
       upgradeInsecureRequests: process.env.NODE_ENV === 'production' ? [] : null
     }
   },
-  crossOriginEmbedderPolicy: false, // Allow embedding for Replit
+  crossOriginEmbedderPolicy: false, // Allow embedding for external integrations
   crossOriginOpenerPolicy: false
 };
 

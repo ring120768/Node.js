@@ -194,19 +194,19 @@ async function signup(req, res) {
     // ========================================
     const cookieMaxAge = 30 * 24 * 60 * 60 * 1000; // 30 days for new signups
 
-    // CRITICAL for Replit: sameSite must be 'none' for cross-site cookies
+    // CRITICAL: sameSite must be 'none' for cross-site cookies with secure: true
     res.cookie('access_token', authResult.session.access_token, {
       httpOnly: true,
-      secure: true, // Always true - Replit uses HTTPS
-      sameSite: 'none', // Required for Replit subdomains
+      secure: true, // Always true in production (HTTPS required)
+      sameSite: 'none', // Required for cross-origin requests
       path: '/', // CRITICAL: Make cookie available site-wide for API endpoints
       maxAge: cookieMaxAge
     });
 
     res.cookie('refresh_token', authResult.session.refresh_token, {
       httpOnly: true,
-      secure: true, // Always true - Replit uses HTTPS
-      sameSite: 'none', // Required for Replit subdomains
+      secure: true, // Always true in production (HTTPS required)
+      sameSite: 'none', // Required for cross-origin requests
       path: '/', // CRITICAL: Make cookie available site-wide
       maxAge: cookieMaxAge
     });
@@ -276,12 +276,12 @@ async function login(req, res) {
     const cookieMaxAge = rememberMe ? 90 * 24 * 60 * 60 * 1000 : 30 * 24 * 60 * 60 * 1000;
 
     // Store BOTH access token and refresh token
-    // CRITICAL for Replit: sameSite must be 'none' for cross-site cookies
-    // This requires secure: true (HTTPS), which Replit provides
+    // CRITICAL: sameSite must be 'none' for cross-site cookies
+    // This requires secure: true (HTTPS), which Railway/production provides
     res.cookie('access_token', authResult.session.access_token, {
       httpOnly: true,
-      secure: true, // Always true - Replit uses HTTPS
-      sameSite: 'none', // Required for Replit subdomains
+      secure: true, // Always true in production (HTTPS required)
+      sameSite: 'none', // Required for cross-origin requests
       path: '/', // CRITICAL: Make cookie available site-wide for API endpoints
       maxAge: cookieMaxAge
     });
@@ -289,8 +289,8 @@ async function login(req, res) {
     // Store refresh token (critical for session persistence)
     res.cookie('refresh_token', authResult.session.refresh_token, {
       httpOnly: true,
-      secure: true, // Always true - Replit uses HTTPS
-      sameSite: 'none', // Required for Replit subdomains
+      secure: true, // Always true in production (HTTPS required)
+      sameSite: 'none', // Required for cross-origin requests
       path: '/', // CRITICAL: Make cookie available site-wide
       maxAge: cookieMaxAge // Same duration as access token cookie
     });

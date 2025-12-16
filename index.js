@@ -51,7 +51,7 @@ if (fs.existsSync(envPath)) {
     console.log('✅ Loaded updated OpenAI API key from .env');
   }
 
-  // Load Supabase credentials (if missing from Replit Secrets)
+  // Load Supabase credentials (if missing from environment)
   const supabaseUrlMatch = envContent.match(/SUPABASE_URL=(.+)/);
   if (supabaseUrlMatch && supabaseUrlMatch[1]) {
     process.env.SUPABASE_URL = supabaseUrlMatch[1].trim();
@@ -76,12 +76,12 @@ if (fs.existsSync(envPath)) {
 const PORT = Number(process.env.PORT) || 5000;
 
 if (!PORT || isNaN(PORT)) {
-  console.error(`❌ [PID:${process.pid}] Replit requires process.env.PORT to be a valid number`);
+  console.error(`❌ [PID:${process.pid}] Server requires process.env.PORT to be a valid number`);
   console.error(`   Current PORT: "${process.env.PORT}"`);
   process.exit(1);
 }
 
-const HOST = '0.0.0.0'; // Required for Replit
+const HOST = '0.0.0.0'; // Required for Railway/containerized deployment
 console.log(`🔌 [PID:${process.pid}] Using PORT: ${PORT}, HOST: ${HOST}`);
 
 // Validate required environment variables
@@ -186,9 +186,9 @@ function displayStartupBanner() {
     github_webhook: !!process.env.GITHUB_WEBHOOK_SECRET
   };
 
-  const urls = process.env.REPL_SLUG && process.env.REPL_OWNER
-    ? `https://${process.env.REPL_SLUG}.${process.env.REPL_OWNER}.repl.co`
-    : `http://${HOST}:${PORT}`;
+  const urls = process.env.RAILWAY_PUBLIC_DOMAIN
+    ? `https://${process.env.RAILWAY_PUBLIC_DOMAIN}`
+    : (process.env.APP_URL || `http://${HOST}:${PORT}`);
 
   logger.info('\n' + '='.repeat(60));
   logger.success(`🚗 Car Crash Lawyer AI - Server Ready [PID:${process.pid}]`);
@@ -364,7 +364,7 @@ server.on('error', (error) => {
   if (error.code === 'EADDRINUSE') {
     logger.error(`💡 [PID:${process.pid}] Port ${PORT} is already in use. Try:`);
     logger.error(`   lsof -i :${PORT} && kill -9 $(lsof -t -i:${PORT})`);
-    logger.error(`   Or stop the running "Server" workflow in Replit`);
+    logger.error(`   Or stop the running server in your deployment environment`);
   }
 
   // Cleanup and exit
