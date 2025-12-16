@@ -103,16 +103,16 @@ async function requireAuth(req, res, next) {
         // CRITICAL: Must match login controller settings exactly
         res.cookie('access_token', data.session.access_token, {
           httpOnly: true,
-          secure: true, // Always true - matches login controller
-          sameSite: 'none', // Required for Replit subdomains - matches login controller
+          secure: true, // Always true in production - matches login controller
+          sameSite: 'none', // Required for cross-origin requests - matches login controller
           path: '/', // CRITICAL: Make cookie available site-wide for API endpoints
           maxAge: cookieMaxAge
         });
 
         res.cookie('refresh_token', data.session.refresh_token, {
           httpOnly: true,
-          secure: true, // Always true - matches login controller
-          sameSite: 'none', // Required for Replit subdomains - matches login controller
+          secure: true, // Always true in production - matches login controller
+          sameSite: 'none', // Required for cross-origin requests - matches login controller
           path: '/', // CRITICAL: Make cookie available site-wide
           maxAge: cookieMaxAge
         });
@@ -216,16 +216,16 @@ async function optionalAuth(req, res, next) {
         // CRITICAL: Must match login controller settings exactly
         res.cookie('access_token', data.session.access_token, {
           httpOnly: true,
-          secure: true, // Always true - matches login controller
-          sameSite: 'none', // Required for Replit subdomains - matches login controller
+          secure: true, // Always true in production - matches login controller
+          sameSite: 'none', // Required for cross-origin requests - matches login controller
           path: '/', // CRITICAL: Make cookie available site-wide for API endpoints
           maxAge: cookieMaxAge
         });
 
         res.cookie('refresh_token', data.session.refresh_token, {
           httpOnly: true,
-          secure: true, // Always true - matches login controller
-          sameSite: 'none', // Required for Replit subdomains - matches login controller
+          secure: true, // Always true in production - matches login controller
+          sameSite: 'none', // Required for cross-origin requests - matches login controller
           path: '/', // CRITICAL: Make cookie available site-wide
           maxAge: cookieMaxAge
         });

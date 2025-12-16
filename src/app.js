@@ -67,7 +67,7 @@ try {
 function createApp() {
   const app = express();
 
-  // Trust proxy (required for Replit, Heroku, etc.)
+  // Trust proxy (required for Railway, Heroku, etc.)
   app.set('trust proxy', true);
 
   // ==================== RAW BODY CAPTURE FOR WEBHOOKS ====================
