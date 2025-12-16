@@ -624,15 +624,16 @@
 
         if (response.ok) {
           // Create image object
+          // FIX: Backend returns 'tempPath', not 'path'
           const imageObj = {
-            path: data.path,
+            path: data.tempPath,
             fileName: file.name,
             fileSize: formatFileSize(file.size),
             preview: URL.createObjectURL(file)
           };
 
           uploadedImages.push(imageObj);
-          console.log(`✅ Image uploaded:`, data.path);
+          console.log(`✅ Image uploaded:`, data.tempPath);
 
           // Add image card to UI
           addImageCard(imageObj, uploadedImages.length - 1);

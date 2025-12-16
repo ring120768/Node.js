@@ -2,7 +2,7 @@
  * AI Analysis HTML Renderer Service
  *
  * Purpose: Renders HTML templates for PDF pages 13-16 with AI analysis data
- * Used by: lib/pdfGenerator.js (hybrid PDF generation)
+ * Used by: src/services/adobePdfFormFillerService.js (hybrid PDF generation)
  *
  * Flow:
  * 1. Load HTML templates from views/pdf/

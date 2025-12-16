@@ -1504,99 +1504,28 @@
       }
     });
 
-    // Add Another Vehicle handler
+    // Add Another Vehicle handler - Coming Soon feature
     document.getElementById('add-vehicle-btn').addEventListener('click', () => {
-      // Save current vehicle data before adding another
-      autoSave();
+      // Show "Coming Soon" message
+      const comingSoonMsg = document.createElement('div');
+      comingSoonMsg.style.cssText = 'position: fixed; top: 50%; left: 50%; transform: translate(-50%, -50%); background: linear-gradient(135deg, #0E7490 0%, #0c6179 100%); color: white; padding: 32px 48px; border-radius: 16px; box-shadow: 0 8px 32px rgba(0,0,0,0.3); z-index: 1001; text-align: center; max-width: 400px;';
+      comingSoonMsg.innerHTML = `
+        <div style="font-size: 2.5rem; margin-bottom: 16px;">🚧</div>
+        <div style="font-size: 1.25rem; font-weight: 700; margin-bottom: 12px;">Coming Soon</div>
+        <div style="font-size: 0.95rem; opacity: 0.9; line-height: 1.5;">Support for multiple additional vehicles will be available in the final development release.</div>
+        <div style="margin-top: 20px; font-size: 0.85rem; opacity: 0.7;">For now, please include details of additional vehicles in your incident description.</div>
+        <button onclick="this.parentElement.remove()" style="margin-top: 24px; padding: 12px 32px; background: white; color: #0E7490; border: none; border-radius: 8px; font-weight: 600; cursor: pointer; font-size: 1rem;">Ok</button>
+      `;
 
-      // Get existing additional vehicles from sessionStorage
-      let additionalVehicles = [];
-      const stored = sessionStorage.getItem('additional_vehicles');
-      if (stored) {
-        try {
-          additionalVehicles = JSON.parse(stored);
-        } catch (e) {
-          console.error('Error parsing additional vehicles:', e);
-          additionalVehicles = [];
-        }
-      }
+      // Add backdrop
+      const backdrop = document.createElement('div');
+      backdrop.style.cssText = 'position: fixed; top: 0; left: 0; right: 0; bottom: 0; background: rgba(0,0,0,0.5); z-index: 1000;';
+      backdrop.onclick = () => { backdrop.remove(); comingSoonMsg.remove(); };
 
-      // Add current vehicle data to array
-      const currentVehicleData = {
-        vehicle_number: additionalVehicles.length + 2, // Vehicle 1 is user, 2 is first other, 3+ are additional
-        other_full_name: document.getElementById('other-full-name').value,
-        other_contact_number: document.getElementById('other-contact-number').value,
-        other_email_address: document.getElementById('other-email-address').value,
-        other_driving_license_number: document.getElementById('other-driving-license-number').value,
-        other_vehicle_registration: document.getElementById('other-vehicle-registration').value,
-        other_vehicle_look_up_make: document.getElementById('other-vehicle-look-up-make').textContent,
-        other_vehicle_look_up_model: document.getElementById('other-vehicle-look-up-model').textContent,
-        other_vehicle_look_up_colour: document.getElementById('other-vehicle-look-up-colour').textContent,
-        other_vehicle_look_up_year: document.getElementById('other-vehicle-look-up-year').textContent,
-        other_vehicle_look_up_fuel_type: document.getElementById('other-vehicle-look-up-fuel-type').textContent,
-        // Manual vehicle entry fields (using same database fields as DVLA lookup)
-        other_vehicle_look_up_make_manual: document.getElementById('other-vehicle-look-up-make-manual').value,
-        other_vehicle_look_up_model_manual: document.getElementById('other-vehicle-look-up-model-manual').value,
-        other_vehicle_look_up_colour_manual: document.getElementById('other-vehicle-look-up-colour-manual').value,
-        other_vehicle_look_up_year_manual: document.getElementById('other-vehicle-look-up-year-manual').value,
-        other_vehicle_look_up_mot_status: document.getElementById('other-vehicle-look-up-mot-status').textContent,
-        other_vehicle_look_up_mot_expiry_date: document.getElementById('other-vehicle-look-up-mot-expiry-date').textContent,
-        other_vehicle_look_up_tax_status: document.getElementById('other-vehicle-look-up-tax-status').textContent,
-        other_vehicle_look_up_tax_due_date: document.getElementById('other-vehicle-look-up-tax-due-date').textContent,
-        other_vehicle_look_up_insurance_status: document.getElementById('other-vehicle-look-up-insurance-status').textContent,
-        other_drivers_insurance_company: document.getElementById('other-drivers-insurance-company').value,
-        other_drivers_policy_number: document.getElementById('other-drivers-policy-number').value,
-        other_drivers_policy_holder_name: document.getElementById('other-drivers-policy-holder-name').value,
-        other_drivers_policy_cover_type: document.getElementById('other-drivers-policy-cover-type').value,
-        no_visible_damage: document.getElementById('no-visible-damage-checkbox').checked,
-        describe_damage_to_vehicle: document.getElementById('describe-damage-to-vehicle').value,
-        saved_at: new Date().toISOString()
-      };
+      document.body.appendChild(backdrop);
+      document.body.appendChild(comingSoonMsg);
 
-      additionalVehicles.push(currentVehicleData);
-      sessionStorage.setItem('additional_vehicles', JSON.stringify(additionalVehicles));
-
-      console.log(`✅ Vehicle ${currentVehicleData.vehicle_number} saved. Total vehicles: ${additionalVehicles.length + 1}`);
-
-      // Show confirmation message
-      const vehicleNum = currentVehicleData.vehicle_number;
-      const confirmMsg = document.createElement('div');
-      confirmMsg.style.cssText = 'position: fixed; top: 80px; left: 50%; transform: translateX(-50%); background: var(--success); color: white; padding: 16px 24px; border-radius: 12px; box-shadow: 0 4px 16px rgba(0,0,0,0.2); z-index: 1000; font-weight: 600; animation: slideDown 0.3s ease;';
-      confirmMsg.innerHTML = `<span style="font-size: 1.2rem; margin-right: 8px;">✓</span> Vehicle ${vehicleNum} saved! Now add vehicle ${vehicleNum + 1}`;
-      document.body.appendChild(confirmMsg);
-
-      setTimeout(() => {
-        confirmMsg.remove();
-      }, 2000);
-
-      // Clear form for next vehicle
-      document.getElementById('other-full-name').value = '';
-      document.getElementById('other-contact-number').value = '';
-      document.getElementById('other-email-address').value = '';
-      document.getElementById('other-driving-license-number').value = '';
-      document.getElementById('other-vehicle-registration').value = '';
-      document.getElementById('other-vehicle-look-up-make').textContent = '-';
-      document.getElementById('other-vehicle-look-up-model').textContent = '-';
-      document.getElementById('other-vehicle-look-up-colour').textContent = '-';
-      document.getElementById('other-vehicle-look-up-year').textContent = '-';
-      document.getElementById('other-vehicle-look-up-fuel-type').textContent = '-';
-      document.getElementById('other-vehicle-look-up-mot-status').textContent = '-';
-      document.getElementById('other-vehicle-look-up-mot-expiry-date').textContent = '-';
-      document.getElementById('other-vehicle-look-up-tax-status').textContent = '-';
-      document.getElementById('other-vehicle-look-up-tax-due-date').textContent = '-';
-      document.getElementById('other-vehicle-look-up-insurance-status').textContent = 'Not Available';
-      document.getElementById('other-drivers-insurance-company').value = '';
-      document.getElementById('other-drivers-policy-number').value = '';
-      document.getElementById('other-drivers-policy-holder-name').value = '';
-      document.getElementById('other-drivers-policy-cover-type').value = '';
-      document.getElementById('no-visible-damage-checkbox').checked = false;
-      document.getElementById('describe-damage-to-vehicle').value = '';
-
-      // Reset validation
-      validateForm();
-
-      // Scroll to top smoothly
-      window.scrollTo({ top: 0, behavior: 'smooth' });
+      console.log('ℹ️ Add Another Vehicle: Coming soon in final development');
     });
 
     // Auto-save on changes
@@ -1608,23 +1537,6 @@
     // Initialize
     window.addEventListener('DOMContentLoaded', () => {
       loadSavedData();
-
-      // Display count of additional vehicles if any
-      const stored = sessionStorage.getItem('additional_vehicles');
-      if (stored) {
-        try {
-          const vehicles = JSON.parse(stored);
-          if (vehicles.length > 0) {
-            const addBtn = document.getElementById('add-vehicle-btn');
-            const countBadge = document.createElement('span');
-            countBadge.style.cssText = 'background: white; color: var(--accent); padding: 4px 12px; border-radius: 20px; font-size: 0.875rem; margin-left: 8px; font-weight: 700;';
-            countBadge.textContent = `${vehicles.length + 1} vehicles recorded`;
-            addBtn.appendChild(countBadge);
-          }
-        } catch (e) {
-          console.error('Error displaying vehicle count:', e);
-        }
-      }
     });
   </script>
 

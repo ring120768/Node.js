@@ -56,4 +56,12 @@ router.get('/status/:userId', pdfController.getPdfStatus);
  */
 router.get('/download/:userId', checkGDPRConsent, pdfController.downloadPdf);
 
+/**
+ * Send Image Download Links Email
+ * POST /api/pdf/send-image-links/:userId
+ * Sends email with all user's images as download links
+ * URL expiry: subscription end + 6 weeks (if within 2 months of renewal), otherwise subscription end
+ */
+router.post('/send-image-links/:userId', checkSharedKey, pdfController.sendImageLinksEmail);
+
 module.exports = router;

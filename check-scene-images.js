@@ -1,5 +1,4 @@
 require('dotenv').config();
-
 const { createClient } = require('@supabase/supabase-js');
 
 const supabase = createClient(
@@ -7,43 +6,47 @@ const supabase = createClient(
   process.env.SUPABASE_SERVICE_ROLE_KEY
 );
 
-async function checkSceneImages() {
-  const incidentId = 'e6708c56-f9bb-46f1-94d5-d5bea8db1d71';
-
-  const { data, error } = await supabase
+async function checkImages() {
+  const userId = 'e6708c56-f9bb-46f1-94d5-d5bea8db1d71';
+  
+  // Get ALL user_documents records
+  const { data: docs, error } = await supabase
     .from('user_documents')
-    .select('document_type, public_url, field_name')
-    .eq('incident_report_id', incidentId)
+    .select('id, document_type, storage_path, status, created_at')
+    .eq('create_user_id', userId)
+    .is('deleted_at', null)
     .order('document_type');
-
+  
   if (error) {
-    console.error('Error:', error);
+    console.log('Error:', error.message);
     return;
   }
-
-  console.log('Total documents:', data.length);
-  console.log('\nGrouped by document_type:');
-
-  const grouped = {};
-  data.forEach(doc => {
-    if (!grouped[doc.document_type]) grouped[doc.document_type] = [];
-    grouped[doc.document_type].push(doc);
+  
+  console.log('All document types for user:');
+  console.log('============================');
+  
+  const byType = {};
+  docs.forEach(d => {
+    if (!byType[d.document_type]) byType[d.document_type] = [];
+    byType[d.document_type].push({ status: d.status, path: d.storage_path ? 'yes' : 'no' });
   });
-
-  for (const type in grouped) {
-    const docs = grouped[type];
-    console.log(`\n${type}: ${docs.length} images`);
-    docs.forEach((doc, i) => {
-      console.log(`  ${i+1}. field_name: ${doc.field_name || 'NULL'}`);
-      console.log(`     url: ${doc.public_url ? doc.public_url.substring(0, 60) + '...' : 'NULL'}`);
+  
+  Object.entries(byType).sort().forEach(([type, items]) => {
+    console.log(`\n${type}: ${items.length} record(s)`);
+    items.forEach((item, i) => {
+      console.log(`  [${i+1}] status: ${item.status}, has_path: ${item.path}`);
     });
-  }
-
-  // Check specifically for scene images
-  const sceneImages = data.filter(d => d.document_type === 'scene');
-  console.log('\n=== SCENE IMAGES ANALYSIS ===');
-  console.log(`Total scene images: ${sceneImages.length}`);
-  console.log('Field names:', sceneImages.map(s => s.field_name || 'NULL').join(', '));
+  });
+  
+  // Check for scene-related types
+  console.log('\n\nLooking for scene/accident/location types...');
+  const sceneTypes = docs.filter(d => 
+    d.document_type.includes('scene') || 
+    d.document_type.includes('accident') ||
+    d.document_type.includes('location')
+  );
+  console.log('Found:', sceneTypes.length);
+  sceneTypes.forEach(s => console.log('  -', s.document_type, '| status:', s.status, '| path:', s.storage_path));
 }
 
-checkSceneImages();
+checkImages();

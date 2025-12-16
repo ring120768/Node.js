@@ -28,8 +28,7 @@ Show the directory tree focusing on key files and folders:
 │   └── routes/                # API routes
 ├── lib/
 │   ├── dataFetcher.js        # Fetch data from Supabase
-│   ├── pdfGenerator.js       # Legacy PDF generation (fallback)
-│   └── generators/           # Email and PDF generators
+│   └── generators/           # Email generators
 ├── public/                    # Frontend files (served statically)
 │   ├── index.html            # Landing page
 │   ├── transcription-status.html  # Audio recording UI
@@ -80,12 +79,6 @@ Explain the complete flow from user submission to PDF delivery:
    Store in Supabase Storage
        ↓
    Email to User and Accounts
-   ```
-
-6. **Fallback Flow** (if Adobe unavailable)
-   ```
-   Same flow, but uses:
-   lib/pdfGenerator.js (legacy method using pdf-lib)
    ```
 
 ## Key Integration Points

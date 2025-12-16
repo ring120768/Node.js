@@ -2,7 +2,7 @@
  * HTML to PDF Converter Service (Puppeteer)
  *
  * Purpose: Convert rendered HTML to PDF using headless Chrome
- * Used by: lib/pdfGenerator.js (hybrid PDF generation)
+ * Used by: src/services/adobePdfFormFillerService.js (hybrid PDF generation)
  *
  * Flow:
  * 1. Launch headless Chrome browser

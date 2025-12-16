@@ -116,6 +116,26 @@ async function createVehicle(req, res) {
       vehicleData.dvla_lookup_successful = true;
       vehicleData.dvla_lookup_timestamp = new Date().toISOString();
 
+      // Populate additional DVLA fields (for PDF appendix generation)
+      // Text fields - safe to assign directly (null is fine)
+      vehicleData.fuel_type = dvlaResult.data.fuel_type || null;
+      vehicleData.engine_capacity = dvlaResult.data.engine_capacity || null;
+      vehicleData.dvla_mot_status = dvlaResult.data.mot_status || null;
+      vehicleData.dvla_tax_status = dvlaResult.data.tax_status || null;
+
+      // Date fields - only set if valid date string received
+      if (dvlaResult.data.mot_expiry_date) {
+        vehicleData.dvla_mot_expiry_date = dvlaResult.data.mot_expiry_date;
+      }
+      if (dvlaResult.data.tax_due_date) {
+        vehicleData.dvla_tax_due_date = dvlaResult.data.tax_due_date;
+      }
+
+      // Boolean field - only set if explicitly true/false
+      if (typeof dvlaResult.data.marked_for_export === 'boolean') {
+        vehicleData.dvla_export_marker = dvlaResult.data.marked_for_export;
+      }
+
       // If last_v5c_issued not provided, use DVLA data
       if (!last_v5c_issued && dvlaResult.data.date_of_last_v5c_issued) {
         vehicleData.last_v5c_issued = dvlaResult.data.date_of_last_v5c_issued;

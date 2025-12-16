@@ -280,32 +280,6 @@ async function submitIncidentForm(req, res) {
           errorCount
         };
 
-        // Update incident_reports with first 2 photo URLs (if available)
-        if (allPhotos.length > 0) {
-          const updateData = {};
-          if (allPhotos[0]) updateData.file_url_other_vehicle = allPhotos[0].downloadUrl;
-          if (allPhotos[1]) updateData.file_url_other_vehicle_1 = allPhotos[1].downloadUrl;
-
-          if (Object.keys(updateData).length > 0) {
-            const { error: updateError } = await supabase
-              .from('incident_reports')
-              .update(updateData)
-              .eq('id', incident.id);
-
-            if (updateError) {
-              logger.error('Failed to update incident_reports with other vehicle photo URLs', {
-                incidentId: incident.id,
-                error: updateError.message
-              });
-            } else {
-              logger.info('Updated incident_reports with other vehicle photo URLs', {
-                incidentId: incident.id,
-                photoCount: Object.keys(updateData).length
-              });
-            }
-          }
-        }
-
         logger.info('Other vehicle photos finalized', {
           incidentId: incident.id,
           photoCount: successCount,

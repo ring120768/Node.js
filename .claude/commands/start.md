@@ -60,7 +60,7 @@ You are working on **Car Crash Lawyer AI** - a Node.js web application that help
 
 **Data & PDF:**
 - `/lib/dataFetcher.js` - Fetches all user data from Supabase
-- `/lib/pdfGenerator.js` - Legacy PDF generation (fallback)
+- `/src/services/adobePdfFormFillerService.js` - PDF generation (213 fields)
 - `/pdf-templates/` - PDF templates directory
 
 **Documentation:**

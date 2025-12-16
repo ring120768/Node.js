@@ -133,12 +133,12 @@ function createMatrix() {
 
   if (issues.pdfTypos.length > 0) {
     report += '## ❌ PDF Field Typos (CRITICAL)\n\n';
-    report += 'Mappings in pdfGenerator.js that point to non-existent PDF fields:\n\n';
+    report += 'Mappings in adobePdfFormFillerService.js that point to non-existent PDF fields:\n\n';
     report += '| Line | PDF Field (Code) | DB Column | Status |\n|------|-----------------|-----------|--------|\n';
     issues.pdfTypos.forEach(i => {
       report += `| ${i.line} | \`${i.pdfField}\` | \`${i.dbColumn}\` | ❌ Not in PDF |\n`;
     });
-    report += '\n**Action**: Correct these field names in lib/pdfGenerator.js or fix typos in PDF.\n\n';
+    report += '\n**Action**: Correct these field names in adobePdfFormFillerService.js or fix typos in PDF.\n\n';
   }
 
   if (issues.missingDbColumns.length > 0) {

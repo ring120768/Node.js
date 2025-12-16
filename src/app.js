@@ -47,17 +47,19 @@ const ImageProcessorV2 = require('./services/imageProcessorV2');
 const centralRouter = require('./routes/index');
 const webhookRouter = require('./routes/webhook.routes');
 
-// PDF Modules (optional)
+// PDF Modules (optional) - status check only
+// Actual PDF generation happens in pdf.controller.js using adobePdfFormFillerService
 let pdfModules = null;
 try {
-  pdfModules = {
-    fetchAllData: require('../lib/data/dataFetcher').fetchAllData,
-    generatePDF: require('../lib/pdfGenerator').generatePDF, // Legacy fallback implementation
-    sendEmails: require('../lib/generators/emailService').sendEmails
-  };
-  logger.info('✅ PDF modules loaded');
+  const adobePdfFormFillerService = require('./services/adobePdfFormFillerService');
+  if (adobePdfFormFillerService.isReady()) {
+    pdfModules = { available: true };
+    logger.info('✅ PDF service ready (adobePdfFormFillerService)');
+  } else {
+    logger.warn('⚠️ PDF service not ready - check Adobe credentials');
+  }
 } catch (error) {
-  logger.warn('⚠️ PDF modules not available');
+  logger.warn('⚠️ PDF modules not available:', error.message);
 }
 
 // ==================== CREATE APPLICATION ====================

@@ -12,14 +12,16 @@ const gdprService = require('../services/gdprService');
 const { createClient } = require('@supabase/supabase-js');
 
 // Import PDF generation modules with error handling
-let fetchAllData, generatePDF, sendEmails;
+let fetchAllData, sendEmails;
 try {
-  fetchAllData = require('../../lib/dataFetcher').fetchAllData;  // Fixed path - was lib/data/dataFetcher
-  generatePDF = require('../../lib/pdfGenerator').generatePDF; // Legacy fallback implementation
-  sendEmails = require('../../lib/emailService').sendEmails; // ✅ Uses configured Hostinger SMTP service
+  fetchAllData = require('../../lib/dataFetcher').fetchAllData;
+  sendEmails = require('../../lib/emailService').sendEmails;
 } catch (error) {
   logger.warn('PDF generation modules not found - PDF features will be disabled', error.message);
 }
+
+// Import Adobe PDF Form Filler Service (verified 213/213 field mappings)
+const adobePdfFormFillerService = require('../services/adobePdfFormFillerService');
 
 // Import Adobe REST API Form Filler Service (validated with 43-field whitelist)
 const adobeRestFormFiller = require('../services/adobeRestFormFiller');
@@ -282,6 +284,7 @@ async function storeCompletedForm(createUserId, pdfBuffer, allData) {
 
     let pdfUrl = null;
     if (storageData && !storageError) {
+      // Generate initial signed URL (365 days) for immediate use
       const { data: urlData } = await supabase.storage
         .from('incident-images-secure')
         .createSignedUrl(fileName, 31536000);
@@ -298,6 +301,7 @@ async function storeCompletedForm(createUserId, pdfBuffer, allData) {
         form_data: allData,
         pdf_base64: pdfBase64.substring(0, 1000000),
         pdf_url: pdfUrl,
+        pdf_storage_path: fileName, // Store path for on-demand URL regeneration
         generated_at: new Date().toISOString(),
         sent_to_user: false,
         sent_to_accounts: false,
@@ -347,11 +351,10 @@ async function generateUserPDF(create_user_id, source = 'direct') {
   //   - closing_statement, final_review, quality_review (Pages 16-18)
   // fetchAllData() correctly uses incident_reports.voice_transcription from LATEST incident
 
-  // CRITICAL: Always use comprehensive hybrid pipeline for 100% data coverage
-  // Adobe REST API only handles ~43 fields; hybrid pipeline handles all 200+ fields
-  // including AI pages 13-18, witnesses, vehicles, DVLA data, and emergency appendix
-  logger.info('📄 Using comprehensive hybrid PDF pipeline (100% data coverage)');
-  let pdfBuffer = await generatePDF(allData);
+  // Use Adobe PDF Form Filler Service (verified 213/213 field mappings)
+  // Handles all fields including AI pages 13-18, witnesses, vehicles, DVLA data
+  logger.info('📄 Generating PDF with adobePdfFormFillerService (213 fields)');
+  let pdfBuffer = await adobePdfFormFillerService.fillPdfForm(allData);
 
   const storedForm = await storeCompletedForm(create_user_id, pdfBuffer, allData);
   const emailResult = await sendEmails(allData.user.email, pdfBuffer, create_user_id);
@@ -393,7 +396,7 @@ async function generatePdf(req, res) {
     return sendError(res, 503, 'Service not configured', 'SERVICE_UNAVAILABLE');
   }
 
-  if (!fetchAllData || !generatePDF || !sendEmails) {
+  if (!fetchAllData || !sendEmails || !adobePdfFormFillerService.isReady()) {
     return sendError(res, 503, 'PDF generation modules not available', 'PDF_UNAVAILABLE');
   }
 
@@ -448,8 +451,45 @@ async function getPdfStatus(req, res) {
 }
 
 /**
+ * Calculate subscription-aware URL expiry in seconds
+ * Logic: If within 2 months of renewal, give subscription end + 6 weeks (incentive to renew)
+ *        Otherwise, give until subscription end date
+ *        Minimum 6 weeks for expired/no subscription
+ * @param {Date|string} subscriptionEndDate - User's subscription end date
+ * @returns {number} - Expiry in seconds
+ */
+function calculateUrlExpiry(subscriptionEndDate) {
+  const SIX_WEEKS_SECONDS = 42 * 24 * 60 * 60; // 42 days = 6 weeks
+  const TWO_MONTHS_SECONDS = 60 * 24 * 60 * 60; // 60 days = ~2 months
+  const ONE_YEAR_SECONDS = 365 * 24 * 60 * 60;
+
+  if (!subscriptionEndDate) {
+    // No subscription date - default to 6 weeks
+    return SIX_WEEKS_SECONDS;
+  }
+
+  const now = new Date();
+  const endDate = new Date(subscriptionEndDate);
+  const timeUntilExpiry = Math.floor((endDate.getTime() - now.getTime()) / 1000);
+
+  // Subscription already expired - give 6 weeks minimum
+  if (timeUntilExpiry <= 0) {
+    return SIX_WEEKS_SECONDS;
+  }
+
+  // Within 2 months of renewal - give subscription end + 6 weeks (better value & renewal incentive)
+  if (timeUntilExpiry <= TWO_MONTHS_SECONDS) {
+    return Math.min(timeUntilExpiry + SIX_WEEKS_SECONDS, ONE_YEAR_SECONDS);
+  }
+
+  // More than 2 months remaining - give until subscription end
+  return Math.min(timeUntilExpiry, ONE_YEAR_SECONDS);
+}
+
+/**
  * Download PDF
  * GET /api/pdf/download/:userId
+ * Generates fresh signed URL with subscription-aware expiry
  */
 async function downloadPdf(req, res) {
   if (!supabase) {
@@ -459,24 +499,60 @@ async function downloadPdf(req, res) {
   try {
     const { userId } = req.params;
 
-    const { data, error } = await supabase
-      .from('completed_incident_forms')
-      .select('pdf_url, pdf_base64')
-      .eq('create_user_id', userId)
-      .order('generated_at', { ascending: false })
-      .limit(1)
-      .single();
+    // Fetch PDF record and user's subscription info in parallel
+    const [formResult, userResult] = await Promise.all([
+      supabase
+        .from('completed_incident_forms')
+        .select('pdf_url, pdf_base64, pdf_storage_path')
+        .eq('create_user_id', userId)
+        .order('generated_at', { ascending: false })
+        .limit(1)
+        .single(),
+      supabase
+        .from('user_signup')
+        .select('subscription_end_date')
+        .eq('create_user_id', userId)
+        .single()
+    ]);
 
-    if (error || !data) {
+    if (formResult.error || !formResult.data) {
       return sendError(res, 404, 'PDF not found', 'PDF_NOT_FOUND');
     }
 
+    const pdfRecord = formResult.data;
+    const subscriptionEndDate = userResult.data?.subscription_end_date;
+
     await gdprService.logActivity(userId, 'PDF_DOWNLOADED', {}, req);
 
-    if (data.pdf_url) {
-      res.redirect(data.pdf_url);
-    } else if (data.pdf_base64) {
-      const buffer = Buffer.from(data.pdf_base64, 'base64');
+    // Generate fresh signed URL if storage path is available
+    if (pdfRecord.pdf_storage_path) {
+      const expirySeconds = calculateUrlExpiry(subscriptionEndDate);
+      const expiryDate = new Date(Date.now() + expirySeconds * 1000);
+
+      logger.info('Generating fresh PDF signed URL', {
+        userId,
+        subscriptionEndDate,
+        expirySeconds,
+        expiryDate: expiryDate.toISOString()
+      });
+
+      const { data: urlData, error: urlError } = await supabase.storage
+        .from('incident-images-secure')
+        .createSignedUrl(pdfRecord.pdf_storage_path, expirySeconds);
+
+      if (urlData && !urlError) {
+        return res.redirect(urlData.signedUrl);
+      } else {
+        logger.warn('Failed to generate fresh signed URL, falling back to stored URL', { urlError });
+      }
+    }
+
+    // Fallback: Use stored URL (may be expired)
+    if (pdfRecord.pdf_url) {
+      res.redirect(pdfRecord.pdf_url);
+    } else if (pdfRecord.pdf_base64) {
+      // Last resort: Use base64 (may be truncated for large PDFs)
+      const buffer = Buffer.from(pdfRecord.pdf_base64, 'base64');
       res.setHeader('Content-Type', 'application/pdf');
       res.setHeader('Content-Disposition', `attachment; filename="report_${userId}.pdf"`);
       res.send(buffer);
@@ -489,9 +565,64 @@ async function downloadPdf(req, res) {
   }
 }
 
+/**
+ * Send Image Download Links Email
+ * POST /api/pdf/send-image-links/:userId
+ * Sends an email with all user's image download links (subscription-aware expiry)
+ */
+async function sendImageLinksEmail(req, res) {
+  if (!supabase) {
+    return sendError(res, 503, 'Service not configured', 'SERVICE_UNAVAILABLE');
+  }
+
+  try {
+    const { userId } = req.params;
+
+    // Get user info for email
+    const { data: userData, error: userError } = await supabase
+      .from('user_signup')
+      .select('email, name, surname')
+      .eq('create_user_id', userId)
+      .single();
+
+    if (userError || !userData) {
+      return sendError(res, 404, 'User not found', 'USER_NOT_FOUND');
+    }
+
+    const { sendImageDownloadLinks } = require('../../lib/emailService');
+    const userName = [userData.name, userData.surname].filter(Boolean).join(' ') || 'Valued Customer';
+
+    const result = await sendImageDownloadLinks(supabase, userId, userData.email, userName);
+
+    if (result.success) {
+      res.json({
+        success: true,
+        message: 'Image download links email sent successfully',
+        email: userData.email,
+        totalImages: result.totalImages,
+        expiryDate: result.expiryDate,
+        expiryDuration: result.expiryDuration,
+        requestId: req.requestId
+      });
+    } else if (result.reason === 'no_images') {
+      res.json({
+        success: false,
+        message: 'No images found for this user',
+        requestId: req.requestId
+      });
+    } else {
+      sendError(res, 500, 'Failed to send email: ' + result.error, 'EMAIL_SEND_FAILED');
+    }
+  } catch (error) {
+    logger.error('Error sending image links email', error);
+    sendError(res, 500, 'Failed to send image links email', 'EMAIL_SEND_FAILED');
+  }
+}
+
 module.exports = {
   generatePdf,
   getPdfStatus,
   downloadPdf,
-  generateUserPDF  // Required by incidentForm.controller for post-submission email
+  generateUserPDF,  // Required by incidentForm.controller for post-submission email
+  sendImageLinksEmail // NEW: Send image download links with subscription-aware expiry
 };
