@@ -4,7 +4,7 @@
 
 **Project**: UK legal documentation system for car accidents
 **Stack**: Node.js, Express, Supabase, Adobe PDF Services, OpenAI
-**Flow**: Typeform → Webhooks → Image Processing → PDF (17 pages, 150+ fields) → Email
+**Flow**: Custom HTML Forms → Image Processing → PDF (17 pages, 150+ fields) → Email
 
 ## Default Behavior
 
@@ -88,7 +88,7 @@ SUPABASE_URL=xxx
 SUPABASE_SERVICE_ROLE_KEY=xxx  # For webhooks (bypasses RLS)
 SUPABASE_ANON_KEY=xxx
 OPENAI_API_KEY=xxx
-TYPEFORM_WEBHOOK_SECRET=xxx
+GITHUB_WEBHOOK_SECRET=xxx      # GitHub webhooks only
 PDF_SERVICES_CLIENT_ID=xxx     # Optional
 PDF_SERVICES_CLIENT_SECRET=xxx
 ```

@@ -10,12 +10,12 @@
 
 ## 📋 Overview
 
-Car Crash Lawyer AI is a comprehensive Node.js web application that helps UK car accident victims complete legal incident reports. The system collects incident data through Typeform webhooks, processes images and audio files using OpenAI, generates comprehensive 17-page PDF reports using Adobe PDF Services, and emails them to users and legal teams.
+Car Crash Lawyer AI is a comprehensive Node.js web application that helps UK car accident victims complete legal incident reports. The system collects incident data through custom HTML forms, processes images and audio files using OpenAI, generates comprehensive 17-page PDF reports using Adobe PDF Services, and emails them to users and legal teams.
 
 ### Key Features
 
 - **Server-Side Security** - Page authentication middleware protects sensitive content
-- **Automated Data Collection** - Typeform integration with webhook processing
+- **Automated Data Collection** - Custom multi-page HTML forms with immediate upload
 - **Audio Transcription** - OpenAI Whisper API for personal statements
 - **AI Analysis** - Automated accident summary generation
 - **Legal PDF Reports** - 17-page document with 150+ fields auto-filled from database
@@ -177,7 +177,7 @@ See [CLAUDE.md](CLAUDE.md#page-protection-pattern) for implementation details.
 | `ai_summary` | AI-generated accident summaries |
 | `completed_incident_forms` | Final PDF reports |
 
-**Primary Key:** `create_user_id` (UUID from Typeform)
+**Primary Key:** `create_user_id` (UUID - user identifier)
 
 See [`/db`](.claude/commands/db.md) command for complete schema.
 
@@ -197,10 +197,10 @@ Generates complete 17-page PDF report from all user data.
 ### Webhooks
 
 ```http
-POST /webhooks/typeform
+POST /webhooks/github
 ```
 
-Receives Typeform submissions and processes user signup data.
+Receives GitHub repository events for deployment automation.
 
 ### Audio Transcription
 
@@ -309,7 +309,7 @@ See [`.claude/COMMANDS_REFERENCE.md`](.claude/COMMANDS_REFERENCE.md) for details
 - **HTTPS** - All connections encrypted
 - **CORS** - Restricted to specific origins
 - **Rate Limiting** - API: 100 req/15min, Strict: 10 req/15min
-- **Webhook Signatures** - HMAC validation for Typeform
+- **Webhook Signatures** - HMAC validation for GitHub webhooks
 - **RLS Policies** - Supabase Row Level Security on all tables
 - **Input Validation** - All user inputs validated
 - **GDPR Compliance** - Data privacy, deletion, export capabilities
@@ -428,7 +428,7 @@ node scripts/test-supabase-client.js
 #### Webhook Signature Verification Failed
 
 **Cause:** Webhook secret mismatch
-**Solution:** Verify `TYPEFORM_WEBHOOK_SECRET` matches Typeform settings.
+**Solution:** Verify `GITHUB_WEBHOOK_SECRET` matches GitHub webhook settings.
 
 ### Get Help
 
