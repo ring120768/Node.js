@@ -32,3 +32,9 @@ user-pdfs/
 test-timestamp.js
 temp/
 supabase/.temp/
+
+# macOS
+.DS_Store
+
+# Quarantine folder (legacy/archived code)
+_quarantine/
