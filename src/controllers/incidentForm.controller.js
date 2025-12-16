@@ -320,26 +320,51 @@ async function submitIncidentForm(req, res) {
       }
     }
 
-    // 7. Finalize scene photos if present (Page 11)
+    // 7. Finalize scene photos if present (Page 4a - Location Photos)
+    // FIX: Changed from page11 to page4a (actual scene photo collection page)
     let scenePhotoResults = null;
-    if (formData.page11?.session_id) {
+    if (formData.page4a?.session_id) {
       try {
         scenePhotoResults = await locationPhotoService.finalizePhotosByType(
           userId,
           incident.id,
-          formData.page11.session_id,
+          formData.page4a.session_id,
           'scene_photo',           // field_name in temp_uploads
           'scene-photos',          // storage category
           'scene_photo'            // document_type in user_documents
         );
 
-        logger.info('Scene photos finalized', {
+        logger.info('Scene photos finalized from page4a', {
           incidentId: incident.id,
           photoCount: scenePhotoResults.successCount,
           errors: scenePhotoResults.errorCount
         });
       } catch (photoError) {
         logger.error('Failed to finalize scene photos (non-critical)', {
+          incidentId: incident.id,
+          error: photoError.message
+        });
+        // Don't fail the submission - photos can be re-processed
+      }
+    } else if (formData.page11?.session_id) {
+      // LEGACY: Support old page11 format for backward compatibility
+      try {
+        scenePhotoResults = await locationPhotoService.finalizePhotosByType(
+          userId,
+          incident.id,
+          formData.page11.session_id,
+          'scene_photo',
+          'scene-photos',
+          'scene_photo'
+        );
+
+        logger.info('Scene photos finalized from page11 (legacy)', {
+          incidentId: incident.id,
+          photoCount: scenePhotoResults.successCount,
+          errors: scenePhotoResults.errorCount
+        });
+      } catch (photoError) {
+        logger.error('Failed to finalize scene photos from legacy page11 (non-critical)', {
           incidentId: incident.id,
           error: photoError.message
         });
@@ -519,6 +544,9 @@ function buildIncidentData(userId, formData) {
     medical_symptom_dizziness: page2.medical_symptom_dizziness || false,
     medical_symptom_life_threatening: page2.medical_symptom_life_threatening || false,
     medical_symptom_none: page2.medical_symptom_none || false,
+
+    // Six Point Safety Check (from six-point-safety-check.html, saved in sessionStorage)
+    six_point_safety_check_completed: formData.six_point_safety_check?.completed_at ? true : false,
 
     // Page 3: Date/Time/Weather/Road Conditions (41 fields - matches migration 016)
     // Note: accident_date and accident_time already set from Page 1 above (lines 410-411)
