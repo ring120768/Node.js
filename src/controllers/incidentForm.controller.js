@@ -53,6 +53,8 @@ const supabase = createClient(
 async function submitIncidentForm(req, res) {
   try {
     const userId = req.user?.id;
+    const userEmail = req.user?.email;
+    const userName = req.user?.user_metadata?.full_name || 'User';
 
     if (!userId) {
       logger.warn('Incident form submission without authentication');
@@ -109,12 +111,10 @@ async function submitIncidentForm(req, res) {
     // 3. Send 90-day retention notice email (non-blocking)
     if (process.env.EMAIL_ENABLED === 'true') {
       const deletionDate = new Date(Date.now() + 90 * 24 * 60 * 60 * 1000); // 90 days from now
-      const userEmail = req.user?.email;
-
       if (userEmail) {
         // Fire-and-forget: don't await, don't block submission response
         emailService.sendIncident90DayNotice(userEmail, {
-          userName: req.user?.user_metadata?.full_name || 'User',
+          userName,
           incidentId: incident.id,
           submittedDate: new Date(),
           deletionDate: deletionDate,
@@ -146,6 +146,38 @@ async function submitIncidentForm(req, res) {
           emailSent: result.email_sent,
           formId: result.form_id
         });
+
+        // Send image download links to the user (non-blocking, best-effort)
+        if (userEmail) {
+          emailService.sendImageDownloadLinks(supabase, userId, userEmail, userName)
+            .then(imageResult => {
+              if (imageResult.success) {
+                logger.success('📧 Image links email sent', {
+                  userId,
+                  incidentId: incident.id,
+                  totalImages: imageResult.totalImages,
+                  expiry: imageResult.expiryDuration
+                });
+              } else if (imageResult.reason === 'no_images') {
+                logger.info('ℹ️ No images to send for user', { userId, incidentId: incident.id });
+              } else {
+                logger.warn('⚠️ Image links email failed (non-critical)', {
+                  userId,
+                  incidentId: incident.id,
+                  error: imageResult.error
+                });
+              }
+            })
+            .catch(error => {
+              logger.warn('⚠️ Image links email error (non-critical)', {
+                userId,
+                incidentId: incident.id,
+                error: error.message
+              });
+            });
+        } else {
+          logger.warn('⚠️ Skipping image links email: user email missing', { userId, incidentId: incident.id });
+        }
       })
       .catch(error => {
         logger.error('⚠️ PDF generation failed (non-critical)', {
