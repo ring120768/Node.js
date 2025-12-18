@@ -904,6 +904,19 @@
     });
 
     document.getElementById('next-btn').addEventListener('click', () => {
+      // Warn if continuing with no damage/other vehicle photos (skip button already captures intentional skips)
+      const saved = sessionStorage.getItem('incident_page8');
+      const savedData = saved ? JSON.parse(saved) : {};
+      const skipped = savedData?.no_damage_photos === true;
+
+      if (!skipped && uploadedImages.length === 0) {
+        const proceed = confirm(
+          'No damage/other vehicle photos have been uploaded.\n\n' +
+          'You can continue without these images, but your report will not include them.'
+        );
+        if (!proceed) return;
+      }
+
       autoSave();
       console.log('Next button clicked - proceeding to Page 9');
       window.location.href = '/incident-form-page9-witnesses.html';

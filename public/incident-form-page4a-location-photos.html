@@ -730,6 +730,15 @@
     });
 
     nextBtn.addEventListener('click', function() {
+      // Warn if continuing with no scene photos (does not apply to what3words screenshot)
+      if (uploadedSceneImages.length === 0) {
+        const proceed = confirm(
+          'No location/scene photos have been uploaded.\n\n' +
+          'You can continue without photos, but your report will not include images for this section.'
+        );
+        if (!proceed) return;
+      }
+
       saveData();
       window.location.href = '/incident-form-page5-vehicle.html';
     });

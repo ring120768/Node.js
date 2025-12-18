@@ -431,8 +431,9 @@
                     console.warn('Declaration endpoint not yet implemented, proceeding anyway');
                 }
 
-                // Clear temporary data
+                // Clear temporary data and mark declaration accepted
                 sessionStorage.setItem('declarationAccepted', 'true');
+                clearIncidentDraftState();
 
                 // Redirect to report complete page after declaration
                 console.log('✅ Declaration accepted, redirecting to report complete');
@@ -448,11 +449,40 @@
 
                 // Even if API fails, allow user to continue (graceful degradation)
                 sessionStorage.setItem('declarationAccepted', 'true');
+                clearIncidentDraftState();
                 const fallbackUrl = userId
                     ? `/report-complete.html?user_id=${userId}`
                     : '/report-complete.html';
                 window.location.href = fallbackUrl;
             }
+        }
+
+        // Clear incident form draft state (keeps auth/session intact)
+        function clearIncidentDraftState() {
+            const localKeys = [
+                'temp_session_id',
+                'incident_form_data',
+                'complete_incident_data',
+                'submitted_incident_id',
+                'incident_form',
+                'transcriptionDraft',
+                'hasAudioRecording',
+                'hasAIAnalysis'
+            ];
+            localKeys.forEach(k => localStorage.removeItem(k));
+
+            const sessionKeysToRemove = [];
+            for (let i = 0; i < sessionStorage.length; i++) {
+                const key = sessionStorage.key(i);
+                if (!key) continue;
+                if (key.startsWith('incident_page')) {
+                    sessionKeysToRemove.push(key);
+                } else if (['complete_incident_data', 'submitted_incident_id', 'currentIncidentId'].includes(key)) {
+                    sessionKeysToRemove.push(key);
+                }
+            }
+            sessionKeysToRemove.forEach(k => sessionStorage.removeItem(k));
+            console.log('🧹 Cleared incident draft state after declaration');
         }
 
         // Enable/disable submit button based on checkbox
