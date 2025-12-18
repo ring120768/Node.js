@@ -378,6 +378,37 @@ async function submitIncidentForm(req, res) {
       }
     }
 
+    // Belt-and-braces warning if session IDs were present but no photos finalized
+    const photoFinalizationSummary = {
+      map: mapScreenshotResults?.successCount || 0,
+      location: photoResults?.successCount || 0,
+      vehicle: vehiclePhotoResults?.successCount || 0,
+      otherVehicle: otherVehiclePhotoResults?.successCount || 0,
+      scene: scenePhotoResults?.successCount || 0
+    };
+    const hadAnySession =
+      !!formData.page4?.session_id ||
+      !!formData.page4a?.session_id ||
+      !!formData.page6?.session_id ||
+      !!formData.page8?.session_id ||
+      !!formData.page11?.session_id;
+    const totalFinalizedPhotos = Object.values(photoFinalizationSummary).reduce((sum, n) => sum + n, 0);
+
+    if (hadAnySession && totalFinalizedPhotos === 0) {
+      logger.warn('⚠️ No photos finalized despite session IDs', {
+        incidentId: incident.id,
+        userId,
+        sessions: {
+          page4: formData.page4?.session_id || null,
+          page4a: formData.page4a?.session_id || null,
+          page6: formData.page6?.session_id || null,
+          page8: formData.page8?.session_id || null,
+          page11: formData.page11?.session_id || null
+        },
+        photoFinalizationSummary
+      });
+    }
+
     // 8. Save witnesses to incident_witnesses table (Page 9)
     let witnessResults = null;
     if (formData.page9?.witnesses_present === 'yes') {
