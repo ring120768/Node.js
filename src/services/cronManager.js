@@ -2,6 +2,7 @@
  * Cron Manager Service
  *
  * Manages all scheduled tasks for the dual retention model:
+ * - PDF queue processing (every 2 minutes)
  * - Incident deletion warnings (daily)
  * - Subscription renewal warnings (daily)
  * - S3 backups (daily)
@@ -10,8 +11,8 @@
  * - Process subscription renewals (daily)
  * - Cleanup old S3 backups (monthly)
  *
- * @version 1.0.0
- * @date 2025-10-17
+ * @version 1.1.0
+ * @date 2025-12-18
  */
 
 const cron = require('node-cron');
@@ -67,6 +68,13 @@ class CronManager {
 
     logger.info('[CRON] Starting cron manager...');
     logger.info(`[CRON] Environment: ${this.isProduction ? 'PRODUCTION' : 'DEVELOPMENT'}`);
+
+    // 0. PDF Queue Processing - Every 2 minutes (ensures failed PDFs are retried promptly)
+    this.scheduleJob(
+      'process-pdf-queue',
+      '*/2 * * * *', // Every 2 minutes
+      () => this.executeScript('scripts/process-pdf-queue.js', 'Process PDF Queue')
+    );
 
     // 1. S3 Backups - Daily at 1:00 AM (before deletions)
     this.scheduleJob(
@@ -187,6 +195,7 @@ class CronManager {
    */
   cronToHuman(cronExpr) {
     const schedules = {
+      '*/2 * * * *': 'Every 2 minutes',
       '0 1 * * *': 'Daily at 1:00 AM',
       '30 1 * * *': 'Daily at 1:30 AM',
       '0 2 * * *': 'Daily at 2:00 AM',

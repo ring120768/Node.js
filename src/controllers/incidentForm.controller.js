@@ -20,6 +20,7 @@ const { createClient } = require('@supabase/supabase-js');
 const logger = require('../utils/logger');
 const locationPhotoService = require('../services/locationPhotoService');
 const emailService = require('../../lib/emailService');
+const pdfQueueService = require('../services/pdfQueueService');
 
 // Use service role key for database writes
 const supabase = createClient(
@@ -136,16 +137,54 @@ async function submitIncidentForm(req, res) {
       }
     }
 
-    // 4. Generate PDF and email to user + accounts (non-blocking)
+    // 4. Generate PDF and email to user + accounts (with queue-based retry)
+    // Strategy: Try immediate generation for best UX, but use queue to guarantee delivery
     const pdfController = require('./pdf.controller');
+
+    // First, add to queue (guarantees eventual delivery even if immediate attempt fails)
+    pdfQueueService.enqueue(userId, incident.id, 'incident-form-submission')
+      .then(queueEntry => {
+        logger.info('📥 PDF job queued', {
+          jobId: queueEntry.id,
+          userId,
+          incidentId: incident.id
+        });
+      })
+      .catch(queueError => {
+        logger.error('❌ Failed to queue PDF job', {
+          userId,
+          incidentId: incident.id,
+          error: queueError.message
+        });
+      });
+
+    // Then, attempt immediate generation (non-blocking, for faster delivery)
     pdfController.generateUserPDF(userId, 'incident-form-submission')
       .then(result => {
-        logger.success('📧 PDF generated and emailed', {
+        logger.success('📧 PDF generated and emailed immediately', {
           userId,
           incidentId: incident.id,
           emailSent: result.email_sent,
           formId: result.form_id
         });
+
+        // Mark queue job as completed (if immediate generation succeeded)
+        supabase
+          .from('pdf_generation_queue')
+          .update({
+            status: 'completed',
+            completed_at: new Date().toISOString(),
+            completed_form_id: result.form_id,
+            attempt_count: 1
+          })
+          .eq('create_user_id', userId)
+          .eq('status', 'pending')
+          .then(() => {
+            logger.info('✅ Queue job marked complete after immediate success', { userId });
+          })
+          .catch(err => {
+            logger.warn('Failed to update queue status', { error: err.message });
+          });
 
         // Send image download links to the user (non-blocking, best-effort)
         if (userEmail) {
@@ -180,14 +219,16 @@ async function submitIncidentForm(req, res) {
         }
       })
       .catch(error => {
-        logger.error('⚠️ PDF generation failed (non-critical)', {
+        // Immediate generation failed - queue will handle retry
+        logger.warn('⚠️ Immediate PDF generation failed, queue will retry', {
           userId,
           incidentId: incident.id,
-          error: error.message
+          error: error.message,
+          retryInfo: 'Job queued - will retry in 1 minute'
         });
       });
 
-    logger.info('📧 PDF generation queued', { incidentId: incident.id, userId });
+    logger.info('📧 PDF generation initiated (queued + immediate attempt)', { incidentId: incident.id, userId });
 
     // 5. Finalize map screenshot if present (Page 4)
     let mapScreenshotResults = null;
