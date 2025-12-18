@@ -13,7 +13,8 @@ const {
 } = require('../controllers/ai.controller');
 
 const {
-  listIncidentReports
+  listIncidentReports,
+  submitDeclaration
 } = require('../controllers/incidentForm.controller');
 
 const router = express.Router();
@@ -59,5 +60,27 @@ router.get('/', requireAuth, listIncidentReports);
  * }
  */
 router.post('/save-statement', savePersonalStatement);
+
+/**
+ * POST /api/incident-reports/declaration
+ * Submit declaration consent and trigger PDF generation
+ *
+ * Body:
+ * {
+ *   userId: string,
+ *   incidentId: string,
+ *   consentGiven: boolean,
+ *   consentTimestamp: string (ISO 8601)
+ * }
+ *
+ * Returns:
+ * {
+ *   success: true,
+ *   message: string,
+ *   pdfQueued: boolean,
+ *   pdfGenerated: boolean (if immediate generation succeeded)
+ * }
+ */
+router.post('/declaration', requireAuth, submitDeclaration);
 
 module.exports = router;
