@@ -448,6 +448,18 @@
 
   <script>
     // ============================================================================
+    // SESSION ID INITIALIZATION (must be first!)
+    // ============================================================================
+    // Ensure temp_session_id exists in localStorage for photo uploads
+    // This should normally be set by Page 4, but we initialize here as a safety net
+    if (!localStorage.getItem('temp_session_id')) {
+      localStorage.setItem('temp_session_id', crypto.randomUUID());
+      console.log('✅ Page 4a: Created new temp session ID:', localStorage.getItem('temp_session_id'));
+    } else {
+      console.log('✅ Page 4a: Using existing temp session ID:', localStorage.getItem('temp_session_id'));
+    }
+
+    // ============================================================================
     // SCENE IMAGE UPLOAD FUNCTIONALITY
     // ============================================================================
 
