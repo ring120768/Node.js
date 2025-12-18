@@ -137,98 +137,13 @@ async function submitIncidentForm(req, res) {
       }
     }
 
-    // 4. Generate PDF and email to user + accounts (with queue-based retry)
-    // Strategy: Try immediate generation for best UX, but use queue to guarantee delivery
-    const pdfController = require('./pdf.controller');
-
-    // First, add to queue (guarantees eventual delivery even if immediate attempt fails)
-    pdfQueueService.enqueue(userId, incident.id, 'incident-form-submission')
-      .then(queueEntry => {
-        logger.info('📥 PDF job queued', {
-          jobId: queueEntry.id,
-          userId,
-          incidentId: incident.id
-        });
-      })
-      .catch(queueError => {
-        logger.error('❌ Failed to queue PDF job', {
-          userId,
-          incidentId: incident.id,
-          error: queueError.message
-        });
-      });
-
-    // Then, attempt immediate generation (non-blocking, for faster delivery)
-    pdfController.generateUserPDF(userId, 'incident-form-submission')
-      .then(result => {
-        logger.success('📧 PDF generated and emailed immediately', {
-          userId,
-          incidentId: incident.id,
-          emailSent: result.email_sent,
-          formId: result.form_id
-        });
-
-        // Mark queue job as completed (if immediate generation succeeded)
-        supabase
-          .from('pdf_generation_queue')
-          .update({
-            status: 'completed',
-            completed_at: new Date().toISOString(),
-            completed_form_id: result.form_id,
-            attempt_count: 1
-          })
-          .eq('create_user_id', userId)
-          .eq('status', 'pending')
-          .then(() => {
-            logger.info('✅ Queue job marked complete after immediate success', { userId });
-          })
-          .catch(err => {
-            logger.warn('Failed to update queue status', { error: err.message });
-          });
-
-        // Send image download links to the user (non-blocking, best-effort)
-        if (userEmail) {
-          emailService.sendImageDownloadLinks(supabase, userId, userEmail, userName)
-            .then(imageResult => {
-              if (imageResult.success) {
-                logger.success('📧 Image links email sent', {
-                  userId,
-                  incidentId: incident.id,
-                  totalImages: imageResult.totalImages,
-                  expiry: imageResult.expiryDuration
-                });
-              } else if (imageResult.reason === 'no_images') {
-                logger.info('ℹ️ No images to send for user', { userId, incidentId: incident.id });
-              } else {
-                logger.warn('⚠️ Image links email failed (non-critical)', {
-                  userId,
-                  incidentId: incident.id,
-                  error: imageResult.error
-                });
-              }
-            })
-            .catch(error => {
-              logger.warn('⚠️ Image links email error (non-critical)', {
-                userId,
-                incidentId: incident.id,
-                error: error.message
-              });
-            });
-        } else {
-          logger.warn('⚠️ Skipping image links email: user email missing', { userId, incidentId: incident.id });
-        }
-      })
-      .catch(error => {
-        // Immediate generation failed - queue will handle retry
-        logger.warn('⚠️ Immediate PDF generation failed, queue will retry', {
-          userId,
-          incidentId: incident.id,
-          error: error.message,
-          retryInfo: 'Job queued - will retry in 1 minute'
-        });
-      });
-
-    logger.info('📧 PDF generation initiated (queued + immediate attempt)', { incidentId: incident.id, userId });
+    // 4. PDF generation deferred until declaration page is submitted
+    // The user must complete the declaration before the report is considered final
+    logger.info('📋 Incident form saved - PDF will be generated after declaration', {
+      incidentId: incident.id,
+      userId,
+      nextStep: 'declaration.html'
+    });
 
     // 5. Finalize map screenshot if present (Page 4)
     let mapScreenshotResults = null;
@@ -1050,9 +965,205 @@ async function listIncidentReports(req, res) {
   }
 }
 
+/**
+ * Submit declaration and trigger PDF generation
+ *
+ * POST /api/incident-reports/declaration
+ *
+ * This is the final step - user has reviewed their information and
+ * agreed to the legal declaration. Now we generate and send the PDF.
+ *
+ * Body: {
+ *   userId: string,
+ *   incidentId: string (optional),
+ *   consentGiven: boolean,
+ *   consentTimestamp: string
+ * }
+ */
+async function submitDeclaration(req, res) {
+  try {
+    const userId = req.user?.id || req.body.userId;
+    const userEmail = req.user?.email;
+    const userName = req.user?.user_metadata?.full_name || 'User';
+    const { incidentId, consentGiven, consentTimestamp } = req.body;
+
+    if (!userId) {
+      logger.warn('Declaration submission without authentication');
+      return res.status(401).json({
+        success: false,
+        error: 'Authentication required'
+      });
+    }
+
+    if (!consentGiven) {
+      logger.warn('Declaration submission without consent', { userId });
+      return res.status(400).json({
+        success: false,
+        error: 'Consent is required to proceed'
+      });
+    }
+
+    logger.info('📋 Declaration submission received', {
+      userId,
+      incidentId,
+      consentGiven,
+      consentTimestamp
+    });
+
+    // 1. Update incident report with declaration consent
+    let incident = null;
+    if (incidentId) {
+      const { data, error } = await supabase
+        .from('incident_reports')
+        .update({
+          declaration_consent: true,
+          declaration_timestamp: consentTimestamp || new Date().toISOString(),
+          updated_at: new Date().toISOString()
+        })
+        .eq('id', incidentId)
+        .eq('create_user_id', userId)
+        .select()
+        .single();
+
+      if (error) {
+        logger.warn('Failed to update incident with declaration', { error: error.message });
+      } else {
+        incident = data;
+        logger.info('✅ Declaration recorded on incident', { incidentId });
+      }
+    } else {
+      // Find the user's most recent incident report
+      const { data, error } = await supabase
+        .from('incident_reports')
+        .select('*')
+        .eq('create_user_id', userId)
+        .order('created_at', { ascending: false })
+        .limit(1)
+        .single();
+
+      if (!error && data) {
+        incident = data;
+        // Update it with declaration
+        await supabase
+          .from('incident_reports')
+          .update({
+            declaration_consent: true,
+            declaration_timestamp: consentTimestamp || new Date().toISOString(),
+            updated_at: new Date().toISOString()
+          })
+          .eq('id', data.id);
+        logger.info('✅ Declaration recorded on most recent incident', { incidentId: data.id });
+      }
+    }
+
+    // 2. Generate PDF and email to user + accounts (with queue-based retry)
+    const pdfController = require('./pdf.controller');
+
+    // First, add to queue (guarantees eventual delivery even if immediate attempt fails)
+    pdfQueueService.enqueue(userId, incident?.id, 'declaration-submission')
+      .then(queueEntry => {
+        logger.info('📥 PDF job queued', {
+          jobId: queueEntry.id,
+          userId,
+          incidentId: incident?.id
+        });
+      })
+      .catch(queueError => {
+        logger.error('❌ Failed to queue PDF job', {
+          userId,
+          incidentId: incident?.id,
+          error: queueError.message
+        });
+      });
+
+    // Then, attempt immediate generation (non-blocking, for faster delivery)
+    pdfController.generateUserPDF(userId, 'declaration-submission')
+      .then(result => {
+        logger.success('📧 PDF generated and emailed after declaration', {
+          userId,
+          incidentId: incident?.id,
+          emailSent: result.email_sent,
+          formId: result.form_id
+        });
+
+        // Mark queue job as completed (if immediate generation succeeded)
+        supabase
+          .from('pdf_generation_queue')
+          .update({
+            status: 'completed',
+            completed_at: new Date().toISOString(),
+            completed_form_id: result.form_id,
+            attempt_count: 1
+          })
+          .eq('create_user_id', userId)
+          .eq('status', 'pending')
+          .then(() => {
+            logger.info('✅ Queue job marked complete after immediate success', { userId });
+          })
+          .catch(err => {
+            logger.warn('Failed to update queue status', { error: err.message });
+          });
+
+        // Send image download links to the user (non-blocking, best-effort)
+        if (userEmail) {
+          emailService.sendImageDownloadLinks(supabase, userId, userEmail, userName)
+            .then(imageResult => {
+              if (imageResult.success) {
+                logger.success('📧 Image links email sent', {
+                  userId,
+                  incidentId: incident?.id,
+                  totalImages: imageResult.totalImages,
+                  expiry: imageResult.expiryDuration
+                });
+              } else if (imageResult.reason === 'no_images') {
+                logger.info('ℹ️ No images to send for user', { userId });
+              } else {
+                logger.warn('⚠️ Image links email failed (non-critical)', {
+                  userId,
+                  error: imageResult.error
+                });
+              }
+            })
+            .catch(error => {
+              logger.warn('⚠️ Image links email error (non-critical)', {
+                userId,
+                error: error.message
+              });
+            });
+        }
+      })
+      .catch(error => {
+        // Immediate generation failed - queue will handle retry
+        logger.warn('⚠️ Immediate PDF generation failed, queue will retry', {
+          userId,
+          incidentId: incident?.id,
+          error: error.message,
+          retryInfo: 'Job queued - will retry in 5 minutes'
+        });
+      });
+
+    logger.info('📧 PDF generation initiated after declaration', { incidentId: incident?.id, userId });
+
+    // 3. Return success immediately (PDF generation is async)
+    res.status(200).json({
+      success: true,
+      message: 'Declaration accepted. Your incident report PDF is being generated and will be emailed to you shortly.',
+      incidentId: incident?.id
+    });
+
+  } catch (error) {
+    logger.error('💥 Error processing declaration:', error);
+    res.status(500).json({
+      success: false,
+      error: 'Failed to process declaration'
+    });
+  }
+}
+
 module.exports = {
   submitIncidentForm,
   saveProgress,
   getIncidentReport,
-  listIncidentReports
+  listIncidentReports,
+  submitDeclaration
 };
