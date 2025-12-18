@@ -13,7 +13,8 @@ CREATE TABLE IF NOT EXISTS public.completed_incident_forms (
   -- Form and PDF data
   form_data JSON,                 -- Complete form data snapshot
   pdf_base64 TEXT,                -- Base64 encoded PDF (truncated to 1MB)
-  pdf_url TEXT,                   -- Supabase Storage URL for PDF
+  pdf_url TEXT,                   -- Supabase Storage signed URL for PDF
+  pdf_storage_path TEXT,          -- Supabase Storage path for on-demand URL regeneration
 
   -- Timestamps
   generated_at TIMESTAMPTZ DEFAULT NOW(),
