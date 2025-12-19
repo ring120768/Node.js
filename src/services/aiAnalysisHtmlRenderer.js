@@ -100,6 +100,145 @@ class AiAnalysisHtmlRenderer {
   }
 
   /**
+   * Ensure the approved header is present; if missing, inject the header CSS and markup.
+   * This protects any future/extra pages rendered by the AI from missing the consistent header.
+   *
+   * @param {string} html - Rendered HTML
+   * @returns {string} HTML guaranteed to include the standard header
+   */
+  ensureHeader(html) {
+    // If header already present, leave as-is
+    if (html.includes('class="header"')) {
+      return html;
+    }
+
+    const headerCss = `
+    /* Injected hybrid header styles */
+    .page {
+      width: 100%;
+      background: white;
+      margin: 0 auto;
+      box-shadow: 0 10px 40px rgba(0,0,0,0.15);
+      page-break-inside: avoid;
+    }
+
+    .header {
+      position: relative;
+      height: 220px;
+      background: linear-gradient(135deg, #125689 0%, #2c799b 35%, #2d7b9d 100%);
+      color: #ffffff;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      padding: 24px 38px;
+      padding-left: 250px;
+    }
+
+    .logo-block {
+      position: absolute;
+      left: 38px;
+      top: 50%;
+      transform: translateY(-50%);
+      width: 180px;
+      height: 150px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      flex-shrink: 0;
+    }
+
+    .logo-block img {
+      width: 180px;
+      height: auto;
+    }
+
+    .header-text {
+      text-align: center;
+      padding: 0 20px;
+      transform: translateX(-15px);
+    }
+
+    .header-title {
+      font-size: 52px;
+      font-weight: 800;
+      line-height: 1.1;
+      letter-spacing: 1px;
+    }
+
+    .header-subtitle {
+      font-size: 36px;
+      font-weight: 800;
+      margin-top: 12px;
+      line-height: 1.1;
+    }
+
+    .header-tagline {
+      font-size: 22px;
+      font-weight: 400;
+      margin-top: 10px;
+      opacity: 0.9;
+    }
+
+    .content {
+      padding: 25px;
+      max-width: 1000px;
+      margin: 0 auto 25px auto;
+    }
+
+    @media print {
+      body {
+        background: #ffffff;
+        -webkit-print-color-adjust: exact;
+        print-color-adjust: exact;
+      }
+
+      .page {
+        box-shadow: none;
+        page-break-inside: avoid;
+      }
+    }
+    `;
+
+    const headerMarkup = `
+    <div class="page">
+      <div class="header">
+        <div class="logo-block">
+          <img src="/images/logo.png" alt="Car Crash Lawyer AI" />
+        </div>
+        <div class="header-text">
+          <div class="header-title">Car Crash Lawyer AI</div>
+          <div class="header-subtitle">TRAFFIC ACCIDENT LEGAL REPORT</div>
+          <div class="header-tagline">Official Legal Document for UK Legal Proceedings</div>
+        </div>
+      </div>
+      <div class="content">
+    `;
+
+    // Inject CSS before </head> (or prepend if head missing)
+    let withCss;
+    if (html.includes('</head>')) {
+      withCss = html.replace('</head>', `<style>${headerCss}</style></head>`);
+    } else {
+      withCss = `<style>${headerCss}</style>${html}`;
+    }
+
+    // Inject header markup right after <body>
+    let withHeader;
+    if (withCss.includes('<body>')) {
+      withHeader = withCss.replace('<body>', `<body>${headerMarkup}`);
+    } else {
+      withHeader = `${headerMarkup}${withCss}`;
+    }
+
+    // Ensure we close the wrapping content/page if not present
+    if (!withHeader.includes('</div>\n</div>\n</body>')) {
+      withHeader = withHeader.replace('</body>', '      </div>\n    </div>\n</body>');
+    }
+
+    return withHeader;
+  }
+
+  /**
    * Render Page 13 - Voice Transcription & Quality Review
    *
    * @param {object} data - AI analysis data
@@ -115,11 +254,13 @@ class AiAnalysisHtmlRenderer {
       // Format analysis metadata for display
       const analysis_metadata = this.formatAnalysisMetadata(data.analysis_metadata);
 
-      const rendered = this.renderTemplate(template, {
+      let rendered = this.renderTemplate(template, {
         voice_transcription: data.voice_transcription || '',
         analysis_metadata,
         quality_review: data.quality_review || ''
       });
+
+      rendered = this.ensureHeader(rendered);
 
       // DEBUG: Save rendered HTML to file for inspection
       const fs = require('fs').promises;
@@ -153,9 +294,11 @@ class AiAnalysisHtmlRenderer {
     try {
       const template = await this.loadTemplate('page14-closing-statement.html');
 
-      const rendered = this.renderTemplate(template, {
+      let rendered = this.renderTemplate(template, {
         closing_statement: data.closing_statement || ''
       });
+
+      rendered = this.ensureHeader(rendered);
 
       logger.info('Rendered Page 14 template', {
         hasStatement: !!data.closing_statement,
@@ -180,9 +323,11 @@ class AiAnalysisHtmlRenderer {
     try {
       const template = await this.loadTemplate('page15-summary.html');
 
-      const rendered = this.renderTemplate(template, {
+      let rendered = this.renderTemplate(template, {
         ai_summary: data.ai_summary || ''
       });
+
+      rendered = this.ensureHeader(rendered);
 
       logger.info('Rendered Page 15 template', {
         hasSummary: !!data.ai_summary,
@@ -210,10 +355,12 @@ class AiAnalysisHtmlRenderer {
       // Extract next steps from final review text and render as checklist HTML
       const nextStepsHtml = this.buildNextStepsHtml(data.final_review || '');
 
-      const rendered = this.renderTemplate(template, {
+      let rendered = this.renderTemplate(template, {
         final_review: data.final_review || '',
         next_steps_html: nextStepsHtml
       });
+
+      rendered = this.ensureHeader(rendered);
 
       logger.info('Rendered Page 16 template', {
         hasReview: !!data.final_review,
