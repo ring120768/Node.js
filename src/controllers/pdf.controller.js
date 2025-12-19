@@ -12,10 +12,12 @@ const gdprService = require('../services/gdprService');
 const { createClient } = require('@supabase/supabase-js');
 
 // Import PDF generation modules with error handling
-let fetchAllData, sendEmails;
+let fetchAllData, sendEmails, sendTemplateEmail;
 try {
   fetchAllData = require('../../lib/dataFetcher').fetchAllData;
-  sendEmails = require('../../lib/emailService').sendEmails;
+  const emailService = require('../../lib/emailService');
+  sendEmails = emailService.sendEmails;
+  sendTemplateEmail = emailService.sendTemplateEmail;
 } catch (error) {
   logger.warn('PDF generation modules not found - PDF features will be disabled', error.message);
 }
@@ -405,6 +407,42 @@ async function generatePdf(req, res) {
     res.json(result);
   } catch (error) {
     logger.error('Error in PDF generation', error);
+
+    // Send failure notification to admin
+    try {
+      // Try to get user email for the notification
+      let userEmail = 'Unknown';
+      if (supabase && create_user_id) {
+        const { data: userData } = await supabase
+          .from('user_signup')
+          .select('email')
+          .eq('create_user_id', create_user_id)
+          .single();
+        if (userData?.email) {
+          userEmail = userData.email;
+        }
+      }
+
+      if (sendTemplateEmail) {
+        await sendTemplateEmail(
+          'admin@carcrashlawyerai.com',
+          `PDF Generation Failed - User ${create_user_id}`,
+          'pdf-generation-failed',
+          {
+            userId: create_user_id,
+            userEmail: userEmail,
+            trigger: 'direct API call',
+            timestamp: new Date().toISOString(),
+            errorMessage: error.message || 'Unknown error',
+            currentYear: new Date().getFullYear()
+          }
+        );
+        logger.info('PDF failure notification sent to admin', { userId: create_user_id });
+      }
+    } catch (notificationError) {
+      logger.error('Failed to send PDF failure notification', notificationError);
+    }
+
     sendError(res, 500, error.message, 'PDF_GENERATION_FAILED');
   }
 }
