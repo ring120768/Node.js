@@ -400,7 +400,8 @@
       max-width: 90vw;
     }
 
-    .btn-with-tooltip:hover .hover-tooltip {
+    /* Only show tooltips on Next button hover */
+    .btn-with-tooltip.next-tooltip:hover .hover-tooltip {
       opacity: 1;
       visibility: visible;
       bottom: calc(100% + 16px);
@@ -559,7 +560,7 @@
       </button>
 
       <!-- Next Button with Bandwidth Pro-Tip -->
-      <div class="btn-with-tooltip">
+      <div class="btn-with-tooltip next-tooltip">
         <button type="button" class="btn btn-primary" id="next-btn">
           <span>Next</span>
           <span>→</span>
