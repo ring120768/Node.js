@@ -207,8 +207,12 @@ class AiAnalysisHtmlRenderer {
     try {
       const template = await this.loadTemplate('page16-final-review.html');
 
+      // Extract next steps from final review text and render as checklist HTML
+      const nextStepsHtml = this.buildNextStepsHtml(data.final_review || '');
+
       const rendered = this.renderTemplate(template, {
-        final_review: data.final_review || ''
+        final_review: data.final_review || '',
+        next_steps_html: nextStepsHtml
       });
 
       logger.info('Rendered Page 16 template', {
@@ -252,6 +256,37 @@ class AiAnalysisHtmlRenderer {
       logger.error('Failed to render all pages', { error: error.message });
       throw error;
     }
+  }
+
+  /**
+   * Build HTML for next steps checklist from the final_review text
+   * Looks for a "Next Steps:" section and converts numbered items to a checklist.
+   */
+  buildNextStepsHtml(finalReviewText) {
+    if (!finalReviewText || typeof finalReviewText !== 'string') return '';
+
+    // Extract the "Next Steps" block between markers (or to end of string)
+    let stepsBlock = '';
+    const nextStepsMatch = finalReviewText.match(/Next Steps:\n([\s\S]*?)(?:\n\nLegal Considerations:|\nLegal Considerations:|$)/);
+    if (nextStepsMatch && nextStepsMatch[1]) {
+      stepsBlock = nextStepsMatch[1];
+    }
+
+    if (!stepsBlock) return '';
+
+    // Split into individual steps, stripping leading numbers/bullets
+    const steps = stepsBlock
+      .split(/\n+/)
+      .map(line => line.replace(/^\s*\d+[\).\s-]?\s*/, '').trim())
+      .filter(Boolean);
+
+    if (steps.length === 0) return '';
+
+    const itemsHtml = steps
+      .map(step => `<li><span class="checkbox"></span><span class="step-text">${step}</span></li>`)
+      .join('\n');
+
+    return `<ul class="next-steps-checklist">${itemsHtml}</ul>`;
   }
 
   /**
