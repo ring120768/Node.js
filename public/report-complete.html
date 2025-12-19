@@ -613,7 +613,7 @@
         }
 
         // ===== SUPABASE INITIALIZATION =====
-        let supabase = null;
+        let supabaseClient = null;
 
         async function initSupabase() {
             try {
@@ -621,7 +621,7 @@
                 const config = await response.json();
 
                 if (config.supabaseUrl && config.supabaseKey) {
-                    supabase = window.supabase.createClient(
+                    supabaseClient = window.supabase.createClient(
                         config.supabaseUrl,
                         config.supabaseKey
                     );
