@@ -11,7 +11,7 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 | | |
 |---|---|
 | **Stack** | Node.js 18+, Express, Supabase (PostgreSQL/Auth/Storage/Realtime), Adobe PDF Services, OpenAI |
-| **Version** | 2.0.1 |
+| **Version** | 2.1.0 |
 | **Location** | UK (DD/MM/YYYY, £ GBP, GMT/BST, +44, British English) |
 | **Flow** | Custom HTML Forms (Pages 1-12) → Image Processing → PDF (18 pages, 170+ fields) → Email |
 
@@ -342,16 +342,6 @@ try {
 - Adding abstraction layers for single-use code
 - "Future-proofing" without a concrete requirement
 
-### Quality Improvements ARE Welcome:
-
-| ✅ Do | ❌ Don't |
-|-------|----------|
-| Fix actual bugs affecting users | Add fallbacks for bugs that don't exist |
-| Improve error messages for debugging | Add logging for every possible state |
-| Simplify complex code paths | Add complexity "for safety" |
-| Remove dead/redundant code | Keep code "just in case" |
-| Add tests for real failure modes | Test hypothetical edge cases |
-
 ### The Litmus Test:
 
 > "If I remove this code, will something actually break for a real user?"
@@ -407,9 +397,7 @@ Do not "fix" these to match - they're deliberate design choices.
 - Data collection process is complete and should NOT be modified
 - Only PDF generation needs implementing when this feature is prioritised
 
-**Added:** 2025-12-16 | **Priority:** Future enhancement
-
 ---
 
-**Last Updated:** 2025-12-16
-**Version:** 2.0.1
+**Last Updated:** 2025-12-19
+**Version:** 2.1.0
