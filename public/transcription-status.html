@@ -165,6 +165,34 @@
             border-bottom-color: #2196F3;
         }
 
+        /* Tab status states */
+        .tab-button.status-recording {
+            background: #fef2f2;
+            color: #b91c1c;
+            border-bottom-color: #b91c1c;
+        }
+        .tab-button.status-processing {
+            background: #fff7ed;
+            color: #c2410c;
+            border-bottom-color: #ea580c;
+        }
+        .tab-button.status-ready {
+            background: #ecfdf3;
+            color: #15803d;
+            border-bottom-color: #16a34a;
+        }
+        .tab-button.status-attention {
+            position: relative;
+            box-shadow: 0 0 0 6px rgba(22, 163, 74, 0.15);
+            animation: pulseGlow 1.6s ease-in-out infinite;
+        }
+
+        @keyframes pulseGlow {
+            0% { box-shadow: 0 0 0 6px rgba(22, 163, 74, 0.12); }
+            50% { box-shadow: 0 0 0 10px rgba(22, 163, 74, 0.24); }
+            100% { box-shadow: 0 0 0 6px rgba(22, 163, 74, 0.12); }
+        }
+
         .tab-panel {
             display: none;
             animation: fadeIn 0.3s ease;
@@ -2583,6 +2611,9 @@ Continue with: What happened immediately after impact? Any injuries you noticed?
                 updateProgress('step-upload', 'complete');
                 updateProgress('step-transcribe', 'active');
                 showStatus('Uploading and transcribing your recording...', 'warning');
+                setTabStatus('record', 'ready');
+                setTabStatus('transcription', 'processing');
+                setTabStatus('analysis', null);
 
                 console.log('📤 Uploading audio:', {
                     size: Math.round(audioBlob.size / 1024) + ' KB',
@@ -2625,6 +2656,9 @@ Continue with: What happened immediately after impact? Any injuries you noticed?
                     updateProgress('step-transcribe', 'complete');
                     showTranscription(result.transcription.text);
                     showStatus('Transcription complete!', 'success');
+                    setTabStatus('transcription', 'ready');
+                    setTabStatus('analysis', 'attention'); // guide next step
+                    switchTab('transcription');
                 } else {
                     throw new Error(result.error || result.message || 'Transcription failed');
                 }
@@ -2663,6 +2697,8 @@ Continue with: What happened immediately after impact? Any injuries you noticed?
                 }
 
                 showStatus(errorMessage, 'error');
+                setTabStatus('transcription', 'recording');
+                setTabStatus('analysis', null);
             }
         }
 
@@ -3401,6 +3437,30 @@ Continue with: What happened immediately after impact? Any injuries you noticed?
             // Auto-fetch existing analysis when switching to analysis tab
             if (tabName === 'analysis' && currentIncidentId) {
                 fetchExistingAnalysis();
+            }
+
+            // When user manually switches tabs, clear attention pulse
+            if (tabName === 'analysis') {
+                setTabStatus('analysis', 'ready');
+            }
+        }
+
+        // ===== TAB STATUS VISUALS =====
+        function setTabStatus(tabName, status) {
+            const btn = document.querySelector(`.tab-button[data-tab="${tabName}"]`);
+            if (!btn) return;
+
+            // Reset status classes
+            btn.classList.remove('status-recording', 'status-processing', 'status-ready', 'status-attention');
+
+            if (status === 'recording') {
+                btn.classList.add('status-recording');
+            } else if (status === 'processing') {
+                btn.classList.add('status-processing');
+            } else if (status === 'ready') {
+                btn.classList.add('status-ready');
+            } else if (status === 'attention') {
+                btn.classList.add('status-ready', 'status-attention');
             }
         }
 
