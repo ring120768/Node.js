@@ -300,6 +300,9 @@
             margin-bottom: 20px;
             display: none;
             border-left: 4px solid #ff9800;
+            display: flex;
+            align-items: center;
+            gap: 10px;
         }
 
         .status-indicator {
@@ -327,6 +330,19 @@
         @keyframes pulse {
             0%, 100% { opacity: 1; }
             50% { opacity: 0.5; }
+        }
+
+        /* Transcription spinner (gavel) */
+        .gavel-spinner {
+            display: none;
+            font-size: 20px;
+            animation: spin 1s linear infinite;
+            transform-origin: center;
+        }
+
+        @keyframes spin {
+            from { transform: rotate(0deg); }
+            to { transform: rotate(360deg); }
         }
 
         /* Recording Status */
@@ -1579,6 +1595,7 @@
         <div id="statusMessage">
             <span class="status-indicator"></span>
             <span id="statusText">Ready to record</span>
+            <span id="gavelSpinner" class="gavel-spinner" aria-hidden="true">🔨</span>
         </div>
 
         <!-- Recording Status -->
@@ -2094,6 +2111,7 @@ Continue with: What happened immediately after impact? Any injuries you noticed?
             const statusDiv = document.getElementById('statusMessage');
             const statusText = document.getElementById('statusText');
             const statusIndicator = statusDiv.querySelector('.status-indicator');
+            const spinner = document.getElementById('gavelSpinner');
 
             statusDiv.style.display = 'block';
             statusText.textContent = message;
@@ -2102,18 +2120,22 @@ Continue with: What happened immediately after impact? Any injuries you noticed?
                 case 'error':
                     statusDiv.style.background = '#fee2e2';
                     statusIndicator.className = 'status-indicator recording';
+                    spinner.style.display = 'none';
                     break;
                 case 'success':
                     statusDiv.style.background = '#d4edda';
                     statusIndicator.className = 'status-indicator complete';
+                    spinner.style.display = 'none';
                     break;
                 case 'warning':
                     statusDiv.style.background = '#fff3cd';
                     statusIndicator.className = 'status-indicator processing';
+                    spinner.style.display = 'inline-block';
                     break;
                 default:
                     statusDiv.style.background = '#d1ecf1';
                     statusIndicator.className = 'status-indicator processing';
+                    spinner.style.display = 'inline-block';
             }
 
             if (type === 'info' || type === 'success') {
@@ -2560,7 +2582,7 @@ Continue with: What happened immediately after impact? Any injuries you noticed?
             try {
                 updateProgress('step-upload', 'complete');
                 updateProgress('step-transcribe', 'active');
-                showStatus('Uploading and transcribing your recording...', 'info');
+                showStatus('Uploading and transcribing your recording...', 'warning');
 
                 console.log('📤 Uploading audio:', {
                     size: Math.round(audioBlob.size / 1024) + ' KB',
