@@ -353,9 +353,21 @@
                 const profileResponse = await fetch('/api/auth/session', { credentials: 'include' });
                 if (profileResponse.ok) {
                     const sessionData = await profileResponse.json();
+                    const fullName =
+                        sessionData.user?.user_metadata?.full_name ||
+                        sessionData.user?.user_metadata?.name ||
+                        sessionData.user?.name ||
+                        null;
+                    const emailName = sessionData.email ? sessionData.email.split('@')[0] : null;
+                    const displayName = fullName || emailName || 'the undersigned';
+
+                    document.getElementById('userName').textContent = displayName;
+
                     if (sessionData.email) {
                         infoList.push(`Email address: ${sessionData.email}`);
-                        document.getElementById('userName').textContent = sessionData.email.split('@')[0];
+                    }
+                    if (fullName) {
+                        infoList.push(`Name on account: ${fullName}`);
                     }
                 }
             } catch (error) {
