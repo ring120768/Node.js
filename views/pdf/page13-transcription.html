@@ -18,70 +18,82 @@
 
         body {
             font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, Cantarell, sans-serif;
-            background: linear-gradient(135deg, #0E7490 0%, #0c6179 100%);
+            background: #f8f8f8;
             min-height: auto;
-            padding: 15px;
+            padding: 0;
             -webkit-print-color-adjust: exact;
             print-color-adjust: exact;
         }
 
-        .container {
-            max-width: 1000px;
-            margin: 0 auto;
+        .page {
+            width: 100%;
             background: white;
-            border-radius: 12px;
-            box-shadow: 0 10px 40px rgba(0,0,0,0.2);
-            padding: 25px;
+            margin: 0 auto;
+            box-shadow: 0 10px 40px rgba(0,0,0,0.15);
             page-break-inside: avoid;
         }
 
-        .brand-header {
+        .header {
+            position: relative;
+            height: 220px;
+            background: linear-gradient(135deg, #125689 0%, #2c799b 35%, #2d7b9d 100%);
+            color: #ffffff;
             display: flex;
             align-items: center;
-            justify-content: space-between;
-            margin-bottom: 20px;
-            padding-bottom: 15px;
-            border-bottom: 3px solid #0E7490;
+            justify-content: center;
+            padding: 24px 38px;
+            padding-left: 250px; /* reserve space for left-anchored logo */
         }
 
-        .brand-logo-section {
+        .logo-block {
+            position: absolute;
+            left: 38px;
+            top: 50%;
+            transform: translateY(-50%);
+            width: 180px;
+            height: 150px;
             display: flex;
             align-items: center;
-            gap: 20px;
+            justify-content: center;
+            flex-shrink: 0;
         }
 
-        .brand-logo {
-            width: 80px;
+        .logo-block img {
+            width: 180px;
             height: auto;
         }
 
-        .brand-text {
-            flex: 1;
+        .header-text {
+            text-align: center;
+            padding: 0 20px;
+            transform: translateX(-15px); /* match approved positioning */
         }
 
-        h1 {
-            color: #0E7490;
-            margin: 0;
-            font-size: 28px;
-            font-weight: 700;
-            letter-spacing: -0.5px;
+        .header-title {
+            font-size: 52px;
+            font-weight: 800;
+            line-height: 1.1;
+            letter-spacing: 1px;
         }
 
-        .brand-tagline {
-            color: #6B7280;
-            font-size: 13px;
-            margin-top: 5px;
-            font-weight: 500;
+        .header-subtitle {
+            font-size: 36px;
+            font-weight: 800;
+            margin-top: 12px;
+            line-height: 1.1;
         }
 
-        .page-number {
-            color: #6B7280;
-            font-size: 14px;
-            font-weight: 600;
-            text-align: right;
-            padding: 8px 16px;
-            background: #F3F4F6;
-            border-radius: 20px;
+        .header-tagline {
+            font-size: 22px;
+            font-weight: 400;
+            margin-top: 10px;
+            opacity: 0.9;
+        }
+
+        .content {
+            padding: 25px;
+            max-width: 1000px;
+            margin: 0 auto 25px auto;
         }
 
         .section {
@@ -176,12 +188,12 @@
 
         @media print {
             body {
-                background: linear-gradient(135deg, #0E7490 0%, #0c6179 100%);
+                background: #ffffff;
                 -webkit-print-color-adjust: exact;
                 print-color-adjust: exact;
             }
 
-            .container {
+            .page {
                 box-shadow: none;
                 page-break-inside: avoid;
             }
@@ -189,48 +201,47 @@
     </style>
 </head>
 <body>
-    <div class="container">
-        <!-- Branded Header -->
-        <div class="brand-header">
-            <div class="brand-logo-section">
-                <img src="/images/logo.png" alt="Car Crash Lawyer AI" class="brand-logo" />
-                <div class="brand-text">
-                    <h1>Car Crash Lawyer AI</h1>
-                    <div class="brand-tagline">Professional Legal Documentation Platform</div>
+    <div class="page">
+        <div class="header">
+            <div class="logo-block">
+                <img src="/images/logo.png" alt="Car Crash Lawyer AI" />
+            </div>
+            <div class="header-text">
+                <div class="header-title">Car Crash Lawyer AI</div>
+                <div class="header-subtitle">TRAFFIC ACCIDENT LEGAL REPORT</div>
+                <div class="header-tagline">Official Legal Document for UK Legal Proceedings</div>
+            </div>
+        </div>
+        <div class="content">
+            <!-- Section 1: Voice Transcription -->
+            <div class="section">
+                <div class="section-title">User's Voice Transcription</div>
+                <p style="color: #6B7280; margin-bottom: 15px; font-size: 14px;">
+                    Your personal statement about the incident, transcribed from audio recording.
+                </p>
+
+                {{#if voice_transcription}}
+                <div class="transcription-box">{{voice_transcription}}</div>
+                {{else}}
+                <div class="empty-state">No voice transcription available</div>
+                {{/if}}
+            </div>
+
+            <!-- Section 2: Analysis Metadata -->
+            <div class="section">
+                <div class="section-title">AI Analysis Information</div>
+
+                {{#if analysis_metadata}}
+                <div class="metadata-box">
+                    <strong>Analysis Details:</strong> {{analysis_metadata}}
                 </div>
+                {{else}}
+                <div class="metadata-box">
+                    <strong>Analysis Details:</strong> Not yet generated
+                </div>
+                {{/if}}
             </div>
-            <div class="page-number">Page 13 of 18</div>
         </div>
-
-        <!-- Section 1: Voice Transcription -->
-        <div class="section">
-            <div class="section-title">User's Voice Transcription</div>
-            <p style="color: #6B7280; margin-bottom: 15px; font-size: 14px;">
-                Your personal statement about the incident, transcribed from audio recording.
-            </p>
-
-            {{#if voice_transcription}}
-            <div class="transcription-box">{{voice_transcription}}</div>
-            {{else}}
-            <div class="empty-state">No voice transcription available</div>
-            {{/if}}
-        </div>
-
-        <!-- Section 2: Analysis Metadata -->
-        <div class="section">
-            <div class="section-title">AI Analysis Information</div>
-
-            {{#if analysis_metadata}}
-            <div class="metadata-box">
-                <strong>Analysis Details:</strong> {{analysis_metadata}}
-            </div>
-            {{else}}
-            <div class="metadata-box">
-                <strong>Analysis Details:</strong> Not yet generated
-            </div>
-            {{/if}}
-        </div>
-
     </div>
 </body>
 </html>
