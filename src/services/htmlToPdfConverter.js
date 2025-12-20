@@ -176,36 +176,30 @@ class HtmlToPdfConverter {
    */
   async convertMultiplePages(htmlPages) {
     try {
-      logger.info('Converting 4 AI analysis pages to PDF');
+      const entries = Object.entries(htmlPages);
+      logger.info(`Converting ${entries.length} AI analysis page(s) to PDF`);
 
       const startTime = Date.now();
 
-      // Convert all pages in parallel for speed
-      const [page13Buffer, page14Buffer, page15Buffer, page16Buffer] = await Promise.all([
-        this.convertHtmlToPdf(htmlPages.page13, { pageNumber: 13 }),
-        this.convertHtmlToPdf(htmlPages.page14, { pageNumber: 14 }),
-        this.convertHtmlToPdf(htmlPages.page15, { pageNumber: 15 }),
-        this.convertHtmlToPdf(htmlPages.page16, { pageNumber: 16 })
-      ]);
+      const buffers = await Promise.all(
+        entries.map(([key, html], idx) => this.convertHtmlToPdf(html, { pageNumber: key || idx + 1 }))
+      );
 
+      const totalSizeKB = (buffers.reduce((sum, b) => sum + b.length, 0) / 1024).toFixed(2);
       const duration = Date.now() - startTime;
 
       logger.info('All pages converted to PDF', {
         durationMs: duration,
-        totalSizeKB: (
-          (page13Buffer.length +
-            page14Buffer.length +
-            page15Buffer.length +
-            page16Buffer.length) / 1024
-        ).toFixed(2)
+        totalSizeKB,
+        pages: entries.map(([key]) => key)
       });
 
-      return {
-        page13: page13Buffer,
-        page14: page14Buffer,
-        page15: page15Buffer,
-        page16: page16Buffer
-      };
+      // Return an object keyed the same as input
+      const result = {};
+      entries.forEach(([key], i) => {
+        result[key] = buffers[i];
+      });
+      return result;
     } catch (error) {
       logger.error('Failed to convert multiple pages', { error: error.message });
       throw error;

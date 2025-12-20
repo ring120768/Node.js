@@ -370,6 +370,7 @@ async function generateUserPDF(create_user_id, source = 'direct') {
 
   // Track email status separately from PDF generation
   const isValidFormId = storedForm.id && !storedForm.id.startsWith('temp-') && !storedForm.id.startsWith('error-');
+  const emailFailed = !emailResult.success;
 
   if (isValidFormId) {
     // Update with email status and tracking
@@ -381,7 +382,7 @@ async function generateUserPDF(create_user_id, source = 'direct') {
     };
 
     // If email failed, queue for retry
-    if (!emailResult.success) {
+    if (emailFailed) {
       updateData.email_last_error = emailResult.error || 'Email send failed';
       updateData.email_retry_queued = true;
 
@@ -406,12 +407,18 @@ async function generateUserPDF(create_user_id, source = 'direct') {
         formId: storedForm.id,
         error: emailResult.error
       });
+
     }
 
     await supabase
       .from('completed_incident_forms')
       .update(updateData)
       .eq('id', storedForm.id);
+
+    if (emailFailed) {
+      // Surface failure so queue retries the whole job and alerts can fire
+      throw new Error(`Email send failed: ${emailResult.error || 'unknown error'}`);
+    }
   }
 
   // PDF generation is still a success even if email failed - it will be retried

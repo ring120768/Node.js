@@ -205,112 +205,35 @@ class AdobePdfFormFillerService {
       const totalFormPages = pdfDoc.getPageCount();
       console.log(`  📊 Form PDF has ${totalFormPages} pages total`);
 
-      // Step 1: Copy pages 1-12 from form-filled PDF
-      console.log('  📄 Copying form pages 1-12...');
-      const formPages1to12 = await mergedPdf.copyPages(pdfDoc, [0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11]);
-      formPages1to12.forEach(page => mergedPdf.addPage(page));
+      // Step 1: Copy base pages (1-12) from form-filled PDF
+      console.log('  📄 Copying base form pages 1-12...');
+      const baseFormCount = Math.min(totalFormPages, 12);
+      const baseIndices = Array.from({ length: baseFormCount }, (_, i) => i);
+      const formPagesBase = await mergedPdf.copyPages(pdfDoc, baseIndices);
+      formPagesBase.forEach(page => mergedPdf.addPage(page));
 
-      // Step 2: Load and add HTML-rendered pages 13-16
-      console.log('  🎨 Adding HTML pages 13-16...');
-      console.error('  🔍 DEBUG: Starting HTML page loading...'); // Using stderr for immediate output
-
-      let page13Pdf, page14Pdf, page15Pdf, page16Pdf;
-      try {
-        console.error('  ⏳ Loading Page 13 PDF...');
-        page13Pdf = await PDFDocument.load(htmlPdfBuffers.page13);
-        console.error('  ✅ Page 13 loaded');
-      } catch (error) {
-        console.error('  ❌ ERROR loading Page 13:', error.message);
-        throw error;
+      // Step 2: Load and add AI HTML-rendered pages (dynamic count)
+      console.log('  🎨 Adding AI HTML pages...');
+      const htmlKeys = Object.keys(htmlPdfBuffers);
+      for (const key of htmlKeys) {
+        console.error(`  ⏳ Loading AI page PDF for ${key}...`);
+        const aiPdf = await PDFDocument.load(htmlPdfBuffers[key]);
+        const pageCount = aiPdf.getPageCount();
+        console.error(`    📄 ${key}: ${pageCount} page(s)`);
+        const indices = Array.from({ length: pageCount }, (_, i) => i);
+        const aiPages = await mergedPdf.copyPages(aiPdf, indices);
+        aiPages.forEach(page => mergedPdf.addPage(page));
+        console.error(`  ✅ Added ${aiPages.length} page(s) from ${key}`);
       }
 
-      try {
-        console.error('  ⏳ Loading Page 14 PDF...');
-        page14Pdf = await PDFDocument.load(htmlPdfBuffers.page14);
-        console.error('  ✅ Page 14 loaded');
-      } catch (error) {
-        console.error('  ❌ ERROR loading Page 14:', error.message);
-        throw error;
-      }
-
-      try {
-        console.error('  ⏳ Loading Page 15 PDF...');
-        page15Pdf = await PDFDocument.load(htmlPdfBuffers.page15);
-        console.error('  ✅ Page 15 loaded');
-      } catch (error) {
-        console.error('  ❌ ERROR loading Page 15:', error.message);
-        throw error;
-      }
-
-      try {
-        console.error('  ⏳ Loading Page 16 PDF...');
-        page16Pdf = await PDFDocument.load(htmlPdfBuffers.page16);
-        console.error('  ✅ Page 16 loaded');
-      } catch (error) {
-        console.error('  ❌ ERROR loading Page 16:', error.message);
-        throw error;
-      }
-
-      // Copy ALL pages from each HTML PDF (some may span multiple pages)
-      console.error('  📊 Getting page counts...');
-      const page13PageCount = page13Pdf.getPageCount();
-      const page14PageCount = page14Pdf.getPageCount();
-      const page15PageCount = page15Pdf.getPageCount();
-      const page16PageCount = page16Pdf.getPageCount();
-
-      console.error(`    📄 Page 13: ${page13PageCount} page(s)`);
-      console.error(`    📄 Page 14: ${page14PageCount} page(s)`);
-      console.error(`    📄 Page 15: ${page15PageCount} page(s) ← CRITICAL: Should be 2 pages`);
-      console.error(`    📄 Page 16: ${page16PageCount} page(s)`);
-
-      // Copy all pages from Page 13
-      console.error(`  📋 Copying Page 13 (${page13PageCount} pages)...`);
-      const page13Indices = Array.from({ length: page13PageCount }, (_, i) => i);
-      const page13Pages = await mergedPdf.copyPages(page13Pdf, page13Indices);
-      page13Pages.forEach(page => mergedPdf.addPage(page));
-      console.error(`  ✅ Added ${page13Pages.length} page(s) from Page 13`);
-
-      // Copy all pages from Page 14
-      console.error(`  📋 Copying Page 14 (${page14PageCount} pages)...`);
-      const page14Indices = Array.from({ length: page14PageCount }, (_, i) => i);
-      const page14Pages = await mergedPdf.copyPages(page14Pdf, page14Indices);
-      page14Pages.forEach(page => mergedPdf.addPage(page));
-      console.error(`  ✅ Added ${page14Pages.length} page(s) from Page 14`);
-
-      // Copy all pages from Page 15
-      console.error(`  📋 Copying Page 15 (${page15PageCount} pages)...`);
-      const page15Indices = Array.from({ length: page15PageCount }, (_, i) => i);
-      const page15Pages = await mergedPdf.copyPages(page15Pdf, page15Indices);
-      page15Pages.forEach(page => mergedPdf.addPage(page));
-      console.error(`  ✅ Added ${page15Pages.length} page(s) from Page 15 ← Should be 2!`);
-
-      // Copy all pages from Page 16
-      console.error(`  📋 Copying Page 16 (${page16PageCount} pages)...`);
-      const page16Indices = Array.from({ length: page16PageCount }, (_, i) => i);
-      const page16Pages = await mergedPdf.copyPages(page16Pdf, page16Indices);
-      page16Pages.forEach(page => mergedPdf.addPage(page));
-      console.error(`  ✅ Added ${page16Pages.length} page(s) from Page 16`);
-
-      // Step 3: Copy remaining pages 17-18 from form-filled PDF
-      console.log('  📄 Copying form pages 17-18...');
-      console.error('  📋 Copying form pages 17-18...');
-      const formPages17to18 = await mergedPdf.copyPages(pdfDoc, [16, 17]);
-      formPages17to18.forEach(page => mergedPdf.addPage(page));
-      console.error(`  ✅ Added ${formPages17to18.length} page(s) (17-18)`);
-
-      // Step 4: Copy any additional pages (witnesses, vehicles) if they exist
-      if (totalFormPages > 18) {
-        const additionalPageCount = totalFormPages - 18;
-        console.log(`  📋 Copying ${additionalPageCount} additional page(s) (witnesses/vehicles)...`);
-        console.error(`  📋 Copying ${additionalPageCount} additional page(s) (witnesses/vehicles)...`);
-
-        const additionalPageIndices = Array.from(
-          { length: additionalPageCount },
-          (_, i) => 18 + i
-        );
-        const additionalPages = await mergedPdf.copyPages(pdfDoc, additionalPageIndices);
-        additionalPages.forEach(page => mergedPdf.addPage(page));
-        console.error(`  ✅ Added ${additionalPages.length} additional page(s)`);
+      // Step 3: Copy remaining form pages after the base slice
+      if (totalFormPages > baseFormCount) {
+        const remainingCount = totalFormPages - baseFormCount;
+        console.log(`  📄 Copying remaining ${remainingCount} form page(s)...`);
+        const remainingIndices = Array.from({ length: remainingCount }, (_, i) => baseFormCount + i);
+        const remainingPages = await mergedPdf.copyPages(pdfDoc, remainingIndices);
+        remainingPages.forEach(page => mergedPdf.addPage(page));
+        console.error(`  ✅ Added ${remainingPages.length} remaining form page(s)`);
       }
 
       const totalPages = mergedPdf.getPageCount();
