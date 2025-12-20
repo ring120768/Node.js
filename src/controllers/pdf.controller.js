@@ -28,6 +28,9 @@ const adobePdfFormFillerService = require('../services/adobePdfFormFillerService
 // Import Adobe REST API Form Filler Service (validated with 43-field whitelist)
 const adobeRestFormFiller = require('../services/adobeRestFormFiller');
 
+// Import Email Retry Service for reliable email delivery
+const emailRetryService = require('../services/emailRetryService');
+
 // Initialize Supabase client
 let supabase = null;
 if (config.supabase.url && config.supabase.serviceKey) {
@@ -37,6 +40,9 @@ if (config.supabase.url && config.supabase.serviceKey) {
       persistSession: false
     }
   });
+
+  // Initialize email retry service with supabase client
+  emailRetryService.initialize(supabase);
 }
 
 /**
@@ -316,10 +322,11 @@ async function storeCompletedForm(createUserId, pdfBuffer, allData) {
       logger.error('Error storing completed form', error);
     }
 
-    return data || { id: `temp-${Date.now()}` };
+    // Return data with pdf_storage_path for email retry queue
+    return data || { id: `temp-${Date.now()}`, pdf_storage_path: fileName };
   } catch (error) {
     logger.error('Error in storeCompletedForm', error);
-    return { id: `error-${Date.now()}` };
+    return { id: `error-${Date.now()}`, pdf_storage_path: null };
   }
 }
 
@@ -361,24 +368,64 @@ async function generateUserPDF(create_user_id, source = 'direct') {
   const storedForm = await storeCompletedForm(create_user_id, pdfBuffer, allData);
   const emailResult = await sendEmails(allData.user.email, pdfBuffer, create_user_id);
 
-  if (storedForm.id && !storedForm.id.startsWith('temp-') && !storedForm.id.startsWith('error-')) {
+  // Track email status separately from PDF generation
+  const isValidFormId = storedForm.id && !storedForm.id.startsWith('temp-') && !storedForm.id.startsWith('error-');
+
+  if (isValidFormId) {
+    // Update with email status and tracking
+    const updateData = {
+      sent_to_user: emailResult.success,
+      sent_to_accounts: emailResult.success,
+      email_status: emailResult,
+      email_attempts: 1
+    };
+
+    // If email failed, queue for retry
+    if (!emailResult.success) {
+      updateData.email_last_error = emailResult.error || 'Email send failed';
+      updateData.email_retry_queued = true;
+
+      // Queue email for retry with exponential backoff
+      await emailRetryService.queueForRetry({
+        createUserId: create_user_id,
+        incidentId: allData.currentIncident?.id || null,
+        completedFormId: storedForm.id,
+        emailType: 'pdf_delivery',
+        recipientEmail: allData.user.email,
+        subject: `Traffic Accident Legal Report - ${new Date().toISOString().split('T')[0]}`,
+        templateName: null, // Uses inline template in sendEmails
+        templateData: null,
+        pdfStoragePath: storedForm.pdf_storage_path || `completed_forms/${create_user_id}/report_${Date.now()}.pdf`,
+        source: source,
+        lastError: emailResult.error || 'Email send failed',
+        priority: 5 // Higher priority for user PDF emails
+      });
+
+      logger.warn('📧 PDF email failed - queued for retry', {
+        userId: create_user_id,
+        formId: storedForm.id,
+        error: emailResult.error
+      });
+    }
+
     await supabase
       .from('completed_incident_forms')
-      .update({
-        sent_to_user: emailResult.success,
-        sent_to_accounts: emailResult.success,
-        email_status: emailResult
-      })
+      .update(updateData)
       .eq('id', storedForm.id);
   }
 
-  logger.success('PDF generation process completed');
+  // PDF generation is still a success even if email failed - it will be retried
+  logger.success('PDF generation process completed', {
+    emailSent: emailResult.success,
+    emailQueued: !emailResult.success
+  });
 
   return {
     success: true,
     form_id: storedForm.id,
     create_user_id,
     email_sent: emailResult.success,
+    email_queued: !emailResult.success,
     timestamp: new Date().toISOString()
   };
 }
@@ -657,10 +704,95 @@ async function sendImageLinksEmail(req, res) {
   }
 }
 
+/**
+ * Get Email Queue Stats
+ * GET /api/pdf/email-queue/stats
+ * Returns statistics about the email retry queue (admin endpoint)
+ */
+async function getEmailQueueStats(req, res) {
+  try {
+    const stats = await emailRetryService.getQueueStats();
+
+    if (!stats) {
+      return res.json({
+        success: true,
+        message: 'Email retry queue not available or table does not exist',
+        stats: null,
+        requestId: req.requestId
+      });
+    }
+
+    res.json({
+      success: true,
+      stats,
+      requestId: req.requestId
+    });
+  } catch (error) {
+    logger.error('Error getting email queue stats', error);
+    sendError(res, 500, 'Failed to get queue stats', 'QUEUE_STATS_FAILED');
+  }
+}
+
+/**
+ * Manually Retry a Specific Email
+ * POST /api/pdf/email-queue/retry/:queueId
+ * Forces an immediate retry of a specific queued email (admin endpoint)
+ */
+async function retryQueuedEmail(req, res) {
+  try {
+    const { queueId } = req.params;
+
+    if (!queueId) {
+      return sendError(res, 400, 'Missing queueId parameter', 'MISSING_QUEUE_ID');
+    }
+
+    const result = await emailRetryService.retryEmailById(queueId);
+
+    if (result.success) {
+      res.json({
+        success: true,
+        message: 'Email successfully resent',
+        queueId,
+        requestId: req.requestId
+      });
+    } else {
+      sendError(res, 400, result.error || 'Retry failed', 'RETRY_FAILED');
+    }
+  } catch (error) {
+    logger.error('Error retrying queued email', error);
+    sendError(res, 500, 'Failed to retry email', 'RETRY_FAILED');
+  }
+}
+
+/**
+ * Process Email Queue
+ * POST /api/pdf/email-queue/process
+ * Manually triggers processing of the email retry queue (admin/cron endpoint)
+ */
+async function processEmailQueue(req, res) {
+  try {
+    const result = await emailRetryService.processQueue();
+
+    res.json({
+      success: true,
+      message: `Processed ${result.processed} emails`,
+      ...result,
+      requestId: req.requestId
+    });
+  } catch (error) {
+    logger.error('Error processing email queue', error);
+    sendError(res, 500, 'Failed to process queue', 'PROCESS_QUEUE_FAILED');
+  }
+}
+
 module.exports = {
   generatePdf,
   getPdfStatus,
   downloadPdf,
   generateUserPDF,  // Required by incidentForm.controller for post-submission email
-  sendImageLinksEmail // NEW: Send image download links with subscription-aware expiry
+  sendImageLinksEmail, // NEW: Send image download links with subscription-aware expiry
+  // Email queue management endpoints
+  getEmailQueueStats,
+  retryQueuedEmail,
+  processEmailQueue
 };

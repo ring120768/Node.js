@@ -64,4 +64,29 @@ router.get('/download/:userId', checkGDPRConsent, pdfController.downloadPdf);
  */
 router.post('/send-image-links/:userId', checkSharedKey, pdfController.sendImageLinksEmail);
 
+// =====================================================
+// EMAIL QUEUE MANAGEMENT (Admin/Cron endpoints)
+// =====================================================
+
+/**
+ * Get Email Queue Statistics
+ * GET /api/pdf/email-queue/stats
+ * Returns pending, failed, completed counts (last 24 hours)
+ */
+router.get('/email-queue/stats', checkSharedKey, pdfController.getEmailQueueStats);
+
+/**
+ * Manually Retry a Specific Email
+ * POST /api/pdf/email-queue/retry/:queueId
+ * Forces immediate retry of a queued email
+ */
+router.post('/email-queue/retry/:queueId', checkSharedKey, pdfController.retryQueuedEmail);
+
+/**
+ * Process Email Queue
+ * POST /api/pdf/email-queue/process
+ * Processes all pending emails ready for retry (for cron job)
+ */
+router.post('/email-queue/process', checkSharedKey, pdfController.processEmailQueue);
+
 module.exports = router;

@@ -85,11 +85,23 @@ module.exports = {
                 process.env.ZAPIER_SHARED_KEY)
   },
 
+  // ==================== EMAIL / SMTP ====================
+
+  smtp: {
+    host: process.env.SMTP_HOST || 'smtp.gmail.com',
+    port: parseInt(process.env.SMTP_PORT || '587', 10),
+    secure: process.env.SMTP_SECURE === 'true' || parseInt(process.env.SMTP_PORT || '587', 10) === 465,
+    user: process.env.SMTP_USER,
+    pass: process.env.SMTP_PASS,
+    enabled: !!(process.env.SMTP_USER && process.env.SMTP_PASS),
+    adminEmail: 'admin@carcrashlawyerai.com'
+  },
+
   // ==================== CORS ====================
 
   cors: {
-    origins: process.env.ALLOWED_ORIGINS 
-      ? process.env.ALLOWED_ORIGINS.split(',') 
+    origins: process.env.ALLOWED_ORIGINS
+      ? process.env.ALLOWED_ORIGINS.split(',')
       : '*'
   },
 
