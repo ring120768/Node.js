@@ -983,8 +983,8 @@ async function listIncidentReports(req, res) {
 async function submitDeclaration(req, res) {
   try {
     const userId = req.user?.id || req.body.userId;
-    const userEmail = req.user?.email;
-    const userName = req.user?.user_metadata?.full_name || 'User';
+    let userEmail = req.user?.email;
+    let userName = req.user?.user_metadata?.full_name || 'User';
     const { incidentId, consentGiven, consentTimestamp } = req.body;
 
     if (!userId) {
@@ -993,6 +993,21 @@ async function submitDeclaration(req, res) {
         success: false,
         error: 'Authentication required'
       });
+    }
+
+    // If email not in auth context, get from database (same pattern as PDF email)
+    if (!userEmail) {
+      const { data: userData } = await supabase
+        .from('user_signup')
+        .select('email, name, surname')
+        .eq('create_user_id', userId)
+        .single();
+
+      if (userData?.email) {
+        userEmail = userData.email;
+        userName = [userData.name, userData.surname].filter(Boolean).join(' ') || 'User';
+        logger.info('📧 Retrieved email from user_signup for images email', { userId, email: userEmail });
+      }
     }
 
     if (!consentGiven) {
