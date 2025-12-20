@@ -98,6 +98,23 @@ if (missingVars.length > 0) {
   process.exit(1);
 }
 
+// Validate SMTP configuration (warning, not fatal - but critical for user emails)
+const smtpEnvVars = ['SMTP_HOST', 'SMTP_USER', 'SMTP_PASS'];
+const missingSMTP = smtpEnvVars.filter(varName => !process.env[varName]);
+if (missingSMTP.length > 0) {
+  console.warn('');
+  console.warn('⚠️ ═══════════════════════════════════════════════════════════════');
+  console.warn('⚠️  SMTP NOT CONFIGURED - EMAIL FUNCTIONALITY DISABLED');
+  console.warn('⚠️ ═══════════════════════════════════════════════════════════════');
+  console.warn(`⚠️  Missing: ${missingSMTP.join(', ')}`);
+  console.warn('⚠️  Users will NOT receive PDF emails!');
+  console.warn('⚠️  Admin will NOT receive failure notifications!');
+  console.warn('⚠️ ═══════════════════════════════════════════════════════════════');
+  console.warn('');
+} else {
+  console.log(`✅ SMTP configured: ${process.env.SMTP_HOST}:${process.env.SMTP_PORT || '587'}`);
+}
+
 // ==================== IMPORTS ====================
 
 const http = require('http');

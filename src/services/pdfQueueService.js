@@ -38,8 +38,8 @@ if (config.supabase.url && config.supabase.serviceKey) {
   });
 }
 
-// Admin email for failure notifications
-const ADMIN_EMAIL = 'admin@carcrashlawyerai.com';
+// Admin email from config
+const ADMIN_EMAIL = config.smtp.adminEmail;
 
 // Retry intervals in seconds - spread over 24 hours for bandwidth considerations
 // Total coverage: ~25 hours (5min + 1hr + 4hr + 8hr + 12hr)
@@ -387,6 +387,12 @@ async function cleanupOldJobs(daysOld = 30) {
  * @param {Array} errorHistory - History of all errors
  */
 async function notifyAdminOfFailure(job, error, errorHistory) {
+  // Check if SMTP is configured
+  if (!config.smtp.enabled) {
+    logger.warn('📧 PDF Queue: SMTP not configured - cannot send admin notification');
+    return;
+  }
+
   try {
     logger.info('📧 PDF Queue: Sending admin notification for abandoned job', {
       jobId: job.id,
@@ -520,20 +526,20 @@ async function notifyAdminOfFailure(job, error, errorHistory) {
       </html>
     `;
 
-    // Create transporter
+    // Create transporter using centralized config
     const transporter = nodemailer.createTransport({
-      host: process.env.SMTP_HOST || 'smtp.gmail.com',
-      port: parseInt(process.env.SMTP_PORT || '587', 10),
-      secure: process.env.SMTP_SECURE === 'true' || parseInt(process.env.SMTP_PORT || '587', 10) === 465,
+      host: config.smtp.host,
+      port: config.smtp.port,
+      secure: config.smtp.secure,
       auth: {
-        user: process.env.SMTP_USER,
-        pass: process.env.SMTP_PASS
+        user: config.smtp.user,
+        pass: config.smtp.pass
       }
     });
 
     // Send email
     const result = await transporter.sendMail({
-      from: `"Car Crash Lawyer AI - ALERT" <${process.env.SMTP_USER}>`,
+      from: `"Car Crash Lawyer AI - ALERT" <${config.smtp.user}>`,
       to: ADMIN_EMAIL,
       subject: `🚨 PDF Generation Failed - User ${job.create_user_id.substring(0, 8)}... (${MAX_ATTEMPTS} attempts exhausted)`,
       html: htmlContent
@@ -564,6 +570,12 @@ async function notifyAdminOfFailure(job, error, errorHistory) {
  * @param {number} retrySeconds - Seconds until next retry
  */
 async function notifyAdminOfAttemptFailure(job, error, attemptNumber, nextRetry, retrySeconds) {
+  // Check if SMTP is configured
+  if (!config.smtp.enabled) {
+    logger.warn('📧 PDF Queue: SMTP not configured - cannot send early warning notification');
+    return;
+  }
+
   try {
     logger.info('📧 PDF Queue: Sending early warning notification', {
       jobId: job.id,
@@ -677,20 +689,20 @@ async function notifyAdminOfAttemptFailure(job, error, attemptNumber, nextRetry,
       </html>
     `;
 
-    // Create transporter
+    // Create transporter using centralized config
     const transporter = nodemailer.createTransport({
-      host: process.env.SMTP_HOST || 'smtp.gmail.com',
-      port: parseInt(process.env.SMTP_PORT || '587', 10),
-      secure: process.env.SMTP_SECURE === 'true' || parseInt(process.env.SMTP_PORT || '587', 10) === 465,
+      host: config.smtp.host,
+      port: config.smtp.port,
+      secure: config.smtp.secure,
       auth: {
-        user: process.env.SMTP_USER,
-        pass: process.env.SMTP_PASS
+        user: config.smtp.user,
+        pass: config.smtp.pass
       }
     });
 
     // Send email
     const result = await transporter.sendMail({
-      from: `"Car Crash Lawyer AI" <${process.env.SMTP_USER}>`,
+      from: `"Car Crash Lawyer AI" <${config.smtp.user}>`,
       to: ADMIN_EMAIL,
       subject: `⚡ PDF Failed (Attempt ${attemptNumber}/${MAX_ATTEMPTS}) - ${userName} - Retry in ${retryTimeDisplay}`,
       html: htmlContent
