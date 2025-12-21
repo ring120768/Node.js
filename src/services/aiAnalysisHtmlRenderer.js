@@ -155,6 +155,7 @@ class AiAnalysisHtmlRenderer {
     .header-text {
       text-align: center;
       padding: 0 20px;
+      flex: 1;
       transform: translateX(-15px);
     }
 
