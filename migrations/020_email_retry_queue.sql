@@ -109,7 +109,8 @@ END $$;
 ALTER TABLE email_retry_queue ENABLE ROW LEVEL SECURITY;
 
 -- Service role can do everything
-CREATE POLICY IF NOT EXISTS "Service role full access to email_retry_queue"
+DROP POLICY IF EXISTS "Service role full access to email_retry_queue" ON email_retry_queue;
+CREATE POLICY "Service role full access to email_retry_queue"
   ON email_retry_queue
   FOR ALL
   TO service_role
@@ -117,7 +118,8 @@ CREATE POLICY IF NOT EXISTS "Service role full access to email_retry_queue"
   WITH CHECK (true);
 
 -- Users can view their own email queue entries (read-only)
-CREATE POLICY IF NOT EXISTS "Users can view own email queue"
+DROP POLICY IF EXISTS "Users can view own email queue" ON email_retry_queue;
+CREATE POLICY "Users can view own email queue"
   ON email_retry_queue
   FOR SELECT
   TO authenticated
