@@ -291,7 +291,10 @@ async function storeCompletedForm(createUserId, pdfBuffer, allData) {
       });
 
     let pdfUrl = null;
+    let storagePath = null;
+
     if (storageData && !storageError) {
+      storagePath = fileName;
       // Generate initial signed URL (365 days) for immediate use
       const { data: urlData } = await supabase.storage
         .from('incident-images-secure')
@@ -300,6 +303,11 @@ async function storeCompletedForm(createUserId, pdfBuffer, allData) {
       if (urlData) {
         pdfUrl = urlData.signedUrl;
       }
+    } else if (storageError) {
+      logger.error('PDF storage upload failed - retries will not have attachment', {
+        error: storageError.message,
+        userId: createUserId
+      });
     }
 
     const { data, error } = await supabase
@@ -309,7 +317,7 @@ async function storeCompletedForm(createUserId, pdfBuffer, allData) {
         form_data: allData,
         pdf_base64: pdfBase64.substring(0, 1000000),
         pdf_url: pdfUrl,
-        pdf_storage_path: fileName, // Store path for on-demand URL regeneration
+        pdf_storage_path: storagePath, // Only set if upload succeeded
         generated_at: new Date().toISOString(),
         sent_to_user: false,
         sent_to_accounts: false,
@@ -322,8 +330,8 @@ async function storeCompletedForm(createUserId, pdfBuffer, allData) {
       logger.error('Error storing completed form', error);
     }
 
-    // Return data with pdf_storage_path for email retry queue
-    return data || { id: `temp-${Date.now()}`, pdf_storage_path: fileName };
+    // Return data with pdf_storage_path for email retry queue (null if upload failed)
+    return data || { id: `temp-${Date.now()}`, pdf_storage_path: storagePath };
   } catch (error) {
     logger.error('Error in storeCompletedForm', error);
     return { id: `error-${Date.now()}`, pdf_storage_path: null };
@@ -479,7 +487,7 @@ async function generatePdf(req, res) {
 
       if (sendTemplateEmail) {
         await sendTemplateEmail(
-          'admin@carcrashlawyerai.com',
+          config.smtp.adminEmail,
           `PDF Generation Failed - User ${create_user_id}`,
           'pdf-generation-failed',
           {
