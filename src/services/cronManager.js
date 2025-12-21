@@ -76,6 +76,13 @@ class CronManager {
       () => this.executeScript('scripts/process-pdf-queue.js', 'Process PDF Queue')
     );
 
+    // 0b. Email Retry Queue - Every 2 minutes (retries failed email sends)
+    this.scheduleJob(
+      'process-email-queue',
+      '*/2 * * * *', // Every 2 minutes
+      () => this.executeScript('scripts/process-email-queue.js', 'Process Email Queue')
+    );
+
     // 1. S3 Backups - Daily at 1:00 AM (before deletions)
     this.scheduleJob(
       'backup-incidents',
