@@ -22,11 +22,8 @@ try {
   logger.warn('PDF generation modules not found - PDF features will be disabled', error.message);
 }
 
-// Import Adobe PDF Form Filler Service (verified 213/213 field mappings)
+// Import PDF Form Filler Service (uses pdf-lib, verified 213/213 field mappings)
 const adobePdfFormFillerService = require('../services/adobePdfFormFillerService');
-
-// Import Adobe REST API Form Filler Service (validated with 43-field whitelist)
-const adobeRestFormFiller = require('../services/adobeRestFormFiller');
 
 // Import Email Retry Service for reliable email delivery
 const emailRetryService = require('../services/emailRetryService');

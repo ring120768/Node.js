@@ -1,90 +1,30 @@
 /**
- * Adobe PDF Form Filler Service
+ * PDF Form Filler Service
  *
- * This service uses Adobe PDF Services to fill the Car Crash Lawyer AI
- * fillable PDF form with data from Supabase.
+ * Fills the Car Crash Lawyer AI incident report PDF form using pdf-lib.
+ * Generates hybrid PDFs with form-filled pages (1-12) and HTML-rendered pages (13-16).
  *
- * This replaces the Zapier + PDFco workflow with direct integration.
+ * Note: Despite the filename, this service uses pdf-lib, not Adobe SDK.
+ * The Adobe SDK import was removed as it was never actually used.
  */
 
-const { ServicePrincipalCredentials, PDFServices } = require('@adobe/pdfservices-node-sdk');
 const { PDFDocument, PDFName, PDFDict, PDFString } = require('pdf-lib');
 const fs = require('fs');
 const path = require('path');
 const logger = require('../utils/logger');
 
-// NEW: HTML rendering services for hybrid PDF generation (pages 13-16)
+// HTML rendering services for hybrid PDF generation (pages 13-16)
 const aiAnalysisHtmlRenderer = require('./aiAnalysisHtmlRenderer');
 const htmlToPdfConverter = require('./htmlToPdfConverter');
 
 class AdobePdfFormFillerService {
   constructor() {
-    this.initialized = false;
-    this.credentials = null;
-    this.pdfServices = null;
-    // FIX: Updated to use latest PDF template (18 Nov 2025) with corrected field names
     this.templatePath = path.join(__dirname, '../../pdf-templates/Car-Crash-Lawyer-AI-incident-report-main.pdf');
-    this.initializeCredentials();
-  }
-
-  /**
-   * Initialize Adobe PDF Services credentials
-   * Priority: 1) Environment variables, 2) Credentials file
-   */
-  initializeCredentials() {
-    try {
-      let clientId = null;
-      let clientSecret = null;
-
-      // Priority 1: Environment variables (for Railway/production)
-      if (process.env.PDF_SERVICES_CLIENT_ID && process.env.PDF_SERVICES_CLIENT_SECRET) {
-        clientId = process.env.PDF_SERVICES_CLIENT_ID;
-        clientSecret = process.env.PDF_SERVICES_CLIENT_SECRET;
-        logger.info('📄 Using Adobe credentials from environment variables');
-      } else {
-        // Priority 2: Credentials file (for local development)
-        const credentialsPath = path.join(__dirname, '../../credentials/pdfservices-api-credentials.json');
-
-        if (fs.existsSync(credentialsPath)) {
-          const credentialsData = JSON.parse(fs.readFileSync(credentialsPath, 'utf8'));
-
-          if (credentialsData.client_credentials &&
-              credentialsData.client_credentials.client_id &&
-              credentialsData.client_credentials.client_secret) {
-            clientId = credentialsData.client_credentials.client_id;
-            clientSecret = credentialsData.client_credentials.client_secret;
-            logger.info('📄 Using Adobe credentials from credentials file');
-          }
-        }
-      }
-
-      if (!clientId || !clientSecret) {
-        logger.warn('⚠️ Adobe PDF credentials not found - form filling will use fallback method');
-        logger.warn('📥 Set PDF_SERVICES_CLIENT_ID and PDF_SERVICES_CLIENT_SECRET env vars');
-        logger.warn('📥 Or add credentials to: /credentials/pdfservices-api-credentials.json');
-        return;
-      }
-
-      // v4 SDK with OAuth Server-to-Server credentials
-      this.credentials = new ServicePrincipalCredentials({
-        clientId: clientId,
-        clientSecret: clientSecret
-      });
-
-      // Create PDF Services instance
-      this.pdfServices = new PDFServices({ credentials: this.credentials });
-
-      this.initialized = true;
-      logger.info('✅ Adobe PDF Form Filler Service initialized successfully');
-    } catch (error) {
-      logger.error('Failed to initialize Adobe PDF Form Filler Service:', error);
-    }
   }
 
   /**
    * Check if service is ready
-   * Note: This service uses pdf-lib for form filling, not Adobe SDK
-   * Only the template file is required
+   * Only requires the PDF template file to exist
    */
   isReady() {
     return fs.existsSync(this.templatePath);
