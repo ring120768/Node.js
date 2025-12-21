@@ -392,30 +392,50 @@ async function generateUserPDF(create_user_id, source = 'direct') {
     // If email failed, queue for retry
     if (emailFailed) {
       updateData.email_last_error = emailResult.error || 'Email send failed';
-      updateData.email_retry_queued = true;
 
-      // Queue email for retry with exponential backoff
-      await emailRetryService.queueForRetry({
-        createUserId: create_user_id,
-        incidentId: allData.currentIncident?.id || null,
-        completedFormId: storedForm.id,
-        emailType: 'pdf_delivery',
-        recipientEmail: allData.user.email,
-        subject: `Traffic Accident Legal Report - ${new Date().toISOString().split('T')[0]}`,
-        templateName: null, // Uses inline template in sendEmails
-        templateData: null,
-        pdfStoragePath: storedForm.pdf_storage_path || `completed_forms/${create_user_id}/report_${Date.now()}.pdf`,
-        source: source,
-        lastError: emailResult.error || 'Email send failed',
-        priority: 5 // Higher priority for user PDF emails
-      });
+      // Only queue if we have a valid storage path (PDF was uploaded successfully)
+      // Without the PDF in storage, retries would fail to attach it
+      if (storedForm.pdf_storage_path) {
+        // Queue email for retry with exponential backoff
+        const queueResult = await emailRetryService.queueForRetry({
+          createUserId: create_user_id,
+          incidentId: allData.currentIncident?.id || null,
+          completedFormId: storedForm.id,
+          emailType: 'pdf_delivery',
+          recipientEmail: allData.user.email,
+          subject: `Traffic Accident Legal Report - ${new Date().toISOString().split('T')[0]}`,
+          templateName: null, // Uses inline template in sendEmails
+          templateData: null,
+          pdfStoragePath: storedForm.pdf_storage_path, // Only use actual path, never fallback
+          source: source,
+          lastError: emailResult.error || 'Email send failed',
+          priority: 5 // Higher priority for user PDF emails
+        });
 
-      logger.warn('📧 PDF email failed - queued for retry', {
-        userId: create_user_id,
-        formId: storedForm.id,
-        error: emailResult.error
-      });
-
+        // Only set email_retry_queued if queue insert actually succeeded
+        if (queueResult) {
+          updateData.email_retry_queued = true;
+          logger.warn('📧 PDF email failed - queued for retry', {
+            userId: create_user_id,
+            formId: storedForm.id,
+            queueId: queueResult.id,
+            error: emailResult.error
+          });
+        } else {
+          logger.error('📧 PDF email failed and could not queue for retry', {
+            userId: create_user_id,
+            formId: storedForm.id,
+            error: emailResult.error
+          });
+        }
+      } else {
+        // PDF upload failed, can't queue for retry without attachment
+        logger.error('📧 PDF email failed - cannot queue retry (no PDF in storage)', {
+          userId: create_user_id,
+          formId: storedForm.id,
+          error: emailResult.error
+        });
+      }
     }
 
     await supabase
