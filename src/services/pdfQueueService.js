@@ -41,6 +41,34 @@ if (config.supabase.url && config.supabase.serviceKey) {
 // Admin email from config
 const ADMIN_EMAIL = config.smtp.adminEmail;
 
+// Cache table existence check
+let tableExists = null;
+
+/**
+ * Check if pdf_generation_queue table exists
+ */
+async function checkTableExists() {
+  if (tableExists !== null) return tableExists;
+
+  try {
+    const { error } = await supabase
+      .from('pdf_generation_queue')
+      .select('id')
+      .limit(1);
+
+    tableExists = !error || !error.message.includes('does not exist');
+
+    if (!tableExists) {
+      logger.warn('📥 PDF Queue: pdf_generation_queue table does not exist - queue disabled');
+    }
+
+    return tableExists;
+  } catch (e) {
+    tableExists = false;
+    return false;
+  }
+}
+
 // Retry intervals in seconds - spread over 24 hours for bandwidth considerations
 // Total coverage: ~25 hours (5min + 1hr + 4hr + 8hr + 12hr)
 const RETRY_INTERVALS = [
@@ -64,7 +92,17 @@ const MAX_ATTEMPTS = 5;
 async function enqueue(createUserId, incidentId = null, source = 'incident-form-submission') {
   if (!supabase) {
     logger.error('PDF Queue: Supabase not configured');
-    throw new Error('Database not configured');
+    return null; // Return null instead of throwing - allows immediate attempt to proceed
+  }
+
+  // Check if table exists before attempting operations
+  const exists = await checkTableExists();
+  if (!exists) {
+    logger.warn('📥 PDF Queue: Cannot queue job - table does not exist', {
+      createUserId,
+      source
+    });
+    return null; // Return null - caller should proceed with immediate attempt
   }
 
   logger.info('📥 PDF Queue: Adding job', { createUserId, incidentId, source });
@@ -119,6 +157,12 @@ async function enqueue(createUserId, incidentId = null, source = 'incident-form-
 async function processQueue(batchSize = 10) {
   if (!supabase) {
     logger.error('PDF Queue: Supabase not configured');
+    return { processed: 0, success: 0, failed: 0 };
+  }
+
+  // Check if table exists
+  const exists = await checkTableExists();
+  if (!exists) {
     return { processed: 0, success: 0, failed: 0 };
   }
 
@@ -732,6 +776,7 @@ module.exports = {
   getStats,
   retryJob,
   cleanupOldJobs,
+  checkTableExists,
   RETRY_INTERVALS,
   MAX_ATTEMPTS
 };
