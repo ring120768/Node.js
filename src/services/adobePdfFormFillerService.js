@@ -29,49 +29,65 @@ class AdobePdfFormFillerService {
 
   /**
    * Initialize Adobe PDF Services credentials
-   * Uses credentials file: /credentials/pdfservices-api-credentials.json
+   * Priority: 1) Environment variables, 2) Credentials file
    */
   initializeCredentials() {
     try {
-      const credentialsPath = path.join(__dirname, '../../credentials/pdfservices-api-credentials.json');
-      
-      if (!fs.existsSync(credentialsPath)) {
-        logger.warn('⚠️ Adobe PDF credentials file not found - form filling will use fallback method');
-        logger.warn('📥 Add credentials to: /credentials/pdfservices-api-credentials.json');
+      let clientId = null;
+      let clientSecret = null;
+
+      // Priority 1: Environment variables (for Railway/production)
+      if (process.env.PDF_SERVICES_CLIENT_ID && process.env.PDF_SERVICES_CLIENT_SECRET) {
+        clientId = process.env.PDF_SERVICES_CLIENT_ID;
+        clientSecret = process.env.PDF_SERVICES_CLIENT_SECRET;
+        logger.info('📄 Using Adobe credentials from environment variables');
+      } else {
+        // Priority 2: Credentials file (for local development)
+        const credentialsPath = path.join(__dirname, '../../credentials/pdfservices-api-credentials.json');
+
+        if (fs.existsSync(credentialsPath)) {
+          const credentialsData = JSON.parse(fs.readFileSync(credentialsPath, 'utf8'));
+
+          if (credentialsData.client_credentials &&
+              credentialsData.client_credentials.client_id &&
+              credentialsData.client_credentials.client_secret) {
+            clientId = credentialsData.client_credentials.client_id;
+            clientSecret = credentialsData.client_credentials.client_secret;
+            logger.info('📄 Using Adobe credentials from credentials file');
+          }
+        }
+      }
+
+      if (!clientId || !clientSecret) {
+        logger.warn('⚠️ Adobe PDF credentials not found - form filling will use fallback method');
+        logger.warn('📥 Set PDF_SERVICES_CLIENT_ID and PDF_SERVICES_CLIENT_SECRET env vars');
+        logger.warn('📥 Or add credentials to: /credentials/pdfservices-api-credentials.json');
         return;
       }
 
-      // Read credentials from file
-      const credentialsData = JSON.parse(fs.readFileSync(credentialsPath, 'utf8'));
-      
-      if (credentialsData.client_credentials && 
-          credentialsData.client_credentials.client_id && 
-          credentialsData.client_credentials.client_secret) {
-        
-        // v4 SDK with OAuth Server-to-Server credentials
-        this.credentials = new ServicePrincipalCredentials({
-          clientId: credentialsData.client_credentials.client_id,
-          clientSecret: credentialsData.client_credentials.client_secret
-        });
+      // v4 SDK with OAuth Server-to-Server credentials
+      this.credentials = new ServicePrincipalCredentials({
+        clientId: clientId,
+        clientSecret: clientSecret
+      });
 
-        // Create PDF Services instance
-        this.pdfServices = new PDFServices({ credentials: this.credentials });
+      // Create PDF Services instance
+      this.pdfServices = new PDFServices({ credentials: this.credentials });
 
-        this.initialized = true;
-        logger.info('✅ Adobe PDF Form Filler Service initialized successfully');
-      } else {
-        logger.warn('⚠️ Invalid Adobe PDF credentials format - form filling will use fallback method');
-      }
+      this.initialized = true;
+      logger.info('✅ Adobe PDF Form Filler Service initialized successfully');
     } catch (error) {
       logger.error('Failed to initialize Adobe PDF Form Filler Service:', error);
     }
   }
 
   /**
-   * Check if Adobe service is ready
+   * Check if service is ready
+   * Note: This service uses pdf-lib for form filling, not Adobe SDK
+   * Only the template file is required
    */
   isReady() {
-    return this.initialized && this.credentials !== null && fs.existsSync(this.templatePath);
+    return fs.existsSync(this.templatePath);
   }
 
   /**
