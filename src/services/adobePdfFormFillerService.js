@@ -390,6 +390,44 @@ class AdobePdfFormFillerService {
       }
     };
 
+    // Helper function to handle multi-widget checkboxes (YES/NO in same field)
+    // ISSUE: Some PDF fields like 'witnesses_present' have 2 widgets (YES checkbox, NO checkbox)
+    // both linked to the same field name. When we check/uncheck, both toggle together.
+    // FIX: Manually set individual widget appearance states
+    const checkMultiWidgetField = (fieldName, shouldCheckYes) => {
+      try {
+        const field = form.getCheckBox(fieldName);
+        if (!field) return;
+
+        const widgets = field.acroField.getWidgets();
+        if (widgets.length !== 2) {
+          // Single widget - use normal check/uncheck
+          if (shouldCheckYes === true || shouldCheckYes === 'yes') {
+            field.check();
+          } else {
+            field.uncheck();
+          }
+          return;
+        }
+
+        // Two widgets: widget[0] = YES, widget[1] = NO
+        const { PDFName } = require('pdf-lib');
+
+        if (shouldCheckYes === true || shouldCheckYes === 'yes') {
+          widgets[0].setAppearanceState(PDFName.of('Yes'));
+          widgets[1].setAppearanceState(PDFName.of('Off'));
+        } else if (shouldCheckYes === false || shouldCheckYes === 'no') {
+          widgets[0].setAppearanceState(PDFName.of('Off'));
+          widgets[1].setAppearanceState(PDFName.of('Yes'));
+        } else {
+          widgets[0].setAppearanceState(PDFName.of('Off'));
+          widgets[1].setAppearanceState(PDFName.of('Off'));
+        }
+      } catch (error) {
+        // Field not found - ignore
+      }
+    };
+
     // Helper function to handle yes/no checkbox pairs
     // CRITICAL: PDF templates often have TWO checkboxes for boolean questions (yes and no)
     // This function ensures only one is checked at a time
@@ -773,8 +811,14 @@ class AdobePdfFormFillerService {
     // PDF REVISION 3: usual_vehicle field structure changed
     // Old: usual_vehicle_yes / usual_vehicle_no
     // New: usual_vehicle (checkbox for yes) / driving_your_usual_vehicle_no (checkbox for no)
-    // FIX: Use checkFieldPair to ensure only one checkbox is checked at a time
-    checkFieldPair('usual_vehicle', 'driving_your_usual_vehicle_no', incident.usual_vehicle === 'yes');
+    //
+    // TEMPLATE BUG FIX (Dec 2025):
+    // Investigation revealed the PDF template has a rendering issue:
+    // - `usual_vehicle` field (x=284, RIGHT) has corrupted appearance stream - doesn't render checkmark
+    // - `driving_your_usual_vehicle_no` field (x=215, LEFT) works correctly
+    // - Visually, LEFT field is positioned under "Yes:" label
+    // - So we SWAP the fields: use the working field (driving_your_usual_vehicle_no) for YES
+    checkFieldPair('driving_your_usual_vehicle_no', 'usual_vehicle', incident.usual_vehicle);
 
     // DVLA lookup registration
     setFieldText('vehicle_license_plate', incident.vehicle_license_plate);
@@ -869,8 +913,8 @@ class AdobePdfFormFillerService {
     // ========================================
 
     // Database stores: witnesses_present = 'yes' or 'no'
-    // NOTE: witnesses_present_no field does not exist in PDF template
-    checkField('witnesses_present', incident.witnesses_present === 'yes');
+    // FIX: witnesses_present has 2 widgets (YES/NO) - use multi-widget handler
+    checkMultiWidgetField('witnesses_present', incident.witnesses_present);
 
     // Witness 1 (apply 14pt max font size to statement to prevent huge text)
     if (data.witnesses && data.witnesses[0]) {
@@ -906,11 +950,8 @@ class AdobePdfFormFillerService {
     // ========================================
 
     // Database stores: police_attended = true/false
-    // NOTE: police_attended_no field does not exist in PDF template
-    checkField('police_attended', incident.police_attended);
-
-    // FIX: Map police_attend field (alternative field name for police attendance)
-    checkField('police_attend', incident.police_attended);
+    // FIX: police_attended = YES checkbox, police_attend = NO checkbox
+    checkFieldPair('police_attended', 'police_attend', incident.police_attended);
 
     setFieldText('police_force', incident.police_force);
     setFieldText('accident_ref_number', incident.accident_ref_number);
