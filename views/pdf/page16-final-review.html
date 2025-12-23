@@ -335,15 +335,16 @@
                 <div class="review-box">
                     <div class="review-content">{{{final_review}}}</div>
                 </div>
+                {{else}}
+                <div class="empty-state">
+                    Final review has not been generated yet. Please generate AI analysis to populate this section.
+                </div>
+                {{/if}}
+
                 {{#if next_steps_html}}
                 <div class="section">
                     <div class="section-title">Next Steps Checklist</div>
                     {{{next_steps_html}}}
-                </div>
-                {{/if}}
-                {{else}}
-                <div class="empty-state">
-                    Final review has not been generated yet. Please generate AI analysis to populate this section.
                 </div>
                 {{/if}}
 

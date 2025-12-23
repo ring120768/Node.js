@@ -182,14 +182,17 @@ class AdobePdfFormFillerService {
         console.error(`  ✅ Added ${aiPages.length} page(s) from ${key}`);
       }
 
-      // Step 3: Copy remaining form pages after the base slice
-      if (totalFormPages > baseFormCount) {
-        const remainingCount = totalFormPages - baseFormCount;
-        console.log(`  📄 Copying remaining ${remainingCount} form page(s)...`);
-        const remainingIndices = Array.from({ length: remainingCount }, (_, i) => baseFormCount + i);
+      // Step 3: Copy only pages 17-18 from form-filled template
+      // (Pages 13-16 are now HTML-rendered, so we skip them)
+      // Template structure: 1-12 (forms), 13-16 (AI - skipped), 17-18 (legal declaration + emergency audio)
+      const declarationStartPage = 16; // 0-indexed, so page 17 = index 16
+      if (totalFormPages > declarationStartPage) {
+        const remainingCount = totalFormPages - declarationStartPage;
+        console.log(`  📄 Copying form pages 17-18 (legal declaration + emergency audio)...`);
+        const remainingIndices = Array.from({ length: remainingCount }, (_, i) => declarationStartPage + i);
         const remainingPages = await mergedPdf.copyPages(pdfDoc, remainingIndices);
         remainingPages.forEach(page => mergedPdf.addPage(page));
-        console.error(`  ✅ Added ${remainingPages.length} remaining form page(s)`);
+        console.error(`  ✅ Added ${remainingPages.length} form page(s) (pages 17-18)`);
       }
 
       const totalPages = mergedPdf.getPageCount();
@@ -943,42 +946,13 @@ class AdobePdfFormFillerService {
     setUrlFieldWithAutoFitFont('vehicle_damage_photo_5_url', data.imageUrls?.vehicle_damage_photo_5_url || '');
 
     // ========================================
-    // PAGES 13-16: AI Analysis Fields (GPT-4o Generated Content)
+    // PAGES 13-16: AI Analysis (HTML-Rendered)
     // ========================================
-    // Migration 028 added these 6 fields directly to incident_reports table
-    // AI analysis fields are now in incident object, not separate table
-
-    console.log('\n🤖 Mapping AI Analysis Fields (Pages 13-16):');
-
-    // Page 13 - Voice Transcription
-    setFieldText('voice_transcription', incident.voice_transcription || '');
-    console.log(`   ✅ voice_transcription: ${incident.voice_transcription ? incident.voice_transcription.length + ' chars' : 'No data'}`);
-
-    // Page 13 - Analysis Metadata (compact format for small text box)
-    const aiMetadata = incident.analysis_metadata || {};
-    const aiMetadataText = aiMetadata.model && aiMetadata.timestamp
-      ? `Model: ${aiMetadata.model} | Generated: ${new Date(aiMetadata.timestamp).toLocaleString('en-GB')}${aiMetadata.version ? ` | v${aiMetadata.version}` : ''}`
-      : '';
-    setFieldText('analysis_metadata', aiMetadataText);
-    console.log(`   ✅ analysis_metadata: ${aiMetadataText || 'No data'}`);
-
-    // Page 13 - Quality Review
-    setFieldText('quality_review', incident.quality_review || '');
-    console.log(`   ✅ quality_review: ${incident.quality_review ? incident.quality_review.length + ' chars' : 'No data'}`);
-
-    // Page 14 - AI Summary
-    setFieldText('ai_summary', incident.ai_summary || '');
-    console.log(`   ✅ ai_summary: ${incident.ai_summary ? incident.ai_summary.length + ' chars' : 'No data'}`);
-
-    // Page 15 - Closing Statement
-    setFieldText('closing_statement', incident.closing_statement || '');
-    console.log(`   ✅ closing_statement: ${incident.closing_statement ? incident.closing_statement.length + ' chars' : 'No data'}`);
-
-    // Page 16 - Final Review
-    setFieldText('final_review', incident.final_review || '');
-    console.log(`   ✅ final_review: ${incident.final_review ? incident.final_review.length + ' chars' : 'No data'}`);
-
-    console.log('✅ All 6 AI analysis fields mapped from incident_reports table');
+    // NOTE: Pages 13-16 are now fully HTML-rendered via Puppeteer (not form fields)
+    // The AI fields (voice_transcription, ai_summary, closing_statement, final_review)
+    // are passed directly to aiAnalysisHtmlRenderer.renderAllPages() at line ~121
+    // DO NOT fill these as form fields - it causes duplicate content with raw HTML tags
+    console.log('\n🤖 AI Analysis Fields (Pages 13-16): Handled via HTML rendering');
 
     // ========================================
     // PAGE 17: Legal Documentation and Declaration
