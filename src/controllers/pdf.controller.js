@@ -28,6 +28,9 @@ const adobePdfFormFillerService = require('../services/adobePdfFormFillerService
 // Import Email Retry Service for reliable email delivery
 const emailRetryService = require('../services/emailRetryService');
 
+// Import PDF Queue Service for full regeneration retries
+const pdfQueueService = require('../services/pdfQueueService');
+
 // Initialize Supabase client
 let supabase = null;
 if (config.supabase.url && config.supabase.serviceKey) {
@@ -426,13 +429,56 @@ async function generateUserPDF(create_user_id, source = 'direct') {
           });
         }
       } else {
-        // PDF upload failed, can't queue for retry without attachment
-        logger.error('📧 PDF email failed - cannot queue retry (no PDF in storage)', {
+        // CRITICAL: PDF storage failed AND email failed - this is a complete failure
+        // We cannot queue a simple email retry because there's no PDF to attach
+        // Queue a FULL PDF regeneration job instead
+        logger.error('🚨 CRITICAL: PDF Storage Failed + Email Failed - Queuing full regeneration', {
+          severity: 'HIGH',
           userId: create_user_id,
           formId: storedForm.id,
-          error: emailResult.error
+          emailError: emailResult.error,
+          storageStatus: 'FAILED - pdf_storage_path is null',
+          action: 'FULL_GENERATION_RETRY'
         });
+
+        // Queue for full PDF regeneration (not just email retry)
+        try {
+          const regenerationResult = await pdfQueueService.enqueue(
+            create_user_id,
+            allData.currentIncident?.id || null,
+            'storage-failure-regeneration'
+          );
+
+          if (regenerationResult) {
+            logger.warn('📥 Queued full PDF regeneration after storage failure', {
+              userId: create_user_id,
+              queueId: regenerationResult.id
+            });
+            updateData.email_last_error = `Storage failed, email failed - queued for full regeneration (queue ID: ${regenerationResult.id})`;
+          } else {
+            logger.error('🚨 CRITICAL: Could not queue regeneration - PDF generation table may not exist', {
+              userId: create_user_id
+            });
+            updateData.email_last_error = 'Storage failed, email failed, regeneration queue failed - MANUAL INTERVENTION REQUIRED';
+          }
+        } catch (queueError) {
+          logger.error('🚨 CRITICAL: Exception queuing regeneration', {
+            userId: create_user_id,
+            error: queueError.message
+          });
+          updateData.email_last_error = `Storage failed, email failed, queue error: ${queueError.message}`;
+        }
       }
+    }
+
+    // Also warn if storage failed but email succeeded - future retries will have issues
+    if (!storedForm.pdf_storage_path && emailResult.success) {
+      logger.warn('⚠️ PDF Storage Failed but email succeeded - future retries will not have PDF attachment', {
+        userId: create_user_id,
+        formId: storedForm.id,
+        note: 'User received email this time, but PDF is not in storage for future access'
+      });
+      updateData.email_last_error = 'Email sent but PDF storage failed - PDF not available for re-download';
     }
 
     await supabase
