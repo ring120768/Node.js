@@ -278,7 +278,7 @@ async function storeCompletedForm(createUserId, pdfBuffer, allData) {
     const fileName = `completed_forms/${createUserId}/report_${Date.now()}.pdf`;
 
     const { data: storageData, error: storageError } = await supabase.storage
-      .from('incident-images-secure')
+      .from('generated_reports')
       .upload(fileName, pdfBuffer, {
         contentType: 'application/pdf',
         upsert: false
@@ -291,7 +291,7 @@ async function storeCompletedForm(createUserId, pdfBuffer, allData) {
       storagePath = fileName;
       // Generate initial signed URL (365 days) for immediate use
       const { data: urlData } = await supabase.storage
-        .from('incident-images-secure')
+        .from('generated_reports')
         .createSignedUrl(fileName, 31536000);
 
       if (urlData) {
@@ -694,7 +694,7 @@ async function downloadPdf(req, res) {
       });
 
       const { data: urlData, error: urlError } = await supabase.storage
-        .from('incident-images-secure')
+        .from('generated_reports')
         .createSignedUrl(pdfRecord.pdf_storage_path, expirySeconds);
 
       if (urlData && !urlError) {
