@@ -328,7 +328,7 @@ async function retrySendEmail(email) {
   if (email.email_type === 'pdf_delivery' && email.pdf_storage_path) {
     try {
       const { data: pdfData, error: downloadError } = await supabase.storage
-        .from('incident-images-secure')
+        .from('generated_reports')
         .download(email.pdf_storage_path);
 
       if (downloadError) {
