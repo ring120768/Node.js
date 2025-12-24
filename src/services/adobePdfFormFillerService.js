@@ -428,25 +428,54 @@ class AdobePdfFormFillerService {
       }
     };
 
+    // Helper to normalize yes/no values to boolean or undefined
+    // Returns: true, false, or undefined (for null/empty/unknown)
+    const normalizeYesNo = (value) => {
+      if (value === true || value === 1) return true;
+      if (value === false || value === 0) return false;
+      if (typeof value === 'string') {
+        const normalized = value.trim().toLowerCase();
+        if (normalized === 'true' || normalized === 'yes' || normalized === '1') return true;
+        if (normalized === 'false' || normalized === 'no' || normalized === '0') return false;
+      }
+      return undefined;
+    };
+
+    // Helper to detect safety from final_feeling text
+    // Handles: boolean, yes/no strings, and free-text responses
+    const isSafeFromFinalFeeling = (value) => {
+      // First try normalizeYesNo for boolean/yes/no values
+      const normalized = normalizeYesNo(value);
+      if (normalized !== undefined) return normalized;
+
+      // Parse free-text response
+      if (typeof value !== 'string' || !value.trim()) return undefined;
+
+      const text = value.toLowerCase();
+
+      // Check explicit negatives FIRST (before positives to avoid "not safe" matching "safe")
+      if (/\bnot\s+(safe|ok|okay|good|fine)\b/.test(text) || /\bunsafe\b/.test(text)) {
+        return false;
+      }
+
+      // Check positives with word boundaries
+      if (/\b(safe|ok|okay|good|fine)\b/.test(text)) {
+        return true;
+      }
+
+      return undefined;
+    };
+
     // Helper function to handle yes/no checkbox pairs
     // CRITICAL: PDF templates often have TWO checkboxes for boolean questions (yes and no)
     // This function ensures only one is checked at a time
     const checkFieldPair = (yesFieldName, noFieldName, value) => {
-      const isTrue = value === true ||
-                     value === 'true' ||
-                     value === 'yes' ||
-                     value === 1 ||
-                     value === '1';
-      const isFalse = value === false ||
-                      value === 'false' ||
-                      value === 'no' ||
-                      value === 0 ||
-                      value === '0';
+      const normalized = normalizeYesNo(value);
 
-      if (isTrue) {
+      if (normalized === true) {
         checkField(yesFieldName, true);
         checkField(noFieldName, false);
-      } else if (isFalse) {
+      } else if (normalized === false) {
         checkField(yesFieldName, false);
         checkField(noFieldName, true);
       } else {
@@ -583,23 +612,22 @@ class AdobePdfFormFillerService {
     // REMOVED: submit_date - field does not exist in PDF template
 
     // Immediate Safety Assessment - Map to PDF field names
-    // FIX: Changed from 'are_you_safe_and_ready_to_complete_this_form' (deleted column) to 'final_feeling'
-    // User's final_feeling response is now used for the safety check
-    const finalFeeling = incident.final_feeling ? incident.final_feeling.toLowerCase() : '';
-    const isSafe = finalFeeling.includes('safe') ||
-                   finalFeeling.includes('good') ||
-                   finalFeeling.includes('ok') ||
-                   finalFeeling.includes('fine') ||  // FIX: Added "fine" as a positive safety response
-                   (user.safety_status && user.safety_status.toLowerCase().includes('safe'));
+    // Uses isSafeFromFinalFeeling helper to handle boolean, yes/no, and free-text responses
+    // Correctly handles "not safe" (false) vs "I feel safe" (true)
+    let isSafe = isSafeFromFinalFeeling(incident.final_feeling);
+    // Fallback to user.safety_status if final_feeling is undefined
+    if (isSafe === undefined && user.safety_status) {
+      isSafe = isSafeFromFinalFeeling(user.safety_status);
+    }
 
     // DEBUG: Log the safety check logic
     console.log('\n🔍 DEBUG - Safety Check:');
     console.log('  final_feeling from DB:', incident.final_feeling);
     console.log('  isSafe evaluates to:', isSafe);
-    console.log('  Will check final_feeling checkbox:', isSafe ? 'YES ✅' : 'NO ❌');
+    console.log('  Will check final_feeling checkbox:', isSafe === true ? 'YES ✅' : 'NO ❌');
 
     // FIX: PDF field is "final_feeling", not "are_you_safe"
-    checkField('final_feeling', isSafe);  // DB: incident.final_feeling → PDF: final_feeling (checkbox for "Are you safe and ready to complete this form?")
+    checkField('final_feeling', isSafe === true);  // DB: incident.final_feeling → PDF: final_feeling (checkbox for "Are you safe and ready to complete this form?")
     // emergency_recording_timestamp is rendered on Page 18 with start/end context (see Page 18 section)
     const medicalAttentionRequired = incident.medical_attention_required;
     const medicalAttentionNeeded = incident.medical_attention_needed;
@@ -658,15 +686,12 @@ class AdobePdfFormFillerService {
     //                   medical_symptom_*
     // ========================================
 
-    // Safety equipment (handles boolean, string "true"/"yes"/"no", or string "yes")
+    // Safety equipment - uses checkFieldPair for reliable yes/no handling
     // Note: PDF has both "yes" and "no" checkboxes for these fields
-    checkField('airbags_deployed', incident.airbags_deployed);
-    checkField('airbags_deployed_no', !incident.airbags_deployed);  // Inverse for "no" checkbox
+    checkFieldPair('airbags_deployed', 'airbags_deployed_no', incident.airbags_deployed);
 
-    // Seatbelts: DB uses "yes"/"no" strings, not booleans
-    const seatbeltsWorn = incident.seatbelts_worn === 'yes' || incident.seatbelts_worn === true;
-    checkField('seatbelt_worn', seatbeltsWorn);  // PDF: seatbelt_worn (singular), DB: seatbelts_worn (plural)
-    checkField('seatbelt_worn_no', !seatbeltsWorn);  // Inverse for "no" checkbox
+    // Seatbelts: PDF: seatbelt_worn (singular), DB: seatbelts_worn (plural)
+    checkFieldPair('seatbelt_worn', 'seatbelt_worn_no', incident.seatbelts_worn);
     setFieldTextWithMaxFont('seatbelt_reason', incident.seatbelt_reason, 16);  // Max 16pt font to prevent gigantic text
 
     // Medical attention

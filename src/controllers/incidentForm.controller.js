@@ -1175,10 +1175,63 @@ async function submitDeclaration(req, res) {
   }
 }
 
+/**
+ * GET /api/incident-reports/current
+ * Get the most recent incident ID for the authenticated user
+ */
+async function getCurrentIncident(req, res) {
+  try {
+    const userId = req.userId;
+
+    if (!userId) {
+      return res.status(401).json({
+        success: false,
+        error: 'Authentication required'
+      });
+    }
+
+    // Fetch most recent incident for this user
+    const { data: incident, error } = await supabase
+      .from('incident_reports')
+      .select('id, created_at')
+      .or(`auth_user_id.eq.${userId},create_user_id.eq.${userId},user_id.eq.${userId}`)
+      .is('deleted_at', null)
+      .order('created_at', { ascending: false })
+      .limit(1)
+      .single();
+
+    if (error && error.code !== 'PGRST116') { // PGRST116 = no rows returned
+      throw error;
+    }
+
+    if (!incident) {
+      return res.json({
+        success: true,
+        incidentId: null,
+        message: 'No incident found for user'
+      });
+    }
+
+    logger.info('📋 Found current incident', { userId, incidentId: incident.id });
+
+    res.json({
+      success: true,
+      incidentId: incident.id
+    });
+  } catch (error) {
+    logger.error('💥 Error fetching current incident:', error);
+    res.status(500).json({
+      success: false,
+      error: 'Failed to fetch incident'
+    });
+  }
+}
+
 module.exports = {
   submitIncidentForm,
   saveProgress,
   getIncidentReport,
   listIncidentReports,
+  getCurrentIncident,
   submitDeclaration
 };
