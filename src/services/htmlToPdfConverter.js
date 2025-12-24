@@ -13,12 +13,68 @@
  */
 
 const puppeteer = require('puppeteer');
+const { execSync } = require('child_process');
+const fs = require('fs');
 const logger = require('../utils/logger');
 
 class HtmlToPdfConverter {
   constructor() {
     this.browserInstance = null;
     this.browserLaunchPromise = null; // Fix race condition for concurrent calls
+    this.chromiumPath = null; // Cached Chromium path
+  }
+
+  /**
+   * Find Chromium executable path
+   * Tries multiple locations for Railway/Nixpacks compatibility
+   */
+  findChromiumPath() {
+    if (this.chromiumPath) {
+      return this.chromiumPath;
+    }
+
+    // Check env var first
+    if (process.env.PUPPETEER_EXECUTABLE_PATH && fs.existsSync(process.env.PUPPETEER_EXECUTABLE_PATH)) {
+      this.chromiumPath = process.env.PUPPETEER_EXECUTABLE_PATH;
+      logger.info('Using Chromium from PUPPETEER_EXECUTABLE_PATH', { path: this.chromiumPath });
+      return this.chromiumPath;
+    }
+
+    // Common paths to try
+    const candidatePaths = [
+      '/usr/bin/chromium',
+      '/usr/bin/chromium-browser',
+      '/usr/bin/google-chrome',
+      '/usr/bin/google-chrome-stable'
+    ];
+
+    for (const path of candidatePaths) {
+      if (fs.existsSync(path)) {
+        this.chromiumPath = path;
+        logger.info('Found Chromium at standard path', { path: this.chromiumPath });
+        return this.chromiumPath;
+      }
+    }
+
+    // Try to find in Nix store (Railway/Nixpacks)
+    try {
+      const nixPath = execSync('find /nix/store -name chromium -type f -executable 2>/dev/null | grep -E "/bin/chromium$" | head -n 1', {
+        encoding: 'utf8',
+        timeout: 5000
+      }).trim();
+
+      if (nixPath && fs.existsSync(nixPath)) {
+        this.chromiumPath = nixPath;
+        logger.info('Found Chromium in Nix store', { path: this.chromiumPath });
+        return this.chromiumPath;
+      }
+    } catch (e) {
+      // Nix store search failed, continue to fallback
+    }
+
+    // Let Puppeteer use its bundled Chromium
+    logger.warn('No system Chromium found, using Puppeteer bundled browser');
+    return undefined;
   }
 
   /**
@@ -41,12 +97,15 @@ class HtmlToPdfConverter {
       return this.browserLaunchPromise;
     }
 
+    // Find Chromium path
+    const executablePath = this.findChromiumPath();
+
     // Launch browser (only one call will reach here due to promise caching)
-    logger.info('Launching headless Chrome browser');
+    logger.info('Launching headless Chrome browser', { executablePath: executablePath || 'bundled' });
 
     this.browserLaunchPromise = puppeteer.launch({
       headless: 'new', // Use new headless mode (faster)
-      executablePath: process.env.PUPPETEER_EXECUTABLE_PATH || undefined, // Railway: use system Chromium
+      executablePath,
       args: [
         '--no-sandbox',
         '--disable-setuid-sandbox',
@@ -64,7 +123,7 @@ class HtmlToPdfConverter {
       return browser;
     }).catch(error => {
       this.browserLaunchPromise = null; // Clear promise on error
-      logger.error('Failed to launch browser', { error: error.message });
+      logger.error('Failed to launch browser', { error: error.message, executablePath: executablePath || 'bundled' });
       throw error;
     });
 
