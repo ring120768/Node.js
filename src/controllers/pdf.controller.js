@@ -11,16 +11,10 @@ const config = require('../config');
 const gdprService = require('../services/gdprService');
 const { createClient } = require('@supabase/supabase-js');
 
-// Import PDF generation modules with error handling
-let fetchAllData, sendEmails, sendTemplateEmail;
-try {
-  fetchAllData = require('../../lib/dataFetcher').fetchAllData;
-  const emailService = require('../../lib/emailService');
-  sendEmails = emailService.sendEmails;
-  sendTemplateEmail = emailService.sendTemplateEmail;
-} catch (error) {
-  logger.warn('PDF generation modules not found - PDF features will be disabled', error.message);
-}
+// Core PDF generation dependencies - FAIL FAST if broken
+// These are critical to the application - crash on startup if missing/broken
+const { fetchAllData } = require('../../lib/dataFetcher');
+const { sendEmails, sendTemplateEmail } = require('../../lib/emailService');
 
 // Import PDF Form Filler Service (uses pdf-lib, verified 213/213 field mappings)
 const adobePdfFormFillerService = require('../services/adobePdfFormFillerService');
