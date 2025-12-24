@@ -127,8 +127,19 @@ class AdobePdfFormFillerService {
         final_review: incident.final_review
       });
 
-      console.log('🔄 Converting HTML to PDF using Puppeteer...');
-      const htmlPdfBuffers = await htmlToPdfConverter.convertMultiplePages(htmlPages);
+      // Try Puppeteer conversion with fallback to template pages
+      let htmlPdfBuffers = null;
+      let useHtmlPages = true;
+
+      try {
+        console.log('🔄 Converting HTML to PDF using Puppeteer...');
+        htmlPdfBuffers = await htmlToPdfConverter.convertMultiplePages(htmlPages);
+        console.log('✅ Puppeteer conversion successful');
+      } catch (puppeteerError) {
+        console.error('⚠️ Puppeteer conversion failed, falling back to template pages:', puppeteerError.message);
+        useHtmlPages = false;
+        // Continue with template pages 13-16 instead of HTML-rendered pages
+      }
 
       // ========================================
       // PDF MERGING: Combine Form + HTML Pages
@@ -168,37 +179,50 @@ class AdobePdfFormFillerService {
       const formPagesBase = await mergedPdf.copyPages(pdfDoc, baseIndices);
       formPagesBase.forEach(page => mergedPdf.addPage(page));
 
-      // Step 2: Load and add AI HTML-rendered pages (dynamic count)
-      // Skip blank trailing pages caused by CSS overflow
-      console.log('  🎨 Adding AI HTML pages...');
-      const htmlKeys = Object.keys(htmlPdfBuffers);
-      for (const key of htmlKeys) {
-        console.error(`  ⏳ Loading AI page PDF for ${key}...`);
-        const aiPdf = await PDFDocument.load(htmlPdfBuffers[key]);
-        const pageCount = aiPdf.getPageCount();
-        console.error(`    📄 ${key}: ${pageCount} page(s)`);
+      // Step 2: Add AI pages (HTML-rendered if Puppeteer worked, template pages otherwise)
+      if (useHtmlPages && htmlPdfBuffers) {
+        // Use HTML-rendered pages from Puppeteer
+        console.log('  🎨 Adding AI HTML pages...');
+        const htmlKeys = Object.keys(htmlPdfBuffers);
+        for (const key of htmlKeys) {
+          console.error(`  ⏳ Loading AI page PDF for ${key}...`);
+          const aiPdf = await PDFDocument.load(htmlPdfBuffers[key]);
+          const pageCount = aiPdf.getPageCount();
+          console.error(`    📄 ${key}: ${pageCount} page(s)`);
 
-        // Check each page for content - skip blank trailing pages
-        let pagesToAdd = pageCount;
-        for (let i = pageCount - 1; i >= 0; i--) {
-          const page = aiPdf.getPage(i);
-          const contentStream = page.node.Contents();
-          // Check if page has meaningful content (more than just whitespace/empty stream)
-          // Blank pages from CSS overflow typically have very small content streams (<500 bytes)
-          const streamSize = contentStream ? JSON.stringify(contentStream.toString()).length : 0;
-          if (streamSize < 500) {
-            console.error(`    ⚠️ Skipping blank page ${i + 1} (stream size: ${streamSize})`);
-            pagesToAdd = i;
-          } else {
-            break; // Stop checking once we find a page with content
+          // Check each page for content - skip blank trailing pages
+          let pagesToAdd = pageCount;
+          for (let i = pageCount - 1; i >= 0; i--) {
+            const page = aiPdf.getPage(i);
+            const contentStream = page.node.Contents();
+            // Check if page has meaningful content (more than just whitespace/empty stream)
+            // Blank pages from CSS overflow typically have very small content streams (<500 bytes)
+            const streamSize = contentStream ? JSON.stringify(contentStream.toString()).length : 0;
+            if (streamSize < 500) {
+              console.error(`    ⚠️ Skipping blank page ${i + 1} (stream size: ${streamSize})`);
+              pagesToAdd = i;
+            } else {
+              break; // Stop checking once we find a page with content
+            }
+          }
+
+          if (pagesToAdd > 0) {
+            const indices = Array.from({ length: pagesToAdd }, (_, i) => i);
+            const aiPages = await mergedPdf.copyPages(aiPdf, indices);
+            aiPages.forEach(page => mergedPdf.addPage(page));
+            console.error(`  ✅ Added ${aiPages.length} page(s) from ${key}${pagesToAdd < pageCount ? ` (skipped ${pageCount - pagesToAdd} blank)` : ''}`);
           }
         }
-
-        if (pagesToAdd > 0) {
-          const indices = Array.from({ length: pagesToAdd }, (_, i) => i);
-          const aiPages = await mergedPdf.copyPages(aiPdf, indices);
-          aiPages.forEach(page => mergedPdf.addPage(page));
-          console.error(`  ✅ Added ${aiPages.length} page(s) from ${key}${pagesToAdd < pageCount ? ` (skipped ${pageCount - pagesToAdd} blank)` : ''}`);
+      } else {
+        // Fallback: Use template pages 13-16 (blank/placeholder) since Puppeteer failed
+        console.log('  📄 Fallback: Copying template pages 13-16 (Puppeteer unavailable)...');
+        const aiTemplateStart = 12; // 0-indexed, page 13 = index 12
+        const aiTemplateEnd = Math.min(totalFormPages, 16); // Pages 13-16
+        if (aiTemplateEnd > aiTemplateStart) {
+          const templateAiIndices = Array.from({ length: aiTemplateEnd - aiTemplateStart }, (_, i) => aiTemplateStart + i);
+          const templateAiPages = await mergedPdf.copyPages(pdfDoc, templateAiIndices);
+          templateAiPages.forEach(page => mergedPdf.addPage(page));
+          console.log(`  ✅ Added ${templateAiPages.length} template pages as fallback`);
         }
       }
 
