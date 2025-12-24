@@ -45,9 +45,9 @@ aptPkgs = []
 cmds = ["npm ci"]
 
 [start]
-# Use startup script to find Chromium binary and set PUPPETEER_EXECUTABLE_PATH
-cmd = "./scripts/find-chromium.sh npm start"
+cmd = "npm start"
 
 [variables]
-# Skip Puppeteer's Chromium download - we use Nix-provided Chromium
-PUPPETEER_SKIP_CHROMIUM_DOWNLOAD = "true"
+# Let Puppeteer download its own Chromium as backup
+# The htmlToPdfConverter will prefer system Chromium if available
+PUPPETEER_SKIP_CHROMIUM_DOWNLOAD = "false"
