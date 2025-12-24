@@ -109,12 +109,35 @@ class HtmlToPdfConverter {
       args: [
         '--no-sandbox',
         '--disable-setuid-sandbox',
-        '--disable-dev-shm-usage', // Overcome limited resource problems
+        '--disable-dev-shm-usage', // Use /tmp instead of /dev/shm
         '--disable-accelerated-2d-canvas',
         '--no-first-run',
         '--no-zygote',
-        '--single-process', // Railway: reduce memory usage
-        '--disable-gpu'
+        '--single-process', // Required for Railway containers
+        '--disable-gpu',
+        // Additional memory optimization flags
+        '--disable-extensions',
+        '--disable-background-networking',
+        '--disable-background-timer-throttling',
+        '--disable-backgrounding-occluded-windows',
+        '--disable-breakpad',
+        '--disable-component-extensions-with-background-pages',
+        '--disable-component-update',
+        '--disable-default-apps',
+        '--disable-features=TranslateUI',
+        '--disable-hang-monitor',
+        '--disable-ipc-flooding-protection',
+        '--disable-popup-blocking',
+        '--disable-prompt-on-repost',
+        '--disable-renderer-backgrounding',
+        '--disable-sync',
+        '--enable-features=NetworkService,NetworkServiceInProcess',
+        '--force-color-profile=srgb',
+        '--metrics-recording-only',
+        '--no-default-browser-check',
+        '--password-store=basic',
+        '--use-mock-keychain',
+        '--js-flags=--max-old-space-size=256' // Limit JS heap
       ]
     }).then(browser => {
       this.browserInstance = browser;
@@ -236,15 +259,24 @@ class HtmlToPdfConverter {
   async convertMultiplePages(htmlPages) {
     try {
       const entries = Object.entries(htmlPages);
-      logger.info(`Converting ${entries.length} AI analysis page(s) to PDF`);
+      logger.info(`Converting ${entries.length} AI analysis page(s) to PDF (sequential for memory efficiency)`);
 
       const startTime = Date.now();
+      const result = {};
 
-      const buffers = await Promise.all(
-        entries.map(([key, html], idx) => this.convertHtmlToPdf(html, { pageNumber: key || idx + 1 }))
-      );
+      // Process pages sequentially to avoid memory spikes on Railway
+      for (let i = 0; i < entries.length; i++) {
+        const [key, html] = entries[i];
+        logger.info(`Converting page ${i + 1}/${entries.length}: ${key}`);
+        result[key] = await this.convertHtmlToPdf(html, { pageNumber: key || i + 1 });
 
-      const totalSizeKB = (buffers.reduce((sum, b) => sum + b.length, 0) / 1024).toFixed(2);
+        // Force garbage collection hint between pages
+        if (global.gc) {
+          global.gc();
+        }
+      }
+
+      const totalSizeKB = (Object.values(result).reduce((sum, b) => sum + b.length, 0) / 1024).toFixed(2);
       const duration = Date.now() - startTime;
 
       logger.info('All pages converted to PDF', {
@@ -253,11 +285,6 @@ class HtmlToPdfConverter {
         pages: entries.map(([key]) => key)
       });
 
-      // Return an object keyed the same as input
-      const result = {};
-      entries.forEach(([key], i) => {
-        result[key] = buffers[i];
-      });
       return result;
     } catch (error) {
       logger.error('Failed to convert multiple pages', { error: error.message });
