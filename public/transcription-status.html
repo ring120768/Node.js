@@ -2098,20 +2098,22 @@ Continue with: What happened immediately after impact? Any injuries you noticed?
                 fullUrl: window.location.href
             });
 
+            // Set user_id if found (don't return early - need to also check incident_id)
             if (user_id) {
                 localStorage.setItem('create_user_id', user_id);
                 sessionStorage.setItem('userId', user_id);
                 userId = user_id;
                 document.getElementById('welcomeBanner').style.display = 'block';
-                return true;
             }
 
+            // Set incident_id (critical for loading existing AI analysis)
             if (incident_id) {
                 currentIncidentId = incident_id;
                 sessionStorage.setItem('incident_id', incident_id);
+                console.log('✅ Set currentIncidentId:', incident_id);
             }
 
-            return false;
+            return Boolean(user_id);
         }
 
         // ===== NETWORK STATUS =====
@@ -3541,6 +3543,26 @@ Continue with: What happened immediately after impact? Any injuries you noticed?
             initializeVisualizer();
             updateNetworkStatus();
 
+            // If no incident ID yet, try to fetch it from API
+            if (!currentIncidentId && userId) {
+                console.log('🔍 No incident ID in session, fetching from API...');
+                try {
+                    const incidentResponse = await fetch('/api/incident-reports/current', {
+                        credentials: 'include'
+                    });
+                    if (incidentResponse.ok) {
+                        const incidentData = await incidentResponse.json();
+                        if (incidentData.success && incidentData.incidentId) {
+                            currentIncidentId = incidentData.incidentId;
+                            sessionStorage.setItem('incident_id', currentIncidentId);
+                            console.log('✅ Fetched incident ID from API:', currentIncidentId);
+                        }
+                    }
+                } catch (err) {
+                    console.warn('Could not fetch incident ID:', err);
+                }
+            }
+
             // Auto-fetch existing analysis if incident ID present
             if (currentIncidentId) {
                 console.log('🔍 Checking for existing AI analysis on page load');
@@ -3548,6 +3570,8 @@ Continue with: What happened immediately after impact? Any injuries you noticed?
                 setTimeout(() => {
                     fetchExistingAnalysis();
                 }, 500);
+            } else {
+                console.warn('⚠️ No incident ID available - cannot load existing analysis');
             }
 
             // Check for saved draft

@@ -14,6 +14,7 @@ const {
 
 const {
   listIncidentReports,
+  getCurrentIncident,
   submitDeclaration
 } = require('../controllers/incidentForm.controller');
 
@@ -40,6 +41,18 @@ router.use(apiLimiter);
  * }
  */
 router.get('/', requireAuth, listIncidentReports);
+
+/**
+ * GET /api/incident-reports/current
+ * Get the most recent incident ID for authenticated user
+ *
+ * Returns:
+ * {
+ *   success: true,
+ *   incidentId: string | null
+ * }
+ */
+router.get('/current', requireAuth, getCurrentIncident);
 
 /**
  * POST /api/incident-reports/save-statement

@@ -14,6 +14,12 @@
 
 **Default Behaviour**: Just do it. Action over asking for routine development tasks.
 
+**Communication Style**:
+- Straight-talking answers without fluff
+- Be honest about what's necessary vs nice-to-have
+- Say "no, you don't need this" when something isn't required
+- Skip the caveats and qualifications - get to the point
+
 **Code Quality**:
 - Clarity > Cleverness
 - Working > "Perfect"
