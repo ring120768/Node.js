@@ -1,13 +1,15 @@
 /**
  * Email Retry Service
  * Handles queuing and retrying failed email sends with exponential backoff
+ * Uses Resend via lib/emailService.js
  */
 
-const nodemailer = require('nodemailer');
 const fs = require('fs');
 const path = require('path');
 const logger = require('../utils/logger');
-const config = require('../config');
+
+// Import the shared email service (uses Resend)
+const { sendEmail, loadTemplate, replacePlaceholders } = require('../../lib/emailService');
 
 // Retry intervals in seconds (exponential backoff)
 const RETRY_INTERVALS = [
@@ -58,22 +60,10 @@ async function checkTableExists() {
 }
 
 /**
- * Create SMTP transporter
+ * Check if Resend is configured
  */
-function createTransporter() {
-  if (!config.smtp.enabled) {
-    throw new Error('SMTP not configured');
-  }
-
-  return nodemailer.createTransport({
-    host: config.smtp.host,
-    port: config.smtp.port,
-    secure: config.smtp.secure,
-    auth: {
-      user: config.smtp.user,
-      pass: config.smtp.pass
-    }
-  });
+function isEmailConfigured() {
+  return !!process.env.RESEND_API_KEY;
 }
 
 /**
@@ -169,8 +159,8 @@ async function processQueue() {
     return { processed: 0, succeeded: 0, failed: 0 };
   }
 
-  if (!config.smtp.enabled) {
-    logger.warn('📧 SMTP not configured - skipping email retry queue');
+  if (!isEmailConfigured()) {
+    logger.warn('📧 Resend not configured - skipping email retry queue');
     return { processed: 0, succeeded: 0, failed: 0 };
   }
 
@@ -236,7 +226,7 @@ async function processQueue() {
         }
 
         succeeded++;
-        logger.success('📧 Email retry succeeded', {
+        logger.info('📧 Email retry succeeded', {
           queueId: email.id,
           type: email.email_type,
           recipient: email.recipient_email,
@@ -320,8 +310,6 @@ async function handleRetryFailure(email, error) {
  * Actually send the email (retry attempt)
  */
 async function retrySendEmail(email) {
-  const transporter = createTransporter();
-
   // For PDF delivery emails, we need to get the PDF from storage
   let attachments = [];
 
@@ -338,8 +326,7 @@ async function retrySendEmail(email) {
       const buffer = Buffer.from(await pdfData.arrayBuffer());
       attachments.push({
         filename: 'Incident-Report.pdf',
-        content: buffer,
-        contentType: 'application/pdf'
+        content: buffer
       });
     } catch (e) {
       logger.error('📧 Failed to get PDF attachment for retry', { error: e.message });
@@ -351,42 +338,32 @@ async function retrySendEmail(email) {
   let html = '';
   if (email.template_name && email.template_data) {
     try {
-      const templatePath = path.join(__dirname, '../../templates/emails', `${email.template_name}.html`);
-      let template = fs.readFileSync(templatePath, 'utf8');
-
-      // Replace placeholders
-      for (const [key, value] of Object.entries(email.template_data)) {
-        template = template.replace(new RegExp(`{{${key}}}`, 'g'), value || '');
-      }
-
-      html = template;
+      const template = await loadTemplate(email.template_name);
+      html = replacePlaceholders(template, email.template_data);
     } catch (e) {
       logger.warn('📧 Failed to load template, using fallback', { template: email.template_name });
       html = `<p>${email.subject}</p><p>Please contact support if you need assistance.</p>`;
     }
   }
 
-  // Send the email
-  const result = await transporter.sendMail({
-    from: `"Car Crash Lawyer AI" <${config.smtp.user}>`,
+  // Send the email using the shared Resend-based service
+  const result = await sendEmail({
     to: email.recipient_email,
     subject: email.subject,
     html: html || `<p>${email.subject}</p>`,
     attachments
   });
 
-  return !!result.messageId;
+  return result.success;
 }
 
 /**
  * Notify admin when an email permanently fails
  */
 async function notifyAdminOfPermanentFailure(email, errorHistory) {
-  if (!config.smtp.enabled) return;
+  if (!isEmailConfigured()) return;
 
   try {
-    const transporter = createTransporter();
-
     const errorHistoryHtml = errorHistory.map(e =>
       `<tr>
         <td style="padding: 8px; border: 1px solid #ddd;">${e.attempt}</td>
@@ -402,7 +379,7 @@ async function notifyAdminOfPermanentFailure(email, errorHistory) {
       <body style="font-family: Arial, sans-serif;">
         <div style="max-width: 600px; margin: 0 auto; padding: 20px;">
           <div style="background: #dc3545; color: white; padding: 20px; text-align: center;">
-            <h1>⚠️ Email Delivery Permanently Failed</h1>
+            <h1>Email Delivery Permanently Failed</h1>
           </div>
           <div style="padding: 20px; background: #f8f9fa;">
             <p><strong>Email Type:</strong> ${email.email_type}</p>
@@ -431,10 +408,11 @@ async function notifyAdminOfPermanentFailure(email, errorHistory) {
       </html>
     `;
 
-    await transporter.sendMail({
-      from: `"Car Crash Lawyer AI - ALERT" <${config.smtp.user}>`,
-      to: config.smtp.adminEmail,
-      subject: `🚨 Email Delivery Failed - ${email.email_type} to ${email.recipient_email}`,
+    const adminEmail = process.env.ADMIN_EMAIL || 'admin@carcrashlawyerai.com';
+
+    await sendEmail({
+      to: adminEmail,
+      subject: `Email Delivery Failed - ${email.email_type} to ${email.recipient_email}`,
       html
     });
 

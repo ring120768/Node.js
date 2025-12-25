@@ -74,86 +74,90 @@ router.post('/process-transcription-queue', checkSharedKey, debugController.test
 router.get('/health', debugController.getHealth);
 
 /**
- * SMTP Configuration Diagnostic
- * GET /api/debug/smtp-config
- * Returns SMTP configuration (masked) to diagnose email issues
+ * Email Configuration Diagnostic
+ * GET /api/debug/email-config
+ * Returns email configuration (Resend) to diagnose email issues
  */
-router.get('/smtp-config', (req, res) => {
-  const nodemailer = require('nodemailer');
-
+router.get('/email-config', (req, res) => {
   const config = {
-    SMTP_HOST: process.env.SMTP_HOST || 'NOT SET (defaults to smtp.gmail.com)',
-    SMTP_PORT: process.env.SMTP_PORT || 'NOT SET (defaults to 587)',
-    SMTP_SECURE: process.env.SMTP_SECURE || 'NOT SET (auto-detects from port)',
-    SMTP_USER: process.env.SMTP_USER
-      ? `${process.env.SMTP_USER.substring(0, 10)}...@${process.env.SMTP_USER.split('@')[1] || '?'}`
+    RESEND_API_KEY: process.env.RESEND_API_KEY
+      ? `${process.env.RESEND_API_KEY.substring(0, 10)}...`
       : 'NOT SET',
-    SMTP_PASS: process.env.SMTP_PASS ? 'SET (hidden)' : 'NOT SET',
-    SMTP_BACKUP_USER: process.env.SMTP_BACKUP_USER
-      ? `${process.env.SMTP_BACKUP_USER.substring(0, 10)}...`
-      : 'NOT SET',
-    SMTP_BACKUP_PASS: process.env.SMTP_BACKUP_PASS ? 'SET (hidden)' : 'NOT SET'
+    RESEND_FROM_EMAIL: process.env.RESEND_FROM_EMAIL || 'NOT SET (defaults to noreply@carcrashlawyerai.co.uk)',
+    ACCOUNTS_EMAIL: process.env.ACCOUNTS_EMAIL || 'accounts@carcrashlawyerai.com',
+    ADMIN_EMAIL: process.env.ADMIN_EMAIL || 'admin@carcrashlawyerai.com'
   };
 
   res.json({
-    status: 'SMTP Configuration',
+    status: 'Email Configuration (Resend)',
     timestamp: new Date().toISOString(),
     environment: process.env.RAILWAY_ENVIRONMENT || process.env.NODE_ENV || 'unknown',
     config,
     diagnosis: {
-      hostConfigured: !!process.env.SMTP_HOST,
-      credentialsConfigured: !!(process.env.SMTP_USER && process.env.SMTP_PASS),
-      backupConfigured: !!(process.env.SMTP_BACKUP_USER && process.env.SMTP_BACKUP_PASS)
+      resendConfigured: !!process.env.RESEND_API_KEY,
+      fromEmailConfigured: !!process.env.RESEND_FROM_EMAIL
     }
   });
 });
 
 /**
- * SMTP Connection Test
- * GET /api/debug/smtp-test
- * Attempts to connect to SMTP and reports result
+ * Email Send Test
+ * GET /api/debug/email-test?to=test@example.com
+ * Sends a test email via Resend
  */
-router.get('/smtp-test', async (req, res) => {
-  const nodemailer = require('nodemailer');
+router.get('/email-test', async (req, res) => {
+  const { sendEmail } = require('../../lib/emailService');
+  const testEmail = req.query.to;
 
-  const host = process.env.SMTP_HOST || 'smtp.gmail.com';
-  const port = parseInt(process.env.SMTP_PORT || '587', 10);
-  const secure = process.env.SMTP_SECURE === 'true' || port === 465;
-  const user = process.env.SMTP_USER;
-  const pass = process.env.SMTP_PASS;
-
-  if (!user || !pass) {
+  if (!testEmail) {
     return res.json({
       success: false,
-      error: 'SMTP_USER or SMTP_PASS not configured',
-      config: { host, port, secure, user: user ? 'SET' : 'NOT SET', pass: pass ? 'SET' : 'NOT SET' }
+      error: 'Please provide ?to=email@example.com'
     });
   }
 
-  const transporter = nodemailer.createTransport({
-    host,
-    port,
-    secure,
-    auth: { user, pass },
-    connectionTimeout: 10000,
-    greetingTimeout: 10000
-  });
+  if (!process.env.RESEND_API_KEY) {
+    return res.json({
+      success: false,
+      error: 'RESEND_API_KEY not configured'
+    });
+  }
 
   try {
-    await transporter.verify();
+    const result = await sendEmail({
+      to: testEmail,
+      subject: 'Test Email from Car Crash Lawyer AI',
+      html: `
+        <h1>Test Email</h1>
+        <p>This is a test email sent at ${new Date().toLocaleString('en-GB')}.</p>
+        <p>If you received this, your email configuration is working correctly.</p>
+      `
+    });
+
     res.json({
-      success: true,
-      message: 'SMTP connection successful!',
-      config: { host, port, secure, user: user.substring(0, 10) + '...' }
+      success: result.success,
+      messageId: result.messageId,
+      error: result.error,
+      sentTo: testEmail
     });
   } catch (error) {
     res.json({
       success: false,
-      error: error.message,
-      errorCode: error.code,
-      config: { host, port, secure, user: user.substring(0, 10) + '...' }
+      error: error.message
     });
   }
+});
+
+// Legacy SMTP endpoints (kept for backwards compatibility)
+router.get('/smtp-config', (req, res) => {
+  res.redirect('/api/debug/email-config');
+});
+
+router.get('/smtp-test', (req, res) => {
+  res.json({
+    success: false,
+    error: 'SMTP has been replaced with Resend. Use /api/debug/email-test?to=your@email.com instead.'
+  });
 });
 
 /**
