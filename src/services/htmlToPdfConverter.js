@@ -150,7 +150,7 @@ class HtmlToPdfConverter {
         '--no-default-browser-check',
         '--password-store=basic',
         '--use-mock-keychain',
-        '--js-flags=--max-old-space-size=256' // Limit JS heap
+        '--js-flags=--max-old-space-size=512' // Increased JS heap for Railway
       ]
     }).then(browser => {
       this.browserInstance = browser;
