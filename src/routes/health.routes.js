@@ -185,4 +185,47 @@ router.get('/puppeteer-health', async (req, res) => {
   }
 });
 
+// TEMPORARY: Test PDF generation with font fix
+// TODO: Remove after confirming fix works
+router.get('/test-pdf/:userId', async (req, res) => {
+  const { fetchAllData } = require('../../lib/dataFetcher');
+  const pdfService = require('../services/adobePdfFormFillerService');
+
+  try {
+    const userId = req.params.userId;
+    console.log('🧪 Test PDF generation for:', userId);
+
+    // Fetch data
+    const data = await fetchAllData(userId);
+    if (!data.currentIncident) {
+      return res.status(404).json({ error: 'No incident data found' });
+    }
+
+    console.log('📊 AI data present:',
+      'voice_transcription:', data.currentIncident.voice_transcription?.length || 0,
+      'ai_summary:', data.currentIncident.ai_summary?.length || 0
+    );
+
+    // Generate PDF
+    const pdfBuffer = await pdfService.fillPdfForm(data);
+
+    console.log('✅ PDF generated:', pdfBuffer.length, 'bytes');
+
+    // Return PDF directly
+    res.set({
+      'Content-Type': 'application/pdf',
+      'Content-Disposition': 'inline; filename=test-pdf.pdf',
+      'Content-Length': pdfBuffer.length
+    });
+    res.send(pdfBuffer);
+
+  } catch (error) {
+    console.error('❌ Test PDF error:', error.message);
+    res.status(500).json({
+      error: error.message,
+      stack: error.stack
+    });
+  }
+});
+
 module.exports = router;
