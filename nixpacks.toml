@@ -10,6 +10,10 @@ nixPkgs = [
   "freetype",
   "harfbuzz",
   "fontconfig",
+  # FONTS - Required for Puppeteer PDF text rendering
+  "dejavu_fonts",
+  "liberation_ttf",
+  "noto-fonts",
   "xorg.libX11",
   "xorg.libXcomposite",
   "xorg.libXdamage",
