@@ -333,19 +333,27 @@ class HtmlToPdfConverter {
   /**
    * Health check - verify Puppeteer is working
    * @returns {Promise<boolean>} True if working
+   * @throws {Error} If Puppeteer fails (with detailed error message)
    */
   async healthCheck() {
     try {
+      console.log('🔍 Puppeteer health check starting...');
       const browser = await this.getBrowser();
+      console.log('✅ Browser obtained');
       const page = await browser.newPage();
+      console.log('✅ New page created');
       await page.setContent('<html><body><h1>Test</h1></body></html>');
+      console.log('✅ Content set');
       const pdf = await page.pdf({ format: 'A4' });
+      console.log('✅ PDF generated, size:', pdf.length);
       await page.close();
 
       return pdf.length > 0;
     } catch (error) {
-      logger.error('Puppeteer health check failed', { error: error.message });
-      return false;
+      console.error('❌ Puppeteer health check failed:', error.message);
+      logger.error('Puppeteer health check failed', { error: error.message, stack: error.stack });
+      // Throw error so health endpoint can return details
+      throw error;
     }
   }
 }
