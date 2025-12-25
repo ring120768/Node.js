@@ -150,6 +150,12 @@ class HtmlToPdfConverter {
         '--no-default-browser-check',
         '--password-store=basic',
         '--use-mock-keychain',
+        // Additional flags for Railway container stability
+        '--disable-gpu',
+        '--disable-software-rasterizer',
+        '--disable-dev-shm-usage', // Prevent /dev/shm issues in containers
+        '--single-process', // Run in single process mode for stability
+        '--no-zygote', // Disable zygote process
         '--js-flags=--max-old-space-size=512' // Increased JS heap for Railway
       ]
     }).then(browser => {
@@ -266,15 +272,26 @@ class HtmlToPdfConverter {
         sizeKB: (pdfBuffer.length / 1024).toFixed(2)
       });
 
-      await page.close();
+      // Safe page close - ignore errors if connection already closed
+      try {
+        await page.close();
+      } catch (closeError) {
+        logger.warn(`Page close warning (Page ${pageNumber}):`, closeError.message);
+      }
 
       return pdfBuffer;
     } catch (error) {
       logger.error(`Failed to convert HTML to PDF: Page ${pageNumber}`, {
-        error: error.message
+        error: error.message,
+        stack: error.stack
       });
 
-      await page.close();
+      // Safe page close - ignore errors if connection already closed
+      try {
+        await page.close();
+      } catch (closeError) {
+        logger.warn(`Page close warning on error (Page ${pageNumber}):`, closeError.message);
+      }
       throw error;
     }
   }
