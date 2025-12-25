@@ -228,4 +228,61 @@ router.get('/test-pdf/:userId', async (req, res) => {
   }
 });
 
+// DIAGNOSTIC: Test HTML template rendering with Puppeteer
+router.get('/test-html-pdf', async (req, res) => {
+  const aiAnalysisHtmlRenderer = require('../services/aiAnalysisHtmlRenderer');
+  const htmlToPdfConverter = require('../services/htmlToPdfConverter');
+
+  try {
+    console.log('🧪 Testing HTML template rendering...');
+
+    // Use minimal test data
+    const testData = {
+      voice_transcription: 'Test transcription content for Railway debugging.',
+      analysis_metadata: JSON.stringify({ model: 'test', timestamp: new Date().toISOString() }),
+      quality_review: 'Test quality review.',
+      ai_summary: 'Test AI summary content.',
+      closing_statement: '<p>Test closing statement with HTML.</p>',
+      final_review: 'Test final review content.'
+    };
+
+    // Step 1: Render HTML
+    console.log('📝 Rendering HTML templates...');
+    const htmlPages = await aiAnalysisHtmlRenderer.renderAllPages(testData);
+    console.log('✅ HTML rendered, sizes:', {
+      page13: htmlPages.page13?.length || 0,
+      page14: htmlPages.page14?.length || 0,
+      page15: htmlPages.page15?.length || 0,
+      page16: htmlPages.page16?.length || 0
+    });
+
+    // Step 2: Convert to PDF
+    console.log('🔄 Converting HTML to PDF with Puppeteer...');
+    const pdfBuffers = await htmlToPdfConverter.convertMultiplePages(htmlPages);
+    console.log('✅ PDF conversion complete, sizes:', {
+      page13: pdfBuffers.page13?.length || 0,
+      page14: pdfBuffers.page14?.length || 0,
+      page15: pdfBuffers.page15?.length || 0,
+      page16: pdfBuffers.page16?.length || 0
+    });
+
+    // Return the first page as test
+    res.set({
+      'Content-Type': 'application/pdf',
+      'Content-Disposition': 'inline; filename=test-html.pdf',
+      'Content-Length': pdfBuffers.page13.length
+    });
+    res.send(pdfBuffers.page13);
+
+  } catch (error) {
+    console.error('❌ HTML PDF test failed:', error.message);
+    console.error('   Stack:', error.stack);
+    res.status(500).json({
+      error: error.message,
+      stack: error.stack,
+      step: 'html-to-pdf'
+    });
+  }
+});
+
 module.exports = router;
