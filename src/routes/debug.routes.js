@@ -74,6 +74,89 @@ router.post('/process-transcription-queue', checkSharedKey, debugController.test
 router.get('/health', debugController.getHealth);
 
 /**
+ * SMTP Configuration Diagnostic
+ * GET /api/debug/smtp-config
+ * Returns SMTP configuration (masked) to diagnose email issues
+ */
+router.get('/smtp-config', (req, res) => {
+  const nodemailer = require('nodemailer');
+
+  const config = {
+    SMTP_HOST: process.env.SMTP_HOST || 'NOT SET (defaults to smtp.gmail.com)',
+    SMTP_PORT: process.env.SMTP_PORT || 'NOT SET (defaults to 587)',
+    SMTP_SECURE: process.env.SMTP_SECURE || 'NOT SET (auto-detects from port)',
+    SMTP_USER: process.env.SMTP_USER
+      ? `${process.env.SMTP_USER.substring(0, 10)}...@${process.env.SMTP_USER.split('@')[1] || '?'}`
+      : 'NOT SET',
+    SMTP_PASS: process.env.SMTP_PASS ? 'SET (hidden)' : 'NOT SET',
+    SMTP_BACKUP_USER: process.env.SMTP_BACKUP_USER
+      ? `${process.env.SMTP_BACKUP_USER.substring(0, 10)}...`
+      : 'NOT SET',
+    SMTP_BACKUP_PASS: process.env.SMTP_BACKUP_PASS ? 'SET (hidden)' : 'NOT SET'
+  };
+
+  res.json({
+    status: 'SMTP Configuration',
+    timestamp: new Date().toISOString(),
+    environment: process.env.RAILWAY_ENVIRONMENT || process.env.NODE_ENV || 'unknown',
+    config,
+    diagnosis: {
+      hostConfigured: !!process.env.SMTP_HOST,
+      credentialsConfigured: !!(process.env.SMTP_USER && process.env.SMTP_PASS),
+      backupConfigured: !!(process.env.SMTP_BACKUP_USER && process.env.SMTP_BACKUP_PASS)
+    }
+  });
+});
+
+/**
+ * SMTP Connection Test
+ * GET /api/debug/smtp-test
+ * Attempts to connect to SMTP and reports result
+ */
+router.get('/smtp-test', async (req, res) => {
+  const nodemailer = require('nodemailer');
+
+  const host = process.env.SMTP_HOST || 'smtp.gmail.com';
+  const port = parseInt(process.env.SMTP_PORT || '587', 10);
+  const secure = process.env.SMTP_SECURE === 'true' || port === 465;
+  const user = process.env.SMTP_USER;
+  const pass = process.env.SMTP_PASS;
+
+  if (!user || !pass) {
+    return res.json({
+      success: false,
+      error: 'SMTP_USER or SMTP_PASS not configured',
+      config: { host, port, secure, user: user ? 'SET' : 'NOT SET', pass: pass ? 'SET' : 'NOT SET' }
+    });
+  }
+
+  const transporter = nodemailer.createTransport({
+    host,
+    port,
+    secure,
+    auth: { user, pass },
+    connectionTimeout: 10000,
+    greetingTimeout: 10000
+  });
+
+  try {
+    await transporter.verify();
+    res.json({
+      success: true,
+      message: 'SMTP connection successful!',
+      config: { host, port, secure, user: user.substring(0, 10) + '...' }
+    });
+  } catch (error) {
+    res.json({
+      success: false,
+      error: error.message,
+      errorCode: error.code,
+      config: { host, port, secure, user: user.substring(0, 10) + '...' }
+    });
+  }
+});
+
+/**
  * ============================================
  * COOKIE DEBUGGING ENDPOINTS (TEMPORARY)
  * DELETE THESE AFTER FIXING SESSION ISSUE
