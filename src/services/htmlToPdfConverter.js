@@ -29,14 +29,19 @@ class HtmlToPdfConverter {
    * Tries multiple locations for Railway/Nixpacks compatibility
    */
   findChromiumPath() {
+    console.log('🔍 Finding Chromium path...');
+
     if (this.chromiumPath) {
+      console.log('   Using cached path:', this.chromiumPath);
       return this.chromiumPath;
     }
 
     // Check env var first
+    console.log('   PUPPETEER_EXECUTABLE_PATH:', process.env.PUPPETEER_EXECUTABLE_PATH || 'not set');
     if (process.env.PUPPETEER_EXECUTABLE_PATH && fs.existsSync(process.env.PUPPETEER_EXECUTABLE_PATH)) {
       this.chromiumPath = process.env.PUPPETEER_EXECUTABLE_PATH;
       logger.info('Using Chromium from PUPPETEER_EXECUTABLE_PATH', { path: this.chromiumPath });
+      console.log('   ✅ Using Chromium from env:', this.chromiumPath);
       return this.chromiumPath;
     }
 
@@ -48,31 +53,39 @@ class HtmlToPdfConverter {
       '/usr/bin/google-chrome-stable'
     ];
 
-    for (const path of candidatePaths) {
-      if (fs.existsSync(path)) {
-        this.chromiumPath = path;
+    console.log('   Checking standard paths...');
+    for (const chromePath of candidatePaths) {
+      const exists = fs.existsSync(chromePath);
+      console.log(`   ${exists ? '✅' : '❌'} ${chromePath}`);
+      if (exists) {
+        this.chromiumPath = chromePath;
         logger.info('Found Chromium at standard path', { path: this.chromiumPath });
         return this.chromiumPath;
       }
     }
 
     // Try to find in Nix store (Railway/Nixpacks)
+    console.log('   Searching Nix store...');
     try {
       const nixPath = execSync('find /nix/store -name chromium -type f -executable 2>/dev/null | grep -E "/bin/chromium$" | head -n 1', {
         encoding: 'utf8',
         timeout: 5000
       }).trim();
 
+      console.log('   Nix store result:', nixPath || '(empty)');
       if (nixPath && fs.existsSync(nixPath)) {
         this.chromiumPath = nixPath;
         logger.info('Found Chromium in Nix store', { path: this.chromiumPath });
+        console.log('   ✅ Using Chromium from Nix store:', this.chromiumPath);
         return this.chromiumPath;
       }
     } catch (e) {
+      console.log('   ❌ Nix store search failed:', e.message);
       // Nix store search failed, continue to fallback
     }
 
     // Let Puppeteer use its bundled Chromium
+    console.log('   ⚠️ No system Chromium found, using Puppeteer bundled browser');
     logger.warn('No system Chromium found, using Puppeteer bundled browser');
     return undefined;
   }
@@ -143,10 +156,23 @@ class HtmlToPdfConverter {
       this.browserInstance = browser;
       this.browserLaunchPromise = null; // Clear promise once complete
       logger.info('Browser launched successfully');
+      console.log('✅ Browser launched successfully');
       return browser;
     }).catch(error => {
       this.browserLaunchPromise = null; // Clear promise on error
-      logger.error('Failed to launch browser', { error: error.message, executablePath: executablePath || 'bundled' });
+      // Enhanced error logging for Railway debugging
+      console.error('❌ BROWSER LAUNCH FAILED');
+      console.error('   Executable path:', executablePath || 'bundled (puppeteer default)');
+      console.error('   Error name:', error.name);
+      console.error('   Error message:', error.message);
+      console.error('   Error stack:', error.stack);
+      logger.error('BROWSER_LAUNCH_FAILED', {
+        error: error.message,
+        stack: error.stack,
+        executablePath: executablePath || 'bundled',
+        nodeEnv: process.env.NODE_ENV,
+        railway: process.env.RAILWAY_ENVIRONMENT || 'not set'
+      });
       throw error;
     });
 

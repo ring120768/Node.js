@@ -133,10 +133,22 @@ class AdobePdfFormFillerService {
 
       try {
         console.log('🔄 Converting HTML to PDF using Puppeteer...');
+        console.log('   Environment: NODE_ENV=' + process.env.NODE_ENV + ', RAILWAY=' + (process.env.RAILWAY_ENVIRONMENT || 'not set'));
         htmlPdfBuffers = await htmlToPdfConverter.convertMultiplePages(htmlPages);
         console.log('✅ Puppeteer conversion successful');
       } catch (puppeteerError) {
-        console.error('⚠️ Puppeteer conversion failed, falling back to template pages:', puppeteerError.message);
+        // CRITICAL: Log full error details for debugging Railway issues
+        console.error('⚠️ Puppeteer conversion failed!');
+        console.error('   Error name:', puppeteerError.name);
+        console.error('   Error message:', puppeteerError.message);
+        console.error('   Error stack:', puppeteerError.stack);
+        logger.error('PUPPETEER_FAILURE', {
+          name: puppeteerError.name,
+          message: puppeteerError.message,
+          stack: puppeteerError.stack,
+          env: process.env.NODE_ENV,
+          railway: process.env.RAILWAY_ENVIRONMENT || 'not set'
+        });
         useHtmlPages = false;
         // Continue with template pages 13-16 instead of HTML-rendered pages
       }

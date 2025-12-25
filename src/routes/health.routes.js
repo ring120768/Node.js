@@ -143,4 +143,46 @@ router.get('/livez', (req, res) => {
   });
 });
 
+// Puppeteer health check - test if browser can be launched
+router.get('/puppeteer-health', async (req, res) => {
+  const htmlToPdfConverter = require('../services/htmlToPdfConverter');
+
+  try {
+    logger.info('Starting Puppeteer health check...');
+    console.log('🔍 Puppeteer health check starting...');
+
+    const startTime = Date.now();
+    const isHealthy = await htmlToPdfConverter.healthCheck();
+    const duration = Date.now() - startTime;
+
+    if (isHealthy) {
+      console.log('✅ Puppeteer health check passed in', duration, 'ms');
+      res.status(200).json({
+        status: 'ok',
+        message: 'Puppeteer is working',
+        duration: duration + 'ms',
+        timestamp: new Date().toISOString()
+      });
+    } else {
+      console.error('❌ Puppeteer health check failed');
+      res.status(503).json({
+        status: 'error',
+        message: 'Puppeteer failed to generate PDF',
+        duration: duration + 'ms',
+        timestamp: new Date().toISOString()
+      });
+    }
+  } catch (error) {
+    console.error('❌ Puppeteer health check exception:', error.message);
+    console.error('   Stack:', error.stack);
+    res.status(503).json({
+      status: 'error',
+      message: 'Puppeteer health check failed',
+      error: error.message,
+      stack: error.stack,
+      timestamp: new Date().toISOString()
+    });
+  }
+});
+
 module.exports = router;
