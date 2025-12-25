@@ -154,9 +154,10 @@ class HtmlToPdfConverter {
         '--disable-gpu',
         '--disable-software-rasterizer',
         '--disable-dev-shm-usage', // Prevent /dev/shm issues in containers
-        '--single-process', // Run in single process mode for stability
-        '--no-zygote', // Disable zygote process
-        '--js-flags=--max-old-space-size=512' // Increased JS heap for Railway
+        // Note: --single-process can cause crashes with complex pages, use separate processes
+        '--no-zygote', // Disable zygote process (but keep multi-process)
+        '--disable-setuid-sandbox', // Required for containers without setuid
+        '--js-flags=--max-old-space-size=768' // Increase JS heap for Railway (was 512)
       ]
     }).then(browser => {
       this.browserInstance = browser;
@@ -255,7 +256,7 @@ class HtmlToPdfConverter {
       // Wait a moment for resources to load after base tag injection
       await new Promise(resolve => setTimeout(resolve, 500));
 
-      // Generate PDF
+      // Generate PDF with timeout
       const pdfBuffer = await page.pdf({
         format,
         printBackground, // CRITICAL: Enable gradient backgrounds
@@ -265,7 +266,8 @@ class HtmlToPdfConverter {
           right: '0mm',
           bottom: '0mm',
           left: '0mm'
-        }
+        },
+        timeout: 60000 // 60 second timeout for PDF generation
       });
 
       logger.info(`PDF generated: Page ${pageNumber}`, {
