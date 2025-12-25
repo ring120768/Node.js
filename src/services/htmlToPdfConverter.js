@@ -257,7 +257,7 @@ class HtmlToPdfConverter {
       await new Promise(resolve => setTimeout(resolve, 500));
 
       // Generate PDF with timeout
-      const pdfBuffer = await page.pdf({
+      const pdfResult = await page.pdf({
         format,
         printBackground, // CRITICAL: Enable gradient backgrounds
         preferCSSPageSize: true, // Use @page CSS rules
@@ -269,6 +269,10 @@ class HtmlToPdfConverter {
         },
         timeout: 60000 // 60 second timeout for PDF generation
       });
+
+      // IMPORTANT: Puppeteer returns Uint8Array, convert to proper Node.js Buffer
+      // Without this, Express will JSON-serialize the Uint8Array instead of sending binary
+      const pdfBuffer = Buffer.from(pdfResult);
 
       logger.info(`PDF generated: Page ${pageNumber}`, {
         sizeKB: (pdfBuffer.length / 1024).toFixed(2)
