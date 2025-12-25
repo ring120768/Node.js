@@ -230,11 +230,61 @@ router.get('/test-pdf/:userId', async (req, res) => {
 
 // DIAGNOSTIC: Test HTML template rendering with Puppeteer
 router.get('/test-html-pdf', async (req, res) => {
+  const htmlToPdfConverter = require('../services/htmlToPdfConverter');
+
+  try {
+    console.log('🧪 Testing SIMPLE HTML to PDF (no templates)...');
+
+    // Use super simple HTML - no gradients, no complex CSS
+    const simpleHtml = `
+      <!DOCTYPE html>
+      <html>
+      <head>
+        <style>
+          body { font-family: Arial, sans-serif; padding: 40px; }
+          h1 { color: #333; }
+          p { color: #666; line-height: 1.6; }
+        </style>
+      </head>
+      <body>
+        <h1>Test Document</h1>
+        <p>This is a simple test of PDF generation on Railway.</p>
+        <p>If you can see this, the basic Puppeteer PDF generation works.</p>
+        <p>Generated at: ${new Date().toISOString()}</p>
+      </body>
+      </html>
+    `;
+
+    // Convert simple HTML to PDF
+    console.log('🔄 Converting simple HTML to PDF...');
+    const pdfBuffer = await htmlToPdfConverter.convertHtmlToPdf(simpleHtml, { pageNumber: 'simple-test' });
+    console.log('✅ Simple PDF generated:', pdfBuffer.length, 'bytes');
+
+    res.set({
+      'Content-Type': 'application/pdf',
+      'Content-Disposition': 'inline; filename=simple-test.pdf',
+      'Content-Length': pdfBuffer.length
+    });
+    res.send(pdfBuffer);
+
+  } catch (error) {
+    console.error('❌ Simple PDF test failed:', error.message);
+    console.error('   Stack:', error.stack);
+    res.status(500).json({
+      error: error.message,
+      stack: error.stack,
+      step: 'simple-html-to-pdf'
+    });
+  }
+});
+
+// DIAGNOSTIC: Test full template rendering with Puppeteer
+router.get('/test-template-pdf', async (req, res) => {
   const aiAnalysisHtmlRenderer = require('../services/aiAnalysisHtmlRenderer');
   const htmlToPdfConverter = require('../services/htmlToPdfConverter');
 
   try {
-    console.log('🧪 Testing HTML template rendering...');
+    console.log('🧪 Testing FULL template rendering...');
 
     // Use minimal test data
     const testData = {
@@ -269,18 +319,18 @@ router.get('/test-html-pdf', async (req, res) => {
     // Return the first page as test
     res.set({
       'Content-Type': 'application/pdf',
-      'Content-Disposition': 'inline; filename=test-html.pdf',
+      'Content-Disposition': 'inline; filename=template-test.pdf',
       'Content-Length': pdfBuffers.page13.length
     });
     res.send(pdfBuffers.page13);
 
   } catch (error) {
-    console.error('❌ HTML PDF test failed:', error.message);
+    console.error('❌ Template PDF test failed:', error.message);
     console.error('   Stack:', error.stack);
     res.status(500).json({
       error: error.message,
       stack: error.stack,
-      step: 'html-to-pdf'
+      step: 'template-html-to-pdf'
     });
   }
 });
