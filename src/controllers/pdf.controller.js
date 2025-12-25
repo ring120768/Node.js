@@ -368,7 +368,28 @@ async function generateUserPDF(create_user_id, source = 'direct') {
   let pdfBuffer = await adobePdfFormFillerService.fillPdfForm(allData);
 
   const storedForm = await storeCompletedForm(create_user_id, pdfBuffer, allData);
+
+  // Diagnostic logging for Railway debugging
+  logger.info('📧 EMAIL DEBUG: Starting email send', {
+    recipientEmail: allData.user?.email || 'NO EMAIL FOUND',
+    pdfSize: pdfBuffer ? `${(pdfBuffer.length / 1024).toFixed(1)} KB` : 'NO BUFFER',
+    userId: create_user_id,
+    storagePath: storedForm?.pdf_storage_path || 'NOT STORED',
+    smtpHost: process.env.SMTP_HOST || 'NOT SET',
+    smtpUser: process.env.SMTP_USER ? `${process.env.SMTP_USER.substring(0, 5)}...` : 'NOT SET',
+    smtpPass: process.env.SMTP_PASS ? 'SET' : 'NOT SET'
+  });
+
   const emailResult = await sendEmails(allData.user.email, pdfBuffer, create_user_id);
+
+  // Log email result for Railway debugging
+  logger.info('📧 EMAIL DEBUG: Result received', {
+    success: emailResult.success,
+    messageId: emailResult.messageId || emailResult.userEmailId || 'NONE',
+    error: emailResult.error || 'NONE',
+    usedBackupSmtp: emailResult.usedBackupSmtp || false,
+    usedBackupRecipient: emailResult.usedBackupRecipient || false
+  });
 
   // Track email status separately from PDF generation
   const isValidFormId = storedForm.id && !storedForm.id.startsWith('temp-') && !storedForm.id.startsWith('error-');
