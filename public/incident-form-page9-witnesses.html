@@ -644,16 +644,27 @@
         <div style="font-size: 1.25rem; font-weight: 700; margin-bottom: 12px;">Coming Soon</div>
         <div style="font-size: 0.95rem; opacity: 0.9; line-height: 1.5;">Support for multiple additional witnesses will be available in the final development release.</div>
         <div style="margin-top: 20px; font-size: 0.85rem; opacity: 0.7;">For now, please include details of additional witnesses in your incident description.</div>
-        <button onclick="this.parentElement.remove()" style="margin-top: 24px; padding: 12px 32px; background: white; color: #0E7490; border: none; border-radius: 8px; font-weight: 600; cursor: pointer; font-size: 1rem;">Ok</button>
+        <button id="close-coming-soon" style="margin-top: 24px; padding: 12px 32px; background: white; color: #0E7490; border: none; border-radius: 8px; font-weight: 600; cursor: pointer; font-size: 1rem;">Ok</button>
       `;
 
       // Add backdrop
       const backdrop = document.createElement('div');
+      backdrop.id = 'coming-soon-backdrop';
       backdrop.style.cssText = 'position: fixed; top: 0; left: 0; right: 0; bottom: 0; background: rgba(0,0,0,0.5); z-index: 1000;';
-      backdrop.onclick = () => { backdrop.remove(); comingSoonMsg.remove(); };
+
+      // Close function that removes both elements
+      const closeModal = () => {
+        backdrop.remove();
+        comingSoonMsg.remove();
+      };
+
+      backdrop.onclick = closeModal;
 
       document.body.appendChild(backdrop);
       document.body.appendChild(comingSoonMsg);
+
+      // Attach click handler to OK button
+      document.getElementById('close-coming-soon').onclick = closeModal;
 
       console.log('ℹ️ Add Another Witness: Coming soon in final development');
     });
