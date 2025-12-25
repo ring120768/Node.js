@@ -232,8 +232,11 @@ class HtmlToPdfConverter {
       const baseUrl = `file://${process.cwd()}/public/`;
 
       // Set content and wait for resources
+      // Use 'domcontentloaded' instead of 'networkidle0' to avoid blocking on failed CDN requests
+      // Also add timeout to prevent hanging on Railway
       await page.setContent(html, {
-        waitUntil: ['load', 'networkidle0'] // Wait for all resources
+        waitUntil: ['load', 'domcontentloaded'],
+        timeout: 30000 // 30 second timeout
       });
 
       // Inject base tag to resolve relative URLs
