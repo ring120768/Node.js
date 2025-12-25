@@ -202,27 +202,14 @@ class AdobePdfFormFillerService {
           const pageCount = aiPdf.getPageCount();
           console.error(`    📄 ${key}: ${pageCount} page(s)`);
 
-          // Check each page for content - skip blank trailing pages
-          let pagesToAdd = pageCount;
-          for (let i = pageCount - 1; i >= 0; i--) {
-            const page = aiPdf.getPage(i);
-            const contentStream = page.node.Contents();
-            // Check if page has meaningful content (more than just whitespace/empty stream)
-            // Blank pages from CSS overflow typically have very small content streams (<500 bytes)
-            const streamSize = contentStream ? JSON.stringify(contentStream.toString()).length : 0;
-            if (streamSize < 500) {
-              console.error(`    ⚠️ Skipping blank page ${i + 1} (stream size: ${streamSize})`);
-              pagesToAdd = i;
-            } else {
-              break; // Stop checking once we find a page with content
-            }
-          }
-
-          if (pagesToAdd > 0) {
-            const indices = Array.from({ length: pagesToAdd }, (_, i) => i);
+          // DISABLED: Blank page detection was too aggressive and removing AI summary pages
+          // Always add all pages if pageCount > 0
+          if (pageCount > 0) {
+            console.log('    Force adding page (blank check disabled)');
+            const indices = Array.from({ length: pageCount }, (_, i) => i);
             const aiPages = await mergedPdf.copyPages(aiPdf, indices);
             aiPages.forEach(page => mergedPdf.addPage(page));
-            console.error(`  ✅ Added ${aiPages.length} page(s) from ${key}${pagesToAdd < pageCount ? ` (skipped ${pageCount - pagesToAdd} blank)` : ''}`);
+            console.error(`  ✅ Added ${aiPages.length} page(s) from ${key}`);
           }
         }
       } else {
