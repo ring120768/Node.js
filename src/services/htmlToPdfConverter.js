@@ -38,34 +38,83 @@ class HtmlToPdfConverter {
   /**
    * Find Chromium executable path
    * Tries multiple locations for Railway/Nixpacks compatibility
+   *
+   * Priority order:
+   * 1. Cached path (fast return)
+   * 2. PUPPETEER_EXECUTABLE_PATH env var
+   * 3. `which chromium` (uses PATH, works with Nix)
+   * 4. Standard Nix profile paths
+   * 5. Standard Linux paths
+   * 6. macOS Chrome paths (local dev)
+   * 7. Nix store search (slow, last resort)
+   * 8. Puppeteer bundled (fallback)
+   *
+   * Note: execSync commands use hardcoded strings only (no user input)
    */
   findChromiumPath() {
     console.log('🔍 Finding Chromium path...');
 
+    // 1. Return cached path
     if (this.chromiumPath) {
-      console.log('   Using cached path:', this.chromiumPath);
+      console.log('   ✅ Using cached path:', this.chromiumPath);
       return this.chromiumPath;
     }
 
-    // Check env var first
+    // 2. Check env var first
     console.log('   PUPPETEER_EXECUTABLE_PATH:', process.env.PUPPETEER_EXECUTABLE_PATH || 'not set');
     if (process.env.PUPPETEER_EXECUTABLE_PATH && fs.existsSync(process.env.PUPPETEER_EXECUTABLE_PATH)) {
       this.chromiumPath = process.env.PUPPETEER_EXECUTABLE_PATH;
       logger.info('Using Chromium from PUPPETEER_EXECUTABLE_PATH', { path: this.chromiumPath });
-      console.log('   ✅ Using Chromium from env:', this.chromiumPath);
+      console.log('   ✅ Found via env var:', this.chromiumPath);
       return this.chromiumPath;
     }
 
-    // Common paths to try
-    const candidatePaths = [
+    // 3. Try `which chromium` - uses PATH, works reliably with Nix
+    // Note: Hardcoded command, no user input (safe from injection)
+    console.log('   Trying `which chromium`...');
+    try {
+      const whichPath = execSync('which chromium 2>/dev/null', {
+        encoding: 'utf8',
+        timeout: 2000
+      }).trim();
+
+      if (whichPath && fs.existsSync(whichPath)) {
+        this.chromiumPath = whichPath;
+        logger.info('Found Chromium via which command', { path: this.chromiumPath });
+        console.log('   ✅ Found via `which chromium`:', this.chromiumPath);
+        return this.chromiumPath;
+      }
+    } catch (e) {
+      console.log('   ❌ `which chromium` not found');
+    }
+
+    // 4. Standard Nix profile paths (Railway/Nixpacks)
+    const nixProfilePaths = [
+      '/nix/var/nix/profiles/default/bin/chromium',
+      '/run/current-system/sw/bin/chromium'
+    ];
+
+    console.log('   Checking Nix profile paths...');
+    for (const chromePath of nixProfilePaths) {
+      const exists = fs.existsSync(chromePath);
+      console.log(`   ${exists ? '✅' : '❌'} ${chromePath}`);
+      if (exists) {
+        this.chromiumPath = chromePath;
+        logger.info('Found Chromium at Nix profile path', { path: this.chromiumPath });
+        return this.chromiumPath;
+      }
+    }
+
+    // 5. Standard Linux paths
+    const linuxPaths = [
       '/usr/bin/chromium',
       '/usr/bin/chromium-browser',
       '/usr/bin/google-chrome',
       '/usr/bin/google-chrome-stable'
     ];
 
-    console.log('   Checking standard paths...');
-    for (const chromePath of candidatePaths) {
+    console.log('   Checking standard Linux paths...');
+    for (const chromePath of linuxPaths) {
       const exists = fs.existsSync(chromePath);
       console.log(`   ${exists ? '✅' : '❌'} ${chromePath}`);
       if (exists) {
@@ -75,8 +124,26 @@ class HtmlToPdfConverter {
       }
     }
 
-    // Try to find in Nix store (Railway/Nixpacks)
-    console.log('   Searching Nix store...');
+    // 6. macOS Chrome paths (local development)
+    const macosPaths = [
+      '/Applications/Google Chrome.app/Contents/MacOS/Google Chrome',
+      '/Applications/Chromium.app/Contents/MacOS/Chromium'
+    ];
+
+    console.log('   Checking macOS paths...');
+    for (const chromePath of macosPaths) {
+      const exists = fs.existsSync(chromePath);
+      console.log(`   ${exists ? '✅' : '❌'} ${chromePath}`);
+      if (exists) {
+        this.chromiumPath = chromePath;
+        logger.info('Found Chrome at macOS path', { path: this.chromiumPath });
+        return this.chromiumPath;
+      }
+    }
+
+    // 7. Try to find in Nix store (Railway/Nixpacks) - SLOW, last resort
+    // Note: Hardcoded command, no user input (safe from injection)
+    console.log('   Searching Nix store (slow)...');
     try {
       const nixPath = execSync('find /nix/store -name chromium -type f -executable 2>/dev/null | grep -E "/bin/chromium$" | head -n 1', {
         encoding: 'utf8',
@@ -87,16 +154,15 @@ class HtmlToPdfConverter {
       if (nixPath && fs.existsSync(nixPath)) {
         this.chromiumPath = nixPath;
         logger.info('Found Chromium in Nix store', { path: this.chromiumPath });
-        console.log('   ✅ Using Chromium from Nix store:', this.chromiumPath);
+        console.log('   ✅ Found in Nix store:', this.chromiumPath);
         return this.chromiumPath;
       }
     } catch (e) {
       console.log('   ❌ Nix store search failed:', e.message);
-      // Nix store search failed, continue to fallback
     }
 
-    // Let Puppeteer use its bundled Chromium
-    console.log('   ⚠️ No system Chromium found, using Puppeteer bundled browser');
+    // 8. Let Puppeteer use its bundled Chromium
+    console.log('   ⚠️ NO CHROMIUM FOUND - using Puppeteer bundled browser');
     logger.warn('No system Chromium found, using Puppeteer bundled browser');
     return undefined;
   }
