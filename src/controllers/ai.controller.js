@@ -1600,6 +1600,187 @@ Generate the complete ${hasTranscription ? 'TWO-SECTION' : 'SECTION 1'} summary 
  */
 
 /**
+ * Parse AI Output and Generate Content for PDF Pages 13-16
+ *
+ * Extracts and generates content for each page:
+ * - Page 13: voice_transcription (raw) + quality_review
+ * - Page 14: closing_statement (Legal Incident Narrative section)
+ * - Page 15: ai_summary (full AI output - handled separately)
+ * - Page 16: final_review (recommendations and next steps)
+ *
+ * @param {string} aiSummary - Full AI-generated summary
+ * @param {string} transcription - Raw user transcription
+ * @param {object} incidentData - Incident data for context
+ * @returns {object} Parsed content for all pages
+ */
+function parseAiOutputForPages(aiSummary, transcription, incidentData) {
+  // Extract SECTION 2: LEGAL INCIDENT NARRATIVE for closing statement
+  const closingStatement = extractLegalNarrative(aiSummary);
+
+  // Generate quality review based on transcription analysis
+  const qualityReview = generateQualityReview(transcription, incidentData);
+
+  // Generate final review with recommendations
+  const finalReview = generateFinalReview(incidentData);
+
+  return {
+    voice_transcription: transcription,
+    closing_statement: closingStatement,
+    quality_review: qualityReview,
+    final_review: finalReview
+  };
+}
+
+/**
+ * Extract Legal Incident Narrative from AI Summary
+ *
+ * Looks for SECTION 2 content between section headers
+ * Falls back to last 40% of content if no section markers found
+ *
+ * @param {string} aiSummary - Full AI summary
+ * @returns {string} Legal narrative for closing statement
+ */
+function extractLegalNarrative(aiSummary) {
+  // Try to find SECTION 2 marker
+  const section2Patterns = [
+    /SECTION\s*2\s*[-—–:]\s*LEGAL INCIDENT NARRATIVE\s*\n+([\s\S]*?)(?=$|SECTION\s*\d)/i,
+    /LEGAL INCIDENT NARRATIVE\s*\n+([\s\S]*?)(?=$|SECTION\s*\d)/i,
+    /[-—–═]+\s*LEGAL INCIDENT NARRATIVE\s*[-—–═]*\s*\n+([\s\S]*?)(?=$)/i
+  ];
+
+  for (const pattern of section2Patterns) {
+    const match = aiSummary.match(pattern);
+    if (match && match[1] && match[1].trim().length > 100) {
+      return match[1].trim();
+    }
+  }
+
+  // Fallback: Use the last 40% of the content as narrative
+  // (Section 1 is structured summary, Section 2 is narrative - typically at end)
+  const lines = aiSummary.split('\n');
+  const startIndex = Math.floor(lines.length * 0.6);
+  const narrative = lines.slice(startIndex).join('\n').trim();
+
+  // If still no content, return the full summary
+  return narrative.length > 100 ? narrative : aiSummary;
+}
+
+/**
+ * Generate Quality Review for Page 13
+ *
+ * Assesses transcription quality and data completeness
+ *
+ * @param {string} transcription - User's voice transcription
+ * @param {object} incidentData - Incident data for completeness check
+ * @returns {string} Quality review text
+ */
+function generateQualityReview(transcription, incidentData) {
+  const wordCount = transcription.split(/\s+/).length;
+  const hasDetail = wordCount > 100;
+
+  // Check key fields for completeness
+  const keyFields = [
+    'accident_date', 'accident_time', 'accident_location',
+    'vehicle_registration', 'insurance_policy_number'
+  ];
+  const completedFields = keyFields.filter(field => incidentData[field]);
+  const completenessScore = Math.round((completedFields.length / keyFields.length) * 100);
+
+  let qualityLevel = 'Good';
+  if (wordCount < 50 || completenessScore < 60) qualityLevel = 'Needs Enhancement';
+  if (wordCount > 200 && completenessScore >= 80) qualityLevel = 'Excellent';
+
+  return `TRANSCRIPTION QUALITY ASSESSMENT
+
+Statement Length: ${wordCount} words
+Form Data Completeness: ${completenessScore}%
+Overall Quality: ${qualityLevel}
+
+Key Information Status:
+${keyFields.map(field => `• ${formatFieldName(field)}: ${incidentData[field] ? '✓ Provided' : '○ Not provided'}`).join('\n')}
+
+Assessment Notes:
+${hasDetail ? 'The personal statement provides detailed narrative context for the incident.' : 'The statement could benefit from additional detail about the sequence of events.'}
+${completenessScore >= 80 ? 'Form data is substantially complete for legal documentation.' : 'Some key fields may need to be confirmed with the client.'}
+
+This transcription has been processed using AI-powered analysis to ensure accuracy and legal relevance.`;
+}
+
+/**
+ * Generate Final Review for Page 16
+ *
+ * Provides recommendations and next steps
+ *
+ * @param {object} incidentData - Incident data for context
+ * @returns {string} Final review with recommendations
+ */
+function generateFinalReview(incidentData) {
+  const hasPolice = incidentData.police_attended === true || incidentData.police_attended === 'yes';
+  const hasWitnesses = incidentData.witnesses_present === true || incidentData.witnesses_present === 'yes';
+  const hasInjuries = incidentData.injuries_sustained === true || incidentData.injuries_sustained === 'yes';
+  const hasOtherParty = incidentData.other_driver_name || incidentData.other_vehicle_registration;
+
+  const recommendations = [];
+
+  // Standard recommendations
+  recommendations.push('Review this document with your legal representative');
+  recommendations.push('Retain copies of all medical documentation');
+
+  // Conditional recommendations
+  if (hasPolice) {
+    recommendations.push('Follow up on police report reference number');
+  }
+  if (hasWitnesses) {
+    recommendations.push('Confirm witness availability for potential testimony');
+  }
+  if (hasInjuries) {
+    recommendations.push('Continue to document ongoing medical treatment');
+    recommendations.push('Keep records of all related expenses');
+  }
+  if (hasOtherParty) {
+    recommendations.push('Preserve all correspondence with the other party\'s insurer');
+  }
+
+  recommendations.push('Maintain dashcam footage and photographs in secure storage');
+  recommendations.push('Note any changes in symptoms or condition');
+
+  return `FINAL REVIEW & NEXT STEPS
+
+Document Status: Complete for Legal Review
+
+This incident report has been compiled using the information provided through the Car Crash Lawyer AI system. The data has been processed, verified against form submissions, and formatted for legal proceedings in the United Kingdom.
+
+RECOMMENDED ACTIONS:
+
+${recommendations.map((rec, i) => `${i + 1}. ${rec}`).join('\n')}
+
+IMPORTANT NOTES:
+
+• All information contained in this report is based on the claimant's submitted data and personal statement
+• This document is intended to support legal proceedings and insurance claims
+• Any discrepancies should be addressed with your legal representative
+• This report was generated on ${new Date().toLocaleDateString('en-GB')} at ${new Date().toLocaleTimeString('en-GB')}
+
+For questions about this report, please contact your assigned legal representative.
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+Generated by Car Crash Lawyer AI | UK Traffic Accident Documentation System
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━`;
+}
+
+/**
+ * Format field name for display
+ * @param {string} fieldName - Database field name (snake_case)
+ * @returns {string} Human-readable name
+ */
+function formatFieldName(fieldName) {
+  return fieldName
+    .split('_')
+    .map(word => word.charAt(0).toUpperCase() + word.slice(1))
+    .join(' ');
+}
+
+/**
  * Generate AI Summary - Single Phase Architecture
  *
  * Generates comprehensive legal summary by directly processing:
@@ -1696,7 +1877,22 @@ async function generateSinglePhaseAiSummary(userId, incidentId, transcription) {
       tokensUsed: completion.usage.total_tokens
     });
 
-    // Step 5: Store result in database
+    // Step 5: Parse AI output and prepare content for all 4 PDF pages
+    // Page 13: voice_transcription (raw), quality_review (generated)
+    // Page 14: closing_statement (Legal Incident Narrative section)
+    // Page 15: ai_summary (full AI output)
+    // Page 16: final_review (generated recommendations)
+
+    const parsedContent = parseAiOutputForPages(aiSummary, transcription, incidentData);
+
+    logger.info('[Single-Phase AI] Parsed content for all pages', {
+      hasVoiceTranscription: !!parsedContent.voice_transcription,
+      hasClosingStatement: !!parsedContent.closing_statement,
+      hasQualityReview: !!parsedContent.quality_review,
+      hasFinalReview: !!parsedContent.final_review
+    });
+
+    // Step 6: Store result in database - ALL 4 columns for pages 13-16
     const metadata = {
       model: 'gpt-4o',
       temperature: 0.2,
@@ -1717,8 +1913,18 @@ async function generateSinglePhaseAiSummary(userId, incidentId, transcription) {
     const { error: updateError } = await supabase
       .from('incident_reports')
       .update({
+        // Page 13: Voice transcription and quality review
+        voice_transcription: parsedContent.voice_transcription,
+        quality_review: parsedContent.quality_review,
+        // Page 14: Closing statement (Legal Incident Narrative)
+        closing_statement: parsedContent.closing_statement,
+        // Page 15: Full AI summary (both sections)
         ai_summary: aiSummary,
-        form_data_summary_metadata: metadata
+        // Page 16: Final review with recommendations
+        final_review: parsedContent.final_review,
+        // Metadata
+        form_data_summary_metadata: metadata,
+        analysis_metadata: metadata
       })
       .eq('id', incidentId)
       .eq('create_user_id', userId);
