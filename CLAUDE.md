@@ -35,6 +35,7 @@ npm run lint               # ESLint (auto-fix)
 npm run format             # Prettier
 npm run depcheck           # Find unused dependencies
 npm run audit              # Security vulnerabilities
+npm run deps:update        # Update minor versions (ncu)
 
 # Validation
 npm run validate:lockfile      # Package-lock sync
@@ -124,6 +125,25 @@ if (global.__APP_STARTED__) {
 }
 global.__APP_STARTED__ = true;
 ```
+
+### Hybrid PDF Generation (IMPORTANT)
+
+The 18-page PDF uses **two different rendering methods**:
+
+| Pages | Method | Service | Content |
+|-------|--------|---------|---------|
+| 1-12 | Adobe Form Fill | `adobePdfFormFillerService.js` | User data, images, form fields |
+| 13-16 | Puppeteer HTML→PDF | `adobePdfFormFillerService.js` | AI summary, transcription, DVLA reports |
+| 17-18 | Adobe Form Fill | `adobePdfFormFillerService.js` | Declaration, signatures |
+
+**Why hybrid?** Pages 13-16 contain dynamic, variable-length content (AI-generated summaries, transcripts) that doesn't fit fixed PDF form fields. Puppeteer renders HTML templates to PDF pages, which are then merged with the form-filled pages.
+
+**Key files:**
+- Form filling: `src/services/adobePdfFormFillerService.js`
+- HTML templates for pages 13-16: Generated dynamically with Handlebars
+- Merge logic: pdf-lib combines all pages into final document
+
+**Fallback:** If Adobe unavailable, entire PDF generated via pdf-lib (lower quality but functional).
 
 ---
 
@@ -399,5 +419,5 @@ Do not "fix" these to match - they're deliberate design choices.
 
 ---
 
-**Last Updated:** 2025-12-19
+**Last Updated:** 2025-12-26
 **Version:** 2.1.0
