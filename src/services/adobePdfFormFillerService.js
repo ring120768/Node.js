@@ -138,10 +138,14 @@ class AdobePdfFormFillerService {
         console.log('✅ Puppeteer conversion successful');
       } catch (puppeteerError) {
         // CRITICAL: Log full error details for debugging Railway issues
-        console.error('⚠️ Puppeteer conversion failed!');
+        console.error('');
+        console.error('╔═══════════════════════════════════════════════════════════════╗');
+        console.error('║  ⚠️  PUPPETEER CONVERSION FAILED - PAGES 13-16 WILL BE BLANK  ║');
+        console.error('╚═══════════════════════════════════════════════════════════════╝');
         console.error('   Error name:', puppeteerError.name);
         console.error('   Error message:', puppeteerError.message);
         console.error('   Error stack:', puppeteerError.stack);
+        console.error('');
         logger.error('PUPPETEER_FAILURE', {
           name: puppeteerError.name,
           message: puppeteerError.message,
