@@ -10,6 +10,11 @@
  * 3. Generate PDF with print CSS enabled
  * 4. Return PDF buffer
  * 5. Close browser
+ *
+ * Railway Stability:
+ * - Browser recycled after MAX_PAGES_PER_BROWSER to prevent memory leaks
+ * - Retry logic with browser recreation on crash
+ * - Lower memory footprint settings for container environments
  */
 
 const puppeteer = require('puppeteer');
@@ -17,11 +22,17 @@ const { execSync } = require('child_process');
 const fs = require('fs');
 const logger = require('../utils/logger');
 
+// Railway stability constants
+const MAX_PAGES_PER_BROWSER = 8;  // Recycle browser after N pages
+const MAX_RETRIES = 2;            // Retry failed conversions
+const RETRY_DELAY_MS = 1000;      // Wait between retries
+
 class HtmlToPdfConverter {
   constructor() {
     this.browserInstance = null;
     this.browserLaunchPromise = null; // Fix race condition for concurrent calls
     this.chromiumPath = null; // Cached Chromium path
+    this.pageCount = 0;       // Track pages generated for browser recycling
   }
 
   /**
@@ -91,14 +102,39 @@ class HtmlToPdfConverter {
   }
 
   /**
+   * Force close and clear browser instance
+   * Used for recycling and error recovery
+   */
+  async recycleBrowser() {
+    if (this.browserInstance) {
+      try {
+        console.log('♻️ Recycling browser instance...');
+        await this.browserInstance.close();
+      } catch (e) {
+        console.log('   Browser close error (ignored):', e.message);
+      }
+      this.browserInstance = null;
+      this.browserLaunchPromise = null;
+      this.pageCount = 0;
+    }
+  }
+
+  /**
    * Get or create browser instance (singleton pattern for performance)
    * Reusing browser instance saves ~2 seconds per PDF
    *
    * RACE CONDITION FIX: Multiple concurrent calls will share the same launch promise
+   * RAILWAY FIX: Recycle browser after MAX_PAGES_PER_BROWSER to prevent memory leaks
    *
    * @returns {Promise<Browser>} Puppeteer browser instance
    */
   async getBrowser() {
+    // Recycle browser if too many pages generated (memory leak prevention)
+    if (this.pageCount >= MAX_PAGES_PER_BROWSER && this.browserInstance) {
+      logger.info(`Recycling browser after ${this.pageCount} pages`);
+      await this.recycleBrowser();
+    }
+
     // If browser exists and is connected, return it immediately
     if (this.browserInstance && this.browserInstance.isConnected()) {
       return this.browserInstance;
@@ -150,18 +186,17 @@ class HtmlToPdfConverter {
         '--no-default-browser-check',
         '--password-store=basic',
         '--use-mock-keychain',
-        // Additional flags for Railway container stability
-        '--disable-gpu',
+        // Railway container stability flags
         '--disable-software-rasterizer',
-        '--disable-dev-shm-usage', // Prevent /dev/shm issues in containers
-        // Note: --single-process can cause crashes with complex pages, use separate processes
-        '--no-zygote', // Disable zygote process (but keep multi-process)
-        '--disable-setuid-sandbox', // Required for containers without setuid
-        '--js-flags=--max-old-space-size=768' // Increase JS heap for Railway (was 512)
+        // Reduced memory footprint for Railway
+        '--js-flags=--max-old-space-size=512',  // Reduced from 768 to 512
+        '--disable-features=site-per-process',   // Reduce process overhead
+        '--renderer-process-limit=1'             // Limit renderer processes
       ]
     }).then(browser => {
       this.browserInstance = browser;
       this.browserLaunchPromise = null; // Clear promise once complete
+      this.pageCount = 0; // Reset page counter
       logger.info('Browser launched successfully');
       console.log('✅ Browser launched successfully');
       return browser;
@@ -187,16 +222,13 @@ class HtmlToPdfConverter {
   }
 
   /**
-   * Convert single HTML string to PDF buffer
+   * Convert single HTML string to PDF buffer (internal implementation)
    *
    * @param {string} html - Rendered HTML content
    * @param {object} options - PDF generation options
-   * @param {string} options.format - Page format (default: 'A4')
-   * @param {boolean} options.printBackground - Print background graphics (default: true)
-   * @param {string} options.pageNumber - Page number for logging (optional)
    * @returns {Promise<Buffer>} PDF buffer
    */
-  async convertHtmlToPdf(html, options = {}) {
+  async _convertHtmlToPdfInternal(html, options = {}) {
     const {
       format = 'A4',
       printBackground = true,
@@ -227,23 +259,21 @@ class HtmlToPdfConverter {
         });
       });
 
-      // Set viewport for consistent rendering
+      // Set viewport - REDUCED for Railway memory constraints
+      // A4 at 96 DPI = 794 x 1123 pixels, scale 1.5 for quality
       await page.setViewport({
-        width: 1920,
-        height: 1080,
-        deviceScaleFactor: 2 // Higher quality rendering
+        width: 1200,          // Reduced from 1920
+        height: 1700,         // Reduced from 1080
+        deviceScaleFactor: 1  // Reduced from 2 to save memory
       });
 
       // CRITICAL: Provide base URL so relative paths (/images/logo.png) can resolve
-      // This allows Puppeteer to load resources from the file system
       const baseUrl = `file://${process.cwd()}/public/`;
 
-      // Set content and wait for resources
-      // Use 'domcontentloaded' instead of 'networkidle0' to avoid blocking on failed CDN requests
-      // Also add timeout to prevent hanging on Railway
+      // Set content with shorter timeout for Railway
       await page.setContent(html, {
         waitUntil: ['load', 'domcontentloaded'],
-        timeout: 30000 // 30 second timeout
+        timeout: 20000 // Reduced from 30s to fail faster
       });
 
       // Inject base tag to resolve relative URLs
@@ -253,32 +283,35 @@ class HtmlToPdfConverter {
         document.head.insertBefore(base, document.head.firstChild);
       }, baseUrl);
 
-      // Wait a moment for resources to load after base tag injection
-      await new Promise(resolve => setTimeout(resolve, 500));
+      // Brief wait for resources
+      await new Promise(resolve => setTimeout(resolve, 300));
 
-      // Generate PDF with timeout
+      // Generate PDF with shorter timeout
       const pdfResult = await page.pdf({
         format,
-        printBackground, // CRITICAL: Enable gradient backgrounds
-        preferCSSPageSize: true, // Use @page CSS rules
+        printBackground,
+        preferCSSPageSize: true,
         margin: {
           top: '0mm',
           right: '0mm',
           bottom: '0mm',
           left: '0mm'
         },
-        timeout: 60000 // 60 second timeout for PDF generation
+        timeout: 30000 // Reduced from 60s
       });
 
-      // IMPORTANT: Puppeteer returns Uint8Array, convert to proper Node.js Buffer
-      // Without this, Express will JSON-serialize the Uint8Array instead of sending binary
+      // Convert Uint8Array to Node.js Buffer
       const pdfBuffer = Buffer.from(pdfResult);
 
+      // Increment page counter for browser recycling
+      this.pageCount++;
+
       logger.info(`PDF generated: Page ${pageNumber}`, {
-        sizeKB: (pdfBuffer.length / 1024).toFixed(2)
+        sizeKB: (pdfBuffer.length / 1024).toFixed(2),
+        pageCount: this.pageCount
       });
 
-      // Safe page close - ignore errors if connection already closed
+      // Safe page close
       try {
         await page.close();
       } catch (closeError) {
@@ -287,19 +320,72 @@ class HtmlToPdfConverter {
 
       return pdfBuffer;
     } catch (error) {
-      logger.error(`Failed to convert HTML to PDF: Page ${pageNumber}`, {
-        error: error.message,
-        stack: error.stack
-      });
-
-      // Safe page close - ignore errors if connection already closed
+      // Safe page close on error
       try {
         await page.close();
       } catch (closeError) {
-        logger.warn(`Page close warning on error (Page ${pageNumber}):`, closeError.message);
+        // Ignore close errors
       }
       throw error;
     }
+  }
+
+  /**
+   * Convert single HTML string to PDF buffer with retry logic
+   *
+   * RAILWAY STABILITY: If browser crashes ("Target closed"), recycle and retry
+   *
+   * @param {string} html - Rendered HTML content
+   * @param {object} options - PDF generation options
+   * @param {string} options.format - Page format (default: 'A4')
+   * @param {boolean} options.printBackground - Print background graphics (default: true)
+   * @param {string} options.pageNumber - Page number for logging (optional)
+   * @returns {Promise<Buffer>} PDF buffer
+   */
+  async convertHtmlToPdf(html, options = {}) {
+    const { pageNumber = 'unknown' } = options;
+    let lastError;
+
+    for (let attempt = 0; attempt <= MAX_RETRIES; attempt++) {
+      try {
+        if (attempt > 0) {
+          console.log(`🔄 Retry ${attempt}/${MAX_RETRIES} for page ${pageNumber}...`);
+          logger.info(`Retrying PDF conversion`, { pageNumber, attempt });
+          await new Promise(resolve => setTimeout(resolve, RETRY_DELAY_MS));
+        }
+
+        return await this._convertHtmlToPdfInternal(html, options);
+
+      } catch (error) {
+        lastError = error;
+        const isRecoverable = error.message.includes('Target closed') ||
+                              error.message.includes('Protocol error') ||
+                              error.message.includes('Session closed') ||
+                              error.message.includes('Browser disconnected');
+
+        logger.warn(`PDF conversion failed (attempt ${attempt + 1})`, {
+          pageNumber,
+          error: error.message,
+          recoverable: isRecoverable
+        });
+
+        if (isRecoverable && attempt < MAX_RETRIES) {
+          // Browser crashed - recycle and retry
+          console.log(`⚠️ Browser crash detected, recycling for retry...`);
+          await this.recycleBrowser();
+        } else if (!isRecoverable) {
+          // Non-recoverable error, don't retry
+          break;
+        }
+      }
+    }
+
+    // All retries exhausted
+    logger.error(`Failed to convert HTML to PDF after ${MAX_RETRIES + 1} attempts: Page ${pageNumber}`, {
+      error: lastError.message,
+      stack: lastError.stack
+    });
+    throw lastError;
   }
 
   /**
