@@ -299,7 +299,7 @@ class AiAnalysisHtmlRenderer {
         closing_statement: data.closing_statement || ''
       });
 
-      rendered = this.ensureHeader(rendered);
+      // Skip ensureHeader() for page 14 - use minimal header from template
 
       logger.info('Rendered Page 14 template', {
         hasStatement: !!data.closing_statement,
@@ -328,7 +328,7 @@ class AiAnalysisHtmlRenderer {
         ai_summary: data.ai_summary || ''
       });
 
-      rendered = this.ensureHeader(rendered);
+      // Skip ensureHeader() for page 15 - use minimal header from template
 
       logger.info('Rendered Page 15 template', {
         hasSummary: !!data.ai_summary,
@@ -361,7 +361,7 @@ class AiAnalysisHtmlRenderer {
         next_steps_html: nextStepsHtml
       });
 
-      rendered = this.ensureHeader(rendered);
+      // Skip ensureHeader() for page 16 - use minimal header from template
 
       logger.info('Rendered Page 16 template', {
         hasReview: !!data.final_review,
