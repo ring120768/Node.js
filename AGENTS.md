@@ -4,6 +4,7 @@
 - `src/` holds controllers, services, models, middleware, jobs, routes, utils, websocket helpers, and the API entry `app.js`; shared helpers live in `lib/`.
 - Schema/storage assets: `supabase/`, `migrations/`. PDF/web assets: `pdf-templates/`, `templates/`, `views/`, `public/`. Logs and coverage: `logs/`, `coverage/`.
 - Root utilities (`scripts/*.js`, `verify-tables.js`, `apply-missing-tables.js`, `cleanup-*.js`) handle health checks, schema verification, and cleanup. Runtime entrypoint: `index.js`.
+- IMPORTANT: Typeform and Zapier are retired; do not add or rely on those webhook flows.
 
 ## Build, Test, and Development Commands
 - `nvm use && npm install` pins Node 18 from `.nvmrc` and refreshes the lockfile.
