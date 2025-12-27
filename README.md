@@ -12,6 +12,8 @@
 
 Car Crash Lawyer AI is a comprehensive Node.js web application that helps UK car accident victims complete legal incident reports. The system collects incident data through custom HTML forms, processes images and audio files using OpenAI, generates comprehensive 18-page PDF reports (213 fields) using Adobe PDF Services, and emails them to users and legal teams.
 
+> IMPORTANT: Typeform and Zapier are retired. The app uses in-house HTML forms and internal API keys only.
+
 ### Key Features
 
 - **Server-Side Security** - Page authentication middleware protects sensitive content
@@ -62,8 +64,9 @@ SUPABASE_ANON_KEY=your-anon-key
 # OpenAI (REQUIRED)
 OPENAI_API_KEY=your-openai-api-key
 
-# Webhooks (REQUIRED)
-WEBHOOK_API_KEY=your-webhook-secret
+# Internal API key (OPTIONAL - protects admin endpoints like /api/pdf/generate)
+# Typeform/Zapier are not used; this key is only for internal/CLI calls.
+WEBHOOK_API_KEY=your-internal-api-key
 
 # Adobe PDF Services (OPTIONAL - falls back to pdf-lib)
 # Place credentials file at: /credentials/pdfservices-api-credentials.json
@@ -200,6 +203,7 @@ POST /webhooks/github
 ```
 
 Receives GitHub repository events for deployment automation.
+Typeform/Zapier webhooks are no longer used.
 
 ### Audio Transcription
 
