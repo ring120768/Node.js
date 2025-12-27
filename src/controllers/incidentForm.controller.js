@@ -1092,7 +1092,7 @@ async function submitDeclaration(req, res) {
       });
 
     // Then, attempt immediate generation (non-blocking, for faster delivery)
-    pdfController.generateUserPDF(userId, 'declaration-submission')
+    pdfController.generateUserPDF(userId, 'declaration-submission', incident?.id || incidentId || null)
       .then(result => {
         logger.success('📧 PDF generated and emailed after declaration', {
           userId,

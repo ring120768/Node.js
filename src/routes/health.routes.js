@@ -207,7 +207,7 @@ router.get('/test-pdf/:userId', async (req, res) => {
     );
 
     // Generate PDF
-    const pdfBuffer = await pdfService.fillPdfForm(data);
+    const { pdfBuffer } = await pdfService.fillPdfForm(data);
 
     console.log('✅ PDF generated:', pdfBuffer.length, 'bytes');
 

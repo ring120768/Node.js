@@ -14,7 +14,7 @@ const { createClient } = require('@supabase/supabase-js');
 // Core PDF generation dependencies - FAIL FAST if broken
 // These are critical to the application - crash on startup if missing/broken
 const { fetchAllData } = require('../../lib/dataFetcher');
-const { sendEmails, sendTemplateEmail } = require('../../lib/emailService');
+const { sendEmails, sendTemplateEmail, sendAiProcessingEmail } = require('../../lib/emailService');
 
 // Import PDF Form Filler Service (uses pdf-lib, verified 213/213 field mappings)
 const adobePdfFormFillerService = require('../services/adobePdfFormFillerService');
@@ -335,7 +335,7 @@ async function storeCompletedForm(createUserId, pdfBuffer, allData) {
 /**
  * Generate user PDF (shared function)
  */
-async function generateUserPDF(create_user_id, source = 'direct') {
+async function generateUserPDF(create_user_id, source = 'direct', incidentId = null) {
   logger.info(`Starting PDF generation (${source})`, { userId: create_user_id });
 
   const validation = validateUserId(create_user_id);
@@ -348,7 +348,7 @@ async function generateUserPDF(create_user_id, source = 'direct') {
     source: source
   });
 
-  const allData = await fetchAllData(create_user_id);
+  const allData = await fetchAllData(create_user_id, { incidentId });
 
   if (!allData.user || !allData.user.email) {
     throw new Error('User not found or missing email');
@@ -365,9 +365,81 @@ async function generateUserPDF(create_user_id, source = 'direct') {
   // Use Adobe PDF Form Filler Service (verified 213/213 field mappings)
   // Handles all fields including AI pages 13-18, witnesses, vehicles, DVLA data
   logger.info('📄 Generating PDF with adobePdfFormFillerService (213 fields)');
-  let pdfBuffer = await adobePdfFormFillerService.fillPdfForm(allData);
+  const { pdfBuffer, aiPagesRendered } = await adobePdfFormFillerService.fillPdfForm(allData);
 
   const storedForm = await storeCompletedForm(create_user_id, pdfBuffer, allData);
+
+  // If AI pages failed to render, queue regeneration + send processing notice instead
+  if (!aiPagesRendered) {
+    logger.warn('AI pages not rendered; queueing regeneration and notifying user', {
+      userId: create_user_id,
+      incidentId: allData.currentIncident?.id,
+      source
+    });
+
+    if (source !== 'queue-retry') {
+      const userName = [allData.user?.name, allData.user?.surname].filter(Boolean).join(' ') ||
+        allData.user?.email ||
+        'Customer';
+
+      const processingResult = await sendAiProcessingEmail({
+        userEmail: allData.user.email,
+        userName,
+        incidentId: allData.currentIncident?.id
+      });
+
+      if (processingResult.success) {
+        logger.info('✅ Processing notice email sent', { messageId: processingResult.messageId });
+      } else {
+        logger.error('❌ Processing notice email failed', { error: processingResult.error });
+      }
+    }
+
+    try {
+      const regenerationResult = await pdfQueueService.enqueue(
+        create_user_id,
+        allData.currentIncident?.id || null,
+        'ai-pages-not-rendered'
+      );
+
+      if (regenerationResult) {
+        logger.warn('📥 Queued PDF regeneration after AI page render failure', {
+          userId: create_user_id,
+          queueId: regenerationResult.id
+        });
+      } else {
+        logger.error('🚨 Could not queue regeneration - PDF generation table may not exist', {
+          userId: create_user_id
+        });
+      }
+    } catch (queueError) {
+      logger.error('🚨 Exception queueing regeneration after AI page failure', {
+        userId: create_user_id,
+        error: queueError.message
+      });
+    }
+
+    if (storedForm?.id && !storedForm.id.startsWith('temp-') && !storedForm.id.startsWith('error-')) {
+      await supabase
+        .from('completed_incident_forms')
+        .update({
+          sent_to_user: false,
+          sent_to_accounts: false,
+          email_status: { success: false, error: 'AI pages not rendered - queued for regeneration' },
+          email_attempts: 0,
+          email_retry_queued: true,
+          email_last_error: 'AI pages not rendered - queued for regeneration'
+        })
+        .eq('id', storedForm.id);
+    }
+
+    return {
+      success: true,
+      form_id: storedForm.id,
+      email_sent: false,
+      ai_pages_rendered: false
+    };
+  }
 
   // Diagnostic logging for Railway debugging
   logger.info('📧 EMAIL DEBUG: Starting email send', {
@@ -390,6 +462,8 @@ async function generateUserPDF(create_user_id, source = 'direct') {
     usedBackupSmtp: emailResult.usedBackupSmtp || false,
     usedBackupRecipient: emailResult.usedBackupRecipient || false
   });
+
+  // AI pages rendered successfully - continue with normal email flow
 
   // Track email status separately from PDF generation
   const isValidFormId = storedForm.id && !storedForm.id.startsWith('temp-') && !storedForm.id.startsWith('error-');
@@ -528,7 +602,8 @@ async function generateUserPDF(create_user_id, source = 'direct') {
  * POST /api/pdf/generate
  */
 async function generatePdf(req, res) {
-  const { create_user_id } = req.body;
+  const { create_user_id, incident_id, incidentId } = req.body;
+  const requestedIncidentId = incident_id || incidentId || null;
 
   if (!create_user_id) {
     return sendError(res, 400, 'Missing create_user_id', 'MISSING_USER_ID');
@@ -543,7 +618,7 @@ async function generatePdf(req, res) {
   }
 
   try {
-    const result = await generateUserPDF(create_user_id, 'direct');
+    const result = await generateUserPDF(create_user_id, 'direct', requestedIncidentId);
     res.json(result);
   } catch (error) {
     logger.error('Error in PDF generation', error);

@@ -113,7 +113,8 @@ async function testFormFilling() {
     }
 
     try {
-      pdfBuffer = await adobePdfFormFillerService.fillPdfForm(allData);
+      const result = await adobePdfFormFillerService.fillPdfForm(allData);
+      pdfBuffer = result.pdfBuffer;
     } catch (adobeError) {
       log(`❌ Adobe error: ${adobeError.message}`, 'red');
       log('   Stack: ' + adobeError.stack, 'yellow');

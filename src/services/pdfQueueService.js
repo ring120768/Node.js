@@ -245,7 +245,7 @@ async function processJob(job) {
     const pdfController = require('../controllers/pdf.controller');
 
     // Generate the PDF
-    const result = await pdfController.generateUserPDF(create_user_id, 'queue-retry');
+    const result = await pdfController.generateUserPDF(create_user_id, 'queue-retry', job.incident_id || null);
 
     // Mark as completed
     await supabase

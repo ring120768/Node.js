@@ -71,7 +71,7 @@ Explain the complete flow from user submission to PDF delivery:
    Fetch All Data (lib/dataFetcher.js)
        ↓
    Adobe PDF Form Filler (src/services/adobePdfFormFillerService.js)
-       ↓ (fills 150+ fields)
+       ↓ (fills 213 fields)
    Compress PDF (adobePdfService.js)
        ↓
    Store in Database (completed_incident_forms table)
@@ -85,7 +85,7 @@ Explain the complete flow from user submission to PDF delivery:
 
 ### Adobe PDF Services
 - **Service**: `src/services/adobePdfFormFillerService.js`
-- **Purpose**: Fill the 17-page legal PDF form from Supabase data
+- **Purpose**: Fill the 18-page legal PDF form from Supabase data
 - **Replaces**: Zapier + PDFco workflow (saves £480/year)
 - **Credentials**: `/credentials/pdfservices-api-credentials.json`
 - **Template**: `/pdf-templates/Car-Crash-Lawyer-AI-incident-report-main.pdf`

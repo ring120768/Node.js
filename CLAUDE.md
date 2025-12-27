@@ -13,7 +13,7 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 | **Stack** | Node.js 18+, Express, Supabase (PostgreSQL/Auth/Storage/Realtime), Adobe PDF Services, OpenAI |
 | **Version** | 2.1.0 |
 | **Location** | UK (DD/MM/YYYY, £ GBP, GMT/BST, +44, British English) |
-| **Flow** | Custom HTML Forms (Pages 1-12) → Image Processing → PDF (18 pages, 170+ fields) → Email |
+| **Flow** | Custom HTML Forms (Pages 1-12) → Image Processing → PDF (18 pages, 213 fields) → Email |
 
 ---
 
