@@ -371,11 +371,17 @@ async function generateUserPDF(create_user_id, source = 'direct', incidentId = n
 
   // If AI pages failed to render, queue regeneration + send processing notice instead
   if (!aiPagesRendered) {
-    logger.warn('AI pages not rendered; queueing regeneration and notifying user', {
+    const aiRenderLogContext = {
       userId: create_user_id,
       incidentId: allData.currentIncident?.id,
       source
-    });
+    };
+
+    if (source === 'queue-retry') {
+      logger.warn('AI pages not rendered during queue retry', aiRenderLogContext);
+    } else {
+      logger.warn('AI pages not rendered; queueing regeneration and notifying user', aiRenderLogContext);
+    }
 
     if (source !== 'queue-retry') {
       const userName = [allData.user?.name, allData.user?.surname].filter(Boolean).join(' ') ||
@@ -393,52 +399,57 @@ async function generateUserPDF(create_user_id, source = 'direct', incidentId = n
       } else {
         logger.error('❌ Processing notice email failed', { error: processingResult.error });
       }
-    }
 
-    try {
-      const regenerationResult = await pdfQueueService.enqueue(
-        create_user_id,
-        allData.currentIncident?.id || null,
-        'ai-pages-not-rendered'
-      );
+      try {
+        const regenerationResult = await pdfQueueService.enqueue(
+          create_user_id,
+          allData.currentIncident?.id || null,
+          'ai-pages-not-rendered'
+        );
 
-      if (regenerationResult) {
-        logger.warn('📥 Queued PDF regeneration after AI page render failure', {
+        if (regenerationResult) {
+          logger.warn('📥 Queued PDF regeneration after AI page render failure', {
+            userId: create_user_id,
+            queueId: regenerationResult.id
+          });
+        } else {
+          logger.error('🚨 Could not queue regeneration - PDF generation table may not exist', {
+            userId: create_user_id
+          });
+        }
+      } catch (queueError) {
+        logger.error('🚨 Exception queueing regeneration after AI page failure', {
           userId: create_user_id,
-          queueId: regenerationResult.id
-        });
-      } else {
-        logger.error('🚨 Could not queue regeneration - PDF generation table may not exist', {
-          userId: create_user_id
+          error: queueError.message
         });
       }
-    } catch (queueError) {
-      logger.error('🚨 Exception queueing regeneration after AI page failure', {
-        userId: create_user_id,
-        error: queueError.message
-      });
+
+      if (storedForm?.id && !storedForm.id.startsWith('temp-') && !storedForm.id.startsWith('error-')) {
+        await supabase
+          .from('completed_incident_forms')
+          .update({
+            sent_to_user: false,
+            sent_to_accounts: false,
+            email_status: { success: false, error: 'AI pages not rendered - queued for regeneration' },
+            email_attempts: 0,
+            email_retry_queued: true,
+            email_last_error: 'AI pages not rendered - queued for regeneration'
+          })
+          .eq('id', storedForm.id);
+      }
+
+      return {
+        success: true,
+        form_id: storedForm.id,
+        email_sent: false,
+        ai_pages_rendered: false,
+        message: 'AI pages failed to render. Report is being processed and will be emailed once complete.'
+      };
     }
 
-    if (storedForm?.id && !storedForm.id.startsWith('temp-') && !storedForm.id.startsWith('error-')) {
-      await supabase
-        .from('completed_incident_forms')
-        .update({
-          sent_to_user: false,
-          sent_to_accounts: false,
-          email_status: { success: false, error: 'AI pages not rendered - queued for regeneration' },
-          email_attempts: 0,
-          email_retry_queued: true,
-          email_last_error: 'AI pages not rendered - queued for regeneration'
-        })
-        .eq('id', storedForm.id);
-    }
-
-    return {
-      success: true,
-      form_id: storedForm.id,
-      email_sent: false,
-      ai_pages_rendered: false
-    };
+    const renderError = new Error('AI pages not rendered');
+    renderError.code = 'AI_PAGES_NOT_RENDERED';
+    throw renderError;
   }
 
   // Diagnostic logging for Railway debugging
