@@ -15,6 +15,8 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 | **Location** | UK (DD/MM/YYYY, £ GBP, GMT/BST, +44, British English) |
 | **Flow** | Custom HTML Forms (Pages 1-12) → Image Processing → PDF (18 pages, 213 fields) → Email |
 
+IMPORTANT: Typeform and Zapier are retired. Do not add or rely on Typeform/Zapier webhook flows.
+
 ---
 
 ## Commands
@@ -98,6 +100,8 @@ const expectedSignature = hmac.digest('base64');
 ```
 
 **Pattern:** Verify signature → Send 200 OK immediately → Process async
+
+Note: Typeform/Zapier integrations are deprecated; this pattern is legacy and only applies to GitHub or other internal webhooks if enabled.
 
 ### Mobile File Upload Pattern
 
