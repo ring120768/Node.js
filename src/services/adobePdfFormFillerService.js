@@ -253,7 +253,12 @@ class AdobePdfFormFillerService {
 
       logger.info(`✅ Hybrid PDF generated successfully (${(filledPdfBuffer.length / 1024).toFixed(2)} KB)`);
 
-      return filledPdfBuffer;
+      const aiPagesRendered = useHtmlPages && !!htmlPdfBuffers;
+
+      return {
+        pdfBuffer: filledPdfBuffer,
+        aiPagesRendered
+      };
 
     } catch (error) {
       logger.error('❌ Error filling PDF form:', error);
@@ -379,6 +384,37 @@ class AdobePdfFormFillerService {
         }
       } catch (error) {
         // Silently handle missing fields
+      }
+    };
+
+    // Normalize AI HTML/text for PDF form fields (fallback when Puppeteer fails)
+    const formatAiText = (value) => {
+      if (value === null || value === undefined) return '';
+      let text = String(value);
+      text = text.replace(/\r\n/g, '\n');
+      text = text.replace(/<\s*br\s*\/?>/gi, '\n');
+      text = text.replace(/<\/p>\s*<p[^>]*>/gi, '\n\n');
+      text = text.replace(/<\/p>/gi, '\n');
+      text = text.replace(/<li[^>]*>/gi, '- ');
+      text = text.replace(/<\/li>/gi, '\n');
+      text = text.replace(/<[^>]+>/g, '');
+      text = text.replace(/&nbsp;/gi, ' ');
+      text = text.replace(/&amp;/gi, '&');
+      text = text.replace(/&lt;/gi, '<');
+      text = text.replace(/&gt;/gi, '>');
+      text = text.replace(/&quot;/gi, '"');
+      text = text.replace(/&#39;/gi, "'");
+      text = text.replace(/\n{3,}/g, '\n\n');
+      return text.trim();
+    };
+
+    const formatAiMetadata = (value) => {
+      if (value === null || value === undefined) return '';
+      if (typeof value === 'string') return value;
+      try {
+        return JSON.stringify(value, null, 2);
+      } catch (error) {
+        return String(value);
       }
     };
 
@@ -1061,11 +1097,15 @@ class AdobePdfFormFillerService {
     // ========================================
     // PAGES 13-16: AI Analysis (HTML-Rendered)
     // ========================================
-    // NOTE: Pages 13-16 are now fully HTML-rendered via Puppeteer (not form fields)
-    // The AI fields (voice_transcription, ai_summary, closing_statement, final_review)
-    // are passed directly to aiAnalysisHtmlRenderer.renderAllPages() at line ~121
-    // DO NOT fill these as form fields - it causes duplicate content with raw HTML tags
+    // NOTE: Pages 13-16 are HTML-rendered via Puppeteer.
+    // We still fill the form fields as a fallback when Puppeteer fails and template pages are used.
     console.log('\n🤖 AI Analysis Fields (Pages 13-16): Handled via HTML rendering');
+    setFieldText('voice_transcription', formatAiText(incident.voice_transcription));
+    setFieldText('analysis_metadata', formatAiMetadata(incident.analysis_metadata));
+    setFieldText('quality_review', formatAiText(incident.quality_review));
+    setFieldText('ai_summary', formatAiText(incident.ai_summary));
+    setFieldText('closing_statement', formatAiText(incident.closing_statement));
+    setFieldText('final_review', formatAiText(incident.final_review));
 
     // ========================================
     // PAGE 17: Legal Documentation and Declaration

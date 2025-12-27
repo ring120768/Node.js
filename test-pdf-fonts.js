@@ -34,7 +34,7 @@ async function main() {
 
   // 2. Generate PDF
   console.log('\n📄 Generating PDF...');
-  const pdfBuffer = await pdfService.fillPdfForm(data);
+  const { pdfBuffer } = await pdfService.fillPdfForm(data);
 
   const outputPath = 'test-output/font-test.pdf';
   fs.writeFileSync(outputPath, pdfBuffer);

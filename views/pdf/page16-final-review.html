@@ -36,23 +36,23 @@
 
         .header {
             position: relative;
-            height: 220px;
+            height: 110px;
             background: #125689;
             color: #ffffff;
             display: flex;
             align-items: center;
             justify-content: center;
-            padding: 24px 38px;
-            padding-left: 250px;
+            padding: 10px 20px;
+            padding-left: 150px;
         }
 
         .logo-block {
             position: absolute;
-            left: 38px;
+            left: 20px;
             top: 50%;
             transform: translateY(-50%);
-            width: 180px;
-            height: 150px;
+            width: 100px;
+            height: 90px;
             display: flex;
             align-items: center;
             justify-content: center;
@@ -60,96 +60,96 @@
         }
 
         .logo-block img {
-            width: 180px;
+            width: 100px;
             height: auto;
         }
 
         .header-text {
             text-align: center;
-            padding: 0 20px;
+            padding: 0 15px;
             flex: 1;
-            transform: translateX(-15px);
+            transform: translateX(-10px);
         }
 
         .header-title {
-            font-size: 42px;
+            font-size: 26px;
             font-weight: 800;
-            line-height: 1.1;
-            letter-spacing: 1px;
+            line-height: 1.0;
+            letter-spacing: 0.3px;
         }
 
         .header-subtitle {
-            font-size: 29px;
+            font-size: 18px;
             font-weight: 800;
-            margin-top: 8px;
-            line-height: 1.1;
+            margin-top: 3px;
+            line-height: 1.0;
         }
 
         .header-tagline {
-            font-size: 18px;
+            font-size: 12px;
             font-weight: 400;
-            margin-top: 8px;
+            margin-top: 3px;
             opacity: 0.9;
         }
 
         .content {
-            padding: 25px;
+            padding: 10px;
             max-width: 1000px;
-            margin: 0 auto 25px auto;
+            margin: 0 auto 10px auto;
         }
 
         .section {
-            margin-bottom: 20px;
+            margin-bottom: 6px;
         }
 
         .section-title {
             color: #0E7490;
-            font-size: 18px;
+            font-size: 15px;
             font-weight: 600;
-            margin-bottom: 12px;
-            padding-bottom: 6px;
+            margin-bottom: 4px;
+            padding-bottom: 2px;
             border-bottom: 2px solid #E5E7EB;
         }
 
         .info-box {
             background: #ECFDF5;
-            border-left: 4px solid #10B981;
-            padding: 12px;
-            margin: 12px 0;
-            border-radius: 4px;
-            font-size: 13px;
+            border-left: 3px solid #10B981;
+            padding: 4px;
+            margin: 4px 0;
+            border-radius: 3px;
+            font-size: 10px;
             color: #1F2937;
-            line-height: 1.6;
+            line-height: 1.3;
         }
 
         .review-box {
             background: white;
-            padding: 18px;
-            border: 2px solid #E5E7EB;
-            border-radius: 8px;
-            margin: 12px 0;
-            box-shadow: 0 2px 8px rgba(0,0,0,0.05);
+            padding: 8px;
+            border: 1px solid #E5E7EB;
+            border-radius: 4px;
+            margin: 4px 0;
+            box-shadow: none;
         }
 
         .review-content {
             color: #1F2937;
-            line-height: 1.6;
-            font-size: 14px;
+            line-height: 1.3;
+            font-size: 12px;
             white-space: pre-wrap;
             word-wrap: break-word;
         }
 
         .review-content h3 {
             color: #0E7490;
-            font-size: 16px;
-            margin: 15px 0 10px 0;
+            font-size: 13px;
+            margin: 6px 0 3px 0;
             font-weight: 600;
         }
 
         .review-content h4 {
             color: #374151;
-            font-size: 15px;
-            margin: 12px 0 8px 0;
+            font-size: 12px;
+            margin: 4px 0 2px 0;
             font-weight: 600;
         }
 
@@ -204,35 +204,39 @@
         .recommendations {
             background: #FEF3C7;
             border-left: 4px solid #F59E0B;
-            padding: 15px;
-            margin: 12px 0;
+            padding: 10px;
+            margin: 8px 0;
             border-radius: 4px;
         }
 
         .recommendations h3 {
             color: #78350F;
-            font-size: 16px;
-            margin-bottom: 10px;
+            font-size: 15px;
+            margin-bottom: 6px;
         }
 
         .recommendations ul {
             list-style: none;
             padding-left: 0;
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 2px 8px;
         }
 
         .recommendations li {
-            padding: 6px 0;
-            padding-left: 25px;
+            padding: 2px 0;
+            padding-left: 18px;
             position: relative;
             color: #78350F;
-            line-height: 1.6;
+            line-height: 1.4;
+            font-size: 11px;
         }
 
         .recommendations li:before {
             content: "⚠️";
             position: absolute;
             left: 0;
-            font-size: 14px;
+            font-size: 11px;
         }
 
         .empty-state {
@@ -245,51 +249,52 @@
         .completion-notice {
             background: #DBEAFE;
             border: 2px solid #3B82F6;
-            border-radius: 8px;
-            padding: 15px;
-            margin: 15px 0;
+            border-radius: 6px;
+            padding: 10px;
+            margin: 10px 0;
             text-align: center;
         }
 
         .completion-notice h3 {
             color: #1E40AF;
-            font-size: 18px;
-            margin-bottom: 8px;
+            font-size: 16px;
+            margin-bottom: 6px;
         }
 
         .completion-notice p {
             color: #1F2937;
-            line-height: 1.6;
+            line-height: 1.5;
+            font-size: 13px;
         }
 
         /* Next Steps checklist */
         .next-steps-checklist {
             list-style: none;
             padding: 0;
-            margin: 12px 0 0 0;
+            margin: 8px 0 0 0;
         }
         .next-steps-checklist li {
             display: flex;
             align-items: center;
-            gap: 10px;
-            padding: 10px 12px;
-            margin-bottom: 8px;
+            gap: 8px;
+            padding: 6px 10px;
+            margin-bottom: 4px;
             background: #F9FAFB;
             border: 1px solid #E5E7EB;
-            border-radius: 6px;
+            border-radius: 4px;
         }
         .next-steps-checklist .checkbox {
-            width: 18px;
-            height: 18px;
+            width: 16px;
+            height: 16px;
             border: 2px solid #0E7490;
-            border-radius: 4px;
+            border-radius: 3px;
             display: inline-block;
             flex-shrink: 0;
         }
         .next-steps-checklist .step-text {
             color: #1F2937;
-            line-height: 1.5;
-            font-size: 14px;
+            line-height: 1.4;
+            font-size: 13px;
         }
 
         @media print {
@@ -316,10 +321,7 @@
             <div class="section">
                 <div class="section-title">Final Review & Next Steps</div>
 
-                <div class="info-box">
-                    <strong>✓ Report Complete:</strong> Your incident report has been generated and analyzed. This section
-                    provides recommendations for next steps and important considerations for your case moving forward.
-                </div>
+                <!-- Info box removed - redundant with completion notice below -->
 
                 {{#if final_review}}
                 <div class="review-box">

@@ -8,7 +8,7 @@
 **Environment**: Claude Code + Replit
 **Location**: UK (DD/MM/YYYY, £ GBP, GMT/BST timezone, +44 phone codes, British English)
 
-**Key Flow**: Typeform → Webhooks → Image Processing → PDF Generation (17 pages, 150+ fields) → Email
+**Key Flow**: Custom HTML Forms → Image Processing → PDF Generation (18 pages, 213 fields) → Email
 
 ## Core Philosophy
 
@@ -299,7 +299,7 @@ processAsync(data).catch(logger.error);
 // 1. Fetch data from 6 tables
 const data = await fetchAllData(userId);
 
-// 2. Fill PDF form (150+ fields)
+// 2. Fill PDF form (213 fields)
 const filledPdf = await pdfService.fillForm(data);
 
 // 3. Compress and store

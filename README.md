@@ -10,7 +10,7 @@
 
 ## 📋 Overview
 
-Car Crash Lawyer AI is a comprehensive Node.js web application that helps UK car accident victims complete legal incident reports. The system collects incident data through custom HTML forms, processes images and audio files using OpenAI, generates comprehensive 17-page PDF reports using Adobe PDF Services, and emails them to users and legal teams.
+Car Crash Lawyer AI is a comprehensive Node.js web application that helps UK car accident victims complete legal incident reports. The system collects incident data through custom HTML forms, processes images and audio files using OpenAI, generates comprehensive 18-page PDF reports (213 fields) using Adobe PDF Services, and emails them to users and legal teams.
 
 ### Key Features
 
@@ -18,7 +18,7 @@ Car Crash Lawyer AI is a comprehensive Node.js web application that helps UK car
 - **Automated Data Collection** - Custom multi-page HTML forms with immediate upload
 - **Audio Transcription** - OpenAI Whisper API for personal statements
 - **AI Analysis** - Automated accident summary generation
-- **Legal PDF Reports** - 17-page document with 150+ fields auto-filled from database
+- **Legal PDF Reports** - 18-page document with 213 fields auto-filled from database
 - **DVLA Integration** - Automated vehicle information lookups
 - **Real-time Updates** - WebSocket for live status updates
 - **GDPR Compliant** - Full data privacy, deletion, and export capabilities
@@ -191,7 +191,7 @@ POST /api/pdf/generate
 Body: {"create_user_id": "uuid"}
 ```
 
-Generates complete 17-page PDF report from all user data.
+Generates complete 18-page PDF report from all user data.
 
 ### Webhooks
 
@@ -222,14 +222,14 @@ Transcribes audio recordings to text using OpenAI Whisper API.
 ### How It Works
 
 1. **Data Collection** - Fetches all user data from Supabase
-2. **Form Filling** - Adobe PDF Services fills 17-page template (150+ fields)
+2. **Form Filling** - Adobe PDF Services fills 18-page template (213 fields)
 3. **Compression** - Reduces file size by 40-70%
 4. **Storage** - Saves to Supabase Storage
 5. **Email** - Sends to user and accounts team
 
 ### Field Mapping
 
-All 150+ fields are automatically mapped from database tables to PDF form fields:
+All 213 fields are automatically mapped from database tables to PDF form fields:
 
 - **Pages 1-2:** Personal info, vehicle, insurance
 - **Page 3:** Document images (license, vehicle photos)
@@ -282,7 +282,7 @@ See [`MANUAL_TESTING_GUIDE.md`](MANUAL_TESTING_GUIDE.md) for UI testing procedur
 | Document | Purpose |
 |----------|---------|
 | [`QUICK_START_FORM_FILLING.md`](QUICK_START_FORM_FILLING.md) | Quick start guide for PDF form filling |
-| [`ADOBE_FORM_FILLING_GUIDE.md`](ADOBE_FORM_FILLING_GUIDE.md) | Complete guide with all 150+ field mappings |
+| [`ADOBE_FORM_FILLING_GUIDE.md`](ADOBE_FORM_FILLING_GUIDE.md) | Complete guide with all 213 field mappings |
 | [`IMPLEMENTATION_SUMMARY.md`](IMPLEMENTATION_SUMMARY.md) | Latest implementation details |
 | [`ZAPIER_REPLACEMENT_SUMMARY.md`](ZAPIER_REPLACEMENT_SUMMARY.md) | How Zapier/PDFco was replaced |
 | [`replit.md`](replit.md) | Full system documentation |
@@ -460,7 +460,7 @@ node scripts/test-supabase-client.js
 
 - ✅ Adobe PDF Services integration
 - ✅ Replaced Zapier + PDFco workflow
-- ✅ Automatic PDF form filling (150+ fields)
+- ✅ Automatic PDF form filling (213 fields)
 - ✅ PDF compression (40-70% size reduction)
 - ✅ Complete documentation suite
 - ✅ Claude Code slash commands
