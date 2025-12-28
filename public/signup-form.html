@@ -1311,7 +1311,7 @@
     initializeSupabase();
 
     // ===== FORM STATE MANAGEMENT =====
-    const formData = {
+    const defaultFormData = {
       date_of_birth: '', // DD/MM/YYYY format
       first_name: '',
       last_name: '',
@@ -1359,6 +1359,8 @@
       dvla_tax_status: '',
       dvla_tax_due: ''
     };
+
+    const formData = { ...defaultFormData };
 
     let currentPage = 1;
     const totalPages = 9; // Consolidated form: photos + recovery/emergency on one page
@@ -1479,6 +1481,14 @@
       }
     }
 
+    function resetFormDataForNewAccount(email, authUserId) {
+      Object.assign(formData, defaultFormData);
+      formData.email = email;
+      formData.auth_user_id = authUserId;
+      formData.timestamp = new Date().toISOString();
+      localStorage.removeItem('ccla_signup_draft');
+    }
+
     // Save draft to localStorage
     function saveDraft() {
       // Create a copy of formData excluding File objects (they can't be serialized)
@@ -1489,6 +1499,10 @@
           dataToSave[key] = value;
         }
       }
+      const accountEmailInput = document.getElementById('account_email');
+      const draftOwnerEmail = formData.email ||
+        (accountEmailInput && accountEmailInput.value ? accountEmailInput.value.trim().toLowerCase() : '');
+      dataToSave.draft_owner_email = draftOwnerEmail || null;
       localStorage.setItem('ccla_signup_draft', JSON.stringify(dataToSave));
     }
 
@@ -2517,6 +2531,30 @@
           auth_user_id: formData.auth_user_id,
           email: formData.email
         });
+
+        // Clear any stale draft from a different user/email to prevent data crossover
+        try {
+          const savedDraft = localStorage.getItem('ccla_signup_draft');
+          if (savedDraft) {
+            const draft = JSON.parse(savedDraft);
+            const draftEmail = (draft.draft_owner_email || draft.email || '').toLowerCase();
+            const draftUserId = draft.auth_user_id;
+
+            if ((draftEmail && draftEmail !== email) ||
+                (draftUserId && draftUserId !== formData.auth_user_id)) {
+              console.warn('🧹 Clearing stale signup draft for different user/email', {
+                draftEmail,
+                email,
+                draftUserId,
+                authUserId: formData.auth_user_id
+              });
+              resetFormDataForNewAccount(email, formData.auth_user_id);
+              saveDraft();
+            }
+          }
+        } catch (draftError) {
+          console.warn('⚠️ Unable to validate signup draft ownership:', draftError.message);
+        }
 
         // Success! Show confirmation before proceeding
         console.log('✅ Account creation complete, showing confirmation');
