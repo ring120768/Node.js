@@ -411,6 +411,7 @@
         const validationMessage = document.getElementById('validationMessage');
         const warningBox = document.getElementById('warningBox');
         const call999Btn = document.getElementById('call999Btn');
+        const incidentData = JSON.parse(sessionStorage.getItem('incidentData') || '{}');
 
         // Initialize on page load
         document.addEventListener('DOMContentLoaded', () => {
@@ -482,6 +483,9 @@
                 check5: document.getElementById('check5').checked,
                 check6: document.getElementById('check6').checked,
 
+                // Tie saved state to the current incident to avoid stale restores
+                incident_timestamp: incidentData.timestamp || null,
+
                 // Master field (saved to database as six_point_safety_check)
                 six_point_safety_check: allChecked,
                 completed_at: allChecked ? new Date().toISOString() : null
@@ -501,6 +505,14 @@
                 try {
                     const data = JSON.parse(saved);
                     console.log('Loading saved data:', data);
+
+                    const currentIncidentTimestamp = incidentData.timestamp || null;
+
+                    if (currentIncidentTimestamp && data.incident_timestamp !== currentIncidentTimestamp) {
+                        console.warn('Stale safety check data found - clearing for new incident');
+                        sessionStorage.removeItem('six_point_safety_check');
+                        return;
+                    }
 
                     // Restore checkbox states
                     document.getElementById('check1').checked = data.check1 || false;
