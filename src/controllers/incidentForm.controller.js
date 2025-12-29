@@ -982,16 +982,34 @@ async function listIncidentReports(req, res) {
  */
 async function submitDeclaration(req, res) {
   try {
-    const userId = req.user?.id || req.body.userId;
+    // SECURITY FIX: Only use authenticated user ID, never accept from request body
+    const userId = req.user?.id;
     let userEmail = req.user?.email;
     let userName = req.user?.user_metadata?.full_name || 'User';
     const { incidentId, consentGiven, consentTimestamp } = req.body;
 
+    // Validate authentication
     if (!userId) {
-      logger.warn('Declaration submission without authentication');
+      logger.warn('Declaration submission without valid authentication');
       return res.status(401).json({
         success: false,
         error: 'Authentication required'
+      });
+    }
+
+    // SECURITY: Detect and block authorization bypass attempts
+    // If req.body.userId is provided, it must match authenticated user
+    if (req.body.userId && req.body.userId !== userId) {
+      logger.error('🚨 Authorization bypass attempt detected', {
+        authenticatedUser: userId,
+        requestedUser: req.body.userId,
+        ip: req.ip,
+        userAgent: req.get('user-agent'),
+        timestamp: new Date().toISOString()
+      });
+      return res.status(403).json({
+        success: false,
+        error: 'Forbidden: Cannot submit declaration for another user'
       });
     }
 
