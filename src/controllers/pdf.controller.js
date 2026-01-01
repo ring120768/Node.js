@@ -39,6 +39,65 @@ if (config.supabase.url && config.supabase.serviceKey) {
   emailRetryService.initialize(supabase);
 }
 
+const PDF_SEND_LOCK_TTL_MS = 30 * 60 * 1000;
+
+async function tryAcquirePdfSendLock(incidentId) {
+  if (!supabase || !incidentId) {
+    return { acquired: false, reason: 'missing' };
+  }
+
+  const now = new Date();
+  const staleBefore = new Date(Date.now() - PDF_SEND_LOCK_TTL_MS).toISOString();
+
+  const { data, error } = await supabase
+    .from('incident_reports')
+    .update({
+      pdf_send_in_progress: true,
+      pdf_send_started_at: now.toISOString()
+    })
+    .eq('id', incidentId)
+    .is('pdf_sent_at', null)
+    .or(`pdf_send_in_progress.eq.false,pdf_send_started_at.lt.${staleBefore}`)
+    .select('id');
+
+  if (error) {
+    logger.error('Failed to acquire PDF send lock', { incidentId, error: error.message });
+    return { acquired: false, reason: 'error' };
+  }
+
+  return {
+    acquired: Array.isArray(data) && data.length > 0,
+    reason: Array.isArray(data) && data.length > 0 ? 'acquired' : 'in_progress'
+  };
+}
+
+async function releasePdfSendLock(incidentId, reason) {
+  if (!supabase || !incidentId) return;
+
+  await supabase
+    .from('incident_reports')
+    .update({
+      pdf_send_in_progress: false,
+      pdf_send_started_at: null
+    })
+    .eq('id', incidentId);
+
+  logger.info('PDF send lock released', { incidentId, reason: reason || 'unknown' });
+}
+
+async function markPdfSent(incidentId) {
+  if (!supabase || !incidentId) return;
+
+  await supabase
+    .from('incident_reports')
+    .update({
+      pdf_sent_at: new Date().toISOString(),
+      pdf_send_in_progress: false,
+      pdf_send_started_at: null
+    })
+    .eq('id', incidentId);
+}
+
 /**
  * Prepare form data for Adobe REST API
  * Converts nested allData structure to flat key-value pairs
@@ -298,16 +357,28 @@ async function storeCompletedForm(createUserId, pdfBuffer, allData) {
         pdfUrl = urlData.signedUrl;
       }
     } else if (storageError) {
-      logger.error('PDF storage upload failed - retries will not have attachment', {
+      // Enhanced error logging for storage failures
+      logger.error('🚨 CRITICAL: PDF storage upload failed', {
         error: storageError.message,
-        userId: createUserId
+        errorCode: storageError.statusCode,
+        userId: createUserId,
+        fileName: fileName,
+        fileSize: `${(pdfBuffer.length / 1024).toFixed(1)} KB`,
+        bucket: 'generated_reports',
+        timestamp: new Date().toISOString()
       });
     }
+
+    // Extract incident_id from allData (BUG FIX: was missing)
+    const incidentId = allData.currentIncident?.id ||
+                       allData.incident?.id ||
+                       null;
 
     const { data, error } = await supabase
       .from('completed_incident_forms')
       .insert({
         create_user_id: createUserId,
+        incident_id: incidentId,  // BUG FIX: Added missing incident_id
         form_data: allData,
         pdf_base64: pdfBase64.substring(0, 1000000),
         pdf_url: pdfUrl,
@@ -338,6 +409,18 @@ async function storeCompletedForm(createUserId, pdfBuffer, allData) {
 async function generateUserPDF(create_user_id, source = 'direct', incidentId = null) {
   logger.info(`Starting PDF generation (${source})`, { userId: create_user_id });
 
+  // System health check diagnostic (helps identify configuration issues)
+  logger.info('🔧 PDF Generation System Health Check', {
+    supabaseConfigured: !!supabase,
+    storageAvailable: !!supabase?.storage,
+    emailServiceReady: !!sendEmails,
+    pdfServiceReady: adobePdfFormFillerService?.isReady?.() || false,
+    adminEmail: config?.smtp?.adminEmail || 'NOT SET',
+    smtpConfigured: !!(process.env.SMTP_HOST && process.env.SMTP_USER),
+    resendConfigured: !!process.env.RESEND_API_KEY,
+    environment: process.env.NODE_ENV || 'development'
+  });
+
   const validation = validateUserId(create_user_id);
   if (!validation.valid) {
     throw new Error(validation.error);
@@ -348,9 +431,102 @@ async function generateUserPDF(create_user_id, source = 'direct', incidentId = n
     source: source
   });
 
-  const allData = await fetchAllData(create_user_id, { incidentId });
+  const requestedIncidentId = incidentId;
+  const allData = await fetchAllData(create_user_id, { incidentId: requestedIncidentId });
 
-  if (!allData.user || !allData.user.email) {
+  if (!allData.user) {
+    throw new Error('User not found');
+  }
+
+  const currentIncident = allData.currentIncident || allData.incident || null;
+  const resolvedIncidentId = currentIncident?.id || requestedIncidentId;
+
+  if (!resolvedIncidentId) {
+    throw new Error('Incident not found for PDF generation');
+  }
+
+  if (requestedIncidentId && resolvedIncidentId !== requestedIncidentId) {
+    throw new Error('Incident ID mismatch - refusing to generate PDF');
+  }
+
+  if (currentIncident?.pdf_sent_at) {
+    logger.warn('PDF already sent for incident - skipping duplicate send', {
+      userId: create_user_id,
+      incidentId: resolvedIncidentId,
+      sentAt: currentIncident.pdf_sent_at
+    });
+
+    return {
+      success: true,
+      already_sent: true,
+      email_sent: false,
+      incident_id: resolvedIncidentId,
+      message: 'PDF already sent for this incident. Use dashboard download for copies.'
+    };
+  }
+
+  const lockResult = await tryAcquirePdfSendLock(resolvedIncidentId);
+  if (!lockResult.acquired) {
+    logger.warn('PDF send already in progress - skipping duplicate send', {
+      userId: create_user_id,
+      incidentId: resolvedIncidentId,
+      reason: lockResult.reason
+    });
+
+    return {
+      success: true,
+      already_processing: true,
+      email_sent: false,
+      incident_id: resolvedIncidentId,
+      message: 'PDF generation already in progress. Use dashboard download once complete.'
+    };
+  }
+
+  // SECURITY: Always prefer authenticated email over database email
+  // This prevents wrong-user delivery if user_signup.email is corrupted
+  let recipientEmail = allData.user.email;
+
+  try {
+    if (supabase?.auth?.admin) {
+      const { data, error } = await supabase.auth.admin.getUserById(create_user_id);
+      const authEmail = data?.user?.email || null;
+
+      if (error) {
+        logger.warn('Auth email lookup failed - falling back to user_signup email', {
+          userId: create_user_id,
+          error: error.message
+        });
+      } else if (authEmail) {
+        // SECURITY: Detect potential email corruption
+        if (recipientEmail && recipientEmail !== authEmail) {
+          logger.error('🚨 EMAIL MISMATCH DETECTED - Potential data corruption', {
+            userId: create_user_id,
+            userSignupEmail: recipientEmail,
+            authEmail: authEmail,
+            action: 'Using authenticated email (safer)',
+            timestamp: new Date().toISOString(),
+            ip: 'PDF generation context'
+          });
+
+          // Log to GDPR activity for audit trail
+          await gdprService.logActivity(create_user_id, 'EMAIL_MISMATCH_DETECTED', {
+            dbEmail: recipientEmail,
+            authEmail: authEmail,
+            source: 'pdf_generation'
+          }).catch(err => logger.warn('Failed to log email mismatch', err));
+        }
+        recipientEmail = authEmail;
+      }
+    }
+  } catch (authError) {
+    logger.warn('Auth email lookup error - falling back to user_signup email', {
+      userId: create_user_id,
+      error: authError.message
+    });
+  }
+
+  if (!recipientEmail) {
+    await releasePdfSendLock(resolvedIncidentId, 'missing-recipient-email');
     throw new Error('User not found or missing email');
   }
 
@@ -385,11 +561,11 @@ async function generateUserPDF(create_user_id, source = 'direct', incidentId = n
 
     if (source !== 'queue-retry') {
       const userName = [allData.user?.name, allData.user?.surname].filter(Boolean).join(' ') ||
-        allData.user?.email ||
+        recipientEmail ||
         'Customer';
 
       const processingResult = await sendAiProcessingEmail({
-        userEmail: allData.user.email,
+        userEmail: recipientEmail,
         userName,
         incidentId: allData.currentIncident?.id
       });
@@ -438,6 +614,8 @@ async function generateUserPDF(create_user_id, source = 'direct', incidentId = n
           .eq('id', storedForm.id);
       }
 
+      await releasePdfSendLock(resolvedIncidentId, 'ai-pages-not-rendered');
+
       return {
         success: true,
         form_id: storedForm.id,
@@ -447,6 +625,8 @@ async function generateUserPDF(create_user_id, source = 'direct', incidentId = n
       };
     }
 
+    await releasePdfSendLock(resolvedIncidentId, 'ai-pages-not-rendered');
+
     const renderError = new Error('AI pages not rendered');
     renderError.code = 'AI_PAGES_NOT_RENDERED';
     throw renderError;
@@ -454,7 +634,7 @@ async function generateUserPDF(create_user_id, source = 'direct', incidentId = n
 
   // Diagnostic logging for Railway debugging
   logger.info('📧 EMAIL DEBUG: Starting email send', {
-    recipientEmail: allData.user?.email || 'NO EMAIL FOUND',
+    recipientEmail: recipientEmail || 'NO EMAIL FOUND',
     pdfSize: pdfBuffer ? `${(pdfBuffer.length / 1024).toFixed(1)} KB` : 'NO BUFFER',
     userId: create_user_id,
     storagePath: storedForm?.pdf_storage_path || 'NOT STORED',
@@ -463,7 +643,7 @@ async function generateUserPDF(create_user_id, source = 'direct', incidentId = n
     smtpPass: process.env.SMTP_PASS ? 'SET' : 'NOT SET'
   });
 
-  const emailResult = await sendEmails(allData.user.email, pdfBuffer, create_user_id);
+  const emailResult = await sendEmails(recipientEmail, pdfBuffer, create_user_id);
 
   // Log email result for Railway debugging
   logger.info('📧 EMAIL DEBUG: Result received', {
@@ -502,7 +682,7 @@ async function generateUserPDF(create_user_id, source = 'direct', incidentId = n
           incidentId: allData.currentIncident?.id || null,
           completedFormId: storedForm.id,
           emailType: 'pdf_delivery',
-          recipientEmail: allData.user.email,
+          recipientEmail: recipientEmail,
           subject: `Traffic Accident Legal Report - ${new Date().toISOString().split('T')[0]}`,
           templateName: null, // Uses inline template in sendEmails
           templateData: null,
@@ -585,11 +765,17 @@ async function generateUserPDF(create_user_id, source = 'direct', incidentId = n
       .from('completed_incident_forms')
       .update(updateData)
       .eq('id', storedForm.id);
+  }
 
-    if (emailFailed) {
-      // Surface failure so queue retries the whole job and alerts can fire
-      throw new Error(`Email send failed: ${emailResult.error || 'unknown error'}`);
-    }
+  if (emailResult.success) {
+    await markPdfSent(resolvedIncidentId);
+  } else {
+    await releasePdfSendLock(resolvedIncidentId, 'email-failed');
+  }
+
+  if (emailFailed && isValidFormId) {
+    // Surface failure so queue retries the whole job and alerts can fire
+    throw new Error(`Email send failed: ${emailResult.error || 'unknown error'}`);
   }
 
   // PDF generation is still a success even if email failed - it will be retried
