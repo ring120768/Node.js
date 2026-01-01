@@ -1,49 +1,33 @@
 # Railway Nixpacks Configuration
 # This configures the Railway build environment to support Puppeteer
+# Based on: https://github.com/ryannono/Puppeteer-Railway-Buildpack
 
 [phases.setup]
-# Install Chromium and dependencies required for Puppeteer
-nixPkgs = [
-  "nodejs_18",
-  "chromium",
-  "nss",
-  "freetype",
-  "harfbuzz",
-  "fontconfig",
-  # FONTS - Required for Puppeteer PDF text rendering
-  "dejavu_fonts",
-  "liberation_ttf",
-  "noto-fonts",
-  "xorg.libX11",
-  "xorg.libXcomposite",
-  "xorg.libXdamage",
-  "xorg.libXext",
-  "xorg.libXfixes",
-  "xorg.libXrandr",
-  "xorg.libxcb",
-  "libxkbcommon",
-  "mesa",
-  "expat",
-  "alsa-lib",
-  "at-spi2-atk",
-  "at-spi2-core",
-  "atk",
-  "cups",
-  "dbus",
-  "gdk-pixbuf",
-  "glib",
-  "gtk3",
-  "libdrm",
-  "libnotify",
-  "libsecret",
-  "libuuid",
-  "pango",
-  "systemd"
+# Install Chrome/Chromium dependencies via apt (required for Puppeteer)
+aptPkgs = [
+  'fonts-liberation',
+  'libappindicator3-1',
+  'libasound2',
+  'libatk-bridge2.0-0',
+  'libatk1.0-0',
+  'libgbm1',
+  'libgtk-3-0',
+  'libnspr4',
+  'libnss3',
+  'libx11-xcb1',
+  'libxcomposite1',
+  'libxcursor1',
+  'libxdamage1',
+  'libxfixes3',
+  'libxi6',
+  'libxrandr2',
+  'libxss1',
+  'libxtst6',
+  'xdg-utils',
+  # Additional fonts for PDF rendering
+  'fonts-dejavu-core',
+  'fonts-noto-core'
 ]
-
-# Disable apt packages to prevent Railway from auto-installing Chromium
-# We're handling all dependencies via Nix packages above
-aptPkgs = []
 
 [phases.install]
 cmds = ["npm ci"]
@@ -52,6 +36,7 @@ cmds = ["npm ci"]
 cmd = "npm start"
 
 [variables]
-# Let Puppeteer download its own Chromium as backup
-# The htmlToPdfConverter will prefer system Chromium if available
+# Let Puppeteer download and use its own bundled Chromium
 PUPPETEER_SKIP_CHROMIUM_DOWNLOAD = "false"
+# Production environment
+NODE_ENV = "production"

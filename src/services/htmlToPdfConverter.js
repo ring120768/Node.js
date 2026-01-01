@@ -18,7 +18,6 @@
  */
 
 const puppeteer = require('puppeteer');
-const { execSync } = require('child_process');
 const fs = require('fs');
 const logger = require('../utils/logger');
 
@@ -37,19 +36,16 @@ class HtmlToPdfConverter {
 
   /**
    * Find Chromium executable path
-   * Tries multiple locations for Railway/Nixpacks compatibility
+   * Simplified for Railway: prefer Puppeteer's bundled Chromium
    *
    * Priority order:
    * 1. Cached path (fast return)
-   * 2. PUPPETEER_EXECUTABLE_PATH env var
-   * 3. `which chromium` (uses PATH, works with Nix)
-   * 4. Standard Nix profile paths
-   * 5. Standard Linux paths
-   * 6. macOS Chrome paths (local dev)
-   * 7. Nix store search (slow, last resort)
-   * 8. Puppeteer bundled (fallback)
+   * 2. PUPPETEER_EXECUTABLE_PATH env var (if set and exists)
+   * 3. macOS Chrome paths (local development only)
+   * 4. Puppeteer bundled Chromium (default for Railway)
    *
-   * Note: execSync commands use hardcoded strings only (no user input)
+   * Note: We no longer search for system Chromium since Puppeteer's bundled
+   * Chrome works best with the apt dependencies installed via nixpacks.toml
    */
   findChromiumPath() {
     console.log('🔍 Finding Chromium path...');
@@ -60,110 +56,38 @@ class HtmlToPdfConverter {
       return this.chromiumPath;
     }
 
-    // 2. Check env var first
-    console.log('   PUPPETEER_EXECUTABLE_PATH:', process.env.PUPPETEER_EXECUTABLE_PATH || 'not set');
-    if (process.env.PUPPETEER_EXECUTABLE_PATH && fs.existsSync(process.env.PUPPETEER_EXECUTABLE_PATH)) {
-      this.chromiumPath = process.env.PUPPETEER_EXECUTABLE_PATH;
+    // 2. Check env var (only if explicitly set and file exists)
+    const envPath = process.env.PUPPETEER_EXECUTABLE_PATH;
+    console.log('   PUPPETEER_EXECUTABLE_PATH:', envPath || 'not set');
+    if (envPath && fs.existsSync(envPath)) {
+      this.chromiumPath = envPath;
       logger.info('Using Chromium from PUPPETEER_EXECUTABLE_PATH', { path: this.chromiumPath });
       console.log('   ✅ Found via env var:', this.chromiumPath);
       return this.chromiumPath;
     }
 
-    // 3. Try `which chromium` - uses PATH, works reliably with Nix
-    // Note: Hardcoded command, no user input (safe from injection)
-    console.log('   Trying `which chromium`...');
-    try {
-      const whichPath = execSync('which chromium 2>/dev/null', {
-        encoding: 'utf8',
-        timeout: 2000
-      }).trim();
+    // 3. macOS Chrome paths (local development only)
+    if (process.platform === 'darwin') {
+      const macosPaths = [
+        '/Applications/Google Chrome.app/Contents/MacOS/Google Chrome',
+        '/Applications/Chromium.app/Contents/MacOS/Chromium'
+      ];
 
-      if (whichPath && fs.existsSync(whichPath)) {
-        this.chromiumPath = whichPath;
-        logger.info('Found Chromium via which command', { path: this.chromiumPath });
-        console.log('   ✅ Found via `which chromium`:', this.chromiumPath);
-        return this.chromiumPath;
-      }
-    } catch (e) {
-      console.log('   ❌ `which chromium` not found');
-    }
-
-    // 4. Standard Nix profile paths (Railway/Nixpacks)
-    const nixProfilePaths = [
-      '/nix/var/nix/profiles/default/bin/chromium',
-      '/run/current-system/sw/bin/chromium'
-    ];
-
-    console.log('   Checking Nix profile paths...');
-    for (const chromePath of nixProfilePaths) {
-      const exists = fs.existsSync(chromePath);
-      console.log(`   ${exists ? '✅' : '❌'} ${chromePath}`);
-      if (exists) {
-        this.chromiumPath = chromePath;
-        logger.info('Found Chromium at Nix profile path', { path: this.chromiumPath });
-        return this.chromiumPath;
+      console.log('   Checking macOS paths (local dev)...');
+      for (const chromePath of macosPaths) {
+        const exists = fs.existsSync(chromePath);
+        console.log(`   ${exists ? '✅' : '❌'} ${chromePath}`);
+        if (exists) {
+          this.chromiumPath = chromePath;
+          logger.info('Found Chrome at macOS path', { path: this.chromiumPath });
+          return this.chromiumPath;
+        }
       }
     }
 
-    // 5. Standard Linux paths
-    const linuxPaths = [
-      '/usr/bin/chromium',
-      '/usr/bin/chromium-browser',
-      '/usr/bin/google-chrome',
-      '/usr/bin/google-chrome-stable'
-    ];
-
-    console.log('   Checking standard Linux paths...');
-    for (const chromePath of linuxPaths) {
-      const exists = fs.existsSync(chromePath);
-      console.log(`   ${exists ? '✅' : '❌'} ${chromePath}`);
-      if (exists) {
-        this.chromiumPath = chromePath;
-        logger.info('Found Chromium at standard path', { path: this.chromiumPath });
-        return this.chromiumPath;
-      }
-    }
-
-    // 6. macOS Chrome paths (local development)
-    const macosPaths = [
-      '/Applications/Google Chrome.app/Contents/MacOS/Google Chrome',
-      '/Applications/Chromium.app/Contents/MacOS/Chromium'
-    ];
-
-    console.log('   Checking macOS paths...');
-    for (const chromePath of macosPaths) {
-      const exists = fs.existsSync(chromePath);
-      console.log(`   ${exists ? '✅' : '❌'} ${chromePath}`);
-      if (exists) {
-        this.chromiumPath = chromePath;
-        logger.info('Found Chrome at macOS path', { path: this.chromiumPath });
-        return this.chromiumPath;
-      }
-    }
-
-    // 7. Try to find in Nix store (Railway/Nixpacks) - SLOW, last resort
-    // Note: Hardcoded command, no user input (safe from injection)
-    console.log('   Searching Nix store (slow)...');
-    try {
-      const nixPath = execSync('find /nix/store -name chromium -type f -executable 2>/dev/null | grep -E "/bin/chromium$" | head -n 1', {
-        encoding: 'utf8',
-        timeout: 5000
-      }).trim();
-
-      console.log('   Nix store result:', nixPath || '(empty)');
-      if (nixPath && fs.existsSync(nixPath)) {
-        this.chromiumPath = nixPath;
-        logger.info('Found Chromium in Nix store', { path: this.chromiumPath });
-        console.log('   ✅ Found in Nix store:', this.chromiumPath);
-        return this.chromiumPath;
-      }
-    } catch (e) {
-      console.log('   ❌ Nix store search failed:', e.message);
-    }
-
-    // 8. Let Puppeteer use its bundled Chromium
-    console.log('   ⚠️ NO CHROMIUM FOUND - using Puppeteer bundled browser');
-    logger.warn('No system Chromium found, using Puppeteer bundled browser');
+    // 4. Let Puppeteer use its bundled Chromium (best for Railway)
+    console.log('   ✅ Using Puppeteer bundled Chromium (recommended for Railway)');
+    logger.info('Using Puppeteer bundled Chromium');
     return undefined;
   }
 
@@ -219,45 +143,29 @@ class HtmlToPdfConverter {
     logger.info('Launching headless Chrome browser', { executablePath: executablePath || 'bundled' });
 
     this.browserLaunchPromise = puppeteer.launch({
-      headless: 'new', // Use new headless mode (faster)
+      headless: true, // Use standard headless mode for Railway compatibility
       executablePath,
       args: [
         '--no-sandbox',
         '--disable-setuid-sandbox',
-        '--disable-dev-shm-usage', // Use /tmp instead of /dev/shm
-        '--disable-accelerated-2d-canvas',
+        '--disable-dev-shm-usage', // Use /tmp instead of /dev/shm (critical for containers)
+        '--disable-gpu',
         '--no-first-run',
         '--no-zygote',
-        '--single-process', // Required for Railway containers
-        '--disable-gpu',
-        // Additional memory optimization flags
+        // Note: --single-process removed as it can cause instability
+        // Memory optimization flags
         '--disable-extensions',
         '--disable-background-networking',
-        '--disable-background-timer-throttling',
-        '--disable-backgrounding-occluded-windows',
-        '--disable-breakpad',
-        '--disable-component-extensions-with-background-pages',
-        '--disable-component-update',
         '--disable-default-apps',
-        '--disable-features=TranslateUI',
-        '--disable-hang-monitor',
-        '--disable-ipc-flooding-protection',
-        '--disable-popup-blocking',
-        '--disable-prompt-on-repost',
-        '--disable-renderer-backgrounding',
         '--disable-sync',
-        '--enable-features=NetworkService,NetworkServiceInProcess',
-        '--force-color-profile=srgb',
+        '--disable-translate',
         '--metrics-recording-only',
+        '--mute-audio',
         '--no-default-browser-check',
-        '--password-store=basic',
-        '--use-mock-keychain',
-        // Railway container stability flags
+        // Container stability flags
         '--disable-software-rasterizer',
-        // Reduced memory footprint for Railway
-        '--js-flags=--max-old-space-size=512',  // Reduced from 768 to 512
-        '--disable-features=site-per-process',   // Reduce process overhead
-        '--renderer-process-limit=1'             // Limit renderer processes
+        '--disable-features=TranslateUI,BlinkGenPropertyTrees',
+        '--font-render-hinting=none'
       ]
     }).then(browser => {
       this.browserInstance = browser;
