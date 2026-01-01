@@ -21,9 +21,105 @@ const RETRY_INTERVALS = [
 ];
 
 const MAX_ATTEMPTS = 5;
+const PDF_SEND_LOCK_TTL_MS = 30 * 60 * 1000;
 
 let supabase = null;
 let tableExists = null; // Cache table existence check
+
+function isSendLockStale(startedAt) {
+  if (!startedAt) return true;
+  return Date.now() - new Date(startedAt).getTime() > PDF_SEND_LOCK_TTL_MS;
+}
+
+async function getIncidentSendState(incidentId) {
+  if (!supabase || !incidentId) return null;
+
+  const { data, error } = await supabase
+    .from('incident_reports')
+    .select('id, pdf_sent_at, pdf_send_in_progress, pdf_send_started_at')
+    .eq('id', incidentId)
+    .single();
+
+  if (error) {
+    logger.warn('Failed to fetch incident send state', { incidentId, error: error.message });
+    return null;
+  }
+
+  return data;
+}
+
+async function tryAcquirePdfSendLock(incidentId) {
+  if (!supabase || !incidentId) {
+    return { acquired: false, reason: 'missing' };
+  }
+
+  const now = new Date();
+  const staleBefore = new Date(Date.now() - PDF_SEND_LOCK_TTL_MS).toISOString();
+
+  const { data, error } = await supabase
+    .from('incident_reports')
+    .update({
+      pdf_send_in_progress: true,
+      pdf_send_started_at: now.toISOString()
+    })
+    .eq('id', incidentId)
+    .is('pdf_sent_at', null)
+    .or(`pdf_send_in_progress.eq.false,pdf_send_started_at.lt.${staleBefore}`)
+    .select('id');
+
+  if (error) {
+    logger.error('Failed to acquire PDF send lock (email retry)', {
+      incidentId,
+      error: error.message
+    });
+    return { acquired: false, reason: 'error' };
+  }
+
+  return {
+    acquired: Array.isArray(data) && data.length > 0,
+    reason: Array.isArray(data) && data.length > 0 ? 'acquired' : 'in_progress'
+  };
+}
+
+async function releasePdfSendLock(incidentId, reason) {
+  if (!supabase || !incidentId) return;
+
+  const { error } = await supabase
+    .from('incident_reports')
+    .update({
+      pdf_send_in_progress: false,
+      pdf_send_started_at: null
+    })
+    .eq('id', incidentId);
+
+  if (error) {
+    logger.warn('Failed to release PDF send lock (email retry)', {
+      incidentId,
+      reason,
+      error: error.message
+    });
+  }
+}
+
+async function markPdfSent(incidentId) {
+  if (!supabase || !incidentId) return;
+
+  const { error } = await supabase
+    .from('incident_reports')
+    .update({
+      pdf_sent_at: new Date().toISOString(),
+      pdf_send_in_progress: false,
+      pdf_send_started_at: null
+    })
+    .eq('id', incidentId);
+
+  if (error) {
+    logger.warn('Failed to mark incident PDF as sent (email retry)', {
+      incidentId,
+      error: error.message
+    });
+  }
+}
 
 /**
  * Initialize the service with Supabase client
@@ -190,7 +286,84 @@ async function processQueue() {
   let failed = 0;
 
   for (const email of pendingEmails) {
+    let sendLockAcquired = false;
+
     try {
+      if (email.email_type === 'pdf_delivery' && email.incident_id) {
+        const sendState = await getIncidentSendState(email.incident_id);
+
+        if (sendState?.pdf_sent_at) {
+          await supabase
+            .from('email_retry_queue')
+            .update({
+              status: 'completed',
+              completed_at: new Date().toISOString(),
+              last_error: null
+            })
+            .eq('id', email.id);
+
+          if (email.completed_form_id) {
+            await supabase
+              .from('completed_incident_forms')
+              .update({
+                sent_to_user: true,
+                email_status: 'sent',
+                email_retry_queued: false
+              })
+              .eq('id', email.completed_form_id);
+          }
+
+          succeeded++;
+          logger.info('📧 Email retry skipped (already sent)', {
+            queueId: email.id,
+            incidentId: email.incident_id,
+            recipient: email.recipient_email
+          });
+          continue;
+        }
+
+        if (sendState?.pdf_send_in_progress && !isSendLockStale(sendState.pdf_send_started_at)) {
+          const nextRetry = new Date(Date.now() + 5 * 60 * 1000);
+
+          await supabase
+            .from('email_retry_queue')
+            .update({
+              status: 'pending',
+              next_retry_at: nextRetry.toISOString()
+            })
+            .eq('id', email.id);
+
+          logger.info('📧 Email retry deferred (send in progress)', {
+            queueId: email.id,
+            incidentId: email.incident_id,
+            nextRetryAt: nextRetry.toISOString()
+          });
+          continue;
+        }
+
+        const lockResult = await tryAcquirePdfSendLock(email.incident_id);
+        if (!lockResult.acquired) {
+          const nextRetry = new Date(Date.now() + 5 * 60 * 1000);
+
+          await supabase
+            .from('email_retry_queue')
+            .update({
+              status: 'pending',
+              next_retry_at: nextRetry.toISOString()
+            })
+            .eq('id', email.id);
+
+          logger.info('📧 Email retry deferred (lock unavailable)', {
+            queueId: email.id,
+            incidentId: email.incident_id,
+            nextRetryAt: nextRetry.toISOString()
+          });
+          continue;
+        }
+
+        sendLockAcquired = true;
+      }
+
       // Mark as processing
       await supabase
         .from('email_retry_queue')
@@ -225,6 +398,10 @@ async function processQueue() {
             .eq('id', email.completed_form_id);
         }
 
+        if (email.email_type === 'pdf_delivery' && email.incident_id) {
+          await markPdfSent(email.incident_id);
+        }
+
         succeeded++;
         logger.info('📧 Email retry succeeded', {
           queueId: email.id,
@@ -232,11 +409,12 @@ async function processQueue() {
           recipient: email.recipient_email,
           attempts: email.attempt_count + 1
         });
-      } else {
-        throw new Error('Send returned false');
       }
     } catch (sendError) {
       failed++;
+      if (sendLockAcquired && email.incident_id) {
+        await releasePdfSendLock(email.incident_id, 'retry-failed');
+      }
       await handleRetryFailure(email, sendError);
     }
   }
@@ -354,7 +532,12 @@ async function retrySendEmail(email) {
     attachments
   });
 
-  return result.success;
+  // If send failed, throw with the actual error message so it gets logged
+  if (!result.success) {
+    throw new Error(result.error || 'Email send failed without error message');
+  }
+
+  return true;
 }
 
 /**
