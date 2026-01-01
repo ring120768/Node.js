@@ -4,10 +4,10 @@
 
 [phases.setup]
 # Install Chrome/Chromium dependencies via apt (required for Puppeteer)
+# Updated for Ubuntu 24.04 (Noble) - libasound2 renamed to libasound2t64
 aptPkgs = [
   'fonts-liberation',
-  'libappindicator3-1',
-  'libasound2',
+  'libasound2t64',
   'libatk-bridge2.0-0',
   'libatk1.0-0',
   'libgbm1',
