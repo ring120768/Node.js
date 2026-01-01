@@ -392,14 +392,48 @@ async function storeCompletedForm(createUserId, pdfBuffer, allData) {
       .single();
 
     if (error) {
-      logger.error('Error storing completed form', error);
+      // Enhanced error logging with full diagnostic details
+      logger.error('🚨 CRITICAL: Database insert failed for completed_incident_forms', {
+        error: error.message,
+        code: error.code,
+        details: error.details,
+        hint: error.hint,
+        userId: createUserId,
+        incidentId: incidentId,
+        storagePath: storagePath,
+        timestamp: new Date().toISOString()
+      });
+      // THROW error instead of returning fallback - this ensures admin notifications trigger
+      throw new Error(`Failed to store completed form: ${error.message} (code: ${error.code})`);
     }
 
-    // Return data with pdf_storage_path for email retry queue (null if upload failed)
-    return data || { id: `temp-${Date.now()}`, pdf_storage_path: storagePath };
+    if (!data) {
+      logger.error('🚨 CRITICAL: Database insert returned no data', {
+        userId: createUserId,
+        incidentId: incidentId,
+        timestamp: new Date().toISOString()
+      });
+      throw new Error('Database insert succeeded but returned no data');
+    }
+
+    logger.info('✅ Completed form stored successfully', {
+      formId: data.id,
+      userId: createUserId,
+      incidentId: incidentId,
+      storagePath: storagePath
+    });
+
+    return data;
   } catch (error) {
-    logger.error('Error in storeCompletedForm', error);
-    return { id: `error-${Date.now()}`, pdf_storage_path: null };
+    // Enhanced exception logging
+    logger.error('🚨 CRITICAL: Exception in storeCompletedForm', {
+      error: error.message,
+      stack: error.stack,
+      userId: createUserId,
+      timestamp: new Date().toISOString()
+    });
+    // RE-THROW error instead of returning fallback - critical for proper error handling
+    throw error;
   }
 }
 
