@@ -153,6 +153,11 @@ class AdobePdfFormFillerService {
           env: process.env.NODE_ENV,
           railway: process.env.RAILWAY_ENVIRONMENT || 'not set'
         });
+
+        // Store error in pdf_generation_queue error_history for debugging
+        // (puppeteer_errors table may not exist yet)
+        console.log('📝 Puppeteer error will be logged in PDF queue error_history');
+
         useHtmlPages = false;
         // Continue with template pages 13-16 instead of HTML-rendered pages
       }
