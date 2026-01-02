@@ -148,6 +148,246 @@ router.get('/email-test', async (req, res) => {
   }
 });
 
+/**
+ * PDF Pipeline Health Check
+ * GET /api/debug/pdf-health
+ * Comprehensive check of all PDF generation and delivery components
+ */
+router.get('/pdf-health', checkSharedKey, async (req, res) => {
+  const { createClient } = require('@supabase/supabase-js');
+  const logger = require('../utils/logger');
+
+  const checks = {
+    timestamp: new Date().toISOString(),
+    environment: process.env.RAILWAY_ENVIRONMENT || process.env.NODE_ENV || 'unknown',
+    overall: 'unknown',
+    components: {}
+  };
+
+  let allPassed = true;
+
+  try {
+    // 1. Check Supabase connection
+    const supabase = createClient(
+      process.env.SUPABASE_URL,
+      process.env.SUPABASE_SERVICE_ROLE_KEY
+    );
+
+    // 2. Check incident_reports columns exist (the ones we fixed)
+    const { data: columnCheck, error: columnError } = await supabase
+      .from('incident_reports')
+      .select('id, pdf_send_in_progress, pdf_send_started_at, pdf_sent_at')
+      .limit(1);
+
+    if (columnError) {
+      checks.components.database_columns = {
+        status: 'FAIL',
+        error: columnError.message,
+        hint: 'Run migration 032_add_pdf_send_guard_to_incident_reports.sql'
+      };
+      allPassed = false;
+    } else {
+      checks.components.database_columns = {
+        status: 'PASS',
+        columns: ['pdf_send_in_progress', 'pdf_send_started_at', 'pdf_sent_at'],
+        message: 'All required PDF lock columns exist'
+      };
+    }
+
+    // 3. Check lock acquisition works (two-step approach without .or())
+    const testIncidentId = 'health-check-test-' + Date.now();
+
+    // Test SELECT query (step 1 of our fix)
+    const { error: selectTestError } = await supabase
+      .from('incident_reports')
+      .select('id, pdf_send_in_progress, pdf_send_started_at')
+      .eq('id', testIncidentId)
+      .is('pdf_sent_at', null);
+
+    if (selectTestError) {
+      checks.components.lock_select = {
+        status: 'FAIL',
+        error: selectTestError.message
+      };
+      allPassed = false;
+    } else {
+      checks.components.lock_select = {
+        status: 'PASS',
+        message: 'Lock eligibility check (SELECT) works correctly'
+      };
+    }
+
+    // 4. Check pdf_generation_queue table
+    const { data: queueStats, error: queueError } = await supabase
+      .from('pdf_generation_queue')
+      .select('status')
+      .limit(100);
+
+    if (queueError) {
+      checks.components.queue_table = {
+        status: 'FAIL',
+        error: queueError.message
+      };
+      allPassed = false;
+    } else {
+      const pending = (queueStats || []).filter(q => q.status === 'pending').length;
+      const processing = (queueStats || []).filter(q => q.status === 'processing').length;
+      const completed = (queueStats || []).filter(q => q.status === 'completed').length;
+      const failed = (queueStats || []).filter(q => q.status === 'failed').length;
+
+      checks.components.queue_table = {
+        status: 'PASS',
+        counts: { pending, processing, completed, failed },
+        warning: pending > 10 ? 'High pending count - check queue processor' : null
+      };
+    }
+
+    // 5. Check completed_incident_forms table
+    const { data: formsData, error: formsError } = await supabase
+      .from('completed_incident_forms')
+      .select('id, generated_at')
+      .order('generated_at', { ascending: false })
+      .limit(5);
+
+    if (formsError) {
+      checks.components.completed_forms_table = {
+        status: 'FAIL',
+        error: formsError.message
+      };
+      allPassed = false;
+    } else {
+      const recentCount = formsData?.length || 0;
+      const latestGenerated = formsData?.[0]?.generated_at || null;
+
+      checks.components.completed_forms_table = {
+        status: 'PASS',
+        recent_count: recentCount,
+        latest_generated: latestGenerated,
+        message: recentCount > 0
+          ? `Found ${recentCount} recent PDFs, latest: ${latestGenerated}`
+          : 'Table accessible but no recent PDFs'
+      };
+    }
+
+    // 6. Check Resend email configuration
+    checks.components.email_service = {
+      status: process.env.RESEND_API_KEY ? 'PASS' : 'FAIL',
+      resend_configured: !!process.env.RESEND_API_KEY,
+      from_email: process.env.RESEND_FROM_EMAIL || 'noreply@carcrashlawyerai.com',
+      accounts_email: process.env.ACCOUNTS_EMAIL || 'accounts@carcrashlawyerai.com'
+    };
+
+    if (!process.env.RESEND_API_KEY) {
+      allPassed = false;
+    }
+
+    // 7. Check for stuck locks (in_progress for > 10 minutes)
+    const tenMinutesAgo = new Date(Date.now() - 10 * 60 * 1000).toISOString();
+    const { data: stuckLocks, error: stuckError } = await supabase
+      .from('incident_reports')
+      .select('id, pdf_send_in_progress, pdf_send_started_at')
+      .eq('pdf_send_in_progress', true)
+      .lt('pdf_send_started_at', tenMinutesAgo);
+
+    if (stuckError) {
+      checks.components.stuck_locks = {
+        status: 'WARN',
+        error: stuckError.message
+      };
+    } else {
+      const stuckCount = stuckLocks?.length || 0;
+      checks.components.stuck_locks = {
+        status: stuckCount > 0 ? 'WARN' : 'PASS',
+        count: stuckCount,
+        message: stuckCount > 0
+          ? `${stuckCount} incidents have stuck PDF locks (>10 min old)`
+          : 'No stuck locks detected'
+      };
+
+      if (stuckCount > 0) {
+        checks.components.stuck_locks.stuck_ids = stuckLocks.map(l => l.id);
+      }
+    }
+
+    // 8. Check for orphaned queue entries (completed but no form_id)
+    const { data: orphanedJobs, error: orphanError } = await supabase
+      .from('pdf_generation_queue')
+      .select('id, create_user_id, incident_id, completed_at')
+      .eq('status', 'completed')
+      .is('completed_form_id', null);
+
+    if (orphanError) {
+      checks.components.orphaned_jobs = {
+        status: 'WARN',
+        error: orphanError.message
+      };
+    } else {
+      const orphanCount = orphanedJobs?.length || 0;
+      checks.components.orphaned_jobs = {
+        status: orphanCount > 0 ? 'FAIL' : 'PASS',
+        count: orphanCount,
+        message: orphanCount > 0
+          ? `${orphanCount} queue jobs marked completed WITHOUT a PDF (BUG DETECTED!)`
+          : 'No orphaned jobs - queue integrity OK'
+      };
+
+      if (orphanCount > 0) {
+        allPassed = false;
+        checks.components.orphaned_jobs.action_required =
+          'Run node requeue-failed-pdfs.js to reset these jobs';
+      }
+    }
+
+    // 9. Check PDF service dependencies
+    try {
+      const fs = require('fs');
+      const pdfTemplatePath = process.env.PDF_TEMPLATE_PATH || './pdf-templates/MIB-4-claim-form.pdf';
+      const templateExists = fs.existsSync(pdfTemplatePath);
+
+      checks.components.pdf_template = {
+        status: templateExists ? 'PASS' : 'FAIL',
+        path: pdfTemplatePath,
+        exists: templateExists
+      };
+
+      if (!templateExists) {
+        allPassed = false;
+      }
+    } catch (fsError) {
+      checks.components.pdf_template = {
+        status: 'WARN',
+        error: fsError.message
+      };
+    }
+
+    // Overall status
+    checks.overall = allPassed ? 'HEALTHY' : 'ISSUES_DETECTED';
+
+    // Add summary
+    const passedCount = Object.values(checks.components).filter(c => c.status === 'PASS').length;
+    const totalCount = Object.keys(checks.components).length;
+
+    checks.summary = {
+      passed: passedCount,
+      total: totalCount,
+      percentage: Math.round((passedCount / totalCount) * 100) + '%'
+    };
+
+    logger.info('PDF health check completed', { overall: checks.overall, summary: checks.summary });
+
+    res.json(checks);
+
+  } catch (error) {
+    logger.error('PDF health check failed', { error: error.message });
+
+    checks.overall = 'ERROR';
+    checks.error = error.message;
+    checks.stack = process.env.NODE_ENV === 'development' ? error.stack : undefined;
+
+    res.status(500).json(checks);
+  }
+});
+
 // Legacy SMTP endpoints (kept for backwards compatibility)
 router.get('/smtp-config', (req, res) => {
   res.redirect('/api/debug/email-config');
