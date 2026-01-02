@@ -37,6 +37,7 @@ cmd = "npm start"
 
 [variables]
 # Let Puppeteer download and use its own bundled Chromium
-PUPPETEER_SKIP_CHROMIUM_DOWNLOAD = "false"
+# Note: Puppeteer 24.x uses PUPPETEER_SKIP_DOWNLOAD (not PUPPETEER_SKIP_CHROMIUM_DOWNLOAD)
+PUPPETEER_SKIP_DOWNLOAD = "false"
 # Production environment
 NODE_ENV = "production"
