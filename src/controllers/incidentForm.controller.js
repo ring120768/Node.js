@@ -970,11 +970,13 @@ async function listIncidentReports(req, res) {
  *
  * POST /api/incident-reports/declaration
  *
- * This is the final step - user has reviewed their information and
- * agreed to the legal declaration. Now we generate and send the PDF.
+ * GDPR PRIVACY: This is a personal legal statement. Each user can ONLY submit
+ * their own declaration. User identity comes from authentication token ONLY.
+ *
+ * SECURITY: userId should NOT be in request body - will be rejected if present.
+ * Authentication is the ONLY source of user identity.
  *
  * Body: {
- *   userId: string,
  *   incidentId: string (optional),
  *   consentGiven: boolean,
  *   consentTimestamp: string
@@ -982,11 +984,27 @@ async function listIncidentReports(req, res) {
  */
 async function submitDeclaration(req, res) {
   try {
-    // SECURITY FIX: Only use authenticated user ID, never accept from request body
+    // GDPR PRIVACY: Only authenticated user can submit their own declaration
+    // This is a personal legal statement - no sharing, no "on behalf of", no exceptions
     const userId = req.user?.id;
     let userEmail = req.user?.email;
     let userName = req.user?.user_metadata?.full_name || 'User';
     const { incidentId, consentGiven, consentTimestamp } = req.body;
+
+    // SECURITY: req.body.userId is NEVER accepted - authentication is the ONLY source
+    if (req.body.userId) {
+      logger.error('🚨 Suspicious request - userId should not be in request body', {
+        authenticatedUser: userId,
+        attemptedUserId: req.body.userId,
+        ip: req.ip,
+        userAgent: req.get('user-agent'),
+        timestamp: new Date().toISOString()
+      });
+      return res.status(400).json({
+        success: false,
+        error: 'Invalid request: userId should not be provided'
+      });
+    }
 
     // Validate authentication
     if (!userId) {
@@ -994,22 +1012,6 @@ async function submitDeclaration(req, res) {
       return res.status(401).json({
         success: false,
         error: 'Authentication required'
-      });
-    }
-
-    // SECURITY: Detect and block authorization bypass attempts
-    // If req.body.userId is provided, it must match authenticated user
-    if (req.body.userId && req.body.userId !== userId) {
-      logger.error('🚨 Authorization bypass attempt detected', {
-        authenticatedUser: userId,
-        requestedUser: req.body.userId,
-        ip: req.ip,
-        userAgent: req.get('user-agent'),
-        timestamp: new Date().toISOString()
-      });
-      return res.status(403).json({
-        success: false,
-        error: 'Forbidden: Cannot submit declaration for another user'
       });
     }
 
@@ -1112,30 +1114,53 @@ async function submitDeclaration(req, res) {
     // Then, attempt immediate generation (non-blocking, for faster delivery)
     pdfController.generateUserPDF(userId, 'declaration-submission', incident?.id || incidentId || null)
       .then(result => {
-        logger.success('📧 PDF generated and emailed after declaration', {
-          userId,
-          incidentId: incident?.id,
-          emailSent: result.email_sent,
-          formId: result.form_id
-        });
+        // Check if PDF was actually generated (not an early return due to already_sent/already_processing)
+        const pdfActuallyGenerated = result.form_id && !result.already_sent && !result.already_processing;
 
-        // Mark queue job as completed (if immediate generation succeeded)
-        supabase
-          .from('pdf_generation_queue')
-          .update({
-            status: 'completed',
-            completed_at: new Date().toISOString(),
-            completed_form_id: result.form_id,
-            attempt_count: 1
-          })
-          .eq('create_user_id', userId)
-          .eq('status', 'pending')
-          .then(() => {
-            logger.info('✅ Queue job marked complete after immediate success', { userId });
-          })
-          .catch(err => {
-            logger.warn('Failed to update queue status', { error: err.message });
+        if (pdfActuallyGenerated) {
+          logger.success('📧 PDF generated and emailed after declaration', {
+            userId,
+            incidentId: incident?.id,
+            emailSent: result.email_sent,
+            formId: result.form_id
           });
+
+          // Mark queue job as completed ONLY if a PDF was actually generated
+          supabase
+            .from('pdf_generation_queue')
+            .update({
+              status: 'completed',
+              completed_at: new Date().toISOString(),
+              completed_form_id: result.form_id,
+              attempt_count: 1
+            })
+            .eq('create_user_id', userId)
+            .eq('status', 'pending')
+            .then(() => {
+              logger.info('✅ Queue job marked complete after immediate success', { userId });
+            })
+            .catch(err => {
+              logger.warn('Failed to update queue status', { error: err.message });
+            });
+        } else if (result.already_sent) {
+          logger.info('ℹ️ PDF was already sent for this incident - skipping queue update', {
+            userId,
+            incidentId: incident?.id
+          });
+        } else if (result.already_processing) {
+          logger.warn('⚠️ PDF generation already in progress - queue will handle completion', {
+            userId,
+            incidentId: incident?.id
+          });
+        } else {
+          // Unexpected case: success=true but no form_id and not already_sent/already_processing
+          logger.error('🚨 PDF generation returned success but no form_id - this is a bug!', {
+            userId,
+            incidentId: incident?.id,
+            result: JSON.stringify(result)
+          });
+          // Don't mark queue as complete - let the queue retry
+        }
 
         // Send image download links to the user (non-blocking, best-effort)
         if (userEmail) {
