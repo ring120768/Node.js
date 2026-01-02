@@ -54,8 +54,38 @@ async function tryAcquirePdfSendLock(incidentId) {
   }
 
   const now = new Date();
-  const staleBefore = new Date(Date.now() - PDF_SEND_LOCK_TTL_MS).toISOString();
+  const staleBefore = new Date(Date.now() - PDF_SEND_LOCK_TTL_MS);
 
+  // First, check current state to determine if we can acquire lock
+  const { data: current, error: fetchError } = await supabase
+    .from('incident_reports')
+    .select('id, pdf_sent_at, pdf_send_in_progress, pdf_send_started_at')
+    .eq('id', incidentId)
+    .single();
+
+  if (fetchError) {
+    logger.error('Failed to fetch incident for PDF send lock', {
+      incidentId,
+      error: fetchError.message
+    });
+    return { acquired: false, reason: 'error' };
+  }
+
+  // Already sent - no lock needed
+  if (current.pdf_sent_at) {
+    return { acquired: false, reason: 'already_sent' };
+  }
+
+  // Check if lock is held and not stale
+  if (current.pdf_send_in_progress && current.pdf_send_started_at) {
+    const lockAge = Date.now() - new Date(current.pdf_send_started_at).getTime();
+    if (lockAge < PDF_SEND_LOCK_TTL_MS) {
+      return { acquired: false, reason: 'in_progress' };
+    }
+    // Lock is stale, we can take it
+  }
+
+  // Attempt to acquire lock with optimistic locking
   const { data, error } = await supabase
     .from('incident_reports')
     .update({
@@ -64,7 +94,6 @@ async function tryAcquirePdfSendLock(incidentId) {
     })
     .eq('id', incidentId)
     .is('pdf_sent_at', null)
-    .or(`pdf_send_in_progress.eq.false,pdf_send_started_at.lt.${staleBefore}`)
     .select('id');
 
   if (error) {
@@ -77,7 +106,7 @@ async function tryAcquirePdfSendLock(incidentId) {
 
   return {
     acquired: Array.isArray(data) && data.length > 0,
-    reason: Array.isArray(data) && data.length > 0 ? 'acquired' : 'in_progress'
+    reason: Array.isArray(data) && data.length > 0 ? 'acquired' : 'conflict'
   };
 }
 

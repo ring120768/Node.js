@@ -31,11 +31,9 @@ async function updateSafetyStatus(req, res) {
     const {
       safetyStatus,
       areYouSafe,
-      timestamp,
-      location,
-      what3words,
-      what3wordsStoragePath,
-      address
+      timestamp
+      // Note: location, what3words, what3wordsStoragePath, address are sent by frontend
+      // but not stored here - location data is captured on page 4 of incident form
     } = req.body;
 
     // Validation
@@ -81,18 +79,13 @@ async function updateSafetyStatus(req, res) {
     }
 
     // Update user_signup record
+    // Note: Location data (lat/lng, what3words) is captured on page 4 of the incident form
     const { data, error } = await supabase
       .from('user_signup')
       .update({
         are_you_safe: correctAreYouSafe,
         safety_status: safetyStatus,
         safety_status_timestamp: timestamp || new Date().toISOString(),
-        safety_check_location_lat: location?.lat || null,
-        safety_check_location_lng: location?.lng || null,
-        safety_check_what3words: what3words || null,
-        safety_check_what3words_storage_path: what3wordsStoragePath || null,
-        // REMOVED: safety_check_address (column does not exist in user_signup table)
-        // Location data already captured via lat/lng and what3words
         updated_at: new Date().toISOString()
       })
       .eq('create_user_id', userId);
