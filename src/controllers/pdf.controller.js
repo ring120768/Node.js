@@ -49,26 +49,59 @@ async function tryAcquirePdfSendLock(incidentId) {
   const now = new Date();
   const staleBefore = new Date(Date.now() - PDF_SEND_LOCK_TTL_MS).toISOString();
 
-  const { data, error } = await supabase
+  // Two-step approach to avoid PostgREST schema cache issues with .or() on UPDATE
+  // Step 1: Check if we can acquire the lock (SELECT first)
+  const { data: eligibleRows, error: selectError } = await supabase
+    .from('incident_reports')
+    .select('id, pdf_send_in_progress, pdf_send_started_at')
+    .eq('id', incidentId)
+    .is('pdf_sent_at', null);
+
+  if (selectError) {
+    logger.error('Failed to check PDF send lock eligibility', { incidentId, error: selectError.message });
+    return { acquired: false, reason: 'error' };
+  }
+
+  if (!eligibleRows || eligibleRows.length === 0) {
+    // Either incident doesn't exist or pdf_sent_at is already set
+    logger.info('PDF lock not eligible - incident not found or PDF already sent', { incidentId });
+    return { acquired: false, reason: 'already_sent' };
+  }
+
+  const incident = eligibleRows[0];
+
+  // Check if lock can be acquired (not in progress, or stale lock)
+  const canAcquire =
+    incident.pdf_send_in_progress === false ||
+    incident.pdf_send_in_progress === null ||
+    (incident.pdf_send_started_at && incident.pdf_send_started_at < staleBefore);
+
+  if (!canAcquire) {
+    logger.info('PDF lock not acquired - send already in progress', {
+      incidentId,
+      inProgress: incident.pdf_send_in_progress,
+      startedAt: incident.pdf_send_started_at
+    });
+    return { acquired: false, reason: 'in_progress' };
+  }
+
+  // Step 2: Acquire the lock (simple UPDATE without .or() filter)
+  const { error: updateError } = await supabase
     .from('incident_reports')
     .update({
       pdf_send_in_progress: true,
       pdf_send_started_at: now.toISOString()
     })
     .eq('id', incidentId)
-    .is('pdf_sent_at', null)
-    .or(`pdf_send_in_progress.eq.false,pdf_send_started_at.lt.${staleBefore}`)
-    .select('id');
+    .is('pdf_sent_at', null);
 
-  if (error) {
-    logger.error('Failed to acquire PDF send lock', { incidentId, error: error.message });
+  if (updateError) {
+    logger.error('Failed to acquire PDF send lock (update)', { incidentId, error: updateError.message });
     return { acquired: false, reason: 'error' };
   }
 
-  return {
-    acquired: Array.isArray(data) && data.length > 0,
-    reason: Array.isArray(data) && data.length > 0 ? 'acquired' : 'in_progress'
-  };
+  logger.info('PDF send lock acquired', { incidentId });
+  return { acquired: true, reason: 'acquired' };
 }
 
 async function releasePdfSendLock(incidentId, reason) {
