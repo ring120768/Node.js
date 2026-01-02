@@ -1,8 +1,9 @@
 /**
  * Puppeteer Configuration for Railway Deployment
  *
- * This configures Puppeteer to use the system-installed Chromium
- * on Railway instead of downloading its own copy.
+ * UPDATED: Use Puppeteer's bundled Chromium instead of system Chromium.
+ * The nixpacks.toml installs the required system libraries (fonts, libasound, etc.)
+ * but Puppeteer downloads its own compatible Chrome binary.
  */
 
 const { join } = require('path');
@@ -11,15 +12,14 @@ const { join } = require('path');
  * @type {import("puppeteer").Configuration}
  */
 module.exports = {
-  // Tell Puppeteer to skip downloading Chromium during npm install
-  skipDownload: true,
+  // DO NOT skip download - let Puppeteer download its bundled Chromium
+  // This is the most reliable approach for Railway
+  skipDownload: false,
 
-  // Use system-installed Chromium (provided by Railway via nixpacks.toml)
-  // On Railway, this will be set by the PUPPETEER_EXECUTABLE_PATH env var
-  executablePath: process.env.PUPPETEER_EXECUTABLE_PATH ||
-                  '/usr/bin/chromium-browser' ||
-                  '/usr/bin/chromium',
+  // DO NOT set executablePath - let Puppeteer use its bundled Chrome
+  // Setting this to a non-existent path causes failures
+  // executablePath: undefined (not set)
 
-  // Cache directory (Railway has limited disk space)
+  // Cache directory for downloaded browser
   cacheDirectory: join(__dirname, '.cache', 'puppeteer')
 };
