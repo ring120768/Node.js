@@ -149,9 +149,100 @@ router.get('/email-test', async (req, res) => {
 });
 
 /**
- * PDF Pipeline Health Check
+ * PDF Pipeline Health Check (Quick/Public version)
+ * GET /api/debug/pdf-health-quick
+ * Returns basic status without sensitive details - no auth required
+ */
+router.get('/pdf-health-quick', async (req, res) => {
+  const { createClient } = require('@supabase/supabase-js');
+
+  try {
+    const supabase = createClient(
+      process.env.SUPABASE_URL,
+      process.env.SUPABASE_SERVICE_ROLE_KEY
+    );
+
+    const checks = {
+      timestamp: new Date().toISOString(),
+      environment: process.env.RAILWAY_ENVIRONMENT || process.env.NODE_ENV || 'unknown',
+      components: {}
+    };
+
+    // 1. Check database columns exist (the ones we fixed)
+    const { error: columnError } = await supabase
+      .from('incident_reports')
+      .select('id, pdf_send_in_progress, pdf_send_started_at, pdf_sent_at')
+      .limit(1);
+
+    checks.components.database_columns = columnError ? 'FAIL' : 'PASS';
+
+    // 2. Check queue table & counts
+    const { data: queueData, error: queueError } = await supabase
+      .from('pdf_generation_queue')
+      .select('status, completed_form_id')
+      .limit(100);
+
+    if (queueError) {
+      checks.components.queue = 'FAIL';
+    } else {
+      const pending = (queueData || []).filter(q => q.status === 'pending').length;
+      const completedNoForm = (queueData || []).filter(
+        q => q.status === 'completed' && !q.completed_form_id
+      ).length;
+
+      checks.components.queue = 'PASS';
+      checks.components.queue_pending = pending;
+      checks.components.orphaned_jobs = completedNoForm;
+
+      if (completedNoForm > 0) {
+        checks.components.warning = `${completedNoForm} completed jobs have no PDF (bug detected!)`;
+      }
+    }
+
+    // 3. Check completed forms table
+    const { data: formsData, error: formsError } = await supabase
+      .from('completed_incident_forms')
+      .select('generated_at')
+      .order('generated_at', { ascending: false })
+      .limit(1);
+
+    checks.components.completed_forms = formsError ? 'FAIL' : 'PASS';
+    if (formsData?.[0]) {
+      checks.components.last_pdf_generated = formsData[0].generated_at;
+    }
+
+    // 4. Check email config
+    checks.components.email = process.env.RESEND_API_KEY ? 'PASS' : 'FAIL';
+
+    // 5. Overall status
+    const criticalFails = ['database_columns', 'queue', 'email'].filter(
+      k => checks.components[k] === 'FAIL'
+    );
+
+    checks.overall = criticalFails.length === 0 && checks.components.orphaned_jobs === 0
+      ? 'HEALTHY'
+      : 'ISSUES_DETECTED';
+
+    if (criticalFails.length > 0) {
+      checks.failed_components = criticalFails;
+    }
+
+    res.json(checks);
+
+  } catch (error) {
+    res.status(500).json({
+      overall: 'ERROR',
+      error: error.message,
+      timestamp: new Date().toISOString()
+    });
+  }
+});
+
+/**
+ * PDF Pipeline Health Check (Full version)
  * GET /api/debug/pdf-health
  * Comprehensive check of all PDF generation and delivery components
+ * Requires API key authentication
  */
 router.get('/pdf-health', checkSharedKey, async (req, res) => {
   const { createClient } = require('@supabase/supabase-js');
