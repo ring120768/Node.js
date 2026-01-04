@@ -15,10 +15,14 @@ const logger = require('../utils/logger');
 const config = require('../config');
 const { createClient } = require('@supabase/supabase-js');
 
-// Initialize OpenAI
-const openai = new OpenAI({
-  apiKey: config.openai.apiKey
-});
+// Lazy-initialize OpenAI to prevent crash when API key is missing
+let openai = null;
+function getOpenAI() {
+  if (!openai && config.openai.apiKey) {
+    openai = new OpenAI({ apiKey: config.openai.apiKey });
+  }
+  return openai;
+}
 
 // Initialize Supabase client
 const supabase = createClient(config.supabase.url, config.supabase.serviceKey);
@@ -36,6 +40,13 @@ const supabase = createClient(config.supabase.url, config.supabase.serviceKey);
 async function analyzeStatement(req, res) {
   try {
     const { userId, incidentId, transcription } = req.body;
+
+    // Check OpenAI is available
+    const client = getOpenAI();
+    if (!client) {
+      logger.warn('OpenAI not configured - AI analysis unavailable');
+      return sendError(res, 503, 'AI service temporarily unavailable', 'AI_NOT_CONFIGURED');
+    }
 
     if (!transcription || transcription.trim().length === 0) {
       return sendError(res, 400, 'Transcription text is required', 'MISSING_TRANSCRIPTION');
@@ -215,7 +226,7 @@ Format as JSON:
   "faultAnalysis": "..."
 }`;
 
-    const summaryResponse = await openai.chat.completions.create({
+    const summaryResponse = await client.chat.completions.create({
       model: 'gpt-4o',
       messages: [
         {
@@ -285,7 +296,7 @@ Format as JSON:
   "suggestions": ["...", "...", "..."]
 }`;
 
-    const reviewResponse = await openai.chat.completions.create({
+    const reviewResponse = await client.chat.completions.create({
       model: 'gpt-4o',
       messages: [
         {
@@ -374,7 +385,7 @@ INSTRUCTIONS:
 
 Provide a complete, accurate record that documents all factual aspects of the incident.`;
 
-      const combinedResponse = await openai.chat.completions.create({
+      const combinedResponse = await client.chat.completions.create({
         model: 'gpt-4o',
         messages: [
           {
@@ -487,7 +498,7 @@ Format as JSON:
   "legalConsiderations": "<p>UK law requires notification to insurers within reasonable time regardless of fault...</p><p>Medical evidence is crucial for personal injury claims...</p>"
 }`;
 
-    const finalReviewResponse = await openai.chat.completions.create({
+    const finalReviewResponse = await client.chat.completions.create({
       model: 'gpt-4o',
       messages: [
         {
@@ -1274,6 +1285,13 @@ function parseFinalReview(finalReviewText) {
 async function generateFormDataSummary(userId, incidentId) {
   logger.info(`[Phase 1 AI] Starting form data summary generation for incident ${incidentId}`);
 
+  // Check OpenAI is available
+  const client = getOpenAI();
+  if (!client) {
+    logger.warn('OpenAI not configured - form data summary unavailable');
+    throw new Error('AI service not configured');
+  }
+
   try {
     // Step 1: Fetch data from all 3 tables
     logger.info('[Phase 1 AI] Fetching incident data from database...');
@@ -1505,7 +1523,7 @@ Generate the complete ${hasTranscription ? 'TWO-SECTION' : 'SECTION 1'} summary 
 
     const startTime = Date.now();
 
-    const completion = await openai.chat.completions.create({
+    const completion = await client.chat.completions.create({
       model: 'gpt-4o-mini', // 10x cheaper than gpt-4o, suitable for structured data
       messages: [systemMessage, userMessage],
       temperature: 0.4,         // Balanced factual with natural elaboration (was 0.3→0.35→0.38→0.4)
@@ -1798,6 +1816,13 @@ function formatFieldName(fieldName) {
 async function generateSinglePhaseAiSummary(userId, incidentId, transcription) {
   const startTime = Date.now();
 
+  // Check OpenAI is available
+  const client = getOpenAI();
+  if (!client) {
+    logger.warn('OpenAI not configured - single-phase AI summary unavailable');
+    throw new Error('AI service not configured');
+  }
+
   logger.info('[Single-Phase AI] Starting comprehensive analysis', {
     userId,
     incidentId,
@@ -1854,7 +1879,7 @@ async function generateSinglePhaseAiSummary(userId, incidentId, transcription) {
     logger.info('[Single-Phase AI] Calling GPT-4o (temp 0.2)...');
 
     // Step 4: Call GPT-4o with temperature 0.2
-    const completion = await openai.chat.completions.create({
+    const completion = await client.chat.completions.create({
       model: 'gpt-4o',
       messages: [
         { role: 'system', content: systemPrompt },

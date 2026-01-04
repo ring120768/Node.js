@@ -16,10 +16,14 @@ const logger = require('../utils/logger');
 const config = require('../config');
 const { createClient } = require('@supabase/supabase-js');
 
-// Initialize OpenAI
-const openai = new OpenAI({
-  apiKey: config.openai.apiKey
-});
+// Lazy-initialize OpenAI to prevent crash when API key is missing
+let openai = null;
+function getOpenAI() {
+  if (!openai && config.openai.apiKey) {
+    openai = new OpenAI({ apiKey: config.openai.apiKey });
+  }
+  return openai;
+}
 
 // Initialize Supabase client with SERVICE ROLE key (bypasses RLS for storage uploads)
 const supabase = createClient(config.supabase.url, config.supabase.serviceKey);
@@ -30,6 +34,13 @@ const supabase = createClient(config.supabase.url, config.supabase.serviceKey);
  */
 async function transcribeAudio(req, res) {
   try {
+    // Check OpenAI is available
+    const client = getOpenAI();
+    if (!client) {
+      logger.warn('OpenAI not configured - transcription unavailable');
+      return sendError(res, 503, 'Transcription service temporarily unavailable', 'AI_NOT_CONFIGURED');
+    }
+
     if (!req.file) {
       return sendError(res, 400, 'No audio file provided', 'MISSING_FILE');
     }
@@ -102,7 +113,7 @@ async function transcribeAudio(req, res) {
 
     let transcription;
     try {
-      transcription = await openai.audio.transcriptions.create({
+      transcription = await client.audio.transcriptions.create({
         file: audioStream,
         model: config.openai.whisperModel,
         language: 'en',
