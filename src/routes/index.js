@@ -34,6 +34,7 @@ const imageUploadRoutes = require('./imageUpload.routes'); // NEW: Post-signup i
 const tempImageUploadRoutes = require('./tempImageUpload.routes'); // NEW: Immediate temp upload for mobile
 const incidentFormRoutes = require('./incidentForm.routes'); // NEW: Multi-page incident form submission
 const stripeRoutes = require('./stripe.routes'); // NEW: Stripe payments and subscriptions
+const groupsRoutes = require('./groups.routes'); // NEW: Family/Business subscription groups
 
 // GitHub webhooks are mounted in app.js via webhook.routes.js (not imported here)
 const locationRoutes = require('./location.routes');
@@ -286,6 +287,7 @@ router.get('/system-status', async (req, res) => {
                 <li><code>/api/dvla/*</code> - DVLA vehicle lookup (GET)</li>
                 <li><code>/api/images/*</code> - Post-signup image upload</li>
                 <li><code>/api/stripe/*</code> - Stripe payments & subscriptions</li>
+                <li><code>/api/groups/*</code> - Subscription groups (Family/Business)</li>
                 <li><code>/api/debug/*</code> - Debug tools</li>
             </ul>
         </div>
@@ -342,6 +344,7 @@ router.use('/api', safetyRoutes); // NEW: Safety check status management (/api/s
 router.use('/api/signup', signupRoutes); // NEW: User signup form submission (custom HTML form)
 router.use('/api/incident-form', incidentFormRoutes); // NEW: Multi-page incident form submission (Pages 1-12)
 router.use('/api/stripe', stripeRoutes); // NEW: Stripe payments (checkout, webhooks, subscriptions)
+router.use('/api/groups', groupsRoutes); // NEW: Family/Business subscription group management
 // Note: Webhook routes are mounted directly in app.js for raw body handling
 // GitHub webhooks are mounted in app.js via webhook.routes.js (not here)
 router.use('/api/location', locationRoutes);

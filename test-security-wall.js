@@ -22,7 +22,7 @@ async function testSecurityWall() {
   console.log(colors.cyan + colors.bold, '\n🔒 Testing Security Wall (Page Auth Middleware)\n');
   console.log(colors.reset + '='.repeat(60));
 
-  const baseUrl = process.env.TEST_URL || 'http://localhost:5000';
+  const baseUrl = process.env.TEST_URL || 'http://localhost:3000';
   console.log(colors.cyan, `\nUsing base URL: ${baseUrl}\n`);
 
   const protectedPages = [

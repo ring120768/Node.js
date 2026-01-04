@@ -2,7 +2,7 @@
 
 > GDPR-compliant legal documentation system for UK traffic accidents
 
-**Version:** 2.1.0
+**Version:** 2.2.0
 **Status:** ✅ Production Ready
 **Location:** United Kingdom
 
@@ -433,6 +433,33 @@ node scripts/test-supabase-client.js
 **Cause:** Webhook secret mismatch
 **Solution:** Verify `GITHUB_WEBHOOK_SECRET` matches GitHub webhook settings.
 
+#### Railway Build Failed - Package Not Found (libasound2)
+
+**Cause:** Ubuntu 24.04 (Noble) renamed packages
+**Error:** `E: Package 'libasound2' has no installation candidate`
+
+**Solution:** Update `nixpacks.toml`:
+```toml
+aptPkgs = [
+  'libasound2t64',  # Use this instead of 'libasound2'
+  # ... other packages
+]
+```
+
+**Note:** Also remove deprecated `libappindicator3-1` if present.
+
+#### PDF Email Not Delivering
+
+**Cause:** Missing contentType on email attachments
+**Solution:** Add `contentType: 'application/pdf'` to attachment in `lib/emailService.js`:
+```javascript
+attachments: [{
+  filename: 'report.pdf',
+  content: pdfBuffer,
+  contentType: 'application/pdf'  // Required for Resend
+}]
+```
+
 ### Get Help
 
 1. Check server logs for detailed error messages
@@ -456,11 +483,19 @@ node scripts/test-supabase-client.js
 
 ## 🎯 Project Status
 
-**Current Version:** 2.1.0
-**Latest Update:** October 18, 2025
+**Current Version:** 2.2.0
+**Latest Update:** January 1, 2026
 **Status:** ✅ Production Ready
 
-### Recent Changes (v2.1.0)
+### Recent Changes (v2.2.0)
+
+- ✅ **Railway Puppeteer fix** - Updated nixpacks.toml for Ubuntu 24.04 (libasound2t64)
+- ✅ **Email PDF attachment fix** - Added contentType: 'application/pdf' for Resend API
+- ✅ **PDF queue system** - Automatic retry for failed PDF generation
+- ✅ **Email retry queue** - Reliable email delivery with exponential backoff
+- ✅ **Cron manager** - Scheduled tasks for PDF processing, backups, and cleanup
+
+### Previous Changes (v2.1.0)
 
 - ✅ Adobe PDF Services integration
 - ✅ Replaced Zapier + PDFco workflow
@@ -489,7 +524,7 @@ For technical support or questions:
 
 ---
 
-**Last Updated:** 2025-10-28
-**Version:** 2.1.0
+**Last Updated:** 2026-01-01
+**Version:** 2.2.0
 
 Made with ❤️ for UK accident victims

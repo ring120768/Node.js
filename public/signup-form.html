@@ -2842,9 +2842,9 @@
           // Clear draft
           localStorage.removeItem('ccla_signup_draft');
 
-          // User is already authenticated (from Page 1) - redirect to payment page
-          console.log('✅ Signup complete, redirecting to payment...');
-          window.location.href = '/payment-success.html';
+          // User is already authenticated (from Page 1) - redirect to plan selection
+          console.log('✅ Signup complete, redirecting to plan selection...');
+          window.location.href = '/select-plan.html';
         } else {
           throw new Error(result.error || 'Failed to submit form');
         }

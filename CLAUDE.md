@@ -11,7 +11,7 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 | | |
 |---|---|
 | **Stack** | Node.js 18+, Express, Supabase (PostgreSQL/Auth/Storage/Realtime), Adobe PDF Services, OpenAI |
-| **Version** | 2.1.0 |
+| **Version** | 2.2.0 |
 | **Location** | UK (DD/MM/YYYY, £ GBP, GMT/BST, +44, British English) |
 | **Flow** | Custom HTML Forms (Pages 1-12) → Image Processing → PDF (18 pages, 213 fields) → Email |
 
@@ -148,6 +148,141 @@ The 18-page PDF uses **two different rendering methods**:
 - Merge logic: pdf-lib combines all pages into final document
 
 **Fallback:** If Adobe unavailable, entire PDF generated via pdf-lib (lower quality but functional).
+
+### Railway Deployment (Puppeteer) ✅ VERIFIED WORKING
+
+**Last verified:** 2026-01-03 (PDF emails delivered successfully)
+
+Puppeteer requires Chrome dependencies installed via `nixpacks.toml`:
+
+```toml
+[phases.setup]
+# Ubuntu 24.04 (Noble) renamed libasound2 → libasound2t64
+aptPkgs = [
+  'fonts-liberation',
+  'libasound2t64',      # NOT libasound2 (deprecated)
+  'libatk-bridge2.0-0',
+  'libatk1.0-0',
+  'libgbm1',
+  'libgtk-3-0',
+  'libnspr4',
+  'libnss3',
+  'libx11-xcb1',
+  'libxcomposite1',
+  'libxcursor1',
+  'libxdamage1',
+  'libxfixes3',
+  'libxi6',
+  'libxrandr2',
+  'libxss1',
+  'libxtst6',
+  'xdg-utils',
+  'fonts-dejavu-core',
+  'fonts-noto-core'
+]
+
+[variables]
+PUPPETEER_SKIP_DOWNLOAD = "false"   # Puppeteer 24.x uses this (NOT PUPPETEER_SKIP_CHROMIUM_DOWNLOAD)
+NODE_ENV = "production"
+```
+
+**Critical `.puppeteerrc.cjs` configuration:**
+```javascript
+// CORRECT - let Puppeteer use its bundled Chrome
+module.exports = {
+  skipDownload: false,                              // DO NOT skip - let Puppeteer download Chrome
+  cacheDirectory: join(__dirname, '.cache', 'puppeteer')
+  // DO NOT set executablePath - let Puppeteer use bundled Chrome
+};
+```
+
+**⚠️ Common mistakes that break PDF generation:**
+1. Setting `skipDownload: true` - prevents Chrome from being downloaded
+2. Setting `executablePath: '/usr/bin/chromium-browser'` - system Chrome doesn't exist on Railway
+3. Using old env var `PUPPETEER_SKIP_CHROMIUM_DOWNLOAD` (renamed in Puppeteer 24.x)
+
+**Browser launch flags (in htmlToPdfConverter.js):**
+```javascript
+const browser = await puppeteer.launch({
+  headless: true,  // Standard headless mode for Railway
+  args: [
+    '--no-sandbox',
+    '--disable-setuid-sandbox',
+    '--disable-dev-shm-usage',   // Critical for containers
+    '--disable-gpu',
+    '--no-first-run',
+    '--no-zygote',
+    '--disable-extensions',
+    '--disable-software-rasterizer',
+    '--font-render-hinting=none'
+  ]
+});
+```
+
+**Memory optimisation for Railway:**
+- Browser recycled after 8 pages (`MAX_PAGES_PER_BROWSER`)
+- Pages processed sequentially (not parallel) to avoid memory spikes
+- Retry logic with browser recreation on crash
+
+**See also:** `docs/PUPPETEER_RAILWAY_TROUBLESHOOTING.md` for detailed debugging guide
+
+### Email Attachments (Resend)
+
+When sending emails with PDF attachments via Resend, **must include contentType**:
+
+```javascript
+// CORRECT - include contentType for binary attachments
+attachments: [{
+  filename: 'report.pdf',
+  content: pdfBuffer,
+  contentType: 'application/pdf'  // REQUIRED
+}]
+
+// WRONG - missing contentType causes silent delivery failures
+attachments: [{
+  filename: 'report.pdf',
+  content: pdfBuffer
+}]
+```
+
+**Fix location:** `lib/emailService.js` - `sendEmails()` function
+
+### PDF Queue System (Asynchronous Processing)
+
+**Critical:** PDFs are NOT generated synchronously. The system uses a queue-based retry mechanism.
+
+**Flow:**
+```
+Form submission → pdf_generation_queue (status: pending)
+                ↓
+Cron job (every 5 min) → Process queue → Generate PDF
+                ↓                              ↓
+         On failure:                    On success:
+         - retry_count++                - completed_incident_forms
+         - locked_until = now + backoff - status: completed
+         - max 3 retries
+```
+
+**Key tables:**
+- `pdf_generation_queue` - Pending/failed jobs with retry logic
+- `completed_incident_forms` - Successful completions
+
+**Important fields:**
+- `status`: pending, processing, completed, failed
+- `retry_count`: 0-3 (max retries before permanent failure)
+- `locked_until`: Prevents duplicate processing during retries
+- `error_message`: Last failure reason for debugging
+
+**Service:** `src/services/pdfQueueService.js`
+**Cron:** `src/services/cronManager.js` - processes queue every 5 minutes
+
+**Debug commands:**
+```bash
+node check-pdf-queue-state.js    # View queue status
+node requeue-failed-pdfs.js      # Retry failed jobs
+```
+
+**Why queue?** PDF generation involves Adobe API (rate limits), Puppeteer (can crash), and network calls (can timeout). Queue ensures reliability through automatic retries with exponential backoff.
 
 ---
 
@@ -423,5 +558,5 @@ Do not "fix" these to match - they're deliberate design choices.
 
 ---
 
-**Last Updated:** 2025-12-26
-**Version:** 2.1.0
+**Last Updated:** 2026-01-04
+**Version:** 2.2.2

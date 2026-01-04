@@ -1,0 +1,295 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Choose Your Plan - Car Crash Lawyer AI</title>
+  <style>
+    :root {
+      --primary: #0073e6;
+      --success: #10b981;
+      --bg: #f5f7fa;
+      --text: #1a1a1a;
+      --text-muted: #666;
+    }
+
+    * {
+      box-sizing: border-box;
+      margin: 0;
+      padding: 0;
+    }
+
+    body {
+      font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif;
+      background: var(--bg);
+      color: var(--text);
+      min-height: 100vh;
+      padding: 20px;
+    }
+
+    .container {
+      max-width: 1200px;
+      margin: 0 auto;
+    }
+
+    header {
+      text-align: center;
+      padding: 40px 20px;
+    }
+
+    header h1 {
+      font-size: 36px;
+      font-weight: 700;
+      margin-bottom: 12px;
+      color: var(--text);
+    }
+
+    header p {
+      font-size: 18px;
+      color: var(--text-muted);
+      max-width: 600px;
+      margin: 0 auto;
+    }
+
+    .success-banner {
+      background: linear-gradient(135deg, #10b981 0%, #059669 100%);
+      color: white;
+      padding: 16px 24px;
+      border-radius: 12px;
+      margin-bottom: 40px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: 12px;
+    }
+
+    .success-banner .icon {
+      font-size: 24px;
+    }
+
+    .success-banner .text {
+      font-size: 16px;
+      font-weight: 500;
+    }
+
+    .user-info {
+      background: #f8fafc;
+      border-radius: 8px;
+      padding: 16px;
+      margin-bottom: 24px;
+      font-size: 14px;
+      color: var(--text-muted);
+      text-align: center;
+    }
+
+    .user-info strong {
+      color: var(--text);
+    }
+
+    .pricing-wrapper {
+      background: white;
+      border-radius: 16px;
+      padding: 24px;
+      box-shadow: 0 4px 20px rgba(0, 0, 0, 0.08);
+      margin-bottom: 32px;
+    }
+
+    .guarantee {
+      text-align: center;
+      padding: 24px;
+      background: #f0fdf4;
+      border-radius: 12px;
+      margin-top: 24px;
+    }
+
+    .guarantee h3 {
+      font-size: 18px;
+      color: #166534;
+      margin-bottom: 8px;
+    }
+
+    .guarantee p {
+      font-size: 14px;
+      color: #166534;
+    }
+
+    .loading-state {
+      text-align: center;
+      padding: 60px 20px;
+    }
+
+    .spinner {
+      width: 48px;
+      height: 48px;
+      border: 4px solid #e5e7eb;
+      border-top-color: var(--primary);
+      border-radius: 50%;
+      animation: spin 1s linear infinite;
+      margin: 0 auto 16px;
+    }
+
+    @keyframes spin {
+      to { transform: rotate(360deg); }
+    }
+
+    .not-logged-in {
+      text-align: center;
+      padding: 60px 20px;
+      background: white;
+      border-radius: 16px;
+      box-shadow: 0 4px 20px rgba(0, 0, 0, 0.08);
+    }
+
+    .not-logged-in h2 {
+      margin-bottom: 16px;
+      color: var(--text);
+    }
+
+    .not-logged-in p {
+      color: var(--text-muted);
+      margin-bottom: 24px;
+    }
+
+    .btn {
+      display: inline-block;
+      padding: 14px 32px;
+      background: var(--primary);
+      color: white;
+      text-decoration: none;
+      border-radius: 8px;
+      font-weight: 600;
+      transition: all 0.2s;
+    }
+
+    .btn:hover {
+      background: #005bb5;
+      transform: translateY(-2px);
+    }
+
+    @media (max-width: 768px) {
+      header h1 {
+        font-size: 28px;
+      }
+
+      .pricing-wrapper {
+        padding: 16px;
+      }
+    }
+  </style>
+</head>
+<body>
+  <div class="container">
+    <header>
+      <h1>🚗 Choose Your Protection Plan</h1>
+      <p>Select the plan that best fits your needs. All plans include our comprehensive accident documentation system.</p>
+    </header>
+
+    <!-- Loading State -->
+    <div class="loading-state" id="loadingState">
+      <div class="spinner"></div>
+      <p style="color: var(--text-muted);">Checking your account...</p>
+    </div>
+
+    <!-- Not Logged In State -->
+    <div class="not-logged-in" id="notLoggedIn" style="display: none;">
+      <h2>Please Log In</h2>
+      <p>You need to be logged in to select a subscription plan.</p>
+      <a href="/login.html?redirect=/select-plan.html" class="btn">Log In</a>
+    </div>
+
+    <!-- Main Content (shown when logged in) -->
+    <div id="mainContent" style="display: none;">
+      <div class="success-banner">
+        <span class="icon">✅</span>
+        <span class="text">Account created successfully! Just one more step - choose your subscription plan below.</span>
+      </div>
+
+      <div class="user-info">
+        Logged in as: <strong id="userEmail"></strong>
+      </div>
+
+      <div class="pricing-wrapper">
+        <!-- Stripe Pricing Table -->
+        <stripe-pricing-table
+          pricing-table-id="prctbl_1SlYoLDjVI87TYBmmZNxFKXw"
+          publishable-key="pk_test_51RgiH5DjVI87TYBmbwA6TXVkWvzzn2cl8MT9VPUBx0HmLIAoVegArDLa44HP9L6gMerZVTcp6OgSNSwWX6k9a112005samAnyG"
+          client-reference-id=""
+          id="stripePricingTable">
+        </stripe-pricing-table>
+      </div>
+
+      <div class="guarantee">
+        <h3>🔒 30-Day Money-Back Guarantee</h3>
+        <p>Not satisfied? Get a full refund within 30 days, no questions asked.</p>
+      </div>
+    </div>
+  </div>
+
+  <script async src="https://js.stripe.com/v3/pricing-table.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+  <script>
+    // Supabase configuration
+    const SUPABASE_URL = 'https://swtkpfpyjjkkemmvkhmz.supabase.co';
+    const SUPABASE_ANON_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InN3dGtwZnB5amprZWltbXZraG16Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3MzY1MjM5NzAsImV4cCI6MjA1MjA5OTk3MH0.WT7ePP_e48LIjwWkL-LoYnE5s41Psrwa_4wB3L2S4TA';
+
+    const supabase = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
+
+    async function init() {
+      const loadingState = document.getElementById('loadingState');
+      const notLoggedIn = document.getElementById('notLoggedIn');
+      const mainContent = document.getElementById('mainContent');
+
+      try {
+        // Check if user is authenticated
+        const { data: { user }, error } = await supabase.auth.getUser();
+
+        if (error || !user) {
+          console.log('No authenticated user');
+          loadingState.style.display = 'none';
+          notLoggedIn.style.display = 'block';
+          return;
+        }
+
+        console.log('User authenticated:', user.email);
+
+        // Check if user already has an active subscription
+        const { data: userData, error: userError } = await supabase
+          .from('user_signup')
+          .select('subscription_status, subscription_tier')
+          .eq('create_user_id', user.id)
+          .single();
+
+        if (userData?.subscription_status === 'active') {
+          console.log('User already has active subscription:', userData.subscription_tier);
+          // Redirect to dashboard if already subscribed
+          window.location.href = '/dashboard.html';
+          return;
+        }
+
+        // Show main content
+        loadingState.style.display = 'none';
+        mainContent.style.display = 'block';
+
+        // Display user email
+        document.getElementById('userEmail').textContent = user.email;
+
+        // Set the client-reference-id on the pricing table for tracking
+        const pricingTable = document.getElementById('stripePricingTable');
+        if (pricingTable) {
+          pricingTable.setAttribute('client-reference-id', user.id);
+        }
+
+        console.log('Page initialized for user:', user.id);
+
+      } catch (err) {
+        console.error('Initialization error:', err);
+        loadingState.style.display = 'none';
+        notLoggedIn.style.display = 'block';
+      }
+    }
+
+    // Initialize on page load
+    document.addEventListener('DOMContentLoaded', init);
+  </script>
+</body>
+</html>

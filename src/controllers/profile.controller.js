@@ -91,6 +91,25 @@ async function updateUserProfile(req, res) {
     logger.info('📝 Updating user profile', { userId });
 
     // ========================================
+    // SECURITY: VERIFY OWNERSHIP
+    // ========================================
+    // GDPR: Users can only update their own profile
+    if (!req.user?.id) {
+      logger.warn('Profile update without authentication');
+      return sendError(res, 401, 'Authentication required', 'AUTH_REQUIRED');
+    }
+
+    if (req.user.id !== userId) {
+      logger.warn('IDOR attempt blocked in profile update', {
+        authenticated: req.user.id,
+        target: userId,
+        ip: req.ip,
+        userAgent: req.get('user-agent')
+      });
+      return sendError(res, 403, 'Access denied: Cannot update another user\'s profile', 'FORBIDDEN');
+    }
+
+    // ========================================
     // VALIDATION
     // ========================================
     const errors = {};
