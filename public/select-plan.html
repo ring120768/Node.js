@@ -228,11 +228,13 @@
   <script async src="https://js.stripe.com/v3/pricing-table.js"></script>
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
   <script>
+    // Wrap in IIFE to avoid conflicts with browser extensions
+    (function() {
     // Supabase configuration
     const SUPABASE_URL = 'https://swtkpfpyjjkkemmvkhmz.supabase.co';
     const SUPABASE_ANON_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InN3dGtwZnB5amprZWltbXZraG16Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3MzY1MjM5NzAsImV4cCI6MjA1MjA5OTk3MH0.WT7ePP_e48LIjwWkL-LoYnE5s41Psrwa_4wB3L2S4TA';
 
-    const supabase = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
+    const supabaseClient = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
 
     async function init() {
       const loadingState = document.getElementById('loadingState');
@@ -241,7 +243,7 @@
 
       try {
         // Check if user is authenticated
-        const { data: { user }, error } = await supabase.auth.getUser();
+        const { data: { user }, error } = await supabaseClient.auth.getUser();
 
         if (error || !user) {
           console.log('No authenticated user');
@@ -253,7 +255,7 @@
         console.log('User authenticated:', user.email);
 
         // Check if user already has an active subscription
-        const { data: userData, error: userError } = await supabase
+        const { data: userData, error: userError } = await supabaseClient
           .from('user_signup')
           .select('subscription_status, subscription_tier')
           .eq('create_user_id', user.id)
@@ -290,6 +292,7 @@
 
     // Initialize on page load
     document.addEventListener('DOMContentLoaded', init);
+    })(); // End IIFE
   </script>
 </body>
 </html>
