@@ -14,10 +14,16 @@
 const Stripe = require('stripe');
 const { createClient } = require('@supabase/supabase-js');
 
-// Initialise Stripe
-const stripe = new Stripe(process.env.STRIPE_SECRET_KEY, {
-  apiVersion: '2024-12-18.acacia',
-});
+// Lazy-initialize Stripe to prevent crash when API key is missing
+let stripe = null;
+function getStripe() {
+  if (!stripe && process.env.STRIPE_SECRET_KEY) {
+    stripe = new Stripe(process.env.STRIPE_SECRET_KEY, {
+      apiVersion: '2024-12-18.acacia',
+    });
+  }
+  return stripe;
+}
 
 // Initialise Supabase
 const supabase = createClient(
@@ -59,6 +65,12 @@ const groupsController = require('./groups.controller');
  * Body: { tier, userId, successUrl, cancelUrl }
  */
 async function createCheckoutSession(req, res) {
+  const stripeClient = getStripe();
+  if (!stripeClient) {
+    console.error('[Stripe] STRIPE_SECRET_KEY not configured');
+    return res.status(503).json({ error: 'Payment service temporarily unavailable' });
+  }
+
   const { tier, userId, successUrl, cancelUrl } = req.body;
 
   // Validate tier
@@ -93,7 +105,7 @@ async function createCheckoutSession(req, res) {
     if (!customerId) {
       console.log('[Stripe] Creating new customer for:', user.email);
 
-      const customer = await stripe.customers.create({
+      const customer = await stripeClient.customers.create({
         email: user.email,
         name: user.driver_name,
         metadata: {
@@ -123,7 +135,7 @@ async function createCheckoutSession(req, res) {
     if (existingUser?.subscription_status === 'active') {
       // Redirect to portal for upgrades/downgrades instead
       console.log('[Stripe] User already subscribed, creating portal session');
-      const portalSession = await stripe.billingPortal.sessions.create({
+      const portalSession = await stripeClient.billingPortal.sessions.create({
         customer: customerId,
         return_url: successUrl || `${process.env.APP_URL || 'https://carcrashlawyerai.co.uk'}/dashboard.html`,
       });
@@ -144,7 +156,7 @@ async function createCheckoutSession(req, res) {
       || `${process.env.APP_URL || 'https://carcrashlawyerai.co.uk'}/subscribe.html`;
 
     // Create Checkout Session
-    const session = await stripe.checkout.sessions.create({
+    const session = await stripeClient.checkout.sessions.create({
       customer: customerId,
       mode: 'subscription',
       payment_method_types: ['card'],
@@ -203,6 +215,12 @@ async function createCheckoutSession(req, res) {
  * IMPORTANT: This endpoint needs raw body parsing for signature verification
  */
 async function handleWebhook(req, res) {
+  const stripeClient = getStripe();
+  if (!stripeClient) {
+    console.error('[Stripe] STRIPE_SECRET_KEY not configured');
+    return res.status(503).json({ error: 'Payment service temporarily unavailable' });
+  }
+
   const sig = req.headers['stripe-signature'];
   const endpointSecret = process.env.STRIPE_WEBHOOK_SECRET;
 
@@ -215,7 +233,7 @@ async function handleWebhook(req, res) {
 
   try {
     // Verify webhook signature
-    event = stripe.webhooks.constructEvent(req.rawBody || req.body, sig, endpointSecret);
+    event = stripeClient.webhooks.constructEvent(req.rawBody || req.body, sig, endpointSecret);
   } catch (err) {
     console.error('[Stripe] Webhook signature verification failed:', err.message);
     return res.status(400).json({ error: `Webhook Error: ${err.message}` });
@@ -276,7 +294,8 @@ async function handleCheckoutComplete(session) {
   }
 
   // Get subscription details
-  const subscription = await stripe.subscriptions.retrieve(session.subscription);
+  const stripeClient = getStripe();
+  const subscription = await stripeClient.subscriptions.retrieve(session.subscription);
 
   // Update user record with subscription info
   const { error } = await supabase
@@ -465,7 +484,8 @@ async function handleInvoicePaid(invoice) {
 
   console.log('[Stripe] Invoice paid (renewal):', invoice.id);
 
-  const subscription = await stripe.subscriptions.retrieve(invoice.subscription);
+  const stripeClient = getStripe();
+  const subscription = await stripeClient.subscriptions.retrieve(invoice.subscription);
 
   // Find user by subscription
   const { data: user, error: findError } = await supabase
@@ -574,6 +594,12 @@ async function getSubscriptionStatus(req, res) {
  * Body: { userId, returnUrl }
  */
 async function createPortalSession(req, res) {
+  const stripeClient = getStripe();
+  if (!stripeClient) {
+    console.error('[Stripe] STRIPE_SECRET_KEY not configured');
+    return res.status(503).json({ error: 'Payment service temporarily unavailable' });
+  }
+
   const { userId, returnUrl } = req.body;
 
   try {
@@ -589,7 +615,7 @@ async function createPortalSession(req, res) {
     }
 
     // Create portal session
-    const session = await stripe.billingPortal.sessions.create({
+    const session = await stripeClient.billingPortal.sessions.create({
       customer: user.stripe_customer_id,
       return_url: returnUrl || `${process.env.APP_URL || 'https://carcrashlawyerai.co.uk'}/dashboard.html`,
     });
@@ -612,6 +638,12 @@ async function createPortalSession(req, res) {
  * Body: { sessionId, userId }
  */
 async function verifySession(req, res) {
+  const stripeClient = getStripe();
+  if (!stripeClient) {
+    console.error('[Stripe] STRIPE_SECRET_KEY not configured');
+    return res.status(503).json({ error: 'Payment service temporarily unavailable' });
+  }
+
   const { sessionId, userId } = req.body;
 
   if (!sessionId) {
@@ -622,7 +654,7 @@ async function verifySession(req, res) {
     console.log('[Stripe] Verifying session:', sessionId);
 
     // Retrieve the session from Stripe
-    const session = await stripe.checkout.sessions.retrieve(sessionId, {
+    const session = await stripeClient.checkout.sessions.retrieve(sessionId, {
       expand: ['subscription', 'customer'],
     });
 
