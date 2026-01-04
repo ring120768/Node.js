@@ -228,25 +228,50 @@
   <script async src="https://js.stripe.com/v3/pricing-table.js"></script>
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
   <script>
-    // Wrap in IIFE to avoid conflicts with browser extensions
-    (function() {
-    // Supabase configuration
-    const SUPABASE_URL = 'https://swtkpfpyjjkkemmvkhmz.supabase.co';
-    const SUPABASE_ANON_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InN3dGtwZnB5amprZWltbXZraG16Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3MzY1MjM5NzAsImV4cCI6MjA1MjA5OTk3MH0.WT7ePP_e48LIjwWkL-LoYnE5s41Psrwa_4wB3L2S4TA';
+    // Wrap in async IIFE to avoid conflicts with browser extensions
+    (async function() {
+    const loadingState = document.getElementById('loadingState');
+    const notLoggedIn = document.getElementById('notLoggedIn');
+    const mainContent = document.getElementById('mainContent');
 
-    const supabaseClient = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
+    // Fetch Supabase config from server (same as signup-form.html)
+    // This ensures we use the same Supabase instance as the signup flow
+    let supabaseClient = null;
+    try {
+      const configResponse = await fetch('/api/config');
+      const config = await configResponse.json();
+      if (config.supabaseUrl && config.supabaseAnonKey) {
+        supabaseClient = window.supabase.createClient(config.supabaseUrl, config.supabaseAnonKey);
+        console.log('✅ Supabase client initialized with URL:', config.supabaseUrl);
+      } else {
+        throw new Error('Supabase config not available');
+      }
+    } catch (configError) {
+      console.error('❌ Failed to get Supabase config:', configError);
+      loadingState.style.display = 'none';
+      notLoggedIn.style.display = 'block';
+      return;
+    }
 
     async function init() {
-      const loadingState = document.getElementById('loadingState');
-      const notLoggedIn = document.getElementById('notLoggedIn');
-      const mainContent = document.getElementById('mainContent');
-
       try {
-        // Check if user is authenticated
-        const { data: { user }, error } = await supabaseClient.auth.getUser();
+        // First try getSession (faster, uses localStorage)
+        let { data: { session }, error: sessionError } = await supabaseClient.auth.getSession();
+        console.log('Session check result:', session ? 'Found session' : 'No session', sessionError?.message || '');
 
-        if (error || !user) {
-          console.log('No authenticated user');
+        // If no session in localStorage, try getUser (server call)
+        let user = session?.user;
+        if (!user) {
+          console.log('No session in localStorage, trying getUser...');
+          const { data: { user: serverUser }, error: userError } = await supabaseClient.auth.getUser();
+          user = serverUser;
+          if (userError) {
+            console.log('getUser error:', userError.message);
+          }
+        }
+
+        if (!user) {
+          console.log('No authenticated user found');
           loadingState.style.display = 'none';
           notLoggedIn.style.display = 'block';
           return;
@@ -290,8 +315,13 @@
       }
     }
 
-    // Initialize on page load
-    document.addEventListener('DOMContentLoaded', init);
+    // Initialize - we're already in an async IIFE, so just call init
+    // Wait for DOM if needed
+    if (document.readyState === 'loading') {
+      document.addEventListener('DOMContentLoaded', init);
+    } else {
+      init();
+    }
     })(); // End IIFE
   </script>
 </body>
