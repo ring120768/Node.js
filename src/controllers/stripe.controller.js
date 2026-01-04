@@ -25,22 +25,32 @@ const supabase = createClient(
   process.env.SUPABASE_SERVICE_ROLE_KEY
 );
 
-// Price IDs from Stripe Dashboard
-// TODO: Replace with your actual Stripe Price IDs after creating products
+// Price IDs from Stripe Dashboard - All 8 subscription tiers
 const PRICE_IDS = {
   standard: process.env.STRIPE_PRICE_STANDARD || 'price_REPLACE_WITH_STANDARD_PRICE_ID',
   premium: process.env.STRIPE_PRICE_PREMIUM || 'price_REPLACE_WITH_PREMIUM_PRICE_ID',
   family: process.env.STRIPE_PRICE_FAMILY || 'price_REPLACE_WITH_FAMILY_PRICE_ID',
-  business: process.env.STRIPE_PRICE_BUSINESS || 'price_REPLACE_WITH_BUSINESS_PRICE_ID',
+  business_10: process.env.STRIPE_PRICE_BUSINESS_10 || 'price_REPLACE_WITH_BUSINESS_10_PRICE_ID',
+  business_25: process.env.STRIPE_PRICE_BUSINESS_25 || 'price_REPLACE_WITH_BUSINESS_25_PRICE_ID',
+  business_50: process.env.STRIPE_PRICE_BUSINESS_50 || 'price_REPLACE_WITH_BUSINESS_50_PRICE_ID',
+  business_75: process.env.STRIPE_PRICE_BUSINESS_75 || 'price_REPLACE_WITH_BUSINESS_75_PRICE_ID',
+  business_100: process.env.STRIPE_PRICE_BUSINESS_100 || 'price_REPLACE_WITH_BUSINESS_100_PRICE_ID',
 };
 
-// Tier display names
+// Tier display names and pricing (for reference)
 const TIER_NAMES = {
-  standard: 'Standard',
-  premium: 'Premium',
-  family: 'Family',
-  business: 'Business',
+  standard: 'Standard (£11.99/year)',
+  premium: 'Premium (£19.99/year)',
+  family: 'Family (£40/year - up to 4 members)',
+  business_10: 'Business 10 (£100/year - up to 10 members)',
+  business_25: 'Business 25 (£210/year - up to 25 members)',
+  business_50: 'Business 50 (£420/year - up to 50 members)',
+  business_75: 'Business 75 (£630/year - up to 75 members)',
+  business_100: 'Business 100 (£800/year - up to 100 members)',
 };
+
+// Import groups controller for group creation
+const groupsController = require('./groups.controller');
 
 /**
  * Create Stripe Checkout Session
@@ -268,7 +278,7 @@ async function handleCheckoutComplete(session) {
   // Get subscription details
   const subscription = await stripe.subscriptions.retrieve(session.subscription);
 
-  // Update user record
+  // Update user record with subscription info
   const { error } = await supabase
     .from('user_signup')
     .update({
@@ -287,6 +297,24 @@ async function handleCheckoutComplete(session) {
 
   console.log('[Stripe] User subscription activated:', userId, 'tier:', tier);
 
+  // Check if this tier requires a subscription group (family or business plans)
+  const tierConfig = groupsController.TIER_CONFIG[tier];
+
+  if (tierConfig && tierConfig.type !== 'individual') {
+    try {
+      // Create subscription group for family/business plans
+      const group = await groupsController.createGroup(userId, tier, subscription.id);
+
+      if (group) {
+        console.log('[Stripe] Subscription group created:', group.id, 'type:', tierConfig.type);
+      }
+    } catch (groupError) {
+      console.error('[Stripe] Failed to create subscription group:', groupError);
+      // Don't fail the checkout - subscription is still valid
+      // User can manage group later
+    }
+  }
+
   // Send welcome email
   try {
     const emailService = require('../../lib/emailService');
@@ -298,11 +326,17 @@ async function handleCheckoutComplete(session) {
       .single();
 
     if (user) {
+      // Customise message for group plans
+      const isGroupPlan = tierConfig && tierConfig.type !== 'individual';
+      const tierDisplayName = TIER_NAMES[tier] || tier;
+
       await emailService.sendSubscriptionWelcome(user.email, {
         userName: user.driver_name,
-        tier: TIER_NAMES[tier] || tier,
+        tier: tierDisplayName,
         subscriptionStartDate: new Date(),
         subscriptionEndDate: new Date(subscription.current_period_end * 1000),
+        isGroupPlan,
+        maxMembers: isGroupPlan ? tierConfig.maxMembers : 1,
       });
     }
   } catch (emailError) {
@@ -397,6 +431,17 @@ async function handleSubscriptionDeleted(subscription) {
 
   if (error) {
     console.error('[Stripe] Failed to update cancelled subscription:', error);
+  }
+
+  // Update group status if this was a group subscription
+  try {
+    await groupsController.updateGroupSubscriptionStatus(
+      subscription.id,
+      'cancelled',
+      new Date(subscription.current_period_end * 1000).toISOString()
+    );
+  } catch (groupError) {
+    console.error('[Stripe] Failed to update group status:', groupError);
   }
 
   // Send cancellation email
@@ -557,9 +602,87 @@ async function createPortalSession(req, res) {
   }
 }
 
+/**
+ * Verify Checkout Session
+ * POST /api/stripe/verify-session
+ *
+ * Called by payment-success page to verify the checkout was successful.
+ * The webhook should have already processed it, but this provides confirmation.
+ *
+ * Body: { sessionId, userId }
+ */
+async function verifySession(req, res) {
+  const { sessionId, userId } = req.body;
+
+  if (!sessionId) {
+    return res.status(400).json({ error: 'sessionId is required' });
+  }
+
+  try {
+    console.log('[Stripe] Verifying session:', sessionId);
+
+    // Retrieve the session from Stripe
+    const session = await stripe.checkout.sessions.retrieve(sessionId, {
+      expand: ['subscription', 'customer'],
+    });
+
+    if (!session) {
+      return res.status(404).json({ error: 'Session not found' });
+    }
+
+    // Check payment status
+    if (session.payment_status !== 'paid') {
+      console.log('[Stripe] Session not paid:', session.payment_status);
+      return res.status(400).json({
+        error: 'Payment not completed',
+        status: session.payment_status,
+      });
+    }
+
+    // Get subscription details
+    const subscription = session.subscription;
+    const customerId = session.customer?.id || session.customer;
+
+    console.log('[Stripe] Session verified:', {
+      sessionId,
+      customerId,
+      subscriptionId: subscription?.id || subscription,
+      paymentStatus: session.payment_status,
+    });
+
+    // If userId is provided, ensure the database is updated
+    if (userId) {
+      const { data: userData, error: userError } = await supabase
+        .from('user_signup')
+        .select('subscription_status, subscription_tier')
+        .eq('create_user_id', userId)
+        .single();
+
+      // If subscription isn't active yet, the webhook might not have processed
+      // Return success anyway - the webhook will update it shortly
+      if (userData && userData.subscription_status !== 'active') {
+        console.log('[Stripe] User subscription not yet active, webhook may be pending');
+      }
+    }
+
+    res.json({
+      success: true,
+      verified: true,
+      paymentStatus: session.payment_status,
+      subscriptionId: subscription?.id || subscription,
+      customerId: customerId,
+    });
+
+  } catch (error) {
+    console.error('[Stripe] Session verification error:', error);
+    res.status(500).json({ error: 'Failed to verify session' });
+  }
+}
+
 module.exports = {
   createCheckoutSession,
   handleWebhook,
   getSubscriptionStatus,
   createPortalSession,
+  verifySession,
 };

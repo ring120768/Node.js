@@ -247,6 +247,48 @@ async function processJob(job) {
     // Generate the PDF
     const result = await pdfController.generateUserPDF(create_user_id, 'queue-retry', job.incident_id || null);
 
+    if (result?.already_processing) {
+      const nextRetry = new Date(Date.now() + 5 * 60 * 1000);
+
+      await supabase
+        .from('pdf_generation_queue')
+        .update({
+          status: 'pending',
+          attempt_count: attempt_count,
+          last_error: 'PDF send already in progress',
+          next_retry_at: nextRetry.toISOString()
+        })
+        .eq('id', id);
+
+      logger.info('📥 PDF Queue: Job deferred (send already in progress)', {
+        jobId: id,
+        createUserId: create_user_id,
+        nextRetryAt: nextRetry.toISOString()
+      });
+
+      return;
+    }
+
+    if (result?.already_sent) {
+      await supabase
+        .from('pdf_generation_queue')
+        .update({
+          status: 'completed',
+          completed_at: new Date().toISOString(),
+          completed_form_id: result.form_id || null,
+          last_error: null
+        })
+        .eq('id', id);
+
+      logger.info('✅ PDF Queue: Job completed (already sent)', {
+        jobId: id,
+        createUserId: create_user_id,
+        formId: result.form_id || 'unknown'
+      });
+
+      return;
+    }
+
     // Mark as completed
     await supabase
       .from('pdf_generation_queue')

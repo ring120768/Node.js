@@ -16,7 +16,7 @@ const supabase = createClient(
 );
 
 // User IDs from the incident
-const SARAH_EMAIL = 'sarahlgibert70@gmail.com';
+const SARAH_EMAIL = 'sarahlgilbert70@gmail.com';  // Note: sarahLgilbert (with L)
 const IAN_EMAIL = 'ian.ring@sky.com';
 
 async function verifyContamination() {
@@ -31,14 +31,13 @@ async function verifyContamination() {
       .select(`
         create_user_id,
         email,
-        emergency_contact_name,
-        emergency_contact_phone,
-        emergency_contact_relationship,
-        policy_holder_name,
-        policy_holder_relationship,
-        policy_holder_address_line1,
-        policy_holder_postcode,
-        insurer_name
+        emergency_contact,
+        emergency_email,
+        emergency_company,
+        policy_holder,
+        insurance_company,
+        street_address,
+        postcode
       `)
       .eq('email', IAN_EMAIL)
       .single();
@@ -49,41 +48,48 @@ async function verifyContamination() {
     }
 
     console.log(`✅ Ian's record found (${ianData.create_user_id})`);
-    console.log('   Emergency Contact:', ianData.emergency_contact_name || 'NULL');
-    console.log('   Policy Holder:', ianData.policy_holder_name || 'NULL');
-    console.log('   Insurer:', ianData.insurer_name || 'NULL');
+    console.log('   Emergency Contact:', ianData.emergency_contact || 'NULL');
+    console.log('   Policy Holder:', ianData.policy_holder || 'NULL');
+    console.log('   Insurance Company:', ianData.insurance_company || 'NULL');
     console.log('');
 
-    // Step 2: Fetch Sarah's data
+    // Step 2: Fetch Sarah's data (most recent record if multiple exist)
     console.log('Step 2: Fetching Sarah\'s user_signup data...');
-    const { data: sarahData, error: sarahError } = await supabase
+    const { data: sarahRecords, error: sarahError } = await supabase
       .from('user_signup')
       .select(`
         create_user_id,
         email,
-        emergency_contact_name,
-        emergency_contact_phone,
-        emergency_contact_relationship,
-        policy_holder_name,
-        policy_holder_relationship,
-        policy_holder_address_line1,
-        policy_holder_postcode,
-        insurer_name,
+        emergency_contact,
+        emergency_email,
+        emergency_company,
+        policy_holder,
+        insurance_company,
+        street_address,
+        postcode,
         created_at
       `)
       .eq('email', SARAH_EMAIL)
-      .single();
+      .order('created_at', { ascending: false });
 
     if (sarahError) {
       console.error('❌ Error fetching Sarah\'s data:', sarahError.message);
       process.exit(1);
     }
 
-    console.log(`✅ Sarah's record found (${sarahData.create_user_id})`);
+    if (!sarahRecords || sarahRecords.length === 0) {
+      console.error('❌ No records found for Sarah');
+      process.exit(1);
+    }
+
+    console.log(`📋 Found ${sarahRecords.length} record(s) for Sarah (analyzing most recent)`);
+    const sarahData = sarahRecords[0]; // Most recent record
+
+    console.log(`✅ Sarah's most recent record found (${sarahData.create_user_id})`);
     console.log(`   Created: ${new Date(sarahData.created_at).toLocaleString('en-GB')}`);
-    console.log('   Emergency Contact:', sarahData.emergency_contact_name || 'NULL');
-    console.log('   Policy Holder:', sarahData.policy_holder_name || 'NULL');
-    console.log('   Insurer:', sarahData.insurer_name || 'NULL');
+    console.log('   Emergency Contact:', sarahData.emergency_contact || 'NULL');
+    console.log('   Policy Holder:', sarahData.policy_holder || 'NULL');
+    console.log('   Insurance Company:', sarahData.insurance_company || 'NULL');
     console.log('');
 
     // Step 3: Compare for contamination
@@ -92,59 +98,68 @@ async function verifyContamination() {
     const contaminations = [];
 
     // Check emergency contact fields
-    if (sarahData.emergency_contact_name &&
-        sarahData.emergency_contact_name === ianData.emergency_contact_name) {
+    if (sarahData.emergency_contact &&
+        sarahData.emergency_contact === ianData.emergency_contact) {
       contaminations.push({
-        field: 'emergency_contact_name',
-        sarahValue: sarahData.emergency_contact_name,
-        ianValue: ianData.emergency_contact_name
+        field: 'emergency_contact',
+        sarahValue: sarahData.emergency_contact,
+        ianValue: ianData.emergency_contact
       });
     }
 
-    if (sarahData.emergency_contact_phone &&
-        sarahData.emergency_contact_phone === ianData.emergency_contact_phone) {
+    if (sarahData.emergency_email &&
+        sarahData.emergency_email === ianData.emergency_email) {
       contaminations.push({
-        field: 'emergency_contact_phone',
-        sarahValue: sarahData.emergency_contact_phone,
-        ianValue: ianData.emergency_contact_phone
+        field: 'emergency_email',
+        sarahValue: sarahData.emergency_email,
+        ianValue: ianData.emergency_email
+      });
+    }
+
+    if (sarahData.emergency_company &&
+        sarahData.emergency_company === ianData.emergency_company) {
+      contaminations.push({
+        field: 'emergency_company',
+        sarahValue: sarahData.emergency_company,
+        ianValue: ianData.emergency_company
       });
     }
 
     // Check policy holder fields
-    if (sarahData.policy_holder_name &&
-        sarahData.policy_holder_name === ianData.policy_holder_name) {
+    if (sarahData.policy_holder &&
+        sarahData.policy_holder === ianData.policy_holder) {
       contaminations.push({
-        field: 'policy_holder_name',
-        sarahValue: sarahData.policy_holder_name,
-        ianValue: ianData.policy_holder_name
+        field: 'policy_holder',
+        sarahValue: sarahData.policy_holder,
+        ianValue: ianData.policy_holder
       });
     }
 
-    if (sarahData.policy_holder_address_line1 &&
-        sarahData.policy_holder_address_line1 === ianData.policy_holder_address_line1) {
+    if (sarahData.street_address &&
+        sarahData.street_address === ianData.street_address) {
       contaminations.push({
-        field: 'policy_holder_address_line1',
-        sarahValue: sarahData.policy_holder_address_line1,
-        ianValue: ianData.policy_holder_address_line1
+        field: 'street_address',
+        sarahValue: sarahData.street_address,
+        ianValue: ianData.street_address
       });
     }
 
-    if (sarahData.policy_holder_postcode &&
-        sarahData.policy_holder_postcode === ianData.policy_holder_postcode) {
+    if (sarahData.postcode &&
+        sarahData.postcode === ianData.postcode) {
       contaminations.push({
-        field: 'policy_holder_postcode',
-        sarahValue: sarahData.policy_holder_postcode,
-        ianValue: ianData.policy_holder_postcode
+        field: 'postcode',
+        sarahValue: sarahData.postcode,
+        ianValue: ianData.postcode
       });
     }
 
-    // Check insurer
-    if (sarahData.insurer_name &&
-        sarahData.insurer_name === ianData.insurer_name) {
+    // Check insurance
+    if (sarahData.insurance_company &&
+        sarahData.insurance_company === ianData.insurance_company) {
       contaminations.push({
-        field: 'insurer_name',
-        sarahValue: sarahData.insurer_name,
-        ianValue: ianData.insurer_name
+        field: 'insurance_company',
+        sarahValue: sarahData.insurance_company,
+        ianValue: ianData.insurance_company
       });
     }
 

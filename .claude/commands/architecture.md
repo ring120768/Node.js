@@ -1,153 +1,41 @@
 ---
-description: Explain project architecture and file structure
+description: View project architecture documentation
 ---
 
-# Project Architecture Overview
+# Project Architecture
 
-Explain the Car Crash Lawyer AI project structure and how components interact.
+📚 **Comprehensive architecture documentation is located at:**
 
-## Project Structure
+**[docs/ARCHITECTURE.md](../../docs/ARCHITECTURE.md)**
 
-Show the directory tree focusing on key files and folders:
+This is the single source of truth for:
 
-```
-/Node.js/
-├── .claude/                    # Claude Code configuration
-│   ├── claude.md              # Global rules
-│   └── commands/              # Slash commands
-├── src/
-│   ├── services/              # Business logic services
-│   │   ├── adobePdfFormFillerService.js  # PDF form filling (main)
-│   │   ├── adobePdfService.js            # Adobe PDF operations
-│   │   └── gdprService.js                # GDPR compliance
-│   ├── controllers/           # API endpoints
-│   │   ├── pdf.controller.js             # PDF generation API
-│   │   └── webhook.controller.js         # Typeform webhooks
-│   ├── middleware/            # Express middleware
-│   ├── utils/                 # Utility functions
-│   └── routes/                # API routes
-├── lib/
-│   ├── dataFetcher.js        # Fetch data from Supabase
-│   └── generators/           # Email generators
-├── public/                    # Frontend files (served statically)
-│   ├── index.html            # Landing page
-│   ├── transcription-status.html  # Audio recording UI
-│   └── payment-success.html  # Post-signup page
-├── pdf-templates/            # PDF form templates
-│   └── Car-Crash-Lawyer-AI-incident-report-main.pdf
-├── credentials/              # Adobe credentials (not in Git)
-│   └── pdfservices-api-credentials.json
-├── test-output/              # Generated test files (not in Git)
-└── Documentation (.md files in root)
-```
+- System overview and data flow diagrams
+- PDF generation pipeline (pdf-lib + Puppeteer hybrid)
+- Email delivery with Resend API
+- Queue systems (PDF retry, Email retry)
+- Database schema and key tables
+- Railway deployment configuration
+- Legacy code to ignore
+- Security and GDPR compliance
 
-## Data Flow - PDF Generation
+## Quick Reference
 
-Explain the complete flow from user submission to PDF delivery:
+### Key Files
+| File | Purpose |
+|------|---------|
+| `src/controllers/pdf.controller.js` | PDF generation & email delivery |
+| `src/services/adobePdfFormFillerService.js` | Form filling (uses pdf-lib, NOT Adobe) |
+| `lib/dataFetcher.js` | Aggregates data from 8+ tables |
+| `lib/emailService.js` | Resend email API integration |
 
-1. **User Submits Form**
-   - Via Typeform or web interface
-   - Webhook triggers on submission
+### Legacy Code (IGNORE)
+- Anything referencing Typeform
+- Anything referencing Zapier
+- `incident_images` table (deprecated)
+- `webhook.controller.js` patterns
 
-2. **Data Storage**
-   - Webhook handler stores data in Supabase tables:
-     - `user_signup` - Personal info, vehicle, insurance
-     - `incident_reports` - Accident details
-     - `incident_images` - Photo uploads
+---
 
-3. **Audio Transcription** (optional)
-   - User records statement in `transcription-status.html`
-   - Audio sent to OpenAI Whisper API
-   - Transcription stored in `ai_transcription` table
-
-4. **AI Analysis**
-   - AI analyzes all collected data
-   - Generates summary stored in `ai_summary` table
-
-5. **PDF Generation** (POST /api/pdf/generate)
-   ```
-   Controller (pdf.controller.js)
-       ↓
-   Fetch All Data (lib/dataFetcher.js)
-       ↓
-   Adobe PDF Form Filler (src/services/adobePdfFormFillerService.js)
-       ↓ (fills 213 fields)
-   Compress PDF (adobePdfService.js)
-       ↓
-   Store in Database (completed_incident_forms table)
-       ↓
-   Store in Supabase Storage
-       ↓
-   Email to User and Accounts
-   ```
-
-## Key Integration Points
-
-### Adobe PDF Services
-- **Service**: `src/services/adobePdfFormFillerService.js`
-- **Purpose**: Fill the 18-page legal PDF form from Supabase data
-- **Replaces**: Zapier + PDFco workflow (saves £480/year)
-- **Credentials**: `/credentials/pdfservices-api-credentials.json`
-- **Template**: `/pdf-templates/Car-Crash-Lawyer-AI-incident-report-main.pdf`
-
-### Supabase Integration
-- **Purpose**: Database, authentication, storage
-- **Client**: Initialized in each controller/service
-- **Auth**: Uses service role key for server operations
-- **Storage**: `incident-images-secure` bucket for uploaded files
-
-### Typeform Integration
-- **Webhook Endpoint**: `/api/webhook/typeform`
-- **Handler**: `src/controllers/webhook.controller.js`
-- **Validates**: HMAC signature for security
-- **Stores**: Data in `user_signup` table
-
-## Critical Database Tables
-
-| Table | Purpose | Key Fields |
-|-------|---------|------------|
-| `user_signup` | Personal info, vehicle, insurance | driver_name, email, license_plate, insurance_company |
-| `incident_reports` | Accident details | accident_date, accident_location, weather, injuries |
-| `incident_images` | Uploaded photos | image_type, file_name, file_url |
-| `dvla_vehicle_info_new` | DVLA vehicle checks | registration_number, make, model, mot_status |
-| `ai_transcription` | Transcribed statements | transcription, created_at |
-| `ai_summary` | AI-generated summaries | summary, created_at |
-| `completed_incident_forms` | Final PDF reports | pdf_url, pdf_base64, sent_to_user |
-
-## API Endpoints
-
-| Method | Endpoint | Purpose | Controller |
-|--------|----------|---------|------------|
-| POST | `/api/pdf/generate` | Generate PDF report | pdf.controller.js |
-| GET | `/api/pdf/status/:userId` | Check PDF generation status | pdf.controller.js |
-| GET | `/api/pdf/download/:userId` | Download completed PDF | pdf.controller.js |
-| POST | `/api/webhook/typeform` | Receive Typeform submissions | webhook.controller.js |
-
-## Security Layers
-
-1. **Environment Variables** - All secrets in `.env` (never committed)
-2. **RLS Policies** - Supabase Row Level Security on all tables
-3. **Input Validation** - All user inputs validated before processing
-4. **CORS** - Configured for specific origins only
-5. **Webhook Signatures** - HMAC validation for Typeform webhooks
-6. **GDPR Logging** - All user data access logged via `gdprService.js`
-
-## Deployment Flow
-
-```
-Development → Feature Branch → PR → Develop Branch → Testing → Main Branch → Production
-```
-
-Current branch strategy:
-- `main` - Production code
-- `develop` - Integration branch
-- `feat/*` - Feature branches
-- `fix/*` - Bug fix branches
-
-## Next: Understanding the Code
-
-To dive deeper into any component:
-- Read global rules: `.claude/claude.md`
-- Check recent work: Run `/recent` command
-- Test services: Run `/test-all` command
-- See implementation details: Read `IMPLEMENTATION_SUMMARY.md`
+**Last Updated:** January 2026
+**See:** [docs/ARCHITECTURE.md](../../docs/ARCHITECTURE.md) for full details

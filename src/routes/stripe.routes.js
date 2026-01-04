@@ -49,4 +49,16 @@ router.get('/subscription/:userId', stripeController.getSubscriptionStatus);
  */
 router.post('/portal', stripeController.createPortalSession);
 
+/**
+ * POST /api/stripe/verify-session
+ * Verify a completed Checkout session
+ *
+ * Called by payment-success page after redirect from Stripe.
+ * The webhook should have already processed it, but this confirms for the UI.
+ *
+ * Body: { sessionId, userId? }
+ * Returns: { success, verified, paymentStatus, subscriptionId, customerId }
+ */
+router.post('/verify-session', stripeController.verifySession);
+
 module.exports = router;

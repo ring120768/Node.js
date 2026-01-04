@@ -38,3 +38,10 @@ supabase/.temp/
 
 # Quarantine folder (legacy/archived code)
 _quarantine/
+*.keystore
+
+# Android build outputs
+*.apk
+*.aab
+android/app/build/
+android/.gradle/

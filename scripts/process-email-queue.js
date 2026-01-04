@@ -37,10 +37,16 @@ async function main() {
     process.exit(1);
   }
 
-  if (!process.env.SMTP_USER || !process.env.SMTP_PASS) {
-    logger.warn('SMTP not configured - email retry queue will not process');
+  // Check for either SMTP or Resend configuration
+  const hasSmtp = process.env.SMTP_USER && process.env.SMTP_PASS;
+  const hasResend = process.env.RESEND_API_KEY;
+
+  if (!hasSmtp && !hasResend) {
+    logger.warn('Email not configured (need SMTP or RESEND_API_KEY) - email retry queue will not process');
     process.exit(0);
   }
+
+  logger.info(`📨 Email provider: ${hasResend ? 'Resend' : 'SMTP'}`);
 
   try {
     const { createClient } = require('@supabase/supabase-js');
