@@ -2842,7 +2842,21 @@
           // Clear draft
           localStorage.removeItem('ccla_signup_draft');
 
-          // User is already authenticated (from Page 1) - redirect to plan selection
+          // Set the session in Supabase client to persist authentication
+          if (result.user && result.user.session && supabaseClient) {
+            try {
+              await supabaseClient.auth.setSession({
+                access_token: result.user.session.access_token,
+                refresh_token: result.user.session.refresh_token
+              });
+              console.log('✅ Session set in Supabase client');
+            } catch (sessionError) {
+              console.error('⚠️ Failed to set session:', sessionError);
+              // Continue anyway - cookies are set on server
+            }
+          }
+
+          // User is now authenticated - redirect to plan selection
           console.log('✅ Signup complete, redirecting to plan selection...');
           window.location.href = '/select-plan.html';
         } else {
