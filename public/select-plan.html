@@ -234,12 +234,17 @@
     const notLoggedIn = document.getElementById('notLoggedIn');
     const mainContent = document.getElementById('mainContent');
 
-    // Fetch Supabase config from server (same as signup-form.html)
-    // This ensures we use the same Supabase instance as the signup flow
+    // Fetch config from server (includes Supabase config and feature flags)
     let supabaseClient = null;
+    let signupFlowV2 = false;
     try {
       const configResponse = await fetch('/api/config');
       const config = await configResponse.json();
+
+      // Store feature flag
+      signupFlowV2 = config.signupFlowV2 === true;
+      console.log(`🔄 Signup flow: ${signupFlowV2 ? 'V2 (auth after payment)' : 'V1 (auth on Page 1)'}`);
+
       if (config.supabaseUrl && config.supabaseAnonKey) {
         supabaseClient = window.supabase.createClient(config.supabaseUrl, config.supabaseAnonKey);
         console.log('✅ Supabase client initialized with URL:', config.supabaseUrl);
@@ -247,7 +252,7 @@
         throw new Error('Supabase config not available');
       }
     } catch (configError) {
-      console.error('❌ Failed to get Supabase config:', configError);
+      console.error('❌ Failed to get config:', configError);
       loadingState.style.display = 'none';
       notLoggedIn.style.display = 'block';
       return;
@@ -255,6 +260,72 @@
 
     async function init() {
       try {
+        // Get URL parameters (used by v2 flow)
+        const urlParams = new URLSearchParams(window.location.search);
+        const signupId = urlParams.get('signup_id');
+        const signupEmail = urlParams.get('email') ? decodeURIComponent(urlParams.get('email')) : null;
+
+        console.log('URL params:', { signupId, signupEmail });
+
+        // ===== SIGNUP FLOW V2: No auth required =====
+        if (signupFlowV2) {
+          console.log('🔄 V2 Flow: Checking for signup_id in URL params');
+
+          if (!signupId) {
+            console.log('❌ V2 Flow: No signup_id in URL - redirect to signup form');
+            // No signup in progress - redirect to start signup
+            window.location.href = '/signup-form.html';
+            return;
+          }
+
+          console.log('✅ V2 Flow: Found signup_id:', signupId);
+
+          // Update banner text for v2 flow
+          const successBanner = document.querySelector('.success-banner .text');
+          if (successBanner) {
+            successBanner.textContent = 'Almost done! Choose your subscription plan below to complete your registration.';
+          }
+
+          // Show main content (no auth check needed)
+          loadingState.style.display = 'none';
+          mainContent.style.display = 'block';
+
+          // Display email (from URL or placeholder)
+          const userEmailEl = document.getElementById('userEmail');
+          if (userEmailEl) {
+            userEmailEl.textContent = signupEmail || 'Your signup email';
+          }
+
+          // Update user-info text for v2 flow
+          const userInfo = document.querySelector('.user-info');
+          if (userInfo && signupEmail) {
+            userInfo.innerHTML = `Completing signup for: <strong>${signupEmail}</strong>`;
+          } else if (userInfo) {
+            userInfo.style.display = 'none';
+          }
+
+          // Configure Stripe pricing table for v2 flow
+          const pricingTable = document.getElementById('stripePricingTable');
+          if (pricingTable) {
+            // Set client-reference-id to temp signup ID (will be used in webhook)
+            pricingTable.setAttribute('client-reference-id', signupId);
+            console.log('📋 Set client-reference-id to signup_id:', signupId);
+
+            // Pre-fill customer email in Stripe checkout
+            if (signupEmail) {
+              pricingTable.setAttribute('customer-email', signupEmail);
+              console.log('📧 Set customer-email:', signupEmail);
+            }
+          }
+
+          console.log('✅ V2 Page initialized for signup:', signupId);
+          return; // Exit here for V2 flow
+        }
+        // ===== END SIGNUP FLOW V2 =====
+
+        // ===== SIGNUP FLOW V1: Requires authentication =====
+        console.log('🔄 V1 Flow: Checking authentication');
+
         // First try getSession (faster, uses localStorage)
         let { data: { session }, error: sessionError } = await supabaseClient.auth.getSession();
         console.log('Session check result:', session ? 'Found session' : 'No session', sessionError?.message || '');
@@ -306,7 +377,8 @@
           pricingTable.setAttribute('client-reference-id', user.id);
         }
 
-        console.log('Page initialized for user:', user.id);
+        console.log('✅ V1 Page initialized for user:', user.id);
+        // ===== END SIGNUP FLOW V1 =====
 
       } catch (err) {
         console.error('Initialization error:', err);

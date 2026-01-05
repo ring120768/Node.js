@@ -48,4 +48,15 @@ router.get('/nonce', optionalAuth, authController.generateNonce);
  */
 router.post('/set-session', authController.setSessionCookies);
 
+/**
+ * Login after payment (Signup Flow v2)
+ * POST /api/auth/login-after-payment
+ *
+ * After Stripe webhook creates auth account, this endpoint
+ * generates a session for auto-login on payment-success page.
+ *
+ * Body: { sessionId } or { email }
+ */
+router.post('/login-after-payment', authController.loginAfterPayment);
+
 module.exports = router;

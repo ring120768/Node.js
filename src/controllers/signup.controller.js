@@ -10,6 +10,10 @@ const { createClient } = require('@supabase/supabase-js');
 const config = require('../config');
 const ImageProcessorV2 = require('../services/imageProcessorV2');
 const gdprService = require('../services/gdprService');
+const { encryptPassword } = require('../../lib/encryption');
+
+// Feature flag for signup flow v2 (auth after payment)
+const isSignupFlowV2 = () => process.env.SIGNUP_FLOW_V2 === 'true';
 
 // Note: Images are now uploaded immediately when selected (temp upload pattern)
 // No multer needed - we receive JSON with temp paths instead of multipart/form-data
@@ -55,9 +59,11 @@ async function submitSignup(req, res) {
     });
 
     // Validate required fields
-    // Note: password NOT required - user already authenticated on Page 1
-    const requiredFields = [
-      'auth_user_id', // From frontend - user authenticated before form submission
+    // Flow v1: auth_user_id required (auth created on Page 1)
+    // Flow v2: temp_signup_id + pending_password required (auth created after payment)
+    const useV2Flow = isSignupFlowV2();
+
+    const baseRequiredFields = [
       'first_name',
       'last_name',
       'email',
@@ -79,6 +85,11 @@ async function submitSignup(req, res) {
       'gdpr_consent'
     ];
 
+    // Add flow-specific required fields
+    const requiredFields = useV2Flow
+      ? [...baseRequiredFields, 'temp_signup_id', 'pending_password'] // v2: temp ID + password for later auth
+      : [...baseRequiredFields, 'auth_user_id']; // v1: auth already created
+
     const missing = requiredFields.filter(field => !formData[field]);
     if (missing.length > 0) {
       logger.warn('Missing required fields:', missing);
@@ -87,6 +98,8 @@ async function submitSignup(req, res) {
         fields: missing
       });
     }
+
+    logger.info(`📋 Using signup flow: ${useV2Flow ? 'v2 (auth after payment)' : 'v1 (auth on Page 1)'}`)
 
     // Validate GDPR consent
     if (formData.gdpr_consent !== 'true' && formData.gdpr_consent !== true) {
@@ -118,9 +131,11 @@ async function submitSignup(req, res) {
     // Track if we need to send reminder email (no hard validation - images are optional)
     const needsImageReminder = missingImages.length > 0;
 
-    // Get auth user ID from frontend (user already authenticated on Page 1)
-    const userId = formData.auth_user_id;
-    logger.info('✅ Using authenticated user ID:', userId);
+    // Get user ID based on flow version
+    // v1: auth_user_id (real Supabase auth user ID)
+    // v2: temp_signup_id (temporary UUID, will become create_user_id until auth is created after payment)
+    const userId = useV2Flow ? formData.temp_signup_id : formData.auth_user_id;
+    logger.info(`✅ Using ${useV2Flow ? 'temporary signup' : 'authenticated user'} ID:`, userId);
 
     // Initialize Supabase client
     const supabase = createClient(config.supabase.url, config.supabase.serviceKey);
@@ -171,7 +186,11 @@ async function submitSignup(req, res) {
       images_status: uploadedImages.length === 5 ? 'complete' : 'partial', // Track image upload status
       missing_images: missingImages.length > 0 ? missingImages : null, // Store which images are missing
       created_at: new Date().toISOString(),
-      updated_at: new Date().toISOString()
+      updated_at: new Date().toISOString(),
+      // Signup flow v2 fields (auth after payment)
+      // These are only set when using the new flow; null for v1 flow
+      pending_password: useV2Flow ? encryptPassword(formData.pending_password) : null,
+      auth_pending: useV2Flow ? true : false // v2: true until Stripe webhook creates auth account
     };
 
     const { data: userRecord, error: userError } = await supabase
@@ -430,19 +449,33 @@ async function submitSignup(req, res) {
     }
 
     // ===== 5. Return success response =====
-    // Note: Auth user already created on Page 1 - no auth creation needed here
     logger.success('🎉 User signup completed successfully:', userId);
 
-    return res.status(201).json({
+    // Build response based on flow version
+    const response = {
       success: true,
       message: 'Signup completed successfully',
       userId: userId,
       email: formData.email,
       images: imageResults,
       needsImageUpload: needsImageReminder, // Tell frontend if reminder was sent
-      missingImages: missingImages
-      // Note: User already authenticated - no auto-login needed
-    });
+      missingImages: missingImages,
+      // Flow-specific response fields
+      flowVersion: useV2Flow ? 'v2' : 'v1'
+    };
+
+    // v2: Include temp_signup_id for Stripe client-reference-id
+    if (useV2Flow) {
+      response.tempSignupId = userId; // This is the temp UUID to pass to Stripe
+      response.redirectTo = `/select-plan.html?signup_id=${userId}&email=${encodeURIComponent(formData.email)}`;
+      logger.info('📍 v2 flow: User should be redirected to select-plan with temp ID');
+    } else {
+      // v1: User already authenticated
+      response.redirectTo = '/select-plan.html'; // Normal auth flow
+      logger.info('📍 v1 flow: User already authenticated, normal redirect');
+    }
+
+    return res.status(201).json(response);
 
   } catch (error) {
     logger.error('❌ Signup error:', error);

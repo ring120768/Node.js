@@ -13,6 +13,11 @@
 
 const Stripe = require('stripe');
 const { createClient } = require('@supabase/supabase-js');
+const { decryptPassword } = require('../../lib/encryption');
+const { supabaseAdmin } = require('../../lib/supabaseAdmin');
+
+// Feature flag for signup flow v2 (auth after payment)
+const isSignupFlowV2 = () => process.env.SIGNUP_FLOW_V2 === 'true';
 
 // Lazy-initialize Stripe to prevent crash when API key is missing
 let stripe = null;
@@ -282,39 +287,135 @@ async function handleWebhook(req, res) {
 
 /**
  * Handle checkout.session.completed
+ *
+ * Supports two flows:
+ * - v1: userId is a real Supabase auth UUID (user already authenticated)
+ * - v2: userId is a temp_signup_id (auth account created here after payment)
  */
 async function handleCheckoutComplete(session) {
   console.log('[Stripe] Checkout complete:', session.id);
 
-  const { userId, tier } = session.metadata;
+  // For Stripe Pricing Table, the user ID is in client_reference_id
+  // For programmatic checkout, it's in metadata.userId
+  let tempOrUserId = session.client_reference_id || session.metadata?.userId;
+  const tier = session.metadata?.tier;
 
-  if (!userId) {
-    console.error('[Stripe] No userId in session metadata');
+  if (!tempOrUserId) {
+    console.error('[Stripe] No userId in session (checked client_reference_id and metadata)');
     return;
   }
 
-  // Get subscription details
+  console.log('[Stripe] Processing checkout for ID:', tempOrUserId, 'tier:', tier);
+
+  // Look up the signup record
+  const { data: signup, error: lookupError } = await supabase
+    .from('user_signup')
+    .select('email, name, surname, pending_password, auth_pending, create_user_id')
+    .eq('create_user_id', tempOrUserId)
+    .single();
+
+  if (lookupError || !signup) {
+    console.error('[Stripe] No signup record found for ID:', tempOrUserId, lookupError);
+    return;
+  }
+
+  // Determine which flow we're in
+  // auth_pending = true means v2 flow (need to create auth account)
+  const needsAuthCreation = signup.auth_pending === true && signup.pending_password;
+  let finalUserId = tempOrUserId;
+
+  // ===== V2 FLOW: Create auth account after payment =====
+  if (needsAuthCreation) {
+    console.log('[Stripe] v2 flow detected - creating auth account for:', signup.email);
+
+    try {
+      // Decrypt the stored password
+      const plainPassword = decryptPassword(signup.pending_password);
+
+      // Create auth account using admin API (auto-confirmed, no email verification)
+      const { data: authData, error: authError } = await supabaseAdmin.auth.admin.createUser({
+        email: signup.email,
+        password: plainPassword,
+        email_confirm: true, // Auto-confirm email
+        user_metadata: {
+          full_name: `${signup.name} ${signup.surname}`,
+          signup_flow: 'v2_after_payment'
+        }
+      });
+
+      if (authError) {
+        console.error('[Stripe] Failed to create auth account:', authError);
+        // This is critical - we can't complete signup without auth
+        // The user will need to contact support
+        throw new Error(`Auth creation failed: ${authError.message}`);
+      }
+
+      const newAuthUserId = authData.user.id;
+      console.log('[Stripe] Auth account created:', newAuthUserId, 'for email:', signup.email);
+
+      // Update user_signup with real auth user ID
+      const { error: updateIdError } = await supabase
+        .from('user_signup')
+        .update({
+          create_user_id: newAuthUserId, // Replace temp ID with real auth ID
+          pending_password: null, // SECURITY: Clear stored password immediately
+          auth_pending: false // Auth is now created
+        })
+        .eq('create_user_id', tempOrUserId);
+
+      if (updateIdError) {
+        console.error('[Stripe] Failed to update create_user_id:', updateIdError);
+        // Auth exists but signup record has wrong ID - admin intervention needed
+      }
+
+      // Update any related records that used the temp ID
+      // (user_documents, incident_reports if any were created somehow)
+      await supabase
+        .from('user_documents')
+        .update({ create_user_id: newAuthUserId })
+        .eq('create_user_id', tempOrUserId);
+
+      await supabase
+        .from('dvla_vehicle_info_new')
+        .update({ create_user_id: newAuthUserId })
+        .eq('create_user_id', tempOrUserId);
+
+      // Use the new auth user ID for the rest of the function
+      finalUserId = newAuthUserId;
+
+      console.log('[Stripe] v2 flow: Updated all records from temp ID', tempOrUserId, 'to auth ID', finalUserId);
+
+    } catch (authCreationError) {
+      console.error('[Stripe] v2 auth creation failed:', authCreationError);
+      // Don't throw - still update subscription status so payment isn't lost
+      // The auth issue will need manual resolution
+    }
+  } else {
+    console.log('[Stripe] v1 flow: Auth already exists for:', finalUserId);
+  }
+
+  // ===== COMMON: Update subscription status =====
   const stripeClient = getStripe();
   const subscription = await stripeClient.subscriptions.retrieve(session.subscription);
 
-  // Update user record with subscription info
-  const { error } = await supabase
+  const { error: subError } = await supabase
     .from('user_signup')
     .update({
       subscription_status: 'active',
       subscription_tier: tier,
       stripe_subscription_id: subscription.id,
+      stripe_customer_id: session.customer, // Also store customer ID
       subscription_start_date: new Date(subscription.current_period_start * 1000).toISOString(),
       subscription_end_date: new Date(subscription.current_period_end * 1000).toISOString(),
     })
-    .eq('create_user_id', userId);
+    .eq('create_user_id', finalUserId);
 
-  if (error) {
-    console.error('[Stripe] Failed to update user subscription:', error);
+  if (subError) {
+    console.error('[Stripe] Failed to update user subscription:', subError);
     return;
   }
 
-  console.log('[Stripe] User subscription activated:', userId, 'tier:', tier);
+  console.log('[Stripe] User subscription activated:', finalUserId, 'tier:', tier);
 
   // Check if this tier requires a subscription group (family or business plans)
   const tierConfig = groupsController.TIER_CONFIG[tier];
@@ -322,7 +423,7 @@ async function handleCheckoutComplete(session) {
   if (tierConfig && tierConfig.type !== 'individual') {
     try {
       // Create subscription group for family/business plans
-      const group = await groupsController.createGroup(userId, tier, subscription.id);
+      const group = await groupsController.createGroup(finalUserId, tier, subscription.id);
 
       if (group) {
         console.log('[Stripe] Subscription group created:', group.id, 'type:', tierConfig.type);
@@ -340,8 +441,8 @@ async function handleCheckoutComplete(session) {
 
     const { data: user } = await supabase
       .from('user_signup')
-      .select('email, driver_name')
-      .eq('create_user_id', userId)
+      .select('email, name, surname')
+      .eq('create_user_id', finalUserId)
       .single();
 
     if (user) {
@@ -350,12 +451,14 @@ async function handleCheckoutComplete(session) {
       const tierDisplayName = TIER_NAMES[tier] || tier;
 
       await emailService.sendSubscriptionWelcome(user.email, {
-        userName: user.driver_name,
+        userName: user.name || `${user.name} ${user.surname}`,
         tier: tierDisplayName,
         subscriptionStartDate: new Date(),
         subscriptionEndDate: new Date(subscription.current_period_end * 1000),
         isGroupPlan,
         maxMembers: isGroupPlan ? tierConfig.maxMembers : 1,
+        // v2 flow extra info
+        isNewAccount: needsAuthCreation,
       });
     }
   } catch (emailError) {

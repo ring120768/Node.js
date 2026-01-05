@@ -146,7 +146,10 @@ router.get('/api/config', (req, res) => {
         auth: !!authService,
         what3words: config.what3words.enabled,
         dvla: config.dvla.enabled,
-        gdpr_consent: true
+        gdpr_consent: true,
+        // Signup flow v2: auth account created after payment instead of on Page 1
+        // This eliminates orphaned accounts and email confirmation interruptions
+        signupFlowV2: process.env.SIGNUP_FLOW_V2 === 'true'
       }
     });
   } catch (error) {
