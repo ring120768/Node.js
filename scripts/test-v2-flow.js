@@ -20,7 +20,9 @@ async function testV2Flow() {
   console.log('🧪 SIGNUP FLOW V2 - Full Test Simulation');
   console.log('─'.repeat(60));
 
-  const testEmail = 'ian.ring@sky.com';
+  // Use unique email for each test run
+  const timestamp = Date.now();
+  const testEmail = `v2-test-${timestamp}@test-ccla.com`;
   const testPassword = 'Test123456!';
 
   // Step 1: Simulate what signup-form.html does
