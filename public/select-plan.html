@@ -241,8 +241,8 @@
       const configResponse = await fetch('/api/config');
       const config = await configResponse.json();
 
-      // Store feature flag
-      signupFlowV2 = config.signupFlowV2 === true;
+      // Store feature flag (nested inside features object)
+      signupFlowV2 = config.features?.signupFlowV2 === true;
       console.log(`🔄 Signup flow: ${signupFlowV2 ? 'V2 (auth after payment)' : 'V1 (auth on Page 1)'}`);
 
       if (config.supabaseUrl && config.supabaseAnonKey) {
