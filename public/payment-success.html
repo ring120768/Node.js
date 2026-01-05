@@ -739,25 +739,12 @@
             console.log('✅ Page initialization complete');
         });
 
-        // Navigate to incident report with auth check
-        async function navigateToIncident() {
+        // Navigate to incident report
+        // Note: incident.html handles its own authentication check
+        // Removed redundant auth check here to prevent login loop
+        function navigateToIncident() {
             console.log('📝 Navigating to incident report...');
-            try {
-                const response = await fetch('/api/auth/status', {
-                    credentials: 'include'
-                });
-                const data = await response.json();
-
-                if (data.authenticated) {
-                    window.location.href = '/incident.html';
-                } else {
-                    window.location.href = '/login.html?redirect=incident.html';
-                }
-            } catch (error) {
-                console.error('Auth check failed:', error);
-                // Allow navigation even if auth check fails
-                window.location.href = '/incident.html';
-            }
+            window.location.href = '/incident.html';
         }
 
         // Navigate to homepage

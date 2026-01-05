@@ -2523,6 +2523,76 @@
 
         console.log('✅ Account created successfully:', data.user.id);
 
+        // ===== EMAIL CONFIRMATION DETECTION =====
+        // Check if Supabase requires email confirmation for this account
+        // If session exists immediately after signUp, confirmation is disabled or user is auto-confirmed
+        // If no session, email confirmation is required
+        const emailConfirmationRequired = !data.session;
+
+        if (emailConfirmationRequired) {
+          console.log('📧 Email confirmation required - guiding user to verify');
+
+          // Store partial data for draft save
+          formData.auth_user_id = data.user.id;
+          formData.email = email;
+
+          // Show verification instructions
+          const wantsToVerifyNow = confirm(
+            '📧 Please Verify Your Email\n\n' +
+            `We sent a verification link to:\n${email}\n\n` +
+            '✅ Click OK if you\'ve verified your email and want to continue\n' +
+            '❌ Click Cancel to verify later (your progress will be saved)'
+          );
+
+          if (!wantsToVerifyNow) {
+            // User wants to verify later - save draft and redirect to login
+            console.log('💾 User chose to verify later - saving progress');
+
+            alert(
+              '✅ Account Created & Progress Saved!\n\n' +
+              'Please check your email and click the verification link.\n\n' +
+              'After verifying, log in to continue your signup.\n\n' +
+              `📧 Email: ${email}`
+            );
+
+            // Save draft with current data
+            saveDraft();
+
+            // Redirect to login page with return URL
+            window.location.href = '/login.html?redirect=/signup-form.html';
+            return; // Stop here
+          }
+
+          // User claims they verified - check if session exists now
+          console.log('🔍 Checking if email verification was completed...');
+
+          const { data: { session: verifiedSession }, error: sessionError } = await supabaseClient.auth.getSession();
+
+          if (!verifiedSession || sessionError) {
+            // Still no session - email not verified yet
+            console.log('❌ Email not verified yet');
+
+            alert(
+              '❌ Email Not Verified Yet\n\n' +
+              'Please click the verification link in your email first.\n\n' +
+              'After verifying, log in to continue.\n\n' +
+              'Your progress has been saved!'
+            );
+
+            // Save draft and redirect
+            saveDraft();
+            window.location.href = '/login.html?redirect=/signup-form.html';
+            return; // Stop here
+          }
+
+          // Success! Email verified
+          console.log('✅ Email verified successfully - continuing signup flow');
+        } else {
+          // No confirmation required or already confirmed
+          console.log('✅ Email confirmation not required - continuing directly');
+        }
+        // ===== END EMAIL CONFIRMATION DETECTION =====
+
         // Store auth user ID in formData (this will be sent to backend)
         formData.auth_user_id = data.user.id;
         formData.email = email;
