@@ -39,4 +39,13 @@ router.get('/session', optionalAuth, authController.checkSession);
  */
 router.get('/nonce', optionalAuth, authController.generateNonce);
 
+/**
+ * Set session cookies after client-side signup
+ * POST /api/auth/set-session
+ *
+ * Called after supabaseClient.auth.signUp() to set HTTP cookies
+ * required by server-side pageAuth middleware
+ */
+router.post('/set-session', authController.setSessionCookies);
+
 module.exports = router;

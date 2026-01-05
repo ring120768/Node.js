@@ -2593,6 +2593,38 @@
         }
         // ===== END EMAIL CONFIRMATION DETECTION =====
 
+        // ===== SET SESSION COOKIES FOR SERVER-SIDE AUTH =====
+        // After successful signup, set HTTP cookies so pageAuth middleware works
+        // This allows access to protected pages (dashboard, incident forms, etc.)
+        if (data.session) {
+          console.log('🍪 Setting session cookies for server-side auth...');
+
+          try {
+            const cookieResponse = await fetch('/api/auth/set-session', {
+              method: 'POST',
+              headers: {
+                'Content-Type': 'application/json'
+              },
+              credentials: 'include', // Important: send/receive cookies
+              body: JSON.stringify({
+                access_token: data.session.access_token,
+                refresh_token: data.session.refresh_token
+              })
+            });
+
+            if (cookieResponse.ok) {
+              const cookieResult = await cookieResponse.json();
+              console.log('✅ Session cookies set successfully:', cookieResult.message);
+            } else {
+              console.warn('⚠️ Failed to set session cookies (non-critical):', await cookieResponse.text());
+            }
+          } catch (cookieError) {
+            // Non-critical error - user can still login later
+            console.warn('⚠️ Cookie setup failed (non-critical):', cookieError.message);
+          }
+        }
+        // ===== END SESSION COOKIES =====
+
         // Store auth user ID in formData (this will be sent to backend)
         formData.auth_user_id = data.user.id;
         formData.email = email;

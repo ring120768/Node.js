@@ -405,12 +405,80 @@ async function checkSession(req, res) {
   }
 }
 
+/**
+ * Set Session Cookies (for client-side signups)
+ * POST /api/auth/set-session
+ *
+ * After client-side supabaseClient.auth.signUp(), this endpoint
+ * sets HTTP cookies so server-side pageAuth middleware works.
+ */
+async function setSessionCookies(req, res) {
+  try {
+    const { access_token, refresh_token } = req.body;
+
+    if (!access_token || !refresh_token) {
+      return sendError(res, 400, 'Missing session tokens', 'MISSING_TOKENS');
+    }
+
+    logger.info('🍪 Setting session cookies from client-side signup');
+
+    // Verify the tokens are valid before setting cookies
+    const { createClient } = require('@supabase/supabase-js');
+    const supabase = createClient(config.supabase.url, config.supabase.anonKey);
+
+    const { data: { user }, error } = await supabase.auth.getUser(access_token);
+
+    if (error || !user) {
+      logger.warn('❌ Invalid session tokens', { error: error?.message });
+      return sendError(res, 401, 'Invalid session tokens', 'INVALID_TOKENS');
+    }
+
+    // Set cookies (same as login/signup)
+    const cookieMaxAge = 90 * 24 * 60 * 60 * 1000; // 90 days
+
+    res.cookie('access_token', access_token, {
+      httpOnly: true,
+      secure: true,
+      sameSite: 'none',
+      path: '/',
+      maxAge: cookieMaxAge
+    });
+
+    res.cookie('refresh_token', refresh_token, {
+      httpOnly: true,
+      secure: true,
+      sameSite: 'none',
+      path: '/',
+      maxAge: cookieMaxAge
+    });
+
+    logger.success('✅ Session cookies set', {
+      userId: user.id,
+      email: user.email
+    });
+
+    res.json({
+      success: true,
+      message: 'Session cookies set successfully',
+      user: {
+        id: user.id,
+        email: user.email
+      }
+    });
+
+  } catch (error) {
+    logger.error('💥 Error setting session cookies:', error);
+    sendError(res, 500, 'Failed to set session cookies', 'COOKIE_ERROR');
+  }
+}
+
 module.exports = {
   signup,
   login,
   logout,
   checkSession,
-  generateNonce
+  generateNonce,
+  setSessionCookies
 };
 
 
