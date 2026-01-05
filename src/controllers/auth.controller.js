@@ -472,13 +472,189 @@ async function setSessionCookies(req, res) {
   }
 }
 
+/**
+ * Login After Payment (Signup Flow v2)
+ * POST /api/auth/login-after-payment
+ *
+ * After Stripe payment completes and webhook creates the auth account,
+ * this endpoint generates a session for auto-login on payment-success page.
+ *
+ * Body: { sessionId } - The Stripe checkout session ID
+ */
+async function loginAfterPayment(req, res) {
+  try {
+    const { sessionId, email: providedEmail } = req.body;
+
+    if (!sessionId && !providedEmail) {
+      return sendError(res, 400, 'Either sessionId or email is required', 'MISSING_PARAMS');
+    }
+
+    logger.info('🔐 Login after payment request', { sessionId, providedEmail });
+
+    let userEmail = providedEmail;
+
+    // If sessionId provided, get email from Stripe session
+    if (sessionId) {
+      const Stripe = require('stripe');
+      const stripe = new Stripe(process.env.STRIPE_SECRET_KEY);
+
+      const session = await stripe.checkout.sessions.retrieve(sessionId);
+
+      if (!session) {
+        return sendError(res, 404, 'Stripe session not found', 'SESSION_NOT_FOUND');
+      }
+
+      userEmail = session.customer_details?.email || session.customer_email;
+    }
+
+    if (!userEmail) {
+      return sendError(res, 400, 'Could not determine user email', 'NO_EMAIL');
+    }
+
+    logger.info('🔍 Looking up user by email:', userEmail);
+
+    // Find the user in user_signup to verify they completed signup
+    const { createClient } = require('@supabase/supabase-js');
+    const supabase = createClient(config.supabase.url, config.supabase.serviceKey);
+
+    const { data: signupRecord, error: signupError } = await supabase
+      .from('user_signup')
+      .select('create_user_id, auth_pending, subscription_status')
+      .eq('email', userEmail.toLowerCase())
+      .single();
+
+    if (signupError || !signupRecord) {
+      logger.warn('❌ No signup record found for email:', userEmail);
+      return sendError(res, 404, 'User not found', 'USER_NOT_FOUND');
+    }
+
+    // Check if auth account was created (v2 flow should have set auth_pending = false)
+    if (signupRecord.auth_pending) {
+      // Webhook hasn't processed yet - tell frontend to wait
+      logger.info('⏳ Auth account not yet created, webhook pending');
+      return res.json({
+        success: false,
+        pending: true,
+        message: 'Payment processing, please wait...'
+      });
+    }
+
+    // Get the auth user to generate a session
+    const authUserId = signupRecord.create_user_id;
+
+    logger.info('📧 Generating magic link for auto-login', { authUserId, email: userEmail });
+
+    // Use admin API to generate a magic link token
+    // This creates a one-time login link that we can extract the token from
+    const { data: linkData, error: linkError } = await supabaseAdmin.auth.admin.generateLink({
+      type: 'magiclink',
+      email: userEmail,
+      options: {
+        redirectTo: `${process.env.APP_URL || 'https://carcrashlawyerai.co.uk'}/dashboard.html`
+      }
+    });
+
+    if (linkError) {
+      logger.error('❌ Failed to generate magic link:', linkError);
+      return sendError(res, 500, 'Failed to generate login session', 'SESSION_ERROR');
+    }
+
+    // The magic link contains a token we can use
+    // Format: https://xxx.supabase.co/auth/v1/verify?token=xxx&type=magiclink&redirect_to=xxx
+    const magicLink = linkData.properties?.action_link;
+
+    if (!magicLink) {
+      logger.error('❌ No magic link generated');
+      return sendError(res, 500, 'Failed to generate login link', 'LINK_ERROR');
+    }
+
+    logger.success('✅ Magic link generated for:', userEmail);
+
+    // Option 1: Return the magic link for frontend to verify
+    // Option 2: Extract token and verify server-side to get session
+
+    // Let's use option 2 - verify the token server-side
+    const url = new URL(magicLink);
+    const token = url.searchParams.get('token');
+    const tokenHash = url.hash.replace('#', '');
+
+    // Use the anon client to verify the token (simulating what the browser would do)
+    const anonSupabase = createClient(config.supabase.url, config.supabase.anonKey);
+
+    // verifyOtp method to exchange token for session
+    const { data: verifyData, error: verifyError } = await anonSupabase.auth.verifyOtp({
+      token_hash: tokenHash || token,
+      type: 'magiclink'
+    });
+
+    if (verifyError || !verifyData?.session) {
+      logger.warn('❌ Failed to verify magic link, falling back to link redirect');
+      // Fall back to returning the magic link for frontend redirect
+      return res.json({
+        success: true,
+        method: 'redirect',
+        redirectUrl: magicLink,
+        message: 'Use magic link to login'
+      });
+    }
+
+    // We have a session! Set cookies and return tokens
+    const { session } = verifyData;
+
+    const cookieMaxAge = 90 * 24 * 60 * 60 * 1000; // 90 days
+
+    res.cookie('access_token', session.access_token, {
+      httpOnly: true,
+      secure: true,
+      sameSite: 'none',
+      path: '/',
+      maxAge: cookieMaxAge
+    });
+
+    res.cookie('refresh_token', session.refresh_token, {
+      httpOnly: true,
+      secure: true,
+      sameSite: 'none',
+      path: '/',
+      maxAge: cookieMaxAge
+    });
+
+    logger.success('✅ Auto-login successful after payment', {
+      userId: authUserId,
+      email: userEmail
+    });
+
+    res.json({
+      success: true,
+      method: 'session',
+      user: {
+        id: authUserId,
+        email: userEmail
+      },
+      session: {
+        access_token: session.access_token,
+        refresh_token: session.refresh_token
+      },
+      message: 'Logged in successfully'
+    });
+
+  } catch (error) {
+    logger.error('💥 Login after payment error:', {
+      error: error.message,
+      stack: error.stack
+    });
+    sendError(res, 500, 'Login failed', 'LOGIN_ERROR');
+  }
+}
+
 module.exports = {
   signup,
   login,
   logout,
   checkSession,
   generateNonce,
-  setSessionCookies
+  setSessionCookies,
+  loginAfterPayment
 };
 
 

@@ -1289,6 +1289,7 @@
   <script>
     // ===== SUPABASE CLIENT INITIALIZATION =====
     let supabaseClient = null;
+    let signupFlowV2 = false; // Feature flag for new signup flow (auth after payment)
 
     // Fetch Supabase config and initialize client
     async function initializeSupabase() {
@@ -1302,6 +1303,10 @@
         } else {
           console.warn('⚠️ Supabase config not available');
         }
+
+        // Store feature flag for signup flow v2 (auth after payment)
+        signupFlowV2 = config.signupFlowV2 === true;
+        console.log(`🔄 Signup flow: ${signupFlowV2 ? 'V2 (auth after payment)' : 'V1 (auth on Page 1)'}`);
       } catch (error) {
         console.error('❌ Failed to initialize Supabase:', error);
       }
@@ -1357,7 +1362,10 @@
       dvla_mot_status: '',
       dvla_mot_expiry: '',
       dvla_tax_status: '',
-      dvla_tax_due: ''
+      dvla_tax_due: '',
+      // Signup flow v2 fields (auth after payment)
+      temp_signup_id: '', // Temporary ID to track signup through payment
+      pending_password: '' // Password stored temporarily until auth account created
     };
 
     const formData = { ...defaultFormData };
@@ -2465,9 +2473,14 @@
 
     /**
      * Create Supabase auth account and proceed to Page 2
+     *
+     * Supports two flows based on signupFlowV2 feature flag:
+     * - V1 (signupFlowV2=false): Create auth account NOW, then proceed to form pages
+     * - V2 (signupFlowV2=true): Store credentials temporarily, create auth AFTER payment
      */
     async function createAccountAndContinue() {
       console.log('🔐 Creating account...');
+      console.log(`🔄 Using signup flow: ${signupFlowV2 ? 'V2 (auth after payment)' : 'V1 (auth on Page 1)'}`);
 
       // Validate fields
       if (!validateAccountCreation()) {
@@ -2480,12 +2493,75 @@
       try {
         // Disable button and show loading state
         btn.disabled = true;
-        btn.textContent = 'Creating Account...';
+        btn.textContent = signupFlowV2 ? 'Saving Details...' : 'Creating Account...';
 
         const email = document.getElementById('account_email').value.trim().toLowerCase();
         const password = document.getElementById('account_password').value;
 
-        console.log('📧 Attempting signup with email:', email);
+        console.log('📧 Processing signup with email:', email);
+
+        // ===== SIGNUP FLOW V2: Store credentials for later auth creation =====
+        if (signupFlowV2) {
+          console.log('🔄 V2 Flow: Storing credentials (auth will be created after payment)');
+
+          // Generate temporary signup ID to track this signup through payment
+          const tempSignupId = crypto.randomUUID();
+          console.log('🆔 Generated temp_signup_id:', tempSignupId);
+
+          // Store in formData for submission to backend
+          formData.temp_signup_id = tempSignupId;
+          formData.pending_password = password; // Will be encrypted by backend
+          formData.email = email;
+
+          console.log('📝 V2 Stored in formData:', {
+            temp_signup_id: formData.temp_signup_id,
+            email: formData.email,
+            pending_password: '(stored for encryption)'
+          });
+
+          // Clear any stale draft from a different user/email
+          try {
+            const savedDraft = localStorage.getItem('ccla_signup_draft');
+            if (savedDraft) {
+              const draft = JSON.parse(savedDraft);
+              const draftEmail = (draft.draft_owner_email || draft.email || '').toLowerCase();
+
+              if (draftEmail && draftEmail !== email) {
+                console.warn('🧹 Clearing stale signup draft for different email', {
+                  draftEmail,
+                  newEmail: email
+                });
+                resetFormDataForNewAccount(email, null);
+                saveDraft();
+              }
+            }
+          } catch (draftError) {
+            console.warn('⚠️ Unable to validate signup draft ownership:', draftError.message);
+          }
+
+          // Success! Show confirmation and proceed
+          console.log('✅ V2: Details saved, proceeding to profile setup');
+          btn.textContent = '✓ Details Saved!';
+
+          setTimeout(() => {
+            alert(
+              '✅ Details Saved!\n\n' +
+              `📧 Email: ${email}\n\n` +
+              'Your account will be created after you complete the signup form and payment.\n\n' +
+              'Click OK to continue with your profile setup.'
+            );
+
+            btn.disabled = false;
+            btn.textContent = originalText;
+            nextPage();
+          }, 500);
+
+          return; // Exit here for V2 flow
+        }
+        // ===== END SIGNUP FLOW V2 =====
+
+        // ===== SIGNUP FLOW V1: Create auth account immediately =====
+        console.log('🔄 V1 Flow: Creating Supabase auth account now');
 
         // Create Supabase auth account
         const { data, error } = await supabaseClient.auth.signUp({
@@ -2677,6 +2753,7 @@
           btn.textContent = originalText;
           nextPage();
         }, 500);
+        // ===== END SIGNUP FLOW V1 =====
 
       } catch (error) {
         console.error('❌ Unexpected error during account creation:', error);

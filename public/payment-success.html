@@ -500,12 +500,17 @@
 
     <script>
         let supabaseClient = null;
+        let signupFlowV2 = false;
 
-        // Initialize Supabase
+        // Initialize Supabase and get feature flags
         async function initSupabase() {
             try {
                 const response = await fetch('/api/config');
                 const config = await response.json();
+
+                // Store feature flag
+                signupFlowV2 = config.signupFlowV2 === true;
+                console.log(`🔄 Signup flow: ${signupFlowV2 ? 'V2 (auth after payment)' : 'V1 (auth on Page 1)'}`);
 
                 if (config.supabaseUrl && config.supabaseKey) {
                     supabaseClient = window.supabase.createClient(
@@ -516,9 +521,113 @@
                 } else {
                     console.warn('⚠️ Supabase config not available');
                 }
+
+                return config;
             } catch (error) {
                 console.error('❌ Failed to initialize Supabase:', error);
+                return null;
             }
+        }
+
+        // V2 Flow: Auto-login after payment by getting session from newly created auth account
+        async function handleV2AutoLogin() {
+            console.log('🔐 V2 Flow: Attempting auto-login after payment...');
+
+            // Get Stripe session_id from URL (Stripe adds this after checkout)
+            const urlParams = new URLSearchParams(window.location.search);
+            const sessionId = urlParams.get('session_id');
+            const signupEmail = urlParams.get('email') ? decodeURIComponent(urlParams.get('email')) : null;
+
+            console.log('URL params:', { sessionId: sessionId ? 'present' : 'missing', signupEmail });
+
+            // Try to get session - need either session_id or email
+            if (!sessionId && !signupEmail) {
+                console.warn('⚠️ V2 Flow: No session_id or email in URL');
+                return null;
+            }
+
+            // Show a loading indicator
+            const userInfoDiv = document.querySelector('.user-info');
+            if (userInfoDiv) {
+                userInfoDiv.innerHTML = `
+                    <strong>🔄 Setting up your account...</strong>
+                    <div style="margin-top: 8px;">
+                        <small style="opacity: 0.8;">Please wait while we complete your registration</small>
+                    </div>
+                `;
+            }
+
+            // Poll for auth account creation (webhook might take a few seconds)
+            const maxAttempts = 10;
+            const delayMs = 2000;
+
+            for (let attempt = 1; attempt <= maxAttempts; attempt++) {
+                console.log(`🔄 V2 Auto-login attempt ${attempt}/${maxAttempts}...`);
+
+                try {
+                    const response = await fetch('/api/auth/login-after-payment', {
+                        method: 'POST',
+                        headers: { 'Content-Type': 'application/json' },
+                        credentials: 'include',
+                        body: JSON.stringify({
+                            sessionId: sessionId,
+                            email: signupEmail
+                        })
+                    });
+
+                    const result = await response.json();
+
+                    if (result.success && result.userId) {
+                        console.log('✅ V2 Auto-login successful:', result.userId);
+
+                        // Store user ID for other pages
+                        localStorage.setItem('create_user_id', result.userId);
+                        sessionStorage.setItem('userId', result.userId);
+
+                        // Cookies should already be set by the endpoint
+                        console.log('🍪 Session cookies set by server');
+
+                        return result.userId;
+                    }
+
+                    if (result.pending) {
+                        console.log('⏳ V2: Auth account not ready yet, waiting...');
+
+                        if (userInfoDiv) {
+                            userInfoDiv.innerHTML = `
+                                <strong>⏳ Completing registration...</strong>
+                                <div style="margin-top: 8px;">
+                                    <small style="opacity: 0.8;">Attempt ${attempt}/${maxAttempts} - Payment is being processed</small>
+                                </div>
+                            `;
+                        }
+
+                        // Wait and try again
+                        await new Promise(resolve => setTimeout(resolve, delayMs));
+                        continue;
+                    }
+
+                    // Non-pending error
+                    console.error('❌ V2 Auto-login failed:', result.error || 'Unknown error');
+                    break;
+
+                } catch (error) {
+                    console.error('❌ V2 Auto-login request failed:', error);
+                    // Wait and retry on network errors
+                    await new Promise(resolve => setTimeout(resolve, delayMs));
+                }
+            }
+
+            console.warn('⚠️ V2 Auto-login: Max attempts reached');
+            if (userInfoDiv) {
+                userInfoDiv.innerHTML = `
+                    <strong>⚠️ Registration processing</strong>
+                    <div style="margin-top: 8px;">
+                        <small style="opacity: 0.8;">Your payment was received. If this page doesn't update, try refreshing or contact support.</small>
+                    </div>
+                `;
+            }
+            return null;
         }
 
         // ⚠️ DEPRECATED - Kept for reference only
@@ -667,19 +776,47 @@
         document.addEventListener('DOMContentLoaded', async function() {
             console.log('🚀 Initializing payment-success page');
 
-            // Initialize Supabase first
+            // Initialize Supabase first (also loads feature flags)
             await initSupabase();
 
-            // Get userId and load data
-            const user_id = getUserIdFromStorage();
-            console.log('🔍 UserId from storage:', user_id || 'null');
+            // ===== SIGNUP FLOW V2: Auto-login after payment =====
+            let user_id = null;
+
+            if (signupFlowV2) {
+                console.log('🔄 V2 Flow: Checking for auto-login after payment');
+
+                // Check URL params for v2 flow indicators
+                const urlParams = new URLSearchParams(window.location.search);
+                const hasSessionId = urlParams.has('session_id');
+                const hasEmail = urlParams.has('email');
+
+                if (hasSessionId || hasEmail) {
+                    console.log('🔐 V2 Flow: Attempting auto-login...');
+                    user_id = await handleV2AutoLogin();
+
+                    if (user_id) {
+                        console.log('✅ V2 Auto-login successful, user_id:', user_id);
+                    } else {
+                        console.warn('⚠️ V2 Auto-login failed or still pending');
+                    }
+                } else {
+                    console.log('🔄 V2 Flow: No session_id/email in URL, falling back to storage');
+                    user_id = getUserIdFromStorage();
+                }
+            } else {
+                // V1 flow: get userId from storage
+                user_id = getUserIdFromStorage();
+            }
+            // ===== END SIGNUP FLOW V2 =====
+
+            console.log('🔍 UserId:', user_id || 'null');
 
             if (user_id) {
                 // Load user data and emergency contacts
                 await loadUserData();
                 // NOTE: updateEmergencyButtons() is called from within loadUserData() after contacts are fetched
             } else {
-                console.warn('⚠️ No userId found in storage. User may need to complete signup first.');
+                console.warn('⚠️ No userId found. User may need to complete signup first.');
                 const userInfoDiv = document.querySelector('.user-info');
                 if (userInfoDiv) {
                     userInfoDiv.innerHTML = `
