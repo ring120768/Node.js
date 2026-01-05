@@ -474,13 +474,45 @@
 
                 // HARD REDIRECT if not authenticated
                 if (!authResponse.ok || !authData.authenticated) {
-                    // Save current URL as redirect target
+                    // Check if we just came from login to prevent infinite loop
+                    const cameFromLogin = document.referrer.includes('/login.html');
+                    const loginAttempts = parseInt(sessionStorage.getItem('login_loop_attempts') || '0');
+
+                    if (cameFromLogin || loginAttempts > 0) {
+                        // Prevent loop: show error instead of redirecting again
+                        console.error('❌ Authentication failed after login attempt');
+                        sessionStorage.removeItem('login_loop_attempts');
+
+                        // Show user-friendly error
+                        document.body.innerHTML = `
+                            <div style="max-width: 600px; margin: 100px auto; padding: 40px; text-align: center; font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;">
+                                <h1 style="color: #ef4444; margin-bottom: 20px;">⚠️ Authentication Error</h1>
+                                <p style="font-size: 18px; color: #666; margin-bottom: 30px;">
+                                    We couldn't verify your login. This might be due to:
+                                </p>
+                                <ul style="text-align: left; color: #666; line-height: 1.8; margin-bottom: 30px;">
+                                    <li>Session expired - please try logging in again</li>
+                                    <li>Browser cookies are disabled</li>
+                                    <li>Incognito/private browsing mode</li>
+                                </ul>
+                                <a href="/login.html" style="display: inline-block; background: #0ea5e9; color: white; padding: 12px 24px; border-radius: 8px; text-decoration: none; font-weight: 600; margin-right: 10px;">Try Again</a>
+                                <a href="/index.html" style="display: inline-block; background: #6b7280; color: white; padding: 12px 24px; border-radius: 8px; text-decoration: none; font-weight: 600;">Go Home</a>
+                            </div>
+                        `;
+                        return false;
+                    }
+
+                    // First attempt: track and redirect to login
+                    sessionStorage.setItem('login_loop_attempts', String(loginAttempts + 1));
                     const returnUrl = window.location.pathname + window.location.search;
                     window.location.href = `/login.html?redirect=${encodeURIComponent(returnUrl)}`;
                     return false;
                 }
 
-                // User is authenticated - store user info
+                // User is authenticated - clear any loop tracking
+                sessionStorage.removeItem('login_loop_attempts');
+
+                // Store user info
                 if (authData.user) {
                     window.currentUser = authData.user;
                     console.log('User authenticated:', authData.user.email);
@@ -490,7 +522,18 @@
 
             } catch (error) {
                 console.error('Auth check failed:', error);
-                // On error, redirect to login for security
+
+                // Check for loop before redirecting on error
+                const loginAttempts = parseInt(sessionStorage.getItem('login_loop_attempts') || '0');
+                if (loginAttempts > 0) {
+                    sessionStorage.removeItem('login_loop_attempts');
+                    alert('Authentication system error. Please contact support if this persists.');
+                    window.location.href = '/index.html';
+                    return false;
+                }
+
+                // First error: redirect to login
+                sessionStorage.setItem('login_loop_attempts', '1');
                 window.location.href = '/login.html?redirect=incident.html';
                 return false;
             }
