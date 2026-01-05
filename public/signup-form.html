@@ -1305,7 +1305,8 @@
         }
 
         // Store feature flag for signup flow v2 (auth after payment)
-        signupFlowV2 = config.signupFlowV2 === true;
+        // Flag is nested inside features object in config response
+        signupFlowV2 = config.features?.signupFlowV2 === true;
         console.log(`🔄 Signup flow: ${signupFlowV2 ? 'V2 (auth after payment)' : 'V1 (auth on Page 1)'}`);
       } catch (error) {
         console.error('❌ Failed to initialize Supabase:', error);
