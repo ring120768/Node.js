@@ -135,6 +135,7 @@
             cursor: pointer;
             transition: all 0.3s ease;
             box-shadow: 0 4px 12px rgba(0, 0, 0, 0.2);
+            position: relative;
         }
 
         .secondary-btn:hover {
@@ -142,6 +143,152 @@
             color: white;
             transform: translateY(-2px);
             box-shadow: 0 6px 16px rgba(11, 122, 176, 0.4);
+        }
+
+        /* Members Only Badge & Tooltip */
+        .secondary-btn.members-only {
+            position: relative;
+        }
+
+        .secondary-btn.members-only::after {
+            content: '🔒';
+            position: absolute;
+            top: -8px;
+            right: -8px;
+            background: #f59e0b;
+            border-radius: 50%;
+            width: 24px;
+            height: 24px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 12px;
+            box-shadow: 0 2px 6px rgba(0, 0, 0, 0.3);
+        }
+
+        .members-only-tooltip {
+            position: absolute;
+            bottom: calc(100% + 10px);
+            left: 50%;
+            transform: translateX(-50%) scale(0.9);
+            background: #1f2937;
+            color: white;
+            padding: 10px 16px;
+            border-radius: 8px;
+            font-size: 14px;
+            font-weight: 500;
+            white-space: nowrap;
+            opacity: 0;
+            pointer-events: none;
+            transition: all 0.2s ease;
+            z-index: 100;
+            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.3);
+        }
+
+        .members-only-tooltip::after {
+            content: '';
+            position: absolute;
+            top: 100%;
+            left: 50%;
+            transform: translateX(-50%);
+            border: 8px solid transparent;
+            border-top-color: #1f2937;
+        }
+
+        .secondary-btn.members-only:hover .members-only-tooltip {
+            opacity: 1;
+            transform: translateX(-50%) scale(1);
+        }
+
+        /* Members Only Modal */
+        .members-modal {
+            background: white;
+            border-radius: 24px;
+            padding: 32px;
+            max-width: 400px;
+            width: 90%;
+            box-shadow: 0 20px 60px rgba(0, 0, 0, 0.5);
+            animation: slideUp 0.4s ease;
+            text-align: center;
+        }
+
+        .members-modal h2 {
+            color: #1f2937;
+            font-size: 24px;
+            margin-bottom: 12px;
+        }
+
+        .members-modal p {
+            color: #6b7280;
+            font-size: 16px;
+            margin-bottom: 24px;
+            line-height: 1.5;
+        }
+
+        .members-modal .benefits {
+            text-align: left;
+            background: #f0fdf4;
+            border-radius: 12px;
+            padding: 16px;
+            margin-bottom: 24px;
+        }
+
+        .members-modal .benefits h4 {
+            color: #166534;
+            font-size: 14px;
+            margin-bottom: 8px;
+        }
+
+        .members-modal .benefits ul {
+            list-style: none;
+            padding: 0;
+            margin: 0;
+        }
+
+        .members-modal .benefits li {
+            color: #166534;
+            font-size: 14px;
+            padding: 4px 0;
+        }
+
+        .members-modal .benefits li::before {
+            content: '✓ ';
+            font-weight: bold;
+        }
+
+        .members-modal .cta-buttons {
+            display: flex;
+            flex-direction: column;
+            gap: 12px;
+        }
+
+        .members-modal .signup-cta {
+            padding: 16px 24px;
+            background: linear-gradient(135deg, #0B7AB0 0%, #1EA1D4 100%);
+            color: white;
+            border: none;
+            border-radius: 12px;
+            font-size: 18px;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.2s ease;
+        }
+
+        .members-modal .signup-cta:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 6px 16px rgba(11, 122, 176, 0.4);
+        }
+
+        .members-modal .login-link {
+            color: #6b7280;
+            font-size: 14px;
+            text-decoration: none;
+        }
+
+        .members-modal .login-link a {
+            color: #0B7AB0;
+            text-decoration: underline;
+            cursor: pointer;
         }
 
         .secondary-btn .btn-icon {
@@ -495,14 +642,16 @@
     </div>
 
     <div class="button-container">
-        <!-- REPORT INCIDENT BUTTON -->
-        <button class="secondary-btn" id="incidentBtn">
+        <!-- REPORT INCIDENT BUTTON (GATED) -->
+        <button class="secondary-btn members-only" id="incidentBtn">
+            <span class="members-only-tooltip">🔒 Members Only</span>
             <span class="btn-icon">📝</span>
             Report an Incident
         </button>
 
-        <!-- DASHBOARD BUTTON -->
-        <button class="secondary-btn" id="dashboardBtn">
+        <!-- DASHBOARD BUTTON (GATED) -->
+        <button class="secondary-btn members-only" id="dashboardBtn">
+            <span class="members-only-tooltip">🔒 Members Only</span>
             <span class="btn-icon">📋</span>
             View My Reports
         </button>
@@ -586,6 +735,37 @@
         </div>
     </div>
 
+    <!-- MEMBERS ONLY MODAL -->
+    <div class="modal-overlay" id="membersOnlyModal">
+        <div class="members-modal">
+            <h2>🔒 Members Only Feature</h2>
+            <p>Get full access to incident reports, AI-powered legal guidance, and your personal dashboard.</p>
+
+            <div class="benefits">
+                <h4>Member Benefits:</h4>
+                <ul>
+                    <li>Unlimited incident reports</li>
+                    <li>AI-generated legal statements</li>
+                    <li>Photo & evidence management</li>
+                    <li>Dashboard to track all claims</li>
+                    <li>Priority email support</li>
+                </ul>
+            </div>
+
+            <div class="cta-buttons">
+                <button class="signup-cta" id="modalSignupBtn">
+                    ✨ Sign Up Now
+                </button>
+                <p class="login-link">
+                    Already a member? <a id="modalLoginLink">Log in</a>
+                </p>
+                <button class="cancel-btn" data-action="close-members-modal" style="margin-top: 10px;">
+                    Maybe Later
+                </button>
+            </div>
+        </div>
+    </div>
+
     <script>
         // Get references to elements
         const emergencyBtn = document.getElementById('emergencyBtn');
@@ -594,6 +774,37 @@
 
         let currentLocation = null;
         let what3wordsAddress = null;
+        let isAuthenticated = false; // Track auth state for gating
+
+        // Members Only Modal Functions
+        const membersOnlyModal = document.getElementById('membersOnlyModal');
+
+        function showMembersOnlyModal() {
+            console.log('🔒 Showing members only modal');
+            membersOnlyModal.classList.add('show');
+        }
+
+        function closeMembersOnlyModal() {
+            membersOnlyModal.classList.remove('show');
+        }
+
+        // Update gated buttons based on auth state
+        function updateGatedButtons(authenticated) {
+            const incidentBtn = document.getElementById('incidentBtn');
+            const dashboardBtn = document.getElementById('dashboardBtn');
+
+            if (authenticated) {
+                // Remove members-only styling for authenticated users
+                incidentBtn?.classList.remove('members-only');
+                dashboardBtn?.classList.remove('members-only');
+                console.log('✅ Gated buttons unlocked for authenticated user');
+            } else {
+                // Ensure members-only styling is present for non-authenticated
+                incidentBtn?.classList.add('members-only');
+                dashboardBtn?.classList.add('members-only');
+                console.log('🔒 Gated buttons locked for non-authenticated user');
+            }
+        }
 
         // Emergency button click handler
         emergencyBtn.addEventListener('click', async function() {
@@ -757,15 +968,27 @@
             }
         });
 
-        // Navigate to incident report (seamless - server handles auth)
+        // Navigate to incident report (gated feature)
         function navigateToIncident() {
-            console.log('📝 Incident button clicked - navigating to incident page');
+            console.log('📝 Incident button clicked');
+            if (!isAuthenticated) {
+                console.log('🔒 User not authenticated - showing members modal');
+                showMembersOnlyModal();
+                return;
+            }
+            console.log('✅ User authenticated - navigating to incident page');
             window.location.href = '/incident.html';
         }
 
-        // Navigate to dashboard (seamless - server handles auth)
+        // Navigate to dashboard (gated feature)
         function navigateToDashboard() {
-            console.log('📋 Dashboard button clicked - navigating to dashboard');
+            console.log('📋 Dashboard button clicked');
+            if (!isAuthenticated) {
+                console.log('🔒 User not authenticated - showing members modal');
+                showMembersOnlyModal();
+                return;
+            }
+            console.log('✅ User authenticated - navigating to dashboard');
             console.log('🍪 Current cookies:', document.cookie);
             console.log('🔗 Navigating to: /dashboard.html');
             console.log('📍 Current location:', window.location.href);
@@ -1069,6 +1292,8 @@
                         if (data.authenticated && data.user) {
                             // User is logged in - show logout button, hide signup
                             console.log('✅ User authenticated:', data.user.email);
+                            isAuthenticated = true;
+                            updateGatedButtons(true);
                             console.log('🔍 Setting logout button to display: inline-block');
                             if (logoutBtn) {
                                 logoutBtn.style.display = 'inline-block';
@@ -1082,6 +1307,8 @@
                         } else {
                             // User not logged in - hide logout button, show signup
                             console.log('ℹ️ User not authenticated - data.authenticated:', data.authenticated);
+                            isAuthenticated = false;
+                            updateGatedButtons(false);
                             if (logoutBtn) {
                                 logoutBtn.style.display = 'none';
                             }
@@ -1092,6 +1319,8 @@
                     } else {
                         // Error checking session - assume not logged in
                         console.log('ℹ️ Session check failed with status:', response.status);
+                        isAuthenticated = false;
+                        updateGatedButtons(false);
                         if (logoutBtn) {
                             logoutBtn.style.display = 'none';
                         }
@@ -1102,6 +1331,8 @@
                 } catch (error) {
                     console.error('❌ Session check error:', error);
                     // On error, hide logout button, show signup
+                    isAuthenticated = false;
+                    updateGatedButtons(false);
                     if (logoutBtn) {
                         logoutBtn.style.display = 'none';
                     }
@@ -1114,6 +1345,43 @@
             // Run session check on page load
             console.log('🔍 About to run checkSession on page load...');
             checkSession();
+
+            // Members Only Modal Event Handlers
+            const modalSignupBtn = document.getElementById('modalSignupBtn');
+            const modalLoginLink = document.getElementById('modalLoginLink');
+
+            if (membersOnlyModal) {
+                // Close modal when clicking outside
+                membersOnlyModal.addEventListener('click', function(e) {
+                    if (e.target === membersOnlyModal) {
+                        closeMembersOnlyModal();
+                    }
+                });
+
+                // Handle close button
+                membersOnlyModal.addEventListener('click', function(e) {
+                    const button = e.target.closest('[data-action]');
+                    if (button && button.getAttribute('data-action') === 'close-members-modal') {
+                        closeMembersOnlyModal();
+                    }
+                });
+            }
+
+            if (modalSignupBtn) {
+                modalSignupBtn.addEventListener('click', function(e) {
+                    e.preventDefault();
+                    console.log('✨ Sign Up button clicked from members modal');
+                    window.location.href = '/signup-form.html';
+                });
+            }
+
+            if (modalLoginLink) {
+                modalLoginLink.addEventListener('click', function(e) {
+                    e.preventDefault();
+                    console.log('🔑 Login link clicked from members modal');
+                    window.location.href = '/login.html';
+                });
+            }
 
             // User Guide Modal Event Delegation
             if (userGuideModal) {
