@@ -3036,9 +3036,12 @@
             }
           }
 
-          // User is now authenticated - redirect to plan selection
-          console.log('✅ Signup complete, redirecting to plan selection...');
-          window.location.href = '/select-plan.html';
+          // Redirect to plan selection
+          // v2 flow: result.redirectTo includes signup_id and email params
+          // v1 flow: result.redirectTo is just '/select-plan.html'
+          const redirectUrl = result.redirectTo || '/select-plan.html';
+          console.log('✅ Signup complete, redirecting to:', redirectUrl);
+          window.location.href = redirectUrl;
         } else {
           throw new Error(result.error || 'Failed to submit form');
         }
