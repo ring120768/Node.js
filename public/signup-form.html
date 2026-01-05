@@ -2901,37 +2901,77 @@
       }
 
       // ===== DEFENSIVE CHECK FOR MISSING ACCOUNT CREATION (Page 1) =====
-      // Prevent form submission if user somehow skipped Page 1 (account creation)
-      if (!formData.auth_user_id) {
-        console.error('❌ CRITICAL: Missing auth_user_id - Page 1 (Account Creation) was skipped');
-        console.error('   Expected: User creates account → formData.auth_user_id = Supabase user ID');
-        console.error('   Actual: formData.auth_user_id =', formData.auth_user_id);
-        alert('❌ Account creation required!\n\n' +
-              'It looks like you skipped Page 1 (Create Account).\n\n' +
-              'You must create an account first to continue.\n\n' +
-              '📝 Click OK to go back to Page 1 and create your account.');
-        currentPage = 1;
-        showPage(1);
-        return;
+      // Supports two flows:
+      // - V1 (signupFlowV2=false): Requires auth_user_id (Supabase auth created on Page 1)
+      // - V2 (signupFlowV2=true): Requires temp_signup_id (auth created AFTER payment)
+
+      const hasV1Auth = !!formData.auth_user_id;
+      const hasV2TempId = !!formData.temp_signup_id;
+
+      if (signupFlowV2) {
+        // V2 Flow: Check for temp_signup_id and pending_password
+        if (!hasV2TempId) {
+          console.error('❌ CRITICAL (V2): Missing temp_signup_id - Page 1 was skipped');
+          console.error('   Expected: User completes Page 1 → formData.temp_signup_id = UUID');
+          console.error('   Actual: formData.temp_signup_id =', formData.temp_signup_id);
+          alert('❌ Account details required!\n\n' +
+                'It looks like you skipped Page 1 (Account Details).\n\n' +
+                'You must enter your email and password first.\n\n' +
+                '📝 Click OK to go back to Page 1.');
+          currentPage = 1;
+          showPage(1);
+          return;
+        }
+
+        if (!formData.pending_password) {
+          console.error('❌ CRITICAL (V2): Missing pending_password - Page 1 incomplete');
+          alert('❌ Password required!\n\n' +
+                'Your password was not saved from Page 1.\n\n' +
+                'Please go back and re-enter your password.\n\n' +
+                '📝 Click OK to go back to Page 1.');
+          currentPage = 1;
+          showPage(1);
+          return;
+        }
+
+        console.log('✅ V2 Account validation passed:', {
+          temp_signup_id: formData.temp_signup_id,
+          email: formData.email,
+          pending_password: '(set)'
+        });
+      } else {
+        // V1 Flow: Check for auth_user_id (existing Supabase auth)
+        if (!hasV1Auth) {
+          console.error('❌ CRITICAL (V1): Missing auth_user_id - Page 1 (Account Creation) was skipped');
+          console.error('   Expected: User creates account → formData.auth_user_id = Supabase user ID');
+          console.error('   Actual: formData.auth_user_id =', formData.auth_user_id);
+          alert('❌ Account creation required!\n\n' +
+                'It looks like you skipped Page 1 (Create Account).\n\n' +
+                'You must create an account first to continue.\n\n' +
+                '📝 Click OK to go back to Page 1 and create your account.');
+          currentPage = 1;
+          showPage(1);
+          return;
+        }
+
+        console.log('✅ V1 Account validation passed:', {
+          auth_user_id: formData.auth_user_id,
+          email: formData.email
+        });
       }
 
       if (!formData.email) {
-        console.error('❌ CRITICAL: Missing email - Page 1 (Account Creation) was incomplete');
+        console.error('❌ CRITICAL: Missing email - Page 1 was incomplete');
         console.error('   Expected: User enters email → formData.email = email address');
         console.error('   Actual: formData.email =', formData.email);
         alert('❌ Email address required!\n\n' +
               'Your email address is missing.\n\n' +
-              'Please go back to Page 1 and complete account creation.\n\n' +
+              'Please go back to Page 1 and complete your details.\n\n' +
               '📝 Click OK to go back to Page 1.');
         currentPage = 1;
         showPage(1);
         return;
       }
-
-      console.log('✅ Account validation passed:', {
-        auth_user_id: formData.auth_user_id,
-        email: formData.email
-      });
 
       // ===== CHECK FOR MISSING IMAGES (SOFT WARNING) =====
       const recommendedImages = [
