@@ -171,6 +171,12 @@ async function generateComprehensiveAnalysis(
   formDataSummary = null  // NEW: Phase 1 form data summary
 ) {
   try {
+    // Get OpenAI client (required for all GPT API calls)
+    const client = getOpenAI();
+    if (!client) {
+      throw new Error('OpenAI not configured');
+    }
+
     const startTime = Date.now();
 
     // Step 1: Generate Blended Summary (Phase 2 - combines Phase 1 summary with transcription)
