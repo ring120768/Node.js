@@ -620,10 +620,10 @@
                 const response = await fetch('/api/config');
                 const config = await response.json();
 
-                if (config.supabaseUrl && config.supabaseKey) {
+                if (config.supabaseUrl && config.supabaseAnonKey) {
                     supabaseClient = window.supabase.createClient(
                         config.supabaseUrl,
-                        config.supabaseKey
+                        config.supabaseAnonKey
                     );
                     console.log('✅ Supabase initialized');
                 } else {
