@@ -11,6 +11,7 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 | | |
 |---|---|
 | **Stack** | Node.js 18+, Express, Supabase (PostgreSQL/Auth/Storage/Realtime), Adobe PDF Services, OpenAI |
+| **Mobile** | Capacitor (Android + iOS) wrapping web app |
 | **Version** | 2.2.0 |
 | **Location** | UK (DD/MM/YYYY, £ GBP, GMT/BST, +44, British English) |
 | **Flow** | Custom HTML Forms (Pages 1-12) → Image Processing → PDF (18 pages, 213 fields) → Email |
@@ -47,12 +48,32 @@ npm run validate:pdf-mapping   # PDF field mappings
 node test-form-filling.js [user-uuid]   # PDF generation
 node test-security-wall.js              # Page authentication
 node scripts/test-supabase-client.js    # Database connection
+node test-railway-email.js              # Email delivery test
+
+# PDF Queue & Email Diagnostics
+node check-pdf-queue-state.js           # View queue status
+node check-pdf-storage.js               # Verify PDF in storage
+node requeue-failed-pdfs.js             # Retry failed jobs
+node requeue-abandoned.js               # Requeue stuck jobs
+node send-pdf-email.js [user-uuid]      # Resend PDF email
+node regenerate-and-send.js [user-uuid] # Regenerate and email PDF
+
+# Data Management
+node verify-tables.js                   # Schema verification
+node apply-missing-tables.js            # Apply missing schema
+node cleanup-test-data.js               # Remove test data
+node cleanup-incident-data.js [uuid]    # Clean specific user data
+
+# Mobile App (Capacitor)
+npx cap sync                            # Sync web→native
+npx cap open android                    # Open Android Studio
+npx cap run android                     # Build and run on device
+cd android && ./gradlew assembleRelease # Build release APK
+cd android && ./gradlew bundleRelease   # Build release AAB
 
 # Utilities
 npm run health             # API health check
 npm run clean              # Clear caches and temp files
-node verify-tables.js      # Schema verification
-node apply-missing-tables.js  # Apply missing schema
 ```
 
 ---
@@ -226,6 +247,26 @@ const browser = await puppeteer.launch({
 
 **See also:** `docs/PUPPETEER_RAILWAY_TROUBLESHOOTING.md` for detailed debugging guide
 
+### Email System (Resend API)
+
+**3-4 emails sent per completed incident:**
+
+1. **Image Download Links** - Sent immediately after Page 12 submission
+2. **90-Day Retention Notice** - GDPR compliance notification
+3. **PDF Report** - Sent to user + accounts when PDF generation completes (~2-3 min)
+4. **AI Processing Notice** - Fallback if Puppeteer fails (rare)
+
+**Email provider:** Resend (HTTP API) - Replaced nodemailer due to Railway's blocked SMTP ports
+
+**Email retry queue:** Failed emails automatically retried with exponential backoff (max 3 attempts)
+
+**Key files:**
+- Email service: `lib/emailService.js`
+- Queue processor: `src/services/emailQueueService.js`
+- Email templates: `lib/generators/emailGenerator.js`
+
+**See:** `EMAIL-FLOW-DOCUMENTATION.md` for complete email flow, timing, and troubleshooting
+
 ### Email Attachments (Resend)
 
 When sending emails with PDF attachments via Resend, **must include contentType**:
@@ -265,6 +306,7 @@ Cron job (every 5 min) → Process queue → Generate PDF
 
 **Key tables:**
 - `pdf_generation_queue` - Pending/failed jobs with retry logic
+- `email_retry_queue` - Failed email delivery attempts
 - `completed_incident_forms` - Successful completions
 
 **Important fields:**
@@ -280,9 +322,90 @@ Cron job (every 5 min) → Process queue → Generate PDF
 ```bash
 node check-pdf-queue-state.js    # View queue status
 node requeue-failed-pdfs.js      # Retry failed jobs
+node check-queue-status.js       # Check specific job
 ```
 
 **Why queue?** PDF generation involves Adobe API (rate limits), Puppeteer (can crash), and network calls (can timeout). Queue ensures reliability through automatic retries with exponential backoff.
+
+---
+
+## Mobile App (Capacitor)
+
+### Overview
+
+Native iOS and Android apps wrap the web application using Capacitor. The apps load the hosted Railway site (`https://carcrashlawyerai.co.uk`) within a native webview.
+
+**Configuration:** `capacitor.config.ts`
+**Platforms:** `android/` (Gradle/Java), `ios/` (Xcode/Swift)
+
+### Key Features
+
+- **Native camera access** - Photo upload via device camera
+- **Biometric auth** - Face ID / Touch ID for secure login
+- **Push notifications** - Real-time updates
+- **Offline detection** - Handle network loss gracefully
+- **Stripe integration** - In-app browser for checkout
+- **Splash screen** - Branded loading screen (#0ea5e9 blue)
+
+### Build Process
+
+```bash
+# Sync web assets to native projects
+npx cap sync
+
+# Android development
+npx cap open android          # Open in Android Studio
+npx cap run android           # Build and run on device/emulator
+
+# Android release builds
+cd android
+./gradlew assembleRelease     # APK for direct installation
+./gradlew bundleRelease       # AAB for Google Play Store
+
+# iOS development (macOS only)
+npx cap open ios              # Open in Xcode
+npx cap run ios               # Build and run on device/simulator
+```
+
+### Build Artifacts
+
+Release builds generate:
+- `android/app/build/outputs/apk/release/app-release.apk` - APK (direct install)
+- `android/app/build/outputs/bundle/release/app-release.aab` - AAB (Play Store)
+
+**Current versions in root:**
+- `carcrashlawyerai-v1.0.apk` - Direct distribution
+- `carcrashlawyerai-v1.0.aab` - Google Play submission
+
+### Important Patterns
+
+**File upload from mobile:**
+1. Use temp upload endpoint first (`/api/images/temp-upload`)
+2. Return temp ID immediately (prevents app backgrounding issues)
+3. Link temp file to user record on form submit
+
+**Biometric authentication:**
+- Plugin: `capacitor-native-biometric`
+- Stores encrypted tokens in secure device storage
+- Falls back to standard login if biometrics unavailable
+
+**Navigation:**
+- Web app runs inside webview (all HTML pages work natively)
+- External links (Stripe) open in system browser via Browser plugin
+- Deep linking via custom URL scheme: `carcrashlawyerai://`
+
+### Testing Mobile
+
+**Web → Mobile workflow:**
+1. Make changes to `public/` HTML or `src/` backend
+2. Test in browser first (`npm run dev`)
+3. Sync to native: `npx cap sync`
+4. Test in native: `npx cap run android` or `npx cap run ios`
+
+**Common issues:**
+- Camera not working: Check permissions in `AndroidManifest.xml` / `Info.plist`
+- File upload failing: Verify temp upload endpoint handling multipart/form-data
+- Stripe redirect broken: Confirm `allowNavigation` includes Stripe domains
 
 ---
 
@@ -304,8 +427,16 @@ node requeue-failed-pdfs.js      # Retry failed jobs
   /data             # dataFetcher.js - database abstractions
   /generators       # Email, PDF templates
 
-/public             # Static assets
+/public             # Static assets (web app & mobile webview)
   *.html            # Page templates (incident-form-page1-12.html)
+
+/android            # Native Android app (Capacitor)
+  /app/src/main     # Java/Kotlin source
+  /gradle           # Build configuration
+
+/ios                # Native iOS app (Capacitor)
+  /App              # Swift source
+  /Pods             # CocoaPods dependencies
 
 /migrations         # Database migrations (numbered, with rollbacks)
 /scripts            # Utility scripts
@@ -313,6 +444,7 @@ node requeue-failed-pdfs.js      # Retry failed jobs
 /credentials        # Adobe credentials (not in Git)
 
 index.js            # Entry point + WebSocket init + graceful shutdown
+capacitor.config.ts # Mobile app configuration
 ```
 
 **`/src` vs `/lib`:** Use `/src` for application-specific code (references domain tables). Use `/lib` for generic, reusable code (could be npm package).
@@ -333,6 +465,8 @@ index.js            # Entry point + WebSocket init + graceful shutdown
 | `temp_uploads` | Temporary uploads (24hr TTL) | `id` |
 | `ai_transcription` | OpenAI Whisper transcripts | `id` |
 | `completed_incident_forms` | Final PDF records | `id` |
+| `pdf_generation_queue` | PDF job queue with retries | `id` |
+| `email_retry_queue` | Failed email retry tracking | `id` |
 
 ### Row Level Security
 
@@ -379,6 +513,10 @@ POST   /api/ai/analyze-incident
 PDF:
 POST   /api/pdf/generate
 
+Email:
+POST   /api/pdf/send-image-links/:userId
+POST   /api/pdf/resend-email/:userId
+
 GDPR:
 POST   /api/gdpr/export, /api/gdpr/delete-account
 
@@ -401,7 +539,14 @@ SUPABASE_URL=https://xxx.supabase.co
 SUPABASE_ANON_KEY=xxx                # Client auth
 SUPABASE_SERVICE_ROLE_KEY=xxx        # Server (bypasses RLS)
 OPENAI_API_KEY=sk-xxx
-GITHUB_WEBHOOK_SECRET=xxx
+```
+
+**Email (Required for production):**
+```bash
+RESEND_API_KEY=re_xxxxx
+RESEND_FROM_EMAIL=Car Crash Lawyer AI <noreply@carcrashlawyerai.com>
+ACCOUNTS_EMAIL=accounts@carcrashlawyerai.com
+EMAIL_ENABLED=true                   # Set false to disable emails
 ```
 
 **Optional (graceful fallback):**
@@ -410,6 +555,8 @@ PDF_SERVICES_CLIENT_ID=xxx           # Falls back to pdf-lib
 PDF_SERVICES_CLIENT_SECRET=xxx
 WHAT3WORDS_API_KEY=xxx
 DVLA_API_KEY=xxx
+WEBHOOK_API_KEY=xxx                  # Internal API protection
+GITHUB_WEBHOOK_SECRET=xxx
 CRON_ENABLED=true                    # Set false to disable cron jobs
 ```
 
@@ -457,6 +604,21 @@ lsof -ti:5000 | xargs kill -9
 **Supabase connection:** `node scripts/test-supabase-client.js`
 
 **PDF generation issues:** `node test-form-filling.js [uuid]` for diagnostics
+
+**Email not sending:**
+```bash
+node test-railway-email.js          # Test Resend API
+node send-pdf-email.js [uuid]       # Resend specific email
+```
+
+**PDF queue stuck:**
+```bash
+node check-pdf-queue-state.js       # Check queue status
+node requeue-failed-pdfs.js         # Retry failed jobs
+node requeue-abandoned.js           # Requeue abandoned jobs
+```
+
+**Mobile app camera not working:** Check permissions in `AndroidManifest.xml` or `Info.plist`
 
 ---
 
@@ -514,7 +676,7 @@ try {
 **Format:** `type: description`
 **Types:** `feat`, `fix`, `docs`, `refactor`, `test`, `chore`
 
-**Never commit:** `.env`, `credentials/`, `node_modules/`, `test-output/`, `coverage/`
+**Never commit:** `.env`, `credentials/`, `node_modules/`, `test-output/`, `coverage/`, `*.apk`, `*.aab`
 
 PRs should include: lint output, test output, and note any migrations or PDF mapping updates.
 
@@ -528,6 +690,25 @@ PRs should include: lint output, test output, and note any migrations or PDF map
 - Pages 13-18: White - Legal document format (PDF only)
 
 Do not "fix" these to match - they're deliberate design choices.
+
+---
+
+## Documentation
+
+**Key reference files:**
+- `EMAIL-FLOW-DOCUMENTATION.md` - Complete email system flow and troubleshooting
+- `AGENTS.md` - Contributor guide and coding standards
+- `README.md` - Project overview and quick start
+- `DEPLOYMENT-GUIDE-*.md` - Railway deployment procedures
+- `docs/ARCHITECTURE.md` - Detailed system architecture
+- `docs/MOBILE_APP_TRANSITION_PLAN.md` - Mobile app development roadmap
+
+**Slash commands** (Claude Code):
+- `/start` - Load full project context
+- `/status` - Check all services
+- `/db` - Show database schema
+- `/docs` - List documentation files
+- `/help` - Show all available commands
 
 ---
 
@@ -558,5 +739,5 @@ Do not "fix" these to match - they're deliberate design choices.
 
 ---
 
-**Last Updated:** 2026-01-04
+**Last Updated:** 2026-01-05
 **Version:** 2.2.2
