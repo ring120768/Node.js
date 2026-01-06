@@ -512,10 +512,10 @@
                 signupFlowV2 = config.features?.signupFlowV2 === true;
                 console.log(`🔄 Signup flow: ${signupFlowV2 ? 'V2 (auth after payment)' : 'V1 (auth on Page 1)'}`);
 
-                if (config.supabaseUrl && config.supabaseKey) {
+                if (config.supabaseUrl && config.supabaseAnonKey) {
                     supabaseClient = window.supabase.createClient(
                         config.supabaseUrl,
-                        config.supabaseKey
+                        config.supabaseAnonKey
                     );
                     console.log('✅ Supabase initialized');
                 } else {
@@ -577,17 +577,40 @@
 
                     const result = await response.json();
 
-                    if (result.success && result.userId) {
-                        console.log('✅ V2 Auto-login successful:', result.userId);
+                    if (result.success && result.user) {
+                        console.log('✅ V2 Auto-login successful:', result.user.id);
 
                         // Store user ID for other pages
-                        localStorage.setItem('create_user_id', result.userId);
-                        sessionStorage.setItem('userId', result.userId);
+                        localStorage.setItem('create_user_id', result.user.id);
+                        sessionStorage.setItem('userId', result.user.id);
 
                         // Cookies should already be set by the endpoint
                         console.log('🍪 Session cookies set by server');
 
-                        return result.userId;
+                        // CRITICAL FIX: Initialize Supabase client session
+                        // Server sets HTTP-only cookies (for middleware), but client SDK needs session tokens
+                        if (result.session && supabaseClient) {
+                            const { access_token, refresh_token } = result.session;
+
+                            try {
+                                const { data, error } = await supabaseClient.auth.setSession({
+                                    access_token,
+                                    refresh_token
+                                });
+
+                                if (error) {
+                                    console.error('❌ Failed to set Supabase client session:', error);
+                                } else {
+                                    console.log('✅ Supabase client session initialized');
+                                }
+                            } catch (err) {
+                                console.error('❌ Error initializing Supabase session:', err);
+                            }
+                        } else {
+                            console.warn('⚠️ No session tokens returned from server or Supabase client not initialized');
+                        }
+
+                        return result.user.id;
                     }
 
                     if (result.pending) {
