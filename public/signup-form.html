@@ -1455,13 +1455,26 @@
 
     // Initialize page-specific settings
     function initializePage() {
-      // Set max date for DOB input (must be 16+ years old)
+      // Set date range for DOB input (must be 16+ years old)
       const dobInput = document.getElementById('date_of_birth');
       if (dobInput) {
         const today = new Date();
+
+        // Maximum date: 16 years ago (minimum age requirement)
         const maxDate = new Date(today.getFullYear() - 16, today.getMonth(), today.getDate());
         const maxDateString = maxDate.toISOString().split('T')[0];
         dobInput.setAttribute('max', maxDateString);
+
+        // Minimum date: 100 years ago (reasonable age range)
+        const minDate = new Date(today.getFullYear() - 100, today.getMonth(), today.getDate());
+        const minDateString = minDate.toISOString().split('T')[0];
+        dobInput.setAttribute('min', minDateString);
+
+        // Set default to 1st Jan 1990 (opens picker at sensible year on Android)
+        // This prevents users having to scroll back from 2010
+        if (!dobInput.value) {
+          dobInput.value = '1990-01-01';
+        }
       }
     }
 
