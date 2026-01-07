@@ -8,12 +8,12 @@ const config: CapacitorConfig = {
   // Server configuration - loads your hosted web app
   server: {
     // Production URL - the app loads your Railway-hosted site
-    url: 'https://carcrashlawyerai.co.uk',
+    url: 'https://car-crash-lawyer-ai-production.up.railway.app',
     cleartext: false,
     // Allow navigation to these domains
     allowNavigation: [
-      'carcrashlawyerai.co.uk',
-      '*.carcrashlawyerai.co.uk',
+      'car-crash-lawyer-ai-production.up.railway.app',
+      '*.railway.app',
       'checkout.stripe.com',  // For Stripe payment redirect
       'js.stripe.com',
     ],
