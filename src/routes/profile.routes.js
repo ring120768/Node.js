@@ -16,4 +16,7 @@ router.get('/:userId', profileController.getUserProfile);
 // PUT /api/profile/:userId - Update user profile
 router.put('/:userId', profileController.updateUserProfile);
 
+// POST /api/profile/update-fcm-token - Update FCM token for push notifications
+router.post('/update-fcm-token', profileController.updateFcmToken);
+
 module.exports = router;

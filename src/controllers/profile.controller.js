@@ -195,7 +195,51 @@ async function updateUserProfile(req, res) {
   }
 }
 
+/**
+ * Update FCM Token
+ * POST /api/profile/update-fcm-token
+ * Saves device FCM token for push notifications
+ */
+async function updateFcmToken(req, res) {
+  try {
+    const { fcmToken } = req.body;
+    const userId = req.user?.id;
+
+    if (!userId) {
+      return sendError(res, 401, 'User not authenticated', 'UNAUTHORIZED');
+    }
+
+    if (!fcmToken || typeof fcmToken !== 'string') {
+      return sendError(res, 400, 'Valid FCM token required', 'INVALID_TOKEN');
+    }
+
+    logger.info('📱 Updating FCM token', { userId, tokenPreview: fcmToken.substring(0, 20) + '...' });
+
+    const { error } = await supabase
+      .from('user_signup')
+      .update({ fcm_token: fcmToken })
+      .eq('create_user_id', userId);
+
+    if (error) {
+      logger.error('❌ Failed to update FCM token:', error);
+      return sendError(res, 500, 'Failed to update notification token', 'UPDATE_FAILED');
+    }
+
+    logger.info('✅ FCM token updated successfully', { userId });
+
+    return res.status(200).json({
+      success: true,
+      message: 'Notification token updated successfully'
+    });
+
+  } catch (error) {
+    logger.error('❌ Error updating FCM token:', error);
+    return sendError(res, 500, 'Failed to update notification token', 'INTERNAL_ERROR');
+  }
+}
+
 module.exports = {
   getUserProfile,
-  updateUserProfile
+  updateUserProfile,
+  updateFcmToken
 };

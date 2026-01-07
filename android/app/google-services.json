@@ -1,0 +1,29 @@
+{
+  "project_info": {
+    "project_number": "740683204218",
+    "project_id": "com-carcrashlawyerai-app",
+    "storage_bucket": "com-carcrashlawyerai-app.firebasestorage.app"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:740683204218:android:6423addc6930785341ddc3",
+        "android_client_info": {
+          "package_name": "com.carcrashlawyerai.app"
+        }
+      },
+      "oauth_client": [],
+      "api_key": [
+        {
+          "current_key": "AIzaSyCHQoah_gxGEYuJ3JHqa2C-OBVT1_3nPaw"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": []
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}
