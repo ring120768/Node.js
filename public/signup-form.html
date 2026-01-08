@@ -10,6 +10,11 @@
 
   <!-- Supabase Client for Auto-Login -->
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+
+  <!-- Air Datepicker - Modern, mobile-friendly date picker -->
+  <link href="https://cdn.jsdelivr.net/npm/air-datepicker@3.5.3/air-datepicker.css" rel="stylesheet">
+  <script src="https://cdn.jsdelivr.net/npm/air-datepicker@3.5.3/air-datepicker.js"></script>
+
   <style>
     :root {
       --grad-start: #2e6a9d;
@@ -638,11 +643,12 @@
         <h2>Please enter your Date of Birth</h2>
         <p class="desc">We need this to verify you're 16 or older</p>
         <input
-          type="date"
+          type="text"
           id="date_of_birth"
           class="input-field"
           required
-          max=""
+          placeholder="DD/MM/YYYY"
+          autocomplete="off"
         />
         <p class="hint">You must be at least 16 years old to use this service</p>
         <p class="error-message" id="dob-error"></p>
@@ -1455,26 +1461,41 @@
 
     // Initialize page-specific settings
     function initializePage() {
-      // Set date range for DOB input (must be 16+ years old)
+      // Initialize Air Datepicker for DOB input (must be 16+ years old)
       const dobInput = document.getElementById('date_of_birth');
-      if (dobInput) {
+      if (dobInput && typeof AirDatepicker !== 'undefined') {
         const today = new Date();
 
         // Maximum date: 16 years ago (minimum age requirement)
         const maxDate = new Date(today.getFullYear() - 16, today.getMonth(), today.getDate());
-        const maxDateString = maxDate.toISOString().split('T')[0];
-        dobInput.setAttribute('max', maxDateString);
 
         // Minimum date: 100 years ago (reasonable age range)
         const minDate = new Date(today.getFullYear() - 100, today.getMonth(), today.getDate());
-        const minDateString = minDate.toISOString().split('T')[0];
-        dobInput.setAttribute('min', minDateString);
 
-        // Set default to 1st Jan 1990 (opens picker at sensible year on Android)
-        // This prevents users having to scroll back from 2010
-        if (!dobInput.value) {
-          dobInput.value = '1990-01-01';
-        }
+        // Default selected date: 1st Jan 1990 (easier year navigation on mobile)
+        const defaultDate = new Date(1990, 0, 1);
+
+        // Initialize Air Datepicker with UK format and mobile-optimized settings
+        new AirDatepicker(dobInput, {
+          dateFormat: 'dd/MM/yyyy',           // UK date format
+          minDate: minDate,                   // 100 years ago
+          maxDate: maxDate,                   // 16 years ago
+          startDate: defaultDate,             // Opens calendar at 1990
+          selectedDates: !dobInput.value ? [defaultDate] : undefined, // Pre-select 1990 if empty
+          autoClose: true,                    // Close picker after selection
+          position: 'bottom center',          // Position below input
+          isMobile: true,                     // Mobile-optimized view
+          container: '',                      // Use default body positioning
+          multipleDates: false,               // Single date only
+          toggleSelected: false,              // Don't deselect on re-click
+          view: 'days',                       // Default to day view
+          onSelect({ date, formattedDate }) {
+            // Update input value with formatted date
+            dobInput.value = formattedDate;
+            // Trigger change event for validation
+            dobInput.dispatchEvent(new Event('change'));
+          }
+        });
       }
     }
 
@@ -1487,14 +1508,11 @@
           Object.assign(formData, draft);
           console.log('✅ Loaded draft from localStorage');
 
-          // Restore date of birth if exists (convert DD/MM/YYYY to YYYY-MM-DD for input)
+          // Restore date of birth if exists (Air Datepicker uses DD/MM/YYYY directly)
           if (formData.date_of_birth) {
-            const [day, month, year] = formData.date_of_birth.split('/');
-            if (day && month && year) {
-              const dobInput = document.getElementById('date_of_birth');
-              if (dobInput) {
-                dobInput.value = `${year}-${month}-${day}`;
-              }
+            const dobInput = document.getElementById('date_of_birth');
+            if (dobInput) {
+              dobInput.value = formData.date_of_birth; // Already in DD/MM/YYYY format
             }
           }
         } catch (e) {
@@ -1736,8 +1754,25 @@
         return false;
       }
 
+      // Parse DD/MM/YYYY format from Air Datepicker
+      const [day, month, year] = dob.split('/');
+      if (!day || !month || !year) {
+        showError('dob-error', 'Please enter a valid date (DD/MM/YYYY)');
+        dobInput.classList.add('error');
+        return false;
+      }
+
+      // Create date object (month is 0-indexed in JavaScript)
+      const birthDate = new Date(parseInt(year), parseInt(month) - 1, parseInt(day));
+
+      // Validate it's a real date
+      if (isNaN(birthDate.getTime())) {
+        showError('dob-error', 'Please enter a valid date');
+        dobInput.classList.add('error');
+        return false;
+      }
+
       // Calculate age
-      const birthDate = new Date(dob);
       const today = new Date();
       let age = today.getFullYear() - birthDate.getFullYear();
       const monthDiff = today.getMonth() - birthDate.getMonth();
@@ -2785,10 +2820,9 @@
       // Page 2: Date of Birth
       if (currentPage === 2) {
         const dobValue = document.getElementById('date_of_birth').value;
-        // Convert from YYYY-MM-DD (HTML5 date format) to DD/MM/YYYY (UK format)
+        // Air Datepicker already returns DD/MM/YYYY format
         if (dobValue) {
-          const [year, month, day] = dobValue.split('-');
-          formData.date_of_birth = `${day}/${month}/${year}`;
+          formData.date_of_birth = dobValue;
         }
         return;
       }
