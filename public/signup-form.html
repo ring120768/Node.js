@@ -14,6 +14,7 @@
   <!-- Air Datepicker - Modern, mobile-friendly date picker -->
   <link href="https://cdn.jsdelivr.net/npm/air-datepicker@3.5.3/air-datepicker.css" rel="stylesheet">
   <script src="https://cdn.jsdelivr.net/npm/air-datepicker@3.5.3/air-datepicker.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/air-datepicker@3.5.3/locale/en.js"></script>
 
   <style>
     :root {
@@ -1477,6 +1478,7 @@
 
         // Initialize Air Datepicker with UK format and mobile-optimized settings
         new AirDatepicker(dobInput, {
+          locale: 'en',                       // English locale for month/day names
           dateFormat: 'dd/MM/yyyy',           // UK date format
           minDate: minDate,                   // 100 years ago
           maxDate: maxDate,                   // 16 years ago
