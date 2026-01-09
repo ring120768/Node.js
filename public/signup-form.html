@@ -1393,9 +1393,24 @@
       console.log(`  - Page ${pageNum}: ${page.classList.contains('active') ? '✅ ACTIVE' : '⭕ Hidden'}`);
     });
 
-    updateProgress();
-    initializePage();
-    setupEventListeners();
+    // ✅ FIX: Wait for DOM to be fully ready (critical for Android webview)
+    // Android webview has different timing than desktop browsers - event listeners
+    // must attach AFTER DOM elements are ready, not immediately on script load
+    function initializeForm() {
+      console.log('✅ DOM ready - initializing signup form...');
+      updateProgress();
+      initializePage();
+      setupEventListeners();
+    }
+
+    // Check if DOM is already loaded (desktop browsers) or still loading (Android)
+    if (document.readyState === 'loading') {
+      // DOM still loading - wait for DOMContentLoaded event
+      document.addEventListener('DOMContentLoaded', initializeForm);
+    } else {
+      // DOM already loaded - initialize immediately
+      initializeForm();
+    }
 
     // Setup event listeners (CSP-compliant - no inline onclick)
     function setupEventListeners() {
