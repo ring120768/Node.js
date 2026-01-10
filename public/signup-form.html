@@ -1478,41 +1478,49 @@
     // Initialize page-specific settings
     function initializePage() {
       // Initialize Air Datepicker for DOB input (must be 16+ years old)
+      // ✅ FIX: Wrap in try-catch to prevent datepicker errors from breaking password strength listeners
       const dobInput = document.getElementById('date_of_birth');
       if (dobInput && typeof AirDatepicker !== 'undefined') {
-        const today = new Date();
+        try {
+          const today = new Date();
 
-        // Maximum date: 16 years ago (minimum age requirement)
-        const maxDate = new Date(today.getFullYear() - 16, today.getMonth(), today.getDate());
+          // Maximum date: 16 years ago (minimum age requirement)
+          const maxDate = new Date(today.getFullYear() - 16, today.getMonth(), today.getDate());
 
-        // Minimum date: 100 years ago (reasonable age range)
-        const minDate = new Date(today.getFullYear() - 100, today.getMonth(), today.getDate());
+          // Minimum date: 100 years ago (reasonable age range)
+          const minDate = new Date(today.getFullYear() - 100, today.getMonth(), today.getDate());
 
-        // Default selected date: 1st Jan 1990 (easier year navigation on mobile)
-        const defaultDate = new Date(1990, 0, 1);
+          // Default selected date: 1st Jan 1990 (easier year navigation on mobile)
+          const defaultDate = new Date(1990, 0, 1);
 
-        // Initialize Air Datepicker with UK format and mobile-optimized settings
-        new AirDatepicker(dobInput, {
-          locale: 'en',                       // English locale for month/day names
-          dateFormat: 'dd/MM/yyyy',           // UK date format
-          minDate: minDate,                   // 100 years ago
-          maxDate: maxDate,                   // 16 years ago
-          startDate: defaultDate,             // Opens calendar at 1990
-          selectedDates: !dobInput.value ? [defaultDate] : undefined, // Pre-select 1990 if empty
-          autoClose: true,                    // Close picker after selection
-          position: 'bottom center',          // Position below input
-          isMobile: true,                     // Mobile-optimized view
-          container: '',                      // Use default body positioning
-          multipleDates: false,               // Single date only
-          toggleSelected: false,              // Don't deselect on re-click
-          view: 'days',                       // Default to day view
-          onSelect({ date, formattedDate }) {
-            // Update input value with formatted date
-            dobInput.value = formattedDate;
-            // Trigger change event for validation
-            dobInput.dispatchEvent(new Event('change'));
-          }
-        });
+          // Initialize Air Datepicker with UK format and mobile-optimized settings
+          new AirDatepicker(dobInput, {
+            locale: 'en',                       // English locale for month/day names
+            dateFormat: 'dd/MM/yyyy',           // UK date format
+            minDate: minDate,                   // 100 years ago
+            maxDate: maxDate,                   // 16 years ago
+            startDate: defaultDate,             // Opens calendar at 1990
+            selectedDates: !dobInput.value ? [defaultDate] : undefined, // Pre-select 1990 if empty
+            autoClose: true,                    // Close picker after selection
+            position: 'bottom center',          // Position below input
+            isMobile: true,                     // Mobile-optimized view
+            container: '',                      // Use default body positioning
+            multipleDates: false,               // Single date only
+            toggleSelected: false,              // Don't deselect on re-click
+            view: 'days',                       // Default to day view
+            onSelect({ date, formattedDate }) {
+              // Update input value with formatted date
+              dobInput.value = formattedDate;
+              // Trigger change event for validation
+              dobInput.dispatchEvent(new Event('change'));
+            }
+          });
+          console.log('✅ Air Datepicker initialized successfully');
+        } catch (error) {
+          console.error('⚠️ Air Datepicker initialization failed (non-critical):', error.message);
+          console.log('✅ Continuing with form initialization...');
+          // DOB field will still work as a regular text input
+        }
       }
     }
 
