@@ -1,532 +1,417 @@
-# WhatsApp Business Cloud API Setup Guide
+# WhatsApp Business Platform Setup Guide
+**For: Car Crash Lawyer AI**
+**WhatsApp Number:** 07496 834683
+**Date:** 8th January 2026
 
-## Overview
+---
 
-WhatsApp Business Cloud API provides **1000 FREE messages/month**, then ~£0.01-0.05 per message.
+## Why Meta WhatsApp Business Platform?
 
-**What you'll need:**
-- Facebook Business Manager account (you already have this! ✅)
-- UK phone number (for WhatsApp Business account)
-- Message templates approved by Meta (24-48 hours)
+✅ **Lower costs** - Free user-initiated conversations (24hr window)
+✅ **Template messages** - £0.03-0.05 per message (vs Twilio £0.08+)
+✅ **Advertising integration** - Click-to-WhatsApp ads on Facebook/Instagram
+✅ **Analytics** - Built into Facebook Business Manager
+✅ **Scalability** - Better pricing at high volumes
+✅ **Brand control** - Custom templates, verified business profile
 
-**Notification flow:**
+---
+
+## Phase 1: Meta Business Manager Setup (15 minutes)
+
+### Step 1: Create Facebook Business Manager Account
+
+1. Go to: https://business.facebook.com
+2. Click **"Create Account"**
+3. Enter:
+   - **Business Name:** Beat the Bookie Ltd (or Car Crash Lawyer AI)
+   - **Your Name:** Ian Ring
+   - **Business Email:** accounts@carcrashlawyerai.com
+4. Click **"Submit"**
+
+### Step 2: Verify Your Business
+
+**Option A: Business Documents (Fastest)**
+1. Go to: Business Settings → Business Info → Verification
+2. Upload one of:
+   - Companies House certificate (Beat the Bookie Ltd)
+   - Business bank statement
+   - Utility bill with business address
+3. Verification takes 1-3 business days
+
+**Option B: Business Phone (Alternative)**
+1. Use: +44 7496 834683
+2. Receive verification code via SMS
+3. Instant verification (but limited features until document verified)
+
+---
+
+## Phase 2: WhatsApp Business Platform Setup (20 minutes)
+
+### Step 1: Add WhatsApp to Business Manager
+
+1. In Business Manager, go to: **Settings → Accounts → WhatsApp Accounts**
+2. Click **"Add"** → **"Create a new WhatsApp Business Account"**
+3. Enter:
+   - **WhatsApp Business Account Name:** Car Crash Lawyer AI
+   - **WhatsApp Business Display Name:** Car Crash Lawyer AI
+   - **Category:** Legal Services
+   - **Description:** Professional legal documentation for UK traffic accidents
+   - **Website:** https://carcrashlawyerai.co.uk
+
+### Step 2: Add Your Phone Number
+
+1. Click **"Add Phone Number"**
+2. Enter: **+44 7496 834683**
+3. Select: **Voice call** or **SMS** for verification code
+4. Enter the 6-digit code received
+5. ✅ Number is now verified
+
+**Important:** This number will be used ONLY for WhatsApp Business API. Don't use it for personal WhatsApp.
+
+### Step 3: Create WhatsApp Business Profile
+
+1. Go to: WhatsApp Manager → Business Profile
+2. Complete:
+   - **Profile Photo:** Upload your app icon (512×512)
+   - **About:** "Professional legal documentation for UK traffic accident victims. GDPR compliant."
+   - **Address:** Your registered business address
+   - **Email:** accounts@carcrashlawyerai.com
+   - **Website:** https://carcrashlawyerai.co.uk
+   - **Business Hours:** Mon-Fri 9am-5pm GMT
+
+---
+
+## Phase 3: Create Message Templates (30 minutes)
+
+WhatsApp requires **pre-approved templates** for business-initiated messages. User replies are free for 24 hours.
+
+### Template 1: Photo Upload Confirmation
+
+**Template Name:** `photo_upload_confirmation`
+**Category:** Transactional
+**Language:** English (UK)
+
 ```
-PDF Ready
-    ↓
-1. Try Push Notification (if user has app - instant)
-    ↓
-2. Try WhatsApp (if user has phone number - instant)  ← NEW!
-    ↓
-3. Send Email (always sent - PRIMARY notification)
+Hi {{1}},
+
+Great news! We've received your photos for your traffic accident report.
+
+📸 Photos uploaded: {{2}}
+📅 Date: {{3}}
+
+Your detailed PDF report will be ready in 2-3 minutes. We'll send it to your email and WhatsApp.
+
+Need help? Reply to this message.
+
+Car Crash Lawyer AI
+```
+
+**Variables:**
+1. `{{1}}` - User's first name
+2. `{{2}}` - Number of photos (e.g., "5")
+3. `{{3}}` - Upload date (DD/MM/YYYY)
+
+---
+
+### Template 2: PDF Report Ready
+
+**Template Name:** `pdf_report_ready`
+**Category:** Transactional
+**Language:** English (UK)
+
+```
+Hi {{1}},
+
+Your traffic accident report is ready! 📄
+
+✅ 18-page professional PDF
+✅ All your photos included
+✅ AI-generated summary
+
+Download your report:
+{{2}}
+
+This report has been sent to:
+📧 {{3}}
+
+Your data will be securely stored for 90 days as per GDPR regulations.
+
+Questions? Just reply to this message.
+
+Car Crash Lawyer AI
+```
+
+**Variables:**
+1. `{{1}}` - User's first name
+2. `{{2}}` - PDF download link
+3. `{{3}}` - User's email address
+
+---
+
+### Template 3: 90-Day GDPR Retention Notice
+
+**Template Name:** `gdpr_retention_notice`
+**Category:** Transactional
+**Language:** English (UK)
+
+```
+Hi {{1}},
+
+This is a reminder about your traffic accident report created on {{2}}.
+
+🗂️ Data Retention Notice
+Your personal data and accident report will be securely stored for 90 days to comply with UK legal documentation requirements.
+
+After 90 days:
+✅ All photos will be permanently deleted
+✅ Personal information will be anonymised
+✅ Your report will be archived (anonymous)
+
+Need a copy? Download now:
+{{3}}
+
+Questions about data privacy? Reply to this message.
+
+Car Crash Lawyer AI
+```
+
+**Variables:**
+1. `{{1}}` - User's first name
+2. `{{2}}` - Report creation date (DD/MM/YYYY)
+3. `{{3}}` - PDF download link
+
+---
+
+### Template 4: Processing Status Update
+
+**Template Name:** `processing_status`
+**Category:** Transactional
+**Language:** English (UK)
+
+```
+Hi {{1}},
+
+Your report is being processed...
+
+{{2}}% complete
+
+⏳ Estimated time: {{3}} minutes
+
+We're creating your professional 18-page PDF with all your photos and details.
+
+You'll receive it via email and WhatsApp when ready.
+
+Car Crash Lawyer AI
+```
+
+**Variables:**
+1. `{{1}}` - User's first name
+2. `{{2}}` - Progress percentage (e.g., "50")
+3. `{{3}}` - Estimated minutes remaining
+
+---
+
+### Template 5: Welcome Message (Optional - for Click-to-WhatsApp Ads)
+
+**Template Name:** `welcome_message`
+**Category:** Marketing
+**Language:** English (UK)
+
+```
+Hi! Welcome to Car Crash Lawyer AI 👋
+
+We help UK traffic accident victims create professional legal documentation in minutes.
+
+✅ Free 18-page PDF report
+✅ AI-powered analysis
+✅ GDPR compliant
+✅ No hidden fees
+
+Ready to start?
+Visit: https://carcrashlawyerai.co.uk
+
+Questions? Just reply to this message.
+
+Car Crash Lawyer AI
 ```
 
 ---
 
-## Step 1: Access Meta Business Suite
+## Phase 4: Submit Templates for Approval
 
-1. Go to **https://business.facebook.com/**
-2. Log in with your Facebook Business account
-3. Select your business (or create one if needed)
-4. Navigate to **"All tools"** → **"WhatsApp Manager"**
-
----
-
-## Step 2: Set Up WhatsApp Business Account
-
-### 2.1 Create WhatsApp Business Account
-
-1. In WhatsApp Manager, click **"Get Started"**
-2. Click **"Create a WhatsApp Business Account"**
-3. Select **"Cloud API"** (NOT the old WhatsApp Business API)
-4. Choose **"Use existing Facebook Business account"**
-5. Click **"Continue"**
-
-### 2.2 Add Phone Number
-
-**⚠️ Important:** This phone number will be your WhatsApp Business number.
-
-1. Click **"Add phone number"**
-2. Enter a UK phone number:
-   - **NOT your personal WhatsApp number**
-   - Can be a new SIM card or virtual number
-   - Format: +44 7700 900123
-3. Select **"Text message"** verification
-4. Enter the 6-digit code you receive
-5. Click **"Continue"**
-
-**💡 Tip:** You can use a virtual UK number from:
-- Twilio (pay-as-you-go)
-- Vonage (virtual numbers)
-- Google Voice UK (if available)
-
-### 2.3 Complete Business Profile
-
-1. **Business name:** "Car Crash Lawyer AI"
-2. **Category:** Select "Legal Services" or "Professional Services"
-3. **Description:** "AI-powered legal documentation for UK traffic accidents"
-4. **Website:** https://carcrashlawyerai.co.uk
-5. **Business email:** admin@carcrashlawyerai.com
-6. Click **"Save"**
-
----
-
-## Step 3: Get API Credentials
-
-### 3.1 Phone Number ID
-
-1. In WhatsApp Manager, go to **"API Setup"**
-2. You'll see **"Phone number ID"** - Copy this
-3. Format: `123456789012345`
-
-**Save this:** You'll need it for `.env` file
-
-### 3.2 Access Token (Temporary)
-
-**⚠️ This is a temporary token - we'll create a permanent one next**
-
-1. On the same page, find **"Temporary access token"**
-2. Click **"Copy"**
-3. This token expires in 24 hours
-
-### 3.3 Create Permanent Access Token
-
-**For production, create a System User with permanent token:**
-
-1. Go to **Business Settings** → **"Users"** → **"System Users"**
-2. Click **"Add"** → Create system user:
-   - Name: "WhatsApp API User"
-   - Role: "Admin"
-3. Click **"Add Assets"** → **"Apps"**
-4. Select your WhatsApp app
-5. Toggle **"Manage app"** permission ON
-6. Click **"Generate New Token"**
-7. Select permissions:
-   - ✅ `whatsapp_business_management`
-   - ✅ `whatsapp_business_messaging`
-8. Click **"Generate Token"**
-9. **IMPORTANT:** Copy this token immediately (you can't see it again!)
-
-**Save this:** You'll need it for `.env` file
-
-### 3.4 Business Account ID (Optional - for monitoring)
-
-1. Go to **Business Settings** → **"Business Info"**
-2. Copy **"Business Manager ID"**
-3. Format: `123456789012345`
-
-**Save this:** Optional, for usage monitoring
-
----
-
-## Step 4: Create Message Templates
-
-**⚠️ CRITICAL:** WhatsApp requires pre-approved templates. You CANNOT send freeform messages.
-
-### 4.1 Navigate to Message Templates
-
-1. In WhatsApp Manager, go to **"Message Templates"**
+1. Go to: WhatsApp Manager → Message Templates
 2. Click **"Create Template"**
+3. For each template above:
+   - Enter template name (lowercase, underscores only)
+   - Select category (Transactional or Marketing)
+   - Select language: **English (UK)**
+   - Paste template text
+   - Mark variable positions with `{{1}}`, `{{2}}`, etc.
+   - Add sample values for review
+4. Click **"Submit"**
 
-### 4.2 Create "PDF Ready" Template
+**Approval time:** Usually 2-24 hours. You'll get email notification.
 
-**Template 1: pdf_ready_notification**
-
-1. **Template name:** `pdf_ready_notification`
-2. **Category:** "Utility"
-3. **Languages:** English (UK)
-4. **Header:** None
-5. **Body:**
-   ```
-   ✅ Your Car Crash Lawyer AI report is ready! {{1}}
-   ```
-   - Click **"Add Variable"** for `{{1}}` (user's name)
-6. **Footer:** None
-7. **Buttons:** None (or add "View Report" button later)
-8. **Example values:**
-   - {{1}}: John
-9. Click **"Submit"**
-
-**Status:** Pending approval (24-48 hours)
+**Pro tip:** Transactional templates get approved faster than Marketing templates.
 
 ---
 
-### 4.3 Create "AI Analysis Complete" Template
+## Phase 5: Get API Credentials
 
-**Template 2: ai_complete_notification**
+### Step 1: Create System User
 
-1. **Template name:** `ai_complete_notification`
-2. **Category:** "Utility"
-3. **Languages:** English (UK)
-4. **Body:**
-   ```
-   🤖 We've finished analyzing your incident. {{1}}
-   ```
-   - Variable {{1}}: User's name
-5. **Example values:**
-   - {{1}}: John
-6. Click **"Submit"**
+1. Go to: Business Settings → Users → System Users
+2. Click **"Add"** → **"Create System User"**
+3. Enter:
+   - **Name:** Car Crash Lawyer AI API
+   - **Role:** Admin
+4. Click **"Create System User"**
 
-**Status:** Pending approval
+### Step 2: Generate Access Token
 
----
+1. Click on the system user you just created
+2. Click **"Generate New Token"**
+3. Select:
+   - **App:** (Create new app or select existing)
+   - **Permissions:** `whatsapp_business_messaging`, `whatsapp_business_management`
+   - **Expiration:** Never
+4. Click **"Generate Token"**
+5. **Copy the token immediately** (you won't see it again!)
 
-### 4.4 Create "Processing Started" Template
+### Step 3: Get Your Credentials
 
-**Template 3: processing_started_notification**
-
-1. **Template name:** `processing_started_notification`
-2. **Category:** "Utility"
-3. **Languages:** English (UK)
-4. **Body:**
-   ```
-   📋 We're processing your incident report. You'll receive your PDF shortly.
-   ```
-   - No variables
-5. Click **"Submit"**
-
-**Status:** Pending approval
-
----
-
-### 4.5 Create Generic Template (Optional)
-
-**Template 4: generic_notification**
-
-1. **Template name:** `generic_notification`
-2. **Category:** "Utility"
-3. **Languages:** English (UK)
-4. **Body:**
-   ```
-   {{1}}
-   ```
-   - Variable {{1}}: Custom message
-5. **Example values:**
-   - {{1}}: Your document is ready
-6. Click **"Submit"**
-
----
-
-## Step 5: Configure Environment Variables
-
-### 5.1 Add to `.env` File
-
-Add these lines to `/Users/ianring/Node.js/.env`:
+You'll need these for `.env`:
 
 ```bash
-# WhatsApp Business Cloud API (1000 free messages/month)
-WHATSAPP_PHONE_NUMBER_ID=YOUR_PHONE_NUMBER_ID_HERE
-WHATSAPP_ACCESS_TOKEN=YOUR_PERMANENT_ACCESS_TOKEN_HERE
-WHATSAPP_BUSINESS_ACCOUNT_ID=YOUR_BUSINESS_ACCOUNT_ID_HERE  # Optional
-
-# Enable/disable WhatsApp notifications
-WHATSAPP_ENABLED=true
+WHATSAPP_PHONE_NUMBER_ID=123456789012345   # From WhatsApp Manager → Phone Numbers
+WHATSAPP_BUSINESS_ACCOUNT_ID=987654321098  # From WhatsApp Manager → Settings
+WHATSAPP_ACCESS_TOKEN=EAAxxxxxxxxxxxxx     # From system user token (above)
+WHATSAPP_VERIFY_TOKEN=your_random_secret   # Create your own (for webhooks)
+WHATSAPP_API_VERSION=v21.0                 # Current version (check docs)
 ```
 
-**Replace:**
-- `YOUR_PHONE_NUMBER_ID_HERE` → Phone Number ID from Step 3.1
-- `YOUR_PERMANENT_ACCESS_TOKEN_HERE` → Permanent token from Step 3.3
-- `YOUR_BUSINESS_ACCOUNT_ID_HERE` → Business Account ID from Step 3.4 (optional)
-
-### 5.2 Add to Railway Variables
-
-1. Go to **Railway Dashboard** → Your project
-2. Navigate to **"Variables"** tab
-3. Add the same variables:
-   ```
-   WHATSAPP_PHONE_NUMBER_ID=123456789012345
-   WHATSAPP_ACCESS_TOKEN=EAAxxxx...
-   WHATSAPP_BUSINESS_ACCOUNT_ID=123456789012345
-   WHATSAPP_ENABLED=true
-   ```
-4. Click **"Save"**
-5. Railway will automatically redeploy
+**Where to find IDs:**
+- **Phone Number ID:** WhatsApp Manager → Phone Numbers → Click your number → See "Phone number ID"
+- **Business Account ID:** WhatsApp Manager → Settings → See "WhatsApp Business Account ID"
 
 ---
 
-## Step 6: Wait for Template Approval
+## Phase 6: Set Up Webhooks (for Two-Way Messaging)
 
-**Timeline:** 24-48 hours (usually faster)
+### Step 1: Create Webhook Endpoint in Your App
 
-**Check status:**
-1. Go to WhatsApp Manager → **"Message Templates"**
-2. Look for status:
-   - 🟡 **Pending:** Still under review
-   - 🟢 **Approved:** Ready to use! ✅
-   - 🔴 **Rejected:** Needs modification
+Your app needs to handle:
+- Message delivery status (sent, delivered, read, failed)
+- Incoming user messages (replies, questions)
+- User opt-outs
 
-**If rejected:**
-- Read rejection reason
-- Modify template per guidelines
-- Resubmit
+The webhook URL will be: `https://carcrashlawyerai.co.uk/webhooks/whatsapp`
 
-**Common rejection reasons:**
-- Too promotional (use "Utility" category, not "Marketing")
-- Contains URLs in body (put in buttons instead)
-- Unclear variable placeholders
+### Step 2: Configure Webhook in Meta
 
----
-
-## Step 7: Test WhatsApp Integration
-
-### 7.1 Verify Configuration
-
-```bash
-# Check if WhatsApp is configured
-node -e "
-const whatsapp = require('./lib/services/whatsappService');
-console.log('WhatsApp configured:', whatsapp.isConfigured());
-"
-```
-
-Expected output: `WhatsApp configured: true`
-
-### 7.2 Test Phone Number Formatting
-
-```bash
-# Test UK phone number formatting
-node -e "
-const whatsapp = require('./lib/services/whatsappService');
-console.log(whatsapp.formatPhoneNumber('07700 900123'));  // +447700900123
-console.log(whatsapp.formatPhoneNumber('+44 7700 900123')); // +447700900123
-console.log(whatsapp.formatPhoneNumber('7700900123'));   // +447700900123
-"
-```
-
-### 7.3 Send Test Message (After Template Approval)
-
-**⚠️ Only works after templates are approved!**
-
-```bash
-# Test sending WhatsApp message
-node -e "
-const whatsapp = require('./lib/services/whatsappService');
-
-(async () => {
-  const result = await whatsapp.sendPdfReadyNotification(
-    '+44 7700 900123',  // Your test phone number
-    'John'              // Test user name
-  );
-  console.log('Result:', result);
-})();
-"
-```
-
-Expected output:
-```json
-{
-  "success": true,
-  "messageId": "wamid.HBgLNDQ3NzAwOTAwMTIzFQIAERgSNkQ3MTdCMjRBMzA4RUMwNjI3AA=="
-}
-```
-
-**Check your phone:** You should receive WhatsApp message!
+1. Go to: WhatsApp Manager → Configuration → Webhooks
+2. Click **"Configure"**
+3. Enter:
+   - **Callback URL:** `https://carcrashlawyerai.co.uk/webhooks/whatsapp`
+   - **Verify Token:** (Same as `WHATSAPP_VERIFY_TOKEN` in `.env`)
+4. Subscribe to:
+   - ✅ `messages` (incoming user messages)
+   - ✅ `message_status` (delivery updates)
+5. Click **"Verify and Save"**
 
 ---
 
-## Step 8: Complete Incident Report Test
+## Phase 7: Click-to-WhatsApp Ads (Advertising Benefits!)
 
-**Full end-to-end test:**
+Once setup is complete, you can create Facebook/Instagram ads that:
 
-1. **Start incident report** on production site
-2. **Complete all pages** (1-12 with images)
-3. **Wait for PDF generation** (~2-3 minutes)
-4. **Expected notifications:**
+1. **Click-to-WhatsApp Ads** - Users click ad → Opens WhatsApp with pre-filled message
+2. **Automated Responses** - Auto-reply with welcome message template
+3. **Conversion Tracking** - Track users from ad click → WhatsApp → Form completion
+4. **Retargeting** - Retarget users who messaged but didn't complete form
 
-   ✅ **Push notification** (if you have app installed)
-   ✅ **WhatsApp message** (to your phone number)  ← NEW!
-   ✅ **Email** (always sent as backup)
+**Setup:**
+1. Go to: Facebook Ads Manager
+2. Create new campaign → **Messages** objective
+3. Choose: **WhatsApp** as messaging app
+4. Select your verified WhatsApp number
+5. Choose welcome template: `welcome_message`
+6. Target: UK users, age 25-65, interests: legal services, car insurance
 
-**Notification timeline:**
-```
-PDF generation complete
-    ↓  Immediate
-Push notification sent (if app installed)
-    ↓  Immediate
-WhatsApp message sent (if templates approved)
-    ↓  Immediate
-Email sent (always)
-```
+**Budget suggestion:** Start with £5/day, test for 1 week
 
 ---
 
-## Troubleshooting
+## Testing Before Going Live
 
-### ❌ "WhatsApp not configured" in logs
+### Test Mode (Safe Testing)
 
-**Check:**
-1. `.env` file has `WHATSAPP_PHONE_NUMBER_ID` and `WHATSAPP_ACCESS_TOKEN`
-2. Railway variables are set correctly
-3. Railway redeployed after adding variables
+1. Go to: WhatsApp Manager → API Setup → Test Mode
+2. Enable test mode
+3. Add test numbers (your personal WhatsApp)
+4. Send test messages
+5. Verify templates display correctly
+6. Test webhook delivery
 
-**Fix:**
-```bash
-# Verify .env file
-cat .env | grep WHATSAPP
+### Production Checklist
 
-# Expected output:
-# WHATSAPP_PHONE_NUMBER_ID=123456789012345
-# WHATSAPP_ACCESS_TOKEN=EAAxxxx...
-```
-
-### ❌ "Template not found" error
-
-**Cause:** Template not approved yet or wrong template name
-
-**Fix:**
-1. Check template status in WhatsApp Manager
-2. Wait for approval (24-48 hours)
-3. Verify template name matches exactly:
-   - `pdf_ready_notification` (not `pdf-ready-notification`)
-   - Case-sensitive!
-
-### ❌ "Invalid phone number format" error
-
-**Cause:** Phone number not in E.164 format (+44xxxxxxxxxx)
-
-**Fix:**
-- Ensure `user_signup.phone_number` is stored with UK country code
-- Format: `+447700900123` (no spaces, no dashes)
-- The service auto-formats various UK formats, but database should store E.164
-
-### ❌ WhatsApp message not received
-
-**Check:**
-1. **Templates approved?** (WhatsApp Manager → Message Templates)
-2. **User has phone number?** (Supabase → user_signup table)
-3. **User's phone has WhatsApp?** (Must have WhatsApp installed)
-4. **Railway logs:**
-   ```bash
-   railway logs | grep WhatsApp
-   ```
-
-   Look for:
-   ```
-   💬 WhatsApp message sent successfully
-   ```
-
-### ❌ "Access token expired" error
-
-**Cause:** Using temporary token (expires in 24 hours)
-
-**Fix:**
-- Create permanent token (Step 3.3)
-- Update `.env` and Railway variables
-- Redeploy
-
-### ❌ Rate limit errors
-
-**Cause:** Exceeded Meta's rate limits
-
-**Limits:**
-- **80 messages per second** (unlikely to hit)
-- **1000 free messages per month** (then paid)
-
-**Fix:**
-- Check usage in WhatsApp Manager → Analytics
-- Upgrade to paid tier if needed (very cheap: ~£0.01-0.05/message)
+Before going live:
+- ✅ Business verified in Facebook Business Manager
+- ✅ All message templates approved
+- ✅ API credentials saved in `.env` (encrypted!)
+- ✅ Webhooks configured and tested
+- ✅ WhatsApp Business Profile complete (photo, about, hours)
+- ✅ Test messages sent successfully
+- ✅ User reply handling tested
+- ✅ Error handling in place (rate limits, failures)
 
 ---
 
-## Cost Monitoring
+## Costs (Meta WhatsApp Business Platform)
 
-### Check Monthly Usage
+**Free:**
+- User-initiated conversations (24hr window after user messages you)
+- Webhook setup and configuration
+- Template creation and approval
 
-1. Go to **WhatsApp Manager** → **"Analytics"**
-2. View **"Message Templates"** tab
-3. See message count for current month
+**Paid:**
+- **Service conversations:** £0.0352 per conversation (business-initiated)
+- **Utility conversations:** £0.0176 per conversation (notifications, OTPs)
+- **Authentication:** £0.0088 per conversation (login codes)
 
-**Free tier:** 1000 messages/month
-**After free tier:** ~£0.01-0.05 per message (much cheaper than SMS!)
+**What's a "conversation"?**
+- 24-hour window after first message
+- Multiple messages in same window = 1 conversation
+- Your use case = "Utility" category (£0.0176 per user)
 
-### Stay Within Free Tier
+**Monthly estimate:**
+- 100 users/month × 3 messages each = 100 conversations
+- 100 × £0.0176 = **£1.76/month**
+- vs Twilio: 300 messages × £0.08 = **£24/month**
 
-**Estimated usage:**
-- 50 incident reports/month → 50 WhatsApp messages
-- Well within 1000 free messages! ✅
-
-**If you hit 1000/month:**
-- Costs ~£0.01-0.05 per message
-- Still much cheaper than SMS (~£0.05-0.10/SMS)
-- Email always sent as free backup
-
----
-
-## Message Template Guidelines
-
-**✅ DO:**
-- Use "Utility" category for transaction/service updates
-- Keep messages concise and clear
-- Use British English for UK customers
-- Include company name ("Car Crash Lawyer AI")
-- Test with example values before submitting
-
-**❌ DON'T:**
-- Use "Marketing" category (higher rejection rate)
-- Include URLs in body text (use buttons instead)
-- Use promotional language ("Buy now!", "Limited offer!")
-- Include pricing in templates (against WhatsApp policy)
-- Send unsolicited messages (user must opt-in via signup form)
+**Savings: ~92% cheaper than Twilio!**
 
 ---
 
-## Security Best Practices
+## Next Steps
 
-**🔒 Protect your Access Token:**
-- Never commit to Git (already in `.gitignore`)
-- Rotate token every 90 days (Business Settings → System Users)
-- Use permanent token (not temporary)
-- Store in Railway environment variables (encrypted)
+1. ✅ Create Facebook Business Manager account
+2. ✅ Verify your business (1-3 days)
+3. ✅ Add WhatsApp Business Account
+4. ✅ Verify phone number: +44 7496 834683
+5. ✅ Submit message templates for approval (2-24 hours)
+6. ✅ Generate API credentials
+7. ✅ Configure webhooks
+8. ✅ Test in test mode
+9. ✅ Go live!
 
-**🔒 Phone Number Privacy:**
-- Only use phone numbers users provided during signup
-- Don't share phone numbers with third parties
-- GDPR compliance: User can request deletion
+**Total setup time:** ~2 hours (spread over 2-3 days for approvals)
 
-**🔒 Message Content:**
-- Don't include sensitive personal data in messages
-- Don't include full incident details
-- Direct users to secure portal for full report
+**Questions?** Check: https://developers.facebook.com/docs/whatsapp/cloud-api
 
 ---
 
-## Next Steps After Setup
-
-1. **Wait for template approval** (24-48 hours)
-2. **Test with your phone number** (Step 7)
-3. **Deploy to Railway** (variables already set!)
-4. **Complete full incident report** (end-to-end test)
-5. **Monitor usage** in WhatsApp Manager Analytics
-
----
-
-## Quick Reference
-
-| What | Where to Find |
-|------|---------------|
-| **WhatsApp Manager** | https://business.facebook.com/wa/manage/ |
-| **Business Settings** | https://business.facebook.com/settings/ |
-| **Message Templates** | WhatsApp Manager → Message Templates |
-| **API Setup** | WhatsApp Manager → API Setup |
-| **Analytics/Usage** | WhatsApp Manager → Analytics |
-| **System Users** | Business Settings → Users → System Users |
-| **Phone Number ID** | WhatsApp Manager → API Setup |
-| **Access Token** | Business Settings → System Users → Generate Token |
-
----
-
-## Support
-
-**WhatsApp Business API Docs:**
-- https://developers.facebook.com/docs/whatsapp/cloud-api/
-
-**Meta Business Help:**
-- https://www.facebook.com/business/help/
-
-**Template Guidelines:**
-- https://developers.facebook.com/docs/whatsapp/message-templates/guidelines
-
----
-
-**Last Updated:** 2026-01-06
-**Status:** Ready for setup
-**Estimated Setup Time:** 30-45 minutes (excluding 24-48hr template approval)
+**Created:** 8th January 2026
+**App:** Car Crash Lawyer AI
+**WhatsApp:** 07496 834683
+**Platform:** Meta WhatsApp Business Platform (Cloud API)
