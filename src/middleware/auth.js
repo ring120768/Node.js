@@ -1,11 +1,20 @@
 
 const { createClient } = require('@supabase/supabase-js');
 
-// Initialize Supabase client
-const supabase = createClient(
-  process.env.SUPABASE_URL,
-  process.env.SUPABASE_ANON_KEY
-);
+/**
+ * Create Supabase client (lazy-loaded)
+ * This avoids module-load-time failures if env vars aren't loaded yet
+ */
+function getSupabaseClient() {
+  const supabaseUrl = process.env.SUPABASE_URL;
+  const supabaseAnonKey = process.env.SUPABASE_ANON_KEY;
+
+  if (!supabaseUrl || !supabaseAnonKey) {
+    throw new Error('Missing Supabase credentials');
+  }
+
+  return createClient(supabaseUrl, supabaseAnonKey);
+}
 
 /**
  * Middleware to verify JWT token from Supabase Auth
@@ -18,6 +27,8 @@ const authenticateToken = async (req, res, next) => {
     if (!token) {
       return res.status(401).json({ error: 'Access token required' });
     }
+
+    const supabase = getSupabaseClient();
 
     // Verify the JWT token with Supabase
     const { data: { user }, error } = await supabase.auth.getUser(token);
