@@ -1,19 +1,24 @@
 /**
- * Temporary Image Upload Controller
- * Handles immediate image uploads during form completion
+ * Temporary Media Upload Controller
+ * Handles immediate image and video uploads during form completion
  *
  * Flow:
- * 1. User selects/captures image on any form page
- * 2. Image immediately uploads to temp/ storage location
+ * 1. User selects/captures media (image/video) on any form page
+ * 2. Media immediately uploads to temp/ storage location
  * 3. Record created in temp_uploads table
  * 4. Client stores temp path (not File object) in formData
  * 5. On form submission, temp files moved to permanent location
+ *
+ * Supported Media Types:
+ * - Images: JPEG, PNG, GIF, WebP (max 10MB each)
+ * - Videos: MP4, MOV, AVI, WebM (max 500MB for dashcam clips)
  *
  * Benefits:
  * - Prevents ERR_UPLOAD_FILE_CHANGED errors on mobile
  * - Works for camera captures and library selections
  * - Survives app backgrounding/network issues
- * - Scales to multi-page forms with images anywhere
+ * - Scales to multi-page forms with media anywhere
+ * - Supports large dashcam video files
  */
 
 const logger = require('../utils/logger');
@@ -22,16 +27,19 @@ const config = require('../config');
 const multer = require('multer');
 const crypto = require('crypto');
 
-// Configure multer for single file upload
+// Configure multer for single file upload (images + videos)
 const upload = multer({
   storage: multer.memoryStorage(),
   limits: {
-    fileSize: 10 * 1024 * 1024, // 10MB max file size
+    fileSize: 500 * 1024 * 1024, // 500MB max file size (for dashcam videos)
   },
   fileFilter: (req, file, cb) => {
-    // Accept images only
-    if (!file.mimetype.startsWith('image/')) {
-      return cb(new Error('Only image files are allowed'), false);
+    // Accept images and videos
+    const allowedTypes = ['image/', 'video/'];
+    const isAllowed = allowedTypes.some(type => file.mimetype.startsWith(type));
+
+    if (!isAllowed) {
+      return cb(new Error('Only image and video files are allowed'), false);
     }
     cb(null, true);
   }
@@ -45,12 +53,12 @@ function calculateChecksum(buffer) {
 }
 
 /**
- * Upload image to temporary storage
+ * Upload media (image or video) to temporary storage
  * POST /api/images/temp-upload
  *
  * Body (multipart/form-data):
- * - file: Image file
- * - field_name: Form field name (e.g., 'driving_license_picture')
+ * - file: Image or video file
+ * - field_name: Form field name (e.g., 'driving_license_picture', 'dashcam_video')
  * - temp_session_id: Unique session ID from client
  *
  * Returns:
@@ -60,13 +68,12 @@ function calculateChecksum(buffer) {
  *   uploadId: "uuid",
  *   previewUrl: "https://...",
  *   fileSize: 123456,
- *   checksum: "abc123..."
+ *   checksum: "abc123...",
+ *   mediaType: "image" | "video"
  * }
  */
 async function tempUpload(req, res) {
   try {
-    logger.info('📸 Received temp image upload request');
-
     const { field_name, temp_session_id } = req.body;
     const file = req.file;
 
@@ -74,6 +81,12 @@ async function tempUpload(req, res) {
     if (!file) {
       return res.status(400).json({ error: 'No file provided' });
     }
+
+    // Determine media type
+    const mediaType = file.mimetype.startsWith('video/') ? 'video' : 'image';
+    const icon = mediaType === 'video' ? '🎥' : '📸';
+
+    logger.info(`${icon} Received temp ${mediaType} upload request`);
 
     if (!field_name) {
       return res.status(400).json({ error: 'field_name is required' });
@@ -162,7 +175,8 @@ async function tempUpload(req, res) {
       previewUrl: publicUrl,
       fileSize: file.size,
       checksum: checksum,
-      expiresAt: expiresAt.toISOString()
+      expiresAt: expiresAt.toISOString(),
+      mediaType: mediaType // 'image' or 'video'
     });
 
   } catch (error) {
