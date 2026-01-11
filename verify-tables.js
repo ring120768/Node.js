@@ -24,6 +24,7 @@ async function verifyTables() {
     'user_documents',
     'temp_uploads',
     'ai_transcription',
+    'ai_listening_transcripts',
     'completed_incident_forms'
   ];
 
