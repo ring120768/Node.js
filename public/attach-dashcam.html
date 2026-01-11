@@ -1,0 +1,819 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Attach Dashcam Video - Car Crash Lawyer AI</title>
+
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        :root {
+            /* Brand Colors */
+            --primary: #0E7490;
+            --primary-dark: #0c6179;
+            --primary-light: #06b6d4;
+            --accent: #10b981;
+            --danger: #ef4444;
+            --warning: #f59e0b;
+
+            /* Neutrals */
+            --bg-main: #f8fafc;
+            --bg-card: #ffffff;
+            --text-primary: #1e293b;
+            --text-secondary: #64748b;
+            --text-muted: #94a3b8;
+            --border: #e2e8f0;
+
+            /* Shadows */
+            --shadow-sm: 0 1px 2px 0 rgb(0 0 0 / 0.05);
+            --shadow-md: 0 4px 6px -1px rgb(0 0 0 / 0.1);
+            --shadow-lg: 0 10px 15px -3px rgb(0 0 0 / 0.1);
+
+            /* Spacing */
+            --spacing-xs: 0.5rem;
+            --spacing-sm: 0.75rem;
+            --spacing-md: 1rem;
+            --spacing-lg: 1.5rem;
+            --spacing-xl: 2rem;
+
+            /* Border Radius */
+            --radius-sm: 0.375rem;
+            --radius-md: 0.5rem;
+            --radius-lg: 0.75rem;
+            --radius-xl: 1rem;
+        }
+
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif;
+            background: var(--bg-main);
+            color: var(--text-primary);
+            line-height: 1.6;
+            min-height: 100vh;
+            display: flex;
+            flex-direction: column;
+        }
+
+        /* Header */
+        .header {
+            background: linear-gradient(135deg, var(--primary) 0%, var(--primary-dark) 100%);
+            color: white;
+            padding: var(--spacing-lg) var(--spacing-xl);
+            box-shadow: var(--shadow-md);
+        }
+
+        .header-content {
+            max-width: 800px;
+            margin: 0 auto;
+            text-align: center;
+        }
+
+        .header h1 {
+            font-size: 1.75rem;
+            font-weight: 700;
+            margin-bottom: var(--spacing-xs);
+        }
+
+        .header p {
+            font-size: 1rem;
+            opacity: 0.9;
+        }
+
+        /* Main Content */
+        .container {
+            max-width: 800px;
+            margin: 0 auto;
+            padding: var(--spacing-xl);
+            flex: 1;
+        }
+
+        .card {
+            background: var(--bg-card);
+            border-radius: var(--radius-lg);
+            padding: var(--spacing-xl);
+            box-shadow: var(--shadow-md);
+            margin-bottom: var(--spacing-lg);
+        }
+
+        /* Drop Zone */
+        .drop-zone {
+            border: 3px dashed var(--border);
+            border-radius: var(--radius-lg);
+            padding: var(--spacing-2xl);
+            text-align: center;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            background: var(--bg-main);
+        }
+
+        .drop-zone:hover,
+        .drop-zone.drag-over {
+            border-color: var(--primary);
+            background: rgba(14, 116, 144, 0.05);
+        }
+
+        .drop-zone-icon {
+            font-size: 4rem;
+            margin-bottom: var(--spacing-md);
+        }
+
+        .drop-zone h2 {
+            font-size: 1.25rem;
+            margin-bottom: var(--spacing-sm);
+            color: var(--text-primary);
+        }
+
+        .drop-zone p {
+            color: var(--text-secondary);
+            margin-bottom: var(--spacing-md);
+        }
+
+        .drop-zone-hint {
+            font-size: 0.875rem;
+            color: var(--text-muted);
+        }
+
+        #videoInput {
+            display: none;
+        }
+
+        .btn {
+            display: inline-block;
+            padding: var(--spacing-sm) var(--spacing-lg);
+            border-radius: var(--radius-md);
+            font-weight: 600;
+            text-decoration: none;
+            cursor: pointer;
+            border: none;
+            transition: all 0.2s ease;
+            font-size: 1rem;
+        }
+
+        .btn-primary {
+            background: var(--primary);
+            color: white;
+        }
+
+        .btn-primary:hover {
+            background: var(--primary-dark);
+        }
+
+        .btn-secondary {
+            background: var(--bg-main);
+            color: var(--text-primary);
+            border: 2px solid var(--border);
+        }
+
+        .btn-secondary:hover {
+            background: var(--bg-card);
+        }
+
+        /* Video Preview */
+        .video-preview {
+            display: none;
+            margin-top: var(--spacing-lg);
+        }
+
+        .video-preview.active {
+            display: block;
+        }
+
+        .preview-video {
+            width: 100%;
+            max-height: 400px;
+            border-radius: var(--radius-md);
+            background: #000;
+            margin-bottom: var(--spacing-md);
+        }
+
+        .video-info {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: var(--spacing-md);
+            background: var(--bg-main);
+            border-radius: var(--radius-md);
+            margin-bottom: var(--spacing-md);
+        }
+
+        .video-details {
+            flex: 1;
+        }
+
+        .video-name {
+            font-weight: 600;
+            margin-bottom: var(--spacing-xs);
+        }
+
+        .video-size {
+            font-size: 0.875rem;
+            color: var(--text-secondary);
+        }
+
+        .btn-remove {
+            background: var(--danger);
+            color: white;
+            padding: var(--spacing-xs) var(--spacing-md);
+            border-radius: var(--radius-sm);
+            border: none;
+            cursor: pointer;
+            font-size: 0.875rem;
+        }
+
+        .btn-remove:hover {
+            background: #dc2626;
+        }
+
+        /* Progress Bar */
+        .upload-progress {
+            display: none;
+            margin-top: var(--spacing-lg);
+        }
+
+        .upload-progress.active {
+            display: block;
+        }
+
+        .progress-bar-container {
+            background: var(--bg-main);
+            border-radius: var(--radius-xl);
+            height: 2rem;
+            overflow: hidden;
+            margin-bottom: var(--spacing-md);
+        }
+
+        .progress-bar {
+            height: 100%;
+            background: linear-gradient(90deg, var(--primary) 0%, var(--primary-light) 100%);
+            transition: width 0.3s ease;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            color: white;
+            font-weight: 600;
+            font-size: 0.875rem;
+        }
+
+        .progress-info {
+            text-align: center;
+            font-size: 0.875rem;
+            color: var(--text-secondary);
+        }
+
+        /* Message Boxes */
+        .message {
+            padding: var(--spacing-md);
+            border-radius: var(--radius-md);
+            margin-bottom: var(--spacing-lg);
+            display: none;
+        }
+
+        .message.active {
+            display: block;
+        }
+
+        .message-success {
+            background: rgba(16, 185, 129, 0.1);
+            color: #059669;
+            border-left: 4px solid var(--accent);
+        }
+
+        .message-error {
+            background: rgba(239, 68, 68, 0.1);
+            color: #dc2626;
+            border-left: 4px solid var(--danger);
+        }
+
+        .message-icon {
+            font-size: 1.25rem;
+            margin-right: var(--spacing-sm);
+        }
+
+        /* Actions */
+        .actions {
+            display: flex;
+            gap: var(--spacing-md);
+            justify-content: center;
+            margin-top: var(--spacing-xl);
+        }
+
+        .actions.hidden {
+            display: none;
+        }
+
+        /* Loading Spinner */
+        .spinner {
+            display: inline-block;
+            width: 1rem;
+            height: 1rem;
+            border: 2px solid rgba(255, 255, 255, 0.3);
+            border-radius: 50%;
+            border-top-color: white;
+            animation: spin 0.8s linear infinite;
+            margin-right: var(--spacing-xs);
+        }
+
+        @keyframes spin {
+            to { transform: rotate(360deg); }
+        }
+
+        /* Responsive */
+        @media (max-width: 640px) {
+            .container {
+                padding: var(--spacing-md);
+            }
+
+            .card {
+                padding: var(--spacing-lg);
+            }
+
+            .drop-zone {
+                padding: var(--spacing-xl);
+            }
+
+            .actions {
+                flex-direction: column;
+            }
+
+            .btn {
+                width: 100%;
+                text-align: center;
+            }
+        }
+    </style>
+</head>
+<body>
+    <!-- Header -->
+    <div class="header">
+        <div class="header-content">
+            <h1>🎥 Attach Dashcam Video</h1>
+            <p>Upload your dashcam footage to support your incident report</p>
+        </div>
+    </div>
+
+    <!-- Main Content -->
+    <div class="container">
+        <!-- Success Message -->
+        <div id="successMessage" class="message message-success">
+            <span class="message-icon">✅</span>
+            <span id="successText">Video uploaded successfully!</span>
+        </div>
+
+        <!-- Error Message -->
+        <div id="errorMessage" class="message message-error">
+            <span class="message-icon">❌</span>
+            <span id="errorText">Upload failed. Please try again.</span>
+        </div>
+
+        <!-- Upload Card -->
+        <div class="card">
+            <!-- Drop Zone -->
+            <div id="dropZone" class="drop-zone">
+                <div class="drop-zone-icon">🎬</div>
+                <h2>Drop your dashcam video here</h2>
+                <p>or click to browse files</p>
+                <button class="btn btn-primary" onclick="document.getElementById('videoInput').click()">
+                    Select Video File
+                </button>
+                <p class="drop-zone-hint">Supported: MP4, MOV, AVI, WebM (max 500MB)</p>
+            </div>
+
+            <input
+                type="file"
+                id="videoInput"
+                accept="video/mp4,video/quicktime,video/x-msvideo,video/webm"
+            />
+
+            <!-- Video Preview -->
+            <div id="videoPreview" class="video-preview">
+                <video id="previewPlayer" class="preview-video" controls></video>
+
+                <div class="video-info">
+                    <div class="video-details">
+                        <div class="video-name" id="videoName">video.mp4</div>
+                        <div class="video-size" id="videoSize">0 MB</div>
+                    </div>
+                    <button class="btn-remove" onclick="removeVideo()">Remove</button>
+                </div>
+            </div>
+
+            <!-- Upload Progress -->
+            <div id="uploadProgress" class="upload-progress">
+                <div class="progress-bar-container">
+                    <div id="progressBar" class="progress-bar" style="width: 0%">
+                        <span id="progressText">0%</span>
+                    </div>
+                </div>
+                <div class="progress-info" id="progressInfo">
+                    Uploading video...
+                </div>
+            </div>
+
+            <!-- Actions -->
+            <div id="actions" class="actions hidden">
+                <button id="uploadBtn" class="btn btn-primary" onclick="uploadVideo()">
+                    Upload Video
+                </button>
+                <button class="btn btn-secondary" onclick="removeVideo()">
+                    Cancel
+                </button>
+            </div>
+        </div>
+
+        <!-- Navigation -->
+        <div class="actions">
+            <a href="/dashboard.html" class="btn btn-secondary">
+                ← Back to Dashboard
+            </a>
+            <a id="continueBtn" href="/incident.html" class="btn btn-primary hidden">
+                Continue to Report →
+            </a>
+        </div>
+    </div>
+
+    <script>
+        // State
+        let selectedFile = null;
+        let uploadedVideoId = null;
+        let sessionId = null;
+
+        // Initialize session ID (or get from URL/localStorage)
+        function initializeSession() {
+            // Check URL params first
+            const urlParams = new URLSearchParams(window.location.search);
+            sessionId = urlParams.get('session_id');
+
+            // If not in URL, generate new one
+            if (!sessionId) {
+                sessionId = 'dashcam_' + Date.now() + '_' + Math.random().toString(36).substr(2, 9);
+            }
+
+            console.log('📋 Session ID:', sessionId);
+        }
+
+        // Drop Zone Handlers
+        const dropZone = document.getElementById('dropZone');
+        const videoInput = document.getElementById('videoInput');
+
+        dropZone.addEventListener('click', () => {
+            videoInput.click();
+        });
+
+        dropZone.addEventListener('dragover', (e) => {
+            e.preventDefault();
+            dropZone.classList.add('drag-over');
+        });
+
+        dropZone.addEventListener('dragleave', () => {
+            dropZone.classList.remove('drag-over');
+        });
+
+        dropZone.addEventListener('drop', (e) => {
+            e.preventDefault();
+            dropZone.classList.remove('drag-over');
+
+            const files = e.dataTransfer.files;
+            if (files.length > 0) {
+                handleFileSelect(files[0]);
+            }
+        });
+
+        videoInput.addEventListener('change', (e) => {
+            const files = e.target.files;
+            if (files.length > 0) {
+                handleFileSelect(files[0]);
+            }
+        });
+
+        // Handle File Selection
+        function handleFileSelect(file) {
+            // Validate file type
+            if (!file.type.startsWith('video/')) {
+                showError('Please select a video file (MP4, MOV, AVI, or WebM)');
+                return;
+            }
+
+            // Validate file size (500MB max)
+            const maxSize = 500 * 1024 * 1024; // 500MB
+            if (file.size > maxSize) {
+                showError('Video file is too large. Maximum size is 500MB.');
+                return;
+            }
+
+            selectedFile = file;
+
+            // Show preview
+            const videoPreview = document.getElementById('videoPreview');
+            const previewPlayer = document.getElementById('previewPlayer');
+            const videoName = document.getElementById('videoName');
+            const videoSize = document.getElementById('videoSize');
+            const actions = document.getElementById('actions');
+
+            // Create object URL for video preview
+            const videoUrl = URL.createObjectURL(file);
+            previewPlayer.src = videoUrl;
+
+            // Update info
+            videoName.textContent = file.name;
+            videoSize.textContent = formatFileSize(file.size);
+
+            // Show preview and actions
+            videoPreview.classList.add('active');
+            actions.classList.remove('hidden');
+
+            // Hide drop zone
+            dropZone.style.display = 'none';
+
+            console.log('✅ Video selected:', file.name, formatFileSize(file.size));
+        }
+
+        // Remove Video
+        function removeVideo() {
+            selectedFile = null;
+            uploadedVideoId = null;
+
+            // Reset UI
+            document.getElementById('videoPreview').classList.remove('active');
+            document.getElementById('uploadProgress').classList.remove('active');
+            document.getElementById('actions').classList.add('hidden');
+            document.getElementById('successMessage').classList.remove('active');
+            document.getElementById('errorMessage').classList.remove('active');
+            document.getElementById('continueBtn').classList.add('hidden');
+
+            // Show drop zone
+            dropZone.style.display = 'block';
+
+            // Reset video input
+            videoInput.value = '';
+
+            // Revoke object URL
+            const previewPlayer = document.getElementById('previewPlayer');
+            if (previewPlayer.src) {
+                URL.revokeObjectURL(previewPlayer.src);
+                previewPlayer.src = '';
+            }
+
+            console.log('🗑️ Video removed');
+        }
+
+        // Upload Video
+        async function uploadVideo() {
+            if (!selectedFile) {
+                showError('No video selected');
+                return;
+            }
+
+            const uploadBtn = document.getElementById('uploadBtn');
+            uploadBtn.disabled = true;
+            uploadBtn.innerHTML = '<span class="spinner"></span> Uploading...';
+
+            // Show progress
+            const uploadProgress = document.getElementById('uploadProgress');
+            uploadProgress.classList.add('active');
+
+            try {
+                // Create form data
+                const formData = new FormData();
+                formData.append('file', selectedFile);
+                formData.append('field_name', 'dashcam_video');
+                formData.append('temp_session_id', sessionId);
+
+                // Upload with progress tracking
+                const xhr = new XMLHttpRequest();
+
+                xhr.upload.addEventListener('progress', (e) => {
+                    if (e.lengthComputable) {
+                        const percentComplete = Math.round((e.loaded / e.total) * 100);
+                        updateProgress(percentComplete, e.loaded, e.total);
+                    }
+                });
+
+                xhr.addEventListener('load', () => {
+                    if (xhr.status === 200) {
+                        const response = JSON.parse(xhr.responseText);
+                        handleUploadSuccess(response);
+                    } else {
+                        const error = JSON.parse(xhr.responseText);
+                        handleUploadError(error.error || 'Upload failed');
+                    }
+                });
+
+                xhr.addEventListener('error', () => {
+                    handleUploadError('Network error during upload');
+                });
+
+                xhr.open('POST', '/api/images/temp-upload');
+                xhr.send(formData);
+
+            } catch (error) {
+                console.error('❌ Upload error:', error);
+                handleUploadError(error.message);
+            }
+        }
+
+        // Update Progress Bar
+        function updateProgress(percent, loaded, total) {
+            const progressBar = document.getElementById('progressBar');
+            const progressText = document.getElementById('progressText');
+            const progressInfo = document.getElementById('progressInfo');
+
+            progressBar.style.width = percent + '%';
+            progressText.textContent = percent + '%';
+            progressInfo.textContent = `Uploading: ${formatFileSize(loaded)} / ${formatFileSize(total)}`;
+        }
+
+        // Handle Upload Success
+        function handleUploadSuccess(response) {
+            console.log('✅ Upload successful:', response);
+
+            uploadedVideoId = response.uploadId;
+
+            // Hide progress, show success
+            document.getElementById('uploadProgress').classList.remove('active');
+            document.getElementById('actions').classList.add('hidden');
+
+            const successMessage = document.getElementById('successMessage');
+            const successText = document.getElementById('successText');
+            successText.textContent = 'Video uploaded successfully! You can now continue with your incident report.';
+            successMessage.classList.add('active');
+
+            // Show continue button
+            const continueBtn = document.getElementById('continueBtn');
+            continueBtn.href = `/incident.html?session_id=${sessionId}&dashcam_video=${uploadedVideoId}`;
+            continueBtn.classList.remove('hidden');
+
+            // Store in localStorage for retrieval
+            localStorage.setItem('dashcam_upload', JSON.stringify({
+                sessionId: sessionId,
+                uploadId: uploadedVideoId,
+                tempPath: response.tempPath,
+                fileName: selectedFile.name,
+                fileSize: selectedFile.size
+            }));
+        }
+
+        // Handle Upload Error
+        function handleUploadError(message) {
+            console.error('❌ Upload failed:', message);
+
+            // Reset upload button
+            const uploadBtn = document.getElementById('uploadBtn');
+            uploadBtn.disabled = false;
+            uploadBtn.textContent = 'Upload Video';
+
+            // Hide progress, show error
+            document.getElementById('uploadProgress').classList.remove('active');
+            showError(message);
+        }
+
+        // Show Error Message
+        function showError(message) {
+            const errorMessage = document.getElementById('errorMessage');
+            const errorText = document.getElementById('errorText');
+            errorText.textContent = message;
+            errorMessage.classList.add('active');
+
+            // Auto-hide after 5 seconds
+            setTimeout(() => {
+                errorMessage.classList.remove('active');
+            }, 5000);
+        }
+
+        // Format File Size
+        function formatFileSize(bytes) {
+            if (bytes === 0) return '0 Bytes';
+            const k = 1024;
+            const sizes = ['Bytes', 'KB', 'MB', 'GB'];
+            const i = Math.floor(Math.log(bytes) / Math.log(k));
+            return Math.round((bytes / Math.pow(k, i)) * 100) / 100 + ' ' + sizes[i];
+        }
+
+        // Check for shared video from native share intent
+        async function checkForSharedVideo() {
+            const urlParams = new URLSearchParams(window.location.search);
+            const isFromShare = urlParams.get('source') === 'share';
+
+            if (!isFromShare) {
+                return; // Not from share intent
+            }
+
+            // Check localStorage for pending video share
+            const pendingShareJson = localStorage.getItem('pending_video_share');
+            if (!pendingShareJson) {
+                console.log('ℹ️ No pending video share found');
+                return;
+            }
+
+            try {
+                const shareData = JSON.parse(pendingShareJson);
+                console.log('📥 Processing shared video:', shareData);
+
+                // Clear the pending share
+                localStorage.removeItem('pending_video_share');
+
+                // Show loading message
+                const dropZone = document.getElementById('dropZone');
+                dropZone.innerHTML = `
+                    <div class="drop-zone-icon">⏳</div>
+                    <h2>Loading shared video...</h2>
+                    <p>Processing video from ${shareData.source}</p>
+                `;
+
+                // For Capacitor apps, we need to use Filesystem plugin to read the content URI
+                if (typeof Capacitor !== 'undefined' && Capacitor.isNativePlatform()) {
+                    await loadSharedVideoFromUri(shareData.videoUri);
+                } else {
+                    showError('Share functionality is only available in the mobile app');
+                }
+
+            } catch (error) {
+                console.error('❌ Error processing shared video:', error);
+                showError('Failed to load shared video: ' + error.message);
+
+                // Reset drop zone
+                setTimeout(() => {
+                    dropZone.style.display = 'block';
+                    dropZone.innerHTML = `
+                        <div class="drop-zone-icon">🎬</div>
+                        <h2>Drop your dashcam video here</h2>
+                        <p>or click to browse files</p>
+                        <button class="btn btn-primary" onclick="document.getElementById('videoInput').click()">
+                            Select Video File
+                        </button>
+                        <p class="drop-zone-hint">Supported: MP4, MOV, AVI, WebM (max 500MB)</p>
+                    `;
+                }, 3000);
+            }
+        }
+
+        // Load video file from content URI (Android)
+        async function loadSharedVideoFromUri(contentUri) {
+            try {
+                const { Filesystem } = Capacitor.Plugins;
+
+                // Read the file from content URI
+                const result = await Filesystem.readFile({
+                    path: contentUri
+                });
+
+                // Convert base64 to Blob
+                const blob = base64ToBlob(result.data, 'video/mp4');
+
+                // Extract filename from URI or use default
+                const fileName = extractFileNameFromUri(contentUri) || 'shared_dashcam_video.mp4';
+
+                // Create File object
+                const file = new File([blob], fileName, { type: 'video/mp4' });
+
+                console.log('✅ Shared video loaded:', fileName, formatFileSize(file.size));
+
+                // Process the file as if user selected it
+                handleFileSelect(file);
+
+            } catch (error) {
+                console.error('❌ Error loading shared video:', error);
+                throw new Error('Could not read shared video file');
+            }
+        }
+
+        // Convert base64 to Blob
+        function base64ToBlob(base64, mimeType) {
+            const byteCharacters = atob(base64);
+            const byteArrays = [];
+
+            for (let offset = 0; offset < byteCharacters.length; offset += 512) {
+                const slice = byteCharacters.slice(offset, offset + 512);
+                const byteNumbers = new Array(slice.length);
+
+                for (let i = 0; i < slice.length; i++) {
+                    byteNumbers[i] = slice.charCodeAt(i);
+                }
+
+                const byteArray = new Uint8Array(byteNumbers);
+                byteArrays.push(byteArray);
+            }
+
+            return new Blob(byteArrays, { type: mimeType });
+        }
+
+        // Extract filename from URI
+        function extractFileNameFromUri(uri) {
+            try {
+                const segments = uri.split('/');
+                const lastSegment = segments[segments.length - 1];
+                return lastSegment.split('?')[0];
+            } catch (error) {
+                return null;
+            }
+        }
+
+        // Initialize on page load
+        initializeSession();
+        checkForSharedVideo();
+    </script>
+</body>
+</html>
