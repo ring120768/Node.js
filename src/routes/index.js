@@ -35,6 +35,8 @@ const tempImageUploadRoutes = require('./tempImageUpload.routes'); // NEW: Immed
 const incidentFormRoutes = require('./incidentForm.routes'); // NEW: Multi-page incident form submission
 const stripeRoutes = require('./stripe.routes'); // NEW: Stripe payments and subscriptions
 const groupsRoutes = require('./groups.routes'); // NEW: Family/Business subscription groups
+const accountRoutes = require('./account.routes'); // NEW: GDPR-compliant account deletion
+const deletionRoutes = require('./deletion.routes'); // NEW: Individual item deletion (granular GDPR control)
 
 // GitHub webhooks are mounted in app.js via webhook.routes.js (not imported here)
 const locationRoutes = require('./location.routes');
@@ -291,6 +293,8 @@ router.get('/system-status', async (req, res) => {
                 <li><code>/api/images/*</code> - Post-signup image upload</li>
                 <li><code>/api/stripe/*</code> - Stripe payments & subscriptions</li>
                 <li><code>/api/groups/*</code> - Subscription groups (Family/Business)</li>
+                <li><code>/api/account/*</code> - Account deletion (GDPR)</li>
+                <li><code>/api/deletions/*</code> - Individual item deletion (granular GDPR)</li>
                 <li><code>/api/debug/*</code> - Debug tools</li>
             </ul>
         </div>
@@ -348,6 +352,8 @@ router.use('/api/signup', signupRoutes); // NEW: User signup form submission (cu
 router.use('/api/incident-form', incidentFormRoutes); // NEW: Multi-page incident form submission (Pages 1-12)
 router.use('/api/stripe', stripeRoutes); // NEW: Stripe payments (checkout, webhooks, subscriptions)
 router.use('/api/groups', groupsRoutes); // NEW: Family/Business subscription group management
+router.use('/api/account', accountRoutes); // NEW: GDPR account deletion endpoint
+router.use('/api/deletions', deletionRoutes); // NEW: Individual item deletion (granular control)
 // Note: Webhook routes are mounted directly in app.js for raw body handling
 // GitHub webhooks are mounted in app.js via webhook.routes.js (not here)
 router.use('/api/location', locationRoutes);
