@@ -668,6 +668,12 @@
             User Guide
         </button>
 
+        <!-- LEARNER HUB BUTTON -->
+        <button class="secondary-btn" id="learnerHubBtn">
+            <span class="btn-icon">🎓</span>
+            Learner Hub
+        </button>
+
         <!-- DIVIDER -->
         <div class="divider">
             <span>Account</span>
@@ -1185,6 +1191,7 @@
             const signupBtn = document.getElementById('signupBtn');
             const logoutBtn = document.getElementById('logoutBtn');
             const userGuideBtn = document.getElementById('userGuideBtn');
+            const learnerHubBtn = document.getElementById('learnerHubBtn');
             const userGuideModal = document.getElementById('userGuideModal');
             const guideContent = document.getElementById('guideContent');
 
@@ -1269,6 +1276,15 @@
                     showGuideMenu();
                 });
                 console.log('✅ User Guide button event listener added');
+            }
+
+            if (learnerHubBtn) {
+                learnerHubBtn.addEventListener('click', function(e) {
+                    e.preventDefault();
+                    console.log('🎓 Learner Hub button clicked');
+                    window.location.href = '/learner-hub.html';
+                });
+                console.log('✅ Learner Hub button event listener added');
             }
 
             // Check session status and show/hide logout button
