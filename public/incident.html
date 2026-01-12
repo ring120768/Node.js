@@ -1069,7 +1069,11 @@
 
                     document.getElementById('voiceStatus').textContent = '✅ Evidence recorded and saved securely!';
                 } else {
-                    console.error('Failed to save emergency audio:', response.status);
+                    // Get detailed error message from backend
+                    const errorData = await response.json().catch(() => ({ error: 'Unknown error' }));
+                    console.error('Failed to save emergency audio:', response.status, errorData);
+                    console.error('Error details:', JSON.stringify(errorData, null, 2));
+                    document.getElementById('voiceStatus').textContent = `❌ Save failed: ${errorData.error || 'Unknown error'}`;
                 }
             } catch (error) {
                 console.error('Error saving emergency audio:', error);
