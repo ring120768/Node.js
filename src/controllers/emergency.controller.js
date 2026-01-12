@@ -352,9 +352,8 @@ async function saveEmergencyAudio(req, res) {
       audio_url: audioUrl || null,
       transcription_text: transcriptionText,
       duration_seconds: durationSeconds || null,
-      recorded_at: recordedAt || new Date().toISOString(),
-      created_at: new Date().toISOString(),
-      updated_at: new Date().toISOString()
+      recorded_at: recordedAt || new Date().toISOString()
+      // created_at and updated_at have DEFAULT NOW() in database, don't set explicitly
     };
 
     logger.info('Insert data:', insertData);
