@@ -318,7 +318,7 @@ async function logEmergencyCall(req, res) {
 /**
  * Save Emergency Audio Recording (AI Eavesdropper)
  * POST /api/emergency/audio
- * Body: { userId, incidentId, audioFile, transcriptionText, recordedAt }
+ * Body: { userId, incidentId, audioUrl, transcriptionText, durationSeconds, recordedAt }
  */
 async function saveEmergencyAudio(req, res) {
   if (!supabase) {
@@ -326,7 +326,7 @@ async function saveEmergencyAudio(req, res) {
   }
 
   try {
-    const { userId, incidentId, audioUrl, transcriptionText, recordedAt } = req.body;
+    const { userId, incidentId, audioUrl, transcriptionText, durationSeconds, recordedAt } = req.body;
 
     if (!userId) {
       return sendError(res, 400, 'User ID required', 'MISSING_USER_ID');
@@ -340,6 +340,7 @@ async function saveEmergencyAudio(req, res) {
       userId,
       incidentId,
       hasTranscription: !!transcriptionText,
+      durationSeconds,
       recordedAt
     });
 
@@ -351,6 +352,7 @@ async function saveEmergencyAudio(req, res) {
         incident_id: incidentId || null,
         audio_url: audioUrl || null,
         transcription_text: transcriptionText,
+        duration_seconds: durationSeconds || null,
         recorded_at: recordedAt || new Date().toISOString(),
         created_at: new Date().toISOString(),
         updated_at: new Date().toISOString()

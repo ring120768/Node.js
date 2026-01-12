@@ -994,14 +994,16 @@
 
                 if (response.ok) {
                     const data = await response.json();
-                    voiceTranscription = data.text;
+                    console.log('API response:', data); // Debug log
+                    voiceTranscription = data.transcription?.text || data.text; // Handle both formats
+                    const duration = data.transcription?.duration || 0; // Capture duration
                     voiceStatus.textContent = '✅ Audio transcribed successfully!';
                     voiceStatus.style.color = '#10b981';
                     voiceStatus.style.fontWeight = 'bold';
                     console.log('Transcription received:', voiceTranscription);
 
                     // Save emergency audio to database
-                    await saveEmergencyAudioToDatabase(voiceTranscription);
+                    await saveEmergencyAudioToDatabase(voiceTranscription, duration);
 
                     // Show success message and enable Continue button
                     setTimeout(() => {
@@ -1034,7 +1036,7 @@
         }
 
         // Save emergency audio recording to database
-        async function saveEmergencyAudioToDatabase(transcriptionText) {
+        async function saveEmergencyAudioToDatabase(transcriptionText, durationSeconds = 0) {
             if (!transcriptionText || !userData) {
                 console.warn('Missing required data for saving emergency audio');
                 return;
@@ -1052,6 +1054,7 @@
                         userId: userId,
                         incidentId: null, // Will be linked when incident is created
                         transcriptionText: transcriptionText,
+                        durationSeconds: durationSeconds, // Include duration
                         recordedAt: new Date().toISOString()
                     }),
                     credentials: 'include'
