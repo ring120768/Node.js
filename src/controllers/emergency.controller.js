@@ -340,29 +340,39 @@ async function saveEmergencyAudio(req, res) {
       userId,
       incidentId,
       hasTranscription: !!transcriptionText,
+      transcriptionLength: transcriptionText?.length,
       durationSeconds,
       recordedAt
     });
 
     // Save to ai_listening_transcripts table
+    const insertData = {
+      create_user_id: userId,
+      incident_id: incidentId || null,
+      audio_url: audioUrl || null,
+      transcription_text: transcriptionText,
+      duration_seconds: durationSeconds || null,
+      recorded_at: recordedAt || new Date().toISOString(),
+      created_at: new Date().toISOString(),
+      updated_at: new Date().toISOString()
+    };
+
+    logger.info('Insert data:', insertData);
+
     const { data, error } = await supabase
       .from('ai_listening_transcripts')
-      .insert({
-        create_user_id: userId,
-        incident_id: incidentId || null,
-        audio_url: audioUrl || null,
-        transcription_text: transcriptionText,
-        duration_seconds: durationSeconds || null,
-        recorded_at: recordedAt || new Date().toISOString(),
-        created_at: new Date().toISOString(),
-        updated_at: new Date().toISOString()
-      })
+      .insert(insertData)
       .select()
       .single();
 
     if (error) {
-      logger.error('Failed to save emergency audio', error);
-      return sendError(res, 500, 'Failed to save emergency recording', 'SAVE_FAILED');
+      logger.error('Failed to save emergency audio - Detailed error:', {
+        message: error.message,
+        details: error.details,
+        hint: error.hint,
+        code: error.code
+      });
+      return sendError(res, 500, `Failed to save emergency recording: ${error.message}`, 'SAVE_FAILED');
     }
 
     // Log GDPR activity
