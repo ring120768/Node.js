@@ -269,7 +269,7 @@ async function getDocumentStats(req, res) {
 
     // Use the helper function from the schema
     const { data: stats, error } = await supabase
-      .rpc('get_user_document_stats', { user_id: userId });
+      .rpc('get_user_document_stats', { p_user_id: userId });
 
     if (error) {
       logger.error(`[${requestId}] Failed to get stats`, {
