@@ -1218,7 +1218,7 @@
 
                     <!-- Data Transparency Section -->
                     <div class="data-transparency-section">
-                        <div class="section-header" onclick="toggleDataTransparency()">
+                        <div class="section-header" data-action="toggleDataTransparency">
                             <h2>
                                 <span class="icon">🔒</span>
                                 What Data We Store
@@ -1611,7 +1611,9 @@
                                     ${activity.title}
                                     <button
                                         class="btn-delete"
-                                        onclick="deleteTimelineItem('${activity.type}', '${activity.id}')"
+                                        data-action="deleteTimelineItem"
+                                        data-type="${activity.type}"
+                                        data-id="${activity.id}"
                                         title="Delete this item"
                                         aria-label="Delete ${activity.title}">
                                         🗑️
@@ -2071,6 +2073,16 @@
                     break;
                 case 'hideToast':
                     hideToast();
+                    break;
+                case 'toggleDataTransparency':
+                    toggleDataTransparency();
+                    break;
+                case 'deleteTimelineItem':
+                    const itemType = button.getAttribute('data-type');
+                    const itemId = button.getAttribute('data-id');
+                    if (itemType && itemId) {
+                        deleteTimelineItem(itemType, itemId);
+                    }
                     break;
             }
         });
