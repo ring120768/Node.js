@@ -351,7 +351,7 @@ async function saveEmergencyAudio(req, res) {
       incident_id: incidentId || null,
       audio_url: audioUrl || null,
       transcription_text: transcriptionText,
-      duration_seconds: durationSeconds || null,
+      duration_seconds: durationSeconds ? Math.round(durationSeconds) : null, // Round to integer for database
       recorded_at: recordedAt || new Date().toISOString()
       // created_at and updated_at have DEFAULT NOW() in database, don't set explicitly
     };
