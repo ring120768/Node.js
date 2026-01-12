@@ -651,6 +651,7 @@
       }
 
       console.log('Opening file picker...');
+      imageInput.value = ''; // Clear previous selection (Android WebView fix)
       imageInput.click();
     });
 
