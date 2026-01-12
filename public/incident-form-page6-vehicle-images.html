@@ -590,6 +590,7 @@
       console.log('Add Image button clicked, current count:', uploadedImages.length);
       if (uploadedImages.length < MAX_IMAGES) {
         console.log('Opening file picker...');
+        imageInput.value = ''; // Clear previous selection (Android WebView fix)
         imageInput.click();
       } else {
         console.log('Maximum images reached');

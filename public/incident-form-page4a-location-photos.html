@@ -608,6 +608,7 @@
     // Add Scene Image Button Click Handler
     addSceneImageBtn.addEventListener('click', () => {
       if (uploadedSceneImages.length < MAX_SCENE_IMAGES) {
+        sceneImageInput.value = ''; // Clear previous selection (Android WebView fix)
         sceneImageInput.click();
       }
     });
