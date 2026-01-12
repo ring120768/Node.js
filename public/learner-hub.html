@@ -1,0 +1,748 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Learner Hub - Car Crash Lawyer AI</title>
+    <link rel="icon" type="image/webp" href="/images/car-crash-lawyer-ai-450.webp">
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif;
+            background: linear-gradient(135deg, #0B7AB0 0%, #1EA1D4 100%);
+            min-height: 100vh;
+            padding: 20px;
+        }
+
+        .container {
+            max-width: 1200px;
+            margin: 0 auto;
+        }
+
+        .header {
+            text-align: center;
+            color: white;
+            margin-bottom: 40px;
+            padding: 40px 20px;
+        }
+
+        .header h1 {
+            font-size: 42px;
+            font-weight: 700;
+            margin-bottom: 10px;
+            text-shadow: 0 4px 10px rgba(0, 0, 0, 0.3);
+        }
+
+        .header p {
+            font-size: 18px;
+            opacity: 0.95;
+            text-shadow: 0 2px 5px rgba(0, 0, 0, 0.2);
+        }
+
+        .back-button {
+            display: inline-block;
+            padding: 12px 24px;
+            background: white;
+            color: #0B7AB0;
+            border-radius: 8px;
+            text-decoration: none;
+            font-weight: 600;
+            margin-bottom: 30px;
+            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.2);
+            transition: all 0.3s ease;
+        }
+
+        .back-button:hover {
+            background: #0B7AB0;
+            color: white;
+            transform: translateY(-2px);
+            box-shadow: 0 6px 16px rgba(11, 122, 176, 0.4);
+        }
+
+        .category-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+            gap: 24px;
+            margin-bottom: 40px;
+        }
+
+        .category-card {
+            background: white;
+            border-radius: 16px;
+            padding: 24px;
+            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+            transition: all 0.3s ease;
+            cursor: pointer;
+        }
+
+        .category-card:hover {
+            transform: translateY(-4px);
+            box-shadow: 0 8px 24px rgba(0, 0, 0, 0.2);
+        }
+
+        .category-card h2 {
+            color: #0B7AB0;
+            font-size: 24px;
+            margin-bottom: 12px;
+            display: flex;
+            align-items: center;
+            gap: 12px;
+        }
+
+        .category-card .icon {
+            font-size: 32px;
+        }
+
+        .category-card p {
+            color: #666;
+            font-size: 15px;
+            line-height: 1.6;
+            margin-bottom: 16px;
+        }
+
+        .article-list {
+            list-style: none;
+        }
+
+        .article-list li {
+            padding: 12px 0;
+            border-bottom: 1px solid #eee;
+            color: #444;
+            font-size: 14px;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+
+        .article-list li:last-child {
+            border-bottom: none;
+        }
+
+        .article-list li::before {
+            content: '📄';
+            font-size: 16px;
+        }
+
+        .article-section {
+            background: white;
+            border-radius: 16px;
+            padding: 32px;
+            margin-bottom: 24px;
+            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+            display: none;
+        }
+
+        .article-section.active {
+            display: block;
+            animation: fadeIn 0.5s ease;
+        }
+
+        .article-section h3 {
+            color: #0B7AB0;
+            font-size: 28px;
+            margin-bottom: 20px;
+            padding-bottom: 16px;
+            border-bottom: 3px solid #0B7AB0;
+        }
+
+        .article-section h4 {
+            color: #333;
+            font-size: 20px;
+            margin-top: 24px;
+            margin-bottom: 12px;
+        }
+
+        .article-section p {
+            color: #444;
+            font-size: 16px;
+            line-height: 1.8;
+            margin-bottom: 16px;
+        }
+
+        .article-section ul {
+            margin: 16px 0;
+            padding-left: 24px;
+        }
+
+        .article-section ul li {
+            color: #444;
+            font-size: 16px;
+            line-height: 1.8;
+            margin-bottom: 8px;
+        }
+
+        .tip-box {
+            background: #e6f7ff;
+            border-left: 4px solid #0B7AB0;
+            padding: 16px;
+            margin: 20px 0;
+            border-radius: 8px;
+        }
+
+        .tip-box strong {
+            color: #0B7AB0;
+        }
+
+        .warning-box {
+            background: #fff3cd;
+            border-left: 4px solid #f59e0b;
+            padding: 16px;
+            margin: 20px 0;
+            border-radius: 8px;
+        }
+
+        .warning-box strong {
+            color: #f59e0b;
+        }
+
+        .emergency-box {
+            background: #fee;
+            border-left: 4px solid #ff3b30;
+            padding: 16px;
+            margin: 20px 0;
+            border-radius: 8px;
+        }
+
+        .emergency-box strong {
+            color: #ff3b30;
+        }
+
+        @keyframes fadeIn {
+            from {
+                opacity: 0;
+                transform: translateY(20px);
+            }
+            to {
+                opacity: 1;
+                transform: translateY(0);
+            }
+        }
+
+        @media (max-width: 768px) {
+            .header h1 {
+                font-size: 32px;
+            }
+
+            .category-grid {
+                grid-template-columns: 1fr;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <a href="/" class="back-button">← Back to Home</a>
+
+        <div class="header">
+            <h1>🎓 Learner Hub</h1>
+            <p>Essential driving knowledge to keep you safe on UK roads</p>
+        </div>
+
+        <div class="category-grid" id="categoryGrid">
+            <!-- Getting Started Category -->
+            <div class="category-card" data-category="getting-started">
+                <h2><span class="icon">🚗</span> Getting Started</h2>
+                <p>Everything you need to know before you hit the road as a learner driver.</p>
+                <ul class="article-list">
+                    <li>Your First Lesson: What to Expect</li>
+                    <li>Understanding L-Plates and Legal Requirements</li>
+                    <li>Choosing the Right Driving Instructor</li>
+                    <li>Provisional Licence Explained</li>
+                </ul>
+            </div>
+
+            <!-- Road Safety Category -->
+            <div class="category-card" data-category="road-safety">
+                <h2><span class="icon">🛡️</span> Road Safety</h2>
+                <p>Critical safety skills every learner driver must master.</p>
+                <ul class="article-list">
+                    <li>Defensive Driving Techniques</li>
+                    <li>Safe Following Distances</li>
+                    <li>Roundabout Navigation Guide</li>
+                    <li>Motorway Driving for Beginners</li>
+                    <li>Night Driving Safety Tips</li>
+                </ul>
+            </div>
+
+            <!-- After an Accident Category -->
+            <div class="category-card" data-category="accident-response">
+                <h2><span class="icon">🚨</span> If You Have an Accident</h2>
+                <p>Step-by-step guidance for handling accidents safely and legally.</p>
+                <ul class="article-list">
+                    <li>First Steps After a Collision</li>
+                    <li>What Information to Exchange</li>
+                    <li>When to Call the Police</li>
+                    <li>Documenting the Scene with Photos</li>
+                    <li>Your Legal Responsibilities</li>
+                </ul>
+            </div>
+
+            <!-- Theory Test Category -->
+            <div class="category-card" data-category="theory-test">
+                <h2><span class="icon">📝</span> Theory Test Prep</h2>
+                <p>Master your theory test with these essential guides.</p>
+                <ul class="article-list">
+                    <li>Understanding Road Signs and Markings</li>
+                    <li>Hazard Perception Tips and Tricks</li>
+                    <li>Common Theory Test Questions</li>
+                    <li>Mock Test Practice Strategies</li>
+                </ul>
+            </div>
+
+            <!-- Insurance & Costs Category -->
+            <div class="category-card" data-category="insurance">
+                <h2><span class="icon">💷</span> Insurance & Costs</h2>
+                <p>Understanding insurance, costs, and financial responsibilities.</p>
+                <ul class="article-list">
+                    <li>Learner Driver Insurance Explained</li>
+                    <li>How to Reduce Insurance Costs</li>
+                    <li>Black Box (Telematics) Insurance</li>
+                    <li>What Affects Your Premium</li>
+                </ul>
+            </div>
+
+            <!-- Practical Test Category -->
+            <div class="category-card" data-category="practical-test">
+                <h2><span class="icon">🎯</span> Practical Test</h2>
+                <p>Everything you need to pass your driving test first time.</p>
+                <ul class="article-list">
+                    <li>Test Day Checklist</li>
+                    <li>Common Test Mistakes to Avoid</li>
+                    <li>Manoeuvres Made Simple</li>
+                    <li>Dealing with Test Nerves</li>
+                </ul>
+            </div>
+        </div>
+
+        <!-- Article Content Sections (Hidden by default) -->
+
+        <!-- Accident Response Article -->
+        <div class="article-section" id="accident-first-steps">
+            <h3>🚨 First Steps After a Collision</h3>
+
+            <div class="emergency-box">
+                <strong>⚠️ PRIORITY:</strong> If anyone is injured, call 999 immediately. Your safety and the safety of others comes first.
+            </div>
+
+            <h4>1. Stop and Stay Safe</h4>
+            <p>You must stop if you've been involved in an accident, even if it's minor. Failing to stop is a criminal offence in the UK and can result in prosecution.</p>
+
+            <div class="tip-box">
+                <strong>💡 Safety Tip:</strong> If it's safe to do so, move your vehicle to the side of the road. Turn on your hazard lights to warn other drivers.
+            </div>
+
+            <h4>2. Check for Injuries</h4>
+            <ul>
+                <li>Check yourself and any passengers for injuries</li>
+                <li>Check the other driver and their passengers</li>
+                <li>Check any pedestrians involved</li>
+                <li>Call 999 if anyone is hurt or the road is blocked</li>
+            </ul>
+
+            <h4>3. Exchange Information</h4>
+            <p>You are legally required to exchange the following information with the other driver:</p>
+            <ul>
+                <li>Name and contact details</li>
+                <li>Insurance details (company name and policy number)</li>
+                <li>Vehicle registration number</li>
+                <li>Address</li>
+            </ul>
+
+            <div class="tip-box">
+                <strong>💡 Pro Tip:</strong> Use your phone to take a photo of the other driver's insurance certificate and driving licence. This ensures you have accurate information.
+            </div>
+
+            <h4>4. Document Everything</h4>
+            <p>Take photos and videos of:</p>
+            <ul>
+                <li>All vehicle damage from multiple angles</li>
+                <li>The position of vehicles after the collision</li>
+                <li>Road conditions, weather, and lighting</li>
+                <li>Any road signs, traffic lights, or markings</li>
+                <li>Skid marks or debris</li>
+                <li>Any witnesses present</li>
+            </ul>
+
+            <h4>5. Report the Incident</h4>
+            <ul>
+                <li>Report to your insurance company within 24 hours (even if you weren't at fault)</li>
+                <li>Report to the police within 24 hours if injury or damage occurred</li>
+                <li>Keep a written record of what happened while it's fresh in your memory</li>
+            </ul>
+
+            <div class="warning-box">
+                <strong>⚠️ Important:</strong> Never admit fault at the scene, even if you think you were responsible. Let the insurance companies and authorities determine fault based on evidence.
+            </div>
+
+            <h4>6. Get Witness Details</h4>
+            <p>If there were any witnesses to the accident, get their:</p>
+            <ul>
+                <li>Name and contact details</li>
+                <li>Written statement if possible</li>
+                <li>Note what they saw</li>
+            </ul>
+
+            <h4>What NOT to Do</h4>
+            <ul>
+                <li>❌ Don't leave the scene without exchanging details</li>
+                <li>❌ Don't admit fault or apologise</li>
+                <li>❌ Don't accept cash settlements on the spot</li>
+                <li>❌ Don't sign any documents unless required by police</li>
+                <li>❌ Don't post about the accident on social media</li>
+            </ul>
+
+            <div class="tip-box">
+                <strong>💡 Use Our App:</strong> Car Crash Lawyer AI helps you collect all necessary information at the scene, guides you through the process, and creates a professional incident report automatically.
+            </div>
+        </div>
+
+        <!-- Defensive Driving Article -->
+        <div class="article-section" id="defensive-driving">
+            <h3>🛡️ Defensive Driving Techniques</h3>
+
+            <p>Defensive driving is about anticipating potential hazards and taking action to avoid accidents before they happen. It's one of the most important skills you'll develop as a driver.</p>
+
+            <h4>The 2-Second Rule</h4>
+            <p>Always maintain at least a 2-second gap between you and the vehicle in front:</p>
+            <ul>
+                <li>Watch the vehicle ahead pass a fixed point (lamp post, bridge, sign)</li>
+                <li>Count "Only a fool breaks the 2-second rule"</li>
+                <li>You should pass the same point after finishing the phrase</li>
+                <li>Double this in wet conditions (4 seconds)</li>
+                <li>Increase to 10 seconds in icy conditions</li>
+            </ul>
+
+            <div class="tip-box">
+                <strong>💡 Remember:</strong> The faster you're travelling, the more distance you need to stop safely.
+            </div>
+
+            <h4>Scanning Ahead</h4>
+            <p>Look 12-15 seconds ahead on the road to identify potential hazards early:</p>
+            <ul>
+                <li>Check for brake lights ahead (not just the car in front)</li>
+                <li>Watch for pedestrians near crossings</li>
+                <li>Look for cyclists and motorcyclists</li>
+                <li>Identify merging traffic and junction activity</li>
+                <li>Check road signs for upcoming hazards</li>
+            </ul>
+
+            <h4>Mirror Checks</h4>
+            <p>Check your mirrors every 5-8 seconds:</p>
+            <ul>
+                <li>Interior mirror – what's directly behind</li>
+                <li>Side mirrors – check blind spots</li>
+                <li>Before any manoeuvre (MSM: Mirror, Signal, Manoeuvre)</li>
+                <li>Before changing speed or direction</li>
+            </ul>
+
+            <h4>Anticipating Other Drivers</h4>
+            <ul>
+                <li>Assume other drivers might make mistakes</li>
+                <li>Watch for indicators and brake lights</li>
+                <li>Be prepared for cars to pull out of junctions</li>
+                <li>Give extra space to learners, elderly drivers, and delivery vehicles</li>
+                <li>Watch for reversing lights in car parks</li>
+            </ul>
+
+            <h4>Speed Management</h4>
+            <p>Driving at an appropriate speed isn't just about speed limits:</p>
+            <ul>
+                <li>Slow down in residential areas, even if the limit is 30mph</li>
+                <li>Reduce speed in poor weather conditions</li>
+                <li>Adjust speed for road surface conditions</li>
+                <li>Slow down when you can't see far ahead (bends, hills)</li>
+            </ul>
+
+            <div class="warning-box">
+                <strong>⚠️ Remember:</strong> Speed limits are maximums, not targets. Drive at a speed that's safe for the conditions.
+            </div>
+
+            <h4>Handling Aggressive Drivers</h4>
+            <ul>
+                <li>Don't react to aggressive behaviour</li>
+                <li>Let tailgaters pass when safe to do so</li>
+                <li>Don't make eye contact or gestures</li>
+                <li>Pull over if you feel threatened</li>
+                <li>Report dangerous driving to police on 101 (999 if immediate danger)</li>
+            </ul>
+
+            <h4>Night Driving Safety</h4>
+            <ul>
+                <li>Use dipped headlights in built-up areas</li>
+                <li>Use full beam on unlit roads (when no traffic ahead)</li>
+                <li>Dip your lights when approaching other vehicles</li>
+                <li>Keep windscreen and lights clean</li>
+                <li>Reduce speed – you can only drive as fast as you can see</li>
+            </ul>
+
+            <div class="tip-box">
+                <strong>💡 Pro Tip:</strong> If you're dazzled by oncoming headlights, look towards the left edge of your lane rather than directly at the lights.
+            </div>
+        </div>
+
+        <!-- Roundabout Navigation Article -->
+        <div class="article-section" id="roundabouts">
+            <h3>🔄 Roundabout Navigation Guide</h3>
+
+            <p>Roundabouts can be intimidating for learner drivers, but following these simple rules will help you navigate them safely and confidently.</p>
+
+            <h4>Basic Rules</h4>
+            <ul>
+                <li>Give way to traffic from the right (already on the roundabout)</li>
+                <li>Traffic flows clockwise</li>
+                <li>Signal your intentions clearly</li>
+                <li>Choose the correct lane on approach</li>
+            </ul>
+
+            <h4>Turning Left (1st Exit)</h4>
+            <ul>
+                <li>Approach in the left lane</li>
+                <li>Signal left on approach</li>
+                <li>Keep the signal on throughout</li>
+                <li>Stay in the left lane on the roundabout</li>
+                <li>Exit when safe</li>
+            </ul>
+
+            <h4>Going Straight (2nd Exit)</h4>
+            <ul>
+                <li>Approach in the left lane (unless road markings indicate otherwise)</li>
+                <li>No signal on approach</li>
+                <li>Signal left after passing the exit before yours</li>
+                <li>Stay in the left lane</li>
+                <li>Exit when safe</li>
+            </ul>
+
+            <h4>Turning Right (3rd Exit or More)</h4>
+            <ul>
+                <li>Approach in the right lane</li>
+                <li>Signal right on approach</li>
+                <li>Stay in the right lane on the roundabout</li>
+                <li>Signal left after passing the exit before yours</li>
+                <li>Check your left mirror and blind spot before exiting</li>
+                <li>Move to the left lane to exit</li>
+            </ul>
+
+            <div class="tip-box">
+                <strong>💡 Remember MSPSL:</strong> Mirror, Signal, Position, Speed, Look
+            </div>
+
+            <h4>Multi-Lane Roundabouts</h4>
+            <ul>
+                <li>Always follow lane markings and road signs</li>
+                <li>Choose your lane based on your exit</li>
+                <li>Don't change lanes on the roundabout unless necessary</li>
+                <li>Be extra careful of vehicles in adjacent lanes</li>
+            </ul>
+
+            <h4>Mini Roundabouts</h4>
+            <ul>
+                <li>Same rules apply as normal roundabouts</li>
+                <li>Slow down and be prepared to stop</li>
+                <li>Give way to traffic from the right</li>
+                <li>Be aware that some drivers may go straight over without slowing</li>
+            </ul>
+
+            <div class="warning-box">
+                <strong>⚠️ Watch Out For:</strong> Cyclists and motorcyclists may stay in the left lane even when turning right – always check your mirrors and blind spots before changing lanes or exiting.
+            </div>
+
+            <h4>Common Mistakes to Avoid</h4>
+            <ul>
+                <li>❌ Entering when it's not safe (always give way to the right)</li>
+                <li>❌ Wrong lane selection on approach</li>
+                <li>❌ Not signalling when exiting</li>
+                <li>❌ Cutting across lanes on the roundabout</li>
+                <li>❌ Going too fast to react safely</li>
+            </ul>
+
+            <div class="tip-box">
+                <strong>💡 Practice Tip:</strong> Practice on quiet roundabouts during off-peak hours until you build confidence. Your instructor can help you understand the specific layout of roundabouts in your area.
+            </div>
+        </div>
+
+        <!-- Insurance Guide Article -->
+        <div class="article-section" id="insurance-guide">
+            <h3>💷 Learner Driver Insurance Explained</h3>
+
+            <p>Understanding insurance is crucial for learner drivers. Here's everything you need to know about getting insured and keeping costs down.</p>
+
+            <h4>Types of Learner Insurance</h4>
+
+            <p><strong>1. Named Driver on Parent's Policy</strong></p>
+            <ul>
+                <li>Most affordable option for regular practice</li>
+                <li>Added to parent/guardian's existing insurance</li>
+                <li>Can only drive the specified vehicle</li>
+                <li>Must be supervised by qualified driver (over 21, held licence 3+ years)</li>
+                <li>Affects parent's no-claims bonus if you have an accident</li>
+            </ul>
+
+            <p><strong>2. Short-Term Learner Insurance</strong></p>
+            <ul>
+                <li>Hourly, daily, or weekly cover</li>
+                <li>Ideal for occasional practice sessions</li>
+                <li>Doesn't affect parent's policy</li>
+                <li>More expensive per hour but flexible</li>
+                <li>Can insure multiple vehicles</li>
+            </ul>
+
+            <p><strong>3. Own Policy Insurance</strong></p>
+            <ul>
+                <li>Your own policy on your own car</li>
+                <li>Most expensive option for learners</li>
+                <li>Builds your own no-claims discount</li>
+                <li>Useful if you plan to drive immediately after passing</li>
+            </ul>
+
+            <h4>Insurance Requirements While Learning</h4>
+            <ul>
+                <li>Must have at least third-party insurance to drive on public roads</li>
+                <li>Your driving instructor's car is already insured for lessons</li>
+                <li>You need separate insurance for practice with family/friends</li>
+                <li>L-plates must be displayed when driving</li>
+            </ul>
+
+            <div class="warning-box">
+                <strong>⚠️ Legal Requirement:</strong> Driving without valid insurance is illegal and can result in 6-8 penalty points, a fine, and a driving ban.
+            </div>
+
+            <h4>How to Reduce Insurance Costs</h4>
+
+            <p><strong>1. Black Box (Telematics) Insurance</strong></p>
+            <ul>
+                <li>Device fitted to monitor driving behaviour</li>
+                <li>Rewards safe driving with lower premiums</li>
+                <li>Can reduce costs by 20-30%</li>
+                <li>Monitors speed, braking, cornering, time of day</li>
+                <li>Some policies set curfews (e.g., no driving 11pm-5am)</li>
+            </ul>
+
+            <p><strong>2. Pass Plus Course</strong></p>
+            <ul>
+                <li>6-module advanced driving course after passing test</li>
+                <li>Covers motorways, night driving, adverse conditions</li>
+                <li>Many insurers offer discounts (10-35%)</li>
+                <li>Costs £150-200 but can save more than this</li>
+            </ul>
+
+            <p><strong>3. Higher Voluntary Excess</strong></p>
+            <ul>
+                <li>Agree to pay more if you claim</li>
+                <li>Reduces monthly/annual premium</li>
+                <li>Don't set it higher than you can afford</li>
+                <li>Typical learner excess: £200-500</li>
+            </ul>
+
+            <p><strong>4. Build Driving Experience</strong></p>
+            <ul>
+                <li>Some insurers offer discounts if you've had lessons for 6+ months</li>
+                <li>Passing first time can reduce premiums</li>
+                <li>Advanced driving courses add credibility</li>
+            </ul>
+
+            <p><strong>5. Choose Your Car Wisely</strong></p>
+            <ul>
+                <li>Smaller engines (1.0-1.2L) are cheaper to insure</li>
+                <li>Lower insurance groups (1-10) cost less</li>
+                <li>Avoid modified or high-performance cars</li>
+                <li>Older cars aren't always cheaper (safety features matter)</li>
+            </ul>
+
+            <div class="tip-box">
+                <strong>💡 Money-Saving Tip:</strong> Pay annually instead of monthly if possible – monthly payments often include interest charges.
+            </div>
+
+            <h4>What Affects Your Premium</h4>
+            <ul>
+                <li><strong>Age:</strong> Under 25s pay significantly more</li>
+                <li><strong>Location:</strong> Urban areas have higher rates than rural</li>
+                <li><strong>Vehicle type:</strong> Engine size, value, security features</li>
+                <li><strong>Annual mileage:</strong> Lower mileage = lower premium</li>
+                <li><strong>Where car is kept:</strong> Garage is cheaper than street parking</li>
+                <li><strong>Occupation:</strong> Some jobs are seen as lower risk</li>
+            </ul>
+
+            <h4>After Your Test</h4>
+            <ul>
+                <li>Insurance typically drops by 20-40% after passing</li>
+                <li>Shop around – don't auto-renew</li>
+                <li>Build your no-claims bonus (1 year = 30% discount, 5 years = 60%+)</li>
+                <li>Consider dashcam insurance discounts</li>
+                <li>Update your policy immediately after passing</li>
+            </ul>
+
+            <div class="emergency-box">
+                <strong>⚠️ Important:</strong> If you have an accident while learning, report it to your insurance company within 24 hours – even if you weren't at fault and don't plan to claim.
+            </div>
+
+            <h4>Common Insurance Mistakes</h4>
+            <ul>
+                <li>❌ Not declaring modifications (even cosmetic)</li>
+                <li>❌ Incorrect mileage estimates</li>
+                <li>❌ Failing to update address</li>
+                <li>❌ Not comparing quotes from multiple providers</li>
+                <li>❌ Assuming the cheapest is always best (check what's covered)</li>
+            </ul>
+        </div>
+    </div>
+
+    <script>
+        // Handle category card clicks
+        document.querySelectorAll('.category-card').forEach(card => {
+            card.addEventListener('click', function() {
+                const category = this.getAttribute('data-category');
+
+                // For now, just show a message
+                // Future: Load actual article content based on clicked item
+                if (category === 'accident-response') {
+                    showArticle('accident-first-steps');
+                } else if (category === 'road-safety') {
+                    showArticle('defensive-driving');
+                } else if (category === 'getting-started') {
+                    showArticle('roundabouts');
+                } else if (category === 'insurance') {
+                    showArticle('insurance-guide');
+                } else {
+                    alert('📚 More articles coming soon!\n\nWe\'re building a comprehensive library of driving tutorials. Check back soon for more content in this category.');
+                }
+            });
+        });
+
+        function showArticle(articleId) {
+            // Hide category grid
+            document.getElementById('categoryGrid').style.display = 'none';
+
+            // Hide all articles
+            document.querySelectorAll('.article-section').forEach(section => {
+                section.classList.remove('active');
+            });
+
+            // Show selected article
+            const article = document.getElementById(articleId);
+            if (article) {
+                article.classList.add('active');
+                window.scrollTo({ top: 0, behavior: 'smooth' });
+            }
+        }
+
+        // Handle back button clicks
+        document.querySelector('.back-button').addEventListener('click', function(e) {
+            // Check if an article is showing
+            const activeArticle = document.querySelector('.article-section.active');
+            if (activeArticle) {
+                e.preventDefault();
+                // Return to category grid
+                document.getElementById('categoryGrid').style.display = 'grid';
+                activeArticle.classList.remove('active');
+                window.scrollTo({ top: 0, behavior: 'smooth' });
+            }
+            // Otherwise let the link navigate to home
+        });
+    </script>
+</body>
+</html>
