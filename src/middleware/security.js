@@ -18,10 +18,7 @@ const corsOptions = {
     const allowedOrigins = [
       'https://carcrashlawyerai.co.uk',
       'https://www.carcrashlawyerai.co.uk',
-      'https://carcrashlawyerai.up.railway.app',
-      'https://form.typeform.com',
-      'https://typeform.com',
-      'https://api.typeform.com'
+      'https://carcrashlawyerai.up.railway.app'
     ];
 
     // Add localhost origins only in development/test environments
@@ -48,8 +45,6 @@ const corsOptions = {
     'Authorization',
     'X-Api-Key',
     'X-Request-Id',
-    'Typeform-Signature',
-    'X-Zapier-Secret',
     'X-Hub-Signature-256',
     'X-GitHub-Delivery',
     'X-GitHub-Event'
@@ -139,25 +134,6 @@ function requestTimeoutMiddleware(timeout = 30000) {
 }
 
 /**
- * Verify Typeform HMAC signature against the raw request body.
- * Header format: "sha256=<base64digest>"
- */
-function verifyTypeform(req, secret) {
-  if (!secret) return false;
-  const header = req.get('Typeform-Signature') || '';
-  if (!header.startsWith('sha256=')) return false;
-  const expected = 'sha256=' + crypto
-    .createHmac('sha256', secret)
-    .update(req.rawBody || Buffer.from(''))
-    .digest('base64');
-  try {
-    return crypto.timingSafeEqual(Buffer.from(header), Buffer.from(expected));
-  } catch {
-    return false;
-  }
-}
-
-/**
  * HTTPS redirect middleware with webhook bypass
  */
 function httpsRedirect(req, res, next) {
@@ -203,7 +179,6 @@ module.exports = {
   compression: compression(compressionOptions),
   requestId: requestIdMiddleware,
   requestTimeout: requestTimeoutMiddleware,
-  verifyTypeform,
   httpsRedirect,
   wwwRedirect,
   corsOptions,
