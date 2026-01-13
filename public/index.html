@@ -668,6 +668,12 @@
             User Guide
         </button>
 
+        <!-- EMPLOYER SAFEGUARDING BUTTON -->
+        <button class="secondary-btn" id="employerSafeguardingBtn">
+            <span class="btn-icon">👔</span>
+            Employer Safeguarding
+        </button>
+
         <!-- LEARNER HUB BUTTON -->
         <button class="secondary-btn" id="learnerHubBtn">
             <span class="btn-icon">🎓</span>
@@ -1191,6 +1197,7 @@
             const signupBtn = document.getElementById('signupBtn');
             const logoutBtn = document.getElementById('logoutBtn');
             const userGuideBtn = document.getElementById('userGuideBtn');
+            const employerSafeguardingBtn = document.getElementById('employerSafeguardingBtn');
             const learnerHubBtn = document.getElementById('learnerHubBtn');
             const userGuideModal = document.getElementById('userGuideModal');
             const guideContent = document.getElementById('guideContent');
@@ -1276,6 +1283,15 @@
                     showGuideMenu();
                 });
                 console.log('✅ User Guide button event listener added');
+            }
+
+            if (employerSafeguardingBtn) {
+                employerSafeguardingBtn.addEventListener('click', function(e) {
+                    e.preventDefault();
+                    console.log('👔 Employer Safeguarding button clicked');
+                    window.location.href = '/employer-safeguarding.html';
+                });
+                console.log('✅ Employer Safeguarding button event listener added');
             }
 
             if (learnerHubBtn) {
