@@ -17,11 +17,7 @@ function parseAllowedOrigins() {
     : [];
 
   // Static origins that should always be allowed (webhooks, third-party services)
-  const staticOrigins = [
-    'https://form.typeform.com',
-    'https://typeform.com',
-    'https://api.typeform.com'
-  ];
+  const staticOrigins = [];
 
   // Deduplicate and return
   return [...new Set([...envOrigins, ...staticOrigins])];
@@ -137,8 +133,6 @@ const corsOptions = {
     'Authorization',
     'X-Api-Key',
     'X-Request-Id',
-    'Typeform-Signature',
-    'X-Zapier-Secret',
     'X-Hub-Signature-256',
     'X-GitHub-Delivery',
     'X-GitHub-Event'
