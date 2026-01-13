@@ -1175,11 +1175,19 @@
                         </h2>
                     </div>
                     <div class="quick-actions">
-                        <button class="action-btn" data-action="downloadData">
-                            <div class="action-icon">📥</div>
+                        <button class="action-btn" data-action="sendPdfEmail">
+                            <div class="action-icon">📧</div>
                             <div class="action-content">
-                                <h3>Download My Data</h3>
-                                <p>Export all your data (GDPR)</p>
+                                <h3>Email PDF Report</h3>
+                                <p>Send your completed report via email</p>
+                            </div>
+                        </button>
+
+                        <button class="action-btn" data-action="sendImageLinks">
+                            <div class="action-icon">📸</div>
+                            <div class="action-content">
+                                <h3>Email Image Links</h3>
+                                <p>Send download links for all images</p>
                             </div>
                         </button>
 
@@ -1791,40 +1799,57 @@
             });
         }
 
-        // Download data
-        async function downloadData() {
+        // Send PDF report via email
+        async function sendPdfEmail() {
             try {
-                showToast('Preparing your data...', 'info');
+                showToast('Sending PDF report to your email...', 'info');
 
-                const response = await fetch(`/api/gdpr/export/${userId}`, {
-                    credentials: 'include'
+                const response = await fetch(`/api/profile/send-pdf-email/${userId}`, {
+                    method: 'POST',
+                    credentials: 'include',
+                    headers: {
+                        'Content-Type': 'application/json'
+                    }
                 });
 
                 if (!response.ok) {
-                    throw new Error('Failed to export data');
+                    const error = await response.json();
+                    throw new Error(error.message || 'Failed to send PDF email');
                 }
 
                 const data = await response.json();
-
-                // Create download
-                const blob = new Blob([JSON.stringify(data, null, 2)], {
-                    type: 'application/json'
-                });
-
-                const url = URL.createObjectURL(blob);
-                const a = document.createElement('a');
-                a.href = url;
-                a.download = `my-data-${new Date().toISOString().split('T')[0]}.json`;
-                document.body.appendChild(a);
-                a.click();
-                document.body.removeChild(a);
-                URL.revokeObjectURL(url);
-
-                showToast('Data downloaded successfully!', 'success');
+                showToast(data.message || 'PDF report sent successfully!', 'success');
 
             } catch (error) {
-                console.error('Error downloading data:', error);
-                showToast('Failed to download data: ' + error.message, 'error');
+                console.error('Error sending PDF email:', error);
+                showToast('Failed to send PDF: ' + error.message, 'error');
+            }
+        }
+
+        // Send image download links via email
+        async function sendImageLinks() {
+            try {
+                showToast('Sending image links to your email...', 'info');
+
+                const response = await fetch(`/api/profile/send-image-links/${userId}`, {
+                    method: 'POST',
+                    credentials: 'include',
+                    headers: {
+                        'Content-Type': 'application/json'
+                    }
+                });
+
+                if (!response.ok) {
+                    const error = await response.json();
+                    throw new Error(error.message || 'Failed to send image links');
+                }
+
+                const data = await response.json();
+                showToast(data.message || 'Image links sent successfully!', 'success');
+
+            } catch (error) {
+                console.error('Error sending image links:', error);
+                showToast('Failed to send image links: ' + error.message, 'error');
             }
         }
 
@@ -2046,8 +2071,11 @@
             const action = button.getAttribute('data-action');
 
             switch(action) {
-                case 'downloadData':
-                    downloadData();
+                case 'sendPdfEmail':
+                    sendPdfEmail();
+                    break;
+                case 'sendImageLinks':
+                    sendImageLinks();
                     break;
                 case 'newIncident':
                     window.location.href = '/incident.html';

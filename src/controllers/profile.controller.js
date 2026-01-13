@@ -9,6 +9,7 @@ const { sendError } = require('../utils/response');
 const logger = require('../utils/logger');
 const config = require('../config');
 const { normalizeEmail } = require('../utils/emailNormalizer');
+const { sendEmails, sendImageDownloadLinks } = require('../../lib/emailService');
 
 const supabase = createClient(
   config.supabase.url,
@@ -238,8 +239,207 @@ async function updateFcmToken(req, res) {
   }
 }
 
+/**
+ * Send PDF Report via Email
+ * POST /api/profile/send-pdf-email/:userId
+ * Fetches user's completed PDF and resends via email
+ */
+async function sendPdfEmail(req, res) {
+  try {
+    const { userId } = req.params;
+
+    logger.info('📧 User requesting PDF email resend', { userId });
+
+    // ========================================
+    // SECURITY: VERIFY OWNERSHIP
+    // ========================================
+    if (!req.user?.id) {
+      logger.warn('PDF email request without authentication');
+      return sendError(res, 401, 'Authentication required', 'AUTH_REQUIRED');
+    }
+
+    if (req.user.id !== userId) {
+      logger.warn('IDOR attempt blocked in PDF email', {
+        authenticated: req.user.id,
+        target: userId,
+        ip: req.ip
+      });
+      return sendError(res, 403, 'Access denied: Cannot access another user\'s PDF', 'FORBIDDEN');
+    }
+
+    // ========================================
+    // FETCH USER EMAIL AND PDF RECORD
+    // ========================================
+    const [userResult, pdfResult] = await Promise.all([
+      supabase
+        .from('user_signup')
+        .select('email, name')
+        .eq('create_user_id', userId)
+        .single(),
+      supabase
+        .from('completed_incident_forms')
+        .select('pdf_storage_path, pdf_base64')
+        .eq('create_user_id', userId)
+        .order('generated_at', { ascending: false })
+        .limit(1)
+        .single()
+    ]);
+
+    if (userResult.error || !userResult.data) {
+      logger.error('❌ User not found', { userId });
+      return sendError(res, 404, 'User not found', 'USER_NOT_FOUND');
+    }
+
+    if (pdfResult.error || !pdfResult.data) {
+      logger.error('❌ PDF not found for user', { userId });
+      return sendError(res, 404, 'No completed PDF report found', 'PDF_NOT_FOUND');
+    }
+
+    const userEmail = userResult.data.email;
+    const pdfRecord = pdfResult.data;
+
+    // ========================================
+    // DOWNLOAD PDF FROM STORAGE
+    // ========================================
+    let pdfBuffer;
+
+    if (pdfRecord.pdf_storage_path) {
+      logger.info('📥 Downloading PDF from storage', { path: pdfRecord.pdf_storage_path });
+
+      const { data: pdfData, error: downloadError } = await supabase.storage
+        .from('generated_reports')
+        .download(pdfRecord.pdf_storage_path);
+
+      if (downloadError || !pdfData) {
+        logger.error('❌ Failed to download PDF from storage', { error: downloadError });
+        // Fallback to base64 if available
+        if (pdfRecord.pdf_base64) {
+          logger.info('📄 Using base64 fallback');
+          pdfBuffer = Buffer.from(pdfRecord.pdf_base64, 'base64');
+        } else {
+          return sendError(res, 500, 'Failed to retrieve PDF', 'PDF_DOWNLOAD_FAILED');
+        }
+      } else {
+        pdfBuffer = Buffer.from(await pdfData.arrayBuffer());
+      }
+    } else if (pdfRecord.pdf_base64) {
+      logger.info('📄 Using base64 PDF');
+      pdfBuffer = Buffer.from(pdfRecord.pdf_base64, 'base64');
+    } else {
+      logger.error('❌ No PDF data available');
+      return sendError(res, 404, 'PDF data not available', 'PDF_DATA_MISSING');
+    }
+
+    // ========================================
+    // SEND EMAIL
+    // ========================================
+    logger.info('📨 Sending PDF via email', { email: userEmail });
+
+    const emailResult = await sendEmails(userEmail, pdfBuffer, userId);
+
+    if (!emailResult.success) {
+      logger.error('❌ Failed to send PDF email', { error: emailResult.error });
+      return sendError(res, 500, 'Failed to send email: ' + emailResult.error, 'EMAIL_SEND_FAILED');
+    }
+
+    logger.success('✅ PDF email sent successfully', {
+      userId,
+      userEmailId: emailResult.userEmailId
+    });
+
+    return res.json({
+      success: true,
+      message: 'PDF report has been sent to your email',
+      emailIds: {
+        user: emailResult.userEmailId,
+        accounts: emailResult.accountsEmailId
+      }
+    });
+
+  } catch (error) {
+    logger.error('💥 Error sending PDF email:', error);
+    return sendError(res, 500, 'Failed to send PDF email', 'INTERNAL_ERROR');
+  }
+}
+
+/**
+ * Send Image Download Links via Email
+ * POST /api/profile/send-image-links/:userId
+ * Sends email with download links for all user's incident images
+ */
+async function sendImageLinks(req, res) {
+  try {
+    const { userId } = req.params;
+
+    logger.info('📧 User requesting image links email', { userId });
+
+    // ========================================
+    // SECURITY: VERIFY OWNERSHIP
+    // ========================================
+    if (!req.user?.id) {
+      logger.warn('Image links request without authentication');
+      return sendError(res, 401, 'Authentication required', 'AUTH_REQUIRED');
+    }
+
+    if (req.user.id !== userId) {
+      logger.warn('IDOR attempt blocked in image links', {
+        authenticated: req.user.id,
+        target: userId,
+        ip: req.ip
+      });
+      return sendError(res, 403, 'Access denied: Cannot access another user\'s images', 'FORBIDDEN');
+    }
+
+    // ========================================
+    // FETCH USER DATA
+    // ========================================
+    const { data: userData, error: userError } = await supabase
+      .from('user_signup')
+      .select('email, name')
+      .eq('create_user_id', userId)
+      .single();
+
+    if (userError || !userData) {
+      logger.error('❌ User not found', { userId });
+      return sendError(res, 404, 'User not found', 'USER_NOT_FOUND');
+    }
+
+    const userEmail = userData.email;
+    const userName = userData.name || 'User';
+
+    // ========================================
+    // SEND IMAGE LINKS EMAIL
+    // ========================================
+    logger.info('📨 Sending image links email', { email: userEmail });
+
+    const result = await sendImageDownloadLinks(supabase, userId, userEmail, userName);
+
+    if (!result.success) {
+      logger.error('❌ Failed to send image links email', { error: result.error });
+      return sendError(res, 500, 'Failed to send email: ' + result.error, 'EMAIL_SEND_FAILED');
+    }
+
+    logger.success('✅ Image links email sent successfully', {
+      userId,
+      imageCount: result.imageCount
+    });
+
+    return res.json({
+      success: true,
+      message: `Email sent with ${result.imageCount} image download link(s)`,
+      imageCount: result.imageCount
+    });
+
+  } catch (error) {
+    logger.error('💥 Error sending image links email:', error);
+    return sendError(res, 500, 'Failed to send image links email', 'INTERNAL_ERROR');
+  }
+}
+
 module.exports = {
   getUserProfile,
   updateUserProfile,
-  updateFcmToken
+  updateFcmToken,
+  sendPdfEmail,
+  sendImageLinks
 };
