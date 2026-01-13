@@ -62,19 +62,6 @@ module.exports = {
     TOTAL_UPLOAD: 50 * 1024 * 1024 // 50MB per request
   },
 
-  // ==================== TYPEFORM ====================
-
-  TYPEFORM: {
-    HIDDEN_FIELDS: {
-      AUTH_USER_ID: 'auth_user_id',
-      EMAIL: 'email',
-      AUTH_CODE: 'auth_code',
-      PRODUCT_ID: 'product_id'
-    },
-    NONCE_EXPIRY_MINUTES: 10,
-    WEBHOOK_TIMEOUT_SECONDS: 30
-  },
-
   // ==================== RESPONSE CODES ====================
 
   RESPONSE_CODES: {
