@@ -234,7 +234,7 @@ class ImageProcessorV2 {
   }
 
   /**
-   * Download image from URL with retry logic (e.g., Typeform file_url)
+   * Download image from URL with retry logic
    * Enhanced with better error categorization
    * @param {string} url - Image URL to download
    * @param {string} documentId - Document ID for status tracking
@@ -537,9 +537,10 @@ class ImageProcessorV2 {
   }
 
   /**
-   * Process Typeform image: download from URL and upload to Supabase
+   * LEGACY: Process external image URL - download from URL and upload to Supabase
+   * @deprecated This method is no longer used
    * Enhanced version with user_documents table integration + checksums
-   * @param {string} typeformUrl - Typeform file_url
+   * @param {string} typeformUrl - External file URL
    * @param {string} userId - User ID for path isolation
    * @param {string} imageType - Type of image (e.g., 'driving_license', 'vehicle_front')
    * @param {Object} options - Additional options
@@ -559,10 +560,10 @@ class ImageProcessorV2 {
 
     try {
       if (!typeformUrl || !typeformUrl.startsWith('http')) {
-        throw new Error('Invalid Typeform URL');
+        throw new Error('Invalid URL');
       }
 
-      logger.info('Processing Typeform image', {
+      logger.info('Processing external image', {
         userId,
         imageType,
         urlPreview: typeformUrl.substring(0, 50) + '...',
@@ -606,7 +607,7 @@ class ImageProcessorV2 {
         status: 'pending'
       });
 
-      // Step 2: Download image from Typeform
+      // Step 2: Download image from URL
       const { buffer, contentType, fileName, fileSize } = await this.downloadFromUrl(
         typeformUrl,
         documentId
@@ -665,7 +666,7 @@ class ImageProcessorV2 {
         processing_duration_ms: processingDuration
       });
 
-      logger.info('✅ Typeform image processed successfully', {
+      logger.info('✅ External image processed successfully', {
         documentId,
         userId,
         imageType,
@@ -692,7 +693,7 @@ class ImageProcessorV2 {
       };
 
     } catch (error) {
-      logger.error('Failed to process Typeform image', {
+      logger.error('Failed to process external image', {
         documentId,
         userId,
         imageType,
