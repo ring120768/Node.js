@@ -111,7 +111,7 @@ async function signup(req, res) {
       total_transcriptions: 0,
       last_activity: new Date().toISOString(),
 
-      // Typeform completion tracking
+      // Legacy metadata fields (unused - safe to ignore)
       typeform_completed: false,
       typeform_completion_date: null
     });
