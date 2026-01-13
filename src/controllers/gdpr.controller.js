@@ -11,11 +11,22 @@ const config = require('../config');
 const gdprService = require('../services/gdprService');
 const User = require('../models/User');
 const { sendTemplateEmail } = require('../../lib/emailService');
+const { createClient } = require('@supabase/supabase-js');
 
+// Initialize Supabase client
 let supabase = null;
+if (config.supabase.url && config.supabase.serviceKey) {
+  supabase = createClient(config.supabase.url, config.supabase.serviceKey, {
+    auth: {
+      autoRefreshToken: false,
+      persistSession: false
+    }
+  });
+}
 
 /**
- * Initialize GDPR controller with dependencies
+ * Initialize GDPR controller with dependencies (legacy - no longer needed)
+ * @deprecated Supabase is now initialized directly from config
  */
 function initializeController(supabaseInstance) {
   supabase = supabaseInstance;
