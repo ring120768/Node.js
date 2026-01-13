@@ -436,10 +436,67 @@ async function sendImageLinks(req, res) {
   }
 }
 
+/**
+ * Get PDF Statistics
+ * GET /api/profile/pdf-stats/:userId
+ * Returns count of completed PDFs for the user
+ */
+async function getPdfStats(req, res) {
+  try {
+    const { userId } = req.params;
+
+    logger.info('📊 Fetching PDF stats', { userId });
+
+    // ========================================
+    // SECURITY: VERIFY OWNERSHIP
+    // ========================================
+    if (!req.user?.id) {
+      logger.warn('PDF stats request without authentication');
+      return sendError(res, 401, 'Authentication required', 'AUTH_REQUIRED');
+    }
+
+    if (req.user.id !== userId) {
+      logger.warn('IDOR attempt blocked in PDF stats', {
+        authenticated: req.user.id,
+        target: userId,
+        ip: req.ip
+      });
+      return sendError(res, 403, 'Access denied: Cannot access another user\'s stats', 'FORBIDDEN');
+    }
+
+    // ========================================
+    // COUNT COMPLETED PDFs
+    // ========================================
+    const { count, error } = await supabase
+      .from('completed_incident_forms')
+      .select('*', { count: 'exact', head: true })
+      .eq('create_user_id', userId);
+
+    if (error) {
+      logger.error('❌ Failed to count PDFs:', error);
+      return sendError(res, 500, 'Failed to fetch PDF stats', 'STATS_FETCH_FAILED');
+    }
+
+    logger.success('✅ PDF stats retrieved', { userId, count });
+
+    return res.json({
+      success: true,
+      stats: {
+        completed_pdfs: count || 0
+      }
+    });
+
+  } catch (error) {
+    logger.error('💥 Error fetching PDF stats:', error);
+    return sendError(res, 500, 'Failed to fetch PDF stats', 'INTERNAL_ERROR');
+  }
+}
+
 module.exports = {
   getUserProfile,
   updateUserProfile,
   updateFcmToken,
   sendPdfEmail,
-  sendImageLinks
+  sendImageLinks,
+  getPdfStats
 };
