@@ -34,7 +34,7 @@ router.post('/logout', authController.logout);
 router.get('/session', optionalAuth, authController.checkSession);
 
 /**
- * Generate a nonce for Typeform authentication
+ * Generate a secure nonce for authentication
  * GET /api/auth/nonce
  */
 router.get('/nonce', optionalAuth, authController.generateNonce);
