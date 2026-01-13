@@ -25,4 +25,7 @@ router.post('/send-pdf-email/:userId', profileController.sendPdfEmail);
 // POST /api/profile/send-image-links/:userId - Send image download links via email
 router.post('/send-image-links/:userId', profileController.sendImageLinks);
 
+// GET /api/profile/pdf-stats/:userId - Get PDF statistics
+router.get('/pdf-stats/:userId', profileController.getPdfStats);
+
 module.exports = router;
