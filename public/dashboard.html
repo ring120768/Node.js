@@ -1461,29 +1461,12 @@
 
                 if (docsResponse.ok) {
                     const docsData = await docsResponse.json();
-                    document.getElementById('statDocuments').textContent = docsData.total || 0;
+                    document.getElementById('statDocuments').textContent = docsData.data?.total_documents || 0;
                     document.getElementById('statDocumentsSize').textContent =
-                        ((docsData.totalSize || 0) / (1024 * 1024)).toFixed(1) + ' MB';
+                        ((docsData.data?.total_size_bytes || 0) / (1024 * 1024)).toFixed(1) + ' MB';
                 }
 
-                // Fetch transcription history
-                const transcriptResponse = await fetch('/api/transcription/history?limit=100', {
-                    credentials: 'include'
-                });
-
-                if (transcriptResponse.ok) {
-                    const transcriptData = await transcriptResponse.json();
-                    const count = transcriptData.transcriptions?.length || 0;
-                    document.getElementById('statTranscriptions').textContent = count;
-
-                    // Calculate total duration
-                    const totalMinutes = transcriptData.transcriptions?.reduce((sum, t) =>
-                        sum + (t.duration || 0), 0) / 60 || 0;
-                    document.getElementById('statTranscriptionsTime').textContent =
-                        Math.round(totalMinutes) + ' min';
-                }
-
-                // Fetch incident reports
+                // Fetch incident reports (includes transcriptions and PDFs)
                 const incidentsResponse = await fetch('/api/incident-reports?limit=100', {
                     credentials: 'include'
                 });
@@ -1497,7 +1480,13 @@
                     document.getElementById('statIncidentsChange').textContent =
                         completedIncidents > 0 ? `${completedIncidents} completed` : 'Ready to create';
 
-                    // For now, set PDFs count same as completed incidents
+                    // Transcriptions are created with incident reports (voice_transcription field)
+                    // Count total incidents as they all have transcriptions
+                    document.getElementById('statTranscriptions').textContent = totalIncidents;
+                    document.getElementById('statTranscriptionsTime').textContent =
+                        totalIncidents > 0 ? `${totalIncidents} saved` : '0 min';
+
+                    // PDFs are generated when incidents are completed
                     document.getElementById('statPDFs').textContent = completedIncidents;
                     document.getElementById('statPDFsStatus').textContent =
                         completedIncidents > 0 ? `${completedIncidents} generated` : 'Ready to generate';
