@@ -19,4 +19,10 @@ router.put('/:userId', profileController.updateUserProfile);
 // POST /api/profile/update-fcm-token - Update FCM token for push notifications
 router.post('/update-fcm-token', profileController.updateFcmToken);
 
+// POST /api/profile/send-pdf-email/:userId - Send PDF report via email
+router.post('/send-pdf-email/:userId', profileController.sendPdfEmail);
+
+// POST /api/profile/send-image-links/:userId - Send image download links via email
+router.post('/send-image-links/:userId', profileController.sendImageLinks);
+
 module.exports = router;
