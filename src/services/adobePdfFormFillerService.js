@@ -273,7 +273,7 @@ class AdobePdfFormFillerService {
 
   /**
    * Fill all form fields based on Supabase data
-   * CORRECTED: Uses actual database column names instead of old Typeform fields
+   * Uses actual database column names matching the database schema
    *
    * @param {Object} form - PDF form object from pdf-lib
    * @param {Object} data - All data from Supabase
@@ -710,7 +710,7 @@ class AdobePdfFormFillerService {
     // REMOVED: emergency_contact_made - field does not exist in PDF template
 
     // PAGE 4: Medical and Injury Assessment
-    // IMPORTANT: Use incident.medical_symptom_* columns (not old Typeform columns!)
+    // IMPORTANT: Use incident.medical_symptom_* columns (using actual database column names)
     // Note: Some PDF fields have typos (sympton, mobilty, life _threatening with SPACE)
     checkField('medical_symptom_chest_pain', incident.medical_symptom_chest_pain);
     checkField('medical_symptom_uncontrolled_bleeding', incident.medical_symptom_uncontrolled_bleeding);
