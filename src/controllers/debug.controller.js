@@ -185,8 +185,6 @@ async function getHealth(req, res) {
       supabase: false,
       openai: false,
       what3words: false,
-      typeform: false,
-      zapier: false,
       dvla: false,
       stripe: false
     };
@@ -226,43 +224,12 @@ async function getHealth(req, res) {
       }
     }
 
-    // Check Typeform/Zapier webhook key
-    services.typeform = !!config.webhook.apiKey;
-    services.zapier = !!config.webhook.apiKey;
-
     // Check DVLA API key
     services.dvla = !!config.dvla.apiKey;
 
     // Check Stripe keys
     services.stripe = !!(process.env.STRIPE_SECRET_KEY || process.env.STRIPE_PUBLISHABLE_KEY);
 
-    // Test Typeform/Webhook configuration
-    if (config.webhook.apiKey) {
-      try {
-        // Test webhook endpoint accessibility
-        const testWebhookUrl = `http://localhost:${config.app.port}/api/webhooks/test`;
-        const webhookResponse = await fetch(testWebhookUrl, {
-          method: 'POST',
-          headers: {
-            'Content-Type': 'application/json',
-            'X-Api-Key': config.webhook.apiKey
-          },
-          body: JSON.stringify({ test: true })
-        });
-
-        if (webhookResponse.ok) {
-          logger.success('Typeform webhook test: ✅ Endpoint accessible with valid API key');
-        } else {
-          logger.warn('Typeform webhook test: ❌ Endpoint responded with error');
-        }
-      } catch (webhookError) {
-        logger.warn('Typeform webhook test: ❌ Connection failed:', webhookError.message);
-      }
-    } else {
-      logger.warn('Typeform webhook: ❌ No WEBHOOK_API_KEY configured');
-    }
-
-    // Add other service tests as needed
     logger.info('All connection tests completed');
 
     res.json({
@@ -284,14 +251,6 @@ async function getHealth(req, res) {
           configured: !!config.what3words.apiKey,
           connected: services.what3words,
           features: ['Location Services', 'Address Conversion']
-        },
-        typeform: {
-          configured: services.typeform,
-          features: ['Form Processing', 'Incident Reports']
-        },
-        zapier: {
-          configured: services.zapier,
-          features: ['Webhook Automation', 'PDF Generation']
         },
         dvla: {
           configured: services.dvla,
