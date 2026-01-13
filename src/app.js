@@ -2,12 +2,11 @@
 
 /**
  * Car Crash Lawyer AI - Express Application
- * 
+ *
  * Main application setup with:
  * - Supabase (Database, Auth, Storage, Realtime)
  * - WebSocket for real-time updates
  * - GDPR compliance services
- * - Typeform webhook endpoints with signature verification
  * - External API integrations
  */
 
@@ -558,8 +557,6 @@ function createApp() {
    *
    * Webhook endpoints:
    * - POST /webhooks/github - GitHub repository events
-   *
-   * Note: Typeform webhooks removed - application now uses in-house HTML forms
    */
   app.use('/webhooks', webhookRouter);
 
