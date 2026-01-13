@@ -30,12 +30,11 @@ if (config.supabase.anonKey) {
 /**
  * User Signup with Auth Metadata Only
  * POST /api/auth/signup
- * 
+ *
  * Flow:
  * 1. Create user in Supabase Auth with all metadata
  * 2. Log GDPR consent to storage
- * 3. Redirect to Typeform for detailed profile
- * 4. Typeform webhook populates user_signup table
+ * 3. Return success - frontend handles next steps
  */
 async function signup(req, res) {
   try {
@@ -218,7 +217,7 @@ async function signup(req, res) {
     });
 
     // ========================================
-    // RETURN SUCCESS - FRONTEND REDIRECTS TO TYPEFORM
+    // RETURN SUCCESS - FRONTEND HANDLES NEXT STEPS
     // ========================================
     res.json({
       success: true,
@@ -659,7 +658,7 @@ module.exports = {
 
 
 /**
- * Generate Auth Nonce for Typeform
+ * Generate Auth Nonce
  * GET /api/auth/nonce
  */
 async function generateNonce(req, res) {
