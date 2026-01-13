@@ -1483,20 +1483,7 @@
                     const incidentsData = await incidentsResponse.json();
                     const totalIncidents = incidentsData.total || 0;
 
-                    // Detailed logging to debug PDF count
-                    console.log('📊 Raw incident reports data:', {
-                        totalReturned: incidentsData.reports?.length,
-                        total: incidentsData.total,
-                        allReports: incidentsData.reports
-                    });
-
                     const completedIncidents = (incidentsData.reports || []).filter(r => r.status === 'completed').length;
-
-                    console.log('📊 After filtering:', {
-                        totalIncidents,
-                        completedIncidents,
-                        completedReports: (incidentsData.reports || []).filter(r => r.status === 'completed')
-                    });
 
                     document.getElementById('statIncidents').textContent = totalIncidents;
                     document.getElementById('statIncidentsChange').textContent =
@@ -1506,11 +1493,22 @@
                     document.getElementById('statTranscriptions').textContent = totalIncidents;
                     document.getElementById('statTranscriptionsTime').textContent =
                         totalIncidents > 0 ? `${totalIncidents} saved` : '0 min';
+                }
 
-                    // PDFs: count completed incidents (have completed_at field)
-                    document.getElementById('statPDFs').textContent = completedIncidents;
+                // PDFs: Fetch from correct table (completed_incident_forms)
+                const pdfStatsResponse = await fetch(`/api/profile/pdf-stats/${userId}`, {
+                    credentials: 'include'
+                });
+
+                if (pdfStatsResponse.ok) {
+                    const pdfData = await pdfStatsResponse.json();
+                    const completedPdfs = pdfData.stats.completed_pdfs;
+
+                    console.log('📊 PDF Stats:', { completedPdfs });
+
+                    document.getElementById('statPDFs').textContent = completedPdfs;
                     document.getElementById('statPDFsStatus').textContent =
-                        completedIncidents > 0 ? `${completedIncidents} generated` : 'Ready to generate';
+                        completedPdfs > 0 ? `${completedPdfs} generated` : 'Ready to generate';
                 }
 
             } catch (error) {
