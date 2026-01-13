@@ -684,8 +684,7 @@ function buildIncidentData(userId, formData) {
     manual_colour: page5.manual_colour || null,
     manual_year: page5.manual_year || null,
 
-    // Note: Legacy Typeform fields removed - your_vehicle_make, your_vehicle_model, your_vehicle_color,
-    // your_vehicle_registration, your_vehicle_year don't exist in schema (use dvla_* or manual_* instead)
+    // Note: Use dvla_* or manual_* fields for vehicle information
 
     // Page 7: Other Driver & Vehicle (20 fields from migrations 021 + 022)
     // Driver information (4 fields)
@@ -908,7 +907,7 @@ async function listIncidentReports(req, res) {
     });
 
     // Fetch incident reports for this user
-    // Query all three user ID columns: auth_user_id (new), create_user_id (legacy Typeform), user_id (older)
+    // Query all three user ID columns: auth_user_id (current), create_user_id (legacy), user_id (older)
     const { data: reports, error, count } = await supabase
       .from('incident_reports')
       .select('*', { count: 'exact' })
