@@ -1053,6 +1053,7 @@ async function submitDeclaration(req, res) {
         .update({
           declaration_consent: true,
           declaration_timestamp: consentTimestamp || new Date().toISOString(),
+          completed_at: new Date().toISOString(), // Mark incident as completed when declaration submitted
           updated_at: new Date().toISOString()
         })
         .eq('id', incidentId)
@@ -1084,6 +1085,7 @@ async function submitDeclaration(req, res) {
           .update({
             declaration_consent: true,
             declaration_timestamp: consentTimestamp || new Date().toISOString(),
+            completed_at: new Date().toISOString(), // Mark incident as completed when declaration submitted
             updated_at: new Date().toISOString()
           })
           .eq('id', data.id);

@@ -1474,19 +1474,32 @@
                 if (incidentsResponse.ok) {
                     const incidentsData = await incidentsResponse.json();
                     const totalIncidents = incidentsData.total || 0;
+
+                    // Detailed logging to debug PDF count
+                    console.log('📊 Raw incident reports data:', {
+                        totalReturned: incidentsData.reports?.length,
+                        total: incidentsData.total,
+                        allReports: incidentsData.reports
+                    });
+
                     const completedIncidents = (incidentsData.reports || []).filter(r => r.status === 'completed').length;
+
+                    console.log('📊 After filtering:', {
+                        totalIncidents,
+                        completedIncidents,
+                        completedReports: (incidentsData.reports || []).filter(r => r.status === 'completed')
+                    });
 
                     document.getElementById('statIncidents').textContent = totalIncidents;
                     document.getElementById('statIncidentsChange').textContent =
                         completedIncidents > 0 ? `${completedIncidents} completed` : 'Ready to create';
 
-                    // Transcriptions are created with incident reports (voice_transcription field)
-                    // Count total incidents as they all have transcriptions
+                    // Transcriptions: count total incidents (all have voice_transcription)
                     document.getElementById('statTranscriptions').textContent = totalIncidents;
                     document.getElementById('statTranscriptionsTime').textContent =
                         totalIncidents > 0 ? `${totalIncidents} saved` : '0 min';
 
-                    // PDFs are generated when incidents are completed
+                    // PDFs: count completed incidents (have completed_at field)
                     document.getElementById('statPDFs').textContent = completedIncidents;
                     document.getElementById('statPDFsStatus').textContent =
                         completedIncidents > 0 ? `${completedIncidents} generated` : 'Ready to generate';
