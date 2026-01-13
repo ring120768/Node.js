@@ -77,12 +77,8 @@ module.exports = {
   // ==================== WEBHOOKS ====================
 
   webhook: {
-    apiKey: process.env.WEBHOOK_API_KEY || 
-            process.env.TYPEFORM_X_API_KEY || 
-            process.env.ZAPIER_SHARED_KEY,
-    enabled: !!(process.env.WEBHOOK_API_KEY || 
-                process.env.TYPEFORM_X_API_KEY || 
-                process.env.ZAPIER_SHARED_KEY)
+    apiKey: process.env.WEBHOOK_API_KEY,
+    enabled: !!process.env.WEBHOOK_API_KEY
   },
 
   // ==================== EMAIL / SMTP ====================
