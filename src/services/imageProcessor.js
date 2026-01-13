@@ -3,7 +3,7 @@
  * Handles image uploads, storage, and retrieval for Car Crash Lawyer AI
  *
  * Features:
- * - Download images from external URLs (e.g., Typeform)
+ * - Download images from external URLs
  * - Upload to Supabase Storage with proper paths
  * - Generate signed URLs for secure access
  * - Track images in database with metadata
@@ -26,7 +26,7 @@ class ImageProcessor {
   }
 
   /**
-   * Download image from URL with retry logic (e.g., Typeform file_url)
+   * Download image from URL with retry logic
    * @param {string} url - Image URL to download
    * @param {number} maxRetries - Maximum retry attempts (default from config)
    * @param {number} retryDelay - Initial delay between retries in ms (default from config)
@@ -286,8 +286,9 @@ class ImageProcessor {
   }
 
   /**
-   * Process Typeform image: download from URL and upload to Supabase
-   * @param {string} typeformUrl - Typeform file_url
+   * LEGACY: Process external image URL - download from URL and upload to Supabase
+   * @deprecated This method is no longer used
+   * @param {string} typeformUrl - External file URL
    * @param {string} userId - User ID for path isolation
    * @param {string} imageType - Type of image (e.g., 'driving_license', 'vehicle_front')
    * @returns {Promise<string>} - Supabase storage path
@@ -295,16 +296,16 @@ class ImageProcessor {
   async processTypeformImage(typeformUrl, userId, imageType) {
     try {
       if (!typeformUrl || !typeformUrl.startsWith('http')) {
-        throw new Error('Invalid Typeform URL');
+        throw new Error('Invalid URL');
       }
 
-      logger.info('Processing Typeform image', {
+      logger.info('Processing external image', {
         userId,
         imageType,
         urlPreview: typeformUrl.substring(0, 50) + '...'
       });
 
-      // Download image from Typeform
+      // Download image from URL
       const { buffer, contentType, fileName } = await this.downloadFromUrl(typeformUrl);
 
       // Generate safe filename with timestamp
@@ -331,7 +332,7 @@ class ImageProcessor {
         }
       });
 
-      logger.info('✅ Typeform image processed successfully', {
+      logger.info('✅ External image processed successfully', {
         userId,
         imageType,
         storagePath: fullStoragePath
@@ -339,7 +340,7 @@ class ImageProcessor {
 
       return fullStoragePath;
     } catch (error) {
-      logger.error('Failed to process Typeform image', {
+      logger.error('Failed to process external image', {
         userId,
         imageType,
         error: error.message
@@ -350,7 +351,8 @@ class ImageProcessor {
   }
 
   /**
-   * Process multiple Typeform images in parallel
+   * LEGACY: Process multiple external images in parallel
+   * @deprecated This method is no longer used
    * @param {Object} imageUrls - Object with imageType: url pairs
    * @param {string} userId - User ID
    * @returns {Promise<Object>} - Object with imageType: storagePath pairs
