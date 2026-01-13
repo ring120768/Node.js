@@ -6,7 +6,6 @@ const whatsappWebhookRouter = require('./whatsapp.routes');
 /**
  * Webhook Routes
  *
- * Note: Typeform webhooks removed - application now uses in-house HTML forms
  * Active webhooks: GitHub (repository events), WhatsApp (Meta Business Platform)
  */
 
