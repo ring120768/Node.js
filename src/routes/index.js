@@ -304,9 +304,6 @@ router.get('/system-status', async (req, res) => {
             <ul>
                 <li><code>/webhooks/github</code> - ✅ GitHub repository events</li>
             </ul>
-            <p style="margin-top: 10px; font-size: 12px; color: #666;">
-                Note: Typeform webhooks removed - application now uses in-house HTML forms
-            </p>
         </div>
 
         <div class="links">
@@ -363,11 +360,10 @@ router.use('/api/debug', debugRoutes);
 // ==================== LEGACY REDIRECTS ====================
 
 /**
- * Payment Success Redirect (Typeform)
+ * Payment Success Redirect
  * Short URL redirect to payment-success.html with full parameter names
- * Works around Typeform's character limit for redirect URLs
  *
- * Usage in Typeform: /s?u={{hidden:auth_user_id}}&e={{hidden:email}}
+ * Usage: /s?u={{auth_user_id}}&e={{email}}
  * Redirects to: /payment-success.html?auth_user_id=xxx&email=xxx
  */
 router.get('/s', (req, res) => {
@@ -452,7 +448,6 @@ router.get('/download-pdf/:userId', (req, res) => {
 
 /**
  * Legacy Webhook Endpoints
- * Note: Typeform webhook redirects removed - application now uses in-house HTML forms
  * All form submissions now go through /api/incident-form/* endpoints
  */
 
