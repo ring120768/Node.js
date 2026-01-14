@@ -447,6 +447,28 @@ router.get('/download-pdf/:userId', (req, res) => {
 });
 
 /**
+ * Force Download APK
+ * Serves the Android APK with forced download headers to bypass browser security warnings
+ */
+router.get('/download-app', (req, res) => {
+  const path = require('path');
+  const apkPath = path.join(__dirname, '../../public/CarCrashLawyerAI.apk');
+
+  // Force download with proper headers
+  res.setHeader('Content-Type', 'application/vnd.android.package-archive');
+  res.setHeader('Content-Disposition', 'attachment; filename="CarCrashLawyerAI.apk"');
+  res.setHeader('X-Content-Type-Options', 'nosniff');
+  res.setHeader('Cache-Control', 'public, max-age=86400'); // Cache for 1 day
+
+  res.sendFile(apkPath, (err) => {
+    if (err) {
+      logger.error('APK download failed:', err);
+      res.status(404).json({ error: 'APK file not found' });
+    }
+  });
+});
+
+/**
  * Legacy Webhook Endpoints
  * All form submissions now go through /api/incident-form/* endpoints
  */
