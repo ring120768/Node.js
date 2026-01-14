@@ -2355,6 +2355,12 @@ Continue with: What happened immediately after impact? Any injuries you noticed?
                     const micCheckMicrophone = micCheckContext.createMediaStreamSource(micCheckStream);
                     micCheckMicrophone.connect(micCheckAnalyser);
                     micCheckAnalyser.fftSize = 256;
+
+                    // Clear any previous error messages and show success
+                    const levelText = document.getElementById('micLevelText');
+                    levelText.textContent = '🎤 Microphone connected';
+                    levelText.style.color = '#10b981'; // Green color for success
+
                     animateMicCheckVisualizer();
                 }).catch(error => {
                     console.error('Microphone access error:', error);
