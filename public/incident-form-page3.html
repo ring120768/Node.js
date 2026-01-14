@@ -468,6 +468,36 @@
 
     </div>
 
+    <!-- Section 4B: Journey Purpose -->
+    <div class="form-section">
+      <h3>🚗 Journey Purpose</h3>
+
+      <div class="form-group">
+        <label>
+          What was the purpose of your journey?
+          <span class="required">*</span>
+        </label>
+        <p class="help-text" style="margin-bottom: 12px;">
+          This is important for insurance purposes
+        </p>
+        <div class="radio-group">
+          <label>
+            <input type="radio" name="journey_purpose" value="Business" required>
+            <span>Business (work-related journey: client meetings, site visits, deliveries, etc.)</span>
+          </label>
+          <label>
+            <input type="radio" name="journey_purpose" value="Commuting" required>
+            <span>Commuting (travelling to or from your regular place of work)</span>
+          </label>
+          <label>
+            <input type="radio" name="journey_purpose" value="Personal" required>
+            <span>Personal/Pleasure (shopping, leisure, visiting friends/family, etc.)</span>
+          </label>
+        </div>
+      </div>
+
+    </div>
+
     <!-- Section 5: Weather Conditions -->
     <div class="form-section">
       <h3>🌤️ Weather Conditions</h3>
@@ -846,10 +876,14 @@
         road_markings_visible_partially: document.querySelector('input[name="road_markings_visible_partially"]').checked
       };
 
+      // Get journey purpose (radio button)
+      const journeyPurpose = document.querySelector('input[name="journey_purpose"]:checked')?.value || '';
+
       // Save data to session storage
       const pageData = {
         accident_date: document.getElementById('accident_date').value.trim(),
         accident_time: document.getElementById('accident_time').value.trim(),
+        journey_purpose: journeyPurpose,
         ...weatherConditions,
         ...roadConditions,
         ...roadTypes,

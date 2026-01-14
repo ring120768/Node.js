@@ -541,9 +541,12 @@ function buildIncidentData(userId, formData) {
     // Six Point Safety Check (from six-point-safety-check.html, saved in sessionStorage)
     six_point_safety_check_completed: formData.six_point_safety_check?.completed_at ? true : false,
 
-    // Page 3: Date/Time/Weather/Road Conditions (41 fields - matches migration 016)
+    // Page 3: Date/Time/Weather/Road Conditions (42 fields - includes journey_purpose from migration 036)
     // Note: accident_date and accident_time already set from Page 1 above (lines 410-411)
     // Page 3 data is redundant but kept for validation consistency
+
+    // Journey purpose (radio button - critical for insurance)
+    journey_purpose: page3.journey_purpose || null,
 
     // Weather conditions (12 checkboxes)
     weather_bright_sunlight: page3.weather_bright_sunlight || false,

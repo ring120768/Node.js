@@ -25,14 +25,14 @@
             <div class='fl pad1y space-right2'>
                 <span class="strong">0% </span>
                 <span class="quiet">Statements</span>
-                <span class='fraction'>0/58</span>
+                <span class='fraction'>0/62</span>
             </div>
         
             
             <div class='fl pad1y space-right2'>
                 <span class="strong">0% </span>
                 <span class="quiet">Branches</span>
-                <span class='fraction'>0/45</span>
+                <span class='fraction'>0/52</span>
             </div>
         
             
@@ -46,7 +46,7 @@
             <div class='fl pad1y space-right2'>
                 <span class="strong">0% </span>
                 <span class="quiet">Lines</span>
-                <span class='fraction'>0/54</span>
+                <span class='fraction'>0/58</span>
             </div>
         
             
@@ -274,8 +274,7 @@
 <a name='L209'></a><a href='#L209'>209</a>
 <a name='L210'></a><a href='#L210'>210</a>
 <a name='L211'></a><a href='#L211'>211</a>
-<a name='L212'></a><a href='#L212'>212</a>
-<a name='L213'></a><a href='#L213'>213</a></td><td class="line-coverage quiet"><span class="cline-any cline-neutral">&nbsp;</span>
+<a name='L212'></a><a href='#L212'>212</a></td><td class="line-coverage quiet"><span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
@@ -302,11 +301,8 @@
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
-<span class="cline-any cline-neutral">&nbsp;</span>
-<span class="cline-any cline-neutral">&nbsp;</span>
-<span class="cline-any cline-neutral">&nbsp;</span>
-<span class="cline-any cline-neutral">&nbsp;</span>
-<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-no">&nbsp;</span>
@@ -447,6 +443,8 @@
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
 <span class="cline-any cline-no">&nbsp;</span>
 <span class="cline-any cline-no">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
@@ -505,21 +503,18 @@ const logger = <span class="cstat-no" title="statement not covered" >require('..
 const corsOptions = <span class="cstat-no" title="statement not covered" >{</span>
   origin: <span class="fstat-no" title="function not covered" >(o</span>rigin, callback) =&gt; {
     const allowedOrigins = <span class="cstat-no" title="statement not covered" >[</span>
-      'https://workspace.ring120768.repl.co',
-      'https://workspace.ring120768.replit.app',
-      'https://workspace.ring120768.replit.dev',
-      'http://localhost:3000',
-      'http://localhost:5000',
+      'https://carcrashlawyerai.co.uk',
+      'https://www.carcrashlawyerai.co.uk',
+      'https://carcrashlawyerai.up.railway.app',
       'https://form.typeform.com',
       'https://typeform.com',
       'https://api.typeform.com'
-      // Removed wildcard patterns for security: /.typeform.com$/, /.zapier.com$/, /.replit.co$/,
-      
-      
-      
-      
-      
     ];
+&nbsp;
+    // Add localhost origins only in development/test environments
+<span class="cstat-no" title="statement not covered" >    if (process.env.NODE_ENV !== 'production') {</span>
+<span class="cstat-no" title="statement not covered" >      allowedOrigins.push('http://localhost:3000', 'http://localhost:5000');</span>
+    }
 &nbsp;
 <span class="cstat-no" title="statement not covered" >    if (!origin) <span class="cstat-no" title="statement not covered" >return callback(null, true);</span></span>
 &nbsp;
@@ -567,7 +562,7 @@ const helmetOptions = <span class="cstat-no" title="statement not covered" >{</s
       upgradeInsecureRequests: process.env.NODE_ENV === 'production' ? [] : null
     }
   },
-  crossOriginEmbedderPolicy: false, // Allow embedding for Replit
+  crossOriginEmbedderPolicy: false, // Allow embedding for external integrations
   crossOriginOpenerPolicy: false
 };
 &nbsp;
@@ -658,13 +653,15 @@ function <span class="fstat-no" title="function not covered" >httpsRedirect(</sp
 <span class="cstat-no" title="statement not covered" >    return next();</span>
   }
 &nbsp;
-  // Skip if already HTTPS or in development
-<span class="cstat-no" title="statement not covered" >  if (req.secure || req.get('x-forwarded-proto') === 'https' || process.env.NODE_ENV === 'development') {</span>
+  // Skip if already HTTPS, in development, or localhost
+  const host = <span class="cstat-no" title="statement not covered" >req.get('host') || '';</span>
+  const isLocalhost = <span class="cstat-no" title="statement not covered" >host.includes('localhost') || host.includes('127.0.0.1');</span>
+<span class="cstat-no" title="statement not covered" >  if (req.secure || req.get('x-forwarded-proto') === 'https' || process.env.NODE_ENV === 'development' || isLocalhost) {</span>
 <span class="cstat-no" title="statement not covered" >    return next();</span>
   }
 &nbsp;
   // Force HTTPS redirect for non-webhook requests
-  const httpsUrl = <span class="cstat-no" title="statement not covered" >`https://${req.get('host')}${req.originalUrl}`;</span>
+  const httpsUrl = <span class="cstat-no" title="statement not covered" >`https://${host}${req.originalUrl}`;</span>
 <span class="cstat-no" title="statement not covered" >  return res.redirect(301, httpsUrl);</span>
 }
 &nbsp;
@@ -706,7 +703,7 @@ function <span class="fstat-no" title="function not covered" >wwwRedirect(</span
             <div class='footer quiet pad2 space-top1 center small'>
                 Code coverage generated by
                 <a href="https://istanbul.js.org/" target="_blank" rel="noopener noreferrer">istanbul</a>
-                at 2025-10-23T21:28:13.295Z
+                at 2026-01-13T03:28:38.860Z
             </div>
         <script src="../../prettify.js"></script>
         <script>

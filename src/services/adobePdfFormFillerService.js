@@ -737,13 +737,17 @@ class AdobePdfFormFillerService {
 
     // ========================================
     // PAGE 3: Accident Date/Time/Location
-    // Database columns: accident_date, accident_time, location, what3words
+    // Database columns: accident_date, accident_time, location, what3words, journey_purpose
     // ========================================
     setFieldText('accident_date', incident.accident_date);
     setFieldText('accident_time', incident.accident_time);
     setFieldText('location', incident.location);
     setFieldText('what3words', incident.what3words);
     setFieldText('nearest_landmark', incident.nearest_landmark);
+
+    // Journey purpose (radio button - Business/Commuting/Personal)
+    // Critical for insurance liability classification (Migration 036)
+    setFieldText('journey_purpose', incident.journey_purpose);
 
     // ========================================
     // PAGE 4: Safety Equipment & Medical
