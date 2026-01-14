@@ -4,6 +4,15 @@
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>Incident Report - Location Photos | Car Crash Lawyer AI</title>
+
+  <!-- Capacitor Runtime (only loads in native app) -->
+  <script type="module">
+    // Load Capacitor if available (native app environment)
+    if (window.Capacitor) {
+      import('capacitor://localhost/capacitor.js');
+    }
+  </script>
+
   <style>
     :root {
       /* Brand Colors - Design System */
@@ -606,16 +615,45 @@
     }
 
     // Add Scene Image Button Click Handler
-    addSceneImageBtn.addEventListener('click', () => {
+    addSceneImageBtn.addEventListener('click', async () => {
       if (uploadedSceneImages.length < MAX_SCENE_IMAGES) {
-        sceneImageInput.value = ''; // Clear previous selection (Android WebView fix)
-        sceneImageInput.click();
+        // Check if running in Capacitor (native app)
+        if (window.Capacitor && window.Capacitor.Plugins.Camera) {
+          try {
+            // Use native camera for better UX
+            const { Camera } = window.Capacitor.Plugins;
+            const image = await Camera.getPhoto({
+              quality: 90,
+              allowEditing: false,
+              resultType: 'uri',
+              source: 'CAMERA', // Force camera (not gallery)
+              saveToGallery: false
+            });
+
+            // Convert Capacitor image to blob for upload
+            const response = await fetch(image.webPath);
+            const blob = await response.blob();
+            const file = new File([blob], `scene_photo_${Date.now()}.jpg`, { type: 'image/jpeg' });
+
+            // Trigger upload manually (simulate file input change)
+            uploadSceneImage(file);
+
+          } catch (error) {
+            console.error('Camera error:', error);
+            if (error.message !== 'User cancelled photos app') {
+              alert('Camera access denied. Please enable camera permissions in your device settings.');
+            }
+          }
+        } else {
+          // Fallback to HTML file input (web browser)
+          sceneImageInput.value = ''; // Clear previous selection (Android WebView fix)
+          sceneImageInput.click();
+        }
       }
     });
 
-    // Scene Image Input Change Handler
-    sceneImageInput.addEventListener('change', async (e) => {
-      const file = e.target.files[0];
+    // Reusable upload function for both file input and Capacitor camera
+    async function uploadSceneImage(file) {
       if (!file) return;
 
       // Check image limit
@@ -683,6 +721,12 @@
 
       // Reset input for next selection
       sceneImageInput.value = '';
+    }
+
+    // Scene Image Input Change Handler (for file input fallback)
+    sceneImageInput.addEventListener('change', async (e) => {
+      const file = e.target.files[0];
+      await uploadSceneImage(file);
     });
 
     // Add Scene Image Card to UI
