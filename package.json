@@ -1,6 +1,6 @@
 {
   "name": "car-crash-lawyer-ai-system",
-  "version": "2.0.7",
+  "version": "2.0.8",
   "description": "Image processor and PDF generator for Car Crash Lawyer AI",
   "private": true,
   "main": "index.new.js",

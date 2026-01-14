@@ -2077,6 +2077,7 @@ Continue with: What happened immediately after impact? Any injuries you noticed?
         let isPaused = false;
         let pausedTime = 0;
         let autoSaveInterval = null;
+        let microphoneStream = null; // Store the microphone stream to reuse after mic check
 
         // Store user ID
         localStorage.setItem('create_user_id', userId);
@@ -2384,10 +2385,14 @@ Continue with: What happened immediately after impact? Any injuries you noticed?
             }
             if (micCheckStream) {
                 micCheckStream.getTracks().forEach(track => track.stop());
+                micCheckStream = null;
             }
             if (micCheckContext) {
                 micCheckContext.close();
             }
+
+            // Clear the saved microphone stream since user cancelled
+            microphoneStream = null;
 
             document.getElementById('micCheckModal').classList.remove('active');
 
@@ -2401,9 +2406,12 @@ Continue with: What happened immediately after impact? Any injuries you noticed?
             if (micCheckAnimationId) {
                 cancelAnimationFrame(micCheckAnimationId);
             }
-            if (micCheckStream) {
-                micCheckStream.getTracks().forEach(track => track.stop());
-            }
+
+            // IMPORTANT: Save the stream for reuse in startRecording()
+            // Don't close it - we'll use the same stream for recording!
+            microphoneStream = micCheckStream;
+
+            // Close the audio context and visualizer (we'll create new ones for recording)
             if (micCheckContext) {
                 micCheckContext.close();
             }
@@ -2452,13 +2460,13 @@ Continue with: What happened immediately after impact? Any injuries you noticed?
                 // Then show countdown
                 await showCountdown();
 
-                const stream = await navigator.mediaDevices.getUserMedia({
-                    audio: {
-                        echoCancellation: true,
-                        noiseSuppression: true,
-                        sampleRate: 44100
-                    }
-                });
+                // Reuse the microphone stream from the mic check
+                // No need to request permission again!
+                const stream = microphoneStream;
+
+                if (!stream) {
+                    throw new Error('Microphone stream not available');
+                }
 
                 // Setup audio context for visualization
                 audioContext = new (window.AudioContext || window.webkitAudioContext)();
@@ -2533,9 +2541,10 @@ Continue with: What happened immediately after impact? Any injuries you noticed?
                 }
                 document.getElementById('visualizer').classList.remove('active');
 
-                // Stop audio tracks
-                if (microphone) {
-                    microphone.mediaStream.getTracks().forEach(track => track.stop());
+                // Stop audio tracks and clean up the microphone stream
+                if (microphoneStream) {
+                    microphoneStream.getTracks().forEach(track => track.stop());
+                    microphoneStream = null; // Clear the saved stream
                 }
 
                 // Update UI
