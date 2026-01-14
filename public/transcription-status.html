@@ -2410,6 +2410,12 @@ Continue with: What happened immediately after impact? Any injuries you noticed?
             // IMPORTANT: Save the stream for reuse in startRecording()
             // Don't close it - we'll use the same stream for recording!
             microphoneStream = micCheckStream;
+            console.log('💾 Saved microphone stream:', microphoneStream);
+            console.log('💾 Stream tracks:', microphoneStream ? microphoneStream.getAudioTracks().map(t => ({
+                label: t.label,
+                readyState: t.readyState,
+                enabled: t.enabled
+            })) : 'null');
 
             // Close the audio context and visualizer (we'll create new ones for recording)
             if (micCheckContext) {
@@ -2466,6 +2472,15 @@ Continue with: What happened immediately after impact? Any injuries you noticed?
 
                 if (!stream) {
                     throw new Error('Microphone stream not available');
+                }
+
+                // Check if the stream tracks are still active
+                const audioTracks = stream.getAudioTracks();
+                console.log('🎤 Stream audio tracks:', audioTracks);
+                console.log('🎤 Track states:', audioTracks.map(t => `${t.label}: ${t.readyState}`));
+
+                if (audioTracks.length === 0 || audioTracks[0].readyState !== 'live') {
+                    throw new Error('Microphone stream is not active. Please try recording again.');
                 }
 
                 // Setup audio context for visualization
@@ -2525,8 +2540,18 @@ Continue with: What happened immediately after impact? Any injuries you noticed?
                 }, 5 * 60 * 1000);
 
             } catch (error) {
-                console.error('Error starting recording:', error);
-                showStatus('Failed to access microphone. Please check permissions.', 'error');
+                console.error('❌ Error starting recording:', error);
+                console.error('❌ Error name:', error.name);
+                console.error('❌ Error message:', error.message);
+                console.error('❌ microphoneStream state:', microphoneStream ? 'exists' : 'null');
+                if (microphoneStream) {
+                    console.error('❌ Stream tracks:', microphoneStream.getAudioTracks().map(t => ({
+                        label: t.label,
+                        readyState: t.readyState,
+                        enabled: t.enabled
+                    })));
+                }
+                showStatus(`Failed to start recording: ${error.message}`, 'error');
             }
         }
 
