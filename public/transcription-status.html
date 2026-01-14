@@ -2417,9 +2417,17 @@ Continue with: What happened immediately after impact? Any injuries you noticed?
                 enabled: t.enabled
             })) : 'null');
 
-            // Close the audio context and visualizer (we'll create new ones for recording)
-            if (micCheckContext) {
-                micCheckContext.close();
+            // CRITICAL FOR ANDROID WEBVIEW: Do NOT close the AudioContext!
+            // Closing it causes Android to mark the MediaStreamTrack as inactive.
+            // We'll disconnect the nodes but keep the context alive.
+            if (micCheckContext && micCheckAnalyser && micCheckContext.state === 'running') {
+                try {
+                    // Disconnect nodes but keep context alive
+                    micCheckAnalyser.disconnect();
+                    console.log('🔇 Disconnected mic check audio nodes (context staying alive for Android)');
+                } catch (e) {
+                    console.warn('Could not disconnect audio nodes:', e);
+                }
             }
 
             document.getElementById('micCheckModal').classList.remove('active');
@@ -2436,6 +2444,24 @@ Continue with: What happened immediately after impact? Any injuries you noticed?
                 const numberElement = document.getElementById('countdownNumber');
                 let count = 5;
 
+                // ANDROID WEBVIEW FIX: Keep the stream actively used during countdown
+                // by maintaining an AudioContext connection. This prevents Android from
+                // marking the MediaStreamTrack as inactive during the countdown delay.
+                let keepAliveContext = null;
+                let keepAliveSource = null;
+
+                if (microphoneStream) {
+                    try {
+                        // Create a minimal AudioContext to keep the stream alive
+                        keepAliveContext = new (window.AudioContext || window.webkitAudioContext)();
+                        keepAliveSource = keepAliveContext.createMediaStreamSource(microphoneStream);
+                        // Don't connect to destination - we just need it to exist
+                        console.log('🔊 Created keep-alive AudioContext during countdown (Android WebView fix)');
+                    } catch (e) {
+                        console.warn('Could not create keep-alive context:', e);
+                    }
+                }
+
                 // Show overlay
                 overlay.classList.add('active');
 
@@ -2451,6 +2477,17 @@ Continue with: What happened immediately after impact? Any injuries you noticed?
                     } else {
                         clearInterval(countdownInterval);
                         overlay.classList.remove('active');
+
+                        // Clean up keep-alive context after countdown
+                        if (keepAliveContext) {
+                            try {
+                                keepAliveContext.close();
+                                console.log('🔇 Closed keep-alive context after countdown');
+                            } catch (e) {
+                                console.warn('Could not close keep-alive context:', e);
+                            }
+                        }
+
                         resolve();
                     }
                 }, 1000);
@@ -2467,10 +2504,10 @@ Continue with: What happened immediately after impact? Any injuries you noticed?
                 await showCountdown();
 
                 // Reuse the microphone stream from the mic check
-                // No need to request permission again!
-                const stream = microphoneStream;
+                let stream = microphoneStream;
 
                 if (!stream) {
+                    console.warn('⚠️ No saved microphone stream - this should not happen');
                     throw new Error('Microphone stream not available');
                 }
 
@@ -2479,8 +2516,28 @@ Continue with: What happened immediately after impact? Any injuries you noticed?
                 console.log('🎤 Stream audio tracks:', audioTracks);
                 console.log('🎤 Track states:', audioTracks.map(t => `${t.label}: ${t.readyState}`));
 
+                // ANDROID WEBVIEW FALLBACK: If stream died, request microphone again
                 if (audioTracks.length === 0 || audioTracks[0].readyState !== 'live') {
-                    throw new Error('Microphone stream is not active. Please try recording again.');
+                    console.warn('⚠️ Stream tracks are not live, attempting to request microphone again...');
+
+                    try {
+                        // Last resort: request microphone permission again
+                        stream = await navigator.mediaDevices.getUserMedia({
+                            audio: {
+                                echoCancellation: true,
+                                noiseSuppression: true,
+                                autoGainControl: true
+                            }
+                        });
+
+                        // Update the saved stream
+                        microphoneStream = stream;
+                        console.log('✅ Successfully re-requested microphone access');
+
+                    } catch (fallbackError) {
+                        console.error('❌ Fallback microphone request failed:', fallbackError);
+                        throw new Error('Microphone stream became inactive and could not be reactivated. Please try recording again.');
+                    }
                 }
 
                 // Setup audio context for visualization
