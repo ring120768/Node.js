@@ -2316,53 +2316,59 @@ Continue with: What happened immediately after impact? Any injuries you noticed?
         }
 
         async function startMicrophoneCheck() {
-            try {
-                const modal = document.getElementById('micCheckModal');
-                modal.classList.add('active');
+            const modal = document.getElementById('micCheckModal');
+            modal.classList.add('active');
 
-                initializeMicCheckBars();
+            initializeMicCheckBars();
 
-                micCheckStream = await navigator.mediaDevices.getUserMedia({
+            // Set up button event listeners FIRST (before getUserMedia)
+            const cancelBtn = document.getElementById('cancelMicCheck');
+            const proceedBtn = document.getElementById('proceedWithRecording');
+
+            // Remove any existing listeners
+            cancelBtn.replaceWith(cancelBtn.cloneNode(true));
+            proceedBtn.replaceWith(proceedBtn.cloneNode(true));
+
+            // Get fresh references after cloning
+            const newCancelBtn = document.getElementById('cancelMicCheck');
+            const newProceedBtn = document.getElementById('proceedWithRecording');
+
+            return new Promise((resolve, reject) => {
+                window.micCheckResolve = resolve;
+                window.micCheckReject = reject;
+
+                // Add click handlers BEFORE requesting microphone
+                newCancelBtn.addEventListener('click', cancelMicrophoneCheck);
+                newProceedBtn.addEventListener('click', proceedWithRecording);
+
+                // Now request microphone access
+                navigator.mediaDevices.getUserMedia({
                     audio: {
                         echoCancellation: true,
                         noiseSuppression: true,
                         sampleRate: 44100
                     }
+                }).then(stream => {
+                    micCheckStream = stream;
+                    micCheckContext = new (window.AudioContext || window.webkitAudioContext)();
+                    micCheckAnalyser = micCheckContext.createAnalyser();
+                    const micCheckMicrophone = micCheckContext.createMediaStreamSource(micCheckStream);
+                    micCheckMicrophone.connect(micCheckAnalyser);
+                    micCheckAnalyser.fftSize = 256;
+                    animateMicCheckVisualizer();
+                }).catch(error => {
+                    console.error('Microphone access error:', error);
+                    const levelText = document.getElementById('micLevelText');
+                    if (error.name === 'NotAllowedError' || error.name === 'PermissionDeniedError') {
+                        levelText.textContent = '🚫 Microphone permission denied';
+                        levelText.style.color = '#ef4444';
+                    } else {
+                        levelText.textContent = '❌ Microphone not available';
+                        levelText.style.color = '#ef4444';
+                    }
+                    // Buttons still work - user can cancel or try to proceed
                 });
-
-                micCheckContext = new (window.AudioContext || window.webkitAudioContext)();
-                micCheckAnalyser = micCheckContext.createAnalyser();
-                const micCheckMicrophone = micCheckContext.createMediaStreamSource(micCheckStream);
-                micCheckMicrophone.connect(micCheckAnalyser);
-                micCheckAnalyser.fftSize = 256;
-
-                animateMicCheckVisualizer();
-
-                // Set up button event listeners (safer than inline onclick for CSP)
-                const cancelBtn = document.getElementById('cancelMicCheck');
-                const proceedBtn = document.getElementById('proceedWithRecording');
-
-                // Remove any existing listeners
-                cancelBtn.replaceWith(cancelBtn.cloneNode(true));
-                proceedBtn.replaceWith(proceedBtn.cloneNode(true));
-
-                // Get fresh references after cloning
-                const newCancelBtn = document.getElementById('cancelMicCheck');
-                const newProceedBtn = document.getElementById('proceedWithRecording');
-
-                return new Promise((resolve, reject) => {
-                    window.micCheckResolve = resolve;
-                    window.micCheckReject = reject;
-
-                    // Add click handlers
-                    newCancelBtn.addEventListener('click', cancelMicrophoneCheck);
-                    newProceedBtn.addEventListener('click', proceedWithRecording);
-                });
-            } catch (error) {
-                console.error('Microphone check error:', error);
-                showStatus('Failed to access microphone. Please check permissions.', 'error');
-                throw error;
-            }
+            });
         }
 
         function cancelMicrophoneCheck() {
