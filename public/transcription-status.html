@@ -1766,6 +1766,17 @@ Continue with: What happened immediately after impact? Any injuries you noticed?
         <!-- Tab Panel: Analysis -->
         <div class="tab-panel" id="tab-analysis">
 
+        <!-- Back to Transcription Button -->
+        <div style="margin-bottom: 20px; padding-bottom: 15px; border-bottom: 2px solid #e2e8f0;">
+            <button class="btn btn-secondary" onclick="switchTab('transcription')" style="background: #6c757d; color: white; border: none; padding: 10px 20px; border-radius: 6px; cursor: pointer; font-size: 14px; display: inline-flex; align-items: center; gap: 8px; transition: background 0.2s;">
+                <span style="font-size: 18px;">←</span>
+                <span>Back to Edit Transcription</span>
+            </button>
+            <p style="color: #666; font-size: 13px; margin-top: 8px; margin-bottom: 0;">
+                Return to the transcription tab to make edits before finalizing
+            </p>
+        </div>
+
         <!-- Metrics Dashboard -->
         <div class="metrics-dashboard" id="metricsDashboard">
             <h2>📊 AI Analysis Overview</h2>
@@ -3120,8 +3131,8 @@ Continue with: What happened immediately after impact? Any injuries you noticed?
                         cachedAnalysis = result.analysis;
                         cachedIncidentId = currentIncidentId;
 
-                        // Display analysis with fade-in animation
-                        displayAIAnalysis(result.analysis);
+                        // Display analysis with fade-in animation and auto-switch to Analysis tab
+                        displayAIAnalysis(result.analysis, true);
 
                         // Hide completion banner after 3 seconds
                         setTimeout(() => {
@@ -3164,7 +3175,13 @@ Continue with: What happened immediately after impact? Any injuries you noticed?
             }
         }
 
-        function displayAIAnalysis(analysis) {
+        function displayAIAnalysis(analysis, autoSwitch = false) {
+            // Auto-switch to Analysis tab if requested (from AI generation completion)
+            // This parameter prevents infinite loop when user manually clicks Analysis tab
+            if (autoSwitch) {
+                switchTab('analysis');
+            }
+
             // Display Summary with fade-in animation
             const summarySection = document.getElementById('summarySection');
             summarySection.style.display = 'block';
