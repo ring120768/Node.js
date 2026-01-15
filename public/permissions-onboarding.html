@@ -232,6 +232,146 @@
             0% { transform: rotate(0deg); }
             100% { transform: rotate(360deg); }
         }
+
+        /* Modal overlay and dialog */
+        .modal-overlay {
+            display: none;
+            position: fixed;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background: rgba(0, 0, 0, 0.7);
+            z-index: 1000;
+            animation: fadeIn 0.3s ease;
+        }
+
+        .modal-overlay.show {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            padding: 20px;
+        }
+
+        .modal-dialog {
+            background: white;
+            border-radius: 20px;
+            max-width: 500px;
+            width: 100%;
+            max-height: 90vh;
+            overflow-y: auto;
+            box-shadow: 0 25px 70px rgba(0, 0, 0, 0.5);
+            animation: slideUp 0.3s ease;
+        }
+
+        .modal-header {
+            background: linear-gradient(135deg, #0B7AB0 0%, #1EA1D4 100%);
+            color: white;
+            padding: 25px;
+            border-radius: 20px 20px 0 0;
+            text-align: center;
+        }
+
+        .modal-header h3 {
+            font-size: 22px;
+            font-weight: 700;
+            margin: 0 0 10px 0;
+        }
+
+        .modal-header p {
+            font-size: 14px;
+            margin: 0;
+            opacity: 0.9;
+        }
+
+        .modal-body {
+            padding: 25px;
+        }
+
+        .modal-instruction {
+            margin-bottom: 20px;
+        }
+
+        .modal-instruction-step {
+            display: flex;
+            align-items: flex-start;
+            gap: 15px;
+            margin-bottom: 15px;
+            padding: 15px;
+            background: #f8f9fa;
+            border-radius: 12px;
+        }
+
+        .modal-step-number {
+            background: #0B7AB0;
+            color: white;
+            width: 32px;
+            height: 32px;
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-weight: 700;
+            font-size: 16px;
+            flex-shrink: 0;
+        }
+
+        .modal-step-content {
+            flex: 1;
+        }
+
+        .modal-step-content p {
+            margin: 0;
+            color: #1f2937;
+            font-size: 15px;
+            line-height: 1.6;
+        }
+
+        .modal-step-content strong {
+            color: #0B7AB0;
+        }
+
+        .modal-footer {
+            padding: 0 25px 25px 25px;
+        }
+
+        .modal-button {
+            width: 100%;
+            padding: 16px;
+            background: linear-gradient(135deg, #0B7AB0 0%, #1EA1D4 100%);
+            color: white;
+            border: none;
+            border-radius: 12px;
+            font-size: 16px;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.3s ease;
+        }
+
+        .modal-button:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 6px 16px rgba(11, 122, 176, 0.4);
+        }
+
+        .modal-button:active {
+            transform: translateY(0);
+        }
+
+        @keyframes fadeIn {
+            from { opacity: 0; }
+            to { opacity: 1; }
+        }
+
+        @keyframes slideUp {
+            from {
+                opacity: 0;
+                transform: translateY(30px);
+            }
+            to {
+                opacity: 1;
+                transform: translateY(0);
+            }
+        }
     </style>
 </head>
 <body>
@@ -286,6 +426,59 @@
                 <a href="/incident.html" onclick="localStorage.setItem('permissions_onboarding_complete', 'true'); return true;" style="color: #0B7AB0; text-decoration: underline; font-size: 16px; font-weight: 600; display: inline-block; padding: 10px; cursor: pointer;">
                     → Continue to App
                 </a>
+            </div>
+        </div>
+    </div>
+
+    <!-- Permission Help Modal -->
+    <div class="modal-overlay" id="permissionModal">
+        <div class="modal-dialog">
+            <div class="modal-header">
+                <h3 id="modalTitle">📸 Enable Camera Permission</h3>
+                <p>Follow these steps to manually enable the permission</p>
+            </div>
+            <div class="modal-body">
+                <div class="modal-instruction">
+                    <div class="modal-instruction-step">
+                        <div class="modal-step-number">1</div>
+                        <div class="modal-step-content">
+                            <p>Open your phone's <strong>Settings</strong> app</p>
+                        </div>
+                    </div>
+                    <div class="modal-instruction-step">
+                        <div class="modal-step-number">2</div>
+                        <div class="modal-step-content">
+                            <p>Go to <strong>Apps</strong> or <strong>Applications</strong></p>
+                        </div>
+                    </div>
+                    <div class="modal-instruction-step">
+                        <div class="modal-step-number">3</div>
+                        <div class="modal-step-content">
+                            <p>Find and tap <strong>Car Crash Lawyer AI</strong></p>
+                        </div>
+                    </div>
+                    <div class="modal-instruction-step">
+                        <div class="modal-step-number">4</div>
+                        <div class="modal-step-content">
+                            <p>Tap <strong>Permissions</strong></p>
+                        </div>
+                    </div>
+                    <div class="modal-instruction-step">
+                        <div class="modal-step-number">5</div>
+                        <div class="modal-step-content">
+                            <p id="modalPermissionName">Tap <strong>Camera</strong> and select <strong>Allow</strong></p>
+                        </div>
+                    </div>
+                    <div class="modal-instruction-step">
+                        <div class="modal-step-number">6</div>
+                        <div class="modal-step-content">
+                            <p>Return to this app and tap <strong>Try Again</strong></p>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            <div class="modal-footer">
+                <button class="modal-button" onclick="hidePermissionModal()">Got It - I'll Enable This Now</button>
             </div>
         </div>
     </div>
@@ -482,69 +675,72 @@
             }
 
             button.disabled = true;
-            button.textContent = 'Requesting permissions...';
+            button.textContent = 'Requesting camera permission...';
             console.log('🎯 Button disabled and text updated');
 
             try {
-                // Request camera permission
+                // STEP 1: Request camera permission
                 console.log('📸 Requesting camera permission...');
+                let cameraGranted = false;
                 try {
                     const cameraStream = await navigator.mediaDevices.getUserMedia({
                         video: { facingMode: 'environment' }
                     });
                     console.log('✅ Camera permission granted');
                     updatePermissionStatus('camera', true);
+                    cameraGranted = true;
                     // Stop the stream immediately - we just needed to get permission
                     cameraStream.getTracks().forEach(track => track.stop());
                 } catch (error) {
                     console.error('❌ Camera permission denied:', error);
                     updatePermissionStatus('camera', false);
+                    // Show modal with instructions for camera
+                    button.textContent = 'Try Again';
+                    button.disabled = false;
+                    showPermissionModal('camera');
+                    return; // Stop here - don't request microphone yet
                 }
 
                 // Small delay between requests for better UX
                 await new Promise(resolve => setTimeout(resolve, 500));
 
-                // Request microphone permission
+                // STEP 2: Request microphone permission (only if camera succeeded)
+                button.textContent = 'Requesting microphone permission...';
                 console.log('🎤 Requesting microphone permission...');
+                let microphoneGranted = false;
                 try {
                     const microphoneStream = await navigator.mediaDevices.getUserMedia({
                         audio: true
                     });
                     console.log('✅ Microphone permission granted');
                     updatePermissionStatus('microphone', true);
+                    microphoneGranted = true;
                     // Stop the stream immediately - we just needed to get permission
                     microphoneStream.getTracks().forEach(track => track.stop());
                 } catch (error) {
                     console.error('❌ Microphone permission denied:', error);
                     updatePermissionStatus('microphone', false);
+                    // Show modal with instructions for microphone
+                    button.textContent = 'Try Again';
+                    button.disabled = false;
+                    showPermissionModal('microphone');
+                    return; // Stop here
                 }
 
-                // Update button state
-                if (permissionsGranted.camera && permissionsGranted.microphone) {
+                // STEP 3: Both permissions granted - redirect!
+                if (cameraGranted && microphoneGranted) {
+                    console.log('🎉 All permissions granted! Redirecting...');
                     // Mark onboarding as complete
                     localStorage.setItem('permissions_onboarding_complete', 'true');
 
-                    button.textContent = '✓ Continue to App';
-                    button.onclick = () => {
-                        localStorage.setItem('permissions_onboarding_complete', 'true');
-                        window.location.href = '/incident.html';
-                    };
-                    button.disabled = false;
+                    button.textContent = '✓ Permissions Granted - Redirecting...';
+                    button.disabled = true;
 
-                    // Auto-redirect after 2 seconds
+                    // Auto-redirect after 1.5 seconds
                     setTimeout(() => {
                         localStorage.setItem('permissions_onboarding_complete', 'true');
                         window.location.href = '/incident.html';
-                    }, 2000);
-                } else {
-                    button.textContent = 'Try Again';
-                    button.disabled = false;
-                    button.onclick = requestPermissions;
-
-                    // Show message about denied permissions
-                    if (!permissionsGranted.camera || !permissionsGranted.microphone) {
-                        alert('Some permissions were denied. You can enable them later in your device settings, or try again now.');
-                    }
+                    }, 1500);
                 }
 
             } catch (error) {
@@ -553,6 +749,30 @@
                 button.disabled = false;
                 alert('Failed to request permissions. Please try again.');
             }
+        }
+
+        function showPermissionModal(permissionType) {
+            console.log('📋 Showing permission modal for:', permissionType);
+
+            const modal = document.getElementById('permissionModal');
+            const modalTitle = document.getElementById('modalTitle');
+            const modalPermissionName = document.getElementById('modalPermissionName');
+
+            if (permissionType === 'camera') {
+                modalTitle.textContent = '📸 Enable Camera Permission';
+                modalPermissionName.innerHTML = 'Tap <strong>Camera</strong> and select <strong>Allow</strong>';
+            } else if (permissionType === 'microphone') {
+                modalTitle.textContent = '🎤 Enable Microphone Permission';
+                modalPermissionName.innerHTML = 'Tap <strong>Microphone</strong> and select <strong>Allow</strong>';
+            }
+
+            modal.classList.add('show');
+        }
+
+        function hidePermissionModal() {
+            console.log('📋 Hiding permission modal');
+            const modal = document.getElementById('permissionModal');
+            modal.classList.remove('show');
         }
 
         function updatePermissionStatus(type, granted) {
