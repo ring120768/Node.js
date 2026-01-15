@@ -134,6 +134,18 @@
 
         .enable-button:active {
             transform: translateY(0);
+            background: linear-gradient(135deg, #0c6179 0%, #0B7AB0 100%);
+        }
+
+        /* Visual feedback for touch */
+        .button-touched {
+            animation: pulse 0.3s ease;
+        }
+
+        @keyframes pulse {
+            0% { transform: scale(1); }
+            50% { transform: scale(0.95); }
+            100% { transform: scale(1); }
         }
 
         .enable-button:disabled {
@@ -254,71 +266,224 @@
                 </div>
             </div>
 
-            <button class="enable-button" id="enableButton" onclick="requestPermissions()">
+            <button class="enable-button" id="enableButton">
                 Enable Camera & Microphone
             </button>
 
-            <button class="skip-button" onclick="skipPermissions()">
+            <button class="skip-button" id="skipButton">
                 Skip for Now
             </button>
 
             <div class="info-box">
                 <p><strong>Why we need these:</strong> To document your accident effectively, we need to capture photos and voice recordings. You can enable these permissions later in your device settings if you skip now.</p>
             </div>
+
+            <!-- EMERGENCY BYPASS: Direct link if buttons don't work -->
+            <div style="text-align: center; margin-top: 25px; padding-top: 20px; border-top: 1px solid #e5e7eb;">
+                <p style="color: #6b7280; font-size: 13px; margin-bottom: 10px;">
+                    Already granted permissions in Settings?
+                </p>
+                <a href="/incident.html" onclick="localStorage.setItem('permissions_onboarding_complete', 'true'); return true;" style="color: #0B7AB0; text-decoration: underline; font-size: 16px; font-weight: 600; display: inline-block; padding: 10px; cursor: pointer;">
+                    → Continue to App
+                </a>
+            </div>
         </div>
     </div>
 
     <script>
+        console.log('🔧 Permissions onboarding script loaded');
+        console.log('🔧 User Agent:', navigator.userAgent);
+        console.log('🔧 Platform:', navigator.platform);
+
         let permissionsGranted = {
             camera: false,
             microphone: false
         };
 
-        // Check if permissions are already granted on page load
-        window.addEventListener('DOMContentLoaded', () => {
+        // Multiple attachment strategies for maximum compatibility
+        function attachButtonHandlers() {
+            console.log('🔧 Attaching button handlers...');
+
+            const enableButton = document.getElementById('enableButton');
+            const skipButton = document.getElementById('skipButton');
+
+            if (enableButton) {
+                console.log('🔧 Found enable button');
+
+                // Strategy 1: addEventListener (preferred)
+                enableButton.addEventListener('click', function(e) {
+                    console.log('🔧 Button clicked via addEventListener!');
+                    e.preventDefault();
+                    e.stopPropagation();
+                    enableButton.classList.add('button-touched');
+                    setTimeout(() => enableButton.classList.remove('button-touched'), 300);
+                    requestPermissions();
+                });
+
+                // Strategy 2: Direct onclick as fallback
+                enableButton.onclick = function(e) {
+                    console.log('🔧 Button clicked via onclick!');
+                    e.preventDefault();
+                    e.stopPropagation();
+                    requestPermissions();
+                };
+
+                // Strategy 3: Touch events for mobile
+                enableButton.addEventListener('touchstart', function(e) {
+                    console.log('🔧 Button touchstart detected');
+                    enableButton.classList.add('button-touched');
+                }, { passive: true });
+
+                enableButton.addEventListener('touchend', function(e) {
+                    console.log('🔧 Button touched via touchend!');
+                    e.preventDefault();
+                    e.stopPropagation();
+                    setTimeout(() => enableButton.classList.remove('button-touched'), 300);
+                    requestPermissions();
+                }, { passive: false });
+
+                console.log('✅ Enable button handlers attached');
+            } else {
+                console.error('❌ Enable button not found!');
+            }
+
+            if (skipButton) {
+                console.log('🔧 Found skip button');
+
+                skipButton.addEventListener('click', function(e) {
+                    console.log('🔧 Skip button clicked via addEventListener!');
+                    e.preventDefault();
+                    e.stopPropagation();
+                    skipPermissions();
+                });
+
+                skipButton.onclick = function(e) {
+                    console.log('🔧 Skip button clicked via onclick!');
+                    e.preventDefault();
+                    e.stopPropagation();
+                    skipPermissions();
+                };
+
+                skipButton.addEventListener('touchend', function(e) {
+                    console.log('🔧 Skip button touched via touchend!');
+                    e.preventDefault();
+                    e.stopPropagation();
+                    skipPermissions();
+                }, { passive: false });
+
+                console.log('✅ Skip button handlers attached');
+            } else {
+                console.error('❌ Skip button not found!');
+            }
+        }
+
+        // Attach handlers when DOM is ready
+        if (document.readyState === 'loading') {
+            document.addEventListener('DOMContentLoaded', () => {
+                console.log('🔧 DOMContentLoaded event fired');
+                attachButtonHandlers();
+                checkExistingPermissions();
+            });
+        } else {
+            // DOM already loaded
+            console.log('🔧 DOM already loaded, attaching handlers immediately');
+            attachButtonHandlers();
             checkExistingPermissions();
-        });
+        }
 
         async function checkExistingPermissions() {
+            console.log('🔍 Checking if permissions are already granted...');
+
             try {
-                // Check camera permission
+                // Strategy 1: Try navigator.permissions.query first
                 if (navigator.permissions) {
                     try {
                         const cameraPermission = await navigator.permissions.query({ name: 'camera' });
+                        console.log('📸 Camera permission state:', cameraPermission.state);
                         if (cameraPermission.state === 'granted') {
                             updatePermissionStatus('camera', true);
                         }
                     } catch (e) {
-                        console.log('Camera permission check not supported');
+                        console.log('⚠️ navigator.permissions.query not supported for camera:', e.message);
                     }
 
                     try {
                         const microphonePermission = await navigator.permissions.query({ name: 'microphone' });
+                        console.log('🎤 Microphone permission state:', microphonePermission.state);
                         if (microphonePermission.state === 'granted') {
                             updatePermissionStatus('microphone', true);
                         }
                     } catch (e) {
-                        console.log('Microphone permission check not supported');
+                        console.log('⚠️ navigator.permissions.query not supported for microphone:', e.message);
                     }
                 }
 
-                // If both are granted, update button
+                // Strategy 2: If permissions API didn't work, try actually accessing media
+                console.log('🔍 Attempting to test actual media access...');
+
+                // Test camera
+                if (!permissionsGranted.camera) {
+                    try {
+                        console.log('📸 Testing camera access...');
+                        const cameraStream = await navigator.mediaDevices.getUserMedia({
+                            video: { facingMode: 'environment' }
+                        });
+                        console.log('✅ Camera access granted!');
+                        updatePermissionStatus('camera', true);
+                        cameraStream.getTracks().forEach(track => track.stop());
+                    } catch (e) {
+                        console.log('📸 Camera not yet granted:', e.message);
+                    }
+                }
+
+                // Test microphone
+                if (!permissionsGranted.microphone) {
+                    try {
+                        console.log('🎤 Testing microphone access...');
+                        const micStream = await navigator.mediaDevices.getUserMedia({
+                            audio: true
+                        });
+                        console.log('✅ Microphone access granted!');
+                        updatePermissionStatus('microphone', true);
+                        micStream.getTracks().forEach(track => track.stop());
+                    } catch (e) {
+                        console.log('🎤 Microphone not yet granted:', e.message);
+                    }
+                }
+
+                // If both are granted, auto-redirect!
                 if (permissionsGranted.camera && permissionsGranted.microphone) {
-                    document.getElementById('enableButton').textContent = '✓ Continue to App';
-                    document.getElementById('enableButton').onclick = () => {
-                        localStorage.setItem('permissions_onboarding_complete', 'true');
+                    console.log('🎉 Both permissions already granted! Auto-redirecting...');
+                    document.getElementById('enableButton').textContent = '✓ Permissions Granted - Redirecting...';
+                    document.getElementById('enableButton').disabled = true;
+
+                    localStorage.setItem('permissions_onboarding_complete', 'true');
+
+                    // Auto-redirect after 1 second
+                    setTimeout(() => {
                         window.location.href = '/incident.html';
-                    };
+                    }, 1000);
                 }
             } catch (error) {
-                console.error('Error checking permissions:', error);
+                console.error('❌ Error checking permissions:', error);
             }
         }
 
         async function requestPermissions() {
+            console.log('🎯 requestPermissions() function called!');
+
             const button = document.getElementById('enableButton');
+            console.log('🎯 Button element:', button);
+
+            if (!button) {
+                console.error('❌ Button not found in requestPermissions!');
+                alert('Error: Button not found. Please refresh the page.');
+                return;
+            }
+
             button.disabled = true;
             button.textContent = 'Requesting permissions...';
+            console.log('🎯 Button disabled and text updated');
 
             try {
                 // Request camera permission
@@ -410,7 +575,9 @@
         }
 
         function skipPermissions() {
+            console.log('⏭️ skipPermissions() function called!');
             if (confirm('Are you sure? You\'ll need to enable camera and microphone permissions later to use all features.')) {
+                console.log('⏭️ User confirmed skip');
                 // Mark as complete even if skipped (so we don't nag them every time)
                 localStorage.setItem('permissions_onboarding_complete', 'true');
                 // Redirect to incident page
