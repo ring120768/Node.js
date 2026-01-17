@@ -3,7 +3,7 @@
   "version": "2.0.14",
   "description": "Image processor and PDF generator for Car Crash Lawyer AI",
   "private": true,
-  "main": "index.new.js",
+  "main": "index.js",
   "engines": {
     "node": ">=18.18"
   },
