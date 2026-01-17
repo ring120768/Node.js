@@ -41,7 +41,7 @@ _quarantine/
 *.keystore
 
 # Android build outputs
-*.apk
+# *.apk  # COMMENTED OUT TEMPORARILY for testing phase - Railway needs APK in git
 *.aab
 android/app/build/
 android/.gradle/
