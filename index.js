@@ -85,23 +85,17 @@ const HOST = '0.0.0.0'; // Required for Railway/containerized deployment
 console.log(`🔌 [PID:${process.pid}] Using PORT: ${PORT}, HOST: ${HOST}`);
 
 // Validate required environment variables
-// Check for Supabase configuration (warning only, not fatal)
-const supabaseEnvVars = [
+const requiredEnvVars = [
   'SUPABASE_URL',
   'SUPABASE_SERVICE_ROLE_KEY',
   'SUPABASE_ANON_KEY'
 ];
 
-const missingSupabase = supabaseEnvVars.filter(varName => !process.env[varName]);
-if (missingSupabase.length > 0) {
-  console.warn('');
-  console.warn('⚠️ ═══════════════════════════════════════════════════════════════');
-  console.warn('⚠️  SUPABASE NOT CONFIGURED - DATABASE FUNCTIONALITY DISABLED');
-  console.warn('⚠️ ═══════════════════════════════════════════════════════════════');
-  console.warn(`⚠️  Missing: ${missingSupabase.join(', ')}`);
-  console.warn('⚠️  Static file serving will still work');
-  console.warn('⚠️ ═══════════════════════════════════════════════════════════════');
-  console.warn('');
+const missingVars = requiredEnvVars.filter(varName => !process.env[varName]);
+if (missingVars.length > 0) {
+  console.error(`❌ [PID:${process.pid}] Missing required environment variables:`, missingVars.join(', '));
+  console.error('💡 Please check your .env file against .env.example');
+  process.exit(1);
 }
 
 // Validate SMTP configuration (warning, not fatal - but critical for user emails)
