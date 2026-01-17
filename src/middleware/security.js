@@ -134,9 +134,14 @@ function requestTimeoutMiddleware(timeout = 30000) {
 }
 
 /**
- * HTTPS redirect middleware with webhook bypass
+ * HTTPS redirect middleware with health check and webhook bypass
  */
 function httpsRedirect(req, res, next) {
+  // Bypass for Railway health checks (must accept HTTP for internal container checks)
+  if (req.path === '/healthz' || req.path === '/livez' || req.path === '/readyz') {
+    return next();
+  }
+
   // Skip HTTPS redirect for webhook endpoints to prevent 301/302 issues
   if (req.path.startsWith('/webhooks/') || req.path.startsWith('/webhook/')) {
     return next();

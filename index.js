@@ -115,6 +115,28 @@ if (missingSMTP.length > 0) {
   console.log(`✅ SMTP configured: ${process.env.SMTP_HOST}:${process.env.SMTP_PORT || '587'}`);
 }
 
+// Check APK availability (diagnostic only, non-fatal)
+const apkPath = path.join(__dirname, 'public/CarCrashLawyerAI.apk');
+try {
+  if (fs.existsSync(apkPath)) {
+    const stats = fs.statSync(apkPath);
+    const sizeMB = (stats.size / 1024 / 1024).toFixed(1);
+    console.log(`✅ [PID:${process.pid}] APK available for download: ${sizeMB}MB`);
+  } else {
+    console.warn('');
+    console.warn('⚠️ ═══════════════════════════════════════════════════════════════');
+    console.warn('⚠️  APK FILE NOT FOUND');
+    console.warn('⚠️ ═══════════════════════════════════════════════════════════════');
+    console.warn(`⚠️  [PID:${process.pid}] APK file not found at ${apkPath}`);
+    console.warn('⚠️  Users will receive 404 when downloading app');
+    console.warn('⚠️  Check APK_DOWNLOAD_URL is set and build logs show successful download');
+    console.warn('⚠️ ═══════════════════════════════════════════════════════════════');
+    console.warn('');
+  }
+} catch (err) {
+  console.warn(`⚠️  [PID:${process.pid}] Could not check APK status: ${err.message}`);
+}
+
 // ==================== IMPORTS ====================
 
 const http = require('http');

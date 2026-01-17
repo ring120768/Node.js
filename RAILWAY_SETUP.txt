@@ -1,0 +1,57 @@
+═══════════════════════════════════════════════════════════════
+  ⚠️  CRITICAL: RAILWAY ENVIRONMENT VARIABLE REQUIRED
+═══════════════════════════════════════════════════════════════
+
+⚠️  WITHOUT THIS VARIABLE, DEPLOYMENT WILL FAIL ⚠️
+
+The APK file is NOT in git (346MB → 50MB repo optimization).
+Railway MUST download it during build using this environment variable.
+
+If you don't set this variable:
+❌ Build will fail with "APK_DOWNLOAD_URL not set in production"
+❌ Users will get 404 errors when downloading the app
+❌ Deployment will appear successful but app won't work
+
+═══════════════════════════════════════════════════════════════
+  🔧 REQUIRED SETUP - DO THIS BEFORE DEPLOYMENT WORKS
+═══════════════════════════════════════════════════════════════
+
+1. Go to: https://railway.app/dashboard
+2. Select your "Car Crash Lawyer AI" project
+3. Click "Variables" tab
+4. Add new variable:
+
+   Variable Name:  APK_DOWNLOAD_URL
+   Variable Value: https://github.com/ring120768/Node.js/releases/download/v2.0.14/CarCrashLawyerAI.apk
+
+5. Click "Add" or "Save"
+6. Railway will automatically redeploy with the new variable
+
+───────────────────────────────────────────────────────────────
+📋 What This Does:
+───────────────────────────────────────────────────────────────
+
+The APK is no longer in git (346MB → 50MB repo size).
+
+During Railway build, the script `scripts/download-apk.sh` will:
+- Check if APK exists (development: yes, Railway: no)
+- Download from GitHub Releases URL
+- Place in public/ directory for serving
+
+This fixes the 502 deployment timeout caused by the large git repo.
+
+───────────────────────────────────────────────────────────────
+✅ After Setting Variable:
+───────────────────────────────────────────────────────────────
+
+Wait 2-3 minutes for Railway to rebuild and deploy.
+
+Test the endpoints:
+- Health: https://car-crash-lawyer-ai-production-e138.up.railway.app/healthz
+- APK: https://car-crash-lawyer-ai-production-e138.up.railway.app/CarCrashLawyerAI.apk
+
+If successful, you'll see:
+- Health endpoint returns JSON with status "healthy"
+- APK endpoint starts download (96MB file)
+
+═══════════════════════════════════════════════════════════════

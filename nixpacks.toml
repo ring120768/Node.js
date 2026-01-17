@@ -6,6 +6,8 @@
 # Install Chrome/Chromium dependencies via apt (required for Puppeteer)
 # Updated for Ubuntu 24.04 (Noble) - libasound2 renamed to libasound2t64
 aptPkgs = [
+  'curl',              # Required for APK download during build
+  'ca-certificates',   # Required for HTTPS downloads
   'fonts-liberation',
   'libasound2t64',
   'libatk-bridge2.0-0',
