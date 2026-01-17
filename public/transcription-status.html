@@ -2447,6 +2447,16 @@ Continue with: What happened immediately after impact? Any injuries you noticed?
                 // ANDROID WEBVIEW FIX: Keep the stream actively used during countdown
                 // by maintaining an AudioContext connection. This prevents Android from
                 // marking the MediaStreamTrack as inactive during the countdown delay.
+                console.log('⏱️ Starting countdown, current stream state:', microphoneStream ? {
+                    id: microphoneStream.id,
+                    active: microphoneStream.active,
+                    tracks: microphoneStream.getAudioTracks().map(t => ({
+                        label: t.label,
+                        readyState: t.readyState,
+                        enabled: t.enabled
+                    }))
+                } : 'null');
+
                 let keepAliveContext = null;
                 let keepAliveSource = null;
 
@@ -2457,8 +2467,9 @@ Continue with: What happened immediately after impact? Any injuries you noticed?
                         keepAliveSource = keepAliveContext.createMediaStreamSource(microphoneStream);
                         // Don't connect to destination - we just need it to exist
                         console.log('🔊 Created keep-alive AudioContext during countdown (Android WebView fix)');
+                        console.log('🔊 Keep-alive context state:', keepAliveContext.state);
                     } catch (e) {
-                        console.warn('Could not create keep-alive context:', e);
+                        console.warn('⚠️ Could not create keep-alive context:', e);
                     }
                 }
 
@@ -2487,6 +2498,17 @@ Continue with: What happened immediately after impact? Any injuries you noticed?
                                 console.warn('Could not close keep-alive context:', e);
                             }
                         }
+
+                        // Log stream state after countdown
+                        console.log('⏱️ Countdown complete, stream state:', microphoneStream ? {
+                            id: microphoneStream.id,
+                            active: microphoneStream.active,
+                            tracks: microphoneStream.getAudioTracks().map(t => ({
+                                label: t.label,
+                                readyState: t.readyState,
+                                enabled: t.enabled
+                            }))
+                        } : 'null');
 
                         resolve();
                     }
@@ -2561,13 +2583,27 @@ Continue with: What happened immediately after impact? Any injuries you noticed?
                 animateVisualizer();
 
                 // Setup media recorder
+                console.log('🎙️ About to create MediaRecorder with stream:', stream);
+                console.log('🎙️ Stream ID:', stream.id);
+                console.log('🎙️ Stream active:', stream.active);
+                console.log('🎙️ Stream tracks before MediaRecorder:', stream.getAudioTracks().map(t => ({
+                    id: t.id,
+                    label: t.label,
+                    readyState: t.readyState,
+                    enabled: t.enabled,
+                    muted: t.muted
+                })));
+
                 mediaRecorder = new MediaRecorder(stream, {
                     mimeType: 'audio/webm'
                 });
+                console.log('✅ MediaRecorder created successfully');
+                console.log('🎙️ MediaRecorder state:', mediaRecorder.state);
 
                 audioChunks = [];
 
                 mediaRecorder.ondataavailable = (event) => {
+                    console.log('📊 Data available, size:', event.data.size);
                     if (event.data.size > 0) {
                         audioChunks.push(event.data);
                     }
@@ -2575,7 +2611,13 @@ Continue with: What happened immediately after impact? Any injuries you noticed?
 
                 mediaRecorder.onstop = handleRecordingComplete;
 
+                mediaRecorder.onerror = (error) => {
+                    console.error('❌ MediaRecorder error:', error);
+                };
+
+                console.log('🎙️ About to start MediaRecorder...');
                 mediaRecorder.start();
+                console.log('✅ MediaRecorder.start() called, new state:', mediaRecorder.state);
                 recordingStartTime = Date.now();
 
                 // Update UI

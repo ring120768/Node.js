@@ -30,7 +30,7 @@ aptPkgs = [
 ]
 
 [phases.install]
-cmds = ["npm ci"]
+cmds = ["npm ci", "bash scripts/download-apk.sh"]
 
 [start]
 cmd = "npm start"

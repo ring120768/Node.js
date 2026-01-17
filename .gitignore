@@ -44,9 +44,6 @@ _quarantine/
 *.apk
 *.aab
 android/app/build/
-
-# Exception: Allow public APK for download
-!public/CarCrashLawyerAI.apk
 android/.gradle/
 
 # Puppeteer browser cache (too large for Git)
