@@ -452,20 +452,51 @@ router.get('/download-pdf/:userId', (req, res) => {
  */
 router.get('/download-app', (req, res) => {
   const path = require('path');
+  const fs = require('fs');
   const apkPath = path.join(__dirname, '../../public/CarCrashLawyerAI.apk');
 
-  // Force download with proper headers
+  // Check if file exists
+  if (!fs.existsSync(apkPath)) {
+    logger.error('APK file not found at:', apkPath);
+    return res.status(404).json({ error: 'APK file not found' });
+  }
+
+  // Get file stats for range support
+  const stat = fs.statSync(apkPath);
+  const fileSize = stat.size;
+  const range = req.headers.range;
+
+  // Set common headers
   res.setHeader('Content-Type', 'application/vnd.android.package-archive');
   res.setHeader('Content-Disposition', 'attachment; filename="CarCrashLawyerAI.apk"');
   res.setHeader('X-Content-Type-Options', 'nosniff');
-  res.setHeader('Cache-Control', 'public, max-age=86400'); // Cache for 1 day
+  res.setHeader('Accept-Ranges', 'bytes'); // Enable resume capability
+  res.setHeader('Cache-Control', 'public, max-age=86400');
 
-  res.sendFile(apkPath, (err) => {
-    if (err) {
-      logger.error('APK download failed:', err);
-      res.status(404).json({ error: 'APK file not found' });
-    }
-  });
+  // Handle range requests for resume capability (critical for mobile)
+  if (range) {
+    const parts = range.replace(/bytes=/, '').split('-');
+    const start = parseInt(parts[0], 10);
+    const end = parts[1] ? parseInt(parts[1], 10) : fileSize - 1;
+    const chunksize = (end - start) + 1;
+
+    logger.info(`📱 Range request: ${start}-${end}/${fileSize} (${(chunksize / 1024 / 1024).toFixed(2)}MB)`);
+
+    res.writeHead(206, {
+      'Content-Range': `bytes ${start}-${end}/${fileSize}`,
+      'Content-Length': chunksize,
+    });
+
+    const stream = fs.createReadStream(apkPath, { start, end });
+    stream.pipe(res);
+  } else {
+    // Full file download
+    logger.info(`📥 Full download starting: ${(fileSize / 1024 / 1024).toFixed(2)}MB`);
+
+    res.setHeader('Content-Length', fileSize);
+    const stream = fs.createReadStream(apkPath);
+    stream.pipe(res);
+  }
 });
 
 /**

@@ -22,7 +22,7 @@ If you don't set this variable:
 4. Add new variable:
 
    Variable Name:  APK_DOWNLOAD_URL
-   Variable Value: https://github.com/ring120768/Node.js/releases/download/v2.0.14/CarCrashLawyerAI.apk
+   Variable Value: https://files.catbox.moe/fmjcix.apk
 
 5. Click "Add" or "Save"
 6. Railway will automatically redeploy with the new variable

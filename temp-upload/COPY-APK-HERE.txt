@@ -1,0 +1,19 @@
+========================================
+  📦 COPY YOUR APK FILE HERE
+========================================
+
+INSTRUCTIONS:
+
+1. Open Finder
+2. Navigate to: Ian.ring Dropbox/Ian Ring/Car Crash Lawyer/Stripe/
+3. Find: carcrashlawyerai-v2.0.14-CLEAN-BUILD-20260115-2133.apk
+4. COPY the file (Command+C)
+5. Go to this folder: Node.js/temp-upload/
+6. PASTE the file here (Command+V)
+7. Tell Claude "file copied"
+
+That's it! Once the file is here, I'll upload it to a hosting service and configure Railway.
+
+========================================
+CURRENT STATUS: Waiting for APK file
+========================================
