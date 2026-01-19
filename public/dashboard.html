@@ -8,6 +8,10 @@
     <!-- Chart.js for data visualization -->
     <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
 
+    <!-- Permissions System -->
+    <link rel="stylesheet" href="/css/permissions.css">
+    <script src="/js/permissions-service.js"></script>
+
     <style>
         * {
             margin: 0;
@@ -1223,6 +1227,87 @@
                             </div>
                         </button>
                     </div>
+                </div>
+
+                <!-- App Permissions Card -->
+                <div class="card">
+                    <div class="card-header">
+                        <h2 class="card-title">
+                            <span>🔐</span> App Permissions
+                        </h2>
+                        <p style="color: var(--text-secondary); font-size: 0.875rem; margin-top: 0.5rem;">
+                            Manage permissions for app features
+                        </p>
+                    </div>
+                    <div class="permission-status-list">
+                        <!-- Camera Permission -->
+                        <div class="permission-status-item">
+                            <div class="permission-status-info">
+                                <div class="permission-icon">📸</div>
+                                <div>
+                                    <h4>Camera</h4>
+                                    <p>Take photos of accident damage</p>
+                                </div>
+                            </div>
+                            <div class="permission-status-actions">
+                                <span id="camera-badge" class="permission-badge permission-badge-prompt">
+                                    ⏳ Not Requested
+                                </span>
+                                <button id="camera-enable-btn" class="btn btn-sm"
+                                        onclick="enablePermission('camera')"
+                                        style="display: none; padding: 0.5rem 1rem; font-size: 0.875rem;">
+                                    Enable
+                                </button>
+                            </div>
+                        </div>
+
+                        <!-- Microphone Permission -->
+                        <div class="permission-status-item">
+                            <div class="permission-status-info">
+                                <div class="permission-icon">🎤</div>
+                                <div>
+                                    <h4>Microphone</h4>
+                                    <p>Record voice notes</p>
+                                </div>
+                            </div>
+                            <div class="permission-status-actions">
+                                <span id="microphone-badge" class="permission-badge permission-badge-prompt">
+                                    ⏳ Not Requested
+                                </span>
+                                <button id="microphone-enable-btn" class="btn btn-sm"
+                                        onclick="enablePermission('microphone')"
+                                        style="display: none; padding: 0.5rem 1rem; font-size: 0.875rem;">
+                                    Enable
+                                </button>
+                            </div>
+                        </div>
+
+                        <!-- Location Permission -->
+                        <div class="permission-status-item">
+                            <div class="permission-status-info">
+                                <div class="permission-icon">📍</div>
+                                <div>
+                                    <h4>Location</h4>
+                                    <p>Auto-capture incident location</p>
+                                </div>
+                            </div>
+                            <div class="permission-status-actions">
+                                <span id="location-badge" class="permission-badge permission-badge-prompt">
+                                    ⏳ Not Requested
+                                </span>
+                                <button id="location-enable-btn" class="btn btn-sm"
+                                        onclick="enablePermission('location')"
+                                        style="display: none; padding: 0.5rem 1rem; font-size: 0.875rem;">
+                                    Enable
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+
+                    <button class="btn btn-secondary" onclick="showPermissionHelp()"
+                            style="margin-top: 1rem; width: 100%;">
+                        How to Enable Permissions
+                    </button>
 
                     <!-- Data Transparency Section -->
                     <div class="data-transparency-section">
@@ -2129,6 +2214,112 @@
                 hideDeleteModal();
             }
         });
+
+        // ============================================
+        // PERMISSIONS MANAGEMENT
+        // ============================================
+
+        // Load permission states on page load
+        async function loadPermissionStates() {
+            const service = window.PermissionsService;
+            const states = await service.fetchPermissionStates();
+
+            // Update badges
+            updatePermissionBadge('camera', states.camera);
+            updatePermissionBadge('microphone', states.microphone);
+            updatePermissionBadge('location', states.location);
+        }
+
+        function updatePermissionBadge(permission, state) {
+            const badge = document.getElementById(`${permission}-badge`);
+            const enableBtn = document.getElementById(`${permission}-enable-btn`);
+
+            if (!badge || !enableBtn) return;
+
+            badge.className = 'permission-badge';
+
+            switch (state) {
+                case 'granted':
+                    badge.classList.add('permission-badge-granted');
+                    badge.textContent = '✅ Granted';
+                    enableBtn.style.display = 'none';
+                    break;
+                case 'denied':
+                    badge.classList.add('permission-badge-denied');
+                    badge.textContent = '❌ Denied';
+                    enableBtn.style.display = 'inline-block';
+                    break;
+                case 'prompt':
+                    badge.classList.add('permission-badge-prompt');
+                    badge.textContent = '⏳ Prompt';
+                    enableBtn.style.display = 'inline-block';
+                    break;
+                default:
+                    badge.classList.add('permission-badge-prompt');
+                    badge.textContent = '⏳ Not Requested';
+                    enableBtn.style.display = 'inline-block';
+            }
+        }
+
+        async function enablePermission(permission) {
+            const service = window.PermissionsService;
+            let granted = false;
+
+            try {
+                switch (permission) {
+                    case 'camera':
+                        granted = await service.requestCameraPermission();
+                        break;
+                    case 'microphone':
+                        granted = await service.requestMicrophonePermission();
+                        break;
+                    case 'location':
+                        granted = await service.requestLocationPermission();
+                        break;
+                }
+
+                if (granted) {
+                    showToast(`✅ ${permission} permission granted!`, 'success');
+                    updatePermissionBadge(permission, 'granted');
+                } else {
+                    // Show blocked modal with instructions
+                    window.showPermissionBlockedModal(permission, async (perm) => {
+                        await enablePermission(perm);
+                    });
+                }
+            } catch (error) {
+                console.error(`Error enabling ${permission}:`, error);
+                showToast(`❌ Error enabling ${permission}`, 'error');
+            }
+        }
+
+        function showPermissionHelp() {
+            // Show modal with generic help
+            window.showPermissionBlockedModal('all', () => {
+                loadPermissionStates();
+            });
+        }
+
+        // Load permissions on dashboard init
+        const originalInit = window.init || function() {};
+        window.init = async function() {
+            await originalInit();
+            await loadPermissionStates();
+        };
+    </script>
+
+    <!-- Load Permission Blocked Modal Component -->
+    <div id="permission-blocked-modal-container"></div>
+    <script>
+        // Load modal component
+        fetch('/components/permission-blocked-modal.html')
+            .then(response => response.text())
+            .then(html => {
+                document.getElementById('permission-blocked-modal-container').innerHTML = html;
+            })
+            .catch(error => {
+                console.error('Failed to load permission modal:', error);
+            });
     </script>
 </body>
 </html>

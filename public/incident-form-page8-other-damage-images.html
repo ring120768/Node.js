@@ -15,6 +15,10 @@
     }
   </script>
 
+  <!-- Permissions System -->
+  <link rel="stylesheet" href="/css/permissions.css">
+  <script src="/js/permissions-service.js"></script>
+
   <style>
     /* Design System Variables */
     :root {
@@ -653,6 +657,24 @@
     addImageBtn.addEventListener('click', async () => {
       console.log('Add Image button clicked, current count:', uploadedImages.length);
 
+      // ========================================
+      // PERMISSION CHECK (Web Permissions API)
+      // ========================================
+      // Check camera permission before allowing upload
+      const service = window.PermissionsService;
+      const cameraStatus = await service.checkPermission('camera');
+
+      if (cameraStatus === 'denied') {
+        window.showPermissionBlockedModal('camera', async () => {
+          const granted = await service.requestCameraPermission();
+          if (granted) {
+            // Retry the upload after permission granted
+            addImageBtn.click();
+          }
+        });
+        return;
+      }
+
       if (uploadedImages.length >= MAX_IMAGES) {
         alert(`Maximum ${MAX_IMAGES} images allowed`);
         return;
@@ -977,6 +999,20 @@
 
       loadSavedData();
     });
+  </script>
+
+  <!-- Load Permission Blocked Modal Component -->
+  <div id="permission-blocked-modal-container"></div>
+  <script>
+    // Load modal component
+    fetch('/components/permission-blocked-modal.html')
+      .then(response => response.text())
+      .then(html => {
+        document.getElementById('permission-blocked-modal-container').innerHTML = html;
+      })
+      .catch(error => {
+        console.error('Failed to load permission modal:', error);
+      });
   </script>
 
 </body>

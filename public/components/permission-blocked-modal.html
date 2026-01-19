@@ -1,0 +1,127 @@
+<!-- Permission Blocked Modal Component -->
+<div id="permission-blocked-modal" class="permission-modal">
+  <div class="permission-modal-content">
+    <div class="permission-modal-header">
+      <div class="permission-modal-icon">🔒</div>
+      <h2>Permission Required</h2>
+      <p>To use this feature, please enable permissions in your browser settings.</p>
+    </div>
+
+    <!-- Android Instructions -->
+    <div id="android-instructions" class="platform-instructions" style="display: none;">
+      <h3>📱 Android Settings</h3>
+      <ol>
+        <li>Open your device <strong>Settings</strong></li>
+        <li>Tap <strong>Apps</strong> or <strong>Application Manager</strong></li>
+        <li>Find and tap your <strong>browser</strong> (Chrome, Firefox, etc.)</li>
+        <li>Tap <strong>Permissions</strong></li>
+        <li>Enable the required permissions:
+          <ul>
+            <li><strong>Camera</strong> - For accident photos</li>
+            <li><strong>Microphone</strong> - For voice recording</li>
+            <li><strong>Location</strong> - For incident location</li>
+          </ul>
+        </li>
+        <li>Return to this app and tap <strong>"Try Again"</strong> below</li>
+      </ol>
+    </div>
+
+    <!-- iOS Instructions -->
+    <div id="ios-instructions" class="platform-instructions" style="display: none;">
+      <h3>📱 iOS Settings</h3>
+      <ol>
+        <li>Open your device <strong>Settings</strong></li>
+        <li>Scroll down and tap your <strong>browser</strong> (Safari, Chrome, etc.)</li>
+        <li>Tap <strong>Location</strong> and set to <strong>"While Using"</strong></li>
+        <li>Enable <strong>Camera</strong> access</li>
+        <li>Enable <strong>Microphone</strong> access</li>
+        <li>Return to this app and tap <strong>"Try Again"</strong> below</li>
+      </ol>
+    </div>
+
+    <!-- Desktop Instructions -->
+    <div id="desktop-instructions" class="platform-instructions" style="display: none;">
+      <h3>💻 Browser Settings</h3>
+      <p><strong>Chrome/Edge:</strong></p>
+      <ol>
+        <li>Click the <strong>lock icon</strong> in the address bar</li>
+        <li>Click <strong>"Site settings"</strong></li>
+        <li>Change Camera, Microphone, and Location to <strong>"Allow"</strong></li>
+        <li>Refresh this page</li>
+      </ol>
+      <p><strong>Firefox:</strong></p>
+      <ol>
+        <li>Click the <strong>shield icon</strong> in the address bar</li>
+        <li>Click <strong>"Permissions"</strong></li>
+        <li>Enable Camera, Microphone, and Location</li>
+        <li>Refresh this page</li>
+      </ol>
+    </div>
+
+    <div class="permission-modal-actions">
+      <button id="permission-close-btn" class="permission-btn permission-btn-secondary">
+        Skip for Now
+      </button>
+      <button id="permission-retry-btn" class="permission-btn permission-btn-primary">
+        I've Enabled It - Try Again
+      </button>
+    </div>
+  </div>
+</div>
+
+<script>
+// Permission Blocked Modal Handler
+(function() {
+  const modal = document.getElementById('permission-blocked-modal');
+  const closeBtn = document.getElementById('permission-close-btn');
+  const retryBtn = document.getElementById('permission-retry-btn');
+
+  let currentPermission = null;
+  let retryCallback = null;
+
+  // Show modal with platform-specific instructions
+  window.showPermissionBlockedModal = function(permission, onRetry) {
+    currentPermission = permission;
+    retryCallback = onRetry;
+
+    // Detect platform and show appropriate instructions
+    const platform = window.PermissionsService.detectPlatform();
+
+    document.getElementById('android-instructions').style.display =
+      platform === 'android' ? 'block' : 'none';
+    document.getElementById('ios-instructions').style.display =
+      platform === 'ios' ? 'block' : 'none';
+    document.getElementById('desktop-instructions').style.display =
+      ['mac', 'windows', 'linux'].includes(platform) ? 'block' : 'none';
+
+    modal.classList.add('active');
+  };
+
+  // Hide modal
+  window.hidePermissionBlockedModal = function() {
+    modal.classList.remove('active');
+    currentPermission = null;
+    retryCallback = null;
+  };
+
+  // Close button handler
+  closeBtn.addEventListener('click', () => {
+    window.hidePermissionBlockedModal();
+  });
+
+  // Retry button handler
+  retryBtn.addEventListener('click', async () => {
+    if (retryCallback && currentPermission) {
+      window.hidePermissionBlockedModal();
+      await retryCallback(currentPermission);
+    }
+  });
+
+  // Close on background click
+  modal.addEventListener('click', (e) => {
+    if (e.target === modal) {
+      window.hidePermissionBlockedModal();
+    }
+  });
+})();
+</script>

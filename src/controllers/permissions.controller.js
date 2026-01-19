@@ -8,7 +8,7 @@
  * permission states in the database for analytics and user experience.
  */
 
-const logger = require('../config/logger');
+const logger = require('../utils/logger');
 
 /**
  * Get current user's permission status
