@@ -4,10 +4,22 @@
     <div class="permission-modal-header">
       <div class="permission-modal-icon">🔒</div>
       <h2>Permission Required</h2>
-      <p>To use this feature, please enable permissions in your browser settings.</p>
+      <p id="permission-description">To use this feature, please enable permissions.</p>
     </div>
 
-    <!-- Android Instructions -->
+    <!-- Android App Instructions (for Capacitor APK) -->
+    <div id="android-app-instructions" class="platform-instructions" style="display: none;">
+      <h3>📱 Enable in App Settings</h3>
+      <p>This app needs permission to access your <strong id="android-permission-name">microphone</strong>.</p>
+      <ol>
+        <li>Tap <strong>"Open App Settings"</strong> below</li>
+        <li>Tap <strong>Permissions</strong></li>
+        <li>Enable the required permission</li>
+        <li>Return to this app</li>
+      </ol>
+    </div>
+
+    <!-- Android Browser Instructions -->
     <div id="android-instructions" class="platform-instructions" style="display: none;">
       <h3>📱 Android Settings</h3>
       <ol>
@@ -31,10 +43,8 @@
       <h3>📱 iOS Settings</h3>
       <ol>
         <li>Open your device <strong>Settings</strong></li>
-        <li>Scroll down and tap your <strong>browser</strong> (Safari, Chrome, etc.)</li>
-        <li>Tap <strong>Location</strong> and set to <strong>"While Using"</strong></li>
-        <li>Enable <strong>Camera</strong> access</li>
-        <li>Enable <strong>Microphone</strong> access</li>
+        <li>Scroll down and tap <strong>Car Crash Lawyer AI</strong></li>
+        <li>Enable <strong>Camera</strong>, <strong>Microphone</strong>, and <strong>Location</strong> access</li>
         <li>Return to this app and tap <strong>"Try Again"</strong> below</li>
       </ol>
     </div>
@@ -62,8 +72,12 @@
       <button id="permission-close-btn" class="permission-btn permission-btn-secondary">
         Skip for Now
       </button>
+      <!-- Open Settings button (Android app only) -->
+      <button id="permission-settings-btn" class="permission-btn permission-btn-primary" style="display: none;">
+        ⚙️ Open App Settings
+      </button>
       <button id="permission-retry-btn" class="permission-btn permission-btn-primary">
-        I've Enabled It - Try Again
+        Try Again
       </button>
     </div>
   </div>
@@ -75,24 +89,71 @@
   const modal = document.getElementById('permission-blocked-modal');
   const closeBtn = document.getElementById('permission-close-btn');
   const retryBtn = document.getElementById('permission-retry-btn');
+  const settingsBtn = document.getElementById('permission-settings-btn');
+  const permissionDescription = document.getElementById('permission-description');
 
   let currentPermission = null;
   let retryCallback = null;
+
+  // Check if running in Capacitor native app
+  function isCapacitorApp() {
+    return window.Capacitor && window.Capacitor.isNativePlatform && window.Capacitor.isNativePlatform();
+  }
+
+  // Permission display names
+  const permissionNames = {
+    camera: 'Camera',
+    microphone: 'Microphone',
+    location: 'Location'
+  };
+
+  const permissionDescriptions = {
+    camera: 'Camera access is needed to take photos of accident damage.',
+    microphone: 'Microphone access is needed for voice recording features.',
+    location: 'Location access is needed to record the incident location.'
+  };
 
   // Show modal with platform-specific instructions
   window.showPermissionBlockedModal = function(permission, onRetry) {
     currentPermission = permission;
     retryCallback = onRetry;
 
-    // Detect platform and show appropriate instructions
-    const platform = window.PermissionsService.detectPlatform();
+    // Update description based on permission type
+    permissionDescription.textContent = permissionDescriptions[permission] ||
+      'To use this feature, please enable permissions.';
 
-    document.getElementById('android-instructions').style.display =
-      platform === 'android' ? 'block' : 'none';
-    document.getElementById('ios-instructions').style.display =
-      platform === 'ios' ? 'block' : 'none';
-    document.getElementById('desktop-instructions').style.display =
-      ['mac', 'windows', 'linux'].includes(platform) ? 'block' : 'none';
+    // Detect platform
+    const platform = window.PermissionsService ? window.PermissionsService.detectPlatform() : 'unknown';
+    const isNativeApp = isCapacitorApp();
+
+    // Hide all instruction blocks first
+    document.getElementById('android-app-instructions').style.display = 'none';
+    document.getElementById('android-instructions').style.display = 'none';
+    document.getElementById('ios-instructions').style.display = 'none';
+    document.getElementById('desktop-instructions').style.display = 'none';
+
+    // Show/hide settings button based on platform
+    if (isNativeApp && platform === 'android') {
+      // Running as Android APK - show app settings option
+      document.getElementById('android-app-instructions').style.display = 'block';
+      document.getElementById('android-permission-name').textContent = permissionNames[permission] || permission;
+      settingsBtn.style.display = 'inline-block';
+      retryBtn.textContent = 'Try Again';
+    } else if (platform === 'android') {
+      // Android browser
+      document.getElementById('android-instructions').style.display = 'block';
+      settingsBtn.style.display = 'none';
+      retryBtn.textContent = 'I\'ve Enabled It - Try Again';
+    } else if (platform === 'ios') {
+      document.getElementById('ios-instructions').style.display = 'block';
+      settingsBtn.style.display = 'none';
+      retryBtn.textContent = 'I\'ve Enabled It - Try Again';
+    } else {
+      // Desktop
+      document.getElementById('desktop-instructions').style.display = 'block';
+      settingsBtn.style.display = 'none';
+      retryBtn.textContent = 'I\'ve Enabled It - Try Again';
+    }
 
     modal.classList.add('active');
   };
@@ -109,11 +170,35 @@
     window.hidePermissionBlockedModal();
   });
 
+  // Settings button handler (Android native app only)
+  settingsBtn.addEventListener('click', async () => {
+    try {
+      // Try to use Capacitor's App plugin to open settings
+      if (window.Capacitor && window.Capacitor.Plugins && window.Capacitor.Plugins.App) {
+        // This opens the app's settings page in Android
+        await window.Capacitor.Plugins.App.openUrl({
+          url: 'app-settings:'
+        });
+      } else {
+        // Fallback: try Android intent URL
+        window.location.href = 'intent://settings/application_details_settings?package=com.carcrashlawyerai.app#Intent;scheme=android-app;end';
+      }
+    } catch (error) {
+      console.error('Could not open settings:', error);
+      // Fallback message
+      alert('Please open your device Settings > Apps > Car Crash Lawyer AI > Permissions to enable access.');
+    }
+  });
+
   // Retry button handler
   retryBtn.addEventListener('click', async () => {
+    window.hidePermissionBlockedModal();
+
     if (retryCallback && currentPermission) {
-      window.hidePermissionBlockedModal();
-      await retryCallback(currentPermission);
+      // Small delay to let modal close
+      setTimeout(async () => {
+        await retryCallback(currentPermission);
+      }, 300);
     }
   });
 
