@@ -924,6 +924,26 @@
 
             voiceBtn.addEventListener('click', async function() {
                 if (!isRecording) {
+                    // ========================================
+                    // PERMISSION CHECK (Web Permissions API)
+                    // ========================================
+                    // Check microphone permission before recording
+                    const service = window.PermissionsService;
+                    if (service) {
+                        const micStatus = await service.checkPermission('microphone');
+
+                        if (micStatus === 'denied') {
+                            window.showPermissionBlockedModal('microphone', async () => {
+                                const granted = await service.requestMicrophonePermission();
+                                if (granted) {
+                                    // Retry after permission granted
+                                    voiceBtn.click();
+                                }
+                            });
+                            return;
+                        }
+                    }
+
                     try {
                         const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
                         mediaRecorder = new MediaRecorder(stream);
@@ -959,7 +979,14 @@
 
                     } catch (error) {
                         console.error('Microphone access error:', error);
-                        alert('Microphone access is required for AI Eavesdropper. Please check your browser permissions.');
+                        // Show helpful modal instead of generic alert
+                        if (window.showPermissionBlockedModal) {
+                            window.showPermissionBlockedModal('microphone', () => {
+                                voiceBtn.click();
+                            });
+                        } else {
+                            alert('Microphone access is required for AI Eavesdropper. Please check your browser permissions.');
+                        }
                     }
                 } else {
                     stopRecording();
