@@ -37,6 +37,7 @@ const stripeRoutes = require('./stripe.routes'); // NEW: Stripe payments and sub
 const groupsRoutes = require('./groups.routes'); // NEW: Family/Business subscription groups
 const accountRoutes = require('./account.routes'); // NEW: GDPR-compliant account deletion
 const deletionRoutes = require('./deletion.routes'); // NEW: Individual item deletion (granular GDPR control)
+const permissionsController = require('../controllers/permissions.controller'); // NEW: Permissions management
 
 // GitHub webhooks are mounted in app.js via webhook.routes.js (not imported here)
 const locationRoutes = require('./location.routes');
@@ -356,6 +357,51 @@ router.use('/api/deletions', deletionRoutes); // NEW: Individual item deletion (
 router.use('/api/location', locationRoutes);
 router.use('/api/qr', qrRoutes); // NEW: QR code generation for app (public access)
 router.use('/api/debug', debugRoutes);
+
+// Permissions API routes (direct controller mounting)
+router.get('/api/permissions/status', permissionsController.getPermissionStatus);
+router.post('/api/permissions/update', permissionsController.updatePermissionStatus);
+router.post('/api/permissions/log-request', permissionsController.logPermissionRequest);
+
+// ==================== APK DOWNLOAD ENDPOINT ====================
+
+/**
+ * Serve Android APK for download
+ * GET /download/app-release.apk
+ *
+ * This endpoint serves the signed release APK for Railway distribution
+ * before Google Play Store submission.
+ */
+const path = require('path');
+router.get('/download/app-release.apk', (req, res) => {
+  try {
+    const apkPath = path.join(__dirname, '../../public/download/app-release.apk');
+
+    logger.info('APK download requested', {
+      ip: req.ip,
+      userAgent: req.get('user-agent')
+    });
+
+    // Set proper headers for APK download
+    res.setHeader('Content-Type', 'application/vnd.android.package-archive');
+    res.setHeader('Content-Disposition', 'attachment; filename="carcrashlawyerai-v1.0.apk"');
+    res.setHeader('X-Content-Type-Options', 'nosniff');
+
+    res.download(apkPath, 'carcrashlawyerai-v1.0.apk', (err) => {
+      if (err) {
+        logger.error('APK download failed:', err);
+        if (!res.headersSent) {
+          res.status(500).json({ error: 'Failed to download APK' });
+        }
+      } else {
+        logger.info('APK download completed successfully');
+      }
+    });
+  } catch (error) {
+    logger.error('APK download endpoint error:', error);
+    res.status(500).json({ error: 'Internal server error' });
+  }
+});
 
 // ==================== LEGACY REDIRECTS ====================
 
