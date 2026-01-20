@@ -1,2 +1,0 @@
-*.apk filter=lfs diff=lfs merge=lfs -text
-public/download/*.apk filter=lfs diff=lfs merge=lfs -text
