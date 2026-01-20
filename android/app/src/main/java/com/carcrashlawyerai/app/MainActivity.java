@@ -59,7 +59,7 @@ public class MainActivity extends BridgeActivity {
     }
 
     @Override
-    protected void onResume() {
+    public void onResume() {
         super.onResume();
         // Re-check permissions when returning from settings
         checkAndLogPermissions();
