@@ -238,6 +238,24 @@ function createApp() {
     res.sendFile(path.join(__dirname, '../public/dashboard-v2.html'));
   });
 
+  // APK Download - serve with correct headers for Android installation
+  app.get('/CarCrashLawyerAI.apk', (req, res) => {
+    const apkPath = path.join(__dirname, '../public/CarCrashLawyerAI.apk');
+    res.setHeader('Content-Type', 'application/vnd.android.package-archive');
+    res.setHeader('Content-Disposition', 'attachment; filename="CarCrashLawyerAI.apk"');
+    res.setHeader('Cache-Control', 'no-cache');
+    res.sendFile(apkPath);
+  });
+
+  // Also handle the download folder path
+  app.get('/download/app-release.apk', (req, res) => {
+    const apkPath = path.join(__dirname, '../public/download/app-release.apk');
+    res.setHeader('Content-Type', 'application/vnd.android.package-archive');
+    res.setHeader('Content-Disposition', 'attachment; filename="CarCrashLawyerAI.apk"');
+    res.setHeader('Cache-Control', 'no-cache');
+    res.sendFile(apkPath);
+  });
+
   // Cache control for HTML (MUST be before express.static to work)
   // Sets aggressive cache prevention headers for all HTML files
   app.use((req, res, next) => {
