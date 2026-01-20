@@ -49,6 +49,8 @@ public class MainActivity extends BridgeActivity {
      * Configure WebChromeClient to handle WebView permission requests.
      * This is CRITICAL for getUserMedia to work - it bridges the WebView's
      * permission request to Android's permission system.
+     *
+     * Uses Capacitor's BridgeWebChromeClient as base to preserve all Capacitor functionality.
      */
     private void setupWebChromeClient() {
         try {
@@ -56,7 +58,8 @@ public class MainActivity extends BridgeActivity {
             WebView webView = getBridge().getWebView();
 
             if (webView != null) {
-                webView.setWebChromeClient(new WebChromeClient() {
+                // Use Capacitor's BridgeWebChromeClient as the base, then override onPermissionRequest
+                webView.setWebChromeClient(new com.getcapacitor.BridgeWebChromeClient(getBridge()) {
                     @Override
                     public void onPermissionRequest(PermissionRequest request) {
                         Log.d(TAG, "WebView permission request received");
@@ -71,8 +74,15 @@ public class MainActivity extends BridgeActivity {
                             handlePermissionRequest(request);
                         });
                     }
+
+                    @Override
+                    public void onGeolocationPermissionsShowPrompt(String origin, android.webkit.GeolocationPermissions.Callback callback) {
+                        // Auto-grant geolocation to our app origin
+                        Log.d(TAG, "Geolocation permission requested for: " + origin);
+                        callback.invoke(origin, true, false);
+                    }
                 });
-                Log.d(TAG, "WebChromeClient configured for permission handling");
+                Log.d(TAG, "WebChromeClient configured for permission handling (extends BridgeWebChromeClient)");
             } else {
                 Log.w(TAG, "WebView is null, cannot setup WebChromeClient");
             }
