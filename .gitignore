@@ -48,4 +48,4 @@ android/.gradle/
 
 # Puppeteer browser cache (too large for Git)
 .cache/
-*.apk
+# APK files are now tracked via Git LFS (see .gitattributes)
