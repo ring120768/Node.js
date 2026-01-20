@@ -173,19 +173,27 @@
   // Settings button handler (Android native app only)
   settingsBtn.addEventListener('click', async () => {
     try {
-      // Try to use Capacitor's App plugin to open settings
+      // Try PermissionsService first (uses native plugin)
+      if (window.PermissionsService && window.PermissionsService.openAppSettings) {
+        const success = await window.PermissionsService.openAppSettings();
+        if (success) {
+          console.log('Opened app settings via PermissionsService');
+          return;
+        }
+      }
+
+      // Fallback: Try to use Capacitor's App plugin directly
       if (window.Capacitor && window.Capacitor.Plugins && window.Capacitor.Plugins.App) {
-        // This opens the app's settings page in Android
         await window.Capacitor.Plugins.App.openUrl({
           url: 'app-settings:'
         });
-      } else {
-        // Fallback: try Android intent URL
-        window.location.href = 'intent://settings/application_details_settings?package=com.carcrashlawyerai.app#Intent;scheme=android-app;end';
+        return;
       }
+
+      // Last resort: try Android intent URL
+      window.location.href = 'intent://settings/application_details_settings?package=com.carcrashlawyerai.app#Intent;scheme=android-app;end';
     } catch (error) {
       console.error('Could not open settings:', error);
-      // Fallback message
       alert('Please open your device Settings > Apps > Car Crash Lawyer AI > Permissions to enable access.');
     }
   });

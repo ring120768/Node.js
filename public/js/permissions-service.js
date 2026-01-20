@@ -1,6 +1,9 @@
 /**
  * PermissionsService - Centralized permissions management
- * Handles Web Permissions API + Supabase tracking
+ * Handles Web Permissions API + Native Capacitor Plugin + Supabase tracking
+ *
+ * When running in Capacitor native app (Android APK), uses the WebViewPermission
+ * plugin to properly bridge permissions between WebView and Android OS.
  */
 class PermissionsService {
   constructor() {
@@ -9,15 +12,75 @@ class PermissionsService {
       microphone: 'not-requested',
       location: 'not-requested'
     };
+
+    // Will be set to true if native plugin is available
+    this.hasNativePlugin = false;
+    this.nativePlugin = null;
+
+    // Initialize native plugin detection
+    this._initNativePlugin();
   }
 
   /**
-   * Check current permission status using Permissions API
-   * Gracefully falls back for Safari/unsupported browsers
+   * Check if running in Capacitor native app
+   */
+  isCapacitorApp() {
+    return window.Capacitor &&
+           window.Capacitor.isNativePlatform &&
+           window.Capacitor.isNativePlatform();
+  }
+
+  /**
+   * Initialize native plugin if available (Capacitor Android/iOS)
+   */
+  _initNativePlugin() {
+    if (this.isCapacitorApp()) {
+      // Try to get the WebViewPermission plugin
+      try {
+        if (window.Capacitor.Plugins && window.Capacitor.Plugins.WebViewPermission) {
+          this.nativePlugin = window.Capacitor.Plugins.WebViewPermission;
+          this.hasNativePlugin = true;
+          console.log('[PermissionsService] Native WebViewPermission plugin detected');
+        } else {
+          console.log('[PermissionsService] Running in Capacitor but plugin not registered yet');
+          // Try again after a short delay (plugin may register asynchronously)
+          setTimeout(() => {
+            if (window.Capacitor.Plugins && window.Capacitor.Plugins.WebViewPermission) {
+              this.nativePlugin = window.Capacitor.Plugins.WebViewPermission;
+              this.hasNativePlugin = true;
+              console.log('[PermissionsService] Native plugin detected on retry');
+            }
+          }, 500);
+        }
+      } catch (error) {
+        console.warn('[PermissionsService] Error detecting native plugin:', error);
+      }
+    } else {
+      console.log('[PermissionsService] Running in browser, using Web APIs');
+    }
+  }
+
+  /**
+   * Check current permission status
+   * Uses native plugin on Capacitor, Web Permissions API in browser
    */
   async checkPermission(permissionType) {
+    console.log(`[PermissionsService] checkPermission(${permissionType}), hasNativePlugin: ${this.hasNativePlugin}`);
+
+    // Try native plugin first if available
+    if (this.hasNativePlugin && this.nativePlugin) {
+      try {
+        console.log(`[PermissionsService] Using native plugin to check ${permissionType}`);
+        const result = await this.nativePlugin.checkPermission({ permission: permissionType });
+        console.log(`[PermissionsService] Native check result:`, result);
+        return result.state || (result.granted ? 'granted' : 'prompt');
+      } catch (error) {
+        console.warn(`[PermissionsService] Native check failed, falling back to Web API:`, error);
+      }
+    }
+
+    // Fall back to Web Permissions API
     try {
-      // Map our types to Permissions API names
       const permissionNames = {
         camera: 'camera',
         microphone: 'microphone',
@@ -29,25 +92,46 @@ class PermissionsService {
 
       // Check if Permissions API is supported (not in Safari < 16)
       if (!navigator.permissions || !navigator.permissions.query) {
-        console.warn('Permissions API not supported, will request directly');
-        return 'prompt'; // Assume we need to prompt
+        console.warn('[PermissionsService] Permissions API not supported, will request directly');
+        return 'prompt';
       }
 
       const result = await navigator.permissions.query({ name });
-      return result.state; // 'granted', 'denied', or 'prompt'
+      console.log(`[PermissionsService] Web API check result for ${permissionType}:`, result.state);
+      return result.state;
     } catch (error) {
-      console.warn(`Error checking ${permissionType} permission:`, error);
-      return 'prompt'; // Safe default
+      console.warn(`[PermissionsService] Error checking ${permissionType} permission:`, error);
+      return 'prompt';
     }
   }
 
   /**
-   * Request camera permission using getUserMedia
+   * Request camera permission
+   * Uses native plugin on Capacitor for proper Android bridging
    */
   async requestCameraPermission() {
     try {
       await this.logPermissionRequest('camera');
 
+      // Try native plugin first
+      if (this.hasNativePlugin && this.nativePlugin) {
+        console.log('[PermissionsService] Requesting camera via native plugin');
+        const result = await this.nativePlugin.requestPermission({ permission: 'camera' });
+        console.log('[PermissionsService] Native camera result:', result);
+
+        if (result.granted) {
+          await this.updatePermissionStatus('camera', 'granted');
+          this.permissionStates.camera = 'granted';
+          return true;
+        } else {
+          await this.updatePermissionStatus('camera', 'denied');
+          this.permissionStates.camera = 'denied';
+          return false;
+        }
+      }
+
+      // Fall back to getUserMedia
+      console.log('[PermissionsService] Requesting camera via getUserMedia');
       const stream = await navigator.mediaDevices.getUserMedia({
         video: { facingMode: 'environment' }
       });
@@ -59,7 +143,7 @@ class PermissionsService {
       this.permissionStates.camera = 'granted';
       return true;
     } catch (error) {
-      console.error('Camera permission denied:', error);
+      console.error('[PermissionsService] Camera permission denied:', error);
       await this.updatePermissionStatus('camera', 'denied');
       this.permissionStates.camera = 'denied';
       return false;
@@ -67,12 +151,32 @@ class PermissionsService {
   }
 
   /**
-   * Request microphone permission using getUserMedia
+   * Request microphone permission
+   * Uses native plugin on Capacitor for proper Android bridging
    */
   async requestMicrophonePermission() {
     try {
       await this.logPermissionRequest('microphone');
 
+      // Try native plugin first
+      if (this.hasNativePlugin && this.nativePlugin) {
+        console.log('[PermissionsService] Requesting microphone via native plugin');
+        const result = await this.nativePlugin.requestPermission({ permission: 'microphone' });
+        console.log('[PermissionsService] Native microphone result:', result);
+
+        if (result.granted) {
+          await this.updatePermissionStatus('microphone', 'granted');
+          this.permissionStates.microphone = 'granted';
+          return true;
+        } else {
+          await this.updatePermissionStatus('microphone', 'denied');
+          this.permissionStates.microphone = 'denied';
+          return false;
+        }
+      }
+
+      // Fall back to getUserMedia
+      console.log('[PermissionsService] Requesting microphone via getUserMedia');
       const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
 
       // Stop stream immediately
@@ -82,7 +186,7 @@ class PermissionsService {
       this.permissionStates.microphone = 'granted';
       return true;
     } catch (error) {
-      console.error('Microphone permission denied:', error);
+      console.error('[PermissionsService] Microphone permission denied:', error);
       await this.updatePermissionStatus('microphone', 'denied');
       this.permissionStates.microphone = 'denied';
       return false;
@@ -93,9 +197,34 @@ class PermissionsService {
    * Request location permission using Geolocation API
    */
   async requestLocationPermission() {
-    return new Promise((resolve) => {
-      this.logPermissionRequest('location');
+    return new Promise(async (resolve) => {
+      await this.logPermissionRequest('location');
 
+      // Try native plugin first
+      if (this.hasNativePlugin && this.nativePlugin) {
+        try {
+          console.log('[PermissionsService] Requesting location via native plugin');
+          const result = await this.nativePlugin.requestPermission({ permission: 'location' });
+          console.log('[PermissionsService] Native location result:', result);
+
+          if (result.granted) {
+            await this.updatePermissionStatus('location', 'granted');
+            this.permissionStates.location = 'granted';
+            resolve(true);
+            return;
+          } else {
+            await this.updatePermissionStatus('location', 'denied');
+            this.permissionStates.location = 'denied';
+            resolve(false);
+            return;
+          }
+        } catch (error) {
+          console.warn('[PermissionsService] Native location request failed, falling back:', error);
+        }
+      }
+
+      // Fall back to Geolocation API
+      console.log('[PermissionsService] Requesting location via Geolocation API');
       navigator.geolocation.getCurrentPosition(
         async () => {
           await this.updatePermissionStatus('location', 'granted');
@@ -103,7 +232,7 @@ class PermissionsService {
           resolve(true);
         },
         async (error) => {
-          console.error('Location permission denied:', error);
+          console.error('[PermissionsService] Location permission denied:', error);
           await this.updatePermissionStatus('location', 'denied');
           this.permissionStates.location = 'denied';
           resolve(false);
@@ -128,6 +257,48 @@ class PermissionsService {
   }
 
   /**
+   * Check all permissions via native plugin (if available)
+   */
+  async checkAllNativePermissions() {
+    if (this.hasNativePlugin && this.nativePlugin) {
+      try {
+        const result = await this.nativePlugin.checkAllPermissions();
+        console.log('[PermissionsService] All native permissions:', result);
+        return result;
+      } catch (error) {
+        console.warn('[PermissionsService] Error checking all native permissions:', error);
+      }
+    }
+    return null;
+  }
+
+  /**
+   * Open app settings (native only)
+   */
+  async openAppSettings() {
+    if (this.hasNativePlugin && this.nativePlugin) {
+      try {
+        const result = await this.nativePlugin.openSettings();
+        return result.success;
+      } catch (error) {
+        console.error('[PermissionsService] Error opening settings:', error);
+      }
+    }
+
+    // Fallback for when plugin isn't available
+    if (this.isCapacitorApp() && window.Capacitor.Plugins && window.Capacitor.Plugins.App) {
+      try {
+        await window.Capacitor.Plugins.App.openUrl({ url: 'app-settings:' });
+        return true;
+      } catch (error) {
+        console.error('[PermissionsService] Fallback settings open failed:', error);
+      }
+    }
+
+    return false;
+  }
+
+  /**
    * Update permission status in database
    */
   async updatePermissionStatus(permission, status) {
@@ -144,7 +315,7 @@ class PermissionsService {
 
       return await response.json();
     } catch (error) {
-      console.error('Error updating permission status:', error);
+      console.error('[PermissionsService] Error updating permission status:', error);
     }
   }
 
@@ -159,7 +330,7 @@ class PermissionsService {
         body: JSON.stringify({ permission })
       });
     } catch (error) {
-      console.error('Error logging permission request:', error);
+      console.error('[PermissionsService] Error logging permission request:', error);
     }
   }
 
@@ -180,7 +351,7 @@ class PermissionsService {
 
       return this.permissionStates;
     } catch (error) {
-      console.error('Error fetching permission states:', error);
+      console.error('[PermissionsService] Error fetching permission states:', error);
       return this.permissionStates;
     }
   }
