@@ -4,11 +4,6 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Record Your Statement - Car Crash Lawyer AI</title>
-
-    <!-- Permissions System -->
-    <link rel="stylesheet" href="/css/permissions.css">
-    <script src="/js/permissions-service.js"></script>
-
     <style>
         * {
             margin: 0;
@@ -540,24 +535,6 @@
 
         async function startRecording() {
             try {
-                // ========================================
-                // PERMISSION CHECK (Web Permissions API)
-                // ========================================
-                // Check microphone permission before allowing recording
-                const service = window.PermissionsService;
-                const micStatus = await service.checkPermission('microphone');
-
-                if (micStatus === 'denied') {
-                    window.showPermissionBlockedModal('microphone', async () => {
-                        const granted = await service.requestMicrophonePermission();
-                        if (granted) {
-                            // Retry recording after permission granted
-                            await startRecording();
-                        }
-                    });
-                    return;
-                }
-
                 // Reset state
                 audioChunks = [];
                 hideMessages();
@@ -876,21 +853,5 @@
             }
         });
     </script>
-
-    <!-- Load Permission Blocked Modal Component -->
-    <div id="permission-blocked-modal-container"></div>
-    <script>
-        // Load modal component
-        fetch('/components/permission-blocked-modal.html')
-            .then(response => response.text())
-            .then(html => {
-                document.getElementById('permission-blocked-modal-container').innerHTML = html;
-            })
-            .catch(error => {
-                console.error('Failed to load permission modal:', error);
-            });
-    </script>
-
-    <script src="/js/mascot.js"></script>
-</body>
+    <script src="/js/mascot.js"></script></body>
 </html>

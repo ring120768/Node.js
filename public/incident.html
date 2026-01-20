@@ -6,11 +6,6 @@
     <title>Car Crash Lawyer AI - Report Incident</title>
     <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
     <script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
-
-    <!-- Permissions System -->
-    <link rel="stylesheet" href="/css/permissions.css">
-    <script src="/js/permissions-service.js"></script>
-
     <style>
         * {
             margin: 0;
@@ -709,25 +704,6 @@
         function setupLocationButton() {
             document.getElementById('findMeBtn').addEventListener('click', async function() {
                 const btn = this;
-
-                // ========================================
-                // PERMISSION CHECK (Web Permissions API)
-                // ========================================
-                // Check location permission before allowing "Find Me"
-                const service = window.PermissionsService;
-                const locationStatus = await service.checkPermission('location');
-
-                if (locationStatus === 'denied') {
-                    window.showPermissionBlockedModal('location', async () => {
-                        const granted = await service.requestLocationPermission();
-                        if (granted) {
-                            // Retry the location request after permission granted
-                            btn.click();
-                        }
-                    });
-                    return;
-                }
-
                 btn.innerHTML = '<span class="loading-spinner"></span> Locating...';
                 btn.disabled = true;
 
@@ -924,26 +900,6 @@
 
             voiceBtn.addEventListener('click', async function() {
                 if (!isRecording) {
-                    // ========================================
-                    // PERMISSION CHECK (Web Permissions API)
-                    // ========================================
-                    // Check microphone permission before recording
-                    const service = window.PermissionsService;
-                    if (service) {
-                        const micStatus = await service.checkPermission('microphone');
-
-                        if (micStatus === 'denied') {
-                            window.showPermissionBlockedModal('microphone', async () => {
-                                const granted = await service.requestMicrophonePermission();
-                                if (granted) {
-                                    // Retry after permission granted
-                                    voiceBtn.click();
-                                }
-                            });
-                            return;
-                        }
-                    }
-
                     try {
                         const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
                         mediaRecorder = new MediaRecorder(stream);
@@ -979,14 +935,7 @@
 
                     } catch (error) {
                         console.error('Microphone access error:', error);
-                        // Show helpful modal instead of generic alert
-                        if (window.showPermissionBlockedModal) {
-                            window.showPermissionBlockedModal('microphone', () => {
-                                voiceBtn.click();
-                            });
-                        } else {
-                            alert('Microphone access is required for AI Eavesdropper. Please check your browser permissions.');
-                        }
+                        alert('Microphone access is required for AI Eavesdropper. Please check your browser permissions.');
                     }
                 } else {
                     stopRecording();
@@ -1176,20 +1125,5 @@
             });
         }
     </script>
-
-    <!-- Load Permission Blocked Modal Component -->
-    <div id="permission-blocked-modal-container"></div>
-    <script>
-        // Load modal component
-        fetch('/components/permission-blocked-modal.html')
-            .then(response => response.text())
-            .then(html => {
-                document.getElementById('permission-blocked-modal-container').innerHTML = html;
-            })
-            .catch(error => {
-                console.error('Failed to load permission modal:', error);
-            });
-    </script>
-
     <script src="/js/mascot.js"></script></body>
 </html>

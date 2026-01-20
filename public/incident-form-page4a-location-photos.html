@@ -4,19 +4,6 @@
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>Incident Report - Location Photos | Car Crash Lawyer AI</title>
-
-  <!-- Capacitor Runtime (only loads in native app) -->
-  <script type="module">
-    // Load Capacitor if available (native app environment)
-    if (window.Capacitor) {
-      import('capacitor://localhost/capacitor.js');
-    }
-  </script>
-
-  <!-- Permissions System -->
-  <link rel="stylesheet" href="/css/permissions.css">
-  <script src="/js/permissions-service.js"></script>
-
   <style>
     :root {
       /* Brand Colors - Design System */
@@ -619,63 +606,16 @@
     }
 
     // Add Scene Image Button Click Handler
-    addSceneImageBtn.addEventListener('click', async () => {
-      // ========================================
-      // PERMISSION CHECK (Web Permissions API)
-      // ========================================
-      // Check camera permission before allowing upload
-      const service = window.PermissionsService;
-      const cameraStatus = await service.checkPermission('camera');
-
-      if (cameraStatus === 'denied') {
-        window.showPermissionBlockedModal('camera', async () => {
-          const granted = await service.requestCameraPermission();
-          if (granted) {
-            // Retry the upload after permission granted
-            addSceneImageBtn.click();
-          }
-        });
-        return;
-      }
-
+    addSceneImageBtn.addEventListener('click', () => {
       if (uploadedSceneImages.length < MAX_SCENE_IMAGES) {
-        // Check if running in Capacitor (native app)
-        if (window.Capacitor && window.Capacitor.Plugins.Camera) {
-          try {
-            // Use native camera for better UX
-            const { Camera } = window.Capacitor.Plugins;
-            const image = await Camera.getPhoto({
-              quality: 90,
-              allowEditing: false,
-              resultType: 'uri',
-              source: 'PROMPT', // Let user choose camera or library
-              saveToGallery: false
-            });
-
-            // Convert Capacitor image to blob for upload
-            const response = await fetch(image.webPath);
-            const blob = await response.blob();
-            const file = new File([blob], `scene_photo_${Date.now()}.jpg`, { type: 'image/jpeg' });
-
-            // Trigger upload manually (simulate file input change)
-            uploadSceneImage(file);
-
-          } catch (error) {
-            console.error('Camera error:', error);
-            if (error.message !== 'User cancelled photos app') {
-              alert('Camera access denied. Please enable camera permissions in your device settings.');
-            }
-          }
-        } else {
-          // Fallback to HTML file input (web browser)
-          sceneImageInput.value = ''; // Clear previous selection (Android WebView fix)
-          sceneImageInput.click();
-        }
+        sceneImageInput.value = ''; // Clear previous selection (Android WebView fix)
+        sceneImageInput.click();
       }
     });
 
-    // Reusable upload function for both file input and Capacitor camera
-    async function uploadSceneImage(file) {
+    // Scene Image Input Change Handler
+    sceneImageInput.addEventListener('change', async (e) => {
+      const file = e.target.files[0];
       if (!file) return;
 
       // Check image limit
@@ -743,12 +683,6 @@
 
       // Reset input for next selection
       sceneImageInput.value = '';
-    }
-
-    // Scene Image Input Change Handler (for file input fallback)
-    sceneImageInput.addEventListener('change', async (e) => {
-      const file = e.target.files[0];
-      await uploadSceneImage(file);
     });
 
     // Add Scene Image Card to UI
@@ -856,20 +790,6 @@
       updateSceneImageCount();
       console.log('Page 4a loaded');
     });
-  </script>
-
-  <!-- Load Permission Blocked Modal Component -->
-  <div id="permission-blocked-modal-container"></div>
-  <script>
-    // Load modal component
-    fetch('/components/permission-blocked-modal.html')
-      .then(response => response.text())
-      .then(html => {
-        document.getElementById('permission-blocked-modal-container').innerHTML = html;
-      })
-      .catch(error => {
-        console.error('Failed to load permission modal:', error);
-      });
   </script>
 
 </body>

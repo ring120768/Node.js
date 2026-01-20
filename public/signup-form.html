@@ -16,10 +16,6 @@
   <script src="https://cdn.jsdelivr.net/npm/air-datepicker@3.5.3/air-datepicker.js"></script>
   <script src="https://cdn.jsdelivr.net/npm/air-datepicker@3.5.3/locale/en.js"></script>
 
-  <!-- Permissions System -->
-  <link rel="stylesheet" href="/css/permissions.css">
-  <script src="/js/permissions-service.js"></script>
-
   <style>
     :root {
       --grad-start: #2e6a9d;
@@ -567,68 +563,8 @@
   <!-- Content Area -->
   <div class="content">
 
-    <!-- Page 0: Welcome & Permissions Request -->
-    <div class="question-page active" data-page="0">
-      <div class="question">
-        <h2>Welcome to Car Crash Lawyer AI</h2>
-        <p class="desc">To provide you with the best experience, we'll need a few permissions.</p>
-
-        <div class="permission-list">
-          <div class="permission-item">
-            <div class="permission-item-icon">📸</div>
-            <div class="permission-item-content">
-              <h3>Camera Access</h3>
-              <p>Take photos of accident damage, vehicle positions, and surrounding area</p>
-            </div>
-          </div>
-
-          <div class="permission-item">
-            <div class="permission-item-icon">🎤</div>
-            <div class="permission-item-content">
-              <h3>Microphone Access</h3>
-              <p>Record voice notes to describe the incident in your own words</p>
-            </div>
-          </div>
-
-          <div class="permission-item">
-            <div class="permission-item-icon">📍</div>
-            <div class="permission-item-content">
-              <h3>Location Access</h3>
-              <p>Automatically capture the exact incident location with what3words precision</p>
-            </div>
-          </div>
-        </div>
-
-        <div class="info-box" style="background: #fef3c7; border-left: 4px solid #f59e0b; padding: 16px; border-radius: 8px; margin-top: 20px;">
-          <p style="margin: 0; color: #92400e; font-size: 14px; line-height: 1.6;">
-            <strong>⚠️ Grant Access Now - Not at the Scene:</strong><br>
-            After an accident, you'll be stressed and under time pressure. Trying to enable permissions at the roadside adds unnecessary difficulty when you need to document quickly and safely.<br><br>
-            <strong>✅ Grant these permissions now</strong> in a calm environment, so the app works instantly when you need it most.
-          </p>
-        </div>
-
-        <div class="info-box" style="background: #eff6ff; border-left: 4px solid #3b82f6; padding: 16px; border-radius: 8px; margin-top: 12px;">
-          <p style="margin: 0; color: #1e40af; font-size: 13px;">
-            <strong>📋 What we use permissions for:</strong><br>
-            • <strong>Camera</strong> - Capture damage photos at the scene<br>
-            • <strong>Microphone</strong> - Record witness statements immediately<br>
-            • <strong>Location</strong> - Auto-tag exact incident location with what3words<br><br>
-            You can skip and enable later in settings, but we <strong>strongly recommend granting now</strong>.
-          </p>
-        </div>
-      </div>
-      <div class="nav-buttons">
-        <button class="btn btn-secondary" onclick="skipPermissions()" style="background: #e2e8f0; color: #4a5568;">
-          Skip for Now
-        </button>
-        <button class="btn btn-next" onclick="requestSignupPermissions()">
-          Grant Permissions
-        </button>
-      </div>
-    </div>
-
     <!-- Page 1: Create Account (Auth-First) -->
-    <div class="question-page" data-page="1">
+    <div class="question-page active" data-page="1">
       <div class="question">
         <h2>Create Your Account</h2>
         <p class="desc">Let's start by setting up your login credentials</p>
@@ -1442,8 +1378,8 @@
 
     const formData = { ...defaultFormData };
 
-    let currentPage = 0; // Start at Page 0 (permissions)
-    const totalPages = 10; // Consolidated form: permissions + auth + pages
+    let currentPage = 1;
+    const totalPages = 9; // Consolidated form: photos + recovery/emergency on one page
 
     // Initialize
     console.log('🚀 Form initialized - v2.0 with Page 2');
@@ -1766,7 +1702,7 @@
 
     // Navigate to previous page
     function prevPage() {
-      if (currentPage === 0) return; // Can't go back from permissions page
+      if (currentPage === 1) return;
 
       // Hide current page
       document.querySelector('.question-page.active').classList.remove('active');
@@ -1780,9 +1716,6 @@
 
     // Validate current page
     function validateCurrentPage() {
-      // Page 0: Permissions page (always valid - optional)
-      if (currentPage === 0) return true;
-
       // Page 1: Account creation validation is handled by createAccountBtn
       if (currentPage === 1) return true;
 
@@ -3276,142 +3209,6 @@
         return e.returnValue;
       }
     });
-
-    // ===== PERMISSIONS REQUEST FUNCTIONS =====
-
-    /**
-     * Request all permissions during signup flow
-     */
-    async function requestSignupPermissions() {
-      const service = window.PermissionsService;
-      const btn = event.target;
-      const originalText = btn.textContent;
-
-      btn.textContent = 'Requesting permissions...';
-      btn.disabled = true;
-
-      try {
-        const { results, allGranted } = await service.requestAllPermissions();
-
-        console.log('✅ Permissions request complete:', results);
-
-        // Show feedback based on results
-        if (allGranted) {
-          showNotification('✅ All permissions granted! You\'re ready to go.', 'success');
-        } else {
-          const deniedPerms = Object.entries(results)
-            .filter(([_, granted]) => !granted)
-            .map(([name, _]) => name);
-
-          showNotification(
-            `⚠️ Some permissions were denied (${deniedPerms.join(', ')}). You can enable them later in your dashboard.`,
-            'warning'
-          );
-        }
-
-        // Always proceed to next page (permissions optional)
-        setTimeout(() => {
-          nextPage();
-        }, 1500);
-      } catch (error) {
-        console.error('❌ Error requesting permissions:', error);
-        showNotification('❌ Error requesting permissions. You can try again later.', 'error');
-        btn.textContent = originalText;
-        btn.disabled = false;
-      }
-    }
-
-    /**
-     * Skip permissions and proceed to signup
-     */
-    function skipPermissions() {
-      // Show warning about stress at accident scene
-      const confirmed = confirm(
-        '⚠️ WARNING: Skipping Permissions\n\n' +
-        'If you skip now, you\'ll need to manually enable permissions at the accident scene - ' +
-        'when you\'re stressed, rushed, and need the app working immediately.\n\n' +
-        '✅ We STRONGLY recommend granting permissions now in a calm environment.\n\n' +
-        'Are you sure you want to skip?'
-      );
-
-      if (confirmed) {
-        showNotification('⚠️ Remember to enable permissions in your dashboard before an incident occurs.', 'warning');
-        nextPage();
-      }
-      // If cancelled, stay on permissions page
-    }
-
-    /**
-     * Show notification to user
-     */
-    function showNotification(message, type = 'info') {
-      // Create notification element
-      const notification = document.createElement('div');
-      notification.style.cssText = `
-        position: fixed;
-        top: 20px;
-        right: 20px;
-        padding: 16px 20px;
-        border-radius: 8px;
-        color: white;
-        font-size: 14px;
-        font-weight: 500;
-        box-shadow: 0 4px 12px rgba(0,0,0,0.15);
-        z-index: 10001;
-        max-width: 400px;
-        animation: slideIn 0.3s ease-out;
-      `;
-
-      // Set background color based on type
-      const colors = {
-        success: '#10b981',
-        error: '#ef4444',
-        warning: '#f59e0b',
-        info: '#3b82f6'
-      };
-      notification.style.background = colors[type] || colors.info;
-      notification.textContent = message;
-
-      // Add to page
-      document.body.appendChild(notification);
-
-      // Remove after 5 seconds
-      setTimeout(() => {
-        notification.style.animation = 'slideOut 0.3s ease-in';
-        setTimeout(() => {
-          document.body.removeChild(notification);
-        }, 300);
-      }, 5000);
-    }
-
-    // Add animation styles
-    if (!document.getElementById('notification-styles')) {
-      const style = document.createElement('style');
-      style.id = 'notification-styles';
-      style.textContent = `
-        @keyframes slideIn {
-          from {
-            transform: translateX(400px);
-            opacity: 0;
-          }
-          to {
-            transform: translateX(0);
-            opacity: 1;
-          }
-        }
-        @keyframes slideOut {
-          from {
-            transform: translateX(0);
-            opacity: 1;
-          }
-          to {
-            transform: translateX(400px);
-            opacity: 0;
-          }
-        }
-      `;
-      document.head.appendChild(style);
-    }
   </script>
 </body>
 </html>
