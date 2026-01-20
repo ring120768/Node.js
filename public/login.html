@@ -558,23 +558,8 @@
                         sessionStorage.setItem('user', JSON.stringify(data.user));
                     }
 
-                    // Check if user has completed permissions onboarding
-                    const hasCompletedPermissions = localStorage.getItem('permissions_onboarding_complete');
-
-                    // Redirect to permissions onboarding for first-time users
-                    // But allow them to skip if they're trying to reach a specific page
-                    let redirectUrl;
-                    const requestedUrl = getRedirectUrl();
-
-                    if (!hasCompletedPermissions && requestedUrl === '/index.html') {
-                        // First-time user without specific destination = show permissions onboarding
-                        redirectUrl = '/permissions-onboarding.html';
-                        console.log('First-time user detected, redirecting to permissions onboarding');
-                    } else {
-                        // User has completed onboarding OR has a specific destination
-                        redirectUrl = requestedUrl;
-                    }
-
+                    // Get redirect URL (permissions onboarding disabled for now)
+                    const redirectUrl = getRedirectUrl();
                     console.log('Redirecting to:', redirectUrl);
                     console.log('========================================');
 
