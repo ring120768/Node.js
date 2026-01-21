@@ -2,7 +2,7 @@
 <html lang="en">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
     <meta name="apple-mobile-web-app-capable" content="yes">
     <meta name="mobile-web-app-capable" content="yes">
     <title>Record Your Statement - Car Crash Lawyer AI</title>
@@ -1437,7 +1437,8 @@
         @media (max-width: 768px) {
             .container {
                 padding: 20px;
-                padding-bottom: 120px; /* Extra space for sticky controls */
+                /* Extra space for sticky controls + Android nav bar safe area */
+                padding-bottom: calc(120px + env(safe-area-inset-bottom, 24px));
             }
 
             h1 {
@@ -1456,6 +1457,8 @@
                 right: 0;
                 background: white;
                 padding: 15px 20px;
+                /* Add padding for Android navigation bar / iOS safe area */
+                padding-bottom: calc(15px + env(safe-area-inset-bottom, 24px));
                 box-shadow: 0 -4px 12px rgba(0,0,0,0.15);
                 z-index: 998;
                 margin: 0;
