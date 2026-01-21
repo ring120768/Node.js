@@ -31,9 +31,13 @@ public class MainActivity extends BridgeActivity {
     private static final String TAG = "CarCrashLawyerAI";
     private static final int PERMISSION_REQUEST_CODE = 1001;
     private static final int GEOLOCATION_PERMISSION_REQUEST_CODE = 1002;
+    private static final int FILE_CHOOSER_REQUEST_CODE = 1003;
 
     // Store pending permission request for callback
     private PermissionRequest pendingPermissionRequest = null;
+
+    // Store file chooser callback for onActivityResult
+    private android.webkit.ValueCallback<android.net.Uri[]> filePathCallback = null;
 
     // Store pending geolocation callback and origin
     private android.webkit.GeolocationPermissions.Callback pendingGeolocationCallback = null;
@@ -201,6 +205,76 @@ public class MainActivity extends BridgeActivity {
                             Log.d("WebView", message);
                     }
                     return true;
+                }
+
+                /**
+                 * CRITICAL: Handle file chooser for <input type="file"> elements.
+                 * Without this, file inputs won't work in WebView.
+                 */
+                @Override
+                public boolean onShowFileChooser(
+                        android.webkit.WebView webView,
+                        android.webkit.ValueCallback<android.net.Uri[]> filePathCallback,
+                        FileChooserParams fileChooserParams) {
+
+                    Log.d(TAG, "★★★ onShowFileChooser CALLED ★★★");
+
+                    // Cancel any existing callback to prevent WebView from getting stuck
+                    if (MainActivity.this.filePathCallback != null) {
+                        Log.d(TAG, "Cancelling previous file chooser callback");
+                        MainActivity.this.filePathCallback.onReceiveValue(null);
+                    }
+
+                    // Store the new callback
+                    MainActivity.this.filePathCallback = filePathCallback;
+
+                    // Log what's being requested
+                    String[] acceptTypes = fileChooserParams.getAcceptTypes();
+                    Log.d(TAG, "Accept types: " + java.util.Arrays.toString(acceptTypes));
+                    Log.d(TAG, "Mode: " + fileChooserParams.getMode());
+                    Log.d(TAG, "Is capture enabled: " + fileChooserParams.isCaptureEnabled());
+
+                    try {
+                        // Create intent to pick content
+                        android.content.Intent intent = new android.content.Intent(android.content.Intent.ACTION_GET_CONTENT);
+                        intent.addCategory(android.content.Intent.CATEGORY_OPENABLE);
+
+                        // Set MIME type based on accept types
+                        if (acceptTypes != null && acceptTypes.length > 0 && acceptTypes[0] != null && !acceptTypes[0].isEmpty()) {
+                            String mimeType = acceptTypes[0];
+                            // Handle wildcards like "video/*" or "image/*"
+                            if (mimeType.contains("video")) {
+                                intent.setType("video/*");
+                            } else if (mimeType.contains("image")) {
+                                intent.setType("image/*");
+                            } else if (mimeType.contains("audio")) {
+                                intent.setType("audio/*");
+                            } else {
+                                intent.setType(mimeType);
+                            }
+                        } else {
+                            // Default to all files
+                            intent.setType("*/*");
+                        }
+
+                        // Allow multiple selection if requested
+                        if (fileChooserParams.getMode() == FileChooserParams.MODE_OPEN_MULTIPLE) {
+                            intent.putExtra(android.content.Intent.EXTRA_ALLOW_MULTIPLE, true);
+                        }
+
+                        Log.d(TAG, "Starting file chooser activity with type: " + intent.getType());
+                        startActivityForResult(
+                            android.content.Intent.createChooser(intent, "Select File"),
+                            FILE_CHOOSER_REQUEST_CODE
+                        );
+
+                        return true;
+                    } catch (Exception e) {
+                        Log.e(TAG, "Error launching file chooser: " + e.getMessage(), e);
+                        MainActivity.this.filePathCallback.onReceiveValue(null);
+                        MainActivity.this.filePathCallback = null;
+                        return false;
+                    }
                 }
             };
 
@@ -386,6 +460,54 @@ public class MainActivity extends BridgeActivity {
             pendingGeolocationCallback = null;
             pendingGeolocationOrigin = null;
         }
+    }
+
+    /**
+     * Handle activity results - specifically for file chooser.
+     */
+    @Override
+    protected void onActivityResult(int requestCode, int resultCode, android.content.Intent data) {
+        Log.d(TAG, "onActivityResult called - requestCode: " + requestCode + ", resultCode: " + resultCode);
+
+        // Handle file chooser result
+        if (requestCode == FILE_CHOOSER_REQUEST_CODE) {
+            if (filePathCallback == null) {
+                Log.e(TAG, "File path callback is null!");
+                super.onActivityResult(requestCode, resultCode, data);
+                return;
+            }
+
+            android.net.Uri[] results = null;
+
+            if (resultCode == android.app.Activity.RESULT_OK && data != null) {
+                // Check for multiple file selection
+                if (data.getClipData() != null) {
+                    int count = data.getClipData().getItemCount();
+                    Log.d(TAG, "Multiple files selected: " + count);
+                    results = new android.net.Uri[count];
+                    for (int i = 0; i < count; i++) {
+                        results[i] = data.getClipData().getItemAt(i).getUri();
+                        Log.d(TAG, "  File " + i + ": " + results[i]);
+                    }
+                } else if (data.getData() != null) {
+                    // Single file selected
+                    Log.d(TAG, "Single file selected: " + data.getData());
+                    results = new android.net.Uri[]{data.getData()};
+                }
+            } else {
+                Log.d(TAG, "File selection cancelled or failed");
+            }
+
+            // CRITICAL: Always invoke the callback, even with null results
+            // This prevents the file input from getting stuck
+            filePathCallback.onReceiveValue(results);
+            filePathCallback = null;
+            Log.d(TAG, "File chooser callback invoked with " + (results != null ? results.length + " file(s)" : "null"));
+            return;
+        }
+
+        // Let parent handle other activity results
+        super.onActivityResult(requestCode, resultCode, data);
     }
 
     @Override
