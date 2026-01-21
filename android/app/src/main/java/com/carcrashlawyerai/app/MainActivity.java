@@ -89,12 +89,15 @@ public class MainActivity extends BridgeActivity {
 
             Log.d(TAG, "Got WebView, setting custom WebChromeClient");
 
-            // Create our custom WebChromeClient that extends Capacitor's
-            WebChromeClient customClient = new com.getcapacitor.BridgeWebChromeClient(getBridge()) {
+            // CRITICAL: Use base WebChromeClient, NOT BridgeWebChromeClient
+            // BridgeWebChromeClient's constructor registers a permissionLauncher that
+            // ALWAYS shows the system permission dialog, even when permissions are granted.
+            // By using the base WebChromeClient, we bypass that entirely.
+            WebChromeClient customClient = new WebChromeClient() {
 
                 @Override
                 public void onPermissionRequest(final PermissionRequest request) {
-                    Log.d(TAG, "★★★ onPermissionRequest CALLED ★★★");
+                    Log.d(TAG, "★★★ CUSTOM onPermissionRequest CALLED (bypassing BridgeWebChromeClient) ★★★");
 
                     String[] resources = request.getResources();
                     Log.d(TAG, "Requested resources count: " + resources.length);
@@ -126,6 +129,40 @@ public class MainActivity extends BridgeActivity {
                         // For geolocation, just invoke with true - Android will prompt if needed
                         callback.invoke(origin, true, false);
                     }
+                }
+
+                // Forward JS dialogs to Bridge's handler for proper UI
+                @Override
+                public boolean onJsAlert(android.webkit.WebView view, String url, String message, android.webkit.JsResult result) {
+                    // Let the default WebView behavior handle alerts
+                    return false;
+                }
+
+                @Override
+                public boolean onJsConfirm(android.webkit.WebView view, String url, String message, android.webkit.JsResult result) {
+                    return false;
+                }
+
+                @Override
+                public boolean onJsPrompt(android.webkit.WebView view, String url, String message, String defaultValue, android.webkit.JsPromptResult result) {
+                    return false;
+                }
+
+                @Override
+                public boolean onConsoleMessage(android.webkit.ConsoleMessage consoleMessage) {
+                    String logLevel = consoleMessage.messageLevel().name();
+                    String message = consoleMessage.message() + " -- From line " + consoleMessage.lineNumber() + " of " + consoleMessage.sourceId();
+                    switch (consoleMessage.messageLevel()) {
+                        case ERROR:
+                            Log.e("WebView", message);
+                            break;
+                        case WARNING:
+                            Log.w("WebView", message);
+                            break;
+                        default:
+                            Log.d("WebView", message);
+                    }
+                    return true;
                 }
             };
 
