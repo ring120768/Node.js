@@ -935,7 +935,25 @@
 
                     } catch (error) {
                         console.error('Microphone access error:', error);
-                        alert('Microphone access is required for AI Eavesdropper. Please check your browser permissions.');
+                        console.error('Error name:', error.name);
+                        console.error('Error message:', error.message);
+                        console.error('Error constraint:', error.constraint);
+
+                        // Provide specific error messages for debugging
+                        let errorMsg = 'Microphone access is required for AI Eavesdropper.';
+                        if (error.name === 'NotAllowedError') {
+                            errorMsg += '\n\nPermission denied. Please grant microphone access in your device settings.';
+                        } else if (error.name === 'NotFoundError') {
+                            errorMsg += '\n\nNo microphone found on this device.';
+                        } else if (error.name === 'NotReadableError') {
+                            errorMsg += '\n\nMicrophone is in use by another app or not accessible.';
+                        } else if (error.name === 'OverconstrainedError') {
+                            errorMsg += '\n\nMicrophone constraints cannot be satisfied.';
+                        } else {
+                            errorMsg += `\n\nError: ${error.name} - ${error.message}`;
+                        }
+
+                        alert(errorMsg);
                     }
                 } else {
                     stopRecording();

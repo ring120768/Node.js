@@ -14,6 +14,8 @@ import androidx.core.content.ContextCompat;
 import android.util.Log;
 
 import com.getcapacitor.BridgeActivity;
+import android.webkit.WebView;
+import android.os.Build;
 
 /**
  * MainActivity with robust WebView permission handling for microphone, camera, and location.
@@ -41,6 +43,12 @@ public class MainActivity extends BridgeActivity {
     @Override
     public void onCreate(Bundle savedInstanceState) {
         Log.d(TAG, "=== onCreate START ===");
+
+        // Enable WebView debugging for diagnostics (debug builds only)
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.KITKAT) {
+            WebView.setWebContentsDebuggingEnabled(true);
+            Log.d(TAG, "WebView debugging enabled");
+        }
 
         // Register web view permission handler plugin BEFORE super.onCreate
         registerPlugin(com.carcrashlawyerai.app.WebViewPermissionPlugin.class);
