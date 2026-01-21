@@ -53,15 +53,28 @@ public class MainActivity extends BridgeActivity {
         // Pre-check and log current permission states
         checkAndLogPermissions();
 
-        // Setup WebChromeClient immediately after super.onCreate
+        Log.d(TAG, "=== onCreate END ===");
+    }
+
+    /**
+     * CRITICAL OVERRIDE: This is called after onCreate() but before the Bridge loads the URL.
+     * We override this to set our custom WebChromeClient IMMEDIATELY after Bridge creation,
+     * which happens in super.load(). This ensures our client is set BEFORE any page loads.
+     */
+    @Override
+    protected void load() {
+        Log.d(TAG, "=== load() START ===");
+
+        // This creates the Bridge and sets BridgeWebChromeClient
+        super.load();
+
+        Log.d(TAG, "super.load() completed - Bridge created");
+
+        // IMMEDIATELY set our custom WebChromeClient to override BridgeWebChromeClient
+        // This MUST happen before any web content triggers getUserMedia()
         setupWebChromeClient();
 
-        // Also schedule a delayed setup to handle any race conditions
-        // This ensures the WebChromeClient is set even if there's a timing issue
-        mainHandler.postDelayed(this::setupWebChromeClient, 500);
-        mainHandler.postDelayed(this::setupWebChromeClient, 1500);
-
-        Log.d(TAG, "=== onCreate END ===");
+        Log.d(TAG, "=== load() END ===");
     }
 
     /**
@@ -326,11 +339,9 @@ public class MainActivity extends BridgeActivity {
         // Re-check permissions when returning from settings
         checkAndLogPermissions();
 
-        // Ensure our WebChromeClient is still set (could be reset by Capacitor)
-        if (!webChromeClientSet) {
-            Log.d(TAG, "WebChromeClient not set in onResume, setting now...");
-            setupWebChromeClient();
-        }
+        // ALWAYS ensure our WebChromeClient is set (could be reset by Capacitor)
+        Log.d(TAG, "Re-setting WebChromeClient in onResume...");
+        setupWebChromeClient();
     }
 
     @Override
@@ -338,8 +349,8 @@ public class MainActivity extends BridgeActivity {
         super.onStart();
         Log.d(TAG, "onStart called");
 
-        // Additional opportunity to ensure WebChromeClient is set
-        mainHandler.postDelayed(this::setupWebChromeClient, 100);
+        // Ensure WebChromeClient is set
+        setupWebChromeClient();
     }
 
     @Override
