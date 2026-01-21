@@ -30,9 +30,14 @@ public class MainActivity extends BridgeActivity {
 
     private static final String TAG = "CarCrashLawyerAI";
     private static final int PERMISSION_REQUEST_CODE = 1001;
+    private static final int GEOLOCATION_PERMISSION_REQUEST_CODE = 1002;
 
     // Store pending permission request for callback
     private PermissionRequest pendingPermissionRequest = null;
+
+    // Store pending geolocation callback and origin
+    private android.webkit.GeolocationPermissions.Callback pendingGeolocationCallback = null;
+    private String pendingGeolocationOrigin = null;
 
     // Handler for delayed operations
     private final Handler mainHandler = new Handler(Looper.getMainLooper());
@@ -135,7 +140,7 @@ public class MainActivity extends BridgeActivity {
 
                 @Override
                 public void onGeolocationPermissionsShowPrompt(String origin, android.webkit.GeolocationPermissions.Callback callback) {
-                    Log.d(TAG, "Geolocation permission requested for: " + origin);
+                    Log.d(TAG, "★★★ Geolocation permission requested for: " + origin + " ★★★");
 
                     // Check if we have location permission
                     boolean hasPermission = ContextCompat.checkSelfPermission(
@@ -143,12 +148,24 @@ public class MainActivity extends BridgeActivity {
                     ) == PackageManager.PERMISSION_GRANTED;
 
                     if (hasPermission) {
-                        Log.d(TAG, "Location permission granted, allowing geolocation");
+                        Log.d(TAG, "Location permission GRANTED, allowing geolocation to WebView");
                         callback.invoke(origin, true, false);
                     } else {
-                        Log.d(TAG, "Location permission not granted, requesting...");
-                        // For geolocation, just invoke with true - Android will prompt if needed
-                        callback.invoke(origin, true, false);
+                        Log.d(TAG, "Location permission NOT granted, requesting Android permission...");
+
+                        // Store the callback and origin for later use
+                        pendingGeolocationCallback = callback;
+                        pendingGeolocationOrigin = origin;
+
+                        // Request Android location permission
+                        ActivityCompat.requestPermissions(
+                            MainActivity.this,
+                            new String[]{
+                                Manifest.permission.ACCESS_FINE_LOCATION,
+                                Manifest.permission.ACCESS_COARSE_LOCATION
+                            },
+                            GEOLOCATION_PERMISSION_REQUEST_CODE
+                        );
                     }
                 }
 
@@ -309,7 +326,7 @@ public class MainActivity extends BridgeActivity {
             Log.d(TAG, "  Permission: " + permissions[i] + " = " + (granted ? "GRANTED" : "DENIED"));
         }
 
-        // Handle our pending WebView permission request
+        // Handle our pending WebView permission request (camera/microphone)
         if (requestCode == PERMISSION_REQUEST_CODE && pendingPermissionRequest != null) {
             boolean allGranted = true;
             for (int result : grantResults) {
@@ -336,6 +353,38 @@ public class MainActivity extends BridgeActivity {
                 }
             }
             pendingPermissionRequest = null;
+        }
+
+        // Handle geolocation permission request
+        if (requestCode == GEOLOCATION_PERMISSION_REQUEST_CODE && pendingGeolocationCallback != null) {
+            boolean locationGranted = false;
+            for (int i = 0; i < permissions.length; i++) {
+                if (permissions[i].equals(Manifest.permission.ACCESS_FINE_LOCATION) &&
+                    grantResults[i] == PackageManager.PERMISSION_GRANTED) {
+                    locationGranted = true;
+                    break;
+                }
+            }
+
+            if (locationGranted) {
+                Log.d(TAG, "★ Location permission granted, allowing geolocation to WebView");
+                try {
+                    pendingGeolocationCallback.invoke(pendingGeolocationOrigin, true, false);
+                    Log.d(TAG, "✓ Geolocation callback invoked with allow=true");
+                } catch (Exception e) {
+                    Log.e(TAG, "Error invoking geolocation callback: " + e.getMessage(), e);
+                }
+            } else {
+                Log.d(TAG, "✗ Location permission denied, denying geolocation to WebView");
+                try {
+                    pendingGeolocationCallback.invoke(pendingGeolocationOrigin, false, false);
+                    Log.d(TAG, "✓ Geolocation callback invoked with allow=false");
+                } catch (Exception e) {
+                    Log.e(TAG, "Error invoking geolocation callback: " + e.getMessage(), e);
+                }
+            }
+            pendingGeolocationCallback = null;
+            pendingGeolocationOrigin = null;
         }
     }
 
