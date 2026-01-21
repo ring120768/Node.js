@@ -551,6 +551,264 @@ After implementing the fix:
 
 ---
 
+## 10. Alternative MainActivity / WebView Setup (Minimal Example)
+
+Below is a minimal example that:
+- Enables JavaScript and DOM storage
+- Requests runtime audio permission
+- Implements `WebChromeClient.onPermissionRequest` and grants mic/camera access requested by the page
+
+```java
+public class MainActivity extends AppCompatActivity {
+
+    private static final int REQ_CODE_RECORD_AUDIO = 1001;
+    private WebView webView;
+
+    @Override
+    protected void onCreate(Bundle savedInstanceState) {
+        super.onCreate(savedInstanceState);
+        setContentView(R.layout.activity_main);
+
+        webView = findViewById(R.id.webview);
+
+        WebSettings settings = webView.getSettings();
+        settings.setJavaScriptEnabled(true);
+        settings.setDomStorageEnabled(true);
+        settings.setMediaPlaybackRequiresUserGesture(false);
+
+        // Optional: debugging
+        WebView.setWebContentsDebuggingEnabled(true);
+
+        webView.setWebViewClient(new WebViewClient());
+
+        webView.setWebChromeClient(new WebChromeClient() {
+            @Override
+            public void onPermissionRequest(final PermissionRequest request) {
+                runOnUiThread(() -> {
+                    // In production you should inspect request.getOrigin()
+                    // and request.getResources() before blindly granting.
+                    request.grant(request.getResources());
+                });
+            }
+        });
+
+        ensureMicPermissionAndLoad();
+    }
+
+    private void ensureMicPermissionAndLoad() {
+        if (ContextCompat.checkSelfPermission(this, Manifest.permission.RECORD_AUDIO)
+                != PackageManager.PERMISSION_GRANTED) {
+
+            ActivityCompat.requestPermissions(
+                    this,
+                    new String[]{Manifest.permission.RECORD_AUDIO},
+                    REQ_CODE_RECORD_AUDIO
+            );
+        } else {
+            loadWebApp();
+        }
+    }
+
+    private void loadWebApp() {
+        // IMPORTANT: use https or localhost-equivalent for getUserMedia
+        webView.loadUrl("https://your-production-domain.example");
+        // or, if you run a local server: "http://10.0.2.2:3000" for emulator,
+        // or any scheme that counts as a secure context.
+    }
+
+    @Override
+    public void onRequestPermissionsResult(
+            int requestCode,
+            @NonNull String[] permissions,
+            @NonNull int[] grantResults
+    ) {
+        super.onRequestPermissionsResult(requestCode, permissions, grantResults);
+        if (requestCode == REQ_CODE_RECORD_AUDIO) {
+            if (grantResults.length > 0 &&
+                grantResults[0] == PackageManager.PERMISSION_GRANTED) {
+                loadWebApp();
+            } else {
+                // Handle denied mic permission (show message, disable recording, etc.)
+            }
+        }
+    }
+}
+```
+
+**Key point:** Android Settings showing mic permission only proves the app can access audio from Java/Kotlin. WebView is still a separate permission layer that must explicitly grant WebRTC mic/camera requests via `onPermissionRequest`.
+
+---
+
+## 11. React Native / Expo WebView Fix (Extended)
+
+Use this if your APK is built with React Native / Expo and uses `react-native-webview`.
+
+### 11.1 Known React Native WebView Issues
+
+Older `react-native-webview` versions (and some default setups) do not automatically forward `onPermissionRequest` from the underlying Android WebView.
+
+This leads to:
+- `getUserMedia` failing silently or with `NotAllowedError`
+- Error messages like "Error opening your camera and/or microphone: could not start audio source"
+
+### 11.2 High-Level Fix Strategies
+
+1. **Ensure Android app-level permissions:**
+   - `android.permission.RECORD_AUDIO` in `AndroidManifest.xml` or `app.json`/`app.config.js` (android.permissions for Expo)
+
+2. **Request runtime mic permission from JS** using `PermissionsAndroid` (React Native)
+
+3. **Ensure that the underlying native WebView's `WebChromeClient` implements `onPermissionRequest`** and grants mic/camera resources
+
+### 11.3 Example: Request Mic Permission in React Native
+
+```tsx
+import React, { useEffect } from "react";
+import { PermissionsAndroid, Platform } from "react-native";
+import { WebView } from "react-native-webview";
+
+const App = () => {
+  const requestMicPermission = async () => {
+    if (Platform.OS !== "android") return;
+
+    const granted = await PermissionsAndroid.request(
+      PermissionsAndroid.PERMISSIONS.RECORD_AUDIO,
+      {
+        title: "Microphone permission",
+        message: "This app needs access to your microphone for transcription.",
+        buttonPositive: "OK",
+      }
+    );
+
+    // Optionally check `granted === PermissionsAndroid.RESULTS.GRANTED`
+  };
+
+  useEffect(() => {
+    requestMicPermission();
+  }, []);
+
+  return (
+    <WebView
+      source={{ uri: "https://your-production-domain.example" }}
+      javaScriptEnabled
+      domStorageEnabled
+      mediaPlaybackRequiresUserAction={false}
+      // Optionally:
+      // allowsInlineMediaPlayback
+    />
+  );
+};
+
+export default App;
+```
+
+This handles app-level runtime permission, but you still need to ensure the native WebView grants WebRTC permissions.
+
+### 11.4 Custom Native Handling of onPermissionRequest
+
+You can extend the native WebView manager to implement `onPermissionRequest`. Many community examples do something like this (Java):
+
+```java
+public class MyWebChromeClient extends WebChromeClient {
+    @Override
+    public void onPermissionRequest(final PermissionRequest request) {
+        // You may want to check origin here.
+        request.grant(request.getResources());
+    }
+}
+```
+
+Then, inside your custom `RNCWebViewManager` subclass, you set this `WebChromeClient` on the underlying WebView. Community libraries (e.g. custom "permission WebView") do exactly this to fix mic/camera problems.
+
+### 11.5 Expo Configuration
+
+In Expo, ensure `app.json` / `app.config.js` includes:
+
+```json
+{
+  "expo": {
+    "android": {
+      "permissions": ["RECORD_AUDIO"]
+    }
+  }
+}
+```
+
+The URL loaded in the WebView must be `https://` or a supported localhost-equivalent.
+
+---
+
+## 12. Extended Debugging Checklist
+
+Use this checklist step by step when debugging the APK:
+
+### 12.1 Check Manifest Permissions
+
+Confirm `AndroidManifest.xml` (or Expo config) includes:
+```xml
+<uses-permission android:name="android.permission.RECORD_AUDIO" />
+<uses-permission android:name="android.permission.MODIFY_AUDIO_SETTINGS" />
+```
+
+**Rebuild the APK after any changes.**
+
+### 12.2 Verify Runtime Mic Permission
+
+- Add logging in native code to verify that runtime permission is requested and granted
+- Ensure `onRequestPermissionsResult` handles the response and proceeds to load the WebView only after permission is granted
+
+### 12.3 Implement and Log onPermissionRequest
+
+**In native WebView:**
+- Implement `WebChromeClient.onPermissionRequest`
+- Add logs to confirm it is called when the page calls `getUserMedia`
+- Temporarily grant all resources via `request.grant(request.getResources())`
+
+**In RN/Expo:**
+- Ensure the underlying WebView uses a `WebChromeClient` that overrides `onPermissionRequest`
+- Log origin and resources
+
+### 12.4 Observe JS-side getUserMedia Errors
+
+1. Open WebView debugging: `WebView.setWebContentsDebuggingEnabled(true)`
+2. Connect Chrome DevTools to the WebView
+3. Log and note the exact error thrown by `navigator.mediaDevices.getUserMedia({ audio: true })`:
+
+| Error | Meaning |
+|-------|---------|
+| `NotAllowedError` | Permissions problem (browser/webview level) |
+| `NotFoundError` | No audio input device |
+| `NotReadableError` | Device/driver or permission mismatch ("could not start audio source") |
+
+### 12.5 Verify URL and Security Context
+
+Confirm the WebView loads:
+- `https://your-domain` OR
+- `http://localhost` / framework-specific secure-localhost
+
+If using plain `http://` remote URL, switch to `https://` and re-test.
+
+### 12.6 Test on Multiple Devices / Emulators
+
+Check behaviour on:
+- At least one physical device and one emulator
+- Different Android versions (e.g. 10 vs 13)
+- Note any OEM-specific quirks
+
+### 12.7 If Using React Native / Expo
+
+- Confirm `react-native-webview` version is recent and supports Android `onPermissionRequest`
+- Ensure `androidHardwareAccelerationDisabled` is not turning off features required for WebRTC (keep it `false` unless needed)
+- Confirm `android.permissions` in Expo config includes `"RECORD_AUDIO"`
+
+### 12.8 Re-check Whisper-Specific Handling
+
+Once mic access works (you can see audio tracks in DevTools), verify that:
+- Audio blobs are created correctly
+- They are posted correctly to the Whisper API endpoint (proper content-type, file format)
+
+---
+
 *Document created: January 2026*
 *Last updated: January 2026*
 *For: Car Crash Lawyer AI - Android microphone troubleshooting*
