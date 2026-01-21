@@ -210,6 +210,9 @@ public class MainActivity extends BridgeActivity {
                 /**
                  * CRITICAL: Handle file chooser for <input type="file"> elements.
                  * Without this, file inputs won't work in WebView.
+                 *
+                 * Uses fileChooserParams.createIntent() to properly inherit all
+                 * WebView file chooser parameters (accept types, capture mode, etc.)
                  */
                 @Override
                 public boolean onShowFileChooser(
@@ -235,40 +238,30 @@ public class MainActivity extends BridgeActivity {
                     Log.d(TAG, "Is capture enabled: " + fileChooserParams.isCaptureEnabled());
 
                     try {
-                        // Create intent to pick content
-                        android.content.Intent intent = new android.content.Intent(android.content.Intent.ACTION_GET_CONTENT);
-                        intent.addCategory(android.content.Intent.CATEGORY_OPENABLE);
+                        // Use createIntent() to properly inherit all file chooser params
+                        // This is the recommended approach per Android WebView docs
+                        android.content.Intent intent = fileChooserParams.createIntent();
 
-                        // Set MIME type based on accept types
-                        if (acceptTypes != null && acceptTypes.length > 0 && acceptTypes[0] != null && !acceptTypes[0].isEmpty()) {
-                            String mimeType = acceptTypes[0];
-                            // Handle wildcards like "video/*" or "image/*"
-                            if (mimeType.contains("video")) {
+                        // For video selection (dashcam), ensure we show videos
+                        if (acceptTypes != null && acceptTypes.length > 0) {
+                            String firstType = acceptTypes[0];
+                            if (firstType != null && firstType.contains("video")) {
+                                // Explicitly set video type and add MIME types extra
                                 intent.setType("video/*");
-                            } else if (mimeType.contains("image")) {
-                                intent.setType("image/*");
-                            } else if (mimeType.contains("audio")) {
-                                intent.setType("audio/*");
-                            } else {
-                                intent.setType(mimeType);
+                                intent.putExtra(android.content.Intent.EXTRA_MIME_TYPES, new String[]{"video/*"});
+                                Log.d(TAG, "Set intent type to video/* for dashcam selection");
                             }
-                        } else {
-                            // Default to all files
-                            intent.setType("*/*");
                         }
 
-                        // Allow multiple selection if requested
-                        if (fileChooserParams.getMode() == FileChooserParams.MODE_OPEN_MULTIPLE) {
-                            intent.putExtra(android.content.Intent.EXTRA_ALLOW_MULTIPLE, true);
-                        }
-
-                        Log.d(TAG, "Starting file chooser activity with type: " + intent.getType());
-                        startActivityForResult(
-                            android.content.Intent.createChooser(intent, "Select File"),
-                            FILE_CHOOSER_REQUEST_CODE
-                        );
+                        Log.d(TAG, "Starting file chooser activity");
+                        startActivityForResult(intent, FILE_CHOOSER_REQUEST_CODE);
 
                         return true;
+                    } catch (android.content.ActivityNotFoundException e) {
+                        Log.e(TAG, "No activity found to handle file chooser: " + e.getMessage(), e);
+                        MainActivity.this.filePathCallback.onReceiveValue(null);
+                        MainActivity.this.filePathCallback = null;
+                        return false;
                     } catch (Exception e) {
                         Log.e(TAG, "Error launching file chooser: " + e.getMessage(), e);
                         MainActivity.this.filePathCallback.onReceiveValue(null);
