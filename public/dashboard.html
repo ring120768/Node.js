@@ -5,9 +5,6 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Dashboard - Car Crash Lawyer AI</title>
 
-    <!-- Chart.js for data visualization -->
-    <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
-
     <style>
         * {
             margin: 0;
@@ -706,10 +703,6 @@
                 gap: var(--spacing-sm);
             }
 
-            /* Chart container height reduction */
-            .chart-container {
-                height: 250px;
-            }
 
             /* Action buttons */
             .action-btn {
@@ -785,10 +778,6 @@
                 font-size: 1.25rem;
             }
 
-            /* Chart height on phones */
-            .chart-container {
-                height: 200px;
-            }
 
             /* Reduce stat card padding */
             .stat-card {
@@ -843,12 +832,6 @@
             color: #991b1b;
         }
 
-        /* Chart Container */
-        .chart-container {
-            position: relative;
-            height: 300px;
-            margin-top: var(--spacing-md);
-        }
 
         /* Notification Toast */
         .toast {
@@ -1288,13 +1271,6 @@
                         </div>
                     </div>
 
-                    <!-- Chart -->
-                    <div style="margin-top: var(--spacing-xl);">
-                        <h3 style="margin-bottom: var(--spacing-md); font-size: 1rem;">Activity Overview</h3>
-                        <div class="chart-container">
-                            <canvas id="activityChart"></canvas>
-                        </div>
-                    </div>
                 </div>
             </div>
         </div>
@@ -1414,7 +1390,6 @@
     <script>
         let userId = null;
         let currentUser = null;
-        let activityChart = null;
 
         // Initialize
         async function init() {
@@ -1445,8 +1420,7 @@
                 // Load all data
                 await Promise.all([
                     loadStats(),
-                    loadActivity(),
-                    initChart()
+                    loadActivity()
                 ]);
 
                 // Show content
@@ -1749,52 +1723,6 @@
                     toast.remove();
                 }, 300);
             }, 3000);
-        }
-
-        // Initialize Chart
-        function initChart() {
-            const ctx = document.getElementById('activityChart').getContext('2d');
-
-            // Sample data - will be replaced with real data
-            activityChart = new Chart(ctx, {
-                type: 'line',
-                data: {
-                    labels: ['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun'],
-                    datasets: [{
-                        label: 'Documents',
-                        data: [0, 0, 0, 0, 0, 0, 0],
-                        borderColor: '#0E7490',
-                        backgroundColor: 'rgba(14, 116, 144, 0.1)',
-                        tension: 0.4,
-                        fill: true
-                    }, {
-                        label: 'Transcriptions',
-                        data: [0, 0, 0, 0, 0, 0, 0],
-                        borderColor: '#10b981',
-                        backgroundColor: 'rgba(16, 185, 129, 0.1)',
-                        tension: 0.4,
-                        fill: true
-                    }]
-                },
-                options: {
-                    responsive: true,
-                    maintainAspectRatio: false,
-                    plugins: {
-                        legend: {
-                            display: true,
-                            position: 'top',
-                        }
-                    },
-                    scales: {
-                        y: {
-                            beginAtZero: true,
-                            ticks: {
-                                stepSize: 1
-                            }
-                        }
-                    }
-                }
-            });
         }
 
         // Send PDF report via email
