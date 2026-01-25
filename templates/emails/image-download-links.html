@@ -116,6 +116,13 @@
       <strong>⏰ Link Expiry:</strong> These download links are valid until <strong>{{expiryDate}}</strong> ({{expiryDuration}}). After this date, you can request new links from your dashboard.
     </div>
 
+    {{#if hasDashcamFootage}}
+    <div class="image-section">
+      <h3>🎥 Dashcam Footage</h3>
+      {{dashcamFootageHtml}}
+    </div>
+    {{/if}}
+
     {{#if hasVehicleImages}}
     <div class="image-section">
       <h3>🚗 Your Vehicle Images</h3>

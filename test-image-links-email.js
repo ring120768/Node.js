@@ -2,9 +2,10 @@
 
 /**
  * Test Image Download Links Email
- * Usage: node test-image-links-email.js <user-uuid>
+ * Usage: node test-image-links-email.js <user-uuid> [incident-uuid]
  *
  * Tests the sendImageDownloadLinks function with a real user
+ * If incident-uuid is provided, tests incident-specific image filtering
  */
 
 require('dotenv').config();
@@ -13,10 +14,14 @@ const { createClient } = require('@supabase/supabase-js');
 const { sendImageDownloadLinks, calculateUrlExpiry } = require('./lib/emailService');
 
 const userId = process.argv[2];
+const incidentId = process.argv[3]; // Optional incident filter
 
 if (!userId) {
-  console.log('Usage: node test-image-links-email.js <user-uuid>');
-  console.log('Example: node test-image-links-email.js e6708c56-f9bb-46f1-94d5-d5bea8db1d71');
+  console.log('Usage: node test-image-links-email.js <user-uuid> [incident-uuid]');
+  console.log('');
+  console.log('Examples:');
+  console.log('  All images:           node test-image-links-email.js e6708c56-f9bb-46f1-94d5-d5bea8db1d71');
+  console.log('  Incident-specific:    node test-image-links-email.js e6708c56-f9bb-46f1-94d5-d5bea8db1d71 3d92a38e-a381-490e-9e0e-42c01e35b4c3');
   process.exit(1);
 }
 
@@ -60,6 +65,13 @@ async function testImageLinksEmail() {
     }
 
     console.log('\n📋 Fetching user data...');
+
+    // Log the test mode
+    if (incidentId) {
+      console.log(`🎯 Testing INCIDENT-SPECIFIC mode (Incident ID: ${incidentId})`);
+    } else {
+      console.log('🌍 Testing ALL IMAGES mode');
+    }
 
     // Get user info
     const { data: user, error: userError } = await supabase
@@ -106,7 +118,7 @@ async function testImageLinksEmail() {
     console.log('\n📧 Sending image download links email...');
 
     const userName = [user.name, user.surname].filter(Boolean).join(' ') || 'Test User';
-    const result = await sendImageDownloadLinks(supabase, userId, user.email, userName);
+    const result = await sendImageDownloadLinks(supabase, userId, user.email, userName, incidentId);
 
     if (result.success) {
       console.log('\n✅ Email sent successfully!');

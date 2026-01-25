@@ -343,6 +343,100 @@
             display: block;
         }
 
+        /* Dashcam Upload Progress Styles */
+        .dashcam-upload-progress {
+            background: #f0f9ff;
+            border-radius: 8px;
+            padding: 12px;
+            margin-top: 10px;
+            display: none;
+        }
+
+        .dashcam-upload-progress.active {
+            display: block;
+        }
+
+        .progress-bar-container {
+            background: #e0e7ff;
+            border-radius: 10px;
+            height: 24px;
+            overflow: hidden;
+            margin-bottom: 8px;
+        }
+
+        .progress-bar {
+            height: 100%;
+            background: linear-gradient(90deg, #0E7490 0%, #06b6d4 100%);
+            transition: width 0.3s ease;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            color: white;
+            font-weight: 600;
+            font-size: 12px;
+        }
+
+        .progress-info {
+            text-align: center;
+            font-size: 12px;
+            color: #64748b;
+        }
+
+        /* Dashcam Success Badge */
+        .dashcam-success {
+            background: #d1fae5;
+            border: 2px solid #10b981;
+            border-radius: 8px;
+            padding: 12px;
+            margin-top: 10px;
+            display: none;
+            align-items: center;
+            gap: 10px;
+        }
+
+        .dashcam-success.active {
+            display: flex;
+        }
+
+        .dashcam-success-icon {
+            font-size: 24px;
+        }
+
+        .dashcam-success-text {
+            flex: 1;
+            font-size: 14px;
+            color: #047857;
+            font-weight: 600;
+        }
+
+        .dashcam-success-count {
+            background: #10b981;
+            color: white;
+            padding: 4px 12px;
+            border-radius: 12px;
+            font-size: 12px;
+            font-weight: bold;
+        }
+
+        /* Dashcam Button Badge */
+        .record-btn-badge {
+            position: relative;
+        }
+
+        .record-btn-badge::after {
+            content: attr(data-count);
+            position: absolute;
+            top: -8px;
+            right: -8px;
+            background: #10b981;
+            color: white;
+            border-radius: 12px;
+            padding: 2px 8px;
+            font-size: 11px;
+            font-weight: bold;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.2);
+        }
+
         @media (max-width: 390px) {
             body {
                 padding: 15px;
@@ -409,6 +503,27 @@
 
             <div class="voice-status" id="voiceStatus">
                 Recording in progress...
+            </div>
+
+            <!-- Dashcam Upload Progress -->
+            <div id="dashcamUploadProgress" class="dashcam-upload-progress">
+                <div class="progress-bar-container">
+                    <div id="dashcamProgressBar" class="progress-bar" style="width: 0%">
+                        <span id="dashcamProgressText">0%</span>
+                    </div>
+                </div>
+                <div class="progress-info" id="dashcamProgressInfo">
+                    Uploading dashcam footage...
+                </div>
+            </div>
+
+            <!-- Dashcam Success Badge -->
+            <div id="dashcamSuccess" class="dashcam-success">
+                <span class="dashcam-success-icon">✅</span>
+                <span class="dashcam-success-text" id="dashcamSuccessText">
+                    Dashcam footage uploaded successfully!
+                </span>
+                <span class="dashcam-success-count" id="dashcamFileCount">0</span>
             </div>
         </div>
 
@@ -960,22 +1075,170 @@
                 }
             });
 
-            // Dash Cam Evidence upload handler
-            dashCamInput.addEventListener('change', function(event) {
+            // Dash Cam Evidence upload handler - IMMEDIATE UPLOAD
+            dashCamInput.addEventListener('change', async function(event) {
                 const files = event.target.files;
-                if (files.length > 0) {
-                    console.log(`Dash cam files selected: ${files.length}`);
-                    voiceStatus.textContent = `✅ ${files.length} file(s) selected for upload`;
+                if (files.length === 0) return;
+
+                console.log(`📹 Dashcam files selected: ${files.length}`);
+
+                // Initialize uploaded files array
+                if (!window.uploadedDashcamFiles) {
+                    window.uploadedDashcamFiles = [];
+                }
+
+                // Upload each file immediately
+                const uploadPromises = Array.from(files).map((file, index) =>
+                    uploadDashcamFile(file, index + 1, files.length)
+                );
+
+                try {
+                    const results = await Promise.all(uploadPromises);
+                    window.uploadedDashcamFiles.push(...results.filter(r => r));
+
+                    // Show success badge with file count
+                    showDashcamSuccess(window.uploadedDashcamFiles.length);
+
+                    // Update button badge
+                    updateDashcamButtonBadge(window.uploadedDashcamFiles.length);
+
+                    console.log('✅ All dashcam files uploaded:', window.uploadedDashcamFiles);
+                } catch (error) {
+                    console.error('❌ Dashcam upload error:', error);
+                    voiceStatus.textContent = '❌ Upload failed. Please try again.';
+                    voiceStatus.style.color = '#ef4444';
                     voiceStatus.classList.add('active');
 
                     setTimeout(() => {
                         voiceStatus.classList.remove('active');
-                    }, 3000);
-
-                    // Store files for later upload
-                    window.dashCamFiles = Array.from(files);
+                        voiceStatus.style.color = '';
+                    }, 5000);
                 }
             });
+        }
+
+        // Upload single dashcam file with progress tracking
+        async function uploadDashcamFile(file, fileNumber, totalFiles) {
+            // Validate file type
+            const isVideo = file.type.startsWith('video/');
+            const isImage = file.type.startsWith('image/');
+
+            if (!isVideo && !isImage) {
+                console.warn(`⚠️ Skipping invalid file type: ${file.type}`);
+                voiceStatus.textContent = `⚠️ Skipped ${file.name} - invalid file type`;
+                voiceStatus.style.color = '#f59e0b';
+                voiceStatus.classList.add('active');
+                setTimeout(() => {
+                    voiceStatus.classList.remove('active');
+                    voiceStatus.style.color = '';
+                }, 3000);
+                return null;
+            }
+
+            // Validate file size (500MB max for videos, 10MB for images)
+            const maxSize = isVideo ? 500 * 1024 * 1024 : 10 * 1024 * 1024;
+            if (file.size > maxSize) {
+                const maxSizeMB = isVideo ? 500 : 10;
+                console.warn(`⚠️ File too large: ${file.name} (${formatFileSize(file.size)})`);
+                voiceStatus.textContent = `⚠️ ${file.name} is too large (max ${maxSizeMB}MB)`;
+                voiceStatus.style.color = '#f59e0b';
+                voiceStatus.classList.add('active');
+                setTimeout(() => {
+                    voiceStatus.classList.remove('active');
+                    voiceStatus.style.color = '';
+                }, 3000);
+                return null;
+            }
+
+            return new Promise((resolve, reject) => {
+                const formData = new FormData();
+                formData.append('file', file);
+                formData.append('field_name', 'dashcam_footage');
+                formData.append('temp_session_id', `incident_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`);
+
+                const xhr = new XMLHttpRequest();
+
+                // Show progress for this file
+                const dashcamUploadProgress = document.getElementById('dashcamUploadProgress');
+                const dashcamProgressBar = document.getElementById('dashcamProgressBar');
+                const dashcamProgressText = document.getElementById('dashcamProgressText');
+                const dashcamProgressInfo = document.getElementById('dashcamProgressInfo');
+
+                dashcamUploadProgress.classList.add('active');
+
+                xhr.upload.addEventListener('progress', (e) => {
+                    if (e.lengthComputable) {
+                        const percentComplete = Math.round((e.loaded / e.total) * 100);
+                        dashcamProgressBar.style.width = percentComplete + '%';
+                        dashcamProgressText.textContent = percentComplete + '%';
+                        dashcamProgressInfo.textContent = `Uploading ${file.name} (${fileNumber}/${totalFiles}): ${formatFileSize(e.loaded)} / ${formatFileSize(e.total)}`;
+                    }
+                });
+
+                xhr.addEventListener('load', () => {
+                    dashcamUploadProgress.classList.remove('active');
+
+                    if (xhr.status === 200) {
+                        const response = JSON.parse(xhr.responseText);
+                        console.log(`✅ File ${fileNumber}/${totalFiles} uploaded:`, response);
+                        resolve({
+                            fileName: file.name,
+                            fileSize: file.size,
+                            uploadId: response.uploadId,
+                            tempPath: response.tempPath,
+                            documentType: 'dashcam_footage'
+                        });
+                    } else {
+                        const error = JSON.parse(xhr.responseText);
+                        console.error(`❌ File ${fileNumber}/${totalFiles} upload failed:`, error);
+                        reject(new Error(error.error || 'Upload failed'));
+                    }
+                });
+
+                xhr.addEventListener('error', () => {
+                    dashcamUploadProgress.classList.remove('active');
+                    console.error(`❌ Network error uploading file ${fileNumber}/${totalFiles}`);
+                    reject(new Error('Network error during upload'));
+                });
+
+                xhr.open('POST', '/api/images/temp-upload');
+                xhr.send(formData);
+            });
+        }
+
+        // Show dashcam success badge
+        function showDashcamSuccess(fileCount) {
+            const dashcamSuccess = document.getElementById('dashcamSuccess');
+            const dashcamSuccessText = document.getElementById('dashcamSuccessText');
+            const dashcamFileCountBadge = document.getElementById('dashcamFileCount');
+
+            dashcamSuccessText.textContent = fileCount === 1
+                ? 'Dashcam footage uploaded successfully!'
+                : `${fileCount} dashcam files uploaded successfully!`;
+            dashcamFileCountBadge.textContent = fileCount;
+
+            dashcamSuccess.classList.add('active');
+        }
+
+        // Update button badge with file count
+        function updateDashcamButtonBadge(fileCount) {
+            const dashcamLabel = document.querySelector('label[for="dashCamInput"]');
+            if (fileCount > 0) {
+                dashcamLabel.classList.add('record-btn-badge');
+                dashcamLabel.setAttribute('data-count', fileCount);
+            } else {
+                dashcamLabel.classList.remove('record-btn-badge');
+                dashcamLabel.removeAttribute('data-count');
+            }
+        }
+
+        // Format file size helper
+        function formatFileSize(bytes) {
+            if (bytes === 0) return '0 Bytes';
+            const k = 1024;
+            const sizes = ['Bytes', 'KB', 'MB', 'GB'];
+            const i = Math.floor(Math.log(bytes) / Math.log(k));
+            return Math.round((bytes / Math.pow(k, i)) * 100) / 100 + ' ' + sizes[i];
         }
 
         function stopRecording() {
@@ -1133,7 +1396,7 @@
 
             // Setup Back to Home button
             document.getElementById('backToHomeBtn').addEventListener('click', function() {
-                if (userLocation || voiceTranscription || window.dashCamFiles) {
+                if (userLocation || voiceTranscription || (window.uploadedDashcamFiles && window.uploadedDashcamFiles.length > 0)) {
                     if (confirm('You have unsaved changes. Do you want to leave without saving?')) {
                         window.location.href = '/index.html';
                     }

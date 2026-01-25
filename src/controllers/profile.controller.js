@@ -366,12 +366,18 @@ async function sendPdfEmail(req, res) {
  * Send Image Download Links via Email
  * POST /api/profile/send-image-links/:userId
  * Sends email with download links for all user's incident images
+ *
+ * Body: { incidentId?: string } - Optional incident ID to filter images
  */
 async function sendImageLinks(req, res) {
   try {
     const { userId } = req.params;
+    const { incidentId } = req.body; // Optional incident filter
 
-    logger.info('📧 User requesting image links email', { userId });
+    logger.info('📧 User requesting image links email', {
+      userId,
+      incidentId: incidentId || 'all images'
+    });
 
     // ========================================
     // SECURITY: VERIFY OWNERSHIP
@@ -408,11 +414,14 @@ async function sendImageLinks(req, res) {
     const userName = userData.name || 'User';
 
     // ========================================
-    // SEND IMAGE LINKS EMAIL
+    // SEND IMAGE LINKS EMAIL (with optional incident filter)
     // ========================================
-    logger.info('📨 Sending image links email', { email: userEmail });
+    logger.info('📨 Sending image links email', {
+      email: userEmail,
+      scope: incidentId ? `incident ${incidentId} + signup docs` : 'all images'
+    });
 
-    const result = await sendImageDownloadLinks(supabase, userId, userEmail, userName);
+    const result = await sendImageDownloadLinks(supabase, userId, userEmail, userName, incidentId);
 
     if (!result.success) {
       logger.error('❌ Failed to send image links email', { error: result.error });
