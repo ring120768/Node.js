@@ -1085,7 +1085,11 @@ async function downloadPdf(req, res) {
 /**
  * Send Image Download Links Email
  * POST /api/pdf/send-image-links/:userId
- * Sends an email with all user's image download links (subscription-aware expiry)
+ * POST /api/pdf/send-image-links/:userId/:incidentId (optional - filter by incident)
+ * Sends an email with user's image download links (subscription-aware expiry)
+ *
+ * IMPORTANT: If incidentId is provided, only sends images from THAT incident + signup docs
+ * If not provided, sends ALL user images (legacy behavior)
  */
 async function sendImageLinksEmail(req, res) {
   if (!supabase) {
@@ -1093,7 +1097,7 @@ async function sendImageLinksEmail(req, res) {
   }
 
   try {
-    const { userId } = req.params;
+    const { userId, incidentId } = req.params;  // incidentId is optional
 
     // Get user info for email
     const { data: userData, error: userError } = await supabase
@@ -1109,7 +1113,8 @@ async function sendImageLinksEmail(req, res) {
     const { sendImageDownloadLinks } = require('../../lib/emailService');
     const userName = [userData.name, userData.surname].filter(Boolean).join(' ') || 'Valued Customer';
 
-    const result = await sendImageDownloadLinks(supabase, userId, userData.email, userName);
+    // Pass incidentId to filter images (if provided)
+    const result = await sendImageDownloadLinks(supabase, userId, userData.email, userName, incidentId);
 
     if (result.success) {
       res.json({
