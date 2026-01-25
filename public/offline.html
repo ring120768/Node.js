@@ -1,0 +1,232 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>Connection Error - Car Crash Lawyer AI</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, sans-serif;
+            background: linear-gradient(135deg, #0ea5e9 0%, #0284c7 100%);
+            min-height: 100vh;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            padding: 24px;
+            color: white;
+        }
+
+        .container {
+            text-align: center;
+            max-width: 400px;
+            width: 100%;
+        }
+
+        .icon {
+            font-size: 80px;
+            margin-bottom: 24px;
+            animation: pulse 2s infinite;
+        }
+
+        @keyframes pulse {
+            0%, 100% { opacity: 1; transform: scale(1); }
+            50% { opacity: 0.7; transform: scale(0.95); }
+        }
+
+        h1 {
+            font-size: 24px;
+            font-weight: 700;
+            margin-bottom: 12px;
+        }
+
+        p {
+            font-size: 16px;
+            opacity: 0.9;
+            line-height: 1.6;
+            margin-bottom: 32px;
+        }
+
+        .retry-btn {
+            display: inline-flex;
+            align-items: center;
+            gap: 8px;
+            background: white;
+            color: #0284c7;
+            border: none;
+            padding: 16px 32px;
+            border-radius: 12px;
+            font-size: 18px;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.2s ease;
+            box-shadow: 0 4px 15px rgba(0, 0, 0, 0.2);
+        }
+
+        .retry-btn:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 6px 20px rgba(0, 0, 0, 0.25);
+        }
+
+        .retry-btn:active {
+            transform: translateY(0);
+        }
+
+        .retry-btn.loading {
+            opacity: 0.7;
+            pointer-events: none;
+        }
+
+        .retry-icon {
+            font-size: 20px;
+            transition: transform 0.3s ease;
+        }
+
+        .retry-btn.loading .retry-icon {
+            animation: spin 1s linear infinite;
+        }
+
+        @keyframes spin {
+            from { transform: rotate(0deg); }
+            to { transform: rotate(360deg); }
+        }
+
+        .tips {
+            margin-top: 48px;
+            background: rgba(255, 255, 255, 0.15);
+            backdrop-filter: blur(10px);
+            border-radius: 12px;
+            padding: 20px;
+            text-align: left;
+        }
+
+        .tips h3 {
+            font-size: 14px;
+            font-weight: 600;
+            margin-bottom: 12px;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+        }
+
+        .tips ul {
+            list-style: none;
+            font-size: 14px;
+            opacity: 0.9;
+        }
+
+        .tips li {
+            padding: 6px 0;
+            padding-left: 24px;
+            position: relative;
+        }
+
+        .tips li::before {
+            content: "✓";
+            position: absolute;
+            left: 0;
+            opacity: 0.7;
+        }
+
+        .status {
+            margin-top: 24px;
+            font-size: 14px;
+            opacity: 0.7;
+        }
+
+        .status.online {
+            color: #86efac;
+        }
+
+        .logo {
+            width: 80px;
+            height: 80px;
+            margin-bottom: 24px;
+            border-radius: 20px;
+            background: white;
+            padding: 12px;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="icon">📡</div>
+        <h1>Connection Issue</h1>
+        <p>We couldn't reach our servers. This usually means your internet connection is slow or unavailable.</p>
+
+        <button class="retry-btn" onclick="retryConnection()">
+            <span class="retry-icon">🔄</span>
+            <span class="btn-text">Try Again</span>
+        </button>
+
+        <div class="tips">
+            <h3>Troubleshooting Tips</h3>
+            <ul>
+                <li>Check your Wi-Fi or mobile data connection</li>
+                <li>Try moving to an area with better signal</li>
+                <li>Disable VPN if you're using one</li>
+                <li>Wait a moment and tap "Try Again"</li>
+            </ul>
+        </div>
+
+        <div class="status" id="networkStatus">
+            Checking connection...
+        </div>
+    </div>
+
+    <script>
+        // Check network status
+        function updateNetworkStatus() {
+            const statusEl = document.getElementById('networkStatus');
+            if (navigator.onLine) {
+                statusEl.textContent = '✓ Network detected - tap "Try Again"';
+                statusEl.className = 'status online';
+            } else {
+                statusEl.textContent = '✗ No network connection detected';
+                statusEl.className = 'status';
+            }
+        }
+
+        // Retry connection
+        function retryConnection() {
+            const btn = document.querySelector('.retry-btn');
+            const btnText = btn.querySelector('.btn-text');
+
+            btn.classList.add('loading');
+            btnText.textContent = 'Connecting...';
+
+            // Try to navigate to the main app
+            setTimeout(() => {
+                // Navigate to the production URL
+                window.location.href = 'https://car-crash-lawyer-ai-production.up.railway.app';
+            }, 500);
+
+            // If still on this page after 10 seconds, reset button
+            setTimeout(() => {
+                btn.classList.remove('loading');
+                btnText.textContent = 'Try Again';
+            }, 10000);
+        }
+
+        // Auto-retry when network comes back online
+        window.addEventListener('online', () => {
+            updateNetworkStatus();
+            // Auto-retry after brief delay
+            setTimeout(retryConnection, 1500);
+        });
+
+        window.addEventListener('offline', updateNetworkStatus);
+
+        // Initial status check
+        updateNetworkStatus();
+
+        // Periodic status check
+        setInterval(updateNetworkStatus, 3000);
+    </script>
+</body>
+</html>

@@ -17,15 +17,18 @@ const config: CapacitorConfig = {
       'checkout.stripe.com',  // For Stripe payment redirect
       'js.stripe.com',
     ],
+    // Fallback page when network fails - shows offline.html from bundled assets
+    errorPath: 'offline.html',
   },
 
   // Plugin configurations
   plugins: {
     SplashScreen: {
-      launchShowDuration: 2000,
+      launchShowDuration: 5000,  // Increased from 2000ms to allow network loading
       launchAutoHide: true,
       backgroundColor: '#0ea5e9',  // Your brand blue
-      showSpinner: false,
+      showSpinner: true,  // Show loading spinner for better UX
+      spinnerColor: '#ffffff',
       androidSplashResourceName: 'splash',
       androidScaleType: 'CENTER_CROP',
       splashFullScreen: true,
