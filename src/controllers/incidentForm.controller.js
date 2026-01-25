@@ -1166,33 +1166,6 @@ async function submitDeclaration(req, res) {
           // Don't mark queue as complete - let the queue retry
         }
 
-        // Send image download links to the user (non-blocking, best-effort)
-        if (userEmail) {
-          emailService.sendImageDownloadLinks(supabase, userId, userEmail, userName)
-            .then(imageResult => {
-              if (imageResult.success) {
-                logger.success('📧 Image links email sent', {
-                  userId,
-                  incidentId: incident?.id,
-                  totalImages: imageResult.totalImages,
-                  expiry: imageResult.expiryDuration
-                });
-              } else if (imageResult.reason === 'no_images') {
-                logger.info('ℹ️ No images to send for user', { userId });
-              } else {
-                logger.warn('⚠️ Image links email failed (non-critical)', {
-                  userId,
-                  error: imageResult.error
-                });
-              }
-            })
-            .catch(error => {
-              logger.warn('⚠️ Image links email error (non-critical)', {
-                userId,
-                error: error.message
-              });
-            });
-        }
       })
       .catch(error => {
         // Immediate generation failed - queue will handle retry
@@ -1203,6 +1176,36 @@ async function submitDeclaration(req, res) {
           retryInfo: 'Job queued - will retry in 5 minutes'
         });
       });
+
+    // Send image download links to the user (non-blocking, best-effort)
+    // NOTE: This runs INDEPENDENTLY of PDF generation - if PDF email fails,
+    // user should still get their image download links
+    if (userEmail) {
+      emailService.sendImageDownloadLinks(supabase, userId, userEmail, userName)
+        .then(imageResult => {
+          if (imageResult.success) {
+            logger.success('📧 Image links email sent', {
+              userId,
+              incidentId: incident?.id,
+              totalImages: imageResult.totalImages,
+              expiry: imageResult.expiryDuration
+            });
+          } else if (imageResult.reason === 'no_images') {
+            logger.info('ℹ️ No images to send for user', { userId });
+          } else {
+            logger.warn('⚠️ Image links email failed (non-critical)', {
+              userId,
+              error: imageResult.error
+            });
+          }
+        })
+        .catch(error => {
+          logger.warn('⚠️ Image links email error (non-critical)', {
+            userId,
+            error: error.message
+          });
+        });
+    }
 
     logger.info('📧 PDF generation initiated after declaration', { incidentId: incident?.id, userId });
 
