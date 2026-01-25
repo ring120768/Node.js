@@ -969,6 +969,40 @@
             }
         }
 
+        /* Hourglass Loading Animation */
+        .hourglass-loader {
+            text-align: center;
+            padding: 20px 0;
+            display: none;
+        }
+
+        .hourglass-loader.active {
+            display: block;
+        }
+
+        .hourglass-icon {
+            font-size: 48px;
+            display: inline-block;
+            animation: hourglassRotate 2s ease-in-out infinite;
+            filter: drop-shadow(0 2px 8px rgba(33, 150, 243, 0.3));
+        }
+
+        @keyframes hourglassRotate {
+            0%, 100% {
+                transform: rotate(0deg);
+            }
+            50% {
+                transform: rotate(180deg);
+            }
+        }
+
+        .hourglass-text {
+            margin-top: 12px;
+            font-size: 15px;
+            color: #2196F3;
+            font-weight: 500;
+        }
+
         /* Analysis Complete Animation */
         .analysis-complete-banner {
             background: linear-gradient(135deg, #4CAF50, #45a049);
@@ -1860,7 +1894,10 @@ Continue with: What happened immediately after impact? Any injuries you noticed?
                     <div class="ai-step-label">Next Steps Guide (Page 15)</div>
                 </div>
             </div>
-            <div id="aiLoadingAnimation"></div>
+            <div id="aiLoadingAnimation" class="hourglass-loader">
+                <div class="hourglass-icon">⌛</div>
+                <div class="hourglass-text" id="hourglassText">Analyzing your statement...</div>
+            </div>
         </div>
 
         <!-- Analysis Complete Banner (hidden by default) -->
@@ -3208,12 +3245,16 @@ Continue with: What happened immediately after impact? Any injuries you noticed?
                 updateProgress('step-summary', 'active');
                 showStatus('Generating AI analysis...', 'info');
 
-                // Show progress indicator
+                // Show progress indicator with hourglass
                 const progressContainer = document.getElementById('aiProgressContainer');
                 const completeBanner = document.getElementById('analysisCompleteBanner');
+                const hourglassLoader = document.getElementById('aiLoadingAnimation');
+                const hourglassText = document.getElementById('hourglassText');
+
                 progressContainer.style.display = 'block';
                 completeBanner.style.display = 'none';
-                MascotLoading.show('#aiLoadingAnimation', 'Initializing comprehensive AI analysis...', 'mascot');
+                hourglassLoader.classList.add('active');
+                hourglassText.textContent = 'Initializing comprehensive AI analysis...';
 
                 // Hide analysis sections initially
                 document.getElementById('summarySection').style.display = 'none';
@@ -3297,14 +3338,21 @@ Continue with: What happened immediately after impact? Any injuries you noticed?
             } catch (error) {
                 console.error('AI analysis error:', error);
                 showStatus('Failed to generate AI analysis. Please try again.', 'error');
+
+                // Hide all progress indicators on error
                 document.getElementById('aiProgressContainer').style.display = 'none';
                 document.getElementById('analysisCompleteBanner').style.display = 'none';
+                const hourglassLoader = document.getElementById('aiLoadingAnimation');
+                if (hourglassLoader) {
+                    hourglassLoader.classList.remove('active');
+                }
             }
         }
 
         // Helper function to update AI progress steps
         function updateAIStep(stepNumber, status, text) {
             const step = document.getElementById(`aiStep${stepNumber}`);
+            const hourglassText = document.getElementById('hourglassText');
 
             if (status === 'active') {
                 // Remove active from all steps
@@ -3313,13 +3361,25 @@ Continue with: What happened immediately after impact? Any injuries you noticed?
                 }
                 // Add active to current step
                 step.classList.add('active');
-                if (text) MascotLoading.updateMessage('#aiLoadingAnimation', text);
+
+                // Update hourglass text if provided
+                if (text && hourglassText) {
+                    hourglassText.textContent = text;
+                }
             } else if (status === 'complete') {
                 step.classList.remove('active');
                 step.classList.add('complete');
                 // Replace number with checkmark
                 const circle = step.querySelector('.ai-step-circle');
                 circle.textContent = '✓';
+
+                // Hide hourglass when all steps complete
+                if (stepNumber === 4) {
+                    const hourglassLoader = document.getElementById('aiLoadingAnimation');
+                    if (hourglassLoader) {
+                        hourglassLoader.classList.remove('active');
+                    }
+                }
             }
         }
 

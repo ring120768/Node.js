@@ -1181,7 +1181,7 @@ async function submitDeclaration(req, res) {
     // NOTE: This runs INDEPENDENTLY of PDF generation - if PDF email fails,
     // user should still get their image download links
     if (userEmail) {
-      emailService.sendImageDownloadLinks(supabase, userId, userEmail, userName)
+      emailService.sendImageDownloadLinks(supabase, userId, userEmail, userName, incident?.id)
         .then(imageResult => {
           if (imageResult.success) {
             logger.success('📧 Image links email sent', {
