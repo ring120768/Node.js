@@ -286,11 +286,65 @@ class AdobePdfFormFillerService {
     const emergencyRecordingEnd = data.emergencyAudio?.recorded_at || '';
 
     // Helper functions
+
+    /**
+     * Sanitize text for WinAnsi encoding (Latin-1)
+     * pdf-lib using standard fonts (Helvetica) only supports WinAnsi encoding.
+     * This function replaces problematic Unicode characters with safe ASCII alternatives.
+     *
+     * Common issues:
+     * - Box-drawing characters (─, ━, │, ┃, etc.) cause: "WinAnsi cannot encode"
+     * - Special Unicode quotes, dashes, bullets, etc.
+     *
+     * @param {string} text - Input text that may contain non-WinAnsi characters
+     * @returns {string} - Sanitized text safe for pdf-lib
+     */
+    const sanitizeForWinAnsi = (text) => {
+      if (!text || typeof text !== 'string') return text;
+
+      return text
+        // Box-drawing characters → ASCII alternatives
+        .replace(/[─━┄┅┈┉]/g, '-')     // Horizontal lines → hyphen
+        .replace(/[│┃┆┇┊┋]/g, '|')     // Vertical lines → pipe
+        .replace(/[┌┍┎┏]/g, '+')       // Top-left corners → plus
+        .replace(/[┐┑┒┓]/g, '+')       // Top-right corners → plus
+        .replace(/[└┕┖┗]/g, '+')       // Bottom-left corners → plus
+        .replace(/[┘┙┚┛]/g, '+')       // Bottom-right corners → plus
+        .replace(/[├┝┞┟┠┡┢┣]/g, '+')   // Left T-junctions → plus
+        .replace(/[┤┥┦┧┨┩┪┫]/g, '+')   // Right T-junctions → plus
+        .replace(/[┬┭┮┯┰┱┲┳]/g, '+')   // Top T-junctions → plus
+        .replace(/[┴┵┶┷┸┹┺┻]/g, '+')   // Bottom T-junctions → plus
+        .replace(/[┼┽┾┿╀╁╂╃╄╅╆╇╈╉╊╋]/g, '+') // Crosses → plus
+        .replace(/[═║╒╓╔╕╖╗╘╙╚╛╜╝╞╟╠╡╢╣╤╥╦╧╨╩╪╫╬]/g, function(char) {
+          // Double-line box drawing → ASCII
+          if ('═'.includes(char)) return '=';
+          if ('║'.includes(char)) return '|';
+          return '+';
+        })
+        // Typographic characters → ASCII
+        .replace(/['']/g, "'")          // Smart quotes → straight
+        .replace(/[""]/g, '"')          // Smart quotes → straight
+        .replace(/[–—]/g, '-')          // En/em dashes → hyphen
+        .replace(/…/g, '...')           // Ellipsis → three dots
+        .replace(/•/g, '*')             // Bullet → asterisk
+        .replace(/©/g, '(c)')           // Copyright
+        .replace(/®/g, '(R)')           // Registered
+        .replace(/™/g, '(TM)')          // Trademark
+        .replace(/°/g, ' deg')          // Degree (not in WinAnsi)
+        .replace(/±/g, '+/-')           // Plus-minus
+        .replace(/×/g, 'x')             // Multiplication
+        .replace(/÷/g, '/')             // Division
+        // Remove any remaining non-printable or non-Latin1 characters
+        // WinAnsi supports code points 32-126 and 160-255
+        .replace(/[^\x20-\x7E\xA0-\xFF\n\r\t]/g, '');
+    };
+
     const setFieldText = (fieldName, value) => {
       try {
         const field = form.getTextField(fieldName);
         if (field && value !== null && value !== undefined) {
-          field.setText(String(value));
+          // Sanitize text to prevent WinAnsi encoding errors
+          field.setText(sanitizeForWinAnsi(String(value)));
         }
       } catch (error) {
         // Silently handle missing fields
@@ -301,7 +355,8 @@ class AdobePdfFormFillerService {
       try {
         const field = form.getTextField(fieldName);
         if (field && value !== null && value !== undefined) {
-          field.setText(String(value));
+          // Sanitize text to prevent WinAnsi encoding errors
+          field.setText(sanitizeForWinAnsi(String(value)));
           // Set maximum font size to prevent huge text
           field.setFontSize(maxFontSize);
         }
@@ -315,7 +370,8 @@ class AdobePdfFormFillerService {
       try {
         const field = form.getTextField(fieldName);
         if (field && value !== null && value !== undefined) {
-          const text = String(value);
+          // Sanitize text to prevent WinAnsi encoding errors
+          const text = sanitizeForWinAnsi(String(value));
 
           // Get field dimensions
           const widgets = field.acroField.getWidgets();
@@ -1140,8 +1196,9 @@ class AdobePdfFormFillerService {
     if (emergencyTranscription) {
       emergencyContent = emergencyTranscription + '\n\n';
 
-      // Add metadata footer
-      emergencyContent += '─'.repeat(60) + '\n';
+      // Add metadata footer (using ASCII hyphen instead of box-drawing character
+      // to avoid WinAnsi encoding error in pdf-lib)
+      emergencyContent += '-'.repeat(60) + '\n';
       emergencyContent += 'RECORDING INFORMATION:\n';
       if (emergencyRecordingEnd) {
         emergencyContent += `Recorded: ${new Date(emergencyRecordingEnd).toLocaleString('en-GB', {
