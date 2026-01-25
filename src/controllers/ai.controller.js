@@ -659,6 +659,7 @@ function buildComprehensiveIncidentData(incidentData, otherVehicles = [], witnes
       coordinates: extractValue('coordinates'),
       roadType: extractValue('road_type'),
       speedLimit: extractValue('speed_limit'),
+      journeyPurpose: extractValue('journey_purpose'),  // Business, Commuting, or Personal - critical for insurance liability
       description: extractFromMultiple('what_happened_detailed_account', 'detailed_account_of_what_happened', 'incident_description')
     },
 
