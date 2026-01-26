@@ -969,7 +969,141 @@
             }
         }
 
-        /* Hourglass Loading Animation */
+        /* AI Analysis Modal Overlay */
+        .ai-modal-overlay {
+            display: none;
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(0, 0, 0, 0.75);
+            z-index: 10000;
+            justify-content: center;
+            align-items: center;
+            animation: fadeIn 0.3s ease-out;
+        }
+
+        .ai-modal-overlay.active {
+            display: flex;
+        }
+
+        @keyframes fadeIn {
+            from {
+                opacity: 0;
+            }
+            to {
+                opacity: 1;
+            }
+        }
+
+        .ai-modal-content {
+            background: white;
+            border-radius: 20px;
+            padding: 40px;
+            max-width: 500px;
+            width: 90%;
+            text-align: center;
+            box-shadow: 0 10px 50px rgba(0, 0, 0, 0.3);
+            animation: slideInScale 0.4s ease-out;
+        }
+
+        @keyframes slideInScale {
+            from {
+                transform: scale(0.8) translateY(-20px);
+                opacity: 0;
+            }
+            to {
+                transform: scale(1) translateY(0);
+                opacity: 1;
+            }
+        }
+
+        .ai-modal-icon {
+            font-size: 72px;
+            margin-bottom: 20px;
+            display: inline-block;
+            animation: hourglassRotate 2s ease-in-out infinite;
+            filter: drop-shadow(0 4px 12px rgba(33, 150, 243, 0.4));
+        }
+
+        @keyframes hourglassRotate {
+            0%, 100% {
+                transform: rotate(0deg);
+            }
+            50% {
+                transform: rotate(180deg);
+            }
+        }
+
+        .ai-modal-title {
+            font-size: 28px;
+            font-weight: 700;
+            color: #2196F3;
+            margin: 0 0 16px 0;
+            text-shadow: 0 2px 4px rgba(33, 150, 243, 0.1);
+        }
+
+        .ai-modal-message {
+            font-size: 17px;
+            color: #555;
+            line-height: 1.6;
+            margin: 0 0 20px 0;
+        }
+
+        .ai-modal-suggestion {
+            background: linear-gradient(135deg, #e3f2fd, #bbdefb);
+            border-left: 4px solid #2196F3;
+            padding: 16px 20px;
+            border-radius: 8px;
+            font-size: 15px;
+            color: #1565c0;
+            font-weight: 500;
+            margin-top: 24px;
+        }
+
+        .ai-modal-suggestion strong {
+            display: block;
+            font-size: 16px;
+            margin-bottom: 8px;
+            color: #0d47a1;
+        }
+
+        .ai-modal-progress-dots {
+            display: flex;
+            justify-content: center;
+            gap: 8px;
+            margin-top: 24px;
+        }
+
+        .ai-modal-progress-dot {
+            width: 12px;
+            height: 12px;
+            background: #2196F3;
+            border-radius: 50%;
+            animation: dotPulse 1.5s ease-in-out infinite;
+        }
+
+        .ai-modal-progress-dot:nth-child(2) {
+            animation-delay: 0.2s;
+        }
+
+        .ai-modal-progress-dot:nth-child(3) {
+            animation-delay: 0.4s;
+        }
+
+        @keyframes dotPulse {
+            0%, 100% {
+                transform: scale(1);
+                opacity: 1;
+            }
+            50% {
+                transform: scale(1.5);
+                opacity: 0.5;
+            }
+        }
+
+        /* Hourglass Loading Animation (Legacy - kept for progress container) */
         .hourglass-loader {
             text-align: center;
             padding: 20px 0;
@@ -985,15 +1119,6 @@
             display: inline-block;
             animation: hourglassRotate 2s ease-in-out infinite;
             filter: drop-shadow(0 2px 8px rgba(33, 150, 243, 0.3));
-        }
-
-        @keyframes hourglassRotate {
-            0%, 100% {
-                transform: rotate(0deg);
-            }
-            50% {
-                transform: rotate(180deg);
-            }
         }
 
         .hourglass-text {
@@ -3245,6 +3370,10 @@ Continue with: What happened immediately after impact? Any injuries you noticed?
                 updateProgress('step-summary', 'active');
                 showStatus('Generating AI analysis...', 'info');
 
+                // Show prominent modal overlay
+                const modal = document.getElementById('aiAnalysisModal');
+                modal.classList.add('active');
+
                 // Show progress indicator with hourglass
                 const progressContainer = document.getElementById('aiProgressContainer');
                 const completeBanner = document.getElementById('analysisCompleteBanner');
@@ -3306,6 +3435,10 @@ Continue with: What happened immediately after impact? Any injuries you noticed?
                 const result = await response.json();
 
                 if (result.success) {
+                    // Hide the modal overlay
+                    const modal = document.getElementById('aiAnalysisModal');
+                    modal.classList.remove('active');
+
                     // Mark all steps complete
                     for (let i = 1; i <= 4; i++) {
                         updateAIStep(i, 'complete');
@@ -3338,6 +3471,10 @@ Continue with: What happened immediately after impact? Any injuries you noticed?
             } catch (error) {
                 console.error('AI analysis error:', error);
                 showStatus('Failed to generate AI analysis. Please try again.', 'error');
+
+                // Hide modal overlay on error
+                const modal = document.getElementById('aiAnalysisModal');
+                modal.classList.remove('active');
 
                 // Hide all progress indicators on error
                 document.getElementById('aiProgressContainer').style.display = 'none';
@@ -3894,5 +4031,28 @@ Continue with: What happened immediately after impact? Any injuries you noticed?
     </script>
     <script src="/js/mascot.js"></script>
     <script src="/js/mascot-loading.js"></script>
+
+    <!-- AI Analysis Progress Modal -->
+    <div id="aiAnalysisModal" class="ai-modal-overlay">
+        <div class="ai-modal-content">
+            <div class="ai-modal-icon">⌛</div>
+            <h2 class="ai-modal-title">AI Transcription in Progress</h2>
+            <p class="ai-modal-message">
+                Our advanced AI is analyzing your statement to create a comprehensive incident report.
+                This typically takes 20-30 seconds.
+            </p>
+            <div class="ai-modal-progress-dots">
+                <div class="ai-modal-progress-dot"></div>
+                <div class="ai-modal-progress-dot"></div>
+                <div class="ai-modal-progress-dot"></div>
+            </div>
+            <div class="ai-modal-suggestion">
+                <strong>💡 Suggestion</strong>
+                Please wait until you receive the completion notification.
+                Your report will automatically appear when ready.
+            </div>
+        </div>
+    </div>
+
 </body>
 </html>
