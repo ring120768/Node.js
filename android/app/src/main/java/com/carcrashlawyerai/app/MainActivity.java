@@ -11,7 +11,17 @@ import android.content.pm.PackageManager;
 import androidx.annotation.NonNull;
 import androidx.core.app.ActivityCompat;
 import androidx.core.content.ContextCompat;
+import androidx.core.content.FileProvider;
 import android.util.Log;
+import android.content.Intent;
+import android.net.Uri;
+import android.provider.MediaStore;
+import android.os.Environment;
+import java.io.File;
+import java.io.IOException;
+import java.text.SimpleDateFormat;
+import java.util.Date;
+import java.util.Locale;
 
 import com.getcapacitor.BridgeActivity;
 import android.webkit.WebView;
@@ -38,6 +48,9 @@ public class MainActivity extends BridgeActivity {
 
     // Store file chooser callback for onActivityResult
     private android.webkit.ValueCallback<android.net.Uri[]> filePathCallback = null;
+
+    // Store temporary camera photo URI for direct camera capture
+    private Uri cameraPhotoUri = null;
 
     // Store pending geolocation callback and origin
     private android.webkit.GeolocationPermissions.Callback pendingGeolocationCallback = null;
@@ -209,10 +222,10 @@ public class MainActivity extends BridgeActivity {
 
                 /**
                  * CRITICAL: Handle file chooser for <input type="file"> elements.
-                 * Without this, file inputs won't work in WebView.
+                 * Enhanced to provide BOTH camera and gallery options for images.
                  *
-                 * Uses fileChooserParams.createIntent() to properly inherit all
-                 * WebView file chooser parameters (accept types, capture mode, etc.)
+                 * For video inputs (dashcam), uses default file picker.
+                 * For image inputs, creates a chooser with camera + gallery options.
                  */
                 @Override
                 public boolean onShowFileChooser(
@@ -238,25 +251,42 @@ public class MainActivity extends BridgeActivity {
                     Log.d(TAG, "Is capture enabled: " + fileChooserParams.isCaptureEnabled());
 
                     try {
-                        // Use createIntent() to properly inherit all file chooser params
-                        // This is the recommended approach per Android WebView docs
-                        android.content.Intent intent = fileChooserParams.createIntent();
+                        // Determine if this is an image or video request
+                        boolean isImageRequest = false;
+                        boolean isVideoRequest = false;
 
-                        // For video selection (dashcam), ensure we show videos
                         if (acceptTypes != null && acceptTypes.length > 0) {
                             String firstType = acceptTypes[0];
-                            if (firstType != null && firstType.contains("video")) {
-                                // Explicitly set video type and add MIME types extra
-                                intent.setType("video/*");
-                                intent.putExtra(android.content.Intent.EXTRA_MIME_TYPES, new String[]{"video/*"});
-                                Log.d(TAG, "Set intent type to video/* for dashcam selection");
+                            if (firstType != null) {
+                                if (firstType.contains("image")) {
+                                    isImageRequest = true;
+                                    Log.d(TAG, "Detected IMAGE request");
+                                } else if (firstType.contains("video")) {
+                                    isVideoRequest = true;
+                                    Log.d(TAG, "Detected VIDEO request");
+                                }
                             }
+                        } else {
+                            // No accept types specified, default to image
+                            isImageRequest = true;
+                            Log.d(TAG, "No accept types, defaulting to IMAGE request");
                         }
 
-                        Log.d(TAG, "Starting file chooser activity");
-                        startActivityForResult(intent, FILE_CHOOSER_REQUEST_CODE);
+                        // For images, create enhanced chooser with camera option
+                        if (isImageRequest) {
+                            return showImageChooserWithCamera(fileChooserParams);
+                        }
+                        // For videos, use standard file picker
+                        else if (isVideoRequest) {
+                            return showVideoChooser(fileChooserParams);
+                        }
+                        // Fallback to standard picker
+                        else {
+                            android.content.Intent intent = fileChooserParams.createIntent();
+                            startActivityForResult(intent, FILE_CHOOSER_REQUEST_CODE);
+                            return true;
+                        }
 
-                        return true;
                     } catch (android.content.ActivityNotFoundException e) {
                         Log.e(TAG, "No activity found to handle file chooser: " + e.getMessage(), e);
                         MainActivity.this.filePathCallback.onReceiveValue(null);
@@ -268,6 +298,107 @@ public class MainActivity extends BridgeActivity {
                         MainActivity.this.filePathCallback = null;
                         return false;
                     }
+                }
+
+                /**
+                 * Show image chooser with CAMERA and GALLERY options.
+                 * This creates a chooser dialog that explicitly includes camera capture.
+                 */
+                private boolean showImageChooserWithCamera(FileChooserParams fileChooserParams) throws IOException {
+                    Log.d(TAG, "Creating image chooser with camera option");
+
+                    // Create camera capture intent
+                    Intent takePictureIntent = new Intent(MediaStore.ACTION_IMAGE_CAPTURE);
+
+                    // Check if camera is available
+                    if (takePictureIntent.resolveActivity(getPackageManager()) != null) {
+                        // Create temporary file for camera photo
+                        File photoFile = createImageFile();
+
+                        if (photoFile != null) {
+                            // Get URI using FileProvider for Android 7.0+
+                            cameraPhotoUri = FileProvider.getUriForFile(
+                                MainActivity.this,
+                                getApplicationContext().getPackageName() + ".fileprovider",
+                                photoFile
+                            );
+
+                            takePictureIntent.putExtra(MediaStore.EXTRA_OUTPUT, cameraPhotoUri);
+                            takePictureIntent.addFlags(Intent.FLAG_GRANT_WRITE_URI_PERMISSION);
+                            Log.d(TAG, "Camera intent created with URI: " + cameraPhotoUri);
+                        } else {
+                            Log.e(TAG, "Failed to create image file for camera");
+                            return false;
+                        }
+                    } else {
+                        Log.w(TAG, "No camera app available");
+                        takePictureIntent = null;
+                    }
+
+                    // Create file picker intent for gallery
+                    Intent pickImageIntent = new Intent(Intent.ACTION_GET_CONTENT);
+                    pickImageIntent.addCategory(Intent.CATEGORY_OPENABLE);
+                    pickImageIntent.setType("image/*");
+
+                    // Allow multiple selection if supported by the file chooser params
+                    if (fileChooserParams.getMode() == FileChooserParams.MODE_OPEN_MULTIPLE) {
+                        pickImageIntent.putExtra(Intent.EXTRA_ALLOW_MULTIPLE, true);
+                        Log.d(TAG, "Multiple selection enabled");
+                    }
+
+                    // Create chooser with both options
+                    Intent chooserIntent = Intent.createChooser(pickImageIntent, "Select Image");
+
+                    // Add camera option if available
+                    if (takePictureIntent != null) {
+                        chooserIntent.putExtra(Intent.EXTRA_INITIAL_INTENTS, new Intent[]{takePictureIntent});
+                        Log.d(TAG, "Added camera option to chooser");
+                    }
+
+                    Log.d(TAG, "Starting image chooser activity");
+                    startActivityForResult(chooserIntent, FILE_CHOOSER_REQUEST_CODE);
+                    return true;
+                }
+
+                /**
+                 * Show video chooser (standard file picker for videos).
+                 */
+                private boolean showVideoChooser(FileChooserParams fileChooserParams) {
+                    Log.d(TAG, "Creating video chooser");
+
+                    Intent intent = fileChooserParams.createIntent();
+                    intent.setType("video/*");
+                    intent.putExtra(Intent.EXTRA_MIME_TYPES, new String[]{"video/*"});
+
+                    Log.d(TAG, "Starting video chooser activity");
+                    startActivityForResult(intent, FILE_CHOOSER_REQUEST_CODE);
+                    return true;
+                }
+
+                /**
+                 * Create a temporary image file for camera capture.
+                 */
+                private File createImageFile() throws IOException {
+                    // Create an image file name with timestamp
+                    String timeStamp = new SimpleDateFormat("yyyyMMdd_HHmmss", Locale.UK).format(new Date());
+                    String imageFileName = "PHOTO_" + timeStamp + "_";
+
+                    // Get app's cache directory for temporary storage
+                    File storageDir = getExternalFilesDir(Environment.DIRECTORY_PICTURES);
+
+                    if (storageDir == null) {
+                        // Fallback to cache directory if external files dir not available
+                        storageDir = getCacheDir();
+                    }
+
+                    File imageFile = File.createTempFile(
+                        imageFileName,  /* prefix */
+                        ".jpg",         /* suffix */
+                        storageDir      /* directory */
+                    );
+
+                    Log.d(TAG, "Created temp image file: " + imageFile.getAbsolutePath());
+                    return imageFile;
                 }
             };
 
@@ -456,7 +587,7 @@ public class MainActivity extends BridgeActivity {
     }
 
     /**
-     * Handle activity results - specifically for file chooser.
+     * Handle activity results - specifically for file chooser and camera capture.
      */
     @Override
     protected void onActivityResult(int requestCode, int resultCode, android.content.Intent data) {
@@ -472,20 +603,32 @@ public class MainActivity extends BridgeActivity {
 
             android.net.Uri[] results = null;
 
-            if (resultCode == android.app.Activity.RESULT_OK && data != null) {
-                // Check for multiple file selection
-                if (data.getClipData() != null) {
-                    int count = data.getClipData().getItemCount();
-                    Log.d(TAG, "Multiple files selected: " + count);
-                    results = new android.net.Uri[count];
-                    for (int i = 0; i < count; i++) {
-                        results[i] = data.getClipData().getItemAt(i).getUri();
-                        Log.d(TAG, "  File " + i + ": " + results[i]);
+            if (resultCode == android.app.Activity.RESULT_OK) {
+                // Check if data is null - this happens when camera was used
+                if (data == null || data.getData() == null) {
+                    // Camera was used - use the cameraPhotoUri we stored earlier
+                    if (cameraPhotoUri != null) {
+                        Log.d(TAG, "Camera photo captured: " + cameraPhotoUri);
+                        results = new android.net.Uri[]{cameraPhotoUri};
+                    } else {
+                        Log.w(TAG, "Camera photo URI is null (user may have cancelled)");
                     }
-                } else if (data.getData() != null) {
-                    // Single file selected
-                    Log.d(TAG, "Single file selected: " + data.getData());
-                    results = new android.net.Uri[]{data.getData()};
+                } else {
+                    // Gallery or file picker was used
+                    // Check for multiple file selection
+                    if (data.getClipData() != null) {
+                        int count = data.getClipData().getItemCount();
+                        Log.d(TAG, "Multiple files selected: " + count);
+                        results = new android.net.Uri[count];
+                        for (int i = 0; i < count; i++) {
+                            results[i] = data.getClipData().getItemAt(i).getUri();
+                            Log.d(TAG, "  File " + i + ": " + results[i]);
+                        }
+                    } else if (data.getData() != null) {
+                        // Single file selected from gallery
+                        Log.d(TAG, "Single file selected: " + data.getData());
+                        results = new android.net.Uri[]{data.getData()};
+                    }
                 }
             } else {
                 Log.d(TAG, "File selection cancelled or failed");
@@ -495,6 +638,10 @@ public class MainActivity extends BridgeActivity {
             // This prevents the file input from getting stuck
             filePathCallback.onReceiveValue(results);
             filePathCallback = null;
+
+            // Clear the camera URI after use
+            cameraPhotoUri = null;
+
             Log.d(TAG, "File chooser callback invoked with " + (results != null ? results.length + " file(s)" : "null"));
             return;
         }

@@ -63,11 +63,11 @@ async function testEmailAndPdf() {
     console.log('📷 Step 2: Checking user_documents table...');
     const { data: userDocs, error: docsError } = await supabase
       .from('user_documents')
-      .select('id, document_type, storage_path, signed_url, signed_url_expires_at, incident_id, created_at')
+      .select('id, document_type, storage_path, signed_url, signed_url_expires_at, incident_report_id, created_at')
       .eq('create_user_id', userId)
       .eq('status', 'completed')
       .is('deleted_at', null)
-      .or(`incident_id.eq.${incidentId},incident_id.is.null`)
+      .or(`incident_report_id.eq.${incidentId},incident_report_id.is.null`)
       .order('created_at', { ascending: true });
 
     if (docsError) {
@@ -81,7 +81,7 @@ async function testEmailAndPdf() {
       const urlExpiry = doc.signed_url_expires_at ? new Date(doc.signed_url_expires_at) : null;
       const isExpired = urlExpiry && urlExpiry < new Date();
 
-      console.log(`   ${idx + 1}. ${doc.document_type} (incident: ${doc.incident_id || 'signup'})`);
+      console.log(`   ${idx + 1}. ${doc.document_type} (incident: ${doc.incident_report_id || 'signup'})`);
       console.log(`      - Storage: ${doc.storage_path || 'N/A'}`);
       console.log(`      - Signed URL: ${hasSignedUrl ? '✅' : '❌'}`);
       if (urlExpiry) {
