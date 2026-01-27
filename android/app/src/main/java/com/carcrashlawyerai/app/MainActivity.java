@@ -16,6 +16,7 @@ import android.util.Log;
 import android.content.Intent;
 import android.net.Uri;
 import android.provider.MediaStore;
+import android.provider.Settings;
 import android.os.Environment;
 import java.io.File;
 import java.io.IOException;
@@ -42,6 +43,7 @@ public class MainActivity extends BridgeActivity {
     private static final int PERMISSION_REQUEST_CODE = 1001;
     private static final int GEOLOCATION_PERMISSION_REQUEST_CODE = 1002;
     private static final int FILE_CHOOSER_REQUEST_CODE = 1003;
+    private static final int CAMERA_PERMISSION_REQUEST_CODE = 1004;
 
     // Store pending permission request for callback
     private PermissionRequest pendingPermissionRequest = null;
@@ -55,6 +57,9 @@ public class MainActivity extends BridgeActivity {
     // Store pending geolocation callback and origin
     private android.webkit.GeolocationPermissions.Callback pendingGeolocationCallback = null;
     private String pendingGeolocationOrigin = null;
+
+    // Store pending file chooser params for camera permission flow
+    private WebChromeClient.FileChooserParams pendingFileChooserParams = null;
 
     // Handler for delayed operations
     private final Handler mainHandler = new Handler(Looper.getMainLooper());
@@ -303,9 +308,37 @@ public class MainActivity extends BridgeActivity {
                 /**
                  * Show image chooser with CAMERA and GALLERY options.
                  * This creates a chooser dialog that explicitly includes camera capture.
+                 *
+                 * PERMISSION CHECK: Verifies camera permission before showing camera option.
+                 * If permission is not granted, requests it and stores params for retry.
                  */
                 private boolean showImageChooserWithCamera(FileChooserParams fileChooserParams) throws IOException {
                     Log.d(TAG, "Creating image chooser with camera option");
+
+                    // ★★★ CHECK CAMERA PERMISSION BEFORE PROCEEDING ★★★
+                    boolean hasCameraPermission = ContextCompat.checkSelfPermission(
+                        MainActivity.this, Manifest.permission.CAMERA
+                    ) == PackageManager.PERMISSION_GRANTED;
+
+                    if (!hasCameraPermission) {
+                        Log.d(TAG, "Camera permission NOT granted - requesting permission");
+
+                        // Store the file chooser params to retry after permission is granted
+                        pendingFileChooserParams = fileChooserParams;
+
+                        // Request camera permission
+                        ActivityCompat.requestPermissions(
+                            MainActivity.this,
+                            new String[]{Manifest.permission.CAMERA},
+                            CAMERA_PERMISSION_REQUEST_CODE
+                        );
+
+                        // Return false to indicate chooser wasn't shown yet
+                        // Will be retried in onRequestPermissionsResult if granted
+                        return false;
+                    }
+
+                    Log.d(TAG, "Camera permission granted, creating camera intent");
 
                     // Create camera capture intent
                     Intent takePictureIntent = new Intent(MediaStore.ACTION_IMAGE_CAPTURE);
@@ -584,6 +617,164 @@ public class MainActivity extends BridgeActivity {
             pendingGeolocationCallback = null;
             pendingGeolocationOrigin = null;
         }
+
+        // Handle camera permission request for file chooser
+        if (requestCode == CAMERA_PERMISSION_REQUEST_CODE) {
+            boolean cameraGranted = false;
+            for (int i = 0; i < permissions.length; i++) {
+                if (permissions[i].equals(Manifest.permission.CAMERA) &&
+                    grantResults[i] == PackageManager.PERMISSION_GRANTED) {
+                    cameraGranted = true;
+                    break;
+                }
+            }
+
+            if (cameraGranted) {
+                Log.d(TAG, "★ Camera permission GRANTED by user");
+
+                // Retry showing the file chooser with camera now that permission is granted
+                if (pendingFileChooserParams != null && filePathCallback != null) {
+                    Log.d(TAG, "Retrying file chooser with camera after permission grant");
+                    try {
+                        // Get the WebView to access the inner showImageChooserWithCamera method
+                        // We need to trigger it again through the WebChromeClient
+                        WebView webView = getBridge().getWebView();
+                        WebChromeClient client = webView.getWebChromeClient();
+
+                        // Since we can't directly call the inner method, we'll recreate the chooser here
+                        Intent takePictureIntent = new Intent(MediaStore.ACTION_IMAGE_CAPTURE);
+
+                        if (takePictureIntent.resolveActivity(getPackageManager()) != null) {
+                            File photoFile = createImageFile();
+                            if (photoFile != null) {
+                                cameraPhotoUri = FileProvider.getUriForFile(
+                                    MainActivity.this,
+                                    getApplicationContext().getPackageName() + ".fileprovider",
+                                    photoFile
+                                );
+                                takePictureIntent.putExtra(MediaStore.EXTRA_OUTPUT, cameraPhotoUri);
+                                takePictureIntent.addFlags(Intent.FLAG_GRANT_WRITE_URI_PERMISSION);
+                                Log.d(TAG, "Camera intent created with URI: " + cameraPhotoUri);
+                            }
+                        }
+
+                        Intent pickImageIntent = new Intent(Intent.ACTION_GET_CONTENT);
+                        pickImageIntent.addCategory(Intent.CATEGORY_OPENABLE);
+                        pickImageIntent.setType("image/*");
+
+                        if (pendingFileChooserParams.getMode() == WebChromeClient.FileChooserParams.MODE_OPEN_MULTIPLE) {
+                            pickImageIntent.putExtra(Intent.EXTRA_ALLOW_MULTIPLE, true);
+                        }
+
+                        Intent chooserIntent = Intent.createChooser(pickImageIntent, "Select Image");
+                        if (takePictureIntent != null) {
+                            chooserIntent.putExtra(Intent.EXTRA_INITIAL_INTENTS, new Intent[]{takePictureIntent});
+                        }
+
+                        startActivityForResult(chooserIntent, FILE_CHOOSER_REQUEST_CODE);
+                        Log.d(TAG, "✓ File chooser shown with camera option after permission grant");
+                    } catch (Exception e) {
+                        Log.e(TAG, "Error retrying file chooser: " + e.getMessage(), e);
+                        if (filePathCallback != null) {
+                            filePathCallback.onReceiveValue(null);
+                            filePathCallback = null;
+                        }
+                    }
+                    pendingFileChooserParams = null;
+                }
+            } else {
+                Log.d(TAG, "✗ Camera permission DENIED by user");
+
+                // Check if permission was permanently denied (user clicked "Don't ask again")
+                boolean shouldShowRationale = ActivityCompat.shouldShowRequestPermissionRationale(
+                    MainActivity.this, Manifest.permission.CAMERA
+                );
+
+                if (!shouldShowRationale) {
+                    Log.d(TAG, "Camera permission permanently denied - showing settings dialog");
+                    showCameraPermissionSettingsDialog();
+                } else {
+                    Log.d(TAG, "Camera permission denied but can ask again");
+                    showCameraPermissionDeniedDialog();
+                }
+
+                // Cancel the file chooser callback
+                if (filePathCallback != null) {
+                    filePathCallback.onReceiveValue(null);
+                    filePathCallback = null;
+                }
+                pendingFileChooserParams = null;
+            }
+        }
+    }
+
+    /**
+     * Create a temporary image file for camera capture.
+     * Extracted to class level so it can be called from permission result handler.
+     */
+    private File createImageFile() throws IOException {
+        String timeStamp = new SimpleDateFormat("yyyyMMdd_HHmmss", Locale.UK).format(new Date());
+        String imageFileName = "PHOTO_" + timeStamp + "_";
+
+        File storageDir = getExternalFilesDir(Environment.DIRECTORY_PICTURES);
+        if (storageDir == null) {
+            storageDir = getCacheDir();
+        }
+
+        File imageFile = File.createTempFile(imageFileName, ".jpg", storageDir);
+        Log.d(TAG, "Created temp image file: " + imageFile.getAbsolutePath());
+        return imageFile;
+    }
+
+    /**
+     * Show dialog when camera permission is denied (but can still be requested again).
+     */
+    private void showCameraPermissionDeniedDialog() {
+        runOnUiThread(() -> {
+            new android.app.AlertDialog.Builder(this)
+                .setTitle("Camera Permission Required")
+                .setMessage("To take photos for your accident report, please allow camera access when prompted.")
+                .setPositiveButton("Try Again", (dialog, which) -> {
+                    // User wants to try again - request permission
+                    ActivityCompat.requestPermissions(
+                        MainActivity.this,
+                        new String[]{Manifest.permission.CAMERA},
+                        CAMERA_PERMISSION_REQUEST_CODE
+                    );
+                })
+                .setNegativeButton("Cancel", (dialog, which) -> {
+                    Log.d(TAG, "User cancelled camera permission request");
+                })
+                .setCancelable(false)
+                .show();
+        });
+    }
+
+    /**
+     * Show dialog when camera permission is permanently denied (user must go to settings).
+     */
+    private void showCameraPermissionSettingsDialog() {
+        runOnUiThread(() -> {
+            new android.app.AlertDialog.Builder(this)
+                .setTitle("Camera Access Blocked")
+                .setMessage("Camera permission is required to take photos.\n\nPlease enable it in:\nSettings → Apps → Car Crash Lawyer AI → Permissions → Camera")
+                .setPositiveButton("Open Settings", (dialog, which) -> {
+                    try {
+                        Intent intent = new Intent(android.provider.Settings.ACTION_APPLICATION_DETAILS_SETTINGS);
+                        Uri uri = Uri.fromParts("package", getPackageName(), null);
+                        intent.setData(uri);
+                        startActivity(intent);
+                        Log.d(TAG, "Opened app settings for user");
+                    } catch (Exception e) {
+                        Log.e(TAG, "Error opening settings: " + e.getMessage(), e);
+                    }
+                })
+                .setNegativeButton("Cancel", (dialog, which) -> {
+                    Log.d(TAG, "User cancelled opening settings");
+                })
+                .setCancelable(false)
+                .show();
+        });
     }
 
     /**
