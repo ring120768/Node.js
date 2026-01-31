@@ -12,6 +12,7 @@ import androidx.annotation.NonNull;
 import androidx.core.app.ActivityCompat;
 import androidx.core.content.ContextCompat;
 import androidx.core.content.FileProvider;
+import androidx.core.view.WindowCompat;
 import android.util.Log;
 import android.content.Intent;
 import android.net.Uri;
@@ -76,6 +77,11 @@ public class MainActivity extends BridgeActivity {
             WebView.setWebContentsDebuggingEnabled(true);
             Log.d(TAG, "WebView debugging enabled");
         }
+
+        // Enable edge-to-edge backward compatibility for Android 15+
+        // This prevents content from hiding behind status bar and navigation bar
+        WindowCompat.setDecorFitsSystemWindows(getWindow(), true);
+        Log.d(TAG, "Edge-to-edge backward compatibility enabled");
 
         // Register web view permission handler plugin BEFORE super.onCreate
         registerPlugin(com.carcrashlawyerai.app.WebViewPermissionPlugin.class);
