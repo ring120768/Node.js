@@ -1,0 +1,151 @@
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+GOOGLE PLAY CONSOLE - RELEASE NOTES v2.0.16
+Copy-paste ready for Google Play Console
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+═══════════════════════════════════════════════════════════════════════
+RELEASE NOTES (500 character limit)
+Use this in: Release > Production > Edit release > Release notes
+═══════════════════════════════════════════════════════════════════════
+
+Version 2.0.16 - Smoother Signup Experience
+
+We've made it easier to get started:
+
+• Photos now optional during signup - add them later from your dashboard
+• Helpful Pro-Tips explain how photos strengthen your insurance claim
+• Faster registration means you can start your report right away
+• Improved support for Android 15 devices
+• Better guidance on maximizing your insurance payout
+
+Your legal documentation, simplified.
+
+═══════════════════════════════════════════════════════════════════════
+SHORT DESCRIPTION (80 character limit) - OPTIONAL
+Use this in: Store presence > Main store listing > Short description
+═══════════════════════════════════════════════════════════════════════
+
+Streamlined signup: photos now optional. Add them anytime from dashboard.
+
+═══════════════════════════════════════════════════════════════════════
+WHAT'S NEW - DETAILED (500 character limit per language)
+Alternative version with more detail
+═══════════════════════════════════════════════════════════════════════
+
+🚀 What's New in v2.0.16
+
+FASTER SIGNUP
+• Photos are now optional - complete registration in under 5 minutes
+• Add documentation later from your dashboard when you're ready
+• No more abandoning signup because photos aren't available right now
+
+SMART GUIDANCE
+• Pro-Tip modals explain how photos strengthen insurance claims
+• Learn what UK insurers actually require
+• Understand how to maximize your payout
+
+IMPROVEMENTS
+• Android 15 display fixes
+• Better performance
+• Smoother experience
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+INTERNAL TESTING NOTES (if using closed/internal testing first)
+Copy this to: Testing > Internal testing > Release notes
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+Internal Testing - v2.0.16 (Build 20016)
+
+TESTING FOCUS AREAS:
+
+1. Photo Upload Flow
+   - Navigate to signup page 7 (photo upload)
+   - Click "Continue" without uploading photos
+   - Verify Pro-Tip modal appears
+   - Test both "Go Back & Upload" and "Continue Without" buttons
+   - Confirm signup completes successfully without photos
+
+2. Dashboard Photo Upload (Post-Signup)
+   - Complete signup without photos
+   - Log into dashboard
+   - Verify ability to upload missing photos
+   - Test all photo types: license, vehicle front/back/sides
+
+3. Android 15 Display
+   - Test on Android 15 devices/emulators
+   - Verify no content hidden behind status bar
+   - Check navigation bar doesn't obscure buttons
+   - Test all pages for layout issues
+
+4. Regression Testing
+   - Verify normal signup flow (with photos) still works
+   - Test existing dashboard features
+   - Confirm PDF generation includes/excludes photos correctly
+   - Check email notifications work
+
+KNOWN ISSUES:
+- None at this time
+
+SUCCESS CRITERIA:
+- Pro-Tip modal displays correctly
+- Signup completion without photos works
+- No new crashes or ANRs
+- Performance remains stable
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+CUSTOMER SUPPORT QUICK REFERENCE
+Share with support team
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+Version 2.0.16 - Support FAQ
+
+Q: Why aren't photos required anymore during signup?
+A: We want to make it easier to get started. You can now complete signup in under 5 minutes and add photos later from your dashboard when you're ready.
+
+Q: Do I still need to upload photos?
+A: Photos are highly recommended as they strengthen your insurance claim and can increase your payout by thousands of pounds. While not required to complete signup, we strongly encourage uploading them within 24-48 hours.
+
+Q: Where can I upload photos after signup?
+A: Log into your dashboard and you'll see clear prompts to upload any missing photos. The dashboard shows what you've uploaded and what's still needed.
+
+Q: Will my claim be weaker without photos?
+A: Photos of your vehicle in pristine condition before the accident are crucial evidence. They prove pre-incident value and help maximize your insurance settlement. Our Pro-Tip feature explains exactly why they matter.
+
+Q: What if I uploaded photos during signup in the old version?
+A: Nothing changes for you. Your photos are safely stored and already part of your claim documentation.
+
+Q: Can I still upload photos during signup if I have them?
+A: Absolutely! The photo upload page is still there - we've just made it optional so you can continue if you don't have photos immediately available.
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+ROLLBACK PLAN (if issues arise)
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+If critical issues occur:
+
+HALT ROLLOUT CONDITIONS:
+- Signup completion rate drops below baseline (60%)
+- Crash rate increases by >2%
+- Critical bug prevents signup completion
+- Photo upload mechanism completely broken
+- Database errors related to NULL photo fields
+
+ROLLBACK STEPS:
+1. Go to Google Play Console > Production
+2. Click "Halt release" on v2.0.16
+3. Promote previous version (2.0.15) back to production
+4. Notify users via in-app message about temporary rollback
+5. Fix issues in development
+6. Re-test thoroughly before re-release
+
+MONITORING (first 48 hours):
+- Signup completion rate (target: +15% vs baseline)
+- Photo upload rate (acceptable: >60% eventual upload)
+- Crash-free users (target: >99.5%)
+- Support ticket volume (watch for photo-related confusion)
+- App store reviews (respond to any negative feedback quickly)
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+END OF GOOGLE PLAY RELEASE NOTES
+Ready to copy-paste into Google Play Console
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
