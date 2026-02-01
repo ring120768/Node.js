@@ -972,8 +972,8 @@
     <!-- Page 7: All Photo Uploads -->
     <div class="question-page" data-page="7">
       <div class="question">
-        <h2>Upload your photos</h2>
-        <p class="desc">Please upload clear photos of your driving license and vehicle (all angles)</p>
+        <h2>Upload your photos (Optional)</h2>
+        <p class="desc">Upload photos of your driving license and vehicle to strengthen your insurance claim. You can add these later from your dashboard if you prefer.</p>
 
         <!-- Upload Grid -->
         <div style="display: grid; grid-template-columns: 1fr; gap: 20px; max-width: 600px; margin: 0 auto;">
@@ -1102,7 +1102,7 @@
         </div>
 
         <p class="hint" style="margin-top: 20px; text-align: center;">
-          💡 All photos are required. Make sure images are clear and well-lit.
+          💡 Photos are optional but <strong>highly recommended</strong>. Clear photos of your vehicle in pristine condition help maximize your insurance payout. You can upload these later from your dashboard.
         </p>
 
         <p class="error-message" id="photos-upload-error"></p>
@@ -1664,11 +1664,12 @@
     }
 
     // Navigate to next page
-    function nextPage() {
+    async function nextPage() {
       console.log(`🔄 Navigating from page ${currentPage}...`);
 
-      // Validate current page before proceeding
-      if (!validateCurrentPage()) {
+      // Validate current page before proceeding (may be async for photo validation)
+      const isValid = await validateCurrentPage();
+      if (!isValid) {
         console.log('❌ Validation failed, staying on current page');
         return;
       }
@@ -1714,8 +1715,8 @@
       window.scrollTo(0, 0);
     }
 
-    // Validate current page
-    function validateCurrentPage() {
+    // Validate current page (async to support photo upload modal)
+    async function validateCurrentPage() {
       // Page 1: Account creation validation is handled by createAccountBtn
       if (currentPage === 1) return true;
 
@@ -1744,9 +1745,9 @@
         return validateDrivingRecords();
       }
 
-      // Page 7: All Photo Uploads validation
+      // Page 7: All Photo Uploads validation (may return Promise with modal)
       if (currentPage === 7) {
-        return validatePhotoUploads();
+        return await validatePhotoUploads();
       }
 
       // Page 8: Recovery & Emergency Contact validation
@@ -2283,12 +2284,12 @@
       console.log(`🗑️ ${type} photo removed`);
     }
 
-    // Validate all photo uploads
+    // Validate all photo uploads (now optional with Pro-Tip)
     function validatePhotoUploads() {
       const errorEl = document.getElementById('photos-upload-error');
       errorEl.classList.remove('show');
 
-      const requiredPhotos = [
+      const recommendedPhotos = [
         { field: 'driving_license_picture', name: 'Driving License' },
         { field: 'vehicle_front_image', name: 'Vehicle Front' },
         { field: 'vehicle_driver_side_image', name: 'Vehicle Driver Side' },
@@ -2296,15 +2297,112 @@
         { field: 'vehicle_back_image', name: 'Vehicle Back' }
       ];
 
-      const missing = requiredPhotos.filter(photo => !formData[photo.field]);
+      const missing = recommendedPhotos.filter(photo => !formData[photo.field]);
 
+      // Photos are optional - show Pro-Tip if missing, let them choose
       if (missing.length > 0) {
-        const names = missing.map(p => p.name).join(', ');
-        showError('photos-upload-error', `Please upload all required photos. Missing: ${names}`);
-        return false;
+        return new Promise((resolve) => {
+          showProTipModal(missing, resolve);
+        });
       }
 
       return true;
+    }
+
+    // Pro-Tip modal for missing photos
+    function showProTipModal(missingPhotos, callback) {
+      const names = missingPhotos.map(p => p.name).join(', ');
+
+      // Create modal overlay
+      const modal = document.createElement('div');
+      modal.style.cssText = 'position:fixed;top:0;left:0;right:0;bottom:0;background:rgba(0,0,0,0.7);display:flex;align-items:center;justify-content:center;z-index:10000;padding:20px';
+
+      // Create modal content container
+      const content = document.createElement('div');
+      content.style.cssText = 'background:white;border-radius:16px;max-width:500px;width:100%;padding:32px;box-shadow:0 20px 60px rgba(0,0,0,0.3)';
+
+      // Icon
+      const icon = document.createElement('div');
+      icon.style.cssText = 'font-size:48px;margin-bottom:16px;text-align:center';
+      icon.textContent = '💡';
+
+      // Title
+      const title = document.createElement('h3');
+      title.style.cssText = 'font-size:24px;font-weight:700;color:#1a202c;margin:0 0 12px;text-align:center';
+      title.textContent = 'Pro-Tip: Maximize Your Insurance Payout';
+
+      // Missing photos box
+      const missingBox = document.createElement('div');
+      missingBox.style.cssText = 'background:#f0f9ff;border-left:4px solid #3b82f6;padding:16px;border-radius:8px;margin:24px 0';
+
+      const missingTitle = document.createElement('p');
+      missingTitle.style.cssText = 'margin:0 0 12px;font-size:15px;line-height:1.6;color:#1e40af;font-weight:600';
+      missingTitle.textContent = 'You haven\'t uploaded: ' + names;
+
+      const missingDesc = document.createElement('p');
+      missingDesc.style.cssText = 'margin:0;font-size:14px;line-height:1.6;color:#4a5568';
+      missingDesc.textContent = 'Photos of your vehicle in pristine condition BEFORE the accident are crucial evidence. They prove your vehicle\'s pre-incident value and help secure the best possible insurance settlement.';
+
+      missingBox.appendChild(missingTitle);
+      missingBox.appendChild(missingDesc);
+
+      // Why this matters box
+      const whyBox = document.createElement('div');
+      whyBox.style.cssText = 'background:#fef3c7;border-left:4px solid #f59e0b;padding:16px;border-radius:8px;margin-bottom:24px';
+
+      const whyTitle = document.createElement('p');
+      whyTitle.style.cssText = 'margin:0 0 8px;font-size:14px;font-weight:600;color:#92400e';
+      whyTitle.textContent = 'Why this matters:';
+
+      const whyList = document.createElement('ul');
+      whyList.style.cssText = 'margin:0;padding-left:20px;font-size:14px;line-height:1.6;color:#78350f';
+      ['Proves vehicle condition before accident', 'Strengthens your insurance claim', 'Can increase payout by thousands of pounds', 'Required by most UK insurers for full claims'].forEach(text => {
+        const li = document.createElement('li');
+        li.textContent = text;
+        whyList.appendChild(li);
+      });
+
+      whyBox.appendChild(whyTitle);
+      whyBox.appendChild(whyList);
+
+      // Footer note
+      const note = document.createElement('p');
+      note.style.cssText = 'font-size:13px;color:#6b7280;margin:0 0 24px;text-align:center;font-style:italic';
+      note.textContent = 'Don\'t worry - you can upload these later from your dashboard if you don\'t have them right now.';
+
+      // Buttons container
+      const btnContainer = document.createElement('div');
+      btnContainer.style.cssText = 'display:flex;gap:12px';
+
+      const backBtn = document.createElement('button');
+      backBtn.textContent = 'Go Back & Upload';
+      backBtn.style.cssText = 'flex:1;padding:14px 24px;background:#0ea5e9;color:white;border:none;border-radius:8px;font-weight:600;font-size:15px;cursor:pointer;transition:all 0.2s';
+
+      const continueBtn = document.createElement('button');
+      continueBtn.textContent = 'Continue Without';
+      continueBtn.style.cssText = 'flex:1;padding:14px 24px;background:#e5e7eb;color:#4b5563;border:none;border-radius:8px;font-weight:600;font-size:15px;cursor:pointer;transition:all 0.2s';
+
+      btnContainer.appendChild(backBtn);
+      btnContainer.appendChild(continueBtn);
+
+      // Assemble modal
+      content.appendChild(icon);
+      content.appendChild(title);
+      content.appendChild(missingBox);
+      content.appendChild(whyBox);
+      content.appendChild(note);
+      content.appendChild(btnContainer);
+      modal.appendChild(content);
+      document.body.appendChild(modal);
+
+      // Button interactions
+      backBtn.onmouseover = () => {backBtn.style.background='#0284c7';backBtn.style.transform='translateY(-1px)'};
+      backBtn.onmouseout = () => {backBtn.style.background='#0ea5e9';backBtn.style.transform='translateY(0)'};
+      continueBtn.onmouseover = () => continueBtn.style.background='#d1d5db';
+      continueBtn.onmouseout = () => continueBtn.style.background='#e5e7eb';
+
+      backBtn.onclick = () => {document.body.removeChild(modal);callback(false)};
+      continueBtn.onclick = () => {document.body.removeChild(modal);console.log('⚠️ User chose to continue without photos:',names);callback(true)};
     }
 
     // ===== PAGE 8: RECOVERY & EMERGENCY CONTACT =====

@@ -1,0 +1,588 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="description" content="ReprobusAI - AI-powered fleet safety and incident management. Ancient protection meets modern intelligence.">
+    <title>ReprobusAI - Guardian of Your Fleet</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        :root {
+            --navy: #1B4965;        /* Navy from logo outer ring */
+            --teal: #2B7A9E;        /* Medium blue from waves */
+            --cyan: #00B4D8;        /* Bright cyan from "AI" text */
+            --accent: #5FA8D3;      /* Light blue from logo highlights */
+            --silver: #94A3B8;
+            --light: #F8FAFC;
+            --charcoal: #1E293B;
+        }
+
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', 'Helvetica Neue', Arial, sans-serif;
+            line-height: 1.6;
+            color: var(--charcoal);
+            background: var(--light);
+        }
+
+        /* Header */
+        header {
+            background: white;
+            border-bottom: 1px solid #e2e8f0;
+            padding: 1.5rem 2rem;
+            position: sticky;
+            top: 0;
+            z-index: 100;
+            box-shadow: 0 1px 3px rgba(0,0,0,0.05);
+        }
+
+        .header-content {
+            max-width: 1200px;
+            margin: 0 auto;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+
+        .logo-container {
+            display: flex;
+            align-items: center;
+            gap: 1rem;
+        }
+
+        .logo-img {
+            width: 50px;
+            height: 50px;
+            object-fit: contain;
+        }
+
+        .brand-name {
+            font-size: 1.5rem;
+            font-weight: 700;
+            color: var(--navy);
+        }
+
+        .brand-name span {
+            color: var(--cyan);
+        }
+
+        .cta-button {
+            background: var(--teal);
+            color: white;
+            padding: 0.75rem 1.5rem;
+            border-radius: 6px;
+            text-decoration: none;
+            font-weight: 600;
+            transition: all 0.2s;
+            border: none;
+            cursor: pointer;
+        }
+
+        .cta-button:hover {
+            background: var(--navy);
+            transform: translateY(-1px);
+            box-shadow: 0 4px 12px rgba(14, 116, 144, 0.3);
+        }
+
+        /* Hero Section */
+        .hero {
+            background: linear-gradient(135deg, var(--navy) 0%, var(--teal) 50%, var(--accent) 100%);
+            color: white;
+            padding: 6rem 2rem;
+            text-align: center;
+        }
+
+        .hero-content {
+            max-width: 900px;
+            margin: 0 auto;
+        }
+
+        .hero h1 {
+            font-size: 3.5rem;
+            font-weight: 800;
+            margin-bottom: 1.5rem;
+            line-height: 1.1;
+        }
+
+        .hero-subtitle {
+            font-size: 1.5rem;
+            margin-bottom: 1rem;
+            opacity: 0.95;
+            font-weight: 300;
+        }
+
+        .hero-tagline {
+            font-size: 1.2rem;
+            margin-bottom: 3rem;
+            opacity: 0.9;
+            font-style: italic;
+        }
+
+        .hero-cta {
+            display: flex;
+            gap: 1rem;
+            justify-content: center;
+            flex-wrap: wrap;
+        }
+
+        .primary-button {
+            background: white;
+            color: var(--navy);
+            padding: 1rem 2.5rem;
+            border-radius: 8px;
+            text-decoration: none;
+            font-weight: 700;
+            font-size: 1.1rem;
+            transition: all 0.2s;
+            border: none;
+            cursor: pointer;
+        }
+
+        .primary-button:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 8px 24px rgba(0,0,0,0.2);
+        }
+
+        .secondary-button {
+            background: transparent;
+            color: white;
+            padding: 1rem 2.5rem;
+            border-radius: 8px;
+            text-decoration: none;
+            font-weight: 600;
+            font-size: 1.1rem;
+            border: 2px solid white;
+            transition: all 0.2s;
+            cursor: pointer;
+        }
+
+        .secondary-button:hover {
+            background: rgba(255,255,255,0.1);
+        }
+
+        /* Story Section */
+        .story-section {
+            background: white;
+            padding: 5rem 2rem;
+        }
+
+        .story-content {
+            max-width: 1000px;
+            margin: 0 auto;
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 4rem;
+            align-items: center;
+        }
+
+        .story-text h2 {
+            font-size: 2.5rem;
+            color: var(--navy);
+            margin-bottom: 1.5rem;
+        }
+
+        .story-text p {
+            font-size: 1.1rem;
+            color: var(--charcoal);
+            margin-bottom: 1rem;
+            line-height: 1.8;
+        }
+
+        .story-image {
+            background: var(--light);
+            border-radius: 12px;
+            padding: 3rem;
+            text-align: center;
+        }
+
+        .medallion-img {
+            width: 250px;
+            height: 250px;
+            margin: 0 auto;
+            display: block;
+            object-fit: contain;
+        }
+
+        /* Features Section */
+        .features-section {
+            background: var(--light);
+            padding: 5rem 2rem;
+        }
+
+        .features-content {
+            max-width: 1200px;
+            margin: 0 auto;
+        }
+
+        .section-header {
+            text-align: center;
+            margin-bottom: 4rem;
+        }
+
+        .section-header h2 {
+            font-size: 2.5rem;
+            color: var(--navy);
+            margin-bottom: 1rem;
+        }
+
+        .section-header p {
+            font-size: 1.2rem;
+            color: var(--silver);
+        }
+
+        .features-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+            gap: 2rem;
+        }
+
+        .feature-card {
+            background: white;
+            padding: 2.5rem;
+            border-radius: 12px;
+            box-shadow: 0 2px 8px rgba(0,0,0,0.05);
+            transition: all 0.3s;
+        }
+
+        .feature-card:hover {
+            transform: translateY(-4px);
+            box-shadow: 0 8px 24px rgba(0,0,0,0.1);
+        }
+
+        .feature-icon {
+            width: 60px;
+            height: 60px;
+            background: linear-gradient(135deg, var(--teal), var(--cyan));
+            border-radius: 12px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            color: white;
+            font-size: 1.8rem;
+            margin-bottom: 1.5rem;
+        }
+
+        .feature-card h3 {
+            font-size: 1.5rem;
+            color: var(--navy);
+            margin-bottom: 1rem;
+        }
+
+        .feature-card p {
+            color: var(--charcoal);
+            line-height: 1.6;
+        }
+
+        /* Pricing Section */
+        .pricing-section {
+            background: white;
+            padding: 5rem 2rem;
+        }
+
+        .pricing-content {
+            max-width: 900px;
+            margin: 0 auto;
+            text-align: center;
+        }
+
+        .pricing-card {
+            background: var(--light);
+            padding: 3rem;
+            border-radius: 12px;
+            border: 2px solid var(--teal);
+        }
+
+        .pricing-card h3 {
+            font-size: 2rem;
+            color: var(--navy);
+            margin-bottom: 1rem;
+        }
+
+        .pricing-card .price {
+            font-size: 3rem;
+            font-weight: 800;
+            color: var(--teal);
+            margin-bottom: 1rem;
+        }
+
+        .pricing-features {
+            list-style: none;
+            margin: 2rem 0;
+            text-align: left;
+            max-width: 500px;
+            margin-left: auto;
+            margin-right: auto;
+        }
+
+        .pricing-features li {
+            padding: 0.75rem 0;
+            border-bottom: 1px solid #e2e8f0;
+            font-size: 1.1rem;
+        }
+
+        .pricing-features li:before {
+            content: "✓";
+            color: var(--teal);
+            font-weight: bold;
+            margin-right: 1rem;
+        }
+
+        /* Signup Section */
+        .signup-section {
+            background: linear-gradient(135deg, var(--accent), var(--cyan));
+            padding: 5rem 2rem;
+            color: white;
+        }
+
+        .signup-content {
+            max-width: 700px;
+            margin: 0 auto;
+            text-align: center;
+        }
+
+        .signup-content h2 {
+            font-size: 2.5rem;
+            margin-bottom: 1rem;
+        }
+
+        .signup-content p {
+            font-size: 1.2rem;
+            margin-bottom: 2rem;
+            opacity: 0.95;
+        }
+
+        .signup-form {
+            display: flex;
+            gap: 1rem;
+            max-width: 600px;
+            margin: 0 auto;
+        }
+
+        .signup-form input {
+            flex: 1;
+            padding: 1rem 1.5rem;
+            border: none;
+            border-radius: 8px;
+            font-size: 1rem;
+        }
+
+        .signup-form button {
+            padding: 1rem 2.5rem;
+            background: var(--navy);
+            color: white;
+            border: none;
+            border-radius: 8px;
+            font-weight: 700;
+            font-size: 1rem;
+            cursor: pointer;
+            transition: all 0.2s;
+        }
+
+        .signup-form button:hover {
+            background: var(--charcoal);
+            transform: translateY(-2px);
+        }
+
+        /* Footer */
+        footer {
+            background: var(--navy);
+            color: white;
+            padding: 3rem 2rem;
+            text-align: center;
+        }
+
+        footer p {
+            opacity: 0.8;
+            margin-bottom: 1rem;
+        }
+
+        footer a {
+            color: var(--cyan);
+            text-decoration: none;
+        }
+
+        /* Responsive */
+        @media (max-width: 768px) {
+            .hero h1 {
+                font-size: 2.5rem;
+            }
+
+            .hero-subtitle {
+                font-size: 1.2rem;
+            }
+
+            .story-content {
+                grid-template-columns: 1fr;
+            }
+
+            .signup-form {
+                flex-direction: column;
+            }
+
+            .features-grid {
+                grid-template-columns: 1fr;
+            }
+        }
+    </style>
+</head>
+<body>
+    <!-- Header -->
+    <header>
+        <div class="header-content">
+            <div class="logo-container">
+                <img src="/images/reprobus-logo.png" alt="ReprobusAI Logo" class="logo-img">
+                <div class="brand-name">Reprobus<span>AI</span></div>
+            </div>
+            <a href="#signup" class="cta-button">Get Early Access</a>
+        </div>
+    </header>
+
+    <!-- Hero Section -->
+    <section class="hero">
+        <div class="hero-content">
+            <h1>Guardian of Your Fleet</h1>
+            <p class="hero-subtitle">AI-powered incident management for corporate fleets</p>
+            <p class="hero-tagline">Ancient protection meets modern intelligence</p>
+            <div class="hero-cta">
+                <a href="#signup" class="primary-button">Join the Waitlist</a>
+                <a href="#story" class="secondary-button">Our Story</a>
+            </div>
+        </div>
+    </section>
+
+    <!-- Story Section -->
+    <section class="story-section" id="story">
+        <div class="story-content">
+            <div class="story-text">
+                <h2>The Ferryman's Watch</h2>
+                <p>ReprobusAI takes its name from the legendary giant who became St Christopher—the patron saint of travellers. As a ferryman, he carried people safely across dangerous waters, protecting them from harm.</p>
+                <p>Today, ReprobusAI carries your fleet safely through every journey. Like the ancient guardian, we watch over your vehicles, protect your drivers, and ensure safe passage—now powered by artificial intelligence.</p>
+                <p><strong>From river crossings to road networks. From ancient wisdom to modern AI.</strong></p>
+            </div>
+            <div class="story-image">
+                <img src="/images/reprobus-logo.png" alt="ReprobusAI Medallion - St Christopher carrying fleet" class="medallion-img">
+                <p style="margin-top: 1.5rem; color: var(--silver); font-style: italic;">The guardian who never sleeps</p>
+            </div>
+        </div>
+    </section>
+
+    <!-- Features Section -->
+    <section class="features-section">
+        <div class="features-content">
+            <div class="section-header">
+                <h2>Enterprise-Grade Fleet Protection</h2>
+                <p>Everything your fleet needs, powered by AI</p>
+            </div>
+            <div class="features-grid">
+                <div class="feature-card">
+                    <div class="feature-icon">📋</div>
+                    <h3>Automated Incident Reports</h3>
+                    <p>AI-powered documentation that captures every detail, generates legal-grade PDFs, and ensures GDPR compliance automatically.</p>
+                </div>
+                <div class="feature-card">
+                    <div class="feature-icon">🎙️</div>
+                    <h3>Voice Transcription</h3>
+                    <p>Let drivers speak their account. Our AI transcribes, analyses, and extracts key facts from witness statements instantly.</p>
+                </div>
+                <div class="feature-card">
+                    <div class="feature-icon">📊</div>
+                    <h3>Fleet Dashboard</h3>
+                    <p>Real-time visibility across your entire fleet. Track incidents, monitor trends, and identify risk patterns before they become problems.</p>
+                </div>
+                <div class="feature-card">
+                    <div class="feature-icon">📸</div>
+                    <h3>Image Analysis</h3>
+                    <p>AI-powered damage assessment. Upload photos and get instant analysis of vehicle damage, liability indicators, and repair estimates.</p>
+                </div>
+                <div class="feature-card">
+                    <div class="feature-icon">🔒</div>
+                    <h3>GDPR Compliant</h3>
+                    <p>Built for UK enterprises. Full GDPR compliance, automatic 90-day retention notices, and secure data handling as standard.</p>
+                </div>
+                <div class="feature-card">
+                    <div class="feature-icon">🚀</div>
+                    <h3>API Integration</h3>
+                    <p>Seamless integration with your existing systems. Connect to telematics, insurance platforms, and fleet management tools.</p>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- Pricing Section -->
+    <section class="pricing-section">
+        <div class="pricing-content">
+            <div class="section-header">
+                <h2>Enterprise Pricing</h2>
+                <p>Tailored for corporate fleets and insurance companies</p>
+            </div>
+            <div class="pricing-card">
+                <h3>Corporate Plan</h3>
+                <p class="price">Contact Us</p>
+                <p style="color: var(--silver); margin-bottom: 2rem;">Custom pricing based on fleet size</p>
+                <ul class="pricing-features">
+                    <li>Unlimited incident reports</li>
+                    <li>Multi-user dashboard access</li>
+                    <li>API access for integrations</li>
+                    <li>Dedicated account manager</li>
+                    <li>White-label options available</li>
+                    <li>SLA guarantee & priority support</li>
+                    <li>Custom export formats</li>
+                    <li>Advanced analytics & reporting</li>
+                </ul>
+                <a href="#signup" class="primary-button" style="display: inline-block; margin-top: 2rem;">Get a Quote</a>
+            </div>
+        </div>
+    </section>
+
+    <!-- Signup Section -->
+    <section class="signup-section" id="signup">
+        <div class="signup-content">
+            <h2>Join the Waitlist</h2>
+            <p>Be among the first fleet managers to access ReprobusAI. Enter your email for early access and exclusive pricing.</p>
+            <form class="signup-form" action="https://formspree.io/f/YOUR_FORM_ID" method="POST">
+                <input type="email" name="email" placeholder="your.email@company.com" required>
+                <button type="submit">Get Early Access</button>
+            </form>
+            <p style="font-size: 0.9rem; margin-top: 1.5rem; opacity: 0.8;">
+                ✓ No spam, ever  ✓ Exclusive early adopter pricing  ✓ Priority support
+            </p>
+        </div>
+    </section>
+
+    <!-- Footer -->
+    <footer>
+        <p>&copy; 2026 ReprobusAI. All rights reserved.</p>
+        <p>A division of Car Crash Lawyer AI Ltd. Registered in England & Wales.</p>
+        <p style="margin-top: 1rem;">
+            <a href="mailto:hello@reprobusai.com">hello@reprobusai.com</a> |
+            <a href="https://carcrashlawyerai.co.uk">Consumer Product: Car Crash Lawyer AI</a>
+        </p>
+    </footer>
+
+    <script>
+        // Smooth scrolling for anchor links
+        document.querySelectorAll('a[href^="#"]').forEach(anchor => {
+            anchor.addEventListener('click', function (e) {
+                e.preventDefault();
+                const target = document.querySelector(this.getAttribute('href'));
+                if (target) {
+                    target.scrollIntoView({
+                        behavior: 'smooth',
+                        block: 'start'
+                    });
+                }
+            });
+        });
+
+        // Form submission tracking (replace with your analytics)
+        document.querySelector('.signup-form').addEventListener('submit', function(e) {
+            console.log('Early access signup submitted');
+            // Add analytics tracking here
+        });
+    </script>
+</body>
+</html>
