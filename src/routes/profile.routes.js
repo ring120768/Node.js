@@ -28,4 +28,11 @@ router.post('/send-image-links/:userId', profileController.sendImageLinks);
 // GET /api/profile/pdf-stats/:userId - Get PDF statistics
 router.get('/pdf-stats/:userId', profileController.getPdfStats);
 
+// Phase 1: Editable contact details (safe fields)
+// GET /api/profile/contact-details - Get current contact details
+router.get('/contact-details', profileController.getContactDetails);
+
+// PATCH /api/profile/contact-details - Update contact details
+router.patch('/contact-details', profileController.updateContactDetails);
+
 module.exports = router;

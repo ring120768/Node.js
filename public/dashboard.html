@@ -377,6 +377,66 @@
             color: #16a34a;
         }
 
+        /* Contact Details (Phase 1: Editable Fields) */
+        .contact-details-grid {
+            display: grid;
+            gap: var(--spacing-lg);
+        }
+
+        .detail-section {
+            border: 1px solid var(--border);
+            border-radius: var(--radius-md);
+            padding: var(--spacing-lg);
+            background: var(--bg-main);
+        }
+
+        .detail-section-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: var(--spacing-md);
+            padding-bottom: var(--spacing-sm);
+            border-bottom: 1px solid var(--border);
+        }
+
+        .detail-section-header h3 {
+            font-size: 1rem;
+            font-weight: 600;
+            color: var(--text-primary);
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+            margin: 0;
+        }
+
+        .detail-content {
+            display: grid;
+            gap: var(--spacing-sm);
+        }
+
+        .detail-item {
+            display: grid;
+            grid-template-columns: 140px 1fr;
+            gap: var(--spacing-sm);
+            padding: var(--spacing-xs) 0;
+        }
+
+        .detail-label {
+            font-size: 0.875rem;
+            color: var(--text-secondary);
+            font-weight: 500;
+        }
+
+        .detail-value {
+            font-size: 0.875rem;
+            color: var(--text-primary);
+        }
+
+        .btn-sm {
+            padding: 0.375rem 0.75rem;
+            font-size: 0.875rem;
+        }
+
         /* Content Grid */
         .content-grid {
             display: grid;
@@ -1566,6 +1626,96 @@
                     </div>
                 </div>
 
+                <!-- Contact Details (Phase 1: Editable Fields) -->
+                <div class="card">
+                    <div class="card-header">
+                        <h2 class="card-title">
+                            <span>📇</span> Contact Details
+                        </h2>
+                        <p style="font-size: 0.875rem; color: var(--text-secondary); margin-top: 0.5rem;">
+                            Keep your information up to date
+                        </p>
+                    </div>
+
+                    <div class="contact-details-grid">
+                        <!-- Address Section -->
+                        <div class="detail-section">
+                            <div class="detail-section-header">
+                                <h3>🏠 Address</h3>
+                                <button class="btn btn-sm btn-ghost" data-action="editAddress">Edit</button>
+                            </div>
+                            <div class="detail-content" id="addressDisplay">
+                                <div class="detail-item">
+                                    <span class="detail-label">Address Line 1:</span>
+                                    <span class="detail-value" id="address_line1">-</span>
+                                </div>
+                                <div class="detail-item">
+                                    <span class="detail-label">Address Line 2:</span>
+                                    <span class="detail-value" id="address_line2">-</span>
+                                </div>
+                                <div class="detail-item">
+                                    <span class="detail-label">City:</span>
+                                    <span class="detail-value" id="city">-</span>
+                                </div>
+                                <div class="detail-item">
+                                    <span class="detail-label">County:</span>
+                                    <span class="detail-value" id="county">-</span>
+                                </div>
+                                <div class="detail-item">
+                                    <span class="detail-label">Postcode:</span>
+                                    <span class="detail-value" id="postcode">-</span>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- Mobile Number Section -->
+                        <div class="detail-section">
+                            <div class="detail-section-header">
+                                <h3>📱 Mobile Number</h3>
+                                <button class="btn btn-sm btn-ghost" data-action="editMobile">Edit</button>
+                            </div>
+                            <div class="detail-content">
+                                <div class="detail-item">
+                                    <span class="detail-label">Mobile:</span>
+                                    <span class="detail-value" id="mobile_number">-</span>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- Emergency Contact Section -->
+                        <div class="detail-section">
+                            <div class="detail-section-header">
+                                <h3>🚨 Emergency Contact</h3>
+                                <button class="btn btn-sm btn-ghost" data-action="editEmergency">Edit</button>
+                            </div>
+                            <div class="detail-content">
+                                <div class="detail-item">
+                                    <span class="detail-label">Name:</span>
+                                    <span class="detail-value" id="emergency_contact_name">-</span>
+                                </div>
+                                <div class="detail-item">
+                                    <span class="detail-label">Phone:</span>
+                                    <span class="detail-value" id="emergency_contact_phone">-</span>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- Recovery Email Section -->
+                        <div class="detail-section">
+                            <div class="detail-section-header">
+                                <h3>📧 Recovery Email</h3>
+                                <button class="btn btn-sm btn-ghost" data-action="editRecoveryEmail">Edit</button>
+                            </div>
+                            <div class="detail-content">
+                                <div class="detail-item">
+                                    <span class="detail-label">Recovery Email:</span>
+                                    <span class="detail-value" id="recovery_email">-</span>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
                 <!-- Quick Actions -->
                 <div class="card">
                     <div class="card-header">
@@ -1837,7 +1987,8 @@
                 await Promise.all([
                     loadStats(),
                     loadActivity(),
-                    loadProfileCompletion()
+                    loadProfileCompletion(),
+                    loadContactDetails()
                 ]);
 
                 // Show content
@@ -2256,6 +2407,213 @@
             };
 
             input.click();
+        }
+
+        // Load contact details (Phase 1: Safe editable fields)
+        async function loadContactDetails() {
+            try {
+                console.log('📇 Loading contact details...');
+
+                const response = await fetch('/api/profile/contact-details', {
+                    credentials: 'include'
+                });
+
+                if (!response.ok) {
+                    throw new Error('Failed to fetch contact details');
+                }
+
+                const result = await response.json();
+                const data = result.data;
+
+                // Update UI with contact details
+                document.getElementById('address_line1').textContent = data.address_line1 || '-';
+                document.getElementById('address_line2').textContent = data.address_line2 || '-';
+                document.getElementById('city').textContent = data.city || '-';
+                document.getElementById('county').textContent = data.county || '-';
+                document.getElementById('postcode').textContent = data.postcode || '-';
+                document.getElementById('mobile_number').textContent = data.mobile_number || '-';
+                document.getElementById('emergency_contact_name').textContent = data.emergency_contact_name || '-';
+                document.getElementById('emergency_contact_phone').textContent = data.emergency_contact_phone || '-';
+                document.getElementById('recovery_email').textContent = data.recovery_email || '-';
+
+                console.log('✅ Contact details loaded');
+
+            } catch (error) {
+                console.error('Error loading contact details:', error);
+                showToast('Failed to load contact details', 'error');
+            }
+        }
+
+        // Edit address
+        async function editAddress() {
+            const currentData = {
+                address_line1: document.getElementById('address_line1').textContent,
+                address_line2: document.getElementById('address_line2').textContent,
+                city: document.getElementById('city').textContent,
+                county: document.getElementById('county').textContent,
+                postcode: document.getElementById('postcode').textContent
+            };
+
+            // Show prompt dialog for each field
+            const address_line1 = prompt('Address Line 1:', currentData.address_line1 === '-' ? '' : currentData.address_line1);
+            if (address_line1 === null) return; // Cancelled
+
+            const address_line2 = prompt('Address Line 2 (optional):', currentData.address_line2 === '-' ? '' : currentData.address_line2);
+            if (address_line2 === null) return;
+
+            const city = prompt('City:', currentData.city === '-' ? '' : currentData.city);
+            if (city === null) return;
+
+            const county = prompt('County (optional):', currentData.county === '-' ? '' : currentData.county);
+            if (county === null) return;
+
+            const postcode = prompt('Postcode:', currentData.postcode === '-' ? '' : currentData.postcode);
+            if (postcode === null) return;
+
+            try {
+                showToast('Updating address...', 'info');
+
+                const response = await fetch('/api/profile/contact-details', {
+                    method: 'PATCH',
+                    credentials: 'include',
+                    headers: {
+                        'Content-Type': 'application/json'
+                    },
+                    body: JSON.stringify({
+                        address_line1,
+                        address_line2: address_line2 || null,
+                        city,
+                        county: county || null,
+                        postcode
+                    })
+                });
+
+                const result = await response.json();
+
+                if (!response.ok) {
+                    throw new Error(result.details ? result.details.join(', ') : result.error);
+                }
+
+                showToast('Address updated successfully!', 'success');
+                await loadContactDetails();
+
+            } catch (error) {
+                console.error('Update error:', error);
+                showToast('Error: ' + error.message, 'error');
+            }
+        }
+
+        // Edit mobile number
+        async function editMobile() {
+            const currentValue = document.getElementById('mobile_number').textContent;
+            const newValue = prompt('Mobile Number (UK format):', currentValue === '-' ? '' : currentValue);
+
+            if (newValue === null) return; // Cancelled
+
+            try {
+                showToast('Updating mobile number...', 'info');
+
+                const response = await fetch('/api/profile/contact-details', {
+                    method: 'PATCH',
+                    credentials: 'include',
+                    headers: {
+                        'Content-Type': 'application/json'
+                    },
+                    body: JSON.stringify({
+                        mobile_number: newValue
+                    })
+                });
+
+                const result = await response.json();
+
+                if (!response.ok) {
+                    throw new Error(result.details ? result.details.join(', ') : result.error);
+                }
+
+                showToast('Mobile number updated successfully!', 'success');
+                await loadContactDetails();
+
+            } catch (error) {
+                console.error('Update error:', error);
+                showToast('Error: ' + error.message, 'error');
+            }
+        }
+
+        // Edit emergency contact
+        async function editEmergency() {
+            const currentName = document.getElementById('emergency_contact_name').textContent;
+            const currentPhone = document.getElementById('emergency_contact_phone').textContent;
+
+            const name = prompt('Emergency Contact Name:', currentName === '-' ? '' : currentName);
+            if (name === null) return; // Cancelled
+
+            const phone = prompt('Emergency Contact Phone:', currentPhone === '-' ? '' : currentPhone);
+            if (phone === null) return;
+
+            try {
+                showToast('Updating emergency contact...', 'info');
+
+                const response = await fetch('/api/profile/contact-details', {
+                    method: 'PATCH',
+                    credentials: 'include',
+                    headers: {
+                        'Content-Type': 'application/json'
+                    },
+                    body: JSON.stringify({
+                        emergency_contact_name: name,
+                        emergency_contact_phone: phone
+                    })
+                });
+
+                const result = await response.json();
+
+                if (!response.ok) {
+                    throw new Error(result.details ? result.details.join(', ') : result.error);
+                }
+
+                showToast('Emergency contact updated successfully!', 'success');
+                await loadContactDetails();
+
+            } catch (error) {
+                console.error('Update error:', error);
+                showToast('Error: ' + error.message, 'error');
+            }
+        }
+
+        // Edit recovery email
+        async function editRecoveryEmail() {
+            const currentValue = document.getElementById('recovery_email').textContent;
+            const newValue = prompt('Recovery Email:', currentValue === '-' ? '' : currentValue);
+
+            if (newValue === null) return; // Cancelled
+
+            try {
+                showToast('Updating recovery email...', 'info');
+
+                const response = await fetch('/api/profile/contact-details', {
+                    method: 'PATCH',
+                    credentials: 'include',
+                    headers: {
+                        'Content-Type': 'application/json'
+                    },
+                    body: JSON.stringify({
+                        recovery_email: newValue || null
+                    })
+                });
+
+                const result = await response.json();
+
+                if (!response.ok) {
+                    throw new Error(result.details ? result.details.join(', ') : result.error);
+                }
+
+                showToast('Recovery email updated successfully!', 'success');
+                await loadContactDetails();
+
+            } catch (error) {
+                console.error('Update error:', error);
+                showToast('Error: ' + error.message, 'error');
+            }
         }
 
         // Delete timeline item (document, report, PDF, or transcription)
@@ -2685,6 +3043,18 @@
                     if (field) {
                         uploadProfileItem(field);
                     }
+                    break;
+                case 'editAddress':
+                    editAddress();
+                    break;
+                case 'editMobile':
+                    editMobile();
+                    break;
+                case 'editEmergency':
+                    editEmergency();
+                    break;
+                case 'editRecoveryEmail':
+                    editRecoveryEmail();
                     break;
             }
         });

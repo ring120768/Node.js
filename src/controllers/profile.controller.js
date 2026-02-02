@@ -501,11 +501,278 @@ async function getPdfStats(req, res) {
   }
 }
 
+/**
+ * Log profile field change to audit trail (GDPR compliance)
+ * @param {string} userId - User ID
+ * @param {string} fieldName - Field that was changed
+ * @param {string} oldValue - Previous value
+ * @param {string} newValue - New value
+ * @param {object} req - Express request (for IP & user agent)
+ */
+async function logProfileChange(userId, fieldName, oldValue, newValue, req) {
+  try {
+    const { error } = await supabase
+      .from('profile_edit_audit')
+      .insert({
+        user_id: userId,
+        field_name: fieldName,
+        old_value: oldValue || null,
+        new_value: newValue || null,
+        ip_address: req.ip || req.headers['x-forwarded-for'] || req.connection.remoteAddress,
+        user_agent: req.headers['user-agent']
+      });
+
+    if (error) {
+      logger.error('Failed to log profile change:', error);
+      // Don't throw - audit logging failure shouldn't block the update
+    }
+  } catch (error) {
+    logger.error('Error in logProfileChange:', error);
+  }
+}
+
+/**
+ * Update contact details (Phase 1: Safe editable fields)
+ * PATCH /api/profile/contact-details
+ *
+ * Editable fields:
+ * - Address (all fields)
+ * - Mobile number
+ * - Emergency contact name & phone
+ * - Recovery email
+ */
+async function updateContactDetails(req, res) {
+  try {
+    const userId = req.user?.id;
+
+    if (!userId) {
+      return res.status(401).json({ error: 'Not authenticated' });
+    }
+
+    // Extract updatable fields from request body
+    const {
+      address_line1,
+      address_line2,
+      city,
+      county,
+      postcode,
+      mobile_number,
+      emergency_contact_name,
+      emergency_contact_phone,
+      recovery_email
+    } = req.body;
+
+    // Validation
+    const updates = {};
+    const errors = [];
+
+    // Address validation
+    if (address_line1 !== undefined) {
+      if (address_line1.trim().length === 0) {
+        errors.push('Address line 1 cannot be empty');
+      } else if (address_line1.length > 200) {
+        errors.push('Address line 1 is too long');
+      } else {
+        updates.address_line1 = address_line1.trim();
+      }
+    }
+
+    if (address_line2 !== undefined) {
+      updates.address_line2 = address_line2.trim() || null;
+    }
+
+    if (city !== undefined) {
+      if (city.trim().length === 0) {
+        errors.push('City cannot be empty');
+      } else if (city.length > 100) {
+        errors.push('City name is too long');
+      } else {
+        updates.city = city.trim();
+      }
+    }
+
+    if (county !== undefined) {
+      updates.county = county.trim() || null;
+    }
+
+    if (postcode !== undefined) {
+      const postcodePattern = /^[A-Z]{1,2}\d{1,2}[A-Z]?\s?\d[A-Z]{2}$/i;
+      if (!postcodePattern.test(postcode.trim())) {
+        errors.push('Invalid UK postcode format');
+      } else {
+        updates.postcode = postcode.trim().toUpperCase();
+      }
+    }
+
+    // Mobile number validation (UK format)
+    if (mobile_number !== undefined) {
+      const mobilePattern = /^(\+44|0)?[1-9]\d{9,10}$/;
+      const cleaned = mobile_number.replace(/\s/g, '');
+      if (!mobilePattern.test(cleaned)) {
+        errors.push('Invalid UK mobile number format');
+      } else {
+        // Normalize to +44 format
+        let normalized = cleaned;
+        if (normalized.startsWith('0')) {
+          normalized = '+44' + normalized.substring(1);
+        } else if (!normalized.startsWith('+44')) {
+          normalized = '+44' + normalized;
+        }
+        updates.mobile_number = normalized;
+      }
+    }
+
+    // Emergency contact validation
+    if (emergency_contact_name !== undefined) {
+      if (emergency_contact_name.trim().length === 0) {
+        errors.push('Emergency contact name cannot be empty');
+      } else if (emergency_contact_name.length > 100) {
+        errors.push('Emergency contact name is too long');
+      } else {
+        updates.emergency_contact_name = emergency_contact_name.trim();
+      }
+    }
+
+    if (emergency_contact_phone !== undefined) {
+      const phonePattern = /^(\+44|0)?[1-9]\d{9,10}$/;
+      const cleaned = emergency_contact_phone.replace(/\s/g, '');
+      if (!phonePattern.test(cleaned)) {
+        errors.push('Invalid emergency contact phone format');
+      } else {
+        let normalized = cleaned;
+        if (normalized.startsWith('0')) {
+          normalized = '+44' + normalized.substring(1);
+        } else if (!normalized.startsWith('+44')) {
+          normalized = '+44' + normalized;
+        }
+        updates.emergency_contact_phone = normalized;
+      }
+    }
+
+    // Recovery email validation
+    if (recovery_email !== undefined) {
+      const emailPattern = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+      if (recovery_email.trim().length > 0 && !emailPattern.test(recovery_email)) {
+        errors.push('Invalid recovery email format');
+      } else {
+        updates.recovery_email = recovery_email.trim().toLowerCase() || null;
+      }
+    }
+
+    // Return validation errors
+    if (errors.length > 0) {
+      return res.status(400).json({ error: 'Validation failed', details: errors });
+    }
+
+    // Check if any updates provided
+    if (Object.keys(updates).length === 0) {
+      return res.status(400).json({ error: 'No fields to update' });
+    }
+
+    // Fetch current values for audit logging
+    const { data: currentData, error: fetchError } = await supabase
+      .from('user_signup')
+      .select('address_line1, address_line2, city, county, postcode, mobile_number, emergency_contact_name, emergency_contact_phone, recovery_email')
+      .eq('create_user_id', userId)
+      .single();
+
+    if (fetchError) {
+      logger.error('Error fetching current profile:', fetchError);
+      return res.status(500).json({ error: 'Failed to fetch current profile' });
+    }
+
+    // Update user_signup table
+    const { error: updateError } = await supabase
+      .from('user_signup')
+      .update(updates)
+      .eq('create_user_id', userId);
+
+    if (updateError) {
+      logger.error('Error updating profile:', updateError);
+      return res.status(500).json({ error: 'Failed to update profile' });
+    }
+
+    // Log all changes to audit trail
+    const auditPromises = [];
+    for (const [field, newValue] of Object.entries(updates)) {
+      const oldValue = currentData[field];
+      if (oldValue !== newValue) {
+        auditPromises.push(
+          logProfileChange(userId, field, String(oldValue || ''), String(newValue || ''), req)
+        );
+      }
+    }
+
+    await Promise.all(auditPromises);
+
+    logger.info('Profile contact details updated', {
+      userId,
+      fields: Object.keys(updates)
+    });
+
+    return res.status(200).json({
+      success: true,
+      message: 'Contact details updated successfully',
+      updated_fields: Object.keys(updates)
+    });
+
+  } catch (error) {
+    logger.error('Error in updateContactDetails:', error);
+    return res.status(500).json({ error: 'Server error updating profile' });
+  }
+}
+
+/**
+ * Get current contact details (for displaying in edit forms)
+ * GET /api/profile/contact-details
+ */
+async function getContactDetails(req, res) {
+  try {
+    const userId = req.user?.id;
+
+    if (!userId) {
+      return res.status(401).json({ error: 'Not authenticated' });
+    }
+
+    const { data, error } = await supabase
+      .from('user_signup')
+      .select('address_line1, address_line2, city, county, postcode, mobile_number, emergency_contact_name, emergency_contact_phone, recovery_email')
+      .eq('create_user_id', userId)
+      .single();
+
+    if (error) {
+      logger.error('Error fetching contact details:', error);
+      return res.status(500).json({ error: 'Failed to fetch contact details' });
+    }
+
+    return res.status(200).json({
+      success: true,
+      data: {
+        address_line1: data.address_line1 || '',
+        address_line2: data.address_line2 || '',
+        city: data.city || '',
+        county: data.county || '',
+        postcode: data.postcode || '',
+        mobile_number: data.mobile_number || '',
+        emergency_contact_name: data.emergency_contact_name || '',
+        emergency_contact_phone: data.emergency_contact_phone || '',
+        recovery_email: data.recovery_email || ''
+      }
+    });
+
+  } catch (error) {
+    logger.error('Error in getContactDetails:', error);
+    return res.status(500).json({ error: 'Server error fetching profile' });
+  }
+}
+
 module.exports = {
   getUserProfile,
   updateUserProfile,
   updateFcmToken,
   sendPdfEmail,
   sendImageLinks,
-  getPdfStats
+  getPdfStats,
+  updateContactDetails,
+  getContactDetails
 };
