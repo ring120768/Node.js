@@ -247,6 +247,136 @@
             gap: 0.25rem;
         }
 
+        /* Profile Completion Section */
+        .profile-completion {
+            margin-bottom: var(--spacing-xl);
+        }
+
+        .profile-card {
+            background: linear-gradient(135deg, #f0fdf4 0%, #ecfdf5 100%);
+            border: 2px solid var(--accent);
+        }
+
+        .profile-header-content {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            width: 100%;
+            margin-bottom: var(--spacing-sm);
+        }
+
+        .profile-progress {
+            display: flex;
+            align-items: center;
+            gap: var(--spacing-md);
+        }
+
+        .progress-circle {
+            position: relative;
+            width: 60px;
+            height: 60px;
+        }
+
+        .progress-text {
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            font-size: 0.875rem;
+            font-weight: 700;
+            color: var(--accent);
+        }
+
+        .progress-label {
+            font-size: 0.875rem;
+            color: var(--text-secondary);
+        }
+
+        .profile-subtitle {
+            color: var(--text-secondary);
+            font-size: 0.875rem;
+            margin-top: var(--spacing-sm);
+        }
+
+        .profile-items {
+            display: grid;
+            gap: var(--spacing-md);
+            margin-top: var(--spacing-lg);
+        }
+
+        .profile-item {
+            background: white;
+            border-radius: var(--radius-lg);
+            padding: var(--spacing-lg);
+            display: flex;
+            align-items: flex-start;
+            gap: var(--spacing-md);
+            border: 1px solid var(--border);
+            transition: all 0.2s;
+        }
+
+        .profile-item:hover {
+            box-shadow: var(--shadow-md);
+            transform: translateY(-2px);
+        }
+
+        .profile-item.completed {
+            opacity: 0.6;
+            background: #f8fafc;
+        }
+
+        .profile-item-icon {
+            font-size: 2rem;
+            flex-shrink: 0;
+        }
+
+        .profile-item-content {
+            flex: 1;
+        }
+
+        .profile-item-title {
+            font-size: 1rem;
+            font-weight: 600;
+            color: var(--text-primary);
+            margin-bottom: 0.25rem;
+        }
+
+        .profile-item-description {
+            font-size: 0.875rem;
+            color: var(--text-secondary);
+            line-height: 1.5;
+        }
+
+        .profile-item-actions {
+            display: flex;
+            gap: var(--spacing-sm);
+            margin-top: var(--spacing-sm);
+        }
+
+        .profile-item-status {
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+            flex-shrink: 0;
+        }
+
+        .status-badge {
+            padding: 0.375rem 0.75rem;
+            border-radius: 9999px;
+            font-size: 0.75rem;
+            font-weight: 600;
+        }
+
+        .status-badge.missing {
+            background: #fef2f2;
+            color: #dc2626;
+        }
+
+        .status-badge.completed {
+            background: #f0fdf4;
+            color: #16a34a;
+        }
+
         /* Content Grid */
         .content-grid {
             display: grid;
@@ -1319,6 +1449,41 @@
                 </div>
             </div>
 
+            <!-- Profile Completion Section -->
+            <div id="profileCompletionSection" class="profile-completion" style="display: none;">
+                <div class="card profile-card">
+                    <div class="card-header">
+                        <div class="profile-header-content">
+                            <h2 class="card-title">
+                                <span>✨</span> Complete Your Profile
+                            </h2>
+                            <div class="profile-progress">
+                                <div class="progress-circle">
+                                    <svg width="60" height="60">
+                                        <circle cx="30" cy="30" r="25" fill="none" stroke="#e2e8f0" stroke-width="4"/>
+                                        <circle id="profileProgressCircle" cx="30" cy="30" r="25" fill="none"
+                                                stroke="var(--accent)" stroke-width="4"
+                                                stroke-dasharray="157" stroke-dashoffset="157"
+                                                transform="rotate(-90 30 30)"/>
+                                    </svg>
+                                    <span id="profileProgressText" class="progress-text">0%</span>
+                                </div>
+                                <div class="progress-label">
+                                    <strong id="profileItemsComplete">0 of 5</strong> items complete
+                                </div>
+                            </div>
+                        </div>
+                        <p class="profile-subtitle">
+                            Add these items to strengthen your insurance claim and maximize your payout
+                        </p>
+                    </div>
+
+                    <div class="profile-items" id="profileItemsList">
+                        <!-- Profile items will be dynamically inserted here -->
+                    </div>
+                </div>
+            </div>
+
             <!-- Content Grid -->
             <div class="content-grid">
                 <!-- Recent Activity -->
@@ -1671,7 +1836,8 @@
                 // Load all data
                 await Promise.all([
                     loadStats(),
-                    loadActivity()
+                    loadActivity(),
+                    loadProfileCompletion()
                 ]);
 
                 // Show content
@@ -1875,6 +2041,221 @@
                     </div>
                 `;
             }
+        }
+
+        // Load Profile Completion Status
+        async function loadProfileCompletion() {
+            try {
+                console.log('📋 Loading profile completion status...');
+
+                // Fetch user documents to check what's uploaded
+                const response = await fetch('/api/user-documents', {
+                    credentials: 'include'
+                });
+
+                if (!response.ok) {
+                    throw new Error('Failed to fetch documents');
+                }
+
+                const documents = await response.json();
+
+                // Define required profile items
+                const profileItems = [
+                    {
+                        id: 'driving_license_picture',
+                        icon: '🪪',
+                        title: 'Driving License',
+                        description: 'Your UK driving license photo (front side) helps verify your identity and driving eligibility',
+                        field: 'driving_license_picture'
+                    },
+                    {
+                        id: 'vehicle_front_image',
+                        icon: '📸',
+                        title: 'Vehicle Front Photo',
+                        description: 'Front view of your vehicle in pristine condition (before the accident) proves pre-incident value',
+                        field: 'vehicle_front_image'
+                    },
+                    {
+                        id: 'vehicle_back_image',
+                        icon: '📸',
+                        title: 'Vehicle Back Photo',
+                        description: 'Rear view showing registration plate and overall condition',
+                        field: 'vehicle_back_image'
+                    },
+                    {
+                        id: 'vehicle_driver_side_image',
+                        icon: '📸',
+                        title: 'Vehicle Driver Side',
+                        description: 'Driver side view showing vehicle profile and any existing damage',
+                        field: 'vehicle_driver_side_image'
+                    },
+                    {
+                        id: 'vehicle_passenger_side_image',
+                        icon: '📸',
+                        title: 'Vehicle Passenger Side',
+                        description: 'Passenger side view for complete documentation',
+                        field: 'vehicle_passenger_side_image'
+                    }
+                ];
+
+                // Check which items are missing
+                const missingItems = profileItems.filter(item => {
+                    const doc = documents.find(d => d.document_type === item.field);
+                    return !doc || !doc.storage_path;
+                });
+
+                console.log(`📊 Profile completion: ${profileItems.length - missingItems.length}/${profileItems.length} items`);
+
+                // Show section only if there are missing items
+                const section = document.getElementById('profileCompletionSection');
+                if (missingItems.length === 0) {
+                    section.style.display = 'none';
+                    return;
+                }
+
+                section.style.display = 'block';
+
+                // Calculate progress
+                const completedCount = profileItems.length - missingItems.length;
+                const percentage = Math.round((completedCount / profileItems.length) * 100);
+
+                // Update progress display
+                document.getElementById('profileProgressText').textContent = percentage + '%';
+                document.getElementById('profileItemsComplete').textContent = completedCount + ' of ' + profileItems.length;
+
+                // Animate progress circle (circumference = 2 * π * r = 157)
+                const circle = document.getElementById('profileProgressCircle');
+                const circumference = 157;
+                const offset = circumference - (percentage / 100) * circumference;
+                circle.style.strokeDashoffset = offset;
+
+                // Render missing items using safe DOM methods
+                const itemsList = document.getElementById('profileItemsList');
+                itemsList.textContent = ''; // Clear existing content
+
+                missingItems.forEach(item => {
+                    // Create profile item container
+                    const itemDiv = document.createElement('div');
+                    itemDiv.className = 'profile-item';
+
+                    // Icon
+                    const iconDiv = document.createElement('div');
+                    iconDiv.className = 'profile-item-icon';
+                    iconDiv.textContent = item.icon;
+                    itemDiv.appendChild(iconDiv);
+
+                    // Content
+                    const contentDiv = document.createElement('div');
+                    contentDiv.className = 'profile-item-content';
+
+                    const titleDiv = document.createElement('div');
+                    titleDiv.className = 'profile-item-title';
+                    titleDiv.textContent = item.title;
+                    contentDiv.appendChild(titleDiv);
+
+                    const descDiv = document.createElement('div');
+                    descDiv.className = 'profile-item-description';
+                    descDiv.textContent = item.description;
+                    contentDiv.appendChild(descDiv);
+
+                    // Actions
+                    const actionsDiv = document.createElement('div');
+                    actionsDiv.className = 'profile-item-actions';
+
+                    const uploadBtn = document.createElement('button');
+                    uploadBtn.className = 'btn btn-primary';
+                    uploadBtn.textContent = 'Upload Photo';
+                    uploadBtn.setAttribute('data-action', 'uploadProfileItem');
+                    uploadBtn.setAttribute('data-field', item.field);
+                    actionsDiv.appendChild(uploadBtn);
+
+                    contentDiv.appendChild(actionsDiv);
+                    itemDiv.appendChild(contentDiv);
+
+                    // Status
+                    const statusDiv = document.createElement('div');
+                    statusDiv.className = 'profile-item-status';
+
+                    const badge = document.createElement('span');
+                    badge.className = 'status-badge missing';
+                    badge.textContent = 'Missing';
+                    statusDiv.appendChild(badge);
+
+                    itemDiv.appendChild(statusDiv);
+
+                    // Add to list
+                    itemsList.appendChild(itemDiv);
+                });
+
+            } catch (error) {
+                console.error('Error loading profile completion:', error);
+                // Don't show error to user - profile completion is optional
+            }
+        }
+
+        // Handle profile item upload
+        async function uploadProfileItem(field) {
+            console.log('📤 Starting upload for field:', field);
+
+            // Create file input
+            const input = document.createElement('input');
+            input.type = 'file';
+            input.accept = 'image/*';
+
+            input.onchange = async (e) => {
+                const file = e.target.files[0];
+                if (!file) return;
+
+                try {
+                    showToast('Uploading photo...', 'info');
+
+                    const formData = new FormData();
+                    formData.append('image', file);
+                    formData.append('document_type', field);
+                    formData.append('user_id', userId);
+
+                    const response = await fetch('/api/images/temp-upload', {
+                        method: 'POST',
+                        credentials: 'include',
+                        body: formData
+                    });
+
+                    if (!response.ok) {
+                        const error = await response.json();
+                        throw new Error(error.message || 'Upload failed');
+                    }
+
+                    const data = await response.json();
+
+                    // Link temp upload to user documents
+                    const linkResponse = await fetch('/api/user-documents/link-temp', {
+                        method: 'POST',
+                        credentials: 'include',
+                        headers: {
+                            'Content-Type': 'application/json'
+                        },
+                        body: JSON.stringify({
+                            temp_upload_id: data.tempUploadId,
+                            document_type: field
+                        })
+                    });
+
+                    if (!linkResponse.ok) {
+                        throw new Error('Failed to link uploaded document');
+                    }
+
+                    showToast('Photo uploaded successfully!', 'success');
+
+                    // Reload profile completion
+                    await loadProfileCompletion();
+
+                } catch (error) {
+                    console.error('Upload error:', error);
+                    showToast('Error: ' + error.message, 'error');
+                }
+            };
+
+            input.click();
         }
 
         // Delete timeline item (document, report, PDF, or transcription)
@@ -2297,6 +2678,12 @@
                     const itemId = button.getAttribute('data-id');
                     if (itemType && itemId) {
                         deleteTimelineItem(itemType, itemId);
+                    }
+                    break;
+                case 'uploadProfileItem':
+                    const field = button.getAttribute('data-field');
+                    if (field) {
+                        uploadProfileItem(field);
                     }
                     break;
             }

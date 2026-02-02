@@ -1240,7 +1240,7 @@
                 signupBtn.addEventListener('click', function(e) {
                     e.preventDefault();
                     console.log('✨ Signup button clicked');
-                    window.location.href = '/signup-form.html';
+                    window.location.href = '/signup-checklist.html';
                 });
                 console.log('✅ Signup button event listener added');
             }
@@ -1403,7 +1403,7 @@
                 modalSignupBtn.addEventListener('click', function(e) {
                     e.preventDefault();
                     console.log('✨ Sign Up button clicked from members modal');
-                    window.location.href = '/signup-form.html';
+                    window.location.href = '/signup-checklist.html';
                 });
             }
 
@@ -1459,8 +1459,8 @@
                                 showGuideMenu();
                                 break;
                             case 'start-signup':
-                                console.log('✨ Navigating to signup form...');
-                                window.location.href = '/signup-form.html';
+                                console.log('✨ Navigating to signup checklist...');
+                                window.location.href = '/signup-checklist.html';
                                 break;
                             case 'start-incident':
                                 console.log('📝 Navigating to incident report...');
@@ -1520,7 +1520,7 @@
                     if (logoutBtn) logoutBtn.click();
                 } else if (target.matches('.auth-btn.signup')) {
                     e.preventDefault();
-                    window.location.href = '/signup-form.html';
+                    window.location.href = '/signup-checklist.html';
                 }
             });
             

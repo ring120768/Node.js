@@ -671,6 +671,137 @@ async function updateDocument(req, res) {
   }
 }
 
+/**
+ * POST /api/user-documents/link-temp
+ * Link a temp upload to user documents (for dashboard photo upload)
+ */
+async function linkTempUpload(req, res) {
+  const requestId = req.id || crypto.randomBytes(8).toString('hex');
+
+  try {
+    // Get user ID from auth
+    const userId = req.user?.id;
+
+    if (!userId) {
+      logger.warn(`[${requestId}] Missing user ID`);
+      return res.status(401).json({
+        success: false,
+        error: 'Authentication required',
+        code: 'AUTH_REQUIRED'
+      });
+    }
+
+    const { temp_upload_id, document_type } = req.body;
+
+    if (!temp_upload_id || !document_type) {
+      return res.status(400).json({
+        success: false,
+        error: 'Missing required fields: temp_upload_id, document_type'
+      });
+    }
+
+    logger.info(`[${requestId}] Linking temp upload to user documents`, {
+      userId,
+      temp_upload_id,
+      document_type
+    });
+
+    // 1. Fetch temp upload record
+    const { data: tempUpload, error: fetchError } = await supabase
+      .from('temp_uploads')
+      .select('*')
+      .eq('id', temp_upload_id)
+      .eq('create_user_id', userId) // Security: ensure user owns this temp upload
+      .single();
+
+    if (fetchError || !tempUpload) {
+      logger.error(`[${requestId}] Temp upload not found`, { fetchError });
+      return res.status(404).json({
+        success: false,
+        error: 'Temp upload not found or expired'
+      });
+    }
+
+    // 2. Generate new storage path for user_documents
+    const filename = tempUpload.storage_path.split('/').pop();
+    const newStoragePath = `user-documents/${userId}/${document_type}/${filename}`;
+
+    // 3. Copy file from temp_uploads to user_documents
+    const { data: copyData, error: copyError } = await supabase.storage
+      .from('temp_uploads')
+      .copy(tempUpload.storage_path, newStoragePath, {
+        destinationBucket: 'user-documents'
+      });
+
+    if (copyError) {
+      logger.error(`[${requestId}] Failed to copy file`, { copyError });
+      return res.status(500).json({
+        success: false,
+        error: 'Failed to move file to user documents'
+      });
+    }
+
+    // 4. Create user_documents record
+    const { data: newDocument, error: insertError } = await supabase
+      .from('user_documents')
+      .insert({
+        create_user_id: userId,
+        document_type: document_type,
+        document_category: 'user_signup',
+        file_name: filename,
+        file_size: tempUpload.file_size,
+        mime_type: tempUpload.mime_type,
+        storage_path: newStoragePath,
+        status: 'completed',
+        processed_at: new Date().toISOString()
+      })
+      .select()
+      .single();
+
+    if (insertError) {
+      logger.error(`[${requestId}] Failed to create user_documents record`, { insertError });
+      return res.status(500).json({
+        success: false,
+        error: 'Failed to create document record'
+      });
+    }
+
+    // 5. Delete temp upload record
+    await supabase
+      .from('temp_uploads')
+      .delete()
+      .eq('id', temp_upload_id);
+
+    // 6. Delete file from temp_uploads bucket
+    await supabase.storage
+      .from('temp_uploads')
+      .remove([tempUpload.storage_path]);
+
+    logger.info(`[${requestId}] Successfully linked temp upload`, {
+      documentId: newDocument.id,
+      storagePath: newStoragePath
+    });
+
+    return res.status(200).json({
+      success: true,
+      message: 'Document linked successfully',
+      data: {
+        document_id: newDocument.id,
+        storage_path: newStoragePath,
+        document_type: document_type
+      }
+    });
+
+  } catch (error) {
+    logger.error(`[${requestId}] linkTempUpload error:`, error);
+    return res.status(500).json({
+      success: false,
+      error: 'Internal server error',
+      message: error.message
+    });
+  }
+}
+
 module.exports = {
   listUserDocuments,
   getDocument,
@@ -678,5 +809,6 @@ module.exports = {
   refreshSignedUrl,
   updateDocument,
   deleteDocument,
-  downloadDocument
+  downloadDocument,
+  linkTempUpload
 };

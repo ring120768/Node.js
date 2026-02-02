@@ -5,6 +5,7 @@
  * Endpoints:
  * - GET    /api/user-documents              - List all documents
  * - GET    /api/user-documents/stats        - Get statistics
+ * - POST   /api/user-documents/link-temp    - Link temp upload to user documents
  * - GET    /api/user-documents/:id          - Get specific document
  * - GET    /api/user-documents/:id/download - Download document
  * - POST   /api/user-documents/:id/refresh-url - Refresh signed URL
@@ -74,6 +75,28 @@ router.get('/', userDocumentsController.listUserDocuments);
  * }
  */
 router.get('/stats', userDocumentsController.getDocumentStats);
+
+/**
+ * POST /api/user-documents/link-temp
+ * Link a temp upload to user documents
+ *
+ * Body:
+ * {
+ *   "temp_upload_id": "uuid",
+ *   "document_type": "driving_license_picture"
+ * }
+ *
+ * Response:
+ * {
+ *   "success": true,
+ *   "message": "Document linked successfully",
+ *   "data": {
+ *     "document_id": "uuid",
+ *     "storage_path": "user-documents/..."
+ *   }
+ * }
+ */
+router.post('/link-temp', userDocumentsController.linkTempUpload);
 
 /**
  * GET /api/user-documents/:id

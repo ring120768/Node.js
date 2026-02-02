@@ -3,16 +3,18 @@
  *
  * Manages all scheduled tasks for the dual retention model:
  * - PDF queue processing (every 2 minutes)
+ * - Email retry queue (every 2 minutes)
  * - Incident deletion warnings (daily)
  * - Subscription renewal warnings (daily)
+ * - Profile completion reminders (daily)
  * - S3 backups (daily)
  * - Auto-delete expired incidents (daily)
  * - Auto-delete expired accounts (daily)
  * - Process subscription renewals (daily)
  * - Cleanup old S3 backups (monthly)
  *
- * @version 1.1.0
- * @date 2025-12-18
+ * @version 1.2.0
+ * @date 2026-02-02
  */
 
 const cron = require('node-cron');
@@ -127,6 +129,24 @@ class CronManager {
       'subscription-warnings',
       '30 9 * * *', // Every day at 9:30 AM
       () => this.executeScript('scripts/send-subscription-warnings.js', 'Send Subscription Renewal Warnings')
+    );
+
+    // 4b. Profile Completion Reminders - Daily at 10:00 AM
+    this.scheduleJob(
+      'profile-completion-reminders',
+      '0 10 * * *', // Every day at 10:00 AM
+      async () => {
+        logger.info('[CRON] Starting Profile Completion Reminders...');
+        try {
+          const profileService = require('./profileCompletionService');
+          const stats = await profileService.processProfileReminders();
+          logger.info('[CRON] Profile Completion Reminders completed:', stats);
+          return { success: true, stats };
+        } catch (error) {
+          logger.error('[CRON] Profile Completion Reminders failed:', error);
+          return { success: false, error: error.message };
+        }
+      }
     );
 
     // 5. S3 Cleanup - Monthly on the 1st at 4:00 AM
