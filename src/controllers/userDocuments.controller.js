@@ -711,11 +711,16 @@ async function linkTempUpload(req, res) {
       .from('temp_uploads')
       .select('*')
       .eq('id', temp_upload_id)
-      .eq('create_user_id', userId) // Security: ensure user owns this temp upload
+      .eq('session_id', userId) // Security: ensure user owns this temp upload (session_id = userId from dashboard)
       .single();
 
     if (fetchError || !tempUpload) {
-      logger.error(`[${requestId}] Temp upload not found`, { fetchError });
+      logger.error(`[${requestId}] Temp upload not found`, {
+        fetchError,
+        temp_upload_id,
+        userId,
+        message: 'Check that session_id matches userId'
+      });
       return res.status(404).json({
         success: false,
         error: 'Temp upload not found or expired'
@@ -726,15 +731,17 @@ async function linkTempUpload(req, res) {
     const filename = tempUpload.storage_path.split('/').pop();
     const newStoragePath = `user-documents/${userId}/${document_type}/${filename}`;
 
-    // 3. Copy file from temp_uploads to user_documents
-    const { data: copyData, error: copyError } = await supabase.storage
-      .from('temp_uploads')
-      .copy(tempUpload.storage_path, newStoragePath, {
-        destinationBucket: 'user-documents'
-      });
+    // 3. Move file from temp/ to permanent location within user-documents bucket
+    const { data: moveData, error: moveError } = await supabase.storage
+      .from('user-documents')
+      .move(tempUpload.storage_path, newStoragePath);
 
-    if (copyError) {
-      logger.error(`[${requestId}] Failed to copy file`, { copyError });
+    if (moveError) {
+      logger.error(`[${requestId}] Failed to move file`, {
+        moveError,
+        fromPath: tempUpload.storage_path,
+        toPath: newStoragePath
+      });
       return res.status(500).json({
         success: false,
         error: 'Failed to move file to user documents'
@@ -766,16 +773,11 @@ async function linkTempUpload(req, res) {
       });
     }
 
-    // 5. Delete temp upload record
+    // 5. Delete temp upload record (file was already moved by step 3)
     await supabase
       .from('temp_uploads')
       .delete()
       .eq('id', temp_upload_id);
-
-    // 6. Delete file from temp_uploads bucket
-    await supabase.storage
-      .from('temp_uploads')
-      .remove([tempUpload.storage_path]);
 
     logger.info(`[${requestId}] Successfully linked temp upload`, {
       documentId: newDocument.id,
