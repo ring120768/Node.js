@@ -800,7 +800,7 @@
     <div class="question-page" data-page="5">
       <div class="question">
         <h2>What's your car registration?</h2>
-        <p class="desc">We'll automatically fetch your vehicle details from the DVLA</p>
+        <p class="desc">We'll automatically fetch your vehicle details from the DVLA (optional - can add later)</p>
 
         <input
           type="text"
@@ -808,7 +808,6 @@
           class="input-field"
           placeholder="e.g. AB12 CDE"
           maxlength="8"
-          required
           style="text-transform: uppercase;"
         />
         <p class="hint">Enter your UK vehicle registration number</p>
@@ -875,8 +874,9 @@
       </div>
 
       <div class="nav-buttons">
-        <button class="btn btn-back" data-action="back">Back</button>
-        <button class="btn btn-next" data-action="next" id="confirmDvlaBtn" style="display: none;">
+        <button type="button" class="btn btn-back" data-action="back">Back</button>
+        <button type="button" class="btn btn-ghost" data-action="skip" style="margin-right: auto;">Skip for Now</button>
+        <button type="button" class="btn btn-next" data-action="next" id="confirmDvlaBtn" style="display: none;">
           ✅ Yes, Correct
         </button>
       </div>
@@ -886,11 +886,11 @@
     <div class="question-page" data-page="6">
       <div class="question">
         <h2>Your driving & insurance details</h2>
-        <p class="desc">We need this information for your legal case</p>
+        <p class="desc">Optional - you can add these details later from your dashboard</p>
 
         <div style="margin-bottom: 20px;">
           <label for="driving_license_number" style="display: block; margin-bottom: 8px; font-weight: 500; color: #4a5568;">
-            Driving License Number *
+            Driving License Number (optional)
           </label>
           <input
             type="text"
@@ -898,7 +898,6 @@
             class="input-field"
             placeholder="e.g. SMITH701150AB1CD"
             maxlength="16"
-            required
             style="text-transform: uppercase;"
           />
           <p class="hint">UK driving license number (found on your photocard)</p>
@@ -906,28 +905,26 @@
 
         <div style="margin-bottom: 20px;">
           <label for="insurance_company" style="display: block; margin-bottom: 8px; font-weight: 500; color: #4a5568;">
-            Insurance Company *
+            Insurance Company (optional)
           </label>
           <input
             type="text"
             id="insurance_company"
             class="input-field"
             placeholder="e.g. Admiral, Aviva, Direct Line"
-            required
           />
           <p class="hint">Name of your car insurance provider</p>
         </div>
 
         <div style="margin-bottom: 20px;">
           <label for="policy_number" style="display: block; margin-bottom: 8px; font-weight: 500; color: #4a5568;">
-            Policy Number *
+            Policy Number (optional)
           </label>
           <input
             type="text"
             id="policy_number"
             class="input-field"
             placeholder="e.g. POL123456789"
-            required
             style="text-transform: uppercase;"
           />
           <p class="hint">Your insurance policy number</p>
@@ -935,23 +932,22 @@
 
         <div style="margin-bottom: 20px;">
           <label for="policy_holder" style="display: block; margin-bottom: 8px; font-weight: 500; color: #4a5568;">
-            Policy Holder *
+            Policy Holder (optional)
           </label>
           <input
             type="text"
             id="policy_holder"
             class="input-field"
             placeholder="e.g. John Smith"
-            required
           />
           <p class="hint">Main person named on the insurance policy</p>
         </div>
 
         <div style="margin-bottom: 20px;">
           <label for="cover_type" style="display: block; margin-bottom: 8px; font-weight: 500; color: #4a5568;">
-            Type of Cover *
+            Type of Cover (optional)
           </label>
-          <select id="cover_type" class="input-field" required style="cursor: pointer;">
+          <select id="cover_type" class="input-field" style="cursor: pointer;">
             <option value="">Select cover type...</option>
             <option value="comprehensive">Comprehensive</option>
             <option value="third_party_fire_theft">Third Party, Fire & Theft</option>
@@ -964,8 +960,9 @@
       </div>
 
       <div class="nav-buttons">
-        <button class="btn btn-back" data-action="back">Back</button>
-        <button class="btn btn-next" data-action="next">Continue</button>
+        <button type="button" class="btn btn-back" data-action="back">Back</button>
+        <button type="button" class="btn btn-ghost" data-action="skip" style="margin-right: auto;">Skip for Now</button>
+        <button type="button" class="btn btn-next" data-action="next">Continue</button>
       </div>
     </div>
 
@@ -1444,6 +1441,33 @@
         lookupBtn.addEventListener('click', lookupDVLA);
       }
 
+      // Skip buttons (direct event listeners for reliability)
+      document.querySelectorAll('[data-action="skip"]').forEach(skipBtn => {
+        skipBtn.addEventListener('click', function(e) {
+          e.preventDefault();
+          e.stopPropagation();
+          console.log('⏭️ Skip button clicked - moving from page', currentPage, 'to', currentPage + 1);
+
+          // Hide current page
+          const currentPageEl = document.querySelector('.question-page.active');
+          if (currentPageEl) {
+            currentPageEl.classList.remove('active');
+          }
+
+          // Show next page
+          currentPage++;
+          const nextPageEl = document.querySelector(`[data-page="${currentPage}"]`);
+          if (nextPageEl) {
+            nextPageEl.classList.add('active');
+            updateProgress();
+            window.scrollTo(0, 0);
+            console.log(`✅ Skipped to page ${currentPage}`);
+          }
+
+          return false;
+        });
+      });
+
       // Page 7: All photo upload handlers
       const photoTypes = [
         { type: 'license', fieldName: 'driving_license_picture' },
@@ -1464,6 +1488,31 @@
         // Handle back buttons
         if (target.classList.contains('btn-back') || target.getAttribute('data-action') === 'back') {
           prevPage();
+        }
+
+        // Handle skip buttons (bypass validation and go to next page)
+        if (target.getAttribute('data-action') === 'skip') {
+          e.preventDefault();
+          e.stopPropagation();
+          console.log('⏭️ Skip button clicked (event delegation) - moving from page', currentPage, 'to', currentPage + 1);
+
+          // Hide current page
+          const currentPageEl = document.querySelector('.question-page.active');
+          if (currentPageEl) {
+            currentPageEl.classList.remove('active');
+          }
+
+          // Show next page
+          currentPage++;
+          const nextPageEl = document.querySelector(`[data-page="${currentPage}"]`);
+          if (nextPageEl) {
+            nextPageEl.classList.add('active');
+            updateProgress();
+            window.scrollTo(0, 0);
+            console.log(`✅ Skipped to page ${currentPage}`);
+          }
+
+          return false;
         }
 
         // Handle next/continue buttons
@@ -2054,7 +2103,7 @@
       }
     }
 
-    // Validate car registration (must be verified via DVLA)
+    // Validate car registration (optional - can skip)
     function validateCarRegistration() {
       const regInput = document.getElementById('car_registration_number');
       const errorEl = document.getElementById('dvla-error');
@@ -2064,14 +2113,14 @@
       errorEl.classList.remove('show');
       regInput.classList.remove('error');
 
+      // Allow skipping (no car details provided)
       if (!regNumber) {
-        showError('dvla-error', 'Please enter your car registration');
-        regInput.classList.add('error');
-        return false;
+        return true;
       }
 
+      // If they entered a registration, they must verify it
       if (!formData.dvla_verified) {
-        showError('dvla-error', 'Please verify your vehicle using the "Lookup Vehicle" button');
+        showError('dvla-error', 'Please verify your vehicle using the "Lookup Vehicle" button, or clear the field to skip');
         regInput.classList.add('error');
         return false;
       }
@@ -2081,7 +2130,7 @@
 
     // ===== PAGE 6: DRIVING RECORDS =====
 
-    // Validate driving records
+    // Validate driving records (optional - can skip entirely)
     function validateDrivingRecords() {
       const licenseNumber = document.getElementById('driving_license_number');
       const insuranceCompany = document.getElementById('insurance_company');
@@ -2094,45 +2143,31 @@
       errorEl.classList.remove('show');
       [licenseNumber, insuranceCompany, policyNumber, policyHolder, coverType].forEach(field => field.classList.remove('error'));
 
-      // Validate driving license number
-      const licenseValue = licenseNumber.value.trim().toUpperCase().replace(/\s+/g, '');
-      if (!licenseValue) {
-        showError('driving-error', 'Please enter your driving license number');
-        licenseNumber.classList.add('error');
-        return false;
-      }
-      // UK driving license is 16 characters
-      if (licenseValue.length !== 16) {
-        showError('driving-error', 'UK driving license number must be 16 characters');
-        licenseNumber.classList.add('error');
-        return false;
+      const licenseValue = licenseNumber.value.trim();
+      const insuranceValue = insuranceCompany.value.trim();
+      const policyValue = policyNumber.value.trim();
+      const holderValue = policyHolder.value.trim();
+      const coverValue = coverType.value;
+
+      // Allow skipping entirely (all fields empty)
+      if (!licenseValue && !insuranceValue && !policyValue && !holderValue && !coverValue) {
+        return true;
       }
 
-      // Validate insurance company
-      if (!insuranceCompany.value.trim()) {
-        showError('driving-error', 'Please enter your insurance company name');
-        insuranceCompany.classList.add('error');
-        return false;
+      // If they started filling it out, validate what they entered
+      if (licenseValue) {
+        const cleanedLicense = licenseValue.toUpperCase().replace(/\s+/g, '');
+        if (cleanedLicense.length !== 16) {
+          showError('driving-error', 'UK driving license number must be 16 characters (or leave all fields empty to skip)');
+          licenseNumber.classList.add('error');
+          return false;
+        }
       }
 
-      // Validate policy number
-      if (!policyNumber.value.trim()) {
-        showError('driving-error', 'Please enter your policy number');
-        policyNumber.classList.add('error');
-        return false;
-      }
-
-      // Validate policy holder
-      if (!policyHolder.value.trim()) {
-        showError('driving-error', 'Please enter the policy holder name');
-        policyHolder.classList.add('error');
-        return false;
-      }
-
-      // Validate cover type
-      if (!coverType.value) {
-        showError('driving-error', 'Please select your insurance cover type');
-        coverType.classList.add('error');
+      // Partial validation - if some fields filled, they should complete the set
+      const filledCount = [insuranceValue, policyValue, holderValue, coverValue].filter(v => v).length;
+      if (filledCount > 0 && filledCount < 4) {
+        showError('driving-error', 'Please complete all insurance fields or leave them all empty to skip');
         return false;
       }
 

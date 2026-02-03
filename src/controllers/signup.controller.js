@@ -63,6 +63,8 @@ async function submitSignup(req, res) {
     // Flow v2: temp_signup_id + pending_password required (auth created after payment)
     const useV2Flow = isSignupFlowV2();
 
+    // Relaxed validation - only truly essential fields required
+    // Vehicle, insurance, license, and emergency contact details can be added later from dashboard
     const baseRequiredFields = [
       'first_name',
       'last_name',
@@ -72,16 +74,6 @@ async function submitSignup(req, res) {
       'address_line_1',
       'city',
       'postcode',
-      'car_registration_number',
-      'driving_license_number',
-      'insurance_company',
-      'policy_number',
-      'policy_holder',
-      'cover_type',
-      'emergency_contact_first_name',
-      'emergency_contact_last_name',
-      'emergency_contact_phone',
-      'emergency_contact_email',
       'gdpr_consent'
     ];
 
