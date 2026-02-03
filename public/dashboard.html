@@ -3026,6 +3026,10 @@
                     }
 
                     const data = await response.json();
+                    console.log('✅ Temp upload successful, linking to user documents:', {
+                        uploadId: data.uploadId,
+                        documentType: field
+                    });
 
                     // Link temp upload to user documents
                     const linkResponse = await fetch('/api/user-documents/link-temp', {
@@ -3041,7 +3045,13 @@
                     });
 
                     if (!linkResponse.ok) {
-                        throw new Error('Failed to link uploaded document');
+                        const linkError = await linkResponse.json().catch(() => ({}));
+                        console.error('Link temp upload failed:', {
+                            status: linkResponse.status,
+                            statusText: linkResponse.statusText,
+                            error: linkError
+                        });
+                        throw new Error(linkError.message || linkError.error || `Failed to link document (${linkResponse.status})`);
                     }
 
                     showToast('Photo uploaded successfully!', 'success');
