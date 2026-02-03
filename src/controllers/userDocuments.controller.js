@@ -765,8 +765,8 @@ async function linkTempUpload(req, res) {
         file_size: tempUpload.file_size,
         mime_type: tempUpload.mime_type,
         file_extension: fileExtension,
-        status: 'completed',
-        processed_at: new Date().toISOString()
+        status: 'completed'
+        // Note: processed_at column doesn't exist - removed
       })
       .select()
       .single();
