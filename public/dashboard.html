@@ -1753,6 +1753,19 @@
                             <option value="LPG">LPG</option>
                         </select>
                     </div>
+
+                    <div class="form-group">
+                        <label class="form-label" for="vehicle_condition_input">
+                            Vehicle Condition
+                            <span class="optional">(optional)</span>
+                        </label>
+                        <input
+                            type="text"
+                            id="vehicle_condition_input"
+                            name="vehicle_condition"
+                            class="form-input"
+                            placeholder="e.g. Excellent, Good, Fair">
+                    </div>
                 </div>
 
                 <div class="modal-footer">
@@ -2106,7 +2119,7 @@
                                     <span class="detail-value" id="city">-</span>
                                 </div>
                                 <div class="detail-item">
-                                    <span class="detail-label">County:</span>
+                                    <span class="detail-label">Country:</span>
                                     <span class="detail-value" id="county">-</span>
                                 </div>
                                 <div class="detail-item">
@@ -2214,6 +2227,10 @@
                                 <div class="detail-item">
                                     <span class="detail-label">Fuel Type:</span>
                                     <span class="detail-value" id="fuel_type">-</span>
+                                </div>
+                                <div class="detail-item">
+                                    <span class="detail-label">Condition:</span>
+                                    <span class="detail-value" id="vehicle_condition">-</span>
                                 </div>
                             </div>
                         </div>
@@ -3283,6 +3300,7 @@
                 document.getElementById('make').textContent = data.make || '-';
                 document.getElementById('model').textContent = data.model || '-';
                 document.getElementById('colour').textContent = data.colour || '-';
+                document.getElementById('vehicle_condition').textContent = data.vehicle_condition || '-';
                 document.getElementById('year_of_manufacture').textContent = data.year_of_manufacture || '-';
                 document.getElementById('fuel_type').textContent = data.fuel_type || '-';
 
@@ -3301,6 +3319,7 @@
             const currentMake = document.getElementById('make').textContent;
             const currentModel = document.getElementById('model').textContent;
             const currentColour = document.getElementById('colour').textContent;
+            const currentCondition = document.getElementById('vehicle_condition').textContent;
             const currentYear = document.getElementById('year_of_manufacture').textContent;
             const currentFuel = document.getElementById('fuel_type').textContent;
 
@@ -3308,6 +3327,7 @@
             document.getElementById('vehicle_make').value = currentMake === '-' ? '' : currentMake;
             document.getElementById('vehicle_model').value = currentModel === '-' ? '' : currentModel;
             document.getElementById('vehicle_colour').value = currentColour === '-' ? '' : currentColour;
+            document.getElementById('vehicle_condition_input').value = currentCondition === '-' ? '' : currentCondition;
             document.getElementById('vehicle_year').value = currentYear === '-' ? '' : currentYear;
             document.getElementById('vehicle_fuel').value = currentFuel === '-' ? '' : currentFuel;
 

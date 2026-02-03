@@ -834,7 +834,7 @@ async function getVehicleDetails(req, res) {
     // Query user_signup for vehicle data (columns are prefixed with vehicle_)
     const { data, error } = await supabase
       .from('user_signup')
-      .select('car_registration_number, vehicle_make, vehicle_model, vehicle_colour')
+      .select('car_registration_number, vehicle_make, vehicle_model, vehicle_colour, vehicle_condition')
       .eq('create_user_id', userId)
       .maybeSingle();
 
@@ -851,6 +851,7 @@ async function getVehicleDetails(req, res) {
         make: data?.vehicle_make || '',
         model: data?.vehicle_model || '',
         colour: data?.vehicle_colour || '',
+        vehicle_condition: data?.vehicle_condition || '',
         year_of_manufacture: null, // Not stored in user_signup (in dvla_vehicle_info_new)
         fuel_type: '' // Not stored in user_signup (in dvla_vehicle_info_new)
       }
@@ -883,6 +884,7 @@ async function updateVehicleDetails(req, res) {
       make,
       model,
       colour,
+      vehicle_condition,
       year_of_manufacture,
       fuel_type
     } = req.body;
@@ -904,6 +906,7 @@ async function updateVehicleDetails(req, res) {
     if (make !== undefined) updates.vehicle_make = make.trim() || null;
     if (model !== undefined) updates.vehicle_model = model.trim() || null;
     if (colour !== undefined) updates.vehicle_colour = colour.trim() || null;
+    if (vehicle_condition !== undefined) updates.vehicle_condition = vehicle_condition.trim() || null;
 
     // Note: year_of_manufacture and fuel_type are in dvla_vehicle_info_new table,
     // not in user_signup, so we ignore them for now
@@ -919,7 +922,7 @@ async function updateVehicleDetails(req, res) {
     // Fetch current values for audit
     const { data: currentData, error: fetchError } = await supabase
       .from('user_signup')
-      .select('car_registration_number, vehicle_make, vehicle_model, vehicle_colour')
+      .select('car_registration_number, vehicle_make, vehicle_model, vehicle_colour, vehicle_condition')
       .eq('create_user_id', userId)
       .maybeSingle();
 
