@@ -2535,7 +2535,7 @@
             try {
                 console.log('📇 Loading contact details...');
 
-                const response = await fetch('/api/profile/contact-details', {
+                const response = await fetch(`/api/profile/contact-details?_=${Date.now()}`, {
                     credentials: 'include'
                 });
 
@@ -2744,7 +2744,7 @@
             try {
                 console.log('🚗 Loading vehicle details...');
 
-                const response = await fetch('/api/profile/vehicle-details', {
+                const response = await fetch(`/api/profile/vehicle-details?_=${Date.now()}`, {
                     credentials: 'include'
                 });
 
@@ -2801,7 +2801,7 @@
             try {
                 showToast('Updating vehicle details...', 'info');
 
-                const response = await fetch('/api/profile/vehicle-details', {
+                const response = await fetch(`/api/profile/vehicle-details?_=${Date.now()}`, {
                     method: 'PATCH',
                     credentials: 'include',
                     headers: {
@@ -2839,7 +2839,7 @@
             try {
                 console.log('🛡️ Loading insurance details...');
 
-                const response = await fetch('/api/profile/insurance-details', {
+                const response = await fetch(`/api/profile/insurance-details?_=${Date.now()}`, {
                     credentials: 'include'
                 });
 
@@ -2912,7 +2912,7 @@ Enter number (1-3):`;
             try {
                 showToast('Updating insurance details...', 'info');
 
-                const response = await fetch('/api/profile/insurance-details', {
+                const response = await fetch(`/api/profile/insurance-details?_=${Date.now()}`, {
                     method: 'PATCH',
                     credentials: 'include',
                     headers: {
@@ -2948,7 +2948,7 @@ Enter number (1-3):`;
             try {
                 console.log('🪪 Loading license details...');
 
-                const response = await fetch('/api/profile/license-details', {
+                const response = await fetch(`/api/profile/license-details?_=${Date.now()}`, {
                     credentials: 'include'
                 });
 
@@ -2980,7 +2980,7 @@ Enter number (1-3):`;
             try {
                 showToast('Updating license details...', 'info');
 
-                const response = await fetch('/api/profile/license-details', {
+                const response = await fetch(`/api/profile/license-details?_=${Date.now()}`, {
                     method: 'PATCH',
                     credentials: 'include',
                     headers: {
