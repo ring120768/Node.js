@@ -10,12 +10,6 @@ const { requireAuth } = require('../middleware/authMiddleware');
 // All profile routes require authentication
 router.use(requireAuth);
 
-// GET /api/profile/:userId - Get user profile
-router.get('/:userId', profileController.getUserProfile);
-
-// PUT /api/profile/:userId - Update user profile
-router.put('/:userId', profileController.updateUserProfile);
-
 // POST /api/profile/update-fcm-token - Update FCM token for push notifications
 router.post('/update-fcm-token', profileController.updateFcmToken);
 
@@ -55,5 +49,12 @@ router.get('/license-details', profileController.getLicenseDetails);
 
 // PATCH /api/profile/license-details - Update driving license information
 router.patch('/license-details', profileController.updateLicenseDetails);
+
+// IMPORTANT: Wildcard routes MUST be last to avoid catching specific routes above
+// GET /api/profile/:userId - Get user profile
+router.get('/:userId', profileController.getUserProfile);
+
+// PUT /api/profile/:userId - Update user profile
+router.put('/:userId', profileController.updateUserProfile);
 
 module.exports = router;
