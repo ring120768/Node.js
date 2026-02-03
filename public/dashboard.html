@@ -3051,7 +3051,8 @@
                             statusText: linkResponse.statusText,
                             error: linkError
                         });
-                        throw new Error(linkError.message || linkError.error || `Failed to link document (${linkResponse.status})`);
+                        const errorMsg = linkError.details || linkError.message || linkError.error || `Failed to link document (${linkResponse.status})`;
+                        throw new Error(errorMsg);
                     }
 
                     showToast('Photo uploaded successfully!', 'success');

@@ -772,10 +772,21 @@ async function linkTempUpload(req, res) {
       .single();
 
     if (insertError) {
-      logger.error(`[${requestId}] Failed to create user_documents record`, { insertError });
+      logger.error(`[${requestId}] Failed to create user_documents record`, {
+        insertError,
+        errorCode: insertError.code,
+        errorMessage: insertError.message,
+        errorDetails: insertError.details,
+        insertData: {
+          create_user_id: userId,
+          document_type: document_type,
+          storage_path: newStoragePath
+        }
+      });
       return res.status(500).json({
         success: false,
-        error: 'Failed to create document record'
+        error: 'Failed to create document record',
+        details: insertError.message || insertError.code || 'Unknown database error'
       });
     }
 
