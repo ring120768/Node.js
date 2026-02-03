@@ -549,12 +549,11 @@ async function updateContactDetails(req, res) {
       return res.status(401).json({ error: 'Not authenticated' });
     }
 
-    // Extract updatable fields from request body
+    // Extract updatable fields from request body (using form field names)
     const {
-      address_line1,
-      address_line2,
-      city,
-      county,
+      street_address,
+      street_address_optional,
+      town,
       postcode,
       mobile_number,
       emergency_contact_name,
@@ -566,33 +565,29 @@ async function updateContactDetails(req, res) {
     const updates = {};
     const errors = [];
 
-    // Address validation
-    if (address_line1 !== undefined) {
-      if (address_line1.trim().length === 0) {
+    // Address validation (map form fields to DB columns)
+    if (street_address !== undefined) {
+      if (street_address.trim().length === 0) {
         errors.push('Address line 1 cannot be empty');
-      } else if (address_line1.length > 200) {
+      } else if (street_address.length > 200) {
         errors.push('Address line 1 is too long');
       } else {
-        updates.address_line1 = address_line1.trim();
+        updates.street_address = street_address.trim();
       }
     }
 
-    if (address_line2 !== undefined) {
-      updates.address_line2 = address_line2.trim() || null;
+    if (street_address_optional !== undefined) {
+      updates.street_address_optional = street_address_optional.trim() || null;
     }
 
-    if (city !== undefined) {
-      if (city.trim().length === 0) {
-        errors.push('City cannot be empty');
-      } else if (city.length > 100) {
-        errors.push('City name is too long');
+    if (town !== undefined) {
+      if (town.trim().length === 0) {
+        errors.push('Town cannot be empty');
+      } else if (town.length > 100) {
+        errors.push('Town name is too long');
       } else {
-        updates.city = city.trim();
+        updates.town = town.trim();
       }
-    }
-
-    if (county !== undefined) {
-      updates.county = county.trim() || null;
     }
 
     if (postcode !== undefined) {
@@ -604,7 +599,7 @@ async function updateContactDetails(req, res) {
       }
     }
 
-    // Mobile number validation (UK format)
+    // Mobile number validation (UK format) - DB column is 'mobile'
     if (mobile_number !== undefined) {
       const mobilePattern = /^(\+44|0)?[1-9]\d{9,10}$/;
       const cleaned = mobile_number.replace(/\s/g, '');
@@ -618,44 +613,66 @@ async function updateContactDetails(req, res) {
         } else if (!normalized.startsWith('+44')) {
           normalized = '+44' + normalized;
         }
-        updates.mobile_number = normalized;
+        updates.mobile = normalized; // DB column is 'mobile'
       }
     }
 
-    // Emergency contact validation
-    if (emergency_contact_name !== undefined) {
-      if (emergency_contact_name.trim().length === 0) {
-        errors.push('Emergency contact name cannot be empty');
-      } else if (emergency_contact_name.length > 100) {
-        errors.push('Emergency contact name is too long');
-      } else {
-        updates.emergency_contact_name = emergency_contact_name.trim();
-      }
-    }
-
-    if (emergency_contact_phone !== undefined) {
-      const phonePattern = /^(\+44|0)?[1-9]\d{9,10}$/;
-      const cleaned = emergency_contact_phone.replace(/\s/g, '');
-      if (!phonePattern.test(cleaned)) {
-        errors.push('Invalid emergency contact phone format');
-      } else {
-        let normalized = cleaned;
-        if (normalized.startsWith('0')) {
-          normalized = '+44' + normalized.substring(1);
-        } else if (!normalized.startsWith('+44')) {
-          normalized = '+44' + normalized;
-        }
-        updates.emergency_contact_phone = normalized;
-      }
-    }
-
-    // Recovery email validation
+    // Recovery email validation - DB column is 'recovery_breakdown_email'
     if (recovery_email !== undefined) {
       const emailPattern = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
       if (recovery_email.trim().length > 0 && !emailPattern.test(recovery_email)) {
         errors.push('Invalid recovery email format');
       } else {
-        updates.recovery_email = recovery_email.trim().toLowerCase() || null;
+        updates.recovery_breakdown_email = recovery_email.trim().toLowerCase() || null;
+      }
+    }
+
+    // Emergency contact - stored as pipe-delimited string: "Name | Phone | Email | Company"
+    // Need to fetch current value and update only if both fields provided
+    if (emergency_contact_name !== undefined || emergency_contact_phone !== undefined) {
+      // Fetch current emergency contact to preserve parts not being updated
+      const { data: currentData } = await supabase
+        .from('user_signup')
+        .select('emergency_contact')
+        .eq('create_user_id', userId)
+        .maybeSingle();
+
+      const currentParts = (currentData?.emergency_contact || '').split('|').map(s => s.trim());
+      const [name, phone, email, company] = currentParts;
+
+      // Validate and update name
+      let newName = name;
+      if (emergency_contact_name !== undefined) {
+        if (emergency_contact_name.trim().length === 0) {
+          errors.push('Emergency contact name cannot be empty');
+        } else if (emergency_contact_name.length > 100) {
+          errors.push('Emergency contact name is too long');
+        } else {
+          newName = emergency_contact_name.trim();
+        }
+      }
+
+      // Validate and update phone
+      let newPhone = phone;
+      if (emergency_contact_phone !== undefined) {
+        const phonePattern = /^(\+44|0)?[1-9]\d{9,10}$/;
+        const cleaned = emergency_contact_phone.replace(/\s/g, '');
+        if (!phonePattern.test(cleaned)) {
+          errors.push('Invalid emergency contact phone format');
+        } else {
+          let normalized = cleaned;
+          if (normalized.startsWith('0')) {
+            normalized = '+44' + normalized.substring(1);
+          } else if (!normalized.startsWith('+44')) {
+            normalized = '+44' + normalized;
+          }
+          newPhone = normalized;
+        }
+      }
+
+      // Only update if validations passed
+      if (errors.length === 0) {
+        updates.emergency_contact = `${newName} | ${newPhone} | ${email || ''} | ${company || ''}`;
       }
     }
 
@@ -672,9 +689,9 @@ async function updateContactDetails(req, res) {
     // Fetch current values for audit logging
     const { data: currentData, error: fetchError } = await supabase
       .from('user_signup')
-      .select('address_line1, address_line2, city, county, postcode, mobile_number, emergency_contact_name, emergency_contact_phone, recovery_email')
+      .select('street_address, street_address_optional, town, postcode, mobile, emergency_contact, recovery_breakdown_email')
       .eq('create_user_id', userId)
-      .single();
+      .maybeSingle();
 
     if (fetchError) {
       logger.error('Error fetching current profile:', fetchError);
@@ -695,7 +712,7 @@ async function updateContactDetails(req, res) {
     // Log all changes to audit trail
     const auditPromises = [];
     for (const [field, newValue] of Object.entries(updates)) {
-      const oldValue = currentData[field];
+      const oldValue = currentData?.[field];
       if (oldValue !== newValue) {
         auditPromises.push(
           logProfileChange(userId, field, String(oldValue || ''), String(newValue || ''), req)
@@ -736,7 +753,7 @@ async function getContactDetails(req, res) {
 
     const { data, error } = await supabase
       .from('user_signup')
-      .select('street_address, street_address_optional, town, postcode, mobile_number, emergency_contact, recovery_breakdown_email')
+      .select('street_address, street_address_optional, town, postcode, mobile, emergency_contact, recovery_breakdown_email')
       .eq('create_user_id', userId)
       .maybeSingle();
 
@@ -756,7 +773,7 @@ async function getContactDetails(req, res) {
         street_address_optional: data?.street_address_optional || '',
         town: data?.town || '',
         postcode: data?.postcode || '',
-        mobile_number: data?.mobile_number || '',
+        mobile_number: data?.mobile || '',
         emergency_contact_name: emergencyParts[0] || '',
         emergency_contact_phone: emergencyParts[1] || '',
         recovery_email: data?.recovery_breakdown_email || ''

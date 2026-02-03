@@ -2831,7 +2831,8 @@
                     throw new Error('Failed to fetch documents');
                 }
 
-                const documents = await response.json();
+                const result = await response.json();
+                const documents = result.data?.documents || [];
 
                 // Define required profile items
                 const profileItems = [
