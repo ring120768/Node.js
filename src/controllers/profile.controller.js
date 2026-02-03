@@ -798,9 +798,10 @@ async function getVehicleDetails(req, res) {
       return res.status(401).json({ error: 'Not authenticated' });
     }
 
+    // Query user_signup for vehicle data (columns are prefixed with vehicle_)
     const { data, error } = await supabase
       .from('user_signup')
-      .select('car_registration_number, make, model, colour, year_of_manufacture, fuel_type')
+      .select('car_registration_number, vehicle_make, vehicle_model, vehicle_colour')
       .eq('create_user_id', userId)
       .maybeSingle();
 
@@ -809,16 +810,16 @@ async function getVehicleDetails(req, res) {
       return res.status(500).json({ error: 'Failed to fetch vehicle details' });
     }
 
-    // Return empty values if user hasn't filled out profile yet
+    // Return with simple field names (to match form submission names)
     return res.status(200).json({
       success: true,
       data: {
         car_registration_number: data?.car_registration_number || '',
-        make: data?.make || '',
-        model: data?.model || '',
-        colour: data?.colour || '',
-        year_of_manufacture: data?.year_of_manufacture || null,
-        fuel_type: data?.fuel_type || ''
+        make: data?.vehicle_make || '',
+        model: data?.vehicle_model || '',
+        colour: data?.vehicle_colour || '',
+        year_of_manufacture: null, // Not stored in user_signup (in dvla_vehicle_info_new)
+        fuel_type: '' // Not stored in user_signup (in dvla_vehicle_info_new)
       }
     });
 
@@ -866,21 +867,13 @@ async function updateVehicleDetails(req, res) {
       }
     }
 
-    // Simple text fields
-    if (make !== undefined) updates.make = make.trim() || null;
-    if (model !== undefined) updates.model = model.trim() || null;
-    if (colour !== undefined) updates.colour = colour.trim() || null;
-    if (fuel_type !== undefined) updates.fuel_type = fuel_type.trim() || null;
+    // Simple text fields (map form names to DB columns with vehicle_ prefix)
+    if (make !== undefined) updates.vehicle_make = make.trim() || null;
+    if (model !== undefined) updates.vehicle_model = model.trim() || null;
+    if (colour !== undefined) updates.vehicle_colour = colour.trim() || null;
 
-    // Year validation
-    if (year_of_manufacture !== undefined) {
-      const year = parseInt(year_of_manufacture);
-      if (year && (year < 1900 || year > new Date().getFullYear() + 1)) {
-        errors.push('Invalid year of manufacture');
-      } else {
-        updates.year_of_manufacture = year || null;
-      }
-    }
+    // Note: year_of_manufacture and fuel_type are in dvla_vehicle_info_new table,
+    // not in user_signup, so we ignore them for now
 
     if (errors.length > 0) {
       return res.status(400).json({ error: 'Validation failed', details: errors });
@@ -893,9 +886,9 @@ async function updateVehicleDetails(req, res) {
     // Fetch current values for audit
     const { data: currentData, error: fetchError } = await supabase
       .from('user_signup')
-      .select('car_registration_number, make, model, colour, year_of_manufacture, fuel_type')
+      .select('car_registration_number, vehicle_make, vehicle_model, vehicle_colour')
       .eq('create_user_id', userId)
-      .single();
+      .maybeSingle();
 
     if (fetchError) {
       logger.error('Error fetching current vehicle:', fetchError);
