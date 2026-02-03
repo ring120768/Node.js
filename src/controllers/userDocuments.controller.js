@@ -732,7 +732,7 @@ async function linkTempUpload(req, res) {
     const newStoragePath = `user-documents/${userId}/${document_type}/${filename}`;
 
     // 3. Move file from temp/ to permanent location within user-documents bucket
-    const { data: moveData, error: moveError } = await supabase.storage
+    const { data: moveData, error: moveError} = await supabase.storage
       .from('user-documents')
       .move(tempUpload.storage_path, newStoragePath);
 
@@ -748,8 +748,25 @@ async function linkTempUpload(req, res) {
       });
     }
 
+    // 3.5. Generate signed URL for the moved file (12 month expiry for PDF inclusion)
+    const { data: signedUrlData, error: signedUrlError } = await supabase.storage
+      .from('user-documents')
+      .createSignedUrl(newStoragePath, 31536000); // 12 months in seconds
+
+    if (signedUrlError) {
+      logger.error(`[${requestId}] Failed to generate signed URL`, { signedUrlError });
+      return res.status(500).json({
+        success: false,
+        error: 'Failed to generate signed URL'
+      });
+    }
+
     // 4. Create user_documents record
     const fileExtension = filename.split('.').pop().toLowerCase();
+
+    // Calculate signed URL expiry (12 months from now)
+    const expiresAt = new Date();
+    expiresAt.setFullYear(expiresAt.getFullYear() + 1);
 
     const { data: newDocument, error: insertError } = await supabase
       .from('user_documents')
@@ -762,11 +779,12 @@ async function linkTempUpload(req, res) {
         original_filename: filename,
         storage_bucket: 'user-documents',
         storage_path: newStoragePath,
+        signed_url: signedUrlData.signedUrl,
+        signed_url_expires_at: expiresAt.toISOString(),
         file_size: tempUpload.file_size,
         mime_type: tempUpload.mime_type,
         file_extension: fileExtension,
         status: 'completed'
-        // Note: processed_at column doesn't exist - removed
       })
       .select()
       .single();
