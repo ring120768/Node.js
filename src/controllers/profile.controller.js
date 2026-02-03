@@ -766,6 +766,417 @@ async function getContactDetails(req, res) {
   }
 }
 
+/**
+ * Get vehicle details (Phase 2: Vehicle editing)
+ * GET /api/profile/vehicle-details
+ */
+async function getVehicleDetails(req, res) {
+  try {
+    const userId = req.user?.id;
+
+    if (!userId) {
+      return res.status(401).json({ error: 'Not authenticated' });
+    }
+
+    const { data, error } = await supabase
+      .from('user_signup')
+      .select('car_registration_number, make, model, colour, year_of_manufacture, fuel_type')
+      .eq('create_user_id', userId)
+      .single();
+
+    if (error) {
+      logger.error('Error fetching vehicle details:', error);
+      return res.status(500).json({ error: 'Failed to fetch vehicle details' });
+    }
+
+    return res.status(200).json({
+      success: true,
+      data: {
+        car_registration_number: data.car_registration_number || '',
+        make: data.make || '',
+        model: data.model || '',
+        colour: data.colour || '',
+        year_of_manufacture: data.year_of_manufacture || null,
+        fuel_type: data.fuel_type || ''
+      }
+    });
+
+  } catch (error) {
+    logger.error('Error in getVehicleDetails:', error);
+    return res.status(500).json({ error: 'Server error fetching vehicle details' });
+  }
+}
+
+/**
+ * Update vehicle details (Phase 2: Vehicle editing)
+ * PATCH /api/profile/vehicle-details
+ *
+ * Editable fields:
+ * - Car registration (with optional DVLA lookup)
+ * - Make, model, colour, year, fuel type
+ */
+async function updateVehicleDetails(req, res) {
+  try {
+    const userId = req.user?.id;
+
+    if (!userId) {
+      return res.status(401).json({ error: 'Not authenticated' });
+    }
+
+    const {
+      car_registration_number,
+      make,
+      model,
+      colour,
+      year_of_manufacture,
+      fuel_type
+    } = req.body;
+
+    const updates = {};
+    const errors = [];
+
+    // Car registration validation (UK format)
+    if (car_registration_number !== undefined) {
+      const regPattern = /^[A-Z]{2}[0-9]{2}\s?[A-Z]{3}$|^[A-Z][0-9]{1,3}[A-Z]{3}$|^[A-Z]{3}[0-9]{1,3}[A-Z]$|^[0-9]{1,4}[A-Z]{1,2}$|^[0-9]{1,3}[A-Z]{1,3}$|^[A-Z]{1,2}[0-9]{1,4}$|^[A-Z]{1,3}[0-9]{1,3}$/i;
+      if (car_registration_number.trim().length > 0 && !regPattern.test(car_registration_number.trim())) {
+        errors.push('Invalid UK vehicle registration format');
+      } else {
+        updates.car_registration_number = car_registration_number.trim().toUpperCase();
+      }
+    }
+
+    // Simple text fields
+    if (make !== undefined) updates.make = make.trim() || null;
+    if (model !== undefined) updates.model = model.trim() || null;
+    if (colour !== undefined) updates.colour = colour.trim() || null;
+    if (fuel_type !== undefined) updates.fuel_type = fuel_type.trim() || null;
+
+    // Year validation
+    if (year_of_manufacture !== undefined) {
+      const year = parseInt(year_of_manufacture);
+      if (year && (year < 1900 || year > new Date().getFullYear() + 1)) {
+        errors.push('Invalid year of manufacture');
+      } else {
+        updates.year_of_manufacture = year || null;
+      }
+    }
+
+    if (errors.length > 0) {
+      return res.status(400).json({ error: 'Validation failed', details: errors });
+    }
+
+    if (Object.keys(updates).length === 0) {
+      return res.status(400).json({ error: 'No fields to update' });
+    }
+
+    // Fetch current values for audit
+    const { data: currentData, error: fetchError } = await supabase
+      .from('user_signup')
+      .select('car_registration_number, make, model, colour, year_of_manufacture, fuel_type')
+      .eq('create_user_id', userId)
+      .single();
+
+    if (fetchError) {
+      logger.error('Error fetching current vehicle:', fetchError);
+      return res.status(500).json({ error: 'Failed to fetch current vehicle' });
+    }
+
+    // Update user_signup table
+    const { error: updateError } = await supabase
+      .from('user_signup')
+      .update(updates)
+      .eq('create_user_id', userId);
+
+    if (updateError) {
+      logger.error('Error updating vehicle:', updateError);
+      return res.status(500).json({ error: 'Failed to update vehicle' });
+    }
+
+    // Log changes to audit trail
+    const auditPromises = [];
+    for (const [field, newValue] of Object.entries(updates)) {
+      const oldValue = currentData[field];
+      if (oldValue !== newValue) {
+        auditPromises.push(
+          logProfileChange(userId, field, String(oldValue || ''), String(newValue || ''), req)
+        );
+      }
+    }
+
+    await Promise.all(auditPromises);
+
+    logger.info('Vehicle details updated', { userId, fields: Object.keys(updates) });
+
+    return res.status(200).json({
+      success: true,
+      message: 'Vehicle details updated successfully',
+      updated_fields: Object.keys(updates)
+    });
+
+  } catch (error) {
+    logger.error('Error in updateVehicleDetails:', error);
+    return res.status(500).json({ error: 'Server error updating vehicle' });
+  }
+}
+
+/**
+ * Get insurance details (Phase 2: Insurance editing)
+ * GET /api/profile/insurance-details
+ */
+async function getInsuranceDetails(req, res) {
+  try {
+    const userId = req.user?.id;
+
+    if (!userId) {
+      return res.status(401).json({ error: 'Not authenticated' });
+    }
+
+    const { data, error } = await supabase
+      .from('user_signup')
+      .select('insurance_company, policy_number, policy_holder, cover_type')
+      .eq('create_user_id', userId)
+      .single();
+
+    if (error) {
+      logger.error('Error fetching insurance details:', error);
+      return res.status(500).json({ error: 'Failed to fetch insurance details' });
+    }
+
+    return res.status(200).json({
+      success: true,
+      data: {
+        insurance_company: data.insurance_company || '',
+        policy_number: data.policy_number || '',
+        policy_holder: data.policy_holder || '',
+        cover_type: data.cover_type || ''
+      }
+    });
+
+  } catch (error) {
+    logger.error('Error in getInsuranceDetails:', error);
+    return res.status(500).json({ error: 'Server error fetching insurance' });
+  }
+}
+
+/**
+ * Update insurance details (Phase 2: Insurance editing)
+ * PATCH /api/profile/insurance-details
+ */
+async function updateInsuranceDetails(req, res) {
+  try {
+    const userId = req.user?.id;
+
+    if (!userId) {
+      return res.status(401).json({ error: 'Not authenticated' });
+    }
+
+    const {
+      insurance_company,
+      policy_number,
+      policy_holder,
+      cover_type
+    } = req.body;
+
+    const updates = {};
+    const errors = [];
+
+    if (insurance_company !== undefined) {
+      updates.insurance_company = insurance_company.trim() || null;
+    }
+
+    if (policy_number !== undefined) {
+      updates.policy_number = policy_number.trim().toUpperCase() || null;
+    }
+
+    if (policy_holder !== undefined) {
+      updates.policy_holder = policy_holder.trim() || null;
+    }
+
+    if (cover_type !== undefined) {
+      const validTypes = ['comprehensive', 'third_party_fire_theft', 'third_party_only'];
+      if (cover_type && !validTypes.includes(cover_type)) {
+        errors.push('Invalid cover type');
+      } else {
+        updates.cover_type = cover_type || null;
+      }
+    }
+
+    if (errors.length > 0) {
+      return res.status(400).json({ error: 'Validation failed', details: errors });
+    }
+
+    if (Object.keys(updates).length === 0) {
+      return res.status(400).json({ error: 'No fields to update' });
+    }
+
+    // Fetch current values
+    const { data: currentData, error: fetchError } = await supabase
+      .from('user_signup')
+      .select('insurance_company, policy_number, policy_holder, cover_type')
+      .eq('create_user_id', userId)
+      .single();
+
+    if (fetchError) {
+      logger.error('Error fetching current insurance:', fetchError);
+      return res.status(500).json({ error: 'Failed to fetch current insurance' });
+    }
+
+    // Update
+    const { error: updateError } = await supabase
+      .from('user_signup')
+      .update(updates)
+      .eq('create_user_id', userId);
+
+    if (updateError) {
+      logger.error('Error updating insurance:', updateError);
+      return res.status(500).json({ error: 'Failed to update insurance' });
+    }
+
+    // Audit log
+    const auditPromises = [];
+    for (const [field, newValue] of Object.entries(updates)) {
+      const oldValue = currentData[field];
+      if (oldValue !== newValue) {
+        auditPromises.push(
+          logProfileChange(userId, field, String(oldValue || ''), String(newValue || ''), req)
+        );
+      }
+    }
+
+    await Promise.all(auditPromises);
+
+    logger.info('Insurance details updated', { userId, fields: Object.keys(updates) });
+
+    return res.status(200).json({
+      success: true,
+      message: 'Insurance details updated successfully',
+      updated_fields: Object.keys(updates)
+    });
+
+  } catch (error) {
+    logger.error('Error in updateInsuranceDetails:', error);
+    return res.status(500).json({ error: 'Server error updating insurance' });
+  }
+}
+
+/**
+ * Get driving license details (Phase 2: License editing)
+ * GET /api/profile/license-details
+ */
+async function getLicenseDetails(req, res) {
+  try {
+    const userId = req.user?.id;
+
+    if (!userId) {
+      return res.status(401).json({ error: 'Not authenticated' });
+    }
+
+    const { data, error } = await supabase
+      .from('user_signup')
+      .select('driving_license_number')
+      .eq('create_user_id', userId)
+      .single();
+
+    if (error) {
+      logger.error('Error fetching license details:', error);
+      return res.status(500).json({ error: 'Failed to fetch license details' });
+    }
+
+    return res.status(200).json({
+      success: true,
+      data: {
+        driving_license_number: data.driving_license_number || ''
+      }
+    });
+
+  } catch (error) {
+    logger.error('Error in getLicenseDetails:', error);
+    return res.status(500).json({ error: 'Server error fetching license' });
+  }
+}
+
+/**
+ * Update driving license details (Phase 2: License editing)
+ * PATCH /api/profile/license-details
+ */
+async function updateLicenseDetails(req, res) {
+  try {
+    const userId = req.user?.id;
+
+    if (!userId) {
+      return res.status(401).json({ error: 'Not authenticated' });
+    }
+
+    const { driving_license_number } = req.body;
+
+    const updates = {};
+    const errors = [];
+
+    if (driving_license_number !== undefined) {
+      const cleaned = driving_license_number.trim().toUpperCase().replace(/\s+/g, '');
+      if (cleaned.length > 0 && cleaned.length !== 16) {
+        errors.push('UK driving license number must be 16 characters');
+      } else {
+        updates.driving_license_number = cleaned || null;
+      }
+    }
+
+    if (errors.length > 0) {
+      return res.status(400).json({ error: 'Validation failed', details: errors });
+    }
+
+    if (Object.keys(updates).length === 0) {
+      return res.status(400).json({ error: 'No fields to update' });
+    }
+
+    // Fetch current value
+    const { data: currentData, error: fetchError } = await supabase
+      .from('user_signup')
+      .select('driving_license_number')
+      .eq('create_user_id', userId)
+      .single();
+
+    if (fetchError) {
+      logger.error('Error fetching current license:', fetchError);
+      return res.status(500).json({ error: 'Failed to fetch current license' });
+    }
+
+    // Update
+    const { error: updateError } = await supabase
+      .from('user_signup')
+      .update(updates)
+      .eq('create_user_id', userId);
+
+    if (updateError) {
+      logger.error('Error updating license:', updateError);
+      return res.status(500).json({ error: 'Failed to update license' });
+    }
+
+    // Audit log
+    if (currentData.driving_license_number !== updates.driving_license_number) {
+      await logProfileChange(
+        userId,
+        'driving_license_number',
+        String(currentData.driving_license_number || ''),
+        String(updates.driving_license_number || ''),
+        req
+      );
+    }
+
+    logger.info('License details updated', { userId });
+
+    return res.status(200).json({
+      success: true,
+      message: 'License details updated successfully',
+      updated_fields: Object.keys(updates)
+    });
+
+  } catch (error) {
+    logger.error('Error in updateLicenseDetails:', error);
+    return res.status(500).json({ error: 'Server error updating license' });
+  }
+}
+
 module.exports = {
   getUserProfile,
   updateUserProfile,
@@ -774,5 +1185,11 @@ module.exports = {
   sendImageLinks,
   getPdfStats,
   updateContactDetails,
-  getContactDetails
+  getContactDetails,
+  getVehicleDetails,
+  updateVehicleDetails,
+  getInsuranceDetails,
+  updateInsuranceDetails,
+  getLicenseDetails,
+  updateLicenseDetails
 };
