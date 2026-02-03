@@ -738,25 +738,26 @@ async function getContactDetails(req, res) {
       .from('user_signup')
       .select('address_line1, address_line2, city, county, postcode, mobile_number, emergency_contact_name, emergency_contact_phone, recovery_email')
       .eq('create_user_id', userId)
-      .single();
+      .maybeSingle();
 
     if (error) {
       logger.error('Error fetching contact details:', error);
       return res.status(500).json({ error: 'Failed to fetch contact details' });
     }
 
+    // Return empty values if user hasn't filled out profile yet
     return res.status(200).json({
       success: true,
       data: {
-        address_line1: data.address_line1 || '',
-        address_line2: data.address_line2 || '',
-        city: data.city || '',
-        county: data.county || '',
-        postcode: data.postcode || '',
-        mobile_number: data.mobile_number || '',
-        emergency_contact_name: data.emergency_contact_name || '',
-        emergency_contact_phone: data.emergency_contact_phone || '',
-        recovery_email: data.recovery_email || ''
+        address_line1: data?.address_line1 || '',
+        address_line2: data?.address_line2 || '',
+        city: data?.city || '',
+        county: data?.county || '',
+        postcode: data?.postcode || '',
+        mobile_number: data?.mobile_number || '',
+        emergency_contact_name: data?.emergency_contact_name || '',
+        emergency_contact_phone: data?.emergency_contact_phone || '',
+        recovery_email: data?.recovery_email || ''
       }
     });
 
@@ -782,22 +783,23 @@ async function getVehicleDetails(req, res) {
       .from('user_signup')
       .select('car_registration_number, make, model, colour, year_of_manufacture, fuel_type')
       .eq('create_user_id', userId)
-      .single();
+      .maybeSingle();
 
     if (error) {
       logger.error('Error fetching vehicle details:', error);
       return res.status(500).json({ error: 'Failed to fetch vehicle details' });
     }
 
+    // Return empty values if user hasn't filled out profile yet
     return res.status(200).json({
       success: true,
       data: {
-        car_registration_number: data.car_registration_number || '',
-        make: data.make || '',
-        model: data.model || '',
-        colour: data.colour || '',
-        year_of_manufacture: data.year_of_manufacture || null,
-        fuel_type: data.fuel_type || ''
+        car_registration_number: data?.car_registration_number || '',
+        make: data?.make || '',
+        model: data?.model || '',
+        colour: data?.colour || '',
+        year_of_manufacture: data?.year_of_manufacture || null,
+        fuel_type: data?.fuel_type || ''
       }
     });
 
@@ -935,20 +937,21 @@ async function getInsuranceDetails(req, res) {
       .from('user_signup')
       .select('insurance_company, policy_number, policy_holder, cover_type')
       .eq('create_user_id', userId)
-      .single();
+      .maybeSingle();
 
     if (error) {
       logger.error('Error fetching insurance details:', error);
       return res.status(500).json({ error: 'Failed to fetch insurance details' });
     }
 
+    // Return empty values if user hasn't filled out profile yet
     return res.status(200).json({
       success: true,
       data: {
-        insurance_company: data.insurance_company || '',
-        policy_number: data.policy_number || '',
-        policy_holder: data.policy_holder || '',
-        cover_type: data.cover_type || ''
+        insurance_company: data?.insurance_company || '',
+        policy_number: data?.policy_number || '',
+        policy_holder: data?.policy_holder || '',
+        cover_type: data?.cover_type || ''
       }
     });
 
@@ -1075,17 +1078,18 @@ async function getLicenseDetails(req, res) {
       .from('user_signup')
       .select('driving_license_number')
       .eq('create_user_id', userId)
-      .single();
+      .maybeSingle();
 
     if (error) {
       logger.error('Error fetching license details:', error);
       return res.status(500).json({ error: 'Failed to fetch license details' });
     }
 
+    // Return empty values if user hasn't filled out profile yet
     return res.status(200).json({
       success: true,
       data: {
-        driving_license_number: data.driving_license_number || ''
+        driving_license_number: data?.driving_license_number || ''
       }
     });
 
