@@ -3010,9 +3010,9 @@
                     showToast('Uploading photo...', 'info');
 
                     const formData = new FormData();
-                    formData.append('image', file);
-                    formData.append('document_type', field);
-                    formData.append('user_id', userId);
+                    formData.append('file', file); // Backend expects 'file'
+                    formData.append('field_name', field); // Backend expects 'field_name'
+                    formData.append('temp_session_id', userId); // Backend expects 'temp_session_id'
 
                     const response = await fetch('/api/images/temp-upload', {
                         method: 'POST',
@@ -3022,7 +3022,7 @@
 
                     if (!response.ok) {
                         const error = await response.json();
-                        throw new Error(error.message || 'Upload failed');
+                        throw new Error(error.error || error.message || 'Upload failed');
                     }
 
                     const data = await response.json();
@@ -3035,7 +3035,7 @@
                             'Content-Type': 'application/json'
                         },
                         body: JSON.stringify({
-                            temp_upload_id: data.tempUploadId,
+                            temp_upload_id: data.uploadId, // Use uploadId from response
                             document_type: field
                         })
                     });
