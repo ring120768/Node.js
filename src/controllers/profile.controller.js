@@ -736,7 +736,7 @@ async function getContactDetails(req, res) {
 
     const { data, error } = await supabase
       .from('user_signup')
-      .select('address_line1, address_line2, city, county, postcode, mobile_number, emergency_contact_name, emergency_contact_phone, recovery_email')
+      .select('street_address, street_address_optional, town, postcode, mobile_number, emergency_contact, recovery_breakdown_email')
       .eq('create_user_id', userId)
       .maybeSingle();
 
@@ -745,19 +745,21 @@ async function getContactDetails(req, res) {
       return res.status(500).json({ error: 'Failed to fetch contact details' });
     }
 
+    // Parse emergency contact (pipe-delimited: "Name | Phone | Email | Company")
+    const emergencyParts = (data?.emergency_contact || '').split('|').map(s => s.trim());
+
     // Return empty values if user hasn't filled out profile yet
     return res.status(200).json({
       success: true,
       data: {
-        address_line1: data?.address_line1 || '',
-        address_line2: data?.address_line2 || '',
-        city: data?.city || '',
-        county: data?.county || '',
+        street_address: data?.street_address || '',
+        street_address_optional: data?.street_address_optional || '',
+        town: data?.town || '',
         postcode: data?.postcode || '',
         mobile_number: data?.mobile_number || '',
-        emergency_contact_name: data?.emergency_contact_name || '',
-        emergency_contact_phone: data?.emergency_contact_phone || '',
-        recovery_email: data?.recovery_email || ''
+        emergency_contact_name: emergencyParts[0] || '',
+        emergency_contact_phone: emergencyParts[1] || '',
+        recovery_email: data?.recovery_breakdown_email || ''
       }
     });
 
