@@ -3061,6 +3061,7 @@
                 document.getElementById('address_line1').textContent = data.street_address || '-';
                 document.getElementById('address_line2').textContent = data.street_address_optional || '-';
                 document.getElementById('city').textContent = data.town || '-';
+                document.getElementById('county').textContent = data.county || '-';
                 document.getElementById('postcode').textContent = data.postcode || '-';
                 document.getElementById('mobile_number').textContent = data.mobile_number || '-';
                 document.getElementById('emergency_contact_name').textContent = data.emergency_contact_name || '-';
@@ -3113,9 +3114,9 @@
                         'Content-Type': 'application/json'
                     },
                     body: JSON.stringify({
-                        address_line1,
-                        address_line2: address_line2 || null,
-                        city,
+                        street_address: address_line1,
+                        street_address_optional: address_line2 || null,
+                        town: city,
                         county: county || null,
                         postcode
                     })

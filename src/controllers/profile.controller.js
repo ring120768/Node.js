@@ -554,6 +554,7 @@ async function updateContactDetails(req, res) {
       street_address,
       street_address_optional,
       town,
+      county,
       postcode,
       mobile_number,
       emergency_contact_name,
@@ -590,6 +591,10 @@ async function updateContactDetails(req, res) {
       } else {
         updates.town = town.trim();
       }
+    }
+
+    if (county !== undefined) {
+      updates.county = county.trim() || null;
     }
 
     if (postcode !== undefined) {
@@ -714,7 +719,7 @@ async function updateContactDetails(req, res) {
     // Fetch current values for audit logging
     const { data: currentData, error: fetchError } = await supabase
       .from('user_signup')
-      .select('street_address, street_address_optional, town, postcode, mobile, emergency_contact, recovery_company, recovery_breakdown_number, recovery_breakdown_email')
+      .select('street_address, street_address_optional, town, county, postcode, mobile, emergency_contact, recovery_company, recovery_breakdown_number, recovery_breakdown_email')
       .eq('create_user_id', userId)
       .maybeSingle();
 
@@ -778,7 +783,7 @@ async function getContactDetails(req, res) {
 
     const { data, error } = await supabase
       .from('user_signup')
-      .select('street_address, street_address_optional, town, postcode, mobile, emergency_contact, recovery_company, recovery_breakdown_number, recovery_breakdown_email')
+      .select('street_address, street_address_optional, town, county, postcode, mobile, emergency_contact, recovery_company, recovery_breakdown_number, recovery_breakdown_email')
       .eq('create_user_id', userId)
       .maybeSingle();
 
@@ -797,6 +802,7 @@ async function getContactDetails(req, res) {
         street_address: data?.street_address || '',
         street_address_optional: data?.street_address_optional || '',
         town: data?.town || '',
+        county: data?.county || '',
         postcode: data?.postcode || '',
         mobile_number: data?.mobile || '',
         emergency_contact_name: emergencyParts[0] || '',
