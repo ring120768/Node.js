@@ -800,7 +800,7 @@
     <div class="question-page" data-page="5">
       <div class="question">
         <h2>What's your car registration?</h2>
-        <p class="desc">We'll automatically fetch your vehicle details from the DVLA (optional - can add later)</p>
+        <p class="desc">We'll automatically fetch your vehicle details from the DVLA</p>
 
         <input
           type="text"
@@ -875,7 +875,7 @@
 
       <div class="nav-buttons">
         <button type="button" class="btn btn-back" data-action="back">Back</button>
-        <button type="button" class="btn btn-ghost" data-action="skip" style="margin-right: auto;">Skip for Now</button>
+        <button type="button" class="btn btn-ghost" data-action="skip" style="margin-right: auto; display: none;">Skip for Now</button>
         <button type="button" class="btn btn-next" data-action="next" id="confirmDvlaBtn" style="display: none;">
           ✅ Yes, Correct
         </button>
@@ -886,11 +886,11 @@
     <div class="question-page" data-page="6">
       <div class="question">
         <h2>Your driving & insurance details</h2>
-        <p class="desc">Optional - you can add these details later from your dashboard</p>
+        <p class="desc">Please provide your UK driving license and insurance information</p>
 
         <div style="margin-bottom: 20px;">
           <label for="driving_license_number" style="display: block; margin-bottom: 8px; font-weight: 500; color: #4a5568;">
-            Driving License Number (optional)
+            Driving License Number
           </label>
           <input
             type="text"
@@ -905,7 +905,7 @@
 
         <div style="margin-bottom: 20px;">
           <label for="insurance_company" style="display: block; margin-bottom: 8px; font-weight: 500; color: #4a5568;">
-            Insurance Company (optional)
+            Insurance Company
           </label>
           <input
             type="text"
@@ -918,7 +918,7 @@
 
         <div style="margin-bottom: 20px;">
           <label for="policy_number" style="display: block; margin-bottom: 8px; font-weight: 500; color: #4a5568;">
-            Policy Number (optional)
+            Policy Number
           </label>
           <input
             type="text"
@@ -932,7 +932,7 @@
 
         <div style="margin-bottom: 20px;">
           <label for="policy_holder" style="display: block; margin-bottom: 8px; font-weight: 500; color: #4a5568;">
-            Policy Holder (optional)
+            Policy Holder
           </label>
           <input
             type="text"
@@ -945,7 +945,7 @@
 
         <div style="margin-bottom: 20px;">
           <label for="cover_type" style="display: block; margin-bottom: 8px; font-weight: 500; color: #4a5568;">
-            Type of Cover (optional)
+            Type of Cover
           </label>
           <select id="cover_type" class="input-field" style="cursor: pointer;">
             <option value="">Select cover type...</option>
@@ -961,7 +961,7 @@
 
       <div class="nav-buttons">
         <button type="button" class="btn btn-back" data-action="back">Back</button>
-        <button type="button" class="btn btn-ghost" data-action="skip" style="margin-right: auto;">Skip for Now</button>
+        <button type="button" class="btn btn-ghost" data-action="skip" style="margin-right: auto; display: none;">Skip for Now</button>
         <button type="button" class="btn btn-next" data-action="next">Continue</button>
       </div>
     </div>
