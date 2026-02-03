@@ -749,16 +749,22 @@ async function linkTempUpload(req, res) {
     }
 
     // 4. Create user_documents record
+    const fileExtension = filename.split('.').pop().toLowerCase();
+
     const { data: newDocument, error: insertError } = await supabase
       .from('user_documents')
       .insert({
         create_user_id: userId,
         document_type: document_type,
         document_category: 'user_signup',
-        file_name: filename,
+        source_type: 'dashboard_upload',
+        source_field: document_type,
+        original_filename: filename,
+        storage_bucket: 'user-documents',
+        storage_path: newStoragePath,
         file_size: tempUpload.file_size,
         mime_type: tempUpload.mime_type,
-        storage_path: newStoragePath,
+        file_extension: fileExtension,
         status: 'completed',
         processed_at: new Date().toISOString()
       })
