@@ -558,7 +558,9 @@ async function updateContactDetails(req, res) {
       mobile_number,
       emergency_contact_name,
       emergency_contact_phone,
-      recovery_email
+      recovery_company,
+      recovery_breakdown_number,
+      recovery_breakdown_email
     } = req.body;
 
     // Validation
@@ -617,13 +619,36 @@ async function updateContactDetails(req, res) {
       }
     }
 
-    // Recovery email validation - DB column is 'recovery_breakdown_email'
-    if (recovery_email !== undefined) {
+    // Recovery/breakdown company validation
+    if (recovery_company !== undefined) {
+      updates.recovery_company = recovery_company.trim() || null;
+    }
+
+    if (recovery_breakdown_number !== undefined) {
+      const phonePattern = /^(\+44|0)?[1-9]\d{9,10}$/;
+      const cleaned = recovery_breakdown_number.replace(/\s/g, '');
+      if (cleaned.length > 0 && !phonePattern.test(cleaned)) {
+        errors.push('Invalid recovery breakdown number format');
+      } else if (cleaned.length > 0) {
+        // Normalize to +44 format
+        let normalized = cleaned;
+        if (normalized.startsWith('0')) {
+          normalized = '+44' + normalized.substring(1);
+        } else if (!normalized.startsWith('+44')) {
+          normalized = '+44' + normalized;
+        }
+        updates.recovery_breakdown_number = normalized;
+      } else {
+        updates.recovery_breakdown_number = null;
+      }
+    }
+
+    if (recovery_breakdown_email !== undefined) {
       const emailPattern = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
-      if (recovery_email.trim().length > 0 && !emailPattern.test(recovery_email)) {
+      if (recovery_breakdown_email.trim().length > 0 && !emailPattern.test(recovery_breakdown_email)) {
         errors.push('Invalid recovery email format');
       } else {
-        updates.recovery_breakdown_email = recovery_email.trim().toLowerCase() || null;
+        updates.recovery_breakdown_email = recovery_breakdown_email.trim().toLowerCase() || null;
       }
     }
 
@@ -689,7 +714,7 @@ async function updateContactDetails(req, res) {
     // Fetch current values for audit logging
     const { data: currentData, error: fetchError } = await supabase
       .from('user_signup')
-      .select('street_address, street_address_optional, town, postcode, mobile, emergency_contact, recovery_breakdown_email')
+      .select('street_address, street_address_optional, town, postcode, mobile, emergency_contact, recovery_company, recovery_breakdown_number, recovery_breakdown_email')
       .eq('create_user_id', userId)
       .maybeSingle();
 
@@ -753,7 +778,7 @@ async function getContactDetails(req, res) {
 
     const { data, error } = await supabase
       .from('user_signup')
-      .select('street_address, street_address_optional, town, postcode, mobile, emergency_contact, recovery_breakdown_email')
+      .select('street_address, street_address_optional, town, postcode, mobile, emergency_contact, recovery_company, recovery_breakdown_number, recovery_breakdown_email')
       .eq('create_user_id', userId)
       .maybeSingle();
 
@@ -776,7 +801,9 @@ async function getContactDetails(req, res) {
         mobile_number: data?.mobile || '',
         emergency_contact_name: emergencyParts[0] || '',
         emergency_contact_phone: emergencyParts[1] || '',
-        recovery_email: data?.recovery_breakdown_email || ''
+        recovery_company: data?.recovery_company || '',
+        recovery_breakdown_number: data?.recovery_breakdown_number || '',
+        recovery_breakdown_email: data?.recovery_breakdown_email || ''
       }
     });
 

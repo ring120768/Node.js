@@ -2148,16 +2148,24 @@
                             </div>
                         </div>
 
-                        <!-- Recovery Email Section -->
+                        <!-- Recovery/Breakdown Company Section -->
                         <div class="detail-section">
                             <div class="detail-section-header">
-                                <h3>📧 Recovery Email</h3>
-                                <button class="btn btn-sm btn-ghost" data-action="editRecoveryEmail">Edit</button>
+                                <h3>🚨 Recovery/Breakdown Company</h3>
+                                <button class="btn btn-sm btn-ghost" data-action="editRecovery">Edit</button>
                             </div>
                             <div class="detail-content">
                                 <div class="detail-item">
-                                    <span class="detail-label">Recovery Email:</span>
-                                    <span class="detail-value" id="recovery_email">-</span>
+                                    <span class="detail-label">Company:</span>
+                                    <span class="detail-value" id="recovery_company">-</span>
+                                </div>
+                                <div class="detail-item">
+                                    <span class="detail-label">Telephone:</span>
+                                    <span class="detail-value" id="recovery_breakdown_number">-</span>
+                                </div>
+                                <div class="detail-item">
+                                    <span class="detail-label">Email:</span>
+                                    <span class="detail-value" id="recovery_breakdown_email">-</span>
                                 </div>
                             </div>
                         </div>
@@ -3050,15 +3058,16 @@
                 const data = result.data;
 
                 // Update UI with contact details
-                document.getElementById('address_line1').textContent = data.address_line1 || '-';
-                document.getElementById('address_line2').textContent = data.address_line2 || '-';
-                document.getElementById('city').textContent = data.city || '-';
-                document.getElementById('county').textContent = data.county || '-';
+                document.getElementById('address_line1').textContent = data.street_address || '-';
+                document.getElementById('address_line2').textContent = data.street_address_optional || '-';
+                document.getElementById('city').textContent = data.town || '-';
                 document.getElementById('postcode').textContent = data.postcode || '-';
                 document.getElementById('mobile_number').textContent = data.mobile_number || '-';
                 document.getElementById('emergency_contact_name').textContent = data.emergency_contact_name || '-';
                 document.getElementById('emergency_contact_phone').textContent = data.emergency_contact_phone || '-';
-                document.getElementById('recovery_email').textContent = data.recovery_email || '-';
+                document.getElementById('recovery_company').textContent = data.recovery_company || '-';
+                document.getElementById('recovery_breakdown_number').textContent = data.recovery_breakdown_number || '-';
+                document.getElementById('recovery_breakdown_email').textContent = data.recovery_breakdown_email || '-';
 
                 console.log('✅ Contact details loaded');
 
@@ -3204,15 +3213,23 @@
             }
         }
 
-        // Edit recovery email
-        async function editRecoveryEmail() {
-            const currentValue = document.getElementById('recovery_email').textContent;
-            const newValue = prompt('Recovery Email:', currentValue === '-' ? '' : currentValue);
+        // Edit recovery/breakdown company details
+        async function editRecovery() {
+            const currentCompany = document.getElementById('recovery_company').textContent;
+            const currentNumber = document.getElementById('recovery_breakdown_number').textContent;
+            const currentEmail = document.getElementById('recovery_breakdown_email').textContent;
 
-            if (newValue === null) return; // Cancelled
+            const newCompany = prompt('Recovery Company (e.g., RAC, AA, Green Flag):', currentCompany === '-' ? '' : currentCompany);
+            if (newCompany === null) return; // Cancelled
+
+            const newNumber = prompt('Recovery Telephone Number:', currentNumber === '-' ? '' : currentNumber);
+            if (newNumber === null) return; // Cancelled
+
+            const newEmail = prompt('Recovery Email (optional):', currentEmail === '-' ? '' : currentEmail);
+            if (newEmail === null) return; // Cancelled
 
             try {
-                showToast('Updating recovery email...', 'info');
+                showToast('Updating recovery details...', 'info');
 
                 const response = await fetch('/api/profile/contact-details', {
                     method: 'PATCH',
@@ -3221,7 +3238,9 @@
                         'Content-Type': 'application/json'
                     },
                     body: JSON.stringify({
-                        recovery_email: newValue || null
+                        recovery_company: newCompany || null,
+                        recovery_breakdown_number: newNumber || null,
+                        recovery_breakdown_email: newEmail || null
                     })
                 });
 
@@ -3231,7 +3250,7 @@
                     throw new Error(result.details ? result.details.join(', ') : result.error);
                 }
 
-                showToast('Recovery email updated successfully!', 'success');
+                showToast('Recovery details updated successfully!', 'success');
                 await loadContactDetails();
 
             } catch (error) {
@@ -3949,8 +3968,8 @@
                 case 'editEmergency':
                     editEmergency();
                     break;
-                case 'editRecoveryEmail':
-                    editRecoveryEmail();
+                case 'editRecovery':
+                    editRecovery();
                     break;
                 case 'editVehicle':
                     editVehicle();
