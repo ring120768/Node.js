@@ -1,0 +1,139 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <title>Phase 2 Deployment Test</title>
+  <style>
+    body { font-family: monospace; padding: 20px; background: #1e1e1e; color: #d4d4d4; }
+    .test { margin: 10px 0; padding: 10px; border-radius: 4px; }
+    .pass { background: #1e3a1e; border-left: 4px solid #4caf50; }
+    .fail { background: #3a1e1e; border-left: 4px solid #f44336; }
+    .pending { background: #3a3a1e; border-left: 4px solid #ff9800; }
+    h1 { color: #4fc3f7; }
+    pre { background: #2d2d2d; padding: 10px; border-radius: 4px; overflow-x: auto; }
+  </style>
+</head>
+<body>
+  <h1>🔍 Phase 2 Deployment Test</h1>
+  <div id="results"></div>
+
+  <script>
+    const results = document.getElementById('results');
+
+    function createTestDiv(name, status, details) {
+      const div = document.createElement('div');
+      div.className = `test ${status}`;
+
+      const title = document.createElement('strong');
+      title.textContent = name;
+
+      const br1 = document.createElement('br');
+
+      const statusText = document.createElement('span');
+      statusText.textContent = status === 'pass' ? '✅ PASS' : status === 'fail' ? '❌ FAIL' : 'Testing...';
+
+      const br2 = document.createElement('br');
+
+      const pre = document.createElement('pre');
+      pre.textContent = details || '';
+
+      div.appendChild(title);
+      div.appendChild(br1);
+      div.appendChild(statusText);
+      if (details) {
+        div.appendChild(br2);
+        div.appendChild(pre);
+      }
+
+      return div;
+    }
+
+    async function runTests() {
+      const tests = [
+        {
+          name: 'Test 1: Dashboard HTML has Phase 2 cards',
+          test: async () => {
+            const res = await fetch('/dashboard.html');
+            const html = await res.text();
+            const hasVehicle = html.includes('Vehicle Details');
+            const hasInsurance = html.includes('Insurance Details');
+            const hasLicense = html.includes('Driving License');
+            return {
+              pass: hasVehicle && hasInsurance && hasLicense,
+              details: `Vehicle: ${hasVehicle}, Insurance: ${hasInsurance}, License: ${hasLicense}`
+            };
+          }
+        },
+        {
+          name: 'Test 2: Vehicle Details API endpoint',
+          test: async () => {
+            const res = await fetch('/api/profile/vehicle-details', { credentials: 'include' });
+            return {
+              pass: res.status !== 404,
+              details: `HTTP ${res.status} (401=auth required, 200=OK, 404=NOT DEPLOYED)`
+            };
+          }
+        },
+        {
+          name: 'Test 3: Insurance Details API endpoint',
+          test: async () => {
+            const res = await fetch('/api/profile/insurance-details', { credentials: 'include' });
+            return {
+              pass: res.status !== 404,
+              details: `HTTP ${res.status}`
+            };
+          }
+        },
+        {
+          name: 'Test 4: License Details API endpoint',
+          test: async () => {
+            const res = await fetch('/api/profile/license-details', { credentials: 'include' });
+            return {
+              pass: res.status !== 404,
+              details: `HTTP ${res.status}`
+            };
+          }
+        }
+      ];
+
+      for (const test of tests) {
+        const div = createTestDiv(test.name, 'pending', 'Testing...');
+        results.appendChild(div);
+
+        try {
+          const result = await test.test();
+          results.replaceChild(
+            createTestDiv(test.name, result.pass ? 'pass' : 'fail', result.details),
+            div
+          );
+        } catch (err) {
+          results.replaceChild(
+            createTestDiv(test.name, 'fail', err.message),
+            div
+          );
+        }
+      }
+
+      const passed = document.querySelectorAll('.pass').length;
+      const total = tests.length;
+
+      const summary = document.createElement('div');
+      summary.style.cssText = 'margin-top: 20px; padding: 15px; background: #2d2d2d; border-radius: 4px;';
+
+      const h2 = document.createElement('h2');
+      h2.textContent = `${passed === total ? '✅' : '⚠️'} Results: ${passed}/${total} tests passed`;
+
+      const p = document.createElement('p');
+      p.style.color = passed < total ? '#ff9800' : '#4caf50';
+      p.textContent = passed < total ?
+        'Some tests failed. Phase 2 may not be fully deployed yet.' :
+        'All tests passed! Phase 2 is live.';
+
+      summary.appendChild(h2);
+      summary.appendChild(p);
+      results.appendChild(summary);
+    }
+
+    runTests();
+  </script>
+</body>
+</html>
