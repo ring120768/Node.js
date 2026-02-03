@@ -1426,9 +1426,452 @@
                 padding-left: var(--spacing-sm);
             }
         }
+
+        /* ========================================
+           MODAL SYSTEM - Modern Edit Dialogs
+           ======================================== */
+
+        .modal-backdrop {
+            position: fixed;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background: rgba(0, 0, 0, 0.6);
+            backdrop-filter: blur(4px);
+            display: none;
+            align-items: center;
+            justify-content: center;
+            z-index: 1000;
+            opacity: 0;
+            transition: opacity 0.2s ease;
+            padding: 20px;
+        }
+
+        .modal-backdrop.active {
+            display: flex;
+            animation: fadeIn 0.2s ease forwards;
+        }
+
+        @keyframes fadeIn {
+            to { opacity: 1; }
+        }
+
+        @keyframes fadeOut {
+            from { opacity: 1; }
+            to { opacity: 0; }
+        }
+
+        @keyframes slideUp {
+            from {
+                transform: translateY(20px);
+                opacity: 0;
+            }
+            to {
+                transform: translateY(0);
+                opacity: 1;
+            }
+        }
+
+        .modal-backdrop.closing {
+            animation: fadeOut 0.2s ease forwards;
+        }
+
+        .modal-container {
+            background: var(--bg-card);
+            border-radius: 16px;
+            max-width: 600px;
+            width: 100%;
+            max-height: 90vh;
+            overflow-y: auto;
+            box-shadow: 0 20px 60px rgba(0, 0, 0, 0.3);
+            animation: slideUp 0.3s ease;
+        }
+
+        .modal-header {
+            padding: 24px 24px 16px;
+            border-bottom: 1px solid var(--border);
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+        }
+
+        .modal-title {
+            font-size: 20px;
+            font-weight: 600;
+            color: var(--text-primary);
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+
+        .modal-close {
+            background: transparent;
+            border: none;
+            font-size: 24px;
+            color: var(--text-secondary);
+            cursor: pointer;
+            padding: 4px 8px;
+            border-radius: 4px;
+            transition: all 0.2s;
+            line-height: 1;
+        }
+
+        .modal-close:hover {
+            background: var(--bg-main);
+            color: var(--text-primary);
+        }
+
+        .modal-body {
+            padding: 24px;
+        }
+
+        .modal-form {
+            display: flex;
+            flex-direction: column;
+            gap: 20px;
+        }
+
+        .form-group {
+            display: flex;
+            flex-direction: column;
+            gap: 8px;
+        }
+
+        .form-label {
+            font-size: 14px;
+            font-weight: 500;
+            color: var(--text-primary);
+            display: flex;
+            align-items: center;
+            gap: 4px;
+        }
+
+        .form-label .required {
+            color: var(--danger);
+        }
+
+        .form-label .optional {
+            color: var(--text-secondary);
+            font-weight: 400;
+            font-size: 12px;
+        }
+
+        .form-input {
+            padding: 12px 16px;
+            border: 1px solid var(--border);
+            border-radius: 8px;
+            font-size: 14px;
+            font-family: inherit;
+            transition: all 0.2s;
+            background: var(--bg-card);
+            color: var(--text-primary);
+        }
+
+        .form-input:focus {
+            outline: none;
+            border-color: #0ea5e9;
+            box-shadow: 0 0 0 3px rgba(14, 165, 233, 0.1);
+        }
+
+        .form-input::placeholder {
+            color: var(--text-tertiary);
+        }
+
+        .form-input:disabled {
+            background: var(--bg-main);
+            cursor: not-allowed;
+        }
+
+        .form-select {
+            padding: 12px 16px;
+            border: 1px solid var(--border);
+            border-radius: 8px;
+            font-size: 14px;
+            font-family: inherit;
+            background: var(--bg-card);
+            color: var(--text-primary);
+            cursor: pointer;
+            transition: all 0.2s;
+        }
+
+        .form-select:focus {
+            outline: none;
+            border-color: #0ea5e9;
+            box-shadow: 0 0 0 3px rgba(14, 165, 233, 0.1);
+        }
+
+        .form-help {
+            font-size: 12px;
+            color: var(--text-secondary);
+            margin-top: 4px;
+        }
+
+        .form-error {
+            font-size: 12px;
+            color: var(--danger);
+            margin-top: 4px;
+            display: none;
+        }
+
+        .form-group.has-error .form-input,
+        .form-group.has-error .form-select {
+            border-color: var(--danger);
+        }
+
+        .form-group.has-error .form-error {
+            display: block;
+        }
+
+        .modal-footer {
+            padding: 16px 24px;
+            border-top: 1px solid var(--border);
+            display: flex;
+            gap: 12px;
+            justify-content: flex-end;
+        }
+
+        .modal-footer .btn {
+            min-width: 100px;
+        }
+
+        @media (max-width: 640px) {
+            .modal-container {
+                max-height: 100vh;
+                border-radius: 0;
+                margin: 0;
+            }
+
+            .modal-footer {
+                flex-direction: column-reverse;
+            }
+
+            .modal-footer .btn {
+                width: 100%;
+            }
+        }
     </style>
 </head>
 <body>
+    <!-- ========================================
+         MODALS - Edit Forms
+         ======================================== -->
+
+    <!-- Vehicle Details Modal -->
+    <div id="vehicleModal" class="modal-backdrop">
+        <div class="modal-container">
+            <div class="modal-header">
+                <h2 class="modal-title">
+                    <span>🚗</span> Edit Vehicle Details
+                </h2>
+                <button class="modal-close" data-modal-close="vehicleModal">&times;</button>
+            </div>
+            <form class="modal-form" id="vehicleForm">
+                <div class="modal-body">
+                    <div class="form-group">
+                        <label class="form-label" for="vehicle_reg">
+                            Car Registration Number
+                            <span class="optional">(optional)</span>
+                        </label>
+                        <input
+                            type="text"
+                            id="vehicle_reg"
+                            name="car_registration_number"
+                            class="form-input"
+                            placeholder="e.g. AB12 CDE"
+                            maxlength="10">
+                        <small class="form-help">UK vehicle registration format</small>
+                        <span class="form-error">Please enter a valid UK registration</span>
+                    </div>
+
+                    <div class="form-group">
+                        <label class="form-label" for="vehicle_make">
+                            Make
+                            <span class="optional">(optional)</span>
+                        </label>
+                        <input
+                            type="text"
+                            id="vehicle_make"
+                            name="make"
+                            class="form-input"
+                            placeholder="e.g. Ford, BMW, Toyota">
+                    </div>
+
+                    <div class="form-group">
+                        <label class="form-label" for="vehicle_model">
+                            Model
+                            <span class="optional">(optional)</span>
+                        </label>
+                        <input
+                            type="text"
+                            id="vehicle_model"
+                            name="model"
+                            class="form-input"
+                            placeholder="e.g. Focus, 3 Series, Corolla">
+                    </div>
+
+                    <div class="form-group">
+                        <label class="form-label" for="vehicle_colour">
+                            Colour
+                            <span class="optional">(optional)</span>
+                        </label>
+                        <input
+                            type="text"
+                            id="vehicle_colour"
+                            name="colour"
+                            class="form-input"
+                            placeholder="e.g. Blue, Black, Silver">
+                    </div>
+
+                    <div class="form-group">
+                        <label class="form-label" for="vehicle_year">
+                            Year of Manufacture
+                            <span class="optional">(optional)</span>
+                        </label>
+                        <input
+                            type="number"
+                            id="vehicle_year"
+                            name="year_of_manufacture"
+                            class="form-input"
+                            placeholder="e.g. 2020"
+                            min="1900"
+                            max="2027">
+                    </div>
+
+                    <div class="form-group">
+                        <label class="form-label" for="vehicle_fuel">
+                            Fuel Type
+                            <span class="optional">(optional)</span>
+                        </label>
+                        <select id="vehicle_fuel" name="fuel_type" class="form-select">
+                            <option value="">Select fuel type...</option>
+                            <option value="Petrol">Petrol</option>
+                            <option value="Diesel">Diesel</option>
+                            <option value="Electric">Electric</option>
+                            <option value="Hybrid">Hybrid</option>
+                            <option value="Plug-in Hybrid">Plug-in Hybrid</option>
+                            <option value="LPG">LPG</option>
+                        </select>
+                    </div>
+                </div>
+
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" data-modal-close="vehicleModal">Cancel</button>
+                    <button type="submit" class="btn btn-primary">Save Changes</button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <!-- Insurance Details Modal -->
+    <div id="insuranceModal" class="modal-backdrop">
+        <div class="modal-container">
+            <div class="modal-header">
+                <h2 class="modal-title">
+                    <span>🛡️</span> Edit Insurance Details
+                </h2>
+                <button class="modal-close" data-modal-close="insuranceModal">&times;</button>
+            </div>
+            <form class="modal-form" id="insuranceForm">
+                <div class="modal-body">
+                    <div class="form-group">
+                        <label class="form-label" for="input_insurance_company">
+                            Insurance Company
+                            <span class="optional">(optional)</span>
+                        </label>
+                        <input
+                            type="text"
+                            id="input_insurance_company"
+                            name="insurance_company"
+                            class="form-input"
+                            placeholder="e.g. Aviva, Direct Line">
+                    </div>
+
+                    <div class="form-group">
+                        <label class="form-label" for="input_policy_number">
+                            Policy Number
+                            <span class="optional">(optional)</span>
+                        </label>
+                        <input
+                            type="text"
+                            id="input_policy_number"
+                            name="policy_number"
+                            class="form-input"
+                            placeholder="Your policy reference number">
+                    </div>
+
+                    <div class="form-group">
+                        <label class="form-label" for="input_policy_holder">
+                            Policy Holder Name
+                            <span class="optional">(optional)</span>
+                        </label>
+                        <input
+                            type="text"
+                            id="input_policy_holder"
+                            name="policy_holder"
+                            class="form-input"
+                            placeholder="Name on the policy">
+                    </div>
+
+                    <div class="form-group">
+                        <label class="form-label" for="input_cover_type">
+                            Cover Type
+                            <span class="optional">(optional)</span>
+                        </label>
+                        <select id="input_cover_type" name="cover_type" class="form-select">
+                            <option value="">Select cover type...</option>
+                            <option value="comprehensive">Comprehensive</option>
+                            <option value="third_party_fire_theft">Third Party, Fire & Theft</option>
+                            <option value="third_party_only">Third Party Only</option>
+                        </select>
+                    </div>
+                </div>
+
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" data-modal-close="insuranceModal">Cancel</button>
+                    <button type="submit" class="btn btn-primary">Save Changes</button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <!-- License Details Modal -->
+    <div id="licenseModal" class="modal-backdrop">
+        <div class="modal-container">
+            <div class="modal-header">
+                <h2 class="modal-title">
+                    <span>🪪</span> Edit Driving License
+                </h2>
+                <button class="modal-close" data-modal-close="licenseModal">&times;</button>
+            </div>
+            <form class="modal-form" id="licenseForm">
+                <div class="modal-body">
+                    <div class="form-group">
+                        <label class="form-label" for="license_number">
+                            Driving License Number
+                            <span class="optional">(optional)</span>
+                        </label>
+                        <input
+                            type="text"
+                            id="license_number"
+                            name="driving_license_number"
+                            class="form-input"
+                            placeholder="16-character UK license number"
+                            maxlength="16"
+                            style="text-transform: uppercase;">
+                        <small class="form-help">UK driving license format (16 characters)</small>
+                        <span class="form-error">Please enter a valid 16-character UK license number</span>
+                    </div>
+                </div>
+
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" data-modal-close="licenseModal">Cancel</button>
+                    <button type="submit" class="btn btn-primary">Save Changes</button>
+                </div>
+            </form>
+        </div>
+    </div>
+
     <!-- Header -->
     <header class="header">
         <div class="header-content">
@@ -2075,6 +2518,64 @@
     <script>
         let userId = null;
         let currentUser = null;
+
+        // ========================================
+        // MODAL UTILITIES
+        // ========================================
+
+        // Open modal by ID
+        function openModal(modalId) {
+            const modal = document.getElementById(modalId);
+            if (!modal) return;
+
+            modal.classList.add('active');
+            document.body.style.overflow = 'hidden';
+
+            // Focus first input
+            setTimeout(() => {
+                const firstInput = modal.querySelector('input, select');
+                if (firstInput) firstInput.focus();
+            }, 100);
+        }
+
+        // Close modal by ID
+        function closeModal(modalId) {
+            const modal = document.getElementById(modalId);
+            if (!modal) return;
+
+            modal.classList.add('closing');
+            setTimeout(() => {
+                modal.classList.remove('active', 'closing');
+                document.body.style.overflow = '';
+            }, 200);
+        }
+
+        // Close modal on backdrop click
+        document.addEventListener('click', (e) => {
+            if (e.target.classList.contains('modal-backdrop')) {
+                const modalId = e.target.id;
+                closeModal(modalId);
+            }
+        });
+
+        // Close modal buttons
+        document.addEventListener('click', (e) => {
+            const closeButton = e.target.closest('[data-modal-close]');
+            if (closeButton) {
+                const modalId = closeButton.getAttribute('data-modal-close');
+                closeModal(modalId);
+            }
+        });
+
+        // Close modal on ESC key
+        document.addEventListener('keydown', (e) => {
+            if (e.key === 'Escape') {
+                const activeModal = document.querySelector('.modal-backdrop.active');
+                if (activeModal) {
+                    closeModal(activeModal.id);
+                }
+            }
+        });
 
         // Initialize
         async function init() {
@@ -2773,7 +3274,8 @@
         }
 
         // Edit vehicle details
-        async function editVehicle() {
+        function editVehicle() {
+            // Pre-populate form with current values
             const currentReg = document.getElementById('car_registration_number').textContent;
             const currentMake = document.getElementById('make').textContent;
             const currentModel = document.getElementById('model').textContent;
@@ -2781,23 +3283,30 @@
             const currentYear = document.getElementById('year_of_manufacture').textContent;
             const currentFuel = document.getElementById('fuel_type').textContent;
 
-            const reg = prompt('Car Registration Number (e.g. AB12 CDE):', currentReg === '-' ? '' : currentReg);
-            if (reg === null) return;
+            document.getElementById('vehicle_reg').value = currentReg === '-' ? '' : currentReg;
+            document.getElementById('vehicle_make').value = currentMake === '-' ? '' : currentMake;
+            document.getElementById('vehicle_model').value = currentModel === '-' ? '' : currentModel;
+            document.getElementById('vehicle_colour').value = currentColour === '-' ? '' : currentColour;
+            document.getElementById('vehicle_year').value = currentYear === '-' ? '' : currentYear;
+            document.getElementById('vehicle_fuel').value = currentFuel === '-' ? '' : currentFuel;
 
-            const make = prompt('Make (e.g. Ford, BMW):', currentMake === '-' ? '' : currentMake);
-            if (make === null) return;
+            // Open modal
+            openModal('vehicleModal');
+        }
 
-            const model = prompt('Model (e.g. Focus, 3 Series):', currentModel === '-' ? '' : currentModel);
-            if (model === null) return;
+        // Handle vehicle form submission
+        document.getElementById('vehicleForm')?.addEventListener('submit', async (e) => {
+            e.preventDefault();
 
-            const colour = prompt('Colour:', currentColour === '-' ? '' : currentColour);
-            if (colour === null) return;
-
-            const year = prompt('Year of Manufacture:', currentYear === '-' ? '' : currentYear);
-            if (year === null) return;
-
-            const fuel = prompt('Fuel Type (e.g. Petrol, Diesel, Electric):', currentFuel === '-' ? '' : currentFuel);
-            if (fuel === null) return;
+            const formData = new FormData(e.target);
+            const data = {
+                car_registration_number: formData.get('car_registration_number') || null,
+                make: formData.get('make') || null,
+                model: formData.get('model') || null,
+                colour: formData.get('colour') || null,
+                year_of_manufacture: formData.get('year_of_manufacture') ? parseInt(formData.get('year_of_manufacture')) : null,
+                fuel_type: formData.get('fuel_type') || null
+            };
 
             try {
                 showToast('Updating vehicle details...', 'info');
@@ -2805,17 +3314,8 @@
                 const response = await fetch(`/api/profile/vehicle-details?_=${Date.now()}`, {
                     method: 'PATCH',
                     credentials: 'include',
-                    headers: {
-                        'Content-Type': 'application/json'
-                    },
-                    body: JSON.stringify({
-                        car_registration_number: reg || null,
-                        make: make || null,
-                        model: model || null,
-                        colour: colour || null,
-                        year_of_manufacture: year ? parseInt(year) : null,
-                        fuel_type: fuel || null
-                    })
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify(data)
                 });
 
                 const result = await response.json();
@@ -2824,6 +3324,7 @@
                     throw new Error(result.details ? result.details.join(', ') : result.error);
                 }
 
+                closeModal('vehicleModal');
                 showToast('Vehicle details updated successfully!', 'success');
                 await loadVehicleDetails();
 
@@ -2831,7 +3332,7 @@
                 console.error('Update error:', error);
                 showToast('Error: ' + error.message, 'error');
             }
-        }
+        });
 
         // ===== PHASE 2: INSURANCE DETAILS =====
 
@@ -2873,42 +3374,41 @@
         }
 
         // Edit insurance details
-        async function editInsurance() {
+        function editInsurance() {
+            // Pre-populate form with current values from display elements
             const currentCompany = document.getElementById('insurance_company').textContent;
             const currentPolicy = document.getElementById('policy_number').textContent;
             const currentHolder = document.getElementById('policy_holder').textContent;
-            const currentCover = document.getElementById('cover_type').textContent;
+            const currentCoverDisplay = document.getElementById('cover_type').textContent;
 
-            const company = prompt('Insurance Company:', currentCompany === '-' ? '' : currentCompany);
-            if (company === null) return;
-
-            const policyNumber = prompt('Policy Number:', currentPolicy === '-' ? '' : currentPolicy);
-            if (policyNumber === null) return;
-
-            const holder = prompt('Policy Holder Name:', currentHolder === '-' ? '' : currentHolder);
-            if (holder === null) return;
-
-            const coverOptions = `Select cover type:
-1. Comprehensive
-2. Third Party, Fire & Theft
-3. Third Party Only
-
-Enter number (1-3):`;
-
-            const coverChoice = prompt(coverOptions, '1');
-            if (coverChoice === null) return;
-
-            const coverTypeMap = {
-                '1': 'comprehensive',
-                '2': 'third_party_fire_theft',
-                '3': 'third_party_only'
+            // Map display text back to form value
+            const coverTypeReverseMap = {
+                'Comprehensive': 'comprehensive',
+                'Third Party, Fire & Theft': 'third_party_fire_theft',
+                'Third Party Only': 'third_party_only'
             };
 
-            const coverType = coverTypeMap[coverChoice];
-            if (!coverType) {
-                showToast('Invalid cover type selection', 'error');
-                return;
-            }
+            // Set form input values (note: input IDs are prefixed with 'input_')
+            document.getElementById('input_insurance_company').value = currentCompany === '-' ? '' : currentCompany;
+            document.getElementById('input_policy_number').value = currentPolicy === '-' ? '' : currentPolicy;
+            document.getElementById('input_policy_holder').value = currentHolder === '-' ? '' : currentHolder;
+            document.getElementById('input_cover_type').value = coverTypeReverseMap[currentCoverDisplay] || '';
+
+            // Open modal
+            openModal('insuranceModal');
+        }
+
+        // Handle insurance form submission
+        document.getElementById('insuranceForm')?.addEventListener('submit', async (e) => {
+            e.preventDefault();
+
+            const formData = new FormData(e.target);
+            const data = {
+                insurance_company: formData.get('insurance_company') || null,
+                policy_number: formData.get('policy_number') || null,
+                policy_holder: formData.get('policy_holder') || null,
+                cover_type: formData.get('cover_type') || null
+            };
 
             try {
                 showToast('Updating insurance details...', 'info');
@@ -2916,15 +3416,8 @@ Enter number (1-3):`;
                 const response = await fetch(`/api/profile/insurance-details?_=${Date.now()}`, {
                     method: 'PATCH',
                     credentials: 'include',
-                    headers: {
-                        'Content-Type': 'application/json'
-                    },
-                    body: JSON.stringify({
-                        insurance_company: company || null,
-                        policy_number: policyNumber || null,
-                        policy_holder: holder || null,
-                        cover_type: coverType || null
-                    })
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify(data)
                 });
 
                 const result = await response.json();
@@ -2933,6 +3426,7 @@ Enter number (1-3):`;
                     throw new Error(result.details ? result.details.join(', ') : result.error);
                 }
 
+                closeModal('insuranceModal');
                 showToast('Insurance details updated successfully!', 'success');
                 await loadInsuranceDetails();
 
@@ -2940,7 +3434,7 @@ Enter number (1-3):`;
                 console.error('Update error:', error);
                 showToast('Error: ' + error.message, 'error');
             }
-        }
+        });
 
         // ===== PHASE 2: DRIVING LICENSE =====
 
@@ -2972,11 +3466,24 @@ Enter number (1-3):`;
         }
 
         // Edit license details
-        async function editLicense() {
+        // Edit license details
+        function editLicense() {
+            // Pre-populate form with current value
             const currentLicense = document.getElementById('driving_license_number').textContent;
+            document.getElementById('license_number').value = currentLicense === '-' ? '' : currentLicense;
 
-            const license = prompt('UK Driving License Number (16 characters):', currentLicense === '-' ? '' : currentLicense);
-            if (license === null) return;
+            // Open modal
+            openModal('licenseModal');
+        }
+
+        // Handle license form submission
+        document.getElementById('licenseForm')?.addEventListener('submit', async (e) => {
+            e.preventDefault();
+
+            const formData = new FormData(e.target);
+            const data = {
+                driving_license_number: formData.get('driving_license_number') || null
+            };
 
             try {
                 showToast('Updating license details...', 'info');
@@ -2984,12 +3491,8 @@ Enter number (1-3):`;
                 const response = await fetch(`/api/profile/license-details?_=${Date.now()}`, {
                     method: 'PATCH',
                     credentials: 'include',
-                    headers: {
-                        'Content-Type': 'application/json'
-                    },
-                    body: JSON.stringify({
-                        driving_license_number: license || null
-                    })
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify(data)
                 });
 
                 const result = await response.json();
@@ -2998,6 +3501,7 @@ Enter number (1-3):`;
                     throw new Error(result.details ? result.details.join(', ') : result.error);
                 }
 
+                closeModal('licenseModal');
                 showToast('License details updated successfully!', 'success');
                 await loadLicenseDetails();
 
@@ -3005,7 +3509,7 @@ Enter number (1-3):`;
                 console.error('Update error:', error);
                 showToast('Error: ' + error.message, 'error');
             }
-        }
+        });
 
         // Delete timeline item (document, report, PDF, or transcription)
         async function deleteTimelineItem(type, id) {
