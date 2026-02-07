@@ -198,6 +198,36 @@
       transition: all 0.2s ease;
     }
 
+    /* iOS-specific fixes for date/time inputs */
+    .form-group input[type="date"],
+    .form-group input[type="time"] {
+      -webkit-appearance: none;
+      -moz-appearance: none;
+      appearance: none;
+      display: block;
+      box-sizing: border-box;
+      min-height: 50px;
+    }
+
+    /* Remove iOS default styling */
+    .form-group input[type="date"]::-webkit-date-and-time-value,
+    .form-group input[type="time"]::-webkit-date-and-time-value {
+      text-align: left;
+      padding: 0;
+      margin: 0;
+    }
+
+    /* Fix iOS calendar/clock icon position */
+    .form-group input[type="date"]::-webkit-calendar-picker-indicator,
+    .form-group input[type="time"]::-webkit-calendar-picker-indicator {
+      background: transparent;
+      color: var(--text);
+      cursor: pointer;
+      opacity: 0.6;
+      width: 20px;
+      height: 20px;
+    }
+
     .form-group input:focus,
     .form-group select:focus,
     .form-group textarea:focus {

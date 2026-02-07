@@ -1703,6 +1703,28 @@
 
         <h1>🎤 Record Your Statement</h1>
 
+        <!-- Back Navigation -->
+        <div style="margin-bottom: 20px; text-align: center;">
+            <button id="backButton" style="
+                padding: 12px 24px;
+                background: #0E7490;
+                color: white;
+                border: none;
+                border-radius: 8px;
+                font-size: 16px;
+                font-weight: 600;
+                cursor: pointer;
+                transition: all 0.3s ease;
+                box-shadow: 0 2px 8px rgba(14, 116, 144, 0.3);
+                display: inline-flex;
+                align-items: center;
+                gap: 8px;
+            " onmouseover="this.style.background='#0c6179'; this.style.transform='translateY(-2px)'; this.style.boxShadow='0 4px 12px rgba(14, 116, 144, 0.4)'" onmouseout="this.style.background='#0E7490'; this.style.transform='translateY(0)'; this.style.boxShadow='0 2px 8px rgba(14, 116, 144, 0.3)'">
+                <span style="font-size: 20px;">←</span>
+                <span>Return to Dashboard</span>
+            </button>
+        </div>
+
         <!-- Legal Disclaimer -->
         <div class="legal-disclaimer-box">
             <h3>⚠️ Important Notice</h3>
@@ -2246,6 +2268,22 @@ Continue with: What happened immediately after impact? Any injuries you noticed?
 
         // Store user ID
         localStorage.setItem('create_user_id', userId);
+
+        // ===== BACK NAVIGATION HANDLER =====
+        document.addEventListener('DOMContentLoaded', function() {
+            const backButton = document.getElementById('backButton');
+            if (backButton) {
+                backButton.addEventListener('click', function() {
+                    // Try to go back to previous page (works for web and Capacitor)
+                    if (window.history.length > 1) {
+                        window.history.back();
+                    } else {
+                        // Fallback to dashboard if no history (direct navigation)
+                        window.location.href = '/dashboard.html';
+                    }
+                });
+            }
+        });
 
         // ===== TYPEFORM REDIRECT HANDLER =====
         function extractTypeformParams() {
