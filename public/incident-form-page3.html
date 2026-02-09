@@ -189,6 +189,7 @@
     .form-group select,
     .form-group textarea {
       width: 100%;
+      max-width: 100%;
       padding: 14px 16px;
       border: 2px solid var(--border);
       border-radius: 8px;
@@ -196,6 +197,9 @@
       font-family: inherit;
       background: var(--input-bg);
       transition: all 0.2s ease;
+      box-sizing: border-box;
+      -webkit-box-sizing: border-box;
+      -moz-box-sizing: border-box;
     }
 
     /* iOS-specific fixes for date/time inputs */
@@ -206,7 +210,19 @@
       appearance: none;
       display: block;
       box-sizing: border-box;
+      -webkit-box-sizing: border-box;
       min-height: 50px;
+      /* Prevent iOS zoom on focus */
+      font-size: max(16px, 1rem);
+      /* Constrain width explicitly */
+      max-width: 100%;
+      overflow: hidden;
+    }
+
+    /* Ensure form-group container doesn't overflow */
+    .form-group {
+      max-width: 100%;
+      overflow: hidden;
     }
 
     /* Remove iOS default styling */
