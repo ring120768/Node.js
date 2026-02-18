@@ -1,10 +1,13 @@
 <!DOCTYPE html>
-<html lang="en">
+<html lang="en-GB">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Download Car Crash Lawyer AI App</title>
-    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+    <title>Download Car Crash Lawyer AI - iPhone & Android App</title>
+    <meta name="description" content="Download Car Crash Lawyer AI for iPhone or Android. Document your accident, generate your legal report in minutes. £11.99/year.">
+    <meta name="theme-color" content="#0c4a6e">
+    <link rel="icon" type="image/png" href="/images/logo.png">
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
     <style>
         * {
             margin: 0;
@@ -14,213 +17,454 @@
 
         body {
             font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
-            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            background: linear-gradient(160deg, #0c4a6e 0%, #0e7490 40%, #14b8a6 100%);
             min-height: 100vh;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            padding: 20px;
+            color: #ffffff;
+            overflow-x: hidden;
         }
 
-        .container {
-            background: white;
-            border-radius: 20px;
-            padding: 50px 40px;
-            max-width: 500px;
-            width: 100%;
-            box-shadow: 0 20px 60px rgba(0, 0, 0, 0.3);
+        .hero {
             text-align: center;
+            padding: 60px 20px 40px;
+            max-width: 700px;
+            margin: 0 auto;
         }
 
-        .icon {
-            width: 100px;
-            height: 100px;
+        .logo-wrapper {
+            width: 120px;
+            height: 120px;
             margin: 0 auto 30px;
-            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-            border-radius: 20px;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            font-size: 50px;
+            border-radius: 28px;
+            overflow: hidden;
+            box-shadow: 0 12px 40px rgba(0, 0, 0, 0.3);
+            border: 3px solid rgba(255, 255, 255, 0.2);
+        }
+
+        .logo-wrapper img {
+            width: 100%;
+            height: 100%;
+            object-fit: cover;
         }
 
         h1 {
-            color: #1a202c;
-            font-size: 32px;
-            font-weight: 700;
-            margin-bottom: 15px;
+            font-size: 38px;
+            font-weight: 800;
+            line-height: 1.15;
+            margin-bottom: 16px;
+            letter-spacing: -0.5px;
         }
 
-        .subtitle {
-            color: #718096;
+        h1 span {
+            display: block;
+            background: linear-gradient(90deg, #67e8f9, #a5f3fc);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            background-clip: text;
+        }
+
+        .tagline {
+            font-size: 18px;
+            opacity: 0.9;
+            line-height: 1.6;
+            margin-bottom: 12px;
+            max-width: 500px;
+            margin-left: auto;
+            margin-right: auto;
+        }
+
+        .price-badge {
+            display: inline-block;
+            background: rgba(255, 255, 255, 0.15);
+            backdrop-filter: blur(10px);
+            border: 1px solid rgba(255, 255, 255, 0.25);
+            border-radius: 50px;
+            padding: 10px 28px;
             font-size: 16px;
-            margin-bottom: 30px;
-            line-height: 1.5;
+            font-weight: 600;
+            margin-bottom: 40px;
         }
 
-        .file-info {
-            background: #f7fafc;
-            border-radius: 10px;
-            padding: 20px;
+        .price-badge strong {
+            color: #67e8f9;
+        }
+
+        /* Store Badges */
+        .store-buttons {
+            display: flex;
+            gap: 16px;
+            justify-content: center;
+            align-items: center;
+            flex-wrap: wrap;
+            margin-bottom: 50px;
+        }
+
+        .store-buttons a {
+            display: inline-block;
+            transition: transform 0.3s ease, opacity 0.3s ease;
+            opacity: 0.95;
+        }
+
+        .store-buttons a:hover {
+            transform: translateY(-3px);
+            opacity: 1;
+        }
+
+        .store-badge {
+            height: 60px;
+            width: auto;
+        }
+
+        .store-badge.google-badge {
+            height: 90px;
+            margin: -15px 0;
+        }
+
+        .store-buttons a.highlighted .store-badge {
+            filter: drop-shadow(0 0 12px rgba(103, 232, 249, 0.5));
+        }
+
+        /* Stats Row */
+        .stats {
+            display: flex;
+            justify-content: center;
+            gap: 40px;
+            flex-wrap: wrap;
+            margin-bottom: 50px;
+            padding: 0 20px;
+        }
+
+        .stat {
+            text-align: center;
+        }
+
+        .stat-value {
+            font-size: 28px;
+            font-weight: 800;
+            color: #67e8f9;
+        }
+
+        .stat-label {
+            font-size: 13px;
+            opacity: 0.75;
+            margin-top: 4px;
+        }
+
+        /* Features Grid */
+        .features {
+            max-width: 900px;
+            margin: 0 auto;
+            padding: 0 20px 40px;
+        }
+
+        .features h2 {
+            text-align: center;
+            font-size: 26px;
+            font-weight: 700;
             margin-bottom: 30px;
         }
 
-        .file-size {
-            color: #4a5568;
-            font-size: 14px;
+        .features-grid {
+            display: grid;
+            grid-template-columns: repeat(3, 1fr);
+            gap: 20px;
+        }
+
+        .feature-card {
+            background: rgba(255, 255, 255, 0.1);
+            backdrop-filter: blur(10px);
+            border: 1px solid rgba(255, 255, 255, 0.15);
+            border-radius: 16px;
+            padding: 28px 22px;
+            text-align: center;
+            transition: transform 0.3s ease;
+        }
+
+        .feature-card:hover {
+            transform: translateY(-4px);
+        }
+
+        .feature-icon {
+            font-size: 36px;
+            margin-bottom: 14px;
+        }
+
+        .feature-card h3 {
+            font-size: 16px;
+            font-weight: 700;
             margin-bottom: 8px;
         }
 
-        .file-size strong {
-            color: #2d3748;
-            font-weight: 600;
-        }
-
-        .download-btn {
-            display: inline-block;
-            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-            color: white;
-            font-size: 18px;
-            font-weight: 600;
-            padding: 18px 50px;
-            border-radius: 12px;
-            text-decoration: none;
-            transition: all 0.3s ease;
-            box-shadow: 0 4px 15px rgba(102, 126, 234, 0.4);
-        }
-
-        .download-btn:hover {
-            transform: translateY(-2px);
-            box-shadow: 0 6px 20px rgba(102, 126, 234, 0.6);
-        }
-
-        .download-btn:active {
-            transform: translateY(0);
-        }
-
-        .alternative {
-            margin-top: 25px;
-            padding-top: 25px;
-            border-top: 1px solid #e2e8f0;
-        }
-
-        .alternative p {
-            color: #718096;
-            font-size: 14px;
-            margin-bottom: 12px;
-        }
-
-        .alternative a {
-            color: #667eea;
-            text-decoration: none;
-            font-weight: 500;
-            font-size: 14px;
-        }
-
-        .alternative a:hover {
-            text-decoration: underline;
-        }
-
-        .instructions {
-            background: #fff5f5;
-            border-left: 4px solid #f56565;
-            border-radius: 8px;
-            padding: 15px;
-            margin-top: 30px;
-            text-align: left;
-        }
-
-        .instructions h3 {
-            color: #c53030;
-            font-size: 14px;
-            font-weight: 600;
-            margin-bottom: 10px;
-        }
-
-        .instructions ol {
-            color: #742a2a;
+        .feature-card p {
             font-size: 13px;
+            opacity: 0.8;
+            line-height: 1.5;
+        }
+
+        /* Bottom CTA */
+        .bottom-cta {
+            text-align: center;
+            padding: 40px 20px 30px;
+            max-width: 600px;
+            margin: 0 auto;
+        }
+
+        .bottom-cta p {
+            font-size: 16px;
+            opacity: 0.85;
+            margin-bottom: 24px;
             line-height: 1.6;
-            padding-left: 20px;
         }
 
-        .instructions li {
-            margin-bottom: 5px;
+        /* Footer */
+        .footer {
+            text-align: center;
+            padding: 30px 20px;
+            border-top: 1px solid rgba(255, 255, 255, 0.1);
+            max-width: 700px;
+            margin: 0 auto;
         }
 
-        @media (max-width: 600px) {
-            .container {
-                padding: 40px 25px;
+        .footer-links {
+            display: flex;
+            gap: 24px;
+            justify-content: center;
+            flex-wrap: wrap;
+            margin-bottom: 16px;
+        }
+
+        .footer-links a {
+            color: rgba(255, 255, 255, 0.7);
+            text-decoration: none;
+            font-size: 14px;
+            transition: color 0.2s;
+        }
+
+        .footer-links a:hover {
+            color: #ffffff;
+        }
+
+        .footer-copy {
+            font-size: 13px;
+            opacity: 0.5;
+        }
+
+        /* Coming Soon Badge */
+        .coming-soon {
+            display: inline-block;
+            background: rgba(251, 191, 36, 0.2);
+            color: #fbbf24;
+            font-size: 10px;
+            font-weight: 700;
+            padding: 3px 8px;
+            border-radius: 4px;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+            margin-left: 8px;
+            vertical-align: middle;
+        }
+
+        /* Web App Link */
+        .web-link {
+            text-align: center;
+            margin-bottom: 30px;
+        }
+
+        .web-link a {
+            color: rgba(255, 255, 255, 0.8);
+            text-decoration: none;
+            font-size: 15px;
+            border-bottom: 1px dashed rgba(255, 255, 255, 0.4);
+            padding-bottom: 2px;
+            transition: all 0.2s;
+        }
+
+        .web-link a:hover {
+            color: #ffffff;
+            border-bottom-color: #ffffff;
+        }
+
+        /* Responsive */
+        @media (max-width: 768px) {
+            .hero {
+                padding: 40px 20px 30px;
             }
 
             h1 {
-                font-size: 26px;
+                font-size: 28px;
             }
 
-            .download-btn {
+            .tagline {
+                font-size: 16px;
+            }
+
+            .features-grid {
+                grid-template-columns: repeat(2, 1fr);
+            }
+
+            .stats {
+                gap: 24px;
+            }
+
+            .stat-value {
+                font-size: 24px;
+            }
+        }
+
+        @media (max-width: 480px) {
+            .logo-wrapper {
+                width: 90px;
+                height: 90px;
+                border-radius: 22px;
+            }
+
+            h1 {
+                font-size: 24px;
+            }
+
+            .store-buttons a {
                 width: 100%;
-                padding: 16px 30px;
+                text-align: center;
+            }
+
+            .features-grid {
+                grid-template-columns: 1fr;
+            }
+
+            .stats {
+                gap: 16px;
             }
         }
     </style>
 </head>
 <body>
-    <div class="container">
-        <div class="icon">📱</div>
 
-        <h1>Download Car Crash Lawyer AI</h1>
-        <p class="subtitle">
-            Get the official Android app to document your accident and generate your legal report
+    <!-- Hero Section -->
+    <section class="hero">
+        <div class="logo-wrapper">
+            <img src="/images/logo.png" alt="Car Crash Lawyer AI Logo">
+        </div>
+
+        <h1>
+            Car Crash Lawyer AI
+            <span>Your Legal Sidekick</span>
+        </h1>
+
+        <p class="tagline">
+            Document your accident, capture evidence, and generate a professional 18-page legal report — all from your phone.
         </p>
 
-        <div class="file-info">
-            <div class="file-size"><strong>File Size:</strong> 96 MB</div>
-            <div class="file-size"><strong>Version:</strong> 2.0.14</div>
-            <div class="file-size"><strong>Build Date:</strong> 15 January 2026</div>
-            <div class="file-size"><strong>Platform:</strong> Android 7.0+</div>
+        <div class="price-badge">
+            <strong>£11.99</strong> per year &middot; Cancel anytime
         </div>
 
-        <a href="/download-app" class="download-btn" download>
-            ⬇️ Download APK
-        </a>
+        <!-- Store Download Badges -->
+        <div class="store-buttons">
+            <a href="https://apps.apple.com/app/car-crash-lawyer-ai/id6758804445" id="btn-apple" title="Download on the App Store">
+                <img src="https://tools.applemediaservices.com/api/badges/download-on-the-app-store/black/en-gb?size=250x83" alt="Download on the App Store" class="store-badge">
+            </a>
 
-        <div class="alternative">
-            <p>Alternative download methods:</p>
-            <a href="/CarCrashLawyerAI.apk" download="CarCrashLawyerAI.apk" style="display: block; margin-bottom: 10px;">Direct Download Link</a>
-            <a href="https://files.catbox.moe/fmjcix.apk" download="CarCrashLawyerAI.apk" style="display: block;">External Mirror (if above fails)</a>
+            <a href="https://play.google.com/store/apps/details?id=com.carcrashlawyerai.app" id="btn-google" title="Get it on Google Play">
+                <img src="https://play.google.com/intl/en_gb/badges/static/images/badges/en_badge_web_generic.png" alt="Get it on Google Play" class="store-badge google-badge">
+            </a>
         </div>
 
-        <div class="instructions">
-            <h3>⚠️ Installation Instructions</h3>
-            <ol>
-                <li>Download the APK file above</li>
-                <li>Open your phone's Settings → Security</li>
-                <li>Enable "Install from Unknown Sources"</li>
-                <li>Find the downloaded APK in your Downloads folder</li>
-                <li>Tap to install and follow the prompts</li>
-            </ol>
+        <div class="web-link">
+            <a href="/">Or use the web app in your browser &rarr;</a>
         </div>
+    </section>
 
-        <div class="instructions" style="background: #eff6ff; border-left-color: #3b82f6; margin-top: 20px;">
-            <h3 style="color: #1e40af;">📱 Download Troubleshooting</h3>
-            <ol style="color: #1e3a8a;">
-                <li><strong>Download stops/fails?</strong> The file is 96MB - ensure you have stable WiFi and enough storage space (100MB free)</li>
-                <li><strong>Mobile network issues?</strong> Try the "External Mirror" link above - it may work better on mobile networks</li>
-                <li><strong>Browser blocks download?</strong> Try Chrome or Firefox browser instead of your phone's default browser</li>
-                <li><strong>Still failing?</strong> Download on WiFi and check your phone has at least 200MB free space</li>
-            </ol>
+    <!-- Stats Row -->
+    <section class="stats">
+        <div class="stat">
+            <div class="stat-value">99.5%</div>
+            <div class="stat-label">Cost Saving vs Solicitor</div>
         </div>
-    </div>
+        <div class="stat">
+            <div class="stat-value">~2 min</div>
+            <div class="stat-label">PDF Generation</div>
+        </div>
+        <div class="stat">
+            <div class="stat-value">18 Pages</div>
+            <div class="stat-label">Professional Report</div>
+        </div>
+    </section>
+
+    <!-- Features Grid -->
+    <section class="features">
+        <h2>Everything You Need After an Accident</h2>
+        <div class="features-grid">
+            <div class="feature-card">
+                <div class="feature-icon">🎙️</div>
+                <h3>AI Voice Recording</h3>
+                <p>Describe what happened in your own words — AI transcribes and structures it.</p>
+            </div>
+            <div class="feature-card">
+                <div class="feature-icon">📸</div>
+                <h3>Photo Evidence</h3>
+                <p>Capture damage photos, scene images, and documents directly from your phone.</p>
+            </div>
+            <div class="feature-card">
+                <div class="feature-icon">📄</div>
+                <h3>Legal PDF Report</h3>
+                <p>Professional 18-page incident report with 213 data fields, ready for insurers.</p>
+            </div>
+            <div class="feature-card">
+                <div class="feature-icon">📍</div>
+                <h3>GPS Location</h3>
+                <p>Automatic accident location capture with what3words precision mapping.</p>
+            </div>
+            <div class="feature-card">
+                <div class="feature-icon">🔒</div>
+                <h3>GDPR Compliant</h3>
+                <p>Your data is encrypted, protected, and handled in full UK GDPR compliance.</p>
+            </div>
+            <div class="feature-card">
+                <div class="feature-icon">💷</div>
+                <h3>Just £11.99/year</h3>
+                <p>A fraction of the cost of a solicitor. Cancel anytime, no hidden fees.</p>
+            </div>
+        </div>
+    </section>
+
+    <!-- Bottom CTA -->
+    <section class="bottom-cta">
+        <p>
+            Been in an accident? Don't wait — download the app now and start documenting while the details are fresh.
+        </p>
+        <div class="store-buttons">
+            <a href="https://apps.apple.com/app/car-crash-lawyer-ai/id6758804445">
+                <img src="https://tools.applemediaservices.com/api/badges/download-on-the-app-store/black/en-gb?size=250x83" alt="Download on the App Store" class="store-badge">
+            </a>
+            <a href="https://play.google.com/store/apps/details?id=com.carcrashlawyerai.app">
+                <img src="https://play.google.com/intl/en_gb/badges/static/images/badges/en_badge_web_generic.png" alt="Get it on Google Play" class="store-badge google-badge">
+            </a>
+        </div>
+    </section>
+
+    <!-- Footer -->
+    <footer class="footer">
+        <div class="footer-links">
+            <a href="/">Home</a>
+            <a href="/privacy-policy.html">Privacy Policy</a>
+            <a href="/terms.html">Terms of Service</a>
+            <a href="/delete-account.html">Delete Account</a>
+        </div>
+        <p class="footer-copy">&copy; 2026 Car Crash Lawyer AI Ltd. All rights reserved.</p>
+    </footer>
 
     <script>
-        // Log download attempts for debugging
-        document.querySelector('.download-btn').addEventListener('click', function() {
-            console.log('Download initiated via force-download route');
-        });
+        // Detect platform and highlight the relevant store button
+        (function() {
+            var ua = navigator.userAgent || navigator.vendor || window.opera;
+            var isIOS = /iPad|iPhone|iPod/.test(ua) || (navigator.platform === 'MacIntel' && navigator.maxTouchPoints > 1);
+            var isAndroid = /android/i.test(ua);
 
-        document.querySelector('.alternative a').addEventListener('click', function() {
-            console.log('Download initiated via direct link');
-        });
+            if (isIOS) {
+                document.getElementById('btn-apple').classList.add('highlighted');
+            } else if (isAndroid) {
+                document.getElementById('btn-google').classList.add('highlighted');
+            }
+        })();
     </script>
 </body>
 </html>

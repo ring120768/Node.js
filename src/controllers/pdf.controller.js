@@ -14,7 +14,7 @@ const { createClient } = require('@supabase/supabase-js');
 // Core PDF generation dependencies - FAIL FAST if broken
 // These are critical to the application - crash on startup if missing/broken
 const { fetchAllData } = require('../../lib/dataFetcher');
-const { sendEmails, sendTemplateEmail, sendAiProcessingEmail } = require('../../lib/emailService');
+const { sendEmails, sendTemplateEmail, sendAiProcessingEmail, sendReviewRequestEmail } = require('../../lib/emailService');
 
 // Import PDF Form Filler Service (uses pdf-lib, verified 213/213 field mappings)
 const adobePdfFormFillerService = require('../services/adobePdfFormFillerService');
@@ -836,6 +836,13 @@ async function generateUserPDF(create_user_id, source = 'direct', incidentId = n
 
   if (emailResult.success) {
     await markPdfSent(resolvedIncidentId);
+
+    // Send review request email after 2 min delay (fire-and-forget)
+    const reviewUserName = allData.user?.name || allData.user?.surname || 'there';
+    setTimeout(() => {
+      sendReviewRequestEmail(recipientEmail, { userName: reviewUserName })
+        .catch(err => logger.error('Review request email failed', { error: err.message }));
+    }, 2 * 60 * 1000);
   } else {
     await releasePdfSendLock(resolvedIncidentId, 'email-failed');
   }
