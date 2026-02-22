@@ -12,7 +12,7 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 |---|---|
 | **Stack** | Node.js 18+, Express, Supabase (PostgreSQL/Auth/Storage/Realtime), Adobe PDF Services, OpenAI |
 | **Mobile** | Capacitor (Android + iOS) wrapping web app |
-| **Version** | 2.2.0 |
+| **Version** | 2.3.0 |
 | **Location** | UK (DD/MM/YYYY, £ GBP, GMT/BST, +44, British English) |
 | **Flow** | Custom HTML Forms (Pages 1-12) → Image Processing → PDF (18 pages, 213 fields) → Email |
 
@@ -249,12 +249,13 @@ const browser = await puppeteer.launch({
 
 ### Email System (Resend API)
 
-**3-4 emails sent per completed incident:**
+**4-5 emails sent per completed incident:**
 
-1. **Image Download Links** - Sent immediately after Page 12 submission
-2. **90-Day Retention Notice** - GDPR compliance notification
-3. **PDF Report** - Sent to user + accounts when PDF generation completes (~2-3 min)
-4. **AI Processing Notice** - Fallback if Puppeteer fails (rare)
+1. **Welcome Email** - Sent on signup, includes app store review/recommend badges
+2. **Image Download Links** - Sent immediately after Page 12 submission
+3. **90-Day Retention Notice** - GDPR compliance notification
+4. **PDF Report** - Sent to user + accounts when PDF generation completes (~2-3 min)
+5. **Review Request Email** - Sent 2 minutes after PDF delivery with App Store/Google Play review links
 
 **Email provider:** Resend (HTTP API) - Replaced nodemailer due to Railway's blocked SMTP ports
 
@@ -263,7 +264,12 @@ const browser = await puppeteer.launch({
 **Key files:**
 - Email service: `lib/emailService.js`
 - Queue processor: `src/services/emailQueueService.js`
-- Email templates: `lib/generators/emailGenerator.js`
+- Email templates (HTML): `templates/emails/` (subscription-welcome, review-request)
+- Email generators: `lib/generators/emailGenerator.js`
+
+**App Store links in emails:**
+- Apple: `https://apps.apple.com/app/car-crash-lawyer-ai/id6758804445` (add `?action=write-review` for direct review)
+- Google Play: `https://play.google.com/store/apps/details?id=com.carcrashlawyerai.app`
 
 **See:** `EMAIL-FLOW-DOCUMENTATION.md` for complete email flow, timing, and troubleshooting
 
@@ -334,6 +340,11 @@ node check-queue-status.js       # Check specific job
 ### Overview
 
 Native iOS and Android apps wrap the web application using Capacitor. The apps load the hosted Railway site (`https://carcrashlawyerai.co.uk`) within a native webview.
+
+**Live on stores:**
+- App Store: https://apps.apple.com/app/car-crash-lawyer-ai/id6758804445
+- Google Play: https://play.google.com/store/apps/details?id=com.carcrashlawyerai.app
+- Download page: `public/download.html` (hosted on Hostinger)
 
 **Configuration:** `capacitor.config.ts`
 **Platforms:** `android/` (Gradle/Java), `ios/` (Xcode/Swift)
@@ -429,6 +440,10 @@ Release builds generate:
 
 /public             # Static assets (web app & mobile webview)
   *.html            # Page templates (incident-form-page1-12.html)
+  download.html     # App Store & Google Play download landing page
+
+/templates          # Email templates
+  /emails           # HTML email templates (subscription-welcome, review-request)
 
 /android            # Native Android app (Capacitor)
   /app/src/main     # Java/Kotlin source
@@ -739,5 +754,5 @@ Do not "fix" these to match - they're deliberate design choices.
 
 ---
 
-**Last Updated:** 2026-01-05
-**Version:** 2.2.2
+**Last Updated:** 2026-02-22
+**Version:** 2.3.0

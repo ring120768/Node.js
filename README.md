@@ -2,8 +2,8 @@
 
 > GDPR-compliant legal documentation system for UK traffic accidents
 
-**Version:** 2.2.0
-**Status:** ✅ Production Ready
+**Version:** 2.3.0
+**Status:** ✅ Production Ready | [App Store](https://apps.apple.com/app/car-crash-lawyer-ai/id6758804445) | [Google Play](https://play.google.com/store/apps/details?id=com.carcrashlawyerai.app)
 **Location:** United Kingdom
 
 ---
@@ -24,6 +24,8 @@ Car Crash Lawyer AI is a comprehensive Node.js web application that helps UK car
 - **DVLA Integration** - Automated vehicle information lookups
 - **Real-time Updates** - WebSocket for live status updates
 - **GDPR Compliant** - Full data privacy, deletion, and export capabilities
+- **Mobile Apps** - Native iOS and Android apps via Capacitor (live on App Store & Google Play)
+- **Automated Review Emails** - App store review requests sent after PDF report delivery
 
 ---
 
@@ -149,7 +151,10 @@ See [CLAUDE.md](CLAUDE.md#page-protection-pattern) for implementation details.
 │   └── utils/               # Helpers, validators
 ├── lib/
 │   ├── dataFetcher.js       # Fetch data from Supabase
-│   └── generators/          # Email templates
+│   ├── emailService.js      # Email sending (Resend API)
+│   └── generators/          # Email content generators
+├── templates/
+│   └── emails/              # HTML email templates
 ├── public/                  # Frontend HTML files
 │   ├── index.html           # Landing page
 │   ├── transcription-status.html
@@ -483,11 +488,19 @@ attachments: [{
 
 ## 🎯 Project Status
 
-**Current Version:** 2.2.0
-**Latest Update:** January 1, 2026
+**Current Version:** 2.3.0
+**Latest Update:** 22 February 2026
 **Status:** ✅ Production Ready
 
-### Recent Changes (v2.2.0)
+### Recent Changes (v2.3.0)
+
+- ✅ **Live on App Store & Google Play** - Native iOS and Android apps published
+- ✅ **App store review emails** - Automated review request sent 2min after PDF delivery
+- ✅ **Welcome email feedback section** - Review/recommend badges in signup confirmation
+- ✅ **Dual-platform download page** - Official App Store & Google Play badges with platform detection
+- ✅ **Android permission fix** - Removed READ_MEDIA_IMAGES/VIDEO (not needed for photo picker)
+
+### Previous Changes (v2.2.0)
 
 - ✅ **Railway Puppeteer fix** - Updated nixpacks.toml for Ubuntu 24.04 (libasound2t64)
 - ✅ **Email PDF attachment fix** - Added contentType: 'application/pdf' for Resend API
@@ -507,9 +520,9 @@ attachments: [{
 
 ### Upcoming
 
+- [ ] Witnesses & vehicles appendix PDF
 - [ ] Enhanced error reporting dashboard
-- [ ] Automated backup system
-- [ ] Performance optimization
+- [ ] Performance optimisation
 - [ ] Additional AI analysis features
 
 ---
@@ -524,7 +537,7 @@ For technical support or questions:
 
 ---
 
-**Last Updated:** 2026-01-01
-**Version:** 2.2.0
+**Last Updated:** 22 February 2026
+**Version:** 2.3.0
 
 Made with ❤️ for UK accident victims
