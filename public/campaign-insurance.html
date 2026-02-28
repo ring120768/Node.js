@@ -1,0 +1,545 @@
+<!DOCTYPE html>
+<html lang="en-GB">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Car Crash Lawyer AI for Insurers - Structured FNOL Data from Day One</title>
+    <meta name="description" content="Transform your FNOL process. Car Crash Lawyer AI delivers 213-field structured incident reports with timestamped photos, AI summaries, and signed declarations - before your adjusters pick up the phone.">
+    <meta name="theme-color" content="#0c4a6e">
+
+    <!-- Open Graph / Social Media -->
+    <meta property="og:type" content="website">
+    <meta property="og:title" content="Car Crash Lawyer AI for Insurers - Better Claims Data from Day One">
+    <meta property="og:description" content="213 structured data fields. Timestamped photos. AI-generated summaries. Signed declarations. All before your adjusters pick up the phone.">
+    <meta property="og:image" content="https://carcrashlawyerai.co.uk/images/logo.png">
+    <meta property="og:url" content="https://carcrashlawyerai.co.uk/campaign-insurance.html">
+
+    <!-- Twitter/X Card -->
+    <meta name="twitter:card" content="summary_large_image">
+    <meta name="twitter:title" content="Car Crash Lawyer AI for Insurers">
+    <meta name="twitter:description" content="Transform your FNOL process. 213 structured data fields delivered before your adjusters pick up the phone.">
+    <meta name="twitter:image" content="https://carcrashlawyerai.co.uk/images/logo.png">
+
+    <link rel="icon" type="image/png" href="/images/logo.png">
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+    <style>
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+
+        body {
+            font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+            background: linear-gradient(160deg, #0f172a 0%, #1e3a5f 40%, #0c4a6e 100%);
+            min-height: 100vh;
+            color: #ffffff;
+            overflow-x: hidden;
+        }
+
+        /* Sector Badge */
+        .sector-badge {
+            text-align: center;
+            padding: 16px 20px 0;
+        }
+        .sector-badge span {
+            display: inline-block;
+            background: rgba(59, 130, 246, 0.2);
+            border: 1px solid rgba(59, 130, 246, 0.4);
+            color: #93c5fd;
+            font-size: 12px;
+            font-weight: 700;
+            padding: 6px 16px;
+            border-radius: 50px;
+            text-transform: uppercase;
+            letter-spacing: 1px;
+        }
+
+        .hero {
+            text-align: center;
+            padding: 40px 20px 40px;
+            max-width: 750px;
+            margin: 0 auto;
+        }
+
+        .logo-wrapper {
+            width: 100px;
+            height: 100px;
+            margin: 0 auto 24px;
+            border-radius: 24px;
+            overflow: hidden;
+            box-shadow: 0 12px 40px rgba(0, 0, 0, 0.3);
+            border: 3px solid rgba(255, 255, 255, 0.15);
+        }
+        .logo-wrapper img { width: 100%; height: 100%; object-fit: cover; }
+
+        h1 {
+            font-size: 36px;
+            font-weight: 800;
+            line-height: 1.15;
+            margin-bottom: 20px;
+            letter-spacing: -0.5px;
+        }
+        h1 span {
+            display: block;
+            background: linear-gradient(90deg, #93c5fd, #60a5fa);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            background-clip: text;
+            font-size: 28px;
+            margin-top: 4px;
+        }
+
+        .tagline {
+            font-size: 18px;
+            opacity: 0.9;
+            line-height: 1.7;
+            margin-bottom: 32px;
+            max-width: 600px;
+            margin-left: auto;
+            margin-right: auto;
+        }
+
+        /* Pain Point Callout */
+        .pain-callout {
+            background: rgba(239, 68, 68, 0.1);
+            border: 1px solid rgba(239, 68, 68, 0.3);
+            border-radius: 16px;
+            padding: 24px 28px;
+            max-width: 620px;
+            margin: 0 auto 40px;
+            text-align: left;
+        }
+        .pain-callout h3 {
+            font-size: 15px;
+            font-weight: 700;
+            color: #fca5a5;
+            margin-bottom: 12px;
+        }
+        .pain-callout ul {
+            list-style: none;
+            padding: 0;
+        }
+        .pain-callout li {
+            font-size: 14px;
+            line-height: 1.6;
+            opacity: 0.85;
+            padding: 4px 0 4px 24px;
+            position: relative;
+        }
+        .pain-callout li::before {
+            content: "\2717";
+            position: absolute;
+            left: 0;
+            color: #f87171;
+            font-weight: 700;
+        }
+
+        /* Stats */
+        .stats {
+            display: flex;
+            justify-content: center;
+            gap: 40px;
+            flex-wrap: wrap;
+            margin-bottom: 50px;
+            padding: 0 20px;
+        }
+        .stat { text-align: center; }
+        .stat-value { font-size: 28px; font-weight: 800; color: #60a5fa; }
+        .stat-label { font-size: 13px; opacity: 0.75; margin-top: 4px; }
+
+        /* Solution Section */
+        .solution {
+            max-width: 900px;
+            margin: 0 auto;
+            padding: 0 20px 40px;
+        }
+        .solution h2 {
+            text-align: center;
+            font-size: 26px;
+            font-weight: 700;
+            margin-bottom: 10px;
+        }
+        .solution .subtitle {
+            text-align: center;
+            font-size: 15px;
+            opacity: 0.7;
+            margin-bottom: 30px;
+        }
+
+        .features-grid {
+            display: grid;
+            grid-template-columns: repeat(3, 1fr);
+            gap: 20px;
+        }
+        .feature-card {
+            background: rgba(255, 255, 255, 0.08);
+            backdrop-filter: blur(10px);
+            border: 1px solid rgba(255, 255, 255, 0.12);
+            border-radius: 16px;
+            padding: 28px 22px;
+            text-align: center;
+            transition: transform 0.3s ease;
+        }
+        .feature-card:hover { transform: translateY(-4px); }
+        .feature-icon { font-size: 36px; margin-bottom: 14px; }
+        .feature-card h3 { font-size: 16px; font-weight: 700; margin-bottom: 8px; }
+        .feature-card p { font-size: 13px; opacity: 0.8; line-height: 1.5; }
+
+        /* ROI Section */
+        .roi-section {
+            max-width: 700px;
+            margin: 0 auto;
+            padding: 0 20px 50px;
+        }
+        .roi-card {
+            background: rgba(34, 197, 94, 0.08);
+            border: 1px solid rgba(34, 197, 94, 0.25);
+            border-radius: 16px;
+            padding: 32px;
+            text-align: center;
+        }
+        .roi-card h3 {
+            font-size: 20px;
+            font-weight: 700;
+            color: #86efac;
+            margin-bottom: 16px;
+        }
+        .roi-grid {
+            display: grid;
+            grid-template-columns: repeat(3, 1fr);
+            gap: 20px;
+            margin-top: 20px;
+        }
+        .roi-item { text-align: center; }
+        .roi-value { font-size: 24px; font-weight: 800; color: #4ade80; }
+        .roi-label { font-size: 12px; opacity: 0.75; margin-top: 4px; line-height: 1.4; }
+
+        /* CTA */
+        .cta-section {
+            text-align: center;
+            padding: 40px 20px 30px;
+            max-width: 600px;
+            margin: 0 auto;
+        }
+        .cta-section p {
+            font-size: 16px;
+            opacity: 0.85;
+            margin-bottom: 28px;
+            line-height: 1.7;
+        }
+        .cta-button {
+            display: inline-block;
+            background: linear-gradient(135deg, #3b82f6, #2563eb);
+            color: #ffffff;
+            text-decoration: none;
+            font-size: 17px;
+            font-weight: 700;
+            padding: 16px 40px;
+            border-radius: 12px;
+            transition: transform 0.3s ease, box-shadow 0.3s ease;
+            box-shadow: 0 8px 30px rgba(37, 99, 235, 0.4);
+        }
+        .cta-button:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 12px 40px rgba(37, 99, 235, 0.5);
+        }
+        .cta-sub {
+            font-size: 13px;
+            opacity: 0.6;
+            margin-top: 14px;
+        }
+
+        /* How It Works */
+        .how-it-works {
+            max-width: 750px;
+            margin: 0 auto;
+            padding: 0 20px 50px;
+        }
+        .how-it-works h2 {
+            text-align: center;
+            font-size: 24px;
+            font-weight: 700;
+            margin-bottom: 30px;
+        }
+        .step-list {
+            display: flex;
+            flex-direction: column;
+            gap: 16px;
+        }
+        .step {
+            display: flex;
+            align-items: flex-start;
+            gap: 16px;
+            background: rgba(255, 255, 255, 0.06);
+            border: 1px solid rgba(255, 255, 255, 0.1);
+            border-radius: 12px;
+            padding: 20px;
+        }
+        .step-number {
+            flex-shrink: 0;
+            width: 36px;
+            height: 36px;
+            background: rgba(59, 130, 246, 0.2);
+            border: 1px solid rgba(59, 130, 246, 0.4);
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 14px;
+            font-weight: 800;
+            color: #93c5fd;
+        }
+        .step-content h4 { font-size: 15px; font-weight: 700; margin-bottom: 4px; }
+        .step-content p { font-size: 13px; opacity: 0.75; line-height: 1.5; }
+
+        /* Compliance Strip */
+        .compliance {
+            text-align: center;
+            padding: 24px 20px;
+            max-width: 600px;
+            margin: 0 auto;
+        }
+        .compliance-badges {
+            display: flex;
+            gap: 24px;
+            justify-content: center;
+            flex-wrap: wrap;
+        }
+        .compliance-item {
+            font-size: 13px;
+            opacity: 0.7;
+            display: flex;
+            align-items: center;
+            gap: 6px;
+        }
+        .compliance-item::before {
+            content: "\2713";
+            color: #4ade80;
+            font-weight: 700;
+        }
+
+        /* Footer */
+        .footer {
+            text-align: center;
+            padding: 30px 20px;
+            border-top: 1px solid rgba(255, 255, 255, 0.08);
+            max-width: 700px;
+            margin: 0 auto;
+        }
+        .footer-links {
+            display: flex;
+            gap: 24px;
+            justify-content: center;
+            flex-wrap: wrap;
+            margin-bottom: 16px;
+        }
+        .footer-links a {
+            color: rgba(255, 255, 255, 0.7);
+            text-decoration: none;
+            font-size: 14px;
+            transition: color 0.2s;
+        }
+        .footer-links a:hover { color: #ffffff; }
+        .footer-copy { font-size: 13px; opacity: 0.5; }
+
+        /* Responsive */
+        @media (max-width: 768px) {
+            h1 { font-size: 28px; }
+            h1 span { font-size: 22px; }
+            .tagline { font-size: 16px; }
+            .features-grid { grid-template-columns: repeat(2, 1fr); }
+            .roi-grid { grid-template-columns: 1fr; gap: 16px; }
+            .stats { gap: 24px; }
+        }
+        @media (max-width: 480px) {
+            h1 { font-size: 24px; }
+            h1 span { font-size: 19px; }
+            .features-grid { grid-template-columns: 1fr; }
+            .logo-wrapper { width: 80px; height: 80px; border-radius: 20px; }
+            .pain-callout { padding: 20px; }
+        }
+    </style>
+</head>
+<body>
+
+    <!-- Sector Badge -->
+    <div class="sector-badge">
+        <span>For Insurance Companies</span>
+    </div>
+
+    <!-- Hero -->
+    <section class="hero">
+        <div class="logo-wrapper">
+            <img src="/images/logo.png" alt="Car Crash Lawyer AI Logo">
+        </div>
+
+        <h1>
+            What If Every Claim Arrived Complete?
+            <span>213 data fields. Before you pick up the phone.</span>
+        </h1>
+
+        <p class="tagline">
+            Car Crash Lawyer AI equips policyholders to capture structured incident data, timestamped photos, and AI-generated summaries at the scene &mdash; delivering insurer-ready reports in minutes, not weeks.
+        </p>
+    </section>
+
+    <!-- Pain Points -->
+    <section class="pain-callout">
+        <h3>Sound familiar?</h3>
+        <ul>
+            <li>Claims arrive with missing details, wrong dates, and vague descriptions</li>
+            <li>Adjusters waste hours chasing policyholders for basic information</li>
+            <li>Incomplete FNOL data delays triage and inflates average claim cost</li>
+            <li>Fraudulent claims slip through because initial reports lack structured detail</li>
+            <li>FCA Consumer Duty demands faster, fairer outcomes you can evidence</li>
+        </ul>
+    </section>
+
+    <!-- Stats -->
+    <section class="stats">
+        <div class="stat">
+            <div class="stat-value">213</div>
+            <div class="stat-label">Structured Data Fields</div>
+        </div>
+        <div class="stat">
+            <div class="stat-value">18 Pages</div>
+            <div class="stat-label">Professional Report</div>
+        </div>
+        <div class="stat">
+            <div class="stat-value">~2 min</div>
+            <div class="stat-label">PDF Delivery Time</div>
+        </div>
+        <div class="stat">
+            <div class="stat-value">100%</div>
+            <div class="stat-label">GDPR Compliant</div>
+        </div>
+    </section>
+
+    <!-- Solution Features -->
+    <section class="solution">
+        <h2>What Your Adjusters Receive</h2>
+        <p class="subtitle">Every report your policyholder generates includes:</p>
+        <div class="features-grid">
+            <div class="feature-card">
+                <div class="feature-icon">📋</div>
+                <h3>Structured FNOL Data</h3>
+                <p>213 pre-filled fields including vehicles, parties, witnesses, conditions, and circumstances. No chasing required.</p>
+            </div>
+            <div class="feature-card">
+                <div class="feature-icon">📸</div>
+                <h3>Timestamped Evidence</h3>
+                <p>Photos captured at the scene with metadata - damage, road layout, registration plates, and hazards.</p>
+            </div>
+            <div class="feature-card">
+                <div class="feature-icon">🤖</div>
+                <h3>AI Incident Summary</h3>
+                <p>Natural language analysis of the accident narrative for instant triage and liability assessment.</p>
+            </div>
+            <div class="feature-card">
+                <div class="feature-icon">📍</div>
+                <h3>Precise Location</h3>
+                <p>GPS coordinates with what3words precision mapping. No more "somewhere near the roundabout".</p>
+            </div>
+            <div class="feature-card">
+                <div class="feature-icon">✍️</div>
+                <h3>Signed Declaration</h3>
+                <p>Digital signature and statement of truth captured at point of submission. Fraud deterrent built in.</p>
+            </div>
+            <div class="feature-card">
+                <div class="feature-icon">🚗</div>
+                <h3>DVLA Vehicle Data</h3>
+                <p>Registration lookups pre-populate make, model, colour, and MOT status. One less thing to verify.</p>
+            </div>
+        </div>
+    </section>
+
+    <!-- ROI Section -->
+    <section class="roi-section">
+        <div class="roi-card">
+            <h3>The Business Case</h3>
+            <p style="font-size: 14px; opacity: 0.85; line-height: 1.6; margin-bottom: 8px;">
+                Insurers using structured digital FNOL report significant improvements across the claims lifecycle:
+            </p>
+            <div class="roi-grid">
+                <div class="roi-item">
+                    <div class="roi-value">40%</div>
+                    <div class="roi-label">Faster claim<br>cycle times</div>
+                </div>
+                <div class="roi-item">
+                    <div class="roi-value">60%</div>
+                    <div class="roi-label">Reduction in<br>adjuster chase-ups</div>
+                </div>
+                <div class="roi-item">
+                    <div class="roi-value">25%</div>
+                    <div class="roi-label">Improvement in<br>fraud detection</div>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- How It Works -->
+    <section class="how-it-works">
+        <h2>How the Partnership Works</h2>
+        <div class="step-list">
+            <div class="step">
+                <div class="step-number">1</div>
+                <div class="step-content">
+                    <h4>Offer the App to Policyholders</h4>
+                    <p>Co-branded or white-label deployment. Policyholders download from App Store or Google Play.</p>
+                </div>
+            </div>
+            <div class="step">
+                <div class="step-number">2</div>
+                <div class="step-content">
+                    <h4>Policyholder Reports at the Scene</h4>
+                    <p>Guided step-by-step process captures all data, photos, and narrative while details are fresh.</p>
+                </div>
+            </div>
+            <div class="step">
+                <div class="step-number">3</div>
+                <div class="step-content">
+                    <h4>Structured Report Delivered Instantly</h4>
+                    <p>18-page PDF with 213 fields lands in your claims inbox within minutes. Ready for triage.</p>
+                </div>
+            </div>
+            <div class="step">
+                <div class="step-number">4</div>
+                <div class="step-content">
+                    <h4>Faster Settlements, Happier Customers</h4>
+                    <p>Complete data from day one means faster liability decisions, fewer disputes, and improved NPS.</p>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- CTA -->
+    <section class="cta-section">
+        <p>
+            Ready to see what complete FNOL data looks like? We'll generate a sample report using your claims scenarios so you can see the quality first-hand.
+        </p>
+        <a href="mailto:partnerships@carcrashlawyerai.com?subject=Insurance%20Partnership%20Enquiry&body=Hi%2C%0A%0AI%27d%20like%20to%20learn%20more%20about%20partnering%20with%20Car%20Crash%20Lawyer%20AI%20for%20our%20claims%20operation.%0A%0ACompany%3A%20%0ARole%3A%20%0AApprox.%20motor%20claims%20per%20year%3A%20%0A%0AThanks" class="cta-button">
+            Book a Demo &rarr;
+        </a>
+        <p class="cta-sub">No obligation. We'll walk you through a live report in 15 minutes.</p>
+    </section>
+
+    <!-- Compliance -->
+    <section class="compliance">
+        <div class="compliance-badges">
+            <span class="compliance-item">UK GDPR Compliant</span>
+            <span class="compliance-item">FCA Consumer Duty Ready</span>
+            <span class="compliance-item">ICO Registered</span>
+            <span class="compliance-item">Data Encrypted at Rest</span>
+        </div>
+    </section>
+
+    <!-- Footer -->
+    <footer class="footer">
+        <div class="footer-links">
+            <a href="/">Home</a>
+            <a href="/privacy-policy.html">Privacy Policy</a>
+            <a href="/terms.html">Terms of Service</a>
+            <a href="/download.html">Download App</a>
+        </div>
+        <p class="footer-copy">&copy; 2026 Car Crash Lawyer AI Ltd. All rights reserved.</p>
+    </footer>
+
+</body>
+</html>

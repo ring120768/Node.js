@@ -1,0 +1,572 @@
+<!DOCTYPE html>
+<html lang="en-GB">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Car Crash Lawyer AI for Fleet Operators - Protect Your Drivers & Your Business</title>
+    <meta name="description" content="When your drivers have an accident on the job, are they equipped to protect themselves and your company? Car Crash Lawyer AI delivers professional incident reports from the scene.">
+    <meta name="theme-color" content="#0c4a6e">
+
+    <!-- Open Graph / Social Media -->
+    <meta property="og:type" content="website">
+    <meta property="og:title" content="Your Drivers Do 40,000 Miles a Year. It's Not If, It's When.">
+    <meta property="og:description" content="Equip your fleet with Car Crash Lawyer AI. Professional incident reports from the roadside. Protect your people. Protect your business.">
+    <meta property="og:image" content="https://carcrashlawyerai.co.uk/images/logo.png">
+    <meta property="og:url" content="https://carcrashlawyerai.co.uk/campaign-fleet.html">
+
+    <!-- Twitter/X Card -->
+    <meta name="twitter:card" content="summary_large_image">
+    <meta name="twitter:title" content="Car Crash Lawyer AI for Fleet & Commercial Drivers">
+    <meta name="twitter:description" content="Your drivers do 40,000 miles a year. When the call comes in, will they have the evidence you need?">
+    <meta name="twitter:image" content="https://carcrashlawyerai.co.uk/images/logo.png">
+
+    <link rel="icon" type="image/png" href="/images/logo.png">
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+    <style>
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+
+        body {
+            font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+            background: linear-gradient(160deg, #1a1a2e 0%, #16213e 40%, #0f3460 100%);
+            min-height: 100vh;
+            color: #ffffff;
+            overflow-x: hidden;
+        }
+
+        /* Sector Badge */
+        .sector-badge {
+            text-align: center;
+            padding: 16px 20px 0;
+        }
+        .sector-badge span {
+            display: inline-block;
+            background: rgba(245, 158, 11, 0.15);
+            border: 1px solid rgba(245, 158, 11, 0.35);
+            color: #fbbf24;
+            font-size: 12px;
+            font-weight: 700;
+            padding: 6px 16px;
+            border-radius: 50px;
+            text-transform: uppercase;
+            letter-spacing: 1px;
+        }
+
+        .hero {
+            text-align: center;
+            padding: 40px 20px 40px;
+            max-width: 750px;
+            margin: 0 auto;
+        }
+
+        .logo-wrapper {
+            width: 100px;
+            height: 100px;
+            margin: 0 auto 24px;
+            border-radius: 24px;
+            overflow: hidden;
+            box-shadow: 0 12px 40px rgba(0, 0, 0, 0.3);
+            border: 3px solid rgba(255, 255, 255, 0.15);
+        }
+        .logo-wrapper img { width: 100%; height: 100%; object-fit: cover; }
+
+        h1 {
+            font-size: 36px;
+            font-weight: 800;
+            line-height: 1.15;
+            margin-bottom: 20px;
+            letter-spacing: -0.5px;
+        }
+        h1 span {
+            display: block;
+            background: linear-gradient(90deg, #fbbf24, #f59e0b);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            background-clip: text;
+            font-size: 26px;
+            margin-top: 4px;
+        }
+
+        .tagline {
+            font-size: 18px;
+            opacity: 0.9;
+            line-height: 1.7;
+            margin-bottom: 32px;
+            max-width: 600px;
+            margin-left: auto;
+            margin-right: auto;
+        }
+
+        /* Scenario Callout */
+        .scenario {
+            background: rgba(245, 158, 11, 0.08);
+            border: 1px solid rgba(245, 158, 11, 0.2);
+            border-radius: 16px;
+            padding: 28px;
+            max-width: 640px;
+            margin: 0 auto 40px;
+            text-align: left;
+        }
+        .scenario h3 {
+            font-size: 16px;
+            font-weight: 700;
+            color: #fbbf24;
+            margin-bottom: 12px;
+        }
+        .scenario p {
+            font-size: 14px;
+            line-height: 1.7;
+            opacity: 0.85;
+        }
+        .scenario .scenario-question {
+            font-size: 15px;
+            font-weight: 600;
+            color: #fbbf24;
+            margin-top: 16px;
+            font-style: italic;
+        }
+
+        /* Cost Section */
+        .cost-strip {
+            display: flex;
+            justify-content: center;
+            gap: 20px;
+            flex-wrap: wrap;
+            margin-bottom: 50px;
+            padding: 0 20px;
+        }
+        .cost-card {
+            background: rgba(239, 68, 68, 0.08);
+            border: 1px solid rgba(239, 68, 68, 0.2);
+            border-radius: 12px;
+            padding: 20px 24px;
+            text-align: center;
+            min-width: 180px;
+        }
+        .cost-value {
+            font-size: 26px;
+            font-weight: 800;
+            color: #f87171;
+        }
+        .cost-label {
+            font-size: 12px;
+            opacity: 0.7;
+            margin-top: 4px;
+            line-height: 1.4;
+        }
+
+        /* Stats */
+        .stats {
+            display: flex;
+            justify-content: center;
+            gap: 40px;
+            flex-wrap: wrap;
+            margin-bottom: 50px;
+            padding: 0 20px;
+        }
+        .stat { text-align: center; }
+        .stat-value { font-size: 28px; font-weight: 800; color: #fbbf24; }
+        .stat-label { font-size: 13px; opacity: 0.75; margin-top: 4px; }
+
+        /* Features */
+        .features {
+            max-width: 900px;
+            margin: 0 auto;
+            padding: 0 20px 40px;
+        }
+        .features h2 {
+            text-align: center;
+            font-size: 26px;
+            font-weight: 700;
+            margin-bottom: 10px;
+        }
+        .features .subtitle {
+            text-align: center;
+            font-size: 15px;
+            opacity: 0.7;
+            margin-bottom: 30px;
+        }
+        .features-grid {
+            display: grid;
+            grid-template-columns: repeat(3, 1fr);
+            gap: 20px;
+        }
+        .feature-card {
+            background: rgba(255, 255, 255, 0.07);
+            backdrop-filter: blur(10px);
+            border: 1px solid rgba(255, 255, 255, 0.1);
+            border-radius: 16px;
+            padding: 28px 22px;
+            text-align: center;
+            transition: transform 0.3s ease;
+        }
+        .feature-card:hover { transform: translateY(-4px); }
+        .feature-icon { font-size: 36px; margin-bottom: 14px; }
+        .feature-card h3 { font-size: 16px; font-weight: 700; margin-bottom: 8px; }
+        .feature-card p { font-size: 13px; opacity: 0.8; line-height: 1.5; }
+
+        /* Sector Grid */
+        .sectors {
+            max-width: 800px;
+            margin: 0 auto;
+            padding: 0 20px 50px;
+        }
+        .sectors h2 {
+            text-align: center;
+            font-size: 24px;
+            font-weight: 700;
+            margin-bottom: 24px;
+        }
+        .sector-grid {
+            display: grid;
+            grid-template-columns: repeat(2, 1fr);
+            gap: 16px;
+        }
+        .sector-item {
+            background: rgba(255, 255, 255, 0.06);
+            border: 1px solid rgba(255, 255, 255, 0.1);
+            border-radius: 12px;
+            padding: 20px;
+        }
+        .sector-item h4 {
+            font-size: 15px;
+            font-weight: 700;
+            margin-bottom: 6px;
+        }
+        .sector-item .sector-icon {
+            font-size: 24px;
+            margin-bottom: 8px;
+        }
+        .sector-item p {
+            font-size: 13px;
+            opacity: 0.75;
+            line-height: 1.5;
+        }
+
+        /* Compliance Strip */
+        .compliance {
+            text-align: center;
+            padding: 20px 20px 30px;
+            max-width: 650px;
+            margin: 0 auto;
+        }
+        .compliance p {
+            font-size: 14px;
+            opacity: 0.7;
+            line-height: 1.6;
+            margin-bottom: 16px;
+        }
+        .compliance-badges {
+            display: flex;
+            gap: 20px;
+            justify-content: center;
+            flex-wrap: wrap;
+        }
+        .compliance-item {
+            font-size: 13px;
+            opacity: 0.7;
+            display: flex;
+            align-items: center;
+            gap: 6px;
+        }
+        .compliance-item::before {
+            content: "\2713";
+            color: #4ade80;
+            font-weight: 700;
+        }
+
+        /* CTA */
+        .cta-section {
+            text-align: center;
+            padding: 40px 20px 20px;
+            max-width: 620px;
+            margin: 0 auto;
+        }
+        .cta-section p {
+            font-size: 16px;
+            opacity: 0.85;
+            margin-bottom: 28px;
+            line-height: 1.7;
+        }
+        .cta-buttons {
+            display: flex;
+            gap: 16px;
+            justify-content: center;
+            flex-wrap: wrap;
+            margin-bottom: 16px;
+        }
+        .cta-button {
+            display: inline-block;
+            color: #ffffff;
+            text-decoration: none;
+            font-size: 16px;
+            font-weight: 700;
+            padding: 14px 32px;
+            border-radius: 12px;
+            transition: transform 0.3s ease, box-shadow 0.3s ease;
+        }
+        .cta-button.primary {
+            background: linear-gradient(135deg, #f59e0b, #d97706);
+            box-shadow: 0 8px 30px rgba(245, 158, 11, 0.3);
+        }
+        .cta-button.primary:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 12px 40px rgba(245, 158, 11, 0.4);
+        }
+        .cta-button.secondary {
+            background: rgba(255, 255, 255, 0.1);
+            border: 1px solid rgba(255, 255, 255, 0.25);
+        }
+        .cta-button.secondary:hover {
+            transform: translateY(-2px);
+            background: rgba(255, 255, 255, 0.15);
+        }
+        .cta-sub {
+            font-size: 13px;
+            opacity: 0.5;
+            margin-top: 12px;
+        }
+
+        /* Store Buttons */
+        .store-buttons {
+            display: flex;
+            gap: 16px;
+            justify-content: center;
+            align-items: center;
+            flex-wrap: wrap;
+            padding: 20px 20px 40px;
+        }
+        .store-buttons a {
+            display: inline-block;
+            transition: transform 0.3s ease, opacity 0.3s ease;
+            opacity: 0.9;
+        }
+        .store-buttons a:hover { transform: translateY(-3px); opacity: 1; }
+        .store-badge { height: 52px; width: auto; }
+        .store-badge.google-badge { height: 78px; margin: -13px 0; }
+
+        /* Footer */
+        .footer {
+            text-align: center;
+            padding: 30px 20px;
+            border-top: 1px solid rgba(255, 255, 255, 0.08);
+            max-width: 700px;
+            margin: 0 auto;
+        }
+        .footer-links {
+            display: flex;
+            gap: 24px;
+            justify-content: center;
+            flex-wrap: wrap;
+            margin-bottom: 16px;
+        }
+        .footer-links a {
+            color: rgba(255, 255, 255, 0.7);
+            text-decoration: none;
+            font-size: 14px;
+            transition: color 0.2s;
+        }
+        .footer-links a:hover { color: #ffffff; }
+        .footer-copy { font-size: 13px; opacity: 0.5; }
+
+        /* Responsive */
+        @media (max-width: 768px) {
+            h1 { font-size: 28px; }
+            h1 span { font-size: 21px; }
+            .tagline { font-size: 16px; }
+            .features-grid { grid-template-columns: repeat(2, 1fr); }
+            .sector-grid { grid-template-columns: 1fr; }
+            .cost-strip { gap: 12px; }
+            .cost-card { min-width: 140px; padding: 16px; }
+        }
+        @media (max-width: 480px) {
+            h1 { font-size: 24px; }
+            h1 span { font-size: 18px; }
+            .features-grid { grid-template-columns: 1fr; }
+            .logo-wrapper { width: 80px; height: 80px; border-radius: 20px; }
+            .cost-strip { flex-direction: column; align-items: center; }
+            .cta-buttons { flex-direction: column; align-items: center; }
+        }
+    </style>
+</head>
+<body>
+
+    <!-- Sector Badge -->
+    <div class="sector-badge">
+        <span>For Fleet Operators &amp; Transport Companies</span>
+    </div>
+
+    <!-- Hero -->
+    <section class="hero">
+        <div class="logo-wrapper">
+            <img src="/images/logo.png" alt="Car Crash Lawyer AI Logo">
+        </div>
+
+        <h1>
+            Your Drivers Do 40,000 Miles a Year
+            <span>It's not if. It's when.</span>
+        </h1>
+
+        <p class="tagline">
+            When the call comes in at 7am, is your driver equipped to capture the evidence that protects them &mdash; and your business?
+        </p>
+    </section>
+
+    <!-- Scenario -->
+    <section class="scenario">
+        <h3>Picture this:</h3>
+        <p>
+            Your delivery driver is rear-ended on the A14 during the morning rush. They're shaken, traffic is building, and another driver is getting aggressive. They need to exchange details, document damage, note witnesses, and capture the scene &mdash; all while keeping calm.
+        </p>
+        <p class="scenario-question">
+            Do they have a process for that? Or are they scribbling on the back of a receipt?
+        </p>
+    </section>
+
+    <!-- Cost of Getting It Wrong -->
+    <section class="cost-strip">
+        <div class="cost-card">
+            <div class="cost-value">&pound;6,000+</div>
+            <div class="cost-label">Average fleet accident<br>cost (minor)</div>
+        </div>
+        <div class="cost-card">
+            <div class="cost-value">&pound;16,000+</div>
+            <div class="cost-label">With downtime, admin<br>&amp; premium increase</div>
+        </div>
+        <div class="cost-card">
+            <div class="cost-value">23 days</div>
+            <div class="cost-label">Average vehicle<br>off-road time</div>
+        </div>
+    </section>
+
+    <!-- Stats -->
+    <section class="stats">
+        <div class="stat">
+            <div class="stat-value">213</div>
+            <div class="stat-label">Data Fields Captured</div>
+        </div>
+        <div class="stat">
+            <div class="stat-value">~2 min</div>
+            <div class="stat-label">Report to Your Inbox</div>
+        </div>
+        <div class="stat">
+            <div class="stat-value">18 Pages</div>
+            <div class="stat-label">Legal-Grade Report</div>
+        </div>
+    </section>
+
+    <!-- Features -->
+    <section class="features">
+        <h2>Equip Every Driver</h2>
+        <p class="subtitle">Car Crash Lawyer AI guides your team through the entire process:</p>
+        <div class="features-grid">
+            <div class="feature-card">
+                <div class="feature-icon">👆</div>
+                <h3>Step-by-Step Guidance</h3>
+                <p>Even a shaken driver can follow the guided process. No training required &mdash; just open the app.</p>
+            </div>
+            <div class="feature-card">
+                <div class="feature-icon">📸</div>
+                <h3>Scene Documentation</h3>
+                <p>Prompted photo capture of damage, road layout, registration plates, and hazard conditions.</p>
+            </div>
+            <div class="feature-card">
+                <div class="feature-icon">🎙️</div>
+                <h3>Voice Recording</h3>
+                <p>Driver describes what happened in their own words. AI transcribes and structures the narrative.</p>
+            </div>
+            <div class="feature-card">
+                <div class="feature-icon">📄</div>
+                <h3>Instant PDF Report</h3>
+                <p>18-page professional report delivered to fleet management within minutes of completion.</p>
+            </div>
+            <div class="feature-card">
+                <div class="feature-icon">📱</div>
+                <h3>Works on Any Phone</h3>
+                <p>iPhone or Android. No special hardware or fleet telematics integration needed.</p>
+            </div>
+            <div class="feature-card">
+                <div class="feature-icon">🛡️</div>
+                <h3>Legal Protection</h3>
+                <p>Comprehensive documentation demonstrates your duty of care obligations are being met.</p>
+            </div>
+        </div>
+    </section>
+
+    <!-- Sector-Specific -->
+    <section class="sectors">
+        <h2>Built for Businesses That Drive</h2>
+        <div class="sector-grid">
+            <div class="sector-item">
+                <div class="sector-icon">🚛</div>
+                <h4>Logistics &amp; Delivery</h4>
+                <p>Your vehicles are on the road all day, every day. Give drivers a reliable process for when incidents happen.</p>
+            </div>
+            <div class="sector-item">
+                <div class="sector-icon">💼</div>
+                <h4>Sales Teams</h4>
+                <p>Your reps are focused on closing deals, not collecting witness statements. The app handles the detail.</p>
+            </div>
+            <div class="sector-item">
+                <div class="sector-icon">🏗️</div>
+                <h4>Construction &amp; Trades</h4>
+                <p>Your vans are rolling billboards. A mishandled incident reflects on your brand. Document it properly.</p>
+            </div>
+            <div class="sector-item">
+                <div class="sector-icon">🏛️</div>
+                <h4>Public Sector &amp; Councils</h4>
+                <p>Duty of care compliance, documented and auditable. Show your governance standards are met.</p>
+            </div>
+        </div>
+    </section>
+
+    <!-- Compliance -->
+    <section class="compliance">
+        <p>
+            Under the Health &amp; Safety at Work Act 1974, employers have a duty of care for employees who drive for work. Car Crash Lawyer AI helps you demonstrate that duty is being met.
+        </p>
+        <div class="compliance-badges">
+            <span class="compliance-item">UK GDPR Compliant</span>
+            <span class="compliance-item">Health &amp; Safety Act Ready</span>
+            <span class="compliance-item">Duty of Care Documentation</span>
+        </div>
+    </section>
+
+    <!-- CTA -->
+    <section class="cta-section">
+        <p>
+            Equip your drivers before the next incident. Available for individual download now, with fleet licensing for teams of 10+.
+        </p>
+        <div class="cta-buttons">
+            <a href="mailto:fleet@carcrashlawyerai.com?subject=Fleet%20Licensing%20Enquiry&body=Hi%2C%0A%0AI%27d%20like%20to%20discuss%20fleet%20licensing%20for%20Car%20Crash%20Lawyer%20AI.%0A%0ACompany%3A%20%0ANumber%20of%20drivers%3A%20%0AIndustry%3A%20%0A%0AThanks" class="cta-button primary">
+                Get Fleet Pricing &rarr;
+            </a>
+            <a href="/download.html" class="cta-button secondary">
+                Try the App First
+            </a>
+        </div>
+        <p class="cta-sub">Individual accounts &pound;11.99/year. Fleet discounts available for 10+ drivers.</p>
+    </section>
+
+    <!-- Store Buttons -->
+    <div class="store-buttons">
+        <a href="https://apps.apple.com/app/car-crash-lawyer-ai/id6758804445" title="Download on the App Store">
+            <img src="https://tools.applemediaservices.com/api/badges/download-on-the-app-store/black/en-gb?size=250x83" alt="Download on the App Store" class="store-badge">
+        </a>
+        <a href="https://play.google.com/store/apps/details?id=com.carcrashlawyerai.app" title="Get it on Google Play">
+            <img src="https://play.google.com/intl/en_gb/badges/static/images/badges/en_badge_web_generic.png" alt="Get it on Google Play" class="store-badge google-badge">
+        </a>
+    </div>
+
+    <!-- Footer -->
+    <footer class="footer">
+        <div class="footer-links">
+            <a href="/">Home</a>
+            <a href="/privacy-policy.html">Privacy Policy</a>
+            <a href="/terms.html">Terms of Service</a>
+            <a href="/download.html">Download App</a>
+        </div>
+        <p class="footer-copy">&copy; 2026 Car Crash Lawyer AI Ltd. All rights reserved.</p>
+    </footer>
+
+</body>
+</html>
