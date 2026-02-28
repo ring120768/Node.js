@@ -533,6 +533,84 @@
         width: auto;
       }
     }
+
+    /* Optional page recommendation banner */
+    .optional-banner {
+      background: #f0f9ff;
+      border: 1px solid #bae6fd;
+      border-left: 4px solid #0ea5e9;
+      border-radius: 8px;
+      padding: 16px 20px;
+      margin-bottom: 24px;
+      display: flex;
+      align-items: flex-start;
+      gap: 12px;
+    }
+    .optional-banner .banner-icon {
+      font-size: 20px;
+      flex-shrink: 0;
+      margin-top: 2px;
+    }
+    .optional-banner .banner-text {
+      font-size: 14px;
+      line-height: 1.6;
+      color: #0c4a6e;
+    }
+    .optional-banner .banner-text strong {
+      color: #075985;
+    }
+
+    /* Prominent skip button */
+    .btn-skip {
+      background: #f1f5f9;
+      color: #475569;
+      border: 2px solid #cbd5e1;
+      padding: 14px 28px;
+      font-size: 16px;
+      font-weight: 600;
+      border-radius: 6px;
+      cursor: pointer;
+      transition: all 0.2s ease;
+      width: 100%;
+    }
+    .btn-skip:hover {
+      background: #e2e8f0;
+      border-color: #94a3b8;
+    }
+    @media (min-width: 641px) {
+      .btn-skip { width: auto; }
+    }
+
+    /* Skip to finish link */
+    .skip-to-finish {
+      display: block;
+      text-align: center;
+      margin-top: 16px;
+      padding: 10px;
+      font-size: 14px;
+      color: #64748b;
+      text-decoration: underline;
+      cursor: pointer;
+      transition: color 0.2s;
+    }
+    .skip-to-finish:hover {
+      color: #0E7490;
+    }
+
+    /* Optional badge pill */
+    .optional-badge {
+      display: inline-block;
+      background: #dbeafe;
+      color: #1e40af;
+      font-size: 11px;
+      font-weight: 700;
+      padding: 2px 8px;
+      border-radius: 10px;
+      margin-left: 8px;
+      vertical-align: middle;
+      text-transform: uppercase;
+      letter-spacing: 0.5px;
+    }
   </style>
     <link rel="stylesheet" href="/css/mascot.css">
 </head>
@@ -643,12 +721,17 @@
     <div class="question-page" data-page="2">
       <div class="question">
         <h2>Please enter your Date of Birth</h2>
-        <p class="desc">We need this to verify you're 16 or older</p>
+        <p class="desc">Helps verify your identity for legal purposes</p>
+        <div class="optional-banner">
+          <span class="banner-icon">ℹ️</span>
+          <span class="banner-text">
+            <strong>Recommended but optional.</strong> Your date of birth helps verify your identity for legal documentation. You can add this later from your dashboard.
+          </span>
+        </div>
         <input
           type="text"
           id="date_of_birth"
           class="input-field"
-          required
           placeholder="DD/MM/YYYY"
           autocomplete="off"
         />
@@ -657,15 +740,23 @@
       </div>
       <div class="nav-buttons">
         <button class="btn btn-back" data-action="back">Back</button>
+        <button type="button" class="btn btn-skip" data-action="skip">Skip for Now</button>
         <button class="btn btn-next" data-action="next">Continue</button>
       </div>
+      <a class="skip-to-finish" data-action="skipToFinish">Skip to finish — complete later from your dashboard</a>
     </div>
 
     <!-- Page 3: Personal Details -->
     <div class="question-page" data-page="3">
       <div class="question">
         <h2>Let's get to know you</h2>
-        <p class="desc">We need some basic information to help you</p>
+        <p class="desc">Just your first name is needed to get started</p>
+        <div class="optional-banner">
+          <span class="banner-icon">ℹ️</span>
+          <span class="banner-text">
+            <strong>Only your first name is required.</strong> Your surname and mobile number are recommended for your legal report but can be added later from your dashboard.
+          </span>
+        </div>
 
         <div style="margin-bottom: 20px;">
           <label for="first_name" style="display: block; margin-bottom: 8px; font-weight: 500; color: #4a5568;">
@@ -682,27 +773,25 @@
 
         <div style="margin-bottom: 20px;">
           <label for="last_name" style="display: block; margin-bottom: 8px; font-weight: 500; color: #4a5568;">
-            Last Name *
+            Last Name <span class="optional-badge">Optional</span>
           </label>
           <input
             type="text"
             id="last_name"
             class="input-field"
             placeholder="e.g. Smith"
-            required
           />
         </div>
 
         <div style="margin-bottom: 20px;">
           <label for="mobile_number" style="display: block; margin-bottom: 8px; font-weight: 500; color: #4a5568;">
-            Mobile Number *
+            Mobile Number <span class="optional-badge">Optional</span>
           </label>
           <input
             type="tel"
             id="mobile_number"
             class="input-field"
             placeholder="e.g. 07700 900000"
-            required
           />
           <p class="hint">UK mobile number (for emergency contact)</p>
         </div>
@@ -712,26 +801,33 @@
 
       <div class="nav-buttons">
         <button class="btn btn-back" data-action="back">Back</button>
+        <button type="button" class="btn btn-skip" data-action="skip">Skip for Now</button>
         <button class="btn btn-next" data-action="next">Continue</button>
       </div>
+      <a class="skip-to-finish" data-action="skipToFinish">Skip to finish — complete later from your dashboard</a>
     </div>
 
     <!-- Page 4: Address Details -->
     <div class="question-page" data-page="4">
       <div class="question">
         <h2>What's your address?</h2>
-        <p class="desc">We need your current residential address</p>
+        <p class="desc">Needed for your legal incident report</p>
+        <div class="optional-banner">
+          <span class="banner-icon">ℹ️</span>
+          <span class="banner-text">
+            <strong>Recommended but optional.</strong> Your address is needed for your legal incident report. You can add this later from your dashboard.
+          </span>
+        </div>
 
         <div style="margin-bottom: 20px;">
           <label for="address_line_1" style="display: block; margin-bottom: 8px; font-weight: 500; color: #4a5568;">
-            Address Line 1 *
+            Address Line 1 <span class="optional-badge">Optional</span>
           </label>
           <input
             type="text"
             id="address_line_1"
             class="input-field"
             placeholder="e.g. 123 High Street"
-            required
           />
         </div>
 
@@ -749,14 +845,13 @@
 
         <div style="margin-bottom: 20px;">
           <label for="city" style="display: block; margin-bottom: 8px; font-weight: 500; color: #4a5568;">
-            Town/City *
+            Town/City <span class="optional-badge">Optional</span>
           </label>
           <input
             type="text"
             id="city"
             class="input-field"
             placeholder="e.g. London"
-            required
           />
         </div>
 
@@ -774,7 +869,7 @@
 
         <div style="margin-bottom: 20px;">
           <label for="postcode" style="display: block; margin-bottom: 8px; font-weight: 500; color: #4a5568;">
-            Postcode *
+            Postcode <span class="optional-badge">Optional</span>
           </label>
           <input
             type="text"
@@ -782,7 +877,6 @@
             class="input-field"
             placeholder="e.g. SW1A 1AA"
             maxlength="8"
-            required
             style="text-transform: uppercase;"
           />
           <p class="hint">UK postcode format</p>
@@ -793,8 +887,10 @@
 
       <div class="nav-buttons">
         <button class="btn btn-back" data-action="back">Back</button>
+        <button type="button" class="btn btn-skip" data-action="skip">Skip for Now</button>
         <button class="btn btn-next" data-action="next">Continue</button>
       </div>
+      <a class="skip-to-finish" data-action="skipToFinish">Skip to finish — complete later from your dashboard</a>
     </div>
 
     <!-- Page 5: Car Registration with DVLA Lookup -->
@@ -876,11 +972,12 @@
 
       <div class="nav-buttons">
         <button type="button" class="btn btn-back" data-action="back">Back</button>
-        <button type="button" class="btn btn-ghost" data-action="skip" style="margin-right: auto;">Skip for Now</button>
+        <button type="button" class="btn btn-skip" data-action="skip">Skip for Now</button>
         <button type="button" class="btn btn-next" data-action="next" id="confirmDvlaBtn" style="display: none;">
           ✅ Yes, Correct
         </button>
       </div>
+      <a class="skip-to-finish" data-action="skipToFinish">Skip to finish — complete later from your dashboard</a>
     </div>
 
     <!-- Page 6: Driving Records Group -->
@@ -962,9 +1059,10 @@
 
       <div class="nav-buttons">
         <button type="button" class="btn btn-back" data-action="back">Back</button>
-        <button type="button" class="btn btn-ghost" data-action="skip" style="margin-right: auto;">Skip for Now</button>
+        <button type="button" class="btn btn-skip" data-action="skip">Skip for Now</button>
         <button type="button" class="btn btn-next" data-action="next">Continue</button>
       </div>
+      <a class="skip-to-finish" data-action="skipToFinish">Skip to finish — complete later from your dashboard</a>
     </div>
 
     <!-- Page 7: All Photo Uploads -->
@@ -1006,7 +1104,6 @@
             <select
               id="vehicle_condition"
               class="input-field"
-              required
               style="width: 100%; max-width: 400px;"
             >
               <option value="" disabled selected>Select vehicle condition</option>
@@ -1108,15 +1205,23 @@
 
       <div class="nav-buttons">
         <button class="btn btn-back" data-action="back">Back</button>
+        <button type="button" class="btn btn-skip" data-action="skip">Skip for Now</button>
         <button class="btn btn-next" data-action="next">Continue</button>
       </div>
+      <a class="skip-to-finish" data-action="skipToFinish">Skip to finish — complete later from your dashboard</a>
     </div>
 
     <!-- Page 8: Recovery & Emergency Contact -->
     <div class="question-page" data-page="8">
       <div class="question">
         <h2>📞 Emergency information</h2>
-        <p class="desc">Let's set up your recovery service and emergency contact details</p>
+        <p class="desc">Recovery service and emergency contact details</p>
+        <div class="optional-banner">
+          <span class="banner-icon">ℹ️</span>
+          <span class="banner-text">
+            <strong>Recommended but optional.</strong> Emergency contact and recovery details are important for safety but can be added later from your dashboard.
+          </span>
+        </div>
 
         <!-- Recovery Subscriptions Section -->
         <div style="background: #f9f9f9; border-radius: 12px; padding: 20px; margin: 30px 0; border-left: 4px solid var(--grad-start);">
@@ -1222,8 +1327,10 @@
 
       <div class="nav-buttons">
         <button class="btn btn-back" data-action="back">Back</button>
+        <button type="button" class="btn btn-skip" data-action="skip">Skip for Now</button>
         <button class="btn btn-next" data-action="next">Continue</button>
       </div>
+      <a class="skip-to-finish" data-action="skipToFinish">Skip to finish — complete later from your dashboard</a>
     </div>
 
     <!-- Page 9: Account Setup & GDPR Consent -->
@@ -1489,6 +1596,31 @@
         // Handle back buttons
         if (target.classList.contains('btn-back') || target.getAttribute('data-action') === 'back') {
           prevPage();
+        }
+
+        // Handle "Skip to finish" links (jump to Page 9 GDPR consent)
+        if (target.getAttribute('data-action') === 'skipToFinish') {
+          e.preventDefault();
+          e.stopPropagation();
+          console.log('⏭️ Skip to finish clicked - jumping from page', currentPage, 'to page 9');
+
+          // Hide current page
+          const skipCurrentPage = document.querySelector('.question-page.active');
+          if (skipCurrentPage) {
+            skipCurrentPage.classList.remove('active');
+          }
+
+          // Jump to page 9 (GDPR consent)
+          currentPage = 9;
+          const page9 = document.querySelector('[data-page="9"]');
+          if (page9) {
+            page9.classList.add('active');
+            updateProgress();
+            window.scrollTo(0, 0);
+            console.log('✅ Skipped to page 9 (GDPR consent)');
+          }
+
+          return false;
         }
 
         // Handle skip buttons (bypass validation and go to next page)
@@ -1814,7 +1946,7 @@
       return true;
     }
 
-    // Validate Date of Birth (16+ required)
+    // Validate Date of Birth (optional, but if provided must be 16+)
     function validateDOB() {
       const dobInput = document.getElementById('date_of_birth');
       const dobError = document.getElementById('dob-error');
@@ -1824,10 +1956,9 @@
       dobError.classList.remove('show');
       dobInput.classList.remove('error');
 
+      // DOB is now optional - skip validation if empty
       if (!dob) {
-        showError('dob-error', 'Please enter your date of birth');
-        dobInput.classList.add('error');
-        return false;
+        return true;
       }
 
       // Parse DD/MM/YYYY format from Air Datepicker
@@ -1892,7 +2023,7 @@
 
     // ===== PAGE 3: PERSONAL DETAILS =====
 
-    // Validate personal details
+    // Validate personal details (only first name required)
     function validatePersonalDetails() {
       const firstName = document.getElementById('first_name');
       const lastName = document.getElementById('last_name');
@@ -1903,35 +2034,24 @@
       errorEl.classList.remove('show');
       [firstName, lastName, mobile].forEach(field => field.classList.remove('error'));
 
-      // Validate first name
+      // Validate first name (required)
       if (!firstName.value.trim()) {
         showError('personal-error', 'Please enter your first name');
         firstName.classList.add('error');
         return false;
       }
 
-      // Validate last name
-      if (!lastName.value.trim()) {
-        showError('personal-error', 'Please enter your last name');
-        lastName.classList.add('error');
-        return false;
-      }
+      // Last name is now optional - no validation needed
 
-      // Email is already validated on Page 1 (account creation)
-
-      // Validate UK mobile number
+      // Mobile is now optional, but validate format if provided
       const mobileValue = mobile.value.trim().replace(/\s+/g, '');
-      if (!mobileValue) {
-        showError('personal-error', 'Please enter your mobile number');
-        mobile.classList.add('error');
-        return false;
-      }
-      // UK mobile numbers start with 07 and are 11 digits
-      const ukMobileRegex = /^(\+44|0)7\d{9}$/;
-      if (!ukMobileRegex.test(mobileValue)) {
-        showError('personal-error', 'Please enter a valid UK mobile number (e.g. 07700 900000)');
-        mobile.classList.add('error');
-        return false;
+      if (mobileValue) {
+        const ukMobileRegex = /^(\+44|0)7\d{9}$/;
+        if (!ukMobileRegex.test(mobileValue)) {
+          showError('personal-error', 'Please enter a valid UK mobile number (e.g. 07700 900000)');
+          mobile.classList.add('error');
+          return false;
+        }
       }
 
       return true;
@@ -1939,7 +2059,7 @@
 
     // ===== PAGE 4: ADDRESS DETAILS =====
 
-    // Validate address details
+    // Validate address details (all optional, but validate format if provided)
     function validateAddress() {
       const addressLine1 = document.getElementById('address_line_1');
       const city = document.getElementById('city');
@@ -1950,34 +2070,36 @@
       errorEl.classList.remove('show');
       [addressLine1, city, postcode].forEach(field => field.classList.remove('error'));
 
-      // Validate address line 1
-      if (!addressLine1.value.trim()) {
-        showError('address-error', 'Please enter your address');
-        addressLine1.classList.add('error');
-        return false;
+      const addr = addressLine1.value.trim();
+      const cityVal = city.value.trim();
+      const postcodeValue = postcode.value.trim().toUpperCase();
+
+      // All empty is valid (address is now optional)
+      if (!addr && !cityVal && !postcodeValue) {
+        return true;
       }
 
-      // Validate city
-      if (!city.value.trim()) {
-        showError('address-error', 'Please enter your town or city');
+      // If partially filled, guide user to complete or clear
+      if (addr && !cityVal) {
+        showError('address-error', 'Please enter your town or city, or clear address to skip');
         city.classList.add('error');
         return false;
       }
 
-      // Validate UK postcode format
-      const postcodeValue = postcode.value.trim().toUpperCase();
-      if (!postcodeValue) {
-        showError('address-error', 'Please enter your postcode');
+      if (addr && !postcodeValue) {
+        showError('address-error', 'Please enter your postcode, or clear address to skip');
         postcode.classList.add('error');
         return false;
       }
 
-      // UK postcode regex (handles various formats)
-      const ukPostcodeRegex = /^[A-Z]{1,2}\d{1,2}[A-Z]?\s?\d[A-Z]{2}$/;
-      if (!ukPostcodeRegex.test(postcodeValue)) {
-        showError('address-error', 'Please enter a valid UK postcode (e.g. SW1A 1AA)');
-        postcode.classList.add('error');
-        return false;
+      // Validate UK postcode format if provided
+      if (postcodeValue) {
+        const ukPostcodeRegex = /^[A-Z]{1,2}\d{1,2}[A-Z]?\s?\d[A-Z]{2}$/;
+        if (!ukPostcodeRegex.test(postcodeValue)) {
+          showError('address-error', 'Please enter a valid UK postcode (e.g. SW1A 1AA)');
+          postcode.classList.add('error');
+          return false;
+        }
       }
 
       return true;
@@ -2443,68 +2565,39 @@
 
     // ===== PAGE 8: RECOVERY & EMERGENCY CONTACT =====
 
-    // Validate Recovery & Emergency Contact
+    // Validate Recovery & Emergency Contact (all optional, validate format if provided)
     function validateRecoveryEmergency() {
       const errorEl = document.getElementById('recovery-emergency-error');
       errorEl.classList.remove('show');
 
-      // Recovery service (optional but if provided, validate format)
-      const recoveryNumber = document.getElementById('recovery_breakdown_number').value.trim();
-      const recoveryEmail = document.getElementById('recovery_breakdown_email').value.trim();
+      // Clear any previous error classes
+      ['emergency_contact_first_name', 'emergency_contact_last_name',
+       'emergency_contact_phone', 'emergency_contact_email'].forEach(id => {
+        document.getElementById(id).classList.remove('error');
+      });
 
+      // Recovery service email (optional, validate format if provided)
+      const recoveryEmail = document.getElementById('recovery_breakdown_email').value.trim();
       if (recoveryEmail && !isValidEmail(recoveryEmail)) {
         showError('recovery-emergency-error', 'Please enter a valid recovery service email');
         return false;
       }
 
-      // Emergency contact (required)
-      const firstName = document.getElementById('emergency_contact_first_name').value.trim();
-      const lastName = document.getElementById('emergency_contact_last_name').value.trim();
+      // Emergency contact (all optional now, validate format if provided)
       const phone = document.getElementById('emergency_contact_phone').value.trim();
       const email = document.getElementById('emergency_contact_email').value.trim();
 
-      if (!firstName) {
-        showError('recovery-emergency-error', 'Please enter emergency contact first name');
-        document.getElementById('emergency_contact_first_name').classList.add('error');
-        return false;
-      }
-
-      if (!lastName) {
-        showError('recovery-emergency-error', 'Please enter emergency contact last name');
-        document.getElementById('emergency_contact_last_name').classList.add('error');
-        return false;
-      }
-
-      if (!phone) {
-        showError('recovery-emergency-error', 'Please enter emergency contact phone number');
-        document.getElementById('emergency_contact_phone').classList.add('error');
-        return false;
-      }
-
-      // Validate UK phone format
-      if (!isValidUKPhone(phone)) {
+      if (phone && !isValidUKPhone(phone)) {
         showError('recovery-emergency-error', 'Please enter a valid UK phone number (e.g., 07XXX XXXXXX)');
         document.getElementById('emergency_contact_phone').classList.add('error');
         return false;
       }
 
-      if (!email) {
-        showError('recovery-emergency-error', 'Please enter emergency contact email');
-        document.getElementById('emergency_contact_email').classList.add('error');
-        return false;
-      }
-
-      if (!isValidEmail(email)) {
+      if (email && !isValidEmail(email)) {
         showError('recovery-emergency-error', 'Please enter a valid email address');
         document.getElementById('emergency_contact_email').classList.add('error');
         return false;
       }
-
-      // Clear any error classes
-      document.getElementById('emergency_contact_first_name').classList.remove('error');
-      document.getElementById('emergency_contact_last_name').classList.remove('error');
-      document.getElementById('emergency_contact_phone').classList.remove('error');
-      document.getElementById('emergency_contact_email').classList.remove('error');
 
       return true;
     }

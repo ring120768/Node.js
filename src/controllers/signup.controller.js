@@ -63,17 +63,11 @@ async function submitSignup(req, res) {
     // Flow v2: temp_signup_id + pending_password required (auth created after payment)
     const useV2Flow = isSignupFlowV2();
 
-    // Relaxed validation - only truly essential fields required
-    // Vehicle, insurance, license, and emergency contact details can be added later from dashboard
+    // Minimal required fields - only what's needed for account creation
+    // Everything else can be added later from the dashboard
     const baseRequiredFields = [
       'first_name',
-      'last_name',
       'email',
-      'mobile_number',
-      'date_of_birth',
-      'address_line_1',
-      'city',
-      'postcode',
       'gdpr_consent'
     ];
 
@@ -144,31 +138,33 @@ async function submitSignup(req, res) {
     const userSignupData = {
       create_user_id: userId,
       name: formData.first_name, // Map form → DB
-      surname: formData.last_name, // Map form → DB
+      surname: formData.last_name || null, // Map form → DB (now optional)
       email: formData.email.toLowerCase(),
-      mobile: formData.mobile_number, // Map form → DB
-      date_of_birth: convertDateFormat(formData.date_of_birth), // Convert DD/MM/YYYY to YYYY-MM-DD
-      street_address: formData.address_line_1, // Map form → DB
+      mobile: formData.mobile_number || null, // Map form → DB (now optional)
+      date_of_birth: convertDateFormat(formData.date_of_birth), // Convert DD/MM/YYYY to YYYY-MM-DD (returns null if empty)
+      street_address: formData.address_line_1 || null, // Map form → DB (now optional)
       street_address_optional: formData.address_line_2 || null, // Map form → DB
-      town: formData.city, // Map form → DB
+      town: formData.city || null, // Map form → DB (now optional)
       country: formData.country || 'United Kingdom', // Default to UK
-      postcode: formData.postcode.toUpperCase(),
-      car_registration_number: formData.car_registration_number.toUpperCase(),
-      driving_license_number: formData.driving_license_number.toUpperCase(),
-      insurance_company: formData.insurance_company,
-      policy_number: formData.policy_number.toUpperCase(),
-      policy_holder: formData.policy_holder,
-      cover_type: formData.cover_type, // "Fully Comprehensive", etc.
+      postcode: formData.postcode ? formData.postcode.toUpperCase() : null,
+      car_registration_number: formData.car_registration_number ? formData.car_registration_number.toUpperCase() : null,
+      driving_license_number: formData.driving_license_number ? formData.driving_license_number.toUpperCase() : null,
+      insurance_company: formData.insurance_company || null,
+      policy_number: formData.policy_number ? formData.policy_number.toUpperCase() : null,
+      policy_holder: formData.policy_holder || null,
+      cover_type: formData.cover_type || null, // "Fully Comprehensive", etc.
       recovery_company: formData.recovery_company || null,
       recovery_breakdown_number: formData.recovery_breakdown_number || null,
       recovery_breakdown_email: formData.recovery_breakdown_email ? formData.recovery_breakdown_email.toLowerCase() : null,
       // Combine emergency contact into pipe-delimited format: "FirstName LastName | Phone | Email | Company"
-      emergency_contact: [
-        `${formData.emergency_contact_first_name} ${formData.emergency_contact_last_name}`,
-        formData.emergency_contact_phone,
-        formData.emergency_contact_email.toLowerCase(),
-        formData.emergency_contact_company || ''
-      ].join(' | '),
+      emergency_contact: (formData.emergency_contact_first_name || formData.emergency_contact_last_name)
+        ? [
+            `${formData.emergency_contact_first_name || ''} ${formData.emergency_contact_last_name || ''}`.trim(),
+            formData.emergency_contact_phone || '',
+            formData.emergency_contact_email ? formData.emergency_contact_email.toLowerCase() : '',
+            formData.emergency_contact_company || ''
+          ].join(' | ')
+        : null,
       // DVLA vehicle info (populated from DVLA lookup on Page 5)
       vehicle_make: formData.dvla_make || null,
       vehicle_model: formData.dvla_model || null,
