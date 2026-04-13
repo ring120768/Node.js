@@ -288,9 +288,14 @@
           <li>All your personal information will be permanently deleted</li>
           <li>All incident reports and generated PDFs will be removed</li>
           <li>All uploaded photos and documents will be deleted</li>
+          <li>Your voice transcriptions and AI analysis data will be deleted</li>
           <li>This action cannot be undone</li>
           <li>You will receive a confirmation email within 30 days (GDPR requirement)</li>
         </ul>
+      </div>
+
+      <div style="background:#fff8e1;border-left:4px solid #f9a825;padding:15px;margin-bottom:25px;border-radius:4px;font-size:14px;color:#5d4037;line-height:1.6;">
+        <strong>Data Retention Notice:</strong> Under UK law, certain legal documentation relating to road traffic incidents may be retained for up to <strong>7 years</strong> for compliance purposes, even after account deletion. All other personal data is deleted immediately. You will be informed of any retained data in your deletion confirmation email.
       </div>
 
       <form id="deletionForm">
@@ -437,7 +442,7 @@
 
       try {
         // Send deletion request to backend
-        const response = await fetch('/api/account/delete', {
+        const response = await fetch('https://car-crash-lawyer-ai-production.up.railway.app/api/account/delete', {
           method: 'POST',
           headers: {
             'Content-Type': 'application/json',
