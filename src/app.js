@@ -238,6 +238,13 @@ function createApp() {
     res.sendFile(path.join(__dirname, '../public/dashboard-v2.html'));
   });
 
+  // Account deletion page - publicly accessible (no auth required)
+  // Google Play Data Safety form requires this URL to be reachable without login
+  // Serves at /delete-account (clean URL for app store submissions)
+  app.get('/delete-account', (req, res) => {
+    res.sendFile(path.join(__dirname, '../public/delete-account.html'));
+  });
+
   // APK Download - serve with correct headers for Android installation
   app.get('/CarCrashLawyerAI.apk', (req, res) => {
     const apkPath = path.join(__dirname, '../public/CarCrashLawyerAI.apk');
