@@ -240,9 +240,14 @@ function createApp() {
 
   // Account deletion page - publicly accessible (no auth required)
   // Google Play Data Safety form requires this URL to be reachable without login
-  // Serves at /delete-account (clean URL for app store submissions)
   app.get('/delete-account', (req, res) => {
     res.sendFile(path.join(__dirname, '../public/delete-account.html'));
+  });
+
+  // Data deletion page (keeps account active) - publicly accessible
+  // Google Play Data Safety form "delete data without deleting account" URL
+  app.get('/delete-data', (req, res) => {
+    res.sendFile(path.join(__dirname, '../public/delete-data.html'));
   });
 
   // APK Download - serve with correct headers for Android installation
