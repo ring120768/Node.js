@@ -83,6 +83,28 @@ th { background: #f8fafc; color: #0f172a; }
   margin-top: 6px;
 }
 
+/* Inline product mention. Deliberately styled apart from .callout so readers
+   can tell editorial from commercial - which is what keeps the editorial
+   trustworthy, and trustworthy pages are the ones that get cited. */
+.inline-cta {
+  background: #f8fafc;
+  border: 1px solid #cbd5e1;
+  border-radius: 10px;
+  padding: 18px 20px;
+  margin: 26px 0;
+  font-size: 16px;
+}
+.inline-cta strong { color: #0f172a; }
+.inline-cta p { margin-bottom: 0; color: #475569; }
+.inline-cta .label {
+  display: inline-block;
+  font-size: 12px;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  color: #64748b;
+  margin-bottom: 6px;
+}
+
 .sources { font-size: 15px; color: #475569; }
 
 /* Guides index */
