@@ -282,7 +282,9 @@ function createApp() {
 
   // Static files (served with cache headers set above)
   // Protected pages are intercepted above, so only public pages reach here
-  app.use(express.static(path.join(__dirname, '../public')));
+  // extensions:['html'] serves /guides/foo for public/guides/foo.html, giving the
+  // clean extensionless URLs the guide pages canonicalise to.
+  app.use(express.static(path.join(__dirname, '../public'), { extensions: ['html'] }));
 
   // Rate limiting
   app.use('/api/', apiLimiter);

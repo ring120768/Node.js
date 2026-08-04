@@ -1,0 +1,104 @@
+/* Shared styling for /guides/ pages. */
+
+* { margin: 0; padding: 0; box-sizing: border-box; }
+
+body {
+  font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif;
+  background: #f1f5f9;
+  color: #1e293b;
+  line-height: 1.7;
+}
+
+.masthead { background: linear-gradient(135deg, #0B7AB0 0%, #1EA1D4 100%); padding: 18px 20px; }
+.masthead a { display: inline-flex; align-items: center; gap: 10px; color: #fff; text-decoration: none; font-weight: 600; }
+.masthead img { width: 40px; height: 40px; border-radius: 8px; }
+
+article, main {
+  max-width: 760px;
+  margin: 0 auto;
+  background: #fff;
+  padding: 44px;
+  box-shadow: 0 2px 14px rgba(0, 0, 0, 0.06);
+}
+
+.crumbs { font-size: 14px; color: #64748b; margin-bottom: 18px; }
+.crumbs a { color: #0B7AB0; }
+
+h1 { font-size: 34px; line-height: 1.25; margin-bottom: 16px; color: #0f172a; }
+h2 { font-size: 25px; margin: 36px 0 12px; color: #0B7AB0; }
+h3 { font-size: 19px; margin: 24px 0 8px; color: #0f172a; }
+
+p, ul, ol, table { margin-bottom: 16px; }
+ul, ol { padding-left: 24px; }
+li { margin-bottom: 8px; }
+a { color: #0B7AB0; }
+
+.standfirst { font-size: 19px; color: #334155; margin-bottom: 8px; }
+.updated { font-size: 14px; color: #64748b; margin-bottom: 28px; }
+
+.callout {
+  background: #ecfeff;
+  border-left: 4px solid #0B7AB0;
+  padding: 16px 20px;
+  margin: 24px 0;
+  border-radius: 0 8px 8px 0;
+}
+.callout p:last-child { margin-bottom: 0; }
+.warn { background: #fef2f2; border-left-color: #dc2626; }
+
+.steps { counter-reset: step; list-style: none; padding-left: 0; }
+.steps > li { counter-increment: step; position: relative; padding-left: 46px; margin-bottom: 24px; }
+.steps > li::before {
+  content: counter(step);
+  position: absolute;
+  left: 0;
+  top: 2px;
+  width: 32px;
+  height: 32px;
+  background: #0B7AB0;
+  color: #fff;
+  border-radius: 50%;
+  display: grid;
+  place-items: center;
+  font-weight: 700;
+}
+
+/* Wide content must scroll inside itself, never the page */
+.table-wrap { overflow-x: auto; margin-bottom: 16px; }
+table { border-collapse: collapse; width: 100%; font-size: 15px; }
+th, td { text-align: left; padding: 10px 12px; border-bottom: 1px solid #e2e8f0; vertical-align: top; }
+th { background: #f8fafc; color: #0f172a; }
+
+.cta { background: #0f172a; color: #cbd5e1; padding: 26px; border-radius: 12px; margin: 36px 0 8px; }
+.cta h2 { color: #fff; margin-top: 0; font-size: 21px; }
+.cta p { color: #cbd5e1; }
+.cta a.btn {
+  display: inline-block;
+  background: #0B7AB0;
+  color: #fff;
+  padding: 12px 24px;
+  border-radius: 8px;
+  text-decoration: none;
+  font-weight: 600;
+  margin-top: 6px;
+}
+
+.sources { font-size: 15px; color: #475569; }
+
+/* Guides index */
+.guide { border-top: 1px solid #e2e8f0; padding: 22px 0; }
+.guide h2 { font-size: 21px; margin: 0 0 6px; }
+.guide h2 a { color: #0B7AB0; text-decoration: none; }
+.guide h2 a:hover { text-decoration: underline; }
+.guide p { color: #475569; }
+.soon, .soon h2 { color: #94a3b8; }
+
+footer.page { max-width: 760px; margin: 0 auto; padding: 26px 44px 60px; font-size: 14px; color: #64748b; }
+footer.page a { color: #0B7AB0; }
+
+@media (max-width: 640px) {
+  article, main { padding: 26px 20px; }
+  footer.page { padding: 20px; }
+  h1 { font-size: 27px; }
+  h2 { font-size: 21px; }
+}
