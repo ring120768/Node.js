@@ -111,8 +111,9 @@ function createApp() {
     return requestTimeout(timeout)(req, res, next);
   });
 
-  // HTTPS/WWW redirect middleware (bypasses webhook endpoints)
-  const { httpsRedirect, wwwRedirect } = require('./middleware/security');
+  // Canonical host + HTTPS/WWW redirects (all bypass webhook endpoints)
+  const { canonicalHost, httpsRedirect, wwwRedirect } = require('./middleware/security');
+  app.use(canonicalHost);
   app.use(httpsRedirect);
   app.use(wwwRedirect);
 

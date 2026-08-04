@@ -139,6 +139,13 @@ router.get('/api/config', (req, res) => {
     res.json({
       supabaseUrl: config.supabase.url,
       supabaseAnonKey: config.supabase.anonKey,
+      // Stripe pricing is rendered by Stripe's own Pricing Table, so prices,
+      // tier names and features are managed solely in the Stripe Dashboard.
+      // Switching test -> live is an env change, not an HTML edit.
+      stripe: {
+        publishableKey: process.env.STRIPE_PUBLISHABLE_KEY || null,
+        pricingTableId: process.env.STRIPE_PRICING_TABLE_ID || null
+      },
       features: {
         realtime: supabaseEnabled && isWebSocketInitialized(websocketModule),
         transcription: config.openai.enabled,

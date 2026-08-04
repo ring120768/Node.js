@@ -1,0 +1,53 @@
+User-agent: *
+Allow: /
+
+# Explicitly welcome AI/search crawlers (for AI citations)
+User-agent: GPTBot
+Allow: /
+
+User-agent: OAI-SearchBot
+Allow: /
+
+User-agent: ChatGPT-User
+Allow: /
+
+User-agent: ClaudeBot
+Allow: /
+
+User-agent: Claude-Web
+Allow: /
+
+User-agent: PerplexityBot
+Allow: /
+
+User-agent: Google-Extended
+Allow: /
+
+User-agent: Applebot-Extended
+Allow: /
+
+# Keep private, transactional and test areas out
+Disallow: /api/
+Disallow: /dashboard.html
+Disallow: /dashboard-v2.html
+Disallow: /incident.html
+Disallow: /incident-form-
+Disallow: /report.html
+Disallow: /report-complete.html
+Disallow: /declaration.html
+Disallow: /transcription-status.html
+Disallow: /manage-images.html
+Disallow: /upload-images.html
+Disallow: /transcribe.html
+Disallow: /payment-success.html
+Disallow: /test-
+Disallow: /debug-
+Disallow: /diagnose-
+Disallow: /quick-test.html
+Disallow: /temp.html
+Disallow: /t.html
+Disallow: /fix-storage.html
+Disallow: /replit-
+Disallow: /typeform-
+
+Sitemap: https://www.carcrashlawyerai.com/sitemap.xml

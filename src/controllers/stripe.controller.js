@@ -36,28 +36,37 @@ const supabase = createClient(
   process.env.SUPABASE_SERVICE_ROLE_KEY
 );
 
-// Price IDs from Stripe Dashboard - All 8 subscription tiers
+// Price IDs from Stripe Dashboard.
+// NOTE: the amount actually charged lives on the Stripe Price object, not here.
+// These IDs must point at Prices whose amounts match TIER_NAMES below.
 const PRICE_IDS = {
-  standard: process.env.STRIPE_PRICE_STANDARD || 'price_REPLACE_WITH_STANDARD_PRICE_ID',
   premium: process.env.STRIPE_PRICE_PREMIUM || 'price_REPLACE_WITH_PREMIUM_PRICE_ID',
   family: process.env.STRIPE_PRICE_FAMILY || 'price_REPLACE_WITH_FAMILY_PRICE_ID',
   business_10: process.env.STRIPE_PRICE_BUSINESS_10 || 'price_REPLACE_WITH_BUSINESS_10_PRICE_ID',
+  // Enterprise (25+ seats) is quoted manually - no self-serve Price ID.
+  // Larger business tiers are kept available for manually arranged subscriptions.
   business_25: process.env.STRIPE_PRICE_BUSINESS_25 || 'price_REPLACE_WITH_BUSINESS_25_PRICE_ID',
   business_50: process.env.STRIPE_PRICE_BUSINESS_50 || 'price_REPLACE_WITH_BUSINESS_50_PRICE_ID',
   business_75: process.env.STRIPE_PRICE_BUSINESS_75 || 'price_REPLACE_WITH_BUSINESS_75_PRICE_ID',
   business_100: process.env.STRIPE_PRICE_BUSINESS_100 || 'price_REPLACE_WITH_BUSINESS_100_PRICE_ID',
 };
 
-// Tier display names and pricing (for reference)
+// Tiers that can still be bought self-serve (drives validation on new checkouts).
+// 'standard' is deliberately absent - it is retired and no longer sold.
+const PURCHASABLE_TIERS = ['premium', 'family', 'business_10'];
+
+// Tier display names and pricing.
+// 'standard' is retired but MUST stay here: existing subscribers still carry
+// subscription_tier = 'standard' in the database and are looked up by it.
 const TIER_NAMES = {
-  standard: 'Standard (£11.99/year)',
-  premium: 'Premium (£19.99/year)',
-  family: 'Family (£40/year - up to 4 members)',
-  business_10: 'Business 10 (£100/year - up to 10 members)',
-  business_25: 'Business 25 (£210/year - up to 25 members)',
-  business_50: 'Business 50 (£420/year - up to 50 members)',
-  business_75: 'Business 75 (£630/year - up to 75 members)',
-  business_100: 'Business 100 (£800/year - up to 100 members)',
+  standard: 'Standard (legacy - no longer sold)',
+  premium: 'Premium (£11.99/year)',
+  family: 'Family (£35/year - up to 4 members)',
+  business_10: 'Company (£80/year - up to 10 members)',
+  business_25: 'Enterprise (up to 25 members - priced on request)',
+  business_50: 'Enterprise (up to 50 members - priced on request)',
+  business_75: 'Enterprise (up to 75 members - priced on request)',
+  business_100: 'Enterprise (up to 100 members - priced on request)',
 };
 
 // Import groups controller for group creation
@@ -78,11 +87,12 @@ async function createCheckoutSession(req, res) {
 
   const { tier, userId, successUrl, cancelUrl } = req.body;
 
-  // Validate tier
-  if (!PRICE_IDS[tier]) {
+  // Validate tier. Retired tiers (e.g. 'standard') are rejected for NEW checkouts
+  // but remain valid everywhere else so existing subscribers keep working.
+  if (!PRICE_IDS[tier] || !PURCHASABLE_TIERS.includes(tier)) {
     return res.status(400).json({
       error: 'Invalid subscription tier',
-      validTiers: Object.keys(PRICE_IDS),
+      validTiers: PURCHASABLE_TIERS,
     });
   }
 
@@ -237,8 +247,14 @@ async function handleWebhook(req, res) {
   let event;
 
   try {
-    // Verify webhook signature
-    event = stripeClient.webhooks.constructEvent(req.rawBody || req.body, sig, endpointSecret);
+    // Verify webhook signature. Prefer the raw Buffer captured by the
+    // express.json() verify hook in app.js - Stripe expects the exact bytes it
+    // signed, so the Buffer is safer than a re-encoded string.
+    event = stripeClient.webhooks.constructEvent(
+      req.rawBodyBuffer || req.rawBody || req.body,
+      sig,
+      endpointSecret
+    );
   } catch (err) {
     console.error('[Stripe] Webhook signature verification failed:', err.message);
     return res.status(400).json({ error: `Webhook Error: ${err.message}` });

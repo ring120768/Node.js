@@ -16,9 +16,14 @@ const logger = require('../utils/logger');
 const corsOptions = {
   origin: (origin, callback) => {
     const allowedOrigins = [
+      // Canonical domain
+      'https://www.carcrashlawyerai.com',
+      'https://carcrashlawyerai.com',
+      // Legacy hosts (301 to canonical, kept for the shipped mobile apps)
       'https://carcrashlawyerai.co.uk',
       'https://www.carcrashlawyerai.co.uk',
-      'https://carcrashlawyerai.up.railway.app'
+      'https://carcrashlawyerai.up.railway.app',
+      'https://car-crash-lawyer-ai-production.up.railway.app'
     ];
 
     // Add localhost origins only in development/test environments
@@ -134,6 +139,49 @@ function requestTimeoutMiddleware(timeout = 30000) {
 }
 
 /**
+ * Canonical host redirect (SEO)
+ *
+ * Keeps *.up.railway.app and carcrashlawyerai.co.uk out of Google so all
+ * ranking signals land on https://www.carcrashlawyerai.com.
+ *
+ * IMPORTANT: the shipped Capacitor apps have server.url pinned to the Railway
+ * host with allowNavigation limited to *.railway.app. Redirecting their webview
+ * would bounce users into the system browser, so native webviews are exempt.
+ * New app builds identify themselves via appendUserAgent; already-installed
+ * builds are matched by the WebView UA signature.
+ */
+const CANONICAL_HOST = process.env.CANONICAL_HOST || 'www.carcrashlawyerai.com';
+
+function isNativeAppWebview(req) {
+  const ua = req.get('user-agent') || '';
+  if (ua.includes('CarCrashLawyerAIApp')) return true;       // new builds (appendUserAgent)
+  if (/;\s*wv\)/.test(ua)) return true;                       // Android WebView
+  if (/iPhone|iPad/.test(ua) && !/Safari\//.test(ua)) return true; // iOS WKWebView
+  return false;
+}
+
+function canonicalHost(req, res, next) {
+  if (process.env.CANONICAL_REDIRECT === 'false') return next();
+
+  // Health checks and webhooks must never be redirected
+  if (req.path === '/healthz' || req.path === '/livez' || req.path === '/readyz') return next();
+  if (req.path.startsWith('/webhooks/') || req.path.startsWith('/webhook/')) return next();
+  if (req.path.startsWith('/api/')) return next();
+
+  const host = (req.hostname || '').toLowerCase();
+  if (!host || host === CANONICAL_HOST) return next();
+  if (host.includes('localhost') || host.includes('127.0.0.1')) return next();
+
+  const isLegacyHost = host.endsWith('up.railway.app') || host.includes('carcrashlawyerai.co.uk');
+  const isApex = host === 'carcrashlawyerai.com';
+  if (!isLegacyHost && !isApex) return next();
+
+  if (isLegacyHost && isNativeAppWebview(req)) return next();
+
+  return res.redirect(301, `https://${CANONICAL_HOST}${req.originalUrl}`);
+}
+
+/**
  * HTTPS redirect middleware with health check and webhook bypass
  */
 function httpsRedirect(req, res, next) {
@@ -184,6 +232,7 @@ module.exports = {
   compression: compression(compressionOptions),
   requestId: requestIdMiddleware,
   requestTimeout: requestTimeoutMiddleware,
+  canonicalHost,
   httpsRedirect,
   wwwRedirect,
   corsOptions,

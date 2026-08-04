@@ -7,11 +7,16 @@ const config: CapacitorConfig = {
 
   // Server configuration - loads your hosted web app
   server: {
-    // Production URL - the app loads your Railway-hosted site
-    url: 'https://car-crash-lawyer-ai-production.up.railway.app',
+    // Production URL - the canonical domain (Railway custom domain)
+    url: 'https://www.carcrashlawyerai.com',
     cleartext: false,
+    // Marks this webview as the native app so the canonical-host redirect
+    // middleware leaves it alone (see src/middleware/security.js).
+    appendUserAgent: 'CarCrashLawyerAIApp',
     // Allow navigation to these domains
     allowNavigation: [
+      'www.carcrashlawyerai.com',
+      'carcrashlawyerai.com',
       'car-crash-lawyer-ai-production.up.railway.app',
       '*.railway.app',
       'checkout.stripe.com',  // For Stripe payment redirect

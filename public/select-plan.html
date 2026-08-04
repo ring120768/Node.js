@@ -1,9 +1,26 @@
 <!DOCTYPE html>
-<html lang="en">
+<html lang="en-GB">
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>Choose Your Plan - Car Crash Lawyer AI</title>
+  <title>Choose Your Plan | Car Crash Lawyer AI</title>
+  <meta name="description" content="Choose the Car Crash Lawyer AI subscription that fits you. Every plan includes full accident documentation, evidence capture and incident report generation.">
+  <link rel="canonical" href="https://www.carcrashlawyerai.com/select-plan.html">
+  <link rel="icon" href="/favicon.ico" sizes="any">
+  <link rel="icon" type="image/webp" href="/images/car-crash-lawyer-ai-450.webp">
+  <link rel="apple-touch-icon" href="/apple-touch-icon.png">
+  <!-- Social sharing -->
+  <meta property="og:title" content="Choose Your Plan | Car Crash Lawyer AI">
+  <meta property="og:description" content="Choose the Car Crash Lawyer AI subscription that fits you. Every plan includes full accident documentation, evidence capture and incident report generation.">
+  <meta property="og:image" content="https://www.carcrashlawyerai.com/images/og-image.png">
+  <meta property="og:url" content="https://www.carcrashlawyerai.com/select-plan.html">
+  <meta property="og:type" content="website">
+  <meta property="og:site_name" content="Car Crash Lawyer AI">
+  <meta property="og:locale" content="en_GB">
+  <meta name="twitter:card" content="summary_large_image">
+  <meta name="twitter:title" content="Choose Your Plan | Car Crash Lawyer AI">
+  <meta name="twitter:description" content="Choose the Car Crash Lawyer AI subscription that fits you. Every plan includes full accident documentation, evidence capture and incident report generation.">
+  <meta name="twitter:image" content="https://www.carcrashlawyerai.com/images/og-image.png">
   <style>
     :root {
       --primary: #0073e6;
@@ -210,13 +227,10 @@
       </div>
 
       <div class="pricing-wrapper">
-        <!-- Stripe Pricing Table (TEST) -->
-        <stripe-pricing-table
-          pricing-table-id="prctbl_1SlYoLDjVI87TYBmmZNxFKXw"
-          publishable-key="pk_test_51RgiH5DjVI87TYBmbwA6TXVkWvzzn2cl8MT9VPUBx0HmLIAoVegArDLa44HP9L6gMerZVTcp6OgSNSwWX6k9a112005samAnyG"
-          client-reference-id=""
-          id="stripePricingTable">
-        </stripe-pricing-table>
+        <!-- Stripe Pricing Table. The table id and publishable key come from
+             /api/config (STRIPE_PRICING_TABLE_ID / STRIPE_PUBLISHABLE_KEY), so
+             switching test -> live is an env change, not an HTML edit. -->
+        <div id="pricingTableMount"></div>
       </div>
 
       <div class="guarantee">
@@ -251,6 +265,33 @@
         console.log('✅ Supabase client initialized with URL:', config.supabaseUrl);
       } else {
         throw new Error('Supabase config not available');
+      }
+
+      // Build the Stripe pricing table from server config. Prices and plan names
+      // live in the Stripe Dashboard only - nothing is hardcoded in this page.
+      // Keeps id="stripePricingTable" so the client-reference-id code below works.
+      const mount = document.getElementById('pricingTableMount');
+      const publishableKey = config.stripe?.publishableKey;
+      const pricingTableId = config.stripe?.pricingTableId;
+
+      if (mount && publishableKey && pricingTableId) {
+        const table = document.createElement('stripe-pricing-table');
+        table.id = 'stripePricingTable';
+        table.setAttribute('pricing-table-id', pricingTableId);
+        table.setAttribute('publishable-key', publishableKey);
+        mount.appendChild(table);
+        console.log('✅ Stripe pricing table mounted:', pricingTableId);
+      } else {
+        console.error('❌ Stripe pricing table not configured', {
+          hasKey: !!publishableKey,
+          hasTable: !!pricingTableId
+        });
+        if (mount) {
+          mount.innerHTML =
+            '<p style="text-align:center;padding:20px;">Plans are temporarily unavailable. ' +
+            'Please email <a href="mailto:sales@carcrashlawyerai.com">sales@carcrashlawyerai.com</a> ' +
+            'and we will set you up directly.</p>';
+        }
       }
     } catch (configError) {
       console.error('❌ Failed to get config:', configError);

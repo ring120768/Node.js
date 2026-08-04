@@ -1,88 +1,195 @@
-<section style="padding: 40px 20px; background: #fff; font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;">
-  <h2 style="text-align: center; font-size: 36px; font-weight: 700; margin-bottom: 10px; color: #111;">
-    Choose Your Protection Plan
-  </h2>
-  <p style="text-align: center; font-size: 18px; color: #555; margin-bottom: 40px;">
-    From essential facts to full-service peace of mind.
-  </p>
+<!DOCTYPE html>
+<html lang="en-GB">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Subscription Plans | Car Crash Lawyer AI</title>
+  <meta name="description" content="Car Crash Lawyer AI subscription plans for UK drivers: Premium for individuals, Family for up to four drivers, Company for up to ten, and Enterprise on request.">
+  <link rel="canonical" href="https://www.carcrashlawyerai.com/subscribe.html">
+  <link rel="icon" href="/favicon.ico" sizes="any">
+  <link rel="apple-touch-icon" href="/apple-touch-icon.png">
+  <meta property="og:title" content="Subscription Plans | Car Crash Lawyer AI">
+  <meta property="og:description" content="Car Crash Lawyer AI subscription plans for UK drivers: Premium for individuals, Family for up to four drivers, Company for up to ten, and Enterprise on request.">
+  <meta property="og:image" content="https://www.carcrashlawyerai.com/images/og-image.png">
+  <meta property="og:url" content="https://www.carcrashlawyerai.com/subscribe.html">
+  <meta property="og:type" content="website">
+  <meta property="og:site_name" content="Car Crash Lawyer AI">
+  <meta property="og:locale" content="en_GB">
+  <meta name="twitter:card" content="summary_large_image">
 
-  <div style="display: flex; flex-wrap: wrap; justify-content: center; gap: 30px;">
+  <style>
+    * { margin: 0; padding: 0; box-sizing: border-box; }
 
-    <!-- Standard -->
-    <div style="flex: 1 1 250px; border: 2px solid #0073e6; border-radius: 12px; padding: 30px; max-width: 280px; text-align: center;">
-      <h3 style="color: #0073e6; font-size: 24px; font-weight: 700;">Standard</h3>
-      <p style="font-weight: 700; color: #333;">£4.99/year</p>
-      <ul style="list-style: none; padding: 0; text-align: left; font-size: 15px; color: #333; margin-top: 20px;">
-        <li>✔️ Full AI safety check</li>
-        <li>✔️ Environment assessment</li>
-        <li>✔️ Statement of events</li>
-        <li>✔️ Vehicle check (1 image)</li>
-        <li>✔️ Witness statement</li>
-        <li>✔️ Police & medical reports</li>
-        <li>✔️ Final declaration & PDF</li>
-      </ul>
-      <stripe-buy-button
-        buy-button-id="buy_btn_1RnkFJDjVI87TYBmIck9tYYL"
-        publishable-key="pk_live_51RgiH5DjVI87TYBmCUbru4jjtkoWul7U33XFqRQkkNzqN6YnkhQHORn8ptKysBzRQ3HWg40T8azI68ZUz8N6eS5K00iFm8Ekej">
-      </stripe-buy-button>
+    body {
+      font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif;
+      background: linear-gradient(135deg, #0B7AB0 0%, #1EA1D4 100%);
+      min-height: 100vh;
+      padding: 40px 20px;
+      color: #1e293b;
+    }
+
+    .container { max-width: 1100px; margin: 0 auto; }
+
+    header { text-align: center; color: #fff; margin-bottom: 36px; }
+
+    header img { width: 110px; height: auto; margin-bottom: 18px; border-radius: 12px; }
+
+    header h1 { font-size: 36px; font-weight: 700; margin-bottom: 10px; }
+
+    header p { font-size: 18px; opacity: 0.92; }
+
+    .panel {
+      background: #fff;
+      border-radius: 16px;
+      padding: 32px;
+      box-shadow: 0 8px 24px rgba(0, 0, 0, 0.18);
+    }
+
+    /* Shown only if the pricing table is unconfigured or fails to load */
+    .fallback { text-align: center; padding: 20px; }
+
+    .fallback h2 { font-size: 22px; margin-bottom: 12px; color: #0B7AB0; }
+
+    .fallback p { margin-bottom: 16px; line-height: 1.6; }
+
+    .btn {
+      display: inline-block;
+      padding: 14px 28px;
+      background: #0B7AB0;
+      color: #fff;
+      text-decoration: none;
+      border-radius: 10px;
+      font-weight: 600;
+    }
+
+    .btn:hover { background: #095e88; }
+
+    .enterprise {
+      margin-top: 28px;
+      background: #fff;
+      border-radius: 16px;
+      padding: 28px 32px;
+      box-shadow: 0 8px 24px rgba(0, 0, 0, 0.18);
+      line-height: 1.65;
+    }
+
+    .enterprise h2 { font-size: 24px; color: #0B7AB0; margin-bottom: 10px; }
+
+    .enterprise p { margin-bottom: 12px; }
+
+    .note {
+      margin-top: 24px;
+      text-align: center;
+      color: rgba(255, 255, 255, 0.92);
+      font-size: 14px;
+      line-height: 1.7;
+    }
+
+    .note a { color: #fff; }
+
+    @media (max-width: 600px) {
+      header h1 { font-size: 28px; }
+      .panel, .enterprise { padding: 20px; }
+    }
+  </style>
+</head>
+<body>
+  <div class="container">
+    <header>
+      <img src="/images/car-crash-lawyer-ai-450.webp" alt="Car Crash Lawyer AI logo" width="450" height="450">
+      <h1>Choose Your Plan</h1>
+      <p>Everything you need to document an accident properly, from £11.99 a year.</p>
+    </header>
+
+    <div class="panel">
+      <!-- Prices, plan names and features are managed entirely in the Stripe
+           Dashboard and rendered by Stripe's Pricing Table. Nothing is hardcoded
+           here, so the displayed price can never drift from the amount charged. -->
+      <div id="pricingTableMount">
+        <div class="fallback">
+          <h2>Loading plans…</h2>
+          <p>Fetching current pricing.</p>
+        </div>
+      </div>
     </div>
 
-    <!-- Premium -->
-    <div style="flex: 1 1 250px; border: 2px solid #00b386; border-radius: 12px; padding: 30px; max-width: 280px; text-align: center;">
-      <h3 style="color: #00b386; font-size: 24px; font-weight: 700;">Premium</h3>
-      <p style="font-weight: 700; color: #333;">£9.99/year</p>
-      <ul style="list-style: none; padding: 0; text-align: left; font-size: 15px; color: #333; margin-top: 20px;">
-        <li>✔️ All Standard features plus:</li>
-        <li>✔️ Voice recording & dictation</li>
-        <li>✔️ Auto emergency dialling</li>
-        <li>✔️ Exact location tracking</li>
-        <li>✔️ Full vehicle check (5 images)</li>
-        <li>✔️ AI-transcribed witness statements</li>
-        <li>✔️ Report + location images</li>
-        <li>✔️ Docs to insurer/lawyer</li>
-        <li>✔️ Follow-up recommendations</li>
-      </ul>
-      <stripe-buy-button
-        buy-button-id="buy_btn_1RnkHrDjVI87TYBmg99Rvq6H"
-        publishable-key="pk_live_51RgiH5DjVI87TYBmCUbru4jjtkoWul7U33XFqRQkkNzqN6YnkhQHORn8ptKysBzRQ3HWg40T8azI68ZUz8N6eS5K00iFm8Ekej">
-      </stripe-buy-button>
-    </div>
+    <section class="enterprise">
+      <h2>Enterprise — 25 seats and above</h2>
+      <p>
+        Running a larger fleet? Enterprise cover is priced on request and includes a
+        shared admin dashboard, consolidated billing, onboarding for your drivers and
+        priority support.
+      </p>
+      <p>
+        Email <a href="mailto:sales@carcrashlawyerai.com">sales@carcrashlawyerai.com</a>
+        with your fleet size and we will come back to you with a quote.
+      </p>
+    </section>
 
-    <!-- Family -->
-    <div style="flex: 1 1 250px; border: 2px solid #22c55e; border-radius: 12px; padding: 30px; max-width: 280px; text-align: center;">
-      <h3 style="color: #22c55e; font-size: 24px; font-weight: 700;">Family</h3>
-      <p style="font-weight: 700; color: #333;">£35.00/year</p>
-      <p style="font-size: 14px; color: #777;">£8.75 per user - Save 30%</p>
-      <ul style="list-style: none; padding: 0; text-align: left; font-size: 15px; color: #333; margin-top: 20px;">
-        <li>✔️ All Premium features</li>
-        <li>✔️ 4 user accounts</li>
-        <li>✔️ Family dashboard</li>
-        <li>✔️ Shared emergency contacts</li>
-      </ul>
-      <stripe-buy-button
-        buy-button-id="buy_btn_1RnkKJDjVI87TYBmcMm7b2Mb"
-        publishable-key="pk_live_51RgiH5DjVI87TYBmCUbru4jjtkoWul7U33XFqRQkkNzqN6YnkhQHORn8ptKysBzRQ3HWg40T8azI68ZUz8N6eS5K00iFm8Ekej">
-      </stripe-buy-button>
-    </div>
-
-    <!-- Business -->
-    <div style="flex: 1 1 250px; border: 2px solid #8b5cf6; border-radius: 12px; padding: 30px; max-width: 280px; text-align: center;">
-      <h3 style="color: #8b5cf6; font-size: 24px; font-weight: 700;">Business</h3>
-      <p style="font-weight: 700; color: #333;">£85.00/year</p>
-      <p style="font-size: 14px; color: #777;">£8.50 per user - Save 40%</p>
-      <ul style="list-style: none; padding: 0; text-align: left; font-size: 15px; color: #333; margin-top: 20px;">
-        <li>✔️ All Premium features</li>
-        <li>✔️ 10 user accounts</li>
-        <li>✔️ Admin dashboard</li>
-        <li>✔️ Priority support</li>
-      </ul>
-      <stripe-buy-button
-        buy-button-id="buy_btn_1RnkMBDjVI87TYBm0ojrZoSQ"
-        publishable-key="pk_live_51RgiH5DjVI87TYBmCUbru4jjtkoWul7U33XFqRQkkNzqN6YnkhQHORn8ptKysBzRQ3HWg40T8azI68ZUz8N6eS5K00iFm8Ekej">
-      </stripe-buy-button>
-    </div>
-
+    <p class="note">
+      All plans renew annually and can be cancelled at any time from your dashboard.<br>
+      Already subscribed? <a href="/dashboard.html">Go to your dashboard</a> ·
+      <a href="/">Back to home</a>
+    </p>
   </div>
 
-  <script async src="https://js.stripe.com/v3/buy-button.js"></script>
-</section>
+  <script async src="https://js.stripe.com/v3/pricing-table.js"></script>
+  <script>
+    (async function () {
+      const mount = document.getElementById('pricingTableMount');
+
+      function showFallback(heading, message) {
+        mount.innerHTML =
+          '<div class="fallback"><h2></h2><p></p>' +
+          '<a class="btn" href="mailto:sales@carcrashlawyerai.com">Contact us to subscribe</a></div>';
+        mount.querySelector('h2').textContent = heading;
+        mount.querySelector('p').textContent = message;
+      }
+
+      try {
+        const res = await fetch('/api/config');
+        if (!res.ok) throw new Error('config request failed: ' + res.status);
+        const config = await res.json();
+
+        const publishableKey = config.stripe && config.stripe.publishableKey;
+        const pricingTableId = config.stripe && config.stripe.pricingTableId;
+
+        if (!publishableKey || !pricingTableId) {
+          console.error('[Subscribe] Stripe pricing table not configured', {
+            hasKey: !!publishableKey,
+            hasTable: !!pricingTableId
+          });
+          showFallback(
+            'Plans are temporarily unavailable',
+            'We could not load our subscription plans just now. Please get in touch and we will set you up directly.'
+          );
+          return;
+        }
+
+        // Only build the element once we have real config, so we never render a
+        // pricing table pointing at the wrong Stripe account.
+        const table = document.createElement('stripe-pricing-table');
+        table.setAttribute('pricing-table-id', pricingTableId);
+        table.setAttribute('publishable-key', publishableKey);
+
+        // Pass the user through so Stripe can reconcile the payment on webhook.
+        const params = new URLSearchParams(window.location.search);
+        const reference = params.get('client_reference_id') || params.get('userId') || params.get('signup_id');
+        if (reference) table.setAttribute('client-reference-id', reference);
+
+        const email = params.get('email');
+        if (email) table.setAttribute('customer-email', decodeURIComponent(email));
+
+        mount.innerHTML = '';
+        mount.appendChild(table);
+      } catch (error) {
+        console.error('[Subscribe] Failed to load pricing:', error);
+        showFallback(
+          'Plans are temporarily unavailable',
+          'We could not load our subscription plans just now. Please get in touch and we will set you up directly.'
+        );
+      }
+    })();
+  </script>
+</body>
+</html>
