@@ -55,6 +55,13 @@ const PRICE_IDS = {
 // 'standard' is deliberately absent - it is retired and no longer sold.
 const PURCHASABLE_TIERS = ['premium', 'family', 'business_10'];
 
+// Subscription statuses that entitle a user to the service.
+// 'trialing' MUST be here: the pricing table offers a 7-day free trial, so Stripe
+// sends customer.subscription.* with status 'trialing' immediately after checkout,
+// which overwrites the 'active' set by checkout.session.completed. Without this,
+// every trialing customer looks unsubscribed until their first payment clears.
+const ENTITLED_STATUSES = ['active', 'trialing'];
+
 // Tier display names and pricing.
 // 'standard' is retired but MUST stay here: existing subscribers still carry
 // subscription_tier = 'standard' in the database and are looked up by it.
@@ -689,7 +696,7 @@ async function getSubscriptionStatus(req, res) {
     // Check if subscription is still valid
     const now = new Date();
     const endDate = user.subscription_end_date ? new Date(user.subscription_end_date) : null;
-    const isActive = user.subscription_status === 'active' && endDate && endDate > now;
+    const isActive = ENTITLED_STATUSES.includes(user.subscription_status) && endDate && endDate > now;
 
     res.json({
       status: user.subscription_status || 'inactive',

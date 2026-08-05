@@ -399,8 +399,11 @@
           .eq('create_user_id', user.id)
           .single();
 
-        if (userData?.subscription_status === 'active') {
-          console.log('User already has active subscription:', userData.subscription_tier);
+        // 'trialing' counts as subscribed - the pricing table offers a free trial, so
+        // Stripe reports trialing until the first payment clears. Treating it as
+        // unsubscribed would show the pricing table to someone who just paid.
+        if (['active', 'trialing'].includes(userData?.subscription_status)) {
+          console.log('User already has an active subscription:', userData.subscription_tier, '(' + userData.subscription_status + ')');
           // Redirect to dashboard if already subscribed
           window.location.href = '/dashboard.html';
           return;
