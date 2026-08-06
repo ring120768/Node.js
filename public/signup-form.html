@@ -29,9 +29,32 @@
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 
   <!-- Air Datepicker - Modern, mobile-friendly date picker -->
-  <link href="https://cdn.jsdelivr.net/npm/air-datepicker@3.5.3/air-datepicker.css" rel="stylesheet">
-  <script src="https://cdn.jsdelivr.net/npm/air-datepicker@3.5.3/air-datepicker.js"></script>
-  <script src="https://cdn.jsdelivr.net/npm/air-datepicker@3.5.3/locale/en.js"></script>
+  <link href="https://cdn.jsdelivr.net/npm/air-datepicker@3.5.3/air-datepicker.css" rel="stylesheet"
+        integrity="sha384-+SLUj9NZCsFzQ4x212CLVVLWdvqjbf2bjQnoORFq4gN/+cRaEQ6kJmLC6aWPsx94" crossorigin="anonymous">
+  <script src="https://cdn.jsdelivr.net/npm/air-datepicker@3.5.3/air-datepicker.js"
+          integrity="sha384-K1aTGb0e2SnCOyrnr+BX23z7N8DHKN5oLkdG4v1cRFitBfc/qBzF6SYIO0yDmGwn" crossorigin="anonymous"></script>
+  <!-- The published locale/en.js is a CommonJS build: loading it in the browser
+       throws "exports is not defined", so the locale never registered and
+       `locale: 'en'` then failed with "Cannot create property 'dateFormat' on
+       string 'en'". Air Datepicker expects a locale OBJECT, so define one
+       inline - it is only a small data structure and this removes a broken
+       third-party script. Monday-first and dd/MM/yyyy for the UK. -->
+  <script>
+    window.AIR_DATEPICKER_LOCALE_EN_GB = {
+      days: ['Sunday', 'Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday'],
+      daysShort: ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'],
+      daysMin: ['Su', 'Mo', 'Tu', 'We', 'Th', 'Fr', 'Sa'],
+      months: ['January', 'February', 'March', 'April', 'May', 'June',
+               'July', 'August', 'September', 'October', 'November', 'December'],
+      monthsShort: ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun',
+                    'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'],
+      today: 'Today',
+      clear: 'Clear',
+      dateFormat: 'dd/MM/yyyy',
+      timeFormat: 'HH:mm',
+      firstDay: 1
+    };
+  </script>
 
   <style>
     :root {
@@ -1694,7 +1717,7 @@
 
           // Initialize Air Datepicker with UK format and mobile-optimized settings
           new AirDatepicker(dobInput, {
-            locale: 'en',                       // English locale for month/day names
+            locale: window.AIR_DATEPICKER_LOCALE_EN_GB, // object, not a string - see head
             dateFormat: 'dd/MM/yyyy',           // UK date format
             minDate: minDate,                   // 100 years ago
             maxDate: maxDate,                   // 16 years ago
@@ -1912,6 +1935,36 @@
       document.querySelector(`[data-page="${currentPage}"]`).classList.add('active');
       updateProgress();
       window.scrollTo(0, 0);
+    }
+
+    /**
+     * Jump directly to a page.
+     *
+     * The submitForm() error paths have always called showPage(), but it was
+     * never defined - so hitting any of those validation failures threw a
+     * ReferenceError and left the user staring at a blank panel instead of the
+     * error that had just been raised. Defining it makes those paths recover.
+     *
+     * @param {number} pageNum - 1-based page number
+     * @returns {boolean} whether the page was found and shown
+     */
+    function showPage(pageNum) {
+      const target = document.querySelector(`[data-page="${pageNum}"]`);
+
+      if (!target) {
+        console.error(`❌ showPage(${pageNum}): no page with that data-page attribute`);
+        return false;
+      }
+
+      const active = document.querySelector('.question-page.active');
+      if (active) active.classList.remove('active');
+
+      target.classList.add('active');
+      currentPage = pageNum;
+      updateProgress();
+      window.scrollTo(0, 0);
+      console.log(`✅ showPage(${pageNum}): now showing page ${pageNum}`);
+      return true;
     }
 
     // Validate current page (async to support photo upload modal)
@@ -2822,22 +2875,12 @@
         if (signupFlowV2) {
           console.log('🔄 V2 Flow: Storing credentials (auth will be created after payment)');
 
-          // Generate temporary signup ID to track this signup through payment
-          const tempSignupId = crypto.randomUUID();
-          console.log('🆔 Generated temp_signup_id:', tempSignupId);
-
-          // Store in formData for submission to backend
-          formData.temp_signup_id = tempSignupId;
-          formData.pending_password = password; // Will be encrypted by backend
-          formData.email = email;
-
-          console.log('📝 V2 Stored in formData:', {
-            temp_signup_id: formData.temp_signup_id,
-            email: formData.email,
-            pending_password: '(stored for encryption)'
-          });
-
-          // Clear any stale draft from a different user/email
+          // ORDER MATTERS. Clear any stale draft from a different email FIRST.
+          // resetFormDataForNewAccount() does Object.assign(formData, defaultFormData),
+          // wiping formData wholesale and keeping only email/auth_user_id/timestamp.
+          // Running it after the id was generated silently destroyed temp_signup_id
+          // and pending_password, so submission then failed the missing-id check.
+          // Triggered by any returning tester or shared device with an old draft.
           try {
             const savedDraft = localStorage.getItem('ccla_signup_draft');
             if (savedDraft) {
@@ -2850,11 +2893,35 @@
                   newEmail: email
                 });
                 resetFormDataForNewAccount(email, null);
-                saveDraft();
               }
             }
           } catch (draftError) {
             console.warn('⚠️ Unable to validate signup draft ownership:', draftError.message);
+          }
+
+          // Only now generate the id, so nothing downstream can wipe it.
+          const tempSignupId = crypto.randomUUID();
+          console.log('🆔 Generated temp_signup_id:', tempSignupId);
+
+          formData.temp_signup_id = tempSignupId;
+          formData.pending_password = password; // Will be encrypted by backend
+          formData.email = email;
+
+          // Persist immediately so a refresh mid-signup cannot lose the id either.
+          saveDraft();
+
+          console.log('📝 V2 Stored in formData:', {
+            temp_signup_id: formData.temp_signup_id,
+            email: formData.email,
+            pending_password: '(stored for encryption)'
+          });
+
+          if (!formData.temp_signup_id) {
+            console.error('❌ temp_signup_id missing immediately after assignment - aborting');
+            alert('Something went wrong setting up your signup. Please refresh and try again.');
+            btn.disabled = false;
+            btn.textContent = originalText;
+            return;
           }
 
           // Success! Show confirmation and proceed
