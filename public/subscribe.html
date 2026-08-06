@@ -135,21 +135,67 @@
 
   <script async src="https://js.stripe.com/v3/pricing-table.js"></script>
   <script>
-    (async function () {
+    /*
+     * A checkout with no client-reference-id cannot be attributed to anyone.
+     * Stripe takes the money, the webhook fires, the handler finds no user id
+     * and no-ops with a 200 - a silent failure that looks exactly like success.
+     * This page therefore refuses to render a payable table until it has a
+     * user reference, either from the URL or from a signed-in session.
+     */
+    (function () {
       const mount = document.getElementById('pricingTableMount');
 
-      function showFallback(heading, message) {
+      function showMessage(heading, message, linkHref, linkText) {
         mount.innerHTML =
-          '<div class="fallback"><h2></h2><p></p>' +
-          '<a class="btn" href="mailto:sales@carcrashlawyerai.com">Contact us to subscribe</a></div>';
+          '<div class="fallback"><h2></h2><p></p><a class="btn"></a></div>';
         mount.querySelector('h2').textContent = heading;
         mount.querySelector('p').textContent = message;
+        const a = mount.querySelector('a');
+        a.textContent = linkText;
+        a.href = linkHref;
       }
 
-      try {
-        const res = await fetch('/api/config');
-        if (!res.ok) throw new Error('config request failed: ' + res.status);
-        const config = await res.json();
+      async function resolveUserReference() {
+        // 1. Explicit reference in the URL (used by our own redirects)
+        const params = new URLSearchParams(window.location.search);
+        const fromUrl = params.get('client_reference_id') || params.get('userId') || params.get('signup_id');
+        if (fromUrl) return { reference: fromUrl, email: params.get('email') };
+
+        // 2. The signed-in session, resolved server-side from the auth cookies.
+        //    Deliberately not the Supabase browser SDK: that would mean loading a
+        //    third-party script onto a payment page, and a floating @2 CDN tag
+        //    cannot be pinned with Subresource Integrity.
+        try {
+          const res = await fetch('/api/auth/session', { credentials: 'include' });
+          if (res.ok) {
+            const session = await res.json();
+            if (session.authenticated && session.user && session.user.id) {
+              return { reference: session.user.id, email: session.user.email };
+            }
+          }
+        } catch (err) {
+          console.warn('[Subscribe] Could not read auth session:', err.message);
+        }
+
+        return null;
+      }
+
+      (async function () {
+        let config;
+        try {
+          const res = await fetch('/api/config');
+          if (!res.ok) throw new Error('config request failed: ' + res.status);
+          config = await res.json();
+        } catch (error) {
+          console.error('[Subscribe] Failed to load config:', error);
+          showMessage(
+            'Plans are temporarily unavailable',
+            'We could not load our subscription plans just now. Please get in touch and we will set you up directly.',
+            'mailto:sales@carcrashlawyerai.com',
+            'Contact us to subscribe'
+          );
+          return;
+        }
 
         const publishableKey = config.stripe && config.stripe.publishableKey;
         const pricingTableId = config.stripe && config.stripe.pricingTableId;
@@ -159,36 +205,41 @@
             hasKey: !!publishableKey,
             hasTable: !!pricingTableId
           });
-          showFallback(
+          showMessage(
             'Plans are temporarily unavailable',
-            'We could not load our subscription plans just now. Please get in touch and we will set you up directly.'
+            'We could not load our subscription plans just now. Please get in touch and we will set you up directly.',
+            'mailto:sales@carcrashlawyerai.com',
+            'Contact us to subscribe'
           );
           return;
         }
 
-        // Only build the element once we have real config, so we never render a
-        // pricing table pointing at the wrong Stripe account.
+        const user = await resolveUserReference();
+
+        if (!user || !user.reference) {
+          console.warn('[Subscribe] No user reference - refusing to open an unattributable checkout');
+          showMessage(
+            'Sign in to choose a plan',
+            'We need to know who the subscription belongs to before taking payment. Log in, or create an account, and you will come straight back here.',
+            '/login.html?redirect=/subscribe.html',
+            'Log in to continue'
+          );
+          return;
+        }
+
+        // Only build the element once we have both real config and a user to
+        // attribute the payment to.
         const table = document.createElement('stripe-pricing-table');
         table.setAttribute('pricing-table-id', pricingTableId);
         table.setAttribute('publishable-key', publishableKey);
+        table.setAttribute('client-reference-id', user.reference);
+        if (user.email) table.setAttribute('customer-email', decodeURIComponent(user.email));
 
-        // Pass the user through so Stripe can reconcile the payment on webhook.
-        const params = new URLSearchParams(window.location.search);
-        const reference = params.get('client_reference_id') || params.get('userId') || params.get('signup_id');
-        if (reference) table.setAttribute('client-reference-id', reference);
-
-        const email = params.get('email');
-        if (email) table.setAttribute('customer-email', decodeURIComponent(email));
+        console.log('[Subscribe] Pricing table mounted for reference:', user.reference);
 
         mount.innerHTML = '';
         mount.appendChild(table);
-      } catch (error) {
-        console.error('[Subscribe] Failed to load pricing:', error);
-        showFallback(
-          'Plans are temporarily unavailable',
-          'We could not load our subscription plans just now. Please get in touch and we will set you up directly.'
-        );
-      }
+      })();
     })();
   </script>
 </body>

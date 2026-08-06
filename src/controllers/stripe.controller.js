@@ -55,6 +55,33 @@ const PRICE_IDS = {
 // 'standard' is deliberately absent - it is retired and no longer sold.
 const PURCHASABLE_TIERS = ['premium', 'family', 'business_10'];
 
+/**
+ * Work out which tier a subscription is for.
+ *
+ * The Stripe Pricing Table does NOT set metadata.tier - only our own
+ * create-checkout call does. Every pricing-table purchase therefore wrote
+ * subscription_tier = null, which is why all existing rows have a null tier.
+ * Derive it from the price ID on the subscription instead, falling back to
+ * session metadata for programmatic checkouts.
+ *
+ * @param {object} subscription - a Stripe Subscription object
+ * @param {object} [session] - the Checkout Session, if available
+ * @returns {string|null} tier key, or null if it cannot be determined
+ */
+function resolveTier(subscription, session) {
+  const fromMetadata = session?.metadata?.tier || subscription?.metadata?.tier;
+  if (fromMetadata && PRICE_IDS[fromMetadata]) return fromMetadata;
+
+  const priceId = subscription?.items?.data?.[0]?.price?.id;
+  if (priceId) {
+    const match = Object.keys(PRICE_IDS).find((key) => PRICE_IDS[key] === priceId);
+    if (match) return match;
+    console.warn('[Stripe] Price ID not mapped to any tier:', priceId, '- check STRIPE_PRICE_* env vars');
+  }
+
+  return fromMetadata || null;
+}
+
 // Subscription statuses that entitle a user to the service.
 // 'trialing' MUST be here: the pricing table offers a 7-day free trial, so Stripe
 // sends customer.subscription.* with status 'trialing' immediately after checkout,
@@ -244,30 +271,59 @@ async function handleWebhook(req, res) {
   }
 
   const sig = req.headers['stripe-signature'];
-  const endpointSecret = process.env.STRIPE_WEBHOOK_SECRET;
 
-  if (!endpointSecret) {
-    console.error('[Stripe] STRIPE_WEBHOOK_SECRET not configured');
+  // Two Stripe accounts are live during the migration:
+  //   STRIPE_WEBHOOK_SECRET     -> acct_1Rg9mWGDFfktozQP (current, all new business)
+  //   STRIPE_WEBHOOK_SECRET_OLD -> acct_1RgiH5DjVI87TYBm (legacy subs running to 2027)
+  // Each account signs with its own secret, so try the current one first and
+  // fall back to the legacy one. Remove the fallback once the legacy
+  // subscriptions have been recreated on the current account.
+  const secrets = [
+    { name: 'current', account: 'acct_1Rg9mWGDFfktozQP', secret: process.env.STRIPE_WEBHOOK_SECRET },
+    { name: 'legacy', account: 'acct_1RgiH5DjVI87TYBm', secret: process.env.STRIPE_WEBHOOK_SECRET_OLD },
+  ].filter((s) => s.secret);
+
+  if (!secrets.length) {
+    console.error('[Stripe] No webhook secret configured (STRIPE_WEBHOOK_SECRET)');
     return res.status(500).json({ error: 'Webhook secret not configured' });
   }
 
-  let event;
+  const rawBody = req.rawBodyBuffer || req.rawBody || req.body;
+  let event = null;
+  let source = null;
+  const failures = [];
 
-  try {
-    // Verify webhook signature. Prefer the raw Buffer captured by the
-    // express.json() verify hook in app.js - Stripe expects the exact bytes it
-    // signed, so the Buffer is safer than a re-encoded string.
-    event = stripeClient.webhooks.constructEvent(
-      req.rawBodyBuffer || req.rawBody || req.body,
-      sig,
-      endpointSecret
-    );
-  } catch (err) {
-    console.error('[Stripe] Webhook signature verification failed:', err.message);
-    return res.status(400).json({ error: `Webhook Error: ${err.message}` });
+  for (const candidate of secrets) {
+    try {
+      // Stripe expects the exact bytes it signed, so prefer the raw Buffer
+      // captured by the express.json() verify hook in app.js.
+      event = stripeClient.webhooks.constructEvent(rawBody, sig, candidate.secret);
+      source = candidate;
+      break;
+    } catch (err) {
+      failures.push(`${candidate.name}: ${err.message}`);
+    }
   }
 
-  console.log('[Stripe] Webhook received:', event.type);
+  if (!event) {
+    console.error('[Stripe] Webhook signature verification failed against all secrets:', failures.join(' | '));
+    return res.status(400).json({ error: `Webhook Error: ${failures[0]}` });
+  }
+
+  // Log every event received. The previous silent failure - checkout completing,
+  // webhook returning 200, and nobody being activated - was invisible precisely
+  // because nothing recorded what arrived or what was done with it.
+  console.log('[Stripe] Webhook received:', {
+    type: event.type,
+    id: event.id,
+    account: source.account,
+    secret: source.name,
+    livemode: event.livemode,
+  });
+
+  if (source.name === 'legacy') {
+    console.warn('[Stripe] Event from LEGACY account', source.account, '- type:', event.type);
+  }
 
   try {
     switch (event.type) {
@@ -321,14 +377,16 @@ async function handleCheckoutComplete(session) {
   // For Stripe Pricing Table, the user ID is in client_reference_id
   // For programmatic checkout, it's in metadata.userId
   let tempOrUserId = session.client_reference_id || session.metadata?.userId;
-  const tier = session.metadata?.tier;
+  // Resolved properly once the subscription is retrieved below - the Pricing
+  // Table never sets metadata.tier, so this is null for most real purchases.
+  const metadataTier = session.metadata?.tier;
 
   if (!tempOrUserId) {
     console.error('[Stripe] No userId in session (checked client_reference_id and metadata)');
     return;
   }
 
-  console.log('[Stripe] Processing checkout for ID:', tempOrUserId, 'tier:', tier);
+  console.log('[Stripe] Processing checkout for ID:', tempOrUserId, '| session:', session.id);
 
   // Look up the signup record
   const { data: signup, error: lookupError } = await supabase
@@ -419,7 +477,17 @@ async function handleCheckoutComplete(session) {
 
   // ===== COMMON: Update subscription status =====
   const stripeClient = getStripe();
-  const subscription = await stripeClient.subscriptions.retrieve(session.subscription);
+  const subscription = await stripeClient.subscriptions.retrieve(session.subscription, {
+    expand: ['items.data.price'],
+  });
+
+  // Derive the tier from the price actually purchased. metadataTier is only
+  // populated by our own create-checkout call, never by the Pricing Table.
+  const tier = resolveTier(subscription, session) || metadataTier || null;
+  if (!tier) {
+    console.warn('[Stripe] Could not resolve tier for subscription', subscription.id,
+      '- price:', subscription.items?.data?.[0]?.price?.id);
+  }
 
   const { error: subError } = await supabase
     .from('user_signup')
