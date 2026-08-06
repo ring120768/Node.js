@@ -272,42 +272,29 @@ async function handleWebhook(req, res) {
 
   const sig = req.headers['stripe-signature'];
 
-  // Two Stripe accounts are live during the migration:
-  //   STRIPE_WEBHOOK_SECRET     -> acct_1Rg9mWGDFfktozQP (current, all new business)
-  //   STRIPE_WEBHOOK_SECRET_OLD -> acct_1RgiH5DjVI87TYBm (legacy subs running to 2027)
-  // Each account signs with its own secret, so try the current one first and
-  // fall back to the legacy one. Remove the fallback once the legacy
-  // subscriptions have been recreated on the current account.
-  const secrets = [
-    { name: 'current', account: 'acct_1Rg9mWGDFfktozQP', secret: process.env.STRIPE_WEBHOOK_SECRET },
-    { name: 'legacy', account: 'acct_1RgiH5DjVI87TYBm', secret: process.env.STRIPE_WEBHOOK_SECRET_OLD },
-  ].filter((s) => s.secret);
+  // Single account: acct_1Rg9mWGDFfktozQP. The old account's subscriptions are
+  // being retired and its former users hold lifetime premium in the database, so
+  // there is no second secret to fall back to.
+  const endpointSecret = process.env.STRIPE_WEBHOOK_SECRET;
 
-  if (!secrets.length) {
-    console.error('[Stripe] No webhook secret configured (STRIPE_WEBHOOK_SECRET)');
+  if (!endpointSecret) {
+    console.error('[Stripe] STRIPE_WEBHOOK_SECRET not configured');
     return res.status(500).json({ error: 'Webhook secret not configured' });
   }
 
-  const rawBody = req.rawBodyBuffer || req.rawBody || req.body;
-  let event = null;
-  let source = null;
-  const failures = [];
+  let event;
 
-  for (const candidate of secrets) {
-    try {
-      // Stripe expects the exact bytes it signed, so prefer the raw Buffer
-      // captured by the express.json() verify hook in app.js.
-      event = stripeClient.webhooks.constructEvent(rawBody, sig, candidate.secret);
-      source = candidate;
-      break;
-    } catch (err) {
-      failures.push(`${candidate.name}: ${err.message}`);
-    }
-  }
-
-  if (!event) {
-    console.error('[Stripe] Webhook signature verification failed against all secrets:', failures.join(' | '));
-    return res.status(400).json({ error: `Webhook Error: ${failures[0]}` });
+  try {
+    // Stripe expects the exact bytes it signed, so prefer the raw Buffer
+    // captured by the express.json() verify hook in app.js.
+    event = stripeClient.webhooks.constructEvent(
+      req.rawBodyBuffer || req.rawBody || req.body,
+      sig,
+      endpointSecret
+    );
+  } catch (err) {
+    console.error('[Stripe] Webhook signature verification failed:', err.message);
+    return res.status(400).json({ error: `Webhook Error: ${err.message}` });
   }
 
   // Log every event received. The previous silent failure - checkout completing,
@@ -316,14 +303,9 @@ async function handleWebhook(req, res) {
   console.log('[Stripe] Webhook received:', {
     type: event.type,
     id: event.id,
-    account: source.account,
-    secret: source.name,
+    account: event.account || 'acct_1Rg9mWGDFfktozQP',
     livemode: event.livemode,
   });
-
-  if (source.name === 'legacy') {
-    console.warn('[Stripe] Event from LEGACY account', source.account, '- type:', event.type);
-  }
 
   try {
     switch (event.type) {

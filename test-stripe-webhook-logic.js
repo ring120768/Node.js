@@ -1,10 +1,10 @@
 /**
  * Self-checks for the Stripe webhook fixes (6 Aug 2026).
  *
- * Covers the two failures that made live checkouts silently no-op:
- *   1. Dual-account signature verification (current + legacy secrets)
+ * Covers:
+ *   1. Signature verification against the single account secret
  *   2. Tier derivation from the price ID, since the Pricing Table never
- *      sets metadata.tier
+ *      sets metadata.tier - the bug that wrote null tier on every row
  *
  * Run: node test-stripe-webhook-logic.js
  */
@@ -15,51 +15,31 @@ const Stripe = require('stripe');
 const stripe = new Stripe(process.env.STRIPE_SECRET_KEY || 'sk_test_dummy');
 
 // ---------------------------------------------------------------- signatures
-const CURRENT = 'whsec_current_account_secret';
-const LEGACY = 'whsec_legacy_account_secret';
-
-function verifyAgainst(secrets, payload, header) {
-  for (const c of secrets) {
-    try {
-      return { event: stripe.webhooks.constructEvent(payload, header, c.secret), source: c.name };
-    } catch (e) { /* try next */ }
-  }
-  return null;
-}
-
-const secrets = [
-  { name: 'current', secret: CURRENT },
-  { name: 'legacy', secret: LEGACY },
-];
-
+// Single account only - the legacy-account bridge was cancelled, so a forged or
+// foreign signature must simply be rejected.
+const SECRET = 'whsec_account_secret';
 const payload = JSON.stringify({ id: 'evt_1', type: 'checkout.session.completed', data: { object: {} } });
 
-// An event signed by the CURRENT account verifies, and is tagged as such
-let hdr = stripe.webhooks.generateTestHeaderString({ payload, secret: CURRENT });
-let got = verifyAgainst(secrets, payload, hdr);
-assert.ok(got, 'current-account event must verify');
-assert.strictEqual(got.source, 'current');
-console.log('current-account event  -> verified, tagged "current"');
+function verify(payload, header, secret) {
+  try { return stripe.webhooks.constructEvent(payload, header, secret); }
+  catch (e) { return null; }
+}
 
-// An event signed by the LEGACY account also verifies, via the fallback.
-// This is what keeps the 8 legacy subscriptions processing.
-hdr = stripe.webhooks.generateTestHeaderString({ payload, secret: LEGACY });
-got = verifyAgainst(secrets, payload, hdr);
-assert.ok(got, 'legacy-account event must verify via fallback');
-assert.strictEqual(got.source, 'legacy');
-console.log('legacy-account event   -> verified, tagged "legacy"');
+let hdr = stripe.webhooks.generateTestHeaderString({ payload, secret: SECRET });
+assert.ok(verify(payload, hdr, SECRET), 'correctly signed event must verify');
+console.log('correctly signed event -> verified');
 
-// A forged event matches neither and must be rejected
 hdr = stripe.webhooks.generateTestHeaderString({ payload, secret: 'whsec_not_ours' });
-assert.strictEqual(verifyAgainst(secrets, payload, hdr), null, 'unknown secret must be rejected');
-console.log('unknown-secret event   -> rejected');
+assert.strictEqual(verify(payload, hdr, SECRET), null, 'foreign signature must be rejected');
+console.log('foreign signature      -> rejected');
 
-// With only the current secret configured, legacy events are rejected -
-// proves the fallback is doing real work rather than being permissive
-hdr = stripe.webhooks.generateTestHeaderString({ payload, secret: LEGACY });
-assert.strictEqual(verifyAgainst([secrets[0]], payload, hdr), null,
-  'without the legacy secret, legacy events must fail');
-console.log('legacy event, no fallback configured -> rejected (fallback is load-bearing)');
+assert.strictEqual(verify(payload, 't=1,v1=deadbeef', SECRET), null, 'garbage signature must be rejected');
+console.log('garbage signature      -> rejected');
+
+// The raw bytes matter: a re-encoded body must not verify against the same header
+hdr = stripe.webhooks.generateTestHeaderString({ payload, secret: SECRET });
+assert.strictEqual(verify(payload + ' ', hdr, SECRET), null, 'altered payload must be rejected');
+console.log('altered payload        -> rejected');
 
 // ---------------------------------------------------------------------- tier
 // Mirrors resolveTier() in src/controllers/stripe.controller.js
