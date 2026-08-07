@@ -1589,29 +1589,52 @@
         lookupBtn.addEventListener('click', lookupDVLA);
       }
 
+      /**
+       * Shared by every skip path.
+       *
+       * Skip previously discarded the current page's answers AND walked past
+       * pages carrying required fields - page 3's first_name in particular - so
+       * a user could finish all nine pages and only then get a generic 400.
+       *
+       * Skipping an OPTIONAL page is still fine and still instant. Skipping a
+       * page that holds a required field is refused, with the field named.
+       *
+       * @param {number} targetPage - where the skip wants to land
+       * @returns {boolean} whether the navigation was allowed
+       */
+      function attemptSkip(targetPage) {
+        // Keep whatever they did fill in - skip should not destroy answers.
+        try { saveCurrentPageData(); saveDraft(); } catch (e) {
+          console.warn('[Signup] Could not save before skip:', e.message);
+        }
+
+        // Any required page strictly between here and the target (inclusive of
+        // the current page) blocks the jump. "Skip to finish" from page 2 would
+        // otherwise sail past page 3.
+        const blocking = REQUIRED_FIELDS
+          .filter(spec => spec.page >= currentPage && spec.page < targetPage)
+          .filter(spec => !requiredFieldValue(spec))
+          .sort((a, b) => a.page - b.page);
+
+        if (blocking.length) {
+          console.warn('[Signup] Skip blocked by required field(s):',
+            blocking.map(b => b.field));
+          goToFirstMissingRequiredField(blocking);
+          return false;
+        }
+
+        showPage(targetPage);
+        console.log(`✅ Skipped to page ${targetPage}`);
+        return true;
+      }
+
       // Skip buttons (direct event listeners for reliability)
       document.querySelectorAll('[data-action="skip"]').forEach(skipBtn => {
         skipBtn.addEventListener('click', function(e) {
           e.preventDefault();
           e.stopPropagation();
-          console.log('⏭️ Skip button clicked - moving from page', currentPage, 'to', currentPage + 1);
-
-          // Hide current page
-          const currentPageEl = document.querySelector('.question-page.active');
-          if (currentPageEl) {
-            currentPageEl.classList.remove('active');
-          }
-
-          // Show next page
-          currentPage++;
-          const nextPageEl = document.querySelector(`[data-page="${currentPage}"]`);
-          if (nextPageEl) {
-            nextPageEl.classList.add('active');
-            updateProgress();
-            window.scrollTo(0, 0);
-            console.log(`✅ Skipped to page ${currentPage}`);
-          }
-
+          console.log('⏭️ Skip button clicked - page', currentPage, '->', currentPage + 1);
+          attemptSkip(currentPage + 1);
           return false;
         });
       });
@@ -1642,24 +1665,10 @@
         if (target.getAttribute('data-action') === 'skipToFinish') {
           e.preventDefault();
           e.stopPropagation();
-          console.log('⏭️ Skip to finish clicked - jumping from page', currentPage, 'to page 9');
-
-          // Hide current page
-          const skipCurrentPage = document.querySelector('.question-page.active');
-          if (skipCurrentPage) {
-            skipCurrentPage.classList.remove('active');
-          }
-
-          // Jump to page 9 (GDPR consent)
-          currentPage = 9;
-          const page9 = document.querySelector('[data-page="9"]');
-          if (page9) {
-            page9.classList.add('active');
-            updateProgress();
-            window.scrollTo(0, 0);
-            console.log('✅ Skipped to page 9 (GDPR consent)');
-          }
-
+          console.log('⏭️ Skip to finish clicked - page', currentPage, '-> page 9');
+          // Jumps the widest gap, so it is the most likely to sail past a
+          // required field. attemptSkip checks every page in between.
+          attemptSkip(9);
           return false;
         }
 
@@ -1667,24 +1676,8 @@
         if (target.getAttribute('data-action') === 'skip') {
           e.preventDefault();
           e.stopPropagation();
-          console.log('⏭️ Skip button clicked (event delegation) - moving from page', currentPage, 'to', currentPage + 1);
-
-          // Hide current page
-          const currentPageEl = document.querySelector('.question-page.active');
-          if (currentPageEl) {
-            currentPageEl.classList.remove('active');
-          }
-
-          // Show next page
-          currentPage++;
-          const nextPageEl = document.querySelector(`[data-page="${currentPage}"]`);
-          if (nextPageEl) {
-            nextPageEl.classList.add('active');
-            updateProgress();
-            window.scrollTo(0, 0);
-            console.log(`✅ Skipped to page ${currentPage}`);
-          }
-
+          console.log('⏭️ Skip (delegated) - page', currentPage, '->', currentPage + 1);
+          attemptSkip(currentPage + 1);
           return false;
         }
 
@@ -2119,8 +2112,81 @@
     // Show error message
     function showError(elementId, message) {
       const errorEl = document.getElementById(elementId);
+      if (!errorEl) {
+        console.warn('showError: no element', elementId, '-', message);
+        return;
+      }
       errorEl.textContent = message;
       errorEl.classList.add('show');
+    }
+
+    // ===== REQUIRED FIELDS =====
+    //
+    // Single source of truth, mirroring the server's own list in
+    // src/controllers/signup.controller.js. Everything else on this form is
+    // genuinely optional and can be completed later from the dashboard.
+    //
+    // Skip used to walk straight past page 3, whose first_name IS required -
+    // so a user could complete all nine pages and only then be told, by a
+    // generic 400, that something was missing.
+    const REQUIRED_FIELDS = [
+      { field: 'first_name',   page: 3, elementId: 'first_name',   label: 'First name',
+        errorEl: 'personal-error' },
+      { field: 'gdpr_consent', page: 9, elementId: 'gdpr_consent', label: 'Consent to the privacy terms',
+        errorEl: 'gdpr-consent-error' },
+    ];
+
+    /** Pages that contain at least one required field. Skip must not bypass these. */
+    const PAGES_WITH_REQUIRED_FIELDS = [...new Set(REQUIRED_FIELDS.map(r => r.page))];
+
+    /**
+     * Read a required field's current value, preferring the live DOM over
+     * formData so validation reflects what the user can actually see.
+     */
+    function requiredFieldValue(spec) {
+      const el = document.getElementById(spec.elementId);
+      if (el) {
+        if (el.type === 'checkbox') return el.checked ? 'true' : '';
+        return (el.value || '').trim();
+      }
+      const v = formData[spec.field];
+      return typeof v === 'string' ? v.trim() : (v || '');
+    }
+
+    /** @returns {Array} required fields that are still empty, in page order */
+    function findMissingRequiredFields() {
+      return REQUIRED_FIELDS
+        .filter(spec => !requiredFieldValue(spec))
+        .sort((a, b) => a.page - b.page);
+    }
+
+    /**
+     * Send the user to the first page containing a missing required field, with
+     * the field highlighted and focused and a message naming what is needed.
+     * @returns {boolean} true if something was missing (and we navigated)
+     */
+    function goToFirstMissingRequiredField(missing) {
+      const list = missing || findMissingRequiredFields();
+      if (!list.length) return false;
+
+      const first = list[0];
+      const names = list.map(m => m.label).join(', ');
+
+      showPage(first.page);
+
+      const el = document.getElementById(first.elementId);
+      if (el) {
+        el.classList.add('error');
+        try { el.focus({ preventScroll: false }); } catch (e) { el.focus(); }
+        el.scrollIntoView({ behavior: 'smooth', block: 'center' });
+      }
+
+      showError(first.errorEl, list.length === 1
+        ? `${first.label} is required.`
+        : `Still needed: ${names}. Start with ${first.label}.`);
+
+      console.warn('[Signup] Missing required fields:', list.map(m => m.field));
+      return true;
     }
 
     // ===== HELPER VALIDATION FUNCTIONS =====
@@ -3336,6 +3402,16 @@
       // - V1 (signupFlowV2=false): Requires auth_user_id (Supabase auth created on Page 1)
       // - V2 (signupFlowV2=true): Requires temp_signup_id (auth created AFTER payment)
 
+      // Catch every required field before touching the network. The server
+      // does validate, but discovering a missing first_name via a generic 400
+      // after nine pages of effort is a poor way to find out - and Skip used to
+      // make exactly that outcome easy to reach.
+      const missingRequired = findMissingRequiredFields();
+      if (missingRequired.length) {
+        goToFirstMissingRequiredField(missingRequired);
+        return;
+      }
+
       const hasV1Auth = !!formData.auth_user_id;
       const hasV2TempId = hasValidTempSignupId(formData.temp_signup_id);
 
@@ -3514,6 +3590,26 @@
           console.log('✅ Signup complete, redirecting to:', redirectUrl);
           window.location.href = redirectUrl;
         } else {
+          // The server names what it rejected (`fields`). Map those back to
+          // pages so the user is taken to the problem rather than reading a
+          // generic error.
+          if (Array.isArray(result.fields) && result.fields.length) {
+            console.warn('[Signup] Server rejected, missing:', result.fields);
+
+            const known = result.fields
+              .map(f => REQUIRED_FIELDS.find(r => r.field === f))
+              .filter(Boolean);
+
+            if (known.length) {
+              goToFirstMissingRequiredField(known.sort((a, b) => a.page - b.page));
+              return;
+            }
+
+            // Fields the client does not know about - name them plainly rather
+            // than swallowing them into "Failed to submit form".
+            throw new Error('The server still needs: ' + result.fields.join(', '));
+          }
+
           throw new Error(result.error || 'Failed to submit form');
         }
       } catch (error) {
