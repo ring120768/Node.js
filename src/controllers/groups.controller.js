@@ -17,6 +17,7 @@
  * - DELETE /api/groups/invitation/:invitationId - Cancel invitation
  */
 
+const crypto = require('crypto');
 const { createClient } = require('@supabase/supabase-js');
 
 // Initialise Supabase
@@ -37,6 +38,122 @@ const TIER_CONFIG = {
   business_100: { type: 'business', maxMembers: 100 },
 };
 
+// ===========================================================================
+// JOIN CODES
+// ===========================================================================
+
+// Deliberately excludes characters that are misread when a code is spoken
+// aloud or copied off a screen: O/0, I/1/L, U/V, S/5, B/8.
+// 26 symbols ^ 6 places = ~309 million combinations.
+const JOIN_CODE_ALPHABET = 'ACDEFGHJKMNPQRTWXY234679';
+const JOIN_CODE_LENGTH = 6;
+
+const GROUP_TYPE_PREFIX = {
+  family: 'FAM',
+  business: 'BIZ',
+};
+
+/**
+ * Generate a random join code body using crypto, with rejection sampling so the
+ * distribution stays uniform (a plain % would bias toward the early letters).
+ *
+ * @returns {string} e.g. "K7QM2X"
+ */
+function randomCodeBody() {
+  const out = [];
+  const max = Math.floor(256 / JOIN_CODE_ALPHABET.length) * JOIN_CODE_ALPHABET.length;
+
+  while (out.length < JOIN_CODE_LENGTH) {
+    for (const byte of crypto.randomBytes(JOIN_CODE_LENGTH * 2)) {
+      if (byte >= max) continue; // reject, would skew the distribution
+      out.push(JOIN_CODE_ALPHABET[byte % JOIN_CODE_ALPHABET.length]);
+      if (out.length === JOIN_CODE_LENGTH) break;
+    }
+  }
+
+  return out.join('');
+}
+
+/**
+ * Normalise user input into the canonical stored form.
+ * Accepts "fam k7qm2x", "FAM-K7QM2X", "k7qm2x" and returns "FAM-K7QM2X" given
+ * the expected prefix, so a member typing it by hand is forgiving.
+ *
+ * @param {string} input - raw code as typed
+ * @returns {string|null} canonical code, or null if unusable
+ */
+function normaliseJoinCode(input) {
+  if (typeof input !== 'string') return null;
+
+  const cleaned = input.toUpperCase().replace(/[^A-Z0-9]/g, '');
+  if (!cleaned) return null;
+
+  const match = cleaned.match(/^(FAM|BIZ)?([A-Z0-9]+)$/);
+  if (!match) return null;
+
+  const [, prefix, body] = match;
+  if (body.length !== JOIN_CODE_LENGTH) return null;
+  if (!prefix) return null; // ambiguous without a prefix - reject rather than guess
+
+  return `${prefix}-${body}`;
+}
+
+/**
+ * Generate a join code that is not already in use.
+ *
+ * Collisions are vanishingly unlikely but a unique index enforces it anyway, so
+ * check before insert and retry rather than surfacing a constraint violation.
+ *
+ * @param {string} groupType - 'family' or 'business'
+ * @returns {Promise<string>} e.g. "FAM-K7QM2X"
+ */
+async function generateUniqueJoinCode(groupType) {
+  const prefix = GROUP_TYPE_PREFIX[groupType] || 'GRP';
+
+  for (let attempt = 0; attempt < 10; attempt++) {
+    const code = `${prefix}-${randomCodeBody()}`;
+
+    const { data, error } = await supabase
+      .from('subscription_groups')
+      .select('id')
+      .eq('join_code', code)
+      .maybeSingle();
+
+    if (error) {
+      console.error('[Groups] Join code uniqueness check failed:', error.message);
+      throw new Error('Could not generate a join code');
+    }
+
+    if (!data) return code;
+
+    console.warn('[Groups] Join code collision, retrying:', code);
+  }
+
+  throw new Error('Could not generate a unique join code after 10 attempts');
+}
+
+/**
+ * Count members currently occupying seats in a group.
+ * Soft-deleted rows do not hold a seat.
+ *
+ * @param {string} groupId
+ * @returns {Promise<number>}
+ */
+async function countGroupMembers(groupId) {
+  const { count, error } = await supabase
+    .from('user_signup')
+    .select('*', { count: 'exact', head: true })
+    .eq('group_id', groupId)
+    .is('deleted_at', null);
+
+  if (error) {
+    console.error('[Groups] Failed to count members:', error.message);
+    throw new Error('Could not check group capacity');
+  }
+
+  return count || 0;
+}
+
 /**
  * Create a new subscription group
  * Called internally when a user subscribes to a family/business plan
@@ -56,6 +173,10 @@ async function createGroup(adminUserId, tier, stripeSubscriptionId) {
 
   console.log(`[Groups] Creating ${config.type} group for user:`, adminUserId);
 
+  // Members join with this code rather than per-person email tokens, so it has
+  // to exist from the moment the group does.
+  const joinCode = await generateUniqueJoinCode(config.type);
+
   // Create the group
   const { data: group, error: groupError } = await supabase
     .from('subscription_groups')
@@ -67,6 +188,8 @@ async function createGroup(adminUserId, tier, stripeSubscriptionId) {
       stripe_subscription_id: stripeSubscriptionId,
       subscription_tier: tier,
       subscription_status: 'active',
+      join_code: joinCode,
+      join_code_updated_at: new Date().toISOString(),
     })
     .select()
     .single();
@@ -237,10 +360,17 @@ async function getUserGroup(req, res) {
  * Body: { groupId, email, invitedBy }
  */
 async function inviteMember(req, res) {
-  const { groupId, email, invitedBy } = req.body;
+  const { groupId, email } = req.body;
+  // Identity comes from the session. Previously this was taken from the request
+  // body, so anyone who knew a group's admin id could invite into it.
+  const invitedBy = req.userId;
 
-  if (!groupId || !email || !invitedBy) {
-    return res.status(400).json({ error: 'groupId, email, and invitedBy are required' });
+  if (!groupId || !email) {
+    return res.status(400).json({ error: 'groupId and email are required' });
+  }
+
+  if (!invitedBy) {
+    return res.status(401).json({ error: 'You must be signed in to invite members' });
   }
 
   try {
@@ -331,7 +461,11 @@ async function inviteMember(req, res) {
         .single();
 
       // Build accept URL
-      const acceptUrl = `${process.env.APP_URL || 'https://carcrashlawyerai.co.uk'}/accept-invite.html?token=${invitation.token}`;
+      // Joining is by code now, so the email carries the /join link rather than
+      // a per-person token. accept-invite.html never existed - every invitation
+      // sent under the old scheme linked to a 404.
+      const baseUrl = process.env.APP_URL || 'https://www.carcrashlawyerai.com';
+      const acceptUrl = `${baseUrl}/join?code=${encodeURIComponent(group.join_code)}`;
 
       await emailService.sendEmail({
         to: email,
@@ -847,11 +981,324 @@ async function updateGroupSubscriptionStatus(stripeSubscriptionId, status, expir
   }
 }
 
+/**
+ * Look up a join code without joining.
+ * PUBLIC (rate-limited): the /join page calls this to show the group name and
+ * seat count before asking anyone to create an account.
+ *
+ * Deliberately reveals only the group name, type and seat counts - never member
+ * identities, the admin, or billing details.
+ *
+ * POST /api/groups/join/validate   Body: { code }
+ */
+async function validateJoinCode(req, res) {
+  const code = normaliseJoinCode(req.body?.code);
+
+  if (!code) {
+    return res.status(400).json({
+      valid: false,
+      error: 'That does not look like a join code. It should look like FAM-K7QM2X.',
+    });
+  }
+
+  try {
+    const { data: group, error } = await supabase
+      .from('subscription_groups')
+      .select('id, name, type, max_members, subscription_status')
+      .eq('join_code', code)
+      .maybeSingle();
+
+    // Same response shape whether the code is unknown or the query failed, so
+    // this cannot be used to probe which codes exist.
+    if (error || !group) {
+      return res.status(404).json({ valid: false, error: 'That code was not recognised.' });
+    }
+
+    if (group.subscription_status !== 'active') {
+      return res.status(400).json({
+        valid: false,
+        error: 'This group\'s subscription is not active, so it cannot accept new members.',
+      });
+    }
+
+    const used = await countGroupMembers(group.id);
+    const seatsRemaining = Math.max(0, group.max_members - used);
+
+    return res.json({
+      valid: true,
+      groupName: group.name,
+      groupType: group.type,
+      seatsUsed: used,
+      seatsTotal: group.max_members,
+      seatsRemaining,
+      full: seatsRemaining === 0,
+    });
+
+  } catch (error) {
+    console.error('[Groups] validateJoinCode error:', error.message);
+    return res.status(500).json({ valid: false, error: 'Could not check that code just now.' });
+  }
+}
+
+/**
+ * Join a group using a code.
+ * POST /api/groups/join   Body: { code, email?, name?, password? }
+ *
+ * Two paths:
+ *  - Signed in (req.userId present): joins as that user. Identity comes from the
+ *    session, never the request body.
+ *  - Not signed in: invite-first signup. Creates a minimal account from
+ *    email/name/password, then joins. This is the whole point of code-based
+ *    joining - a family member who has never used the app can be onboarded in
+ *    one step, which the old email-token flow could not do at all.
+ *
+ * Capacity is re-checked immediately before the write, so a code shared widely
+ * cannot oversubscribe a group through concurrent joins.
+ */
+async function joinByCode(req, res) {
+  const code = normaliseJoinCode(req.body?.code);
+
+  if (!code) {
+    return res.status(400).json({ error: 'That does not look like a join code.' });
+  }
+
+  try {
+    const { data: group, error: groupError } = await supabase
+      .from('subscription_groups')
+      .select('*')
+      .eq('join_code', code)
+      .maybeSingle();
+
+    if (groupError || !group) {
+      return res.status(404).json({ error: 'That code was not recognised.' });
+    }
+
+    if (group.subscription_status !== 'active') {
+      return res.status(400).json({ error: 'This group\'s subscription is not active.' });
+    }
+
+    // Capacity check BEFORE creating anything, so a full group does not leave a
+    // stranded account behind.
+    if (await countGroupMembers(group.id) >= group.max_members) {
+      return res.status(409).json({ error: 'This group is full.' });
+    }
+
+    // ---- Identify or create the joining user -----------------------------
+    let userId = req.userId || null;   // set by requireAuth/optionalAuth, never from the body
+    let createdAccount = false;
+
+    if (!userId) {
+      const email = (req.body?.email || '').trim().toLowerCase();
+      const name = (req.body?.name || '').trim();
+      const password = req.body?.password || '';
+
+      if (!email || !name || !password) {
+        return res.status(400).json({
+          error: 'Please provide your name, email and a password to join.',
+          needsAccount: true,
+        });
+      }
+
+      if (password.length < 8) {
+        return res.status(400).json({ error: 'Password must be at least 8 characters.' });
+      }
+
+      // Already registered? Ask them to sign in rather than silently creating a
+      // second account against the same address.
+      const { data: existing } = await supabase
+        .from('user_signup')
+        .select('create_user_id')
+        .eq('email', email)
+        .is('deleted_at', null)
+        .maybeSingle();
+
+      if (existing) {
+        return res.status(409).json({
+          error: 'An account already exists for that email. Please log in, then use the code again.',
+          shouldLogin: true,
+        });
+      }
+
+      const { supabaseAdmin } = require('../../lib/supabaseAdmin');
+      const { data: authData, error: authError } = await supabaseAdmin.auth.admin.createUser({
+        email,
+        password,
+        email_confirm: true,
+      });
+
+      if (authError || !authData?.user) {
+        console.error('[Groups] Invite-first account creation failed:', authError?.message);
+        return res.status(500).json({ error: 'Could not create your account. Please try again.' });
+      }
+
+      userId = authData.user.id;
+      createdAccount = true;
+
+      const { error: rowError } = await supabase
+        .from('user_signup')
+        .insert({
+          create_user_id: userId,
+          email,
+          driver_name: name,
+          auth_pending: false,
+        });
+
+      if (rowError) {
+        console.error('[Groups] Failed to create user_signup row:', rowError.message);
+        return res.status(500).json({ error: 'Could not complete your signup. Please try again.' });
+      }
+    }
+
+    // ---- Guard against double-joining ------------------------------------
+    const { data: joiner, error: joinerError } = await supabase
+      .from('user_signup')
+      .select('create_user_id, email, group_id')
+      .eq('create_user_id', userId)
+      .maybeSingle();
+
+    if (joinerError || !joiner) {
+      return res.status(404).json({ error: 'Your account could not be found.' });
+    }
+
+    if (joiner.group_id === group.id) {
+      return res.json({
+        success: true,
+        alreadyMember: true,
+        groupId: group.id,
+        groupName: group.name,
+        message: `You are already part of ${group.name}.`,
+      });
+    }
+
+    if (joiner.group_id) {
+      return res.status(409).json({
+        error: 'You already belong to another group. Leave it before joining a new one.',
+      });
+    }
+
+    // Re-check capacity immediately before the write
+    if (await countGroupMembers(group.id) >= group.max_members) {
+      return res.status(409).json({ error: 'This group filled up while you were joining.' });
+    }
+
+    const { error: linkError } = await supabase
+      .from('user_signup')
+      .update({
+        group_id: group.id,
+        group_role: 'member',
+        group_joined_at: new Date().toISOString(),
+        // Members are covered by the group's subscription
+        subscription_tier: group.subscription_tier,
+        subscription_status: group.subscription_status,
+        subscription_end_date: group.expires_at || null,
+      })
+      .eq('create_user_id', userId);
+
+    if (linkError) {
+      console.error('[Groups] Failed to link member to group:', linkError.message);
+      return res.status(500).json({ error: 'Could not add you to the group.' });
+    }
+
+    // Best-effort audit trail. group_invitations is optional now, so a failure
+    // here must not fail the join.
+    try {
+      await supabase.from('group_invitations').insert({
+        group_id: group.id,
+        email: joiner.email,
+        status: 'accepted',
+        accepted_at: new Date().toISOString(),
+        invited_by: group.admin_user_id,
+      });
+    } catch (auditError) {
+      console.warn('[Groups] Could not write join audit row:', auditError.message);
+    }
+
+    const used = await countGroupMembers(group.id);
+    console.log('[Groups] Member joined by code:', userId, '->', group.id, `(${used}/${group.max_members})`);
+
+    return res.json({
+      success: true,
+      createdAccount,
+      groupId: group.id,
+      groupName: group.name,
+      groupType: group.type,
+      seatsUsed: used,
+      seatsTotal: group.max_members,
+      message: `Welcome to ${group.name}!`,
+    });
+
+  } catch (error) {
+    console.error('[Groups] joinByCode error:', error.message);
+    return res.status(500).json({ error: 'Could not complete joining. Please try again.' });
+  }
+}
+
+/**
+ * Rotate a group's join code. Admin only.
+ * Existing members are unaffected - only un-redeemed copies of the old code
+ * stop working, which is the point: it revokes a code that has been shared too
+ * widely without disrupting anyone already in.
+ *
+ * POST /api/groups/:groupId/regenerate-code
+ */
+async function regenerateJoinCode(req, res) {
+  const { groupId } = req.params;
+
+  try {
+    const { data: group, error } = await supabase
+      .from('subscription_groups')
+      .select('id, type, admin_user_id')
+      .eq('id', groupId)
+      .maybeSingle();
+
+    if (error || !group) {
+      return res.status(404).json({ error: 'Group not found' });
+    }
+
+    // Identity from the session, not the body
+    if (group.admin_user_id !== req.userId) {
+      return res.status(403).json({ error: 'Only the group admin can regenerate the join code' });
+    }
+
+    const newCode = await generateUniqueJoinCode(group.type);
+
+    const { error: updateError } = await supabase
+      .from('subscription_groups')
+      .update({ join_code: newCode, join_code_updated_at: new Date().toISOString() })
+      .eq('id', group.id);
+
+    if (updateError) {
+      console.error('[Groups] Failed to regenerate join code:', updateError.message);
+      return res.status(500).json({ error: 'Could not regenerate the code' });
+    }
+
+    console.log('[Groups] Join code regenerated for group:', group.id);
+
+    return res.json({
+      success: true,
+      joinCode: newCode,
+      joinUrl: `${process.env.APP_URL || 'https://www.carcrashlawyerai.com'}/join?code=${encodeURIComponent(newCode)}`,
+      message: 'Previous code no longer works. Existing members are unaffected.',
+    });
+
+  } catch (err) {
+    console.error('[Groups] regenerateJoinCode error:', err.message);
+    return res.status(500).json({ error: 'Could not regenerate the code' });
+  }
+}
+
 module.exports = {
   // Internal functions
   createGroup,
   updateGroupSubscriptionStatus,
   TIER_CONFIG,
+
+  // Join codes
+  validateJoinCode,
+  joinByCode,
+  regenerateJoinCode,
+  normaliseJoinCode,
+  generateUniqueJoinCode,
 
   // API endpoints
   getGroup,

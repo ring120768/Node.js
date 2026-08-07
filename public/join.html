@@ -1,0 +1,327 @@
+<!DOCTYPE html>
+<html lang="en-GB">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Join a Group | Car Crash Lawyer AI</title>
+  <meta name="description" content="Join a Car Crash Lawyer AI family or company plan using the join code you were given.">
+  <meta name="robots" content="noindex, nofollow">
+  <link rel="canonical" href="https://www.carcrashlawyerai.com/join">
+  <link rel="icon" href="/favicon.ico" sizes="any">
+  <link rel="apple-touch-icon" href="/apple-touch-icon.png">
+
+  <style>
+    * { margin: 0; padding: 0; box-sizing: border-box; }
+
+    body {
+      font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif;
+      background: linear-gradient(135deg, #0B7AB0 0%, #1EA1D4 100%);
+      min-height: 100vh;
+      padding: 40px 20px;
+      color: #1e293b;
+      line-height: 1.6;
+    }
+
+    .wrap { max-width: 520px; margin: 0 auto; }
+
+    header { text-align: center; color: #fff; margin-bottom: 28px; }
+    header img { width: 96px; height: auto; border-radius: 12px; margin-bottom: 16px; }
+    header h1 { font-size: 30px; font-weight: 700; }
+
+    .card {
+      background: #fff;
+      border-radius: 16px;
+      padding: 32px;
+      box-shadow: 0 8px 24px rgba(0, 0, 0, 0.18);
+    }
+
+    h2 { font-size: 21px; color: #0B7AB0; margin-bottom: 10px; }
+    p { margin-bottom: 16px; color: #334155; }
+
+    label { display: block; font-weight: 600; margin-bottom: 6px; color: #0f172a; }
+
+    input[type="text"], input[type="email"], input[type="password"] {
+      width: 100%;
+      padding: 14px;
+      border: 2px solid #cbd5e1;
+      border-radius: 10px;
+      font-size: 16px;
+      margin-bottom: 16px;
+      font-family: inherit;
+    }
+
+    input:focus { outline: none; border-color: #0B7AB0; }
+
+    #code {
+      text-transform: uppercase;
+      letter-spacing: 0.12em;
+      font-weight: 700;
+      text-align: center;
+      font-size: 20px;
+    }
+
+    button {
+      width: 100%;
+      padding: 15px;
+      background: #0B7AB0;
+      color: #fff;
+      border: none;
+      border-radius: 10px;
+      font-size: 17px;
+      font-weight: 600;
+      cursor: pointer;
+      font-family: inherit;
+    }
+
+    button:hover:not(:disabled) { background: #095e88; }
+    button:disabled { background: #94a3b8; cursor: not-allowed; }
+
+    .msg { padding: 14px 16px; border-radius: 10px; margin-bottom: 18px; font-size: 15px; }
+    .msg.error { background: #fef2f2; border-left: 4px solid #dc2626; color: #991b1b; }
+    .msg.ok { background: #ecfdf5; border-left: 4px solid #059669; color: #065f46; }
+    .msg.info { background: #ecfeff; border-left: 4px solid #0B7AB0; color: #155e75; }
+
+    .group-summary {
+      background: #f8fafc;
+      border: 1px solid #cbd5e1;
+      border-radius: 12px;
+      padding: 18px 20px;
+      margin-bottom: 22px;
+    }
+
+    .group-summary .name { font-size: 20px; font-weight: 700; color: #0f172a; }
+    .group-summary .seats { color: #475569; font-size: 15px; margin-top: 4px; }
+
+    .hidden { display: none; }
+
+    .foot { text-align: center; margin-top: 22px; color: rgba(255,255,255,0.92); font-size: 14px; }
+    .foot a { color: #fff; }
+
+    .spinner {
+      display: inline-block; width: 18px; height: 18px;
+      border: 3px solid rgba(255,255,255,0.4); border-top-color: #fff;
+      border-radius: 50%; animation: spin 0.8s linear infinite; vertical-align: -3px;
+    }
+    @keyframes spin { to { transform: rotate(360deg); } }
+  </style>
+</head>
+<body>
+  <div class="wrap">
+    <header>
+      <img src="/images/car-crash-lawyer-ai-450.webp" alt="Car Crash Lawyer AI logo" width="450" height="450">
+      <h1>Join a group</h1>
+    </header>
+
+    <div class="card">
+      <div id="messages"></div>
+
+      <!-- Step 1: enter / confirm the code -->
+      <section id="stepCode">
+        <h2>Enter your join code</h2>
+        <p>Whoever set up the plan will have given you a code that looks like <strong>FAM-K7QM2X</strong>.</p>
+        <label for="code">Join code</label>
+        <input type="text" id="code" placeholder="FAM-XXXXXX" autocomplete="off"
+               autocapitalize="characters" spellcheck="false" maxlength="12">
+        <button id="checkBtn">Check code</button>
+      </section>
+
+      <!-- Step 2: confirmed group, collect details or confirm join -->
+      <section id="stepJoin" class="hidden">
+        <div class="group-summary">
+          <div class="name" id="groupName"></div>
+          <div class="seats" id="groupSeats"></div>
+        </div>
+
+        <div id="accountFields">
+          <h2>Create your account</h2>
+          <p>You are joining an existing plan, so there is nothing to pay.</p>
+
+          <label for="name">Your name</label>
+          <input type="text" id="name" autocomplete="name" placeholder="Jane Smith">
+
+          <label for="email">Email address</label>
+          <input type="email" id="email" autocomplete="email" placeholder="you@example.com">
+
+          <label for="password">Choose a password</label>
+          <input type="password" id="password" autocomplete="new-password" placeholder="At least 8 characters">
+        </div>
+
+        <div id="loggedInNote" class="hidden">
+          <h2>Confirm</h2>
+          <p>You are signed in as <strong id="sessionEmail"></strong>. Joining will add you to this plan.</p>
+        </div>
+
+        <button id="joinBtn">Join this group</button>
+      </section>
+
+      <!-- Step 3: done -->
+      <section id="stepDone" class="hidden">
+        <h2>You're in</h2>
+        <p id="doneText"></p>
+        <button id="continueBtn">Go to my dashboard</button>
+      </section>
+    </div>
+
+    <p class="foot">
+      Don't have a code? <a href="/subscribe.html">See our plans</a> ·
+      <a href="/">Back to home</a>
+    </p>
+  </div>
+
+  <script>
+    (function () {
+      const $ = (id) => document.getElementById(id);
+      const messages = $('messages');
+
+      let session = null;      // { id, email } when signed in
+      let validated = null;    // response from /join/validate
+
+      function show(type, text) {
+        messages.innerHTML = '';
+        const d = document.createElement('div');
+        d.className = 'msg ' + type;
+        d.textContent = text;
+        messages.appendChild(d);
+      }
+
+      function clearMessages() { messages.innerHTML = ''; }
+
+      function busy(btn, on, label) {
+        btn.disabled = on;
+        btn.innerHTML = on ? '<span class="spinner"></span> ' + label : label;
+      }
+
+      async function post(url, body) {
+        const res = await fetch(url, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          credentials: 'include',
+          body: JSON.stringify(body)
+        });
+        let data = {};
+        try { data = await res.json(); } catch (e) { /* non-JSON error page */ }
+        return { ok: res.ok, status: res.status, data };
+      }
+
+      // Resolve the signed-in user server-side from the auth cookies.
+      async function loadSession() {
+        try {
+          const res = await fetch('/api/auth/session', { credentials: 'include' });
+          if (!res.ok) return null;
+          const j = await res.json();
+          return (j.authenticated && j.user) ? j.user : null;
+        } catch (e) {
+          return null;
+        }
+      }
+
+      async function checkCode() {
+        const raw = $('code').value.trim();
+        if (!raw) { show('error', 'Please enter your join code.'); return; }
+
+        clearMessages();
+        busy($('checkBtn'), true, 'Checking…');
+
+        const { ok, data } = await post('/api/groups/join/validate', { code: raw });
+        busy($('checkBtn'), false, 'Check code');
+
+        if (!ok || !data.valid) {
+          show('error', data.error || 'That code was not recognised.');
+          return;
+        }
+
+        if (data.full) {
+          show('error', 'This group is already full (' + data.seatsTotal + ' of ' + data.seatsTotal + ' seats used).');
+          return;
+        }
+
+        validated = data;
+        $('groupName').textContent = data.groupName;
+        $('groupSeats').textContent =
+          data.seatsUsed + ' of ' + data.seatsTotal + ' seats used · ' +
+          data.seatsRemaining + ' remaining';
+
+        $('stepCode').classList.add('hidden');
+        $('stepJoin').classList.remove('hidden');
+
+        if (session) {
+          $('accountFields').classList.add('hidden');
+          $('loggedInNote').classList.remove('hidden');
+          $('sessionEmail').textContent = session.email;
+        }
+      }
+
+      async function join() {
+        clearMessages();
+
+        const body = { code: $('code').value.trim() };
+
+        if (!session) {
+          body.name = $('name').value.trim();
+          body.email = $('email').value.trim();
+          body.password = $('password').value;
+
+          if (!body.name || !body.email || !body.password) {
+            show('error', 'Please fill in your name, email and password.');
+            return;
+          }
+          if (body.password.length < 8) {
+            show('error', 'Your password must be at least 8 characters.');
+            return;
+          }
+        }
+
+        busy($('joinBtn'), true, 'Joining…');
+        const { ok, data } = await post('/api/groups/join', body);
+        busy($('joinBtn'), false, 'Join this group');
+
+        if (!ok) {
+          if (data.shouldLogin) {
+            show('error', data.error);
+            setTimeout(function () {
+              window.location.href = '/login.html?redirect=' +
+                encodeURIComponent('/join?code=' + encodeURIComponent($('code').value.trim()));
+            }, 2500);
+            return;
+          }
+          show('error', data.error || 'Could not join that group.');
+          return;
+        }
+
+        $('stepJoin').classList.add('hidden');
+        $('stepDone').classList.remove('hidden');
+        $('doneText').textContent =
+          (data.alreadyMember
+            ? 'You were already part of ' + data.groupName + '.'
+            : 'You have joined ' + data.groupName + '.') +
+          ' Your cover is included in this plan — there is nothing to pay.';
+      }
+
+      // ---- init -----------------------------------------------------------
+      (async function init() {
+        session = await loadSession();
+
+        const params = new URLSearchParams(window.location.search);
+        const fromUrl = params.get('code');
+
+        if (fromUrl) {
+          $('code').value = fromUrl.toUpperCase();
+          // A code in the link is the common path - check it straight away so
+          // the group name is confirmed before anyone types anything.
+          await checkCode();
+        }
+
+        $('checkBtn').addEventListener('click', checkCode);
+        $('joinBtn').addEventListener('click', join);
+        $('continueBtn').addEventListener('click', function () {
+          window.location.href = '/dashboard.html';
+        });
+
+        $('code').addEventListener('keydown', function (e) {
+          if (e.key === 'Enter') { e.preventDefault(); checkCode(); }
+        });
+      })();
+    })();
+  </script>
+</body>
+</html>
