@@ -1688,7 +1688,17 @@
           return false;
         }
 
-        // Handle next/continue buttons
+        // Handle next/continue buttons.
+        // createAccountBtn is deliberately excluded: it carries .btn-next for
+        // styling but has its own click handler (createAccountAndContinue).
+        // Without this exclusion a single click fired BOTH, and whenever
+        // createAccountAndContinue returned early - failed validation, say -
+        // this delegated nextPage() still ran and walked the user off page 1
+        // with no temp_signup_id, which submission then rejected.
+        if (target.id === 'createAccountBtn') {
+          return;
+        }
+
         if (target.classList.contains('btn-next') || target.getAttribute('data-action') === 'next') {
           nextPage();
         }
@@ -1752,6 +1762,19 @@
       if (saved) {
         try {
           const draft = JSON.parse(saved);
+
+          // Discard a poisoned temp_signup_id rather than inheriting it.
+          // Earlier builds could persist temp_signup_id: '' - falsy, but present
+          // enough that any code treating "the draft has an id" as truthy-by-key
+          // would trust it. Inheriting that produced an unbreakable retry loop:
+          // submission rejected the empty id, and nothing ever regenerated one.
+          if ('temp_signup_id' in draft && !hasValidTempSignupId(draft.temp_signup_id)) {
+            console.warn('🧹 Draft carried an invalid temp_signup_id - discarding it', {
+              value: draft.temp_signup_id
+            });
+            delete draft.temp_signup_id;
+          }
+
           Object.assign(formData, draft);
           console.log('✅ Loaded draft from localStorage');
 
@@ -1967,10 +1990,35 @@
       return true;
     }
 
+    /**
+     * True only if a temp_signup_id is genuinely present.
+     * Poisoned drafts written by earlier builds contain temp_signup_id: '',
+     * which is falsy but survives a `in` check and reads as "set" to a careless
+     * truthiness test. Treat empty string, whitespace and null identically.
+     */
+    function hasValidTempSignupId(value) {
+      return typeof value === 'string' && value.trim().length > 0;
+    }
+
     // Validate current page (async to support photo upload modal)
     async function validateCurrentPage() {
-      // Page 1: Account creation validation is handled by createAccountBtn
-      if (currentPage === 1) return true;
+      // Page 1: account details are handled by createAccountBtn, but this is the
+      // last gate before the user leaves the page - so fail closed. Previously
+      // this returned true unconditionally, which meant any path that advanced
+      // without running createAccountAndContinue to completion produced a signup
+      // with no id, discovered only at submission.
+      if (currentPage === 1) {
+        if (signupFlowV2 && !hasValidTempSignupId(formData.temp_signup_id)) {
+          console.error('❌ Page 1: refusing to advance without a temp_signup_id', {
+            temp_signup_id: formData.temp_signup_id,
+            type: typeof formData.temp_signup_id
+          });
+          showError('account-error',
+            'Please complete your email and password, then press "Create Account & Continue".');
+          return false;
+        }
+        return true;
+      }
 
       // Page 2: Date of Birth validation
       if (currentPage === 2) {
@@ -3289,7 +3337,7 @@
       // - V2 (signupFlowV2=true): Requires temp_signup_id (auth created AFTER payment)
 
       const hasV1Auth = !!formData.auth_user_id;
-      const hasV2TempId = !!formData.temp_signup_id;
+      const hasV2TempId = hasValidTempSignupId(formData.temp_signup_id);
 
       if (signupFlowV2) {
         // V2 Flow: Check for temp_signup_id and pending_password
