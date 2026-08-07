@@ -1328,11 +1328,115 @@ async function regenerateJoinCode(req, res) {
   }
 }
 
+/**
+ * Look up the group created by a specific Stripe checkout, using the checkout
+ * session id as the bearer credential.
+ * POST /api/groups/by-checkout-session   Body: { sessionId }
+ *
+ * WHY THIS EXISTS
+ * On the V2 flow the buyer arrives at payment-success.html with NO session -
+ * their auth account is created by the webhook, after the redirect. So the page
+ * cannot ask "what is my group?" the way the dashboard does. Stripe appends
+ * ?session_id=cs_live_... to the confirmation URL, and that id is unguessable
+ * and belongs to exactly one purchase, so it stands in for authentication here.
+ *
+ * Returns ONLY the join details for that one purchase, never anything about the
+ * buyer or other groups.
+ *
+ * Also handles the race: the webhook may still be running when the buyer lands,
+ * so a missing group returns ready:false rather than an error, and the page
+ * retries.
+ */
+async function getGroupByCheckoutSession(req, res) {
+  const sessionId = (req.body?.sessionId || req.query?.sessionId || '').trim();
+
+  // Shape check before spending a Stripe call on obvious junk
+  if (!sessionId || !/^cs_(live|test)_[A-Za-z0-9]+$/.test(sessionId)) {
+    return res.status(400).json({ error: 'A valid checkout session id is required' });
+  }
+
+  try {
+    const Stripe = require('stripe');
+    if (!process.env.STRIPE_SECRET_KEY) {
+      console.error('[Groups] STRIPE_SECRET_KEY not configured');
+      return res.status(503).json({ error: 'Payment service unavailable' });
+    }
+    const stripe = new Stripe(process.env.STRIPE_SECRET_KEY, { apiVersion: '2024-12-18.acacia' });
+
+    const session = await stripe.checkout.sessions.retrieve(sessionId);
+
+    if (!session) {
+      return res.status(404).json({ error: 'Checkout session not found' });
+    }
+
+    // Only a completed purchase reveals anything
+    if (session.payment_status !== 'paid' && session.status !== 'complete') {
+      return res.status(402).json({
+        error: 'Payment not completed',
+        paymentStatus: session.payment_status,
+      });
+    }
+
+    const subscriptionId = typeof session.subscription === 'string'
+      ? session.subscription
+      : session.subscription?.id;
+
+    if (!subscriptionId) {
+      // A one-off payment, or a session without a subscription: not a group plan
+      return res.json({ ready: true, isGroupPlan: false });
+    }
+
+    const { data: group, error } = await supabase
+      .from('subscription_groups')
+      .select('id, name, type, join_code, max_members, subscription_status')
+      .eq('stripe_subscription_id', subscriptionId)
+      .maybeSingle();
+
+    if (error) {
+      console.error('[Groups] by-checkout-session lookup failed:', error.message);
+      return res.status(500).json({ error: 'Could not look up your plan' });
+    }
+
+    if (!group) {
+      // Either an individual plan, or the webhook has not created the group yet.
+      // The caller cannot tell the difference, so report "not ready" and let it
+      // retry for a bounded period before giving up gracefully.
+      console.log('[Groups] No group yet for subscription', subscriptionId, '- webhook may still be running');
+      return res.json({ ready: false, isGroupPlan: null });
+    }
+
+    const seatsUsed = await countGroupMembers(group.id);
+
+    return res.json({
+      ready: true,
+      isGroupPlan: true,
+      groupName: group.name,
+      groupType: group.type,
+      joinCode: group.join_code,
+      joinUrl: group.join_code
+        ? `${process.env.APP_URL || 'https://www.carcrashlawyerai.com'}/join?code=${encodeURIComponent(group.join_code)}`
+        : null,
+      seatsUsed,
+      seatsTotal: group.max_members,
+      seatsRemaining: Math.max(0, group.max_members - seatsUsed),
+      full: seatsUsed >= group.max_members,
+    });
+
+  } catch (err) {
+    // A bad/expired session id surfaces as a Stripe error; do not leak details
+    console.error('[Groups] getGroupByCheckoutSession error:', err.message);
+    return res.status(404).json({ error: 'Checkout session not found' });
+  }
+}
+
 module.exports = {
   // Internal functions
   createGroup,
   updateGroupSubscriptionStatus,
   TIER_CONFIG,
+
+  // Post-purchase lookup (no session required - the checkout id is the bearer)
+  getGroupByCheckoutSession,
 
   // Join codes
   validateJoinCode,

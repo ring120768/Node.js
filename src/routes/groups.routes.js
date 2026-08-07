@@ -47,6 +47,22 @@ router.post('/join/validate', strictLimiter, groupsController.validateJoinCode);
  */
 router.post('/join', strictLimiter, groupsController.joinByCode);
 
+/**
+ * POST /api/groups/by-checkout-session
+ * Return the join details for the group created by one specific purchase.
+ *
+ * Public because on the V2 flow the buyer has NO session when they land on
+ * payment-success.html - their auth account is created by the webhook, after
+ * the redirect. Stripe appends ?session_id=cs_live_... to that URL, and the id
+ * is unguessable and tied to exactly one purchase, so it serves as the bearer.
+ *
+ * Returns { ready:false } while the webhook is still creating the group, so the
+ * page can retry rather than showing an error or a blank space.
+ *
+ * Body: { sessionId }
+ */
+router.post('/by-checkout-session', strictLimiter, groupsController.getGroupByCheckoutSession);
+
 // ===========================================================================
 // AUTHENTICATED - everything below needs a session
 // ===========================================================================

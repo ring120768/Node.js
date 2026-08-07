@@ -179,6 +179,112 @@
     container.replaceChildren(card);
   }
 
+  /**
+   * Waiting/failed states.
+   *
+   * The rule: silent-nothing is reserved for people who legitimately should not
+   * see a code - individual plans and members. Anyone who IS entitled to a code
+   * but cannot be shown one yet gets told what is happening, because a blank
+   * space after paying £35 reads as a failure.
+   */
+  function renderPending(container, message, detail) {
+    injectStyles();
+    const card = document.createElement('div');
+    card.className = 'gic';
+
+    const h = document.createElement('h3');
+    h.textContent = message;
+    card.appendChild(h);
+
+    const p = document.createElement('p');
+    p.textContent = detail;
+    p.style.marginBottom = '0';
+    card.appendChild(p);
+
+    container.replaceChildren(card);
+  }
+
+  /**
+   * Success-page path: resolve the group from the Stripe checkout session id,
+   * which is the only credential available before the webhook has created the
+   * buyer's auth account.
+   *
+   * Polls while the webhook catches up. Bounded, and it says so when it gives
+   * up rather than spinning forever.
+   */
+  async function mountFromCheckoutSession(containerId, sessionId, options) {
+    const container = document.getElementById(containerId);
+    if (!container) return;
+
+    const opts = options || {};
+    const timeoutMs = opts.timeoutMs || 30000;
+    const intervalMs = opts.intervalMs || 2500;
+    const started = Date.now();
+    let announced = false;
+
+    while (Date.now() - started < timeoutMs) {
+      try {
+        const res = await fetch('/api/groups/by-checkout-session', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ sessionId })
+        });
+
+        if (res.ok) {
+          const data = await res.json();
+
+          // Individual plan - correctly shows nothing at all
+          if (data.ready && data.isGroupPlan === false) {
+            container.replaceChildren();
+            return;
+          }
+
+          if (data.ready && data.isGroupPlan && data.joinCode) {
+            injectStyles();
+            render(container, {
+              group: {
+                name: data.groupName,
+                type: data.groupType,
+                maxMembers: data.seatsTotal,
+                memberCount: data.seatsUsed,
+                seatsRemaining: data.seatsRemaining,
+                full: data.full,
+                joinCode: data.joinCode,
+                joinUrl: data.joinUrl
+              }
+            });
+            console.log('[GroupInviteCard] rendered from checkout session');
+            return;
+          }
+        } else if (res.status === 400 || res.status === 404) {
+          // Bad or unknown session id - retrying will not help
+          console.warn('[GroupInviteCard] checkout session not recognised');
+          return;
+        }
+      } catch (e) {
+        console.warn('[GroupInviteCard] lookup failed, will retry:', e.message);
+      }
+
+      // Only claim we are setting something up once we know it is worth waiting
+      if (!announced) {
+        renderPending(container,
+          'Setting up your plan…',
+          'This usually takes a few seconds. Your invite code will appear here shortly.');
+        announced = true;
+      }
+
+      await new Promise(r => setTimeout(r, intervalMs));
+    }
+
+    // Bounded wait exceeded. Never leave a blank space - say where to find it.
+    if (announced) {
+      renderPending(container,
+        'Your plan is being set up',
+        'It is taking longer than usual. Your invite code will be in your welcome email, and on your dashboard once you log in.');
+      console.warn('[GroupInviteCard] timed out waiting for group creation');
+    }
+  }
+
   async function mount(containerId) {
     const container = document.getElementById(containerId);
     if (!container) return;
@@ -210,6 +316,17 @@
     }
   }
 
-  global.GroupInviteCard = { mount };
+  /**
+   * Prefers the checkout-session route when a session id is present (the buyer
+   * has just paid and may not be logged in), and falls back to the session
+   * route otherwise. Safe to call on any page.
+   */
+  async function auto(containerId) {
+    const sessionId = new URLSearchParams(window.location.search).get('session_id');
+    if (sessionId) return mountFromCheckoutSession(containerId, sessionId);
+    return mount(containerId);
+  }
+
+  global.GroupInviteCard = { mount, mountFromCheckoutSession, auto };
 
 })(window);
