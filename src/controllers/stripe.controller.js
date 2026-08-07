@@ -139,7 +139,7 @@ async function createCheckoutSession(req, res) {
     // Get user details from database
     const { data: user, error: userError } = await supabase
       .from('user_signup')
-      .select('email, driver_name, stripe_customer_id')
+      .select('email, name, stripe_customer_id')
       .eq('create_user_id', userId)
       .single();
 
@@ -156,7 +156,7 @@ async function createCheckoutSession(req, res) {
 
       const customer = await stripeClient.customers.create({
         email: user.email,
-        name: user.driver_name,
+        name: user.name,
         metadata: {
           userId: userId,
           source: 'car-crash-lawyer-ai',
@@ -665,7 +665,7 @@ async function handleSubscriptionDeleted(subscription) {
   // Find user by subscription ID
   const { data: user, error: findError } = await supabase
     .from('user_signup')
-    .select('create_user_id, email, driver_name')
+    .select('create_user_id, email, name')
     .eq('stripe_subscription_id', subscription.id)
     .single();
 
@@ -759,7 +759,7 @@ async function handlePaymentFailed(invoice) {
   // Find user
   const { data: user } = await supabase
     .from('user_signup')
-    .select('create_user_id, email, driver_name')
+    .select('create_user_id, email, name')
     .eq('stripe_subscription_id', invoice.subscription)
     .single();
 

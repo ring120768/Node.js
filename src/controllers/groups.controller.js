@@ -257,7 +257,7 @@ async function getGroup(req, res) {
     // Get members
     const { data: members, error: membersError } = await supabase
       .from('user_signup')
-      .select('create_user_id, driver_name, email, group_role, group_joined_at')
+      .select('create_user_id, name, email, group_role, group_joined_at')
       .eq('group_id', groupId)
       .is('deleted_at', null);
 
@@ -277,7 +277,7 @@ async function getGroup(req, res) {
       createdAt: group.created_at,
       members: members?.map(m => ({
         userId: m.create_user_id,
-        name: m.driver_name,
+        name: m.name,
         email: m.email,
         role: m.group_role,
         joinedAt: m.group_joined_at,
@@ -480,7 +480,7 @@ async function inviteMember(req, res) {
 
       const { data: admin } = await supabase
         .from('user_signup')
-        .select('driver_name')
+        .select('name')
         .eq('create_user_id', invitedBy)
         .single();
 
@@ -496,7 +496,7 @@ async function inviteMember(req, res) {
         subject: `You've been invited to join ${group.name} on Car Crash Lawyer AI`,
         html: `
           <h2>You've Been Invited!</h2>
-          <p>${admin?.driver_name || 'Someone'} has invited you to join their ${group.type === 'family' ? 'family' : 'business'} subscription on Car Crash Lawyer AI.</p>
+          <p>${admin?.name || 'Someone'} has invited you to join their ${group.type === 'family' ? 'family' : 'business'} subscription on Car Crash Lawyer AI.</p>
           <p>This gives you full access to all premium features at no additional cost.</p>
           <p><a href="${acceptUrl}" style="display:inline-block;padding:12px 24px;background:#007bff;color:#fff;text-decoration:none;border-radius:5px;">Accept Invitation</a></p>
           <p><small>This invitation expires in 7 days. If you didn't expect this invitation, you can safely ignore this email.</small></p>
@@ -1180,7 +1180,7 @@ async function joinByCode(req, res) {
         .insert({
           create_user_id: userId,
           email,
-          driver_name: name,
+          name: name,
           auth_pending: false,
         });
 
