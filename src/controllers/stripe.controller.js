@@ -306,26 +306,41 @@ async function handleWebhook(req, res) {
   // Single account: acct_1Rg9mWGDFfktozQP. The old account's subscriptions are
   // being retired and its former users hold lifetime premium in the database, so
   // there is no second secret to fall back to.
-  const endpointSecret = process.env.STRIPE_WEBHOOK_SECRET;
+  //
+  // STRIPE_WEBHOOK_SECRET_TEST is optional and exists so test-mode events can
+  // reach this endpoint at all. Stripe signs test and live events with
+  // different secrets, so without a second secret the only way to exercise the
+  // retry path is to break production on purpose - twice, once to fail and once
+  // to recover. Absent, behaviour is exactly as before.
+  const secrets = [
+    process.env.STRIPE_WEBHOOK_SECRET,
+    process.env.STRIPE_WEBHOOK_SECRET_TEST,
+  ].filter(Boolean);
 
-  if (!endpointSecret) {
+  if (!secrets.length) {
     console.error('[Stripe] STRIPE_WEBHOOK_SECRET not configured');
     return res.status(500).json({ error: 'Webhook secret not configured' });
   }
 
   let event;
+  let lastSigError;
 
-  try {
-    // Stripe expects the exact bytes it signed, so prefer the raw Buffer
-    // captured by the express.json() verify hook in app.js.
-    event = stripeClient.webhooks.constructEvent(
-      req.rawBodyBuffer || req.rawBody || req.body,
-      sig,
-      endpointSecret
-    );
-  } catch (err) {
-    console.error('[Stripe] Webhook signature verification failed:', err.message);
-    return res.status(400).json({ error: `Webhook Error: ${err.message}` });
+  // Stripe expects the exact bytes it signed, so prefer the raw Buffer captured
+  // by the express.json() verify hook in app.js.
+  const rawBody = req.rawBodyBuffer || req.rawBody || req.body;
+
+  for (const secret of secrets) {
+    try {
+      event = stripeClient.webhooks.constructEvent(rawBody, sig, secret);
+      break;
+    } catch (err) {
+      lastSigError = err;
+    }
+  }
+
+  if (!event) {
+    console.error('[Stripe] Webhook signature verification failed:', lastSigError.message);
+    return res.status(400).json({ error: `Webhook Error: ${lastSigError.message}` });
   }
 
   // Log every event received. The previous silent failure - checkout completing,
@@ -338,43 +353,221 @@ async function handleWebhook(req, res) {
     livemode: event.livemode,
   });
 
+  // ---- Claim the event ----------------------------------------------------
+  // Idempotency lands BEFORE the 500s below, never after. Returning 500 makes
+  // Stripe retry, and a retry re-runs the handler - without this claim, "fail
+  // loudly" would convert a silent-failure bug into a duplicate-data bug that
+  // reaches real customers and is harder to spot.
+  const claim = await claimEvent(event);
+
+  if (claim.duplicate) {
+    console.log('[Stripe] Duplicate delivery, already', claim.status + ':', event.id,
+      `(delivery #${claim.attempts})`);
+    return res.json({ received: true, duplicate: true, status: claim.status });
+  }
+
+  const handler = HANDLED_EVENTS[event.type];
+
+  // Unhandled types are recorded as 'ignored' and answered 200. A 500 here would
+  // buy a permanent retry storm against events that can never succeed - Stripe
+  // would redeliver every customer.updated for three days.
+  if (!handler) {
+    console.log('[Stripe] Event type not handled, ignoring:', event.type, event.id);
+    await finishEvent(event.id, 'ignored');
+    return res.json({ received: true, ignored: true, type: event.type });
+  }
+
   try {
-    switch (event.type) {
-      case 'checkout.session.completed':
-        await handleCheckoutComplete(event.data.object);
-        break;
+    // Deliberate failure injection for verifying the retry path end to end.
+    // Test-mode only, and only while the env var is set - it cannot fire against
+    // a real customer's payment. See STRIPE_WEBHOOK_FORCE_ERROR in .env.example.
+    maybeForceError(event);
 
-      case 'customer.subscription.created':
-        await handleSubscriptionCreated(event.data.object);
-        break;
+    await handler(event.data.object, event);
 
-      case 'customer.subscription.updated':
-        await handleSubscriptionUpdated(event.data.object);
-        break;
-
-      case 'customer.subscription.deleted':
-        await handleSubscriptionDeleted(event.data.object);
-        break;
-
-      case 'invoice.paid':
-        await handleInvoicePaid(event.data.object);
-        break;
-
-      case 'invoice.payment_failed':
-        await handlePaymentFailed(event.data.object);
-        break;
-
-      default:
-        console.log('[Stripe] Unhandled event type:', event.type);
-    }
-
-    res.json({ received: true });
+    await finishEvent(event.id, 'succeeded');
+    return res.json({ received: true });
 
   } catch (error) {
-    console.error('[Stripe] Webhook handler error:', error);
-    // Return 200 to prevent Stripe from retrying
-    res.json({ received: true, error: error.message });
+    // The whole point of this task. This used to `res.json({ received: true })`,
+    // so three separate handler bugs in one week were recorded by Stripe as
+    // successful deliveries, never retried, and never alerted. A 500 makes
+    // Stripe retry on its own schedule - we do not reimplement backoff.
+    console.error('[Stripe] HANDLER FAILED', event.type, event.id,
+      `(attempt ${claim.attempts}):`, error.message);
+    console.error(error.stack);
+
+    await finishEvent(event.id, 'failed', error);
+
+    // Only on the first failure. Stripe retries a failing event for up to three
+    // days; one alert per event is a signal, one per attempt is noise that gets
+    // filtered and then ignored.
+    if (claim.attempts === 1) {
+      await alertWebhookFailure(event, error).catch((alertError) => {
+        console.error('[Stripe] Could not send failure alert:', alertError.message);
+      });
+    }
+
+    return res.status(500).json({
+      error: 'Webhook handler failed',
+      event: event.id,
+      type: event.type,
+    });
   }
+}
+
+/**
+ * Event types this application actually acts on.
+ *
+ * Explicit map rather than a switch so "do we handle this?" is one lookup that
+ * both the dispatcher and the ignored-path share. Anything absent is recorded
+ * as 'ignored' - deliberately distinct from 'succeeded', so "we did nothing on
+ * purpose" can never be mistaken for "we did the work".
+ */
+const HANDLED_EVENTS = {
+  'checkout.session.completed': (obj) => handleCheckoutComplete(obj),
+  'customer.subscription.created': (obj) => handleSubscriptionCreated(obj),
+  'customer.subscription.updated': (obj) => handleSubscriptionUpdated(obj),
+  'customer.subscription.deleted': (obj) => handleSubscriptionDeleted(obj),
+  'invoice.paid': (obj) => handleInvoicePaid(obj),
+  'invoice.payment_failed': (obj) => handlePaymentFailed(obj),
+};
+
+/**
+ * Claim an event for processing.
+ *
+ * @returns {Promise<{duplicate: boolean, status: string, attempts: number}>}
+ *
+ * Fails OPEN. If the ledger itself is unreachable we process the event anyway:
+ * losing idempotency for one delivery is a far smaller problem than refusing to
+ * activate a customer who has just paid because the bookkeeping table is down.
+ */
+async function claimEvent(event) {
+  const { data, error } = await supabase.rpc('claim_stripe_event', {
+    p_event_id: event.id,
+    p_type: event.type,
+    p_livemode: event.livemode,
+  });
+
+  if (error) {
+    console.error('[Stripe] Ledger claim FAILED for', event.id, '-', error.message,
+      '- processing anyway without idempotency protection');
+    return { duplicate: false, status: 'processing', attempts: 1, ledgerDown: true };
+  }
+
+  const row = Array.isArray(data) ? data[0] : data;
+
+  if (!row) {
+    console.error('[Stripe] Ledger claim returned no row for', event.id,
+      '- processing anyway without idempotency protection');
+    return { duplicate: false, status: 'processing', attempts: 1, ledgerDown: true };
+  }
+
+  return {
+    duplicate: row.out_status === 'succeeded' || row.out_status === 'ignored',
+    status: row.out_status,
+    attempts: row.out_attempts,
+  };
+}
+
+/**
+ * Record the outcome of an event.
+ *
+ * Never throws: a ledger write failure must not turn a successful handler into
+ * a 500 (which would make Stripe retry work that already happened), nor mask
+ * the real error on the failure path.
+ */
+async function finishEvent(eventId, status, error = null) {
+  try {
+    const { error: writeError } = await supabase
+      .from('stripe_webhook_events')
+      .update({
+        status,
+        processed_at: new Date().toISOString(),
+        // Truncated: Stripe errors can carry very long bodies and the column is
+        // for triage, not forensics - the stack is in the logs.
+        ...(error ? { last_error: String(error.message || error).slice(0, 2000) } : {}),
+      })
+      .eq('event_id', eventId);
+
+    if (writeError) {
+      console.error('[Stripe] Could not record ledger outcome', status, 'for',
+        eventId, '-', writeError.message);
+    }
+  } catch (e) {
+    console.error('[Stripe] Ledger outcome write threw for', eventId, '-', e.message);
+  }
+}
+
+/**
+ * Tell a human that a payment event failed.
+ *
+ * The failure mode this exists for: a handler breaks, Stripe retries quietly for
+ * three days, and nobody finds out until a customer says they paid and got
+ * nothing. Logs did not work - nobody reads logs at 2am. Email does.
+ */
+async function alertWebhookFailure(event, error) {
+  const to = process.env.ALERT_EMAIL || process.env.ACCOUNTS_EMAIL;
+
+  if (!to) {
+    console.error('[Stripe] No ALERT_EMAIL or ACCOUNTS_EMAIL set - failure alert not sent');
+    return;
+  }
+
+  const emailService = require('../../lib/emailService');
+  const mode = event.livemode ? 'LIVE' : 'TEST';
+
+  await emailService.sendEmail({
+    to,
+    subject: `[${mode}] Stripe webhook failed: ${event.type}`,
+    html: `
+      <h2 style="color:#b91c1c;margin:0 0 12px">Stripe webhook handler failed</h2>
+      <p>Stripe will retry this automatically. If the retries also fail, the
+         customer's account has not been updated.</p>
+      <table cellpadding="6" style="border-collapse:collapse;font-family:monospace;font-size:13px">
+        <tr><td><strong>Event</strong></td><td>${escapeAlertHtml(event.id)}</td></tr>
+        <tr><td><strong>Type</strong></td><td>${escapeAlertHtml(event.type)}</td></tr>
+        <tr><td><strong>Mode</strong></td><td>${mode}</td></tr>
+        <tr><td><strong>Time</strong></td><td>${new Date().toLocaleString('en-GB', { timeZone: 'Europe/London' })}</td></tr>
+        <tr><td valign="top"><strong>Error</strong></td>
+            <td style="color:#b91c1c">${escapeAlertHtml(String(error.message || error))}</td></tr>
+      </table>
+      <p style="margin-top:16px">
+        Ledger row:
+        <code>select * from stripe_webhook_events where event_id = '${escapeAlertHtml(event.id)}';</code>
+      </p>
+      <p>Once fixed, resend the event from the Stripe dashboard rather than editing rows by hand.</p>
+    `,
+  });
+
+  console.log('[Stripe] Failure alert sent to', to, 'for', event.id);
+}
+
+function escapeAlertHtml(value) {
+  return String(value)
+    .replace(/&/g, '&amp;')
+    .replace(/</g, '&lt;')
+    .replace(/>/g, '&gt;')
+    .replace(/"/g, '&quot;');
+}
+
+/**
+ * Throw on demand, so the retry path can be verified without shipping code that
+ * is deliberately broken to production twice.
+ *
+ * Two locks: the env var must be set, AND the event must be test mode. Set
+ * STRIPE_WEBHOOK_FORCE_ERROR to an event type, or to '*' for every type.
+ * A live event can never trigger it.
+ */
+function maybeForceError(event) {
+  const target = process.env.STRIPE_WEBHOOK_FORCE_ERROR;
+  if (!target) return;
+  if (event.livemode) return;
+  if (target !== '*' && target !== event.type) return;
+
+  throw new Error(
+    `Forced failure via STRIPE_WEBHOOK_FORCE_ERROR (${target}) - this is a deliberate test, not a real fault`
+  );
 }
 
 /**
