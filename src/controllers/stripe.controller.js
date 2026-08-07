@@ -493,13 +493,20 @@ async function handleCheckoutComplete(session) {
   // Check if this tier requires a subscription group (family or business plans)
   const tierConfig = groupsController.TIER_CONFIG[tier];
 
+  // Hoisted so the welcome email below can carry the join code. The email is
+  // deliberately sequenced AFTER this: if group creation fails loudly, the
+  // buyer gets the generic email rather than one promising a code that does
+  // not exist.
+  let createdGroup = null;
+
   if (tierConfig && tierConfig.type !== 'individual') {
     try {
       // Create subscription group for family/business plans
-      const group = await groupsController.createGroup(finalUserId, tier, subscription.id);
+      createdGroup = await groupsController.createGroup(finalUserId, tier, subscription.id);
 
-      if (group) {
-        console.log('[Stripe] Subscription group created:', group.id, 'type:', tierConfig.type);
+      if (createdGroup) {
+        console.log('[Stripe] Subscription group created:', createdGroup.id,
+          'type:', tierConfig.type, 'joinCode:', createdGroup.join_code);
       }
     } catch (groupError) {
       console.error('[Stripe] Failed to create subscription group:', groupError);
@@ -523,13 +530,37 @@ async function handleCheckoutComplete(session) {
       const isGroupPlan = tierConfig && tierConfig.type !== 'individual';
       const tierDisplayName = TIER_NAMES[tier] || tier;
 
+      // Accurate billing dates. current_period_end during a trial is the TRIAL
+      // end, not the renewal - labelling it "Renewal Date" was why the email
+      // showed a date a week away next to "protected for 12 months".
+      const trialEndsAt = subscription.trial_end
+        ? new Date(subscription.trial_end * 1000)
+        : null;
+
+      const unitAmount = subscription.items?.data?.[0]?.price?.unit_amount;
+      const currency = (subscription.items?.data?.[0]?.price?.currency || 'gbp').toUpperCase();
+      const firstPaymentAmount = typeof unitAmount === 'number'
+        ? (currency === 'GBP' ? `£${(unitAmount / 100).toFixed(2)}` : `${(unitAmount / 100).toFixed(2)} ${currency}`)
+        : null;
+
       await emailService.sendSubscriptionWelcome(user.email, {
         userName: user.name || `${user.name} ${user.surname}`,
         tier: tierDisplayName,
         subscriptionStartDate: new Date(),
         subscriptionEndDate: new Date(subscription.current_period_end * 1000),
+        trialEndsAt,
+        firstPaymentDate: trialEndsAt || new Date(subscription.current_period_start * 1000),
+        firstPaymentAmount,
         isGroupPlan,
         maxMembers: isGroupPlan ? tierConfig.maxMembers : 1,
+        // Only present when the group actually exists - a failed createGroup
+        // leaves these null and the generic email is sent instead.
+        joinCode: createdGroup?.join_code || null,
+        joinUrl: createdGroup?.join_code
+          ? `${process.env.APP_URL || 'https://www.carcrashlawyerai.com'}/join?code=${encodeURIComponent(createdGroup.join_code)}`
+          : null,
+        seatsUsed: createdGroup ? 1 : null,
+        seatsTotal: createdGroup?.max_members || null,
         // v2 flow extra info
         isNewAccount: needsAuthCreation,
       });
