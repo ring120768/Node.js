@@ -299,6 +299,14 @@ async function getGroup(req, res) {
 async function getUserGroup(req, res) {
   const { userId } = req.params;
 
+  // The path parameter is not trusted. Without this, any authenticated user
+  // could read another user's group by editing the URL - and since this
+  // response now carries the join code, that would hand out free seats rather
+  // than merely leaking data.
+  if (!req.userId || userId !== req.userId) {
+    return res.status(403).json({ error: 'You can only view your own group membership' });
+  }
+
   try {
     // Get user's group info
     const { data: user, error: userError } = await supabase
@@ -332,6 +340,10 @@ async function getUserGroup(req, res) {
       .eq('group_id', user.group_id)
       .is('deleted_at', null);
 
+    const isAdmin = user.group_role === 'admin';
+    const seatsUsed = count || 0;
+    const maxMembers = group?.max_members || 0;
+
     res.json({
       hasGroup: true,
       groupId: user.group_id,
@@ -340,10 +352,22 @@ async function getUserGroup(req, res) {
       group: group ? {
         name: group.name,
         type: group.type,
-        maxMembers: group.max_members,
-        memberCount: count,
+        maxMembers,
+        memberCount: seatsUsed,
+        seatsRemaining: Math.max(0, maxMembers - seatsUsed),
+        full: seatsUsed >= maxMembers,
         subscriptionStatus: group.subscription_status,
         expiresAt: group.expires_at,
+        // The join code is the admin's to share. Members do not receive it:
+        // the payer controls who occupies the seats they are paying for, and
+        // can rotate the code without disrupting anyone already in.
+        ...(isAdmin ? {
+          joinCode: group.join_code,
+          joinUrl: group.join_code
+            ? `${process.env.APP_URL || 'https://www.carcrashlawyerai.com'}/join?code=${encodeURIComponent(group.join_code)}`
+            : null,
+          joinCodeUpdatedAt: group.join_code_updated_at,
+        } : {}),
       } : null,
     });
 

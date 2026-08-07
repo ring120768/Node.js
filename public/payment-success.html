@@ -439,6 +439,10 @@
         </div>
 
         <!-- What You Can Do Now -->
+        <!-- Family/Business plans only: shows the join code, seats used and a
+             copy button. Renders nothing for individual plans or for members. -->
+        <div id="groupInviteCard"></div>
+
         <div class="card features-card">
             <h3>✨ What You Can Do Now</h3>
             <div class="feature-list">
@@ -948,5 +952,7 @@
         }
 
     </script>
-    <script src="/js/mascot.js"></script></body>
+    <script src="/js/mascot.js"></script>
+    <script src="/js/group-invite-card.js"></script>
+    <script>GroupInviteCard.mount('groupInviteCard');</script></body>
 </html>

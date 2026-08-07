@@ -1924,6 +1924,11 @@
 
         <!-- Main Content -->
         <div id="mainContent" style="display: none;">
+            <!-- Family/Business plan admins: join code, seats used, copy button.
+                 Renders nothing for individual plans or for members. This is the
+                 durable home for the code - the success page is easily closed. -->
+            <div id="groupInviteCard"></div>
+
             <!-- Stats Grid -->
             <div class="stats-grid">
                 <div class="stat-card">
@@ -4253,6 +4258,8 @@
         });
     </script>
     <script src="/js/mascot.js"></script>
+    <script src="/js/group-invite-card.js"></script>
+    <script>GroupInviteCard.mount('groupInviteCard');</script>
 </body>
 </html>
 <!-- Force Railway redeploy -->
