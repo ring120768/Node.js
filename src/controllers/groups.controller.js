@@ -38,6 +38,20 @@ const TIER_CONFIG = {
   business_100: { type: 'business', maxMembers: 100 },
 };
 
+/**
+ * A group can take new members while its subscription is in one of these states.
+ *
+ * 'trialing' MUST be here. Every purchase starts with a 7-day trial, so the
+ * moment customer.subscription.updated cascades Stripe's real status onto the
+ * group, `status !== 'active'` would refuse every join code for the whole trial
+ * - the exact week a new family is most likely to be sharing it. createGroup
+ * writes 'active' at checkout, which is the only reason this has not bitten yet.
+ *
+ * Mirrors ENTITLED_STATUSES in stripe.controller.js; the two must agree, or a
+ * member could hold a seat on a group that grants no entitlement.
+ */
+const ACCEPTING_STATUSES = ['active', 'trialing'];
+
 // ===========================================================================
 // JOIN CODES
 // ===========================================================================
@@ -414,7 +428,7 @@ async function inviteMember(req, res) {
       return res.status(403).json({ error: 'Only the group admin can invite members' });
     }
 
-    if (group.subscription_status !== 'active') {
+    if (!ACCEPTING_STATUSES.includes(group.subscription_status)) {
       return res.status(400).json({ error: 'Group subscription is not active' });
     }
 
@@ -978,19 +992,33 @@ async function updateGroupSubscriptionStatus(stripeSubscriptionId, status, expir
       updateData.expires_at = expiresAt;
     }
 
-    const { data: group, error } = await supabase
+    // Deliberately NOT .single(): an individual (premium) subscription pays for
+    // no group and matches zero rows, which .single() reports as PGRST116 - an
+    // error indistinguishable from a real failure. Every cancellation of a
+    // premium plan would log a scary error, and a genuinely broken cascade would
+    // hide among them.
+    const { data: groups, error } = await supabase
       .from('subscription_groups')
       .update(updateData)
       .eq('stripe_subscription_id', stripeSubscriptionId)
-      .select()
-      .single();
+      .select();
 
     if (error) {
-      console.error('[Groups] Failed to update group status:', error);
+      console.error('[Groups] Group status write FAILED for subscription',
+        stripeSubscriptionId, '->', status, ':', error.message);
       return;
     }
 
-    if (!group) return;
+    if (!groups || groups.length === 0) {
+      // Normal for individual plans. Logged at info because the alternative -
+      // saying nothing - is how a cascade that quietly stops matching anything
+      // goes unnoticed for weeks.
+      console.log('[Groups] No group pays for subscription', stripeSubscriptionId,
+        '- nothing to cascade (normal for individual plans)');
+      return;
+    }
+
+    const group = groups[0];
 
     // Propagate to every member.
     //
@@ -1055,7 +1083,7 @@ async function validateJoinCode(req, res) {
       return res.status(404).json({ valid: false, error: 'That code was not recognised.' });
     }
 
-    if (group.subscription_status !== 'active') {
+    if (!ACCEPTING_STATUSES.includes(group.subscription_status)) {
       return res.status(400).json({
         valid: false,
         error: 'This group\'s subscription is not active, so it cannot accept new members.',
@@ -1114,7 +1142,7 @@ async function joinByCode(req, res) {
       return res.status(404).json({ error: 'That code was not recognised.' });
     }
 
-    if (group.subscription_status !== 'active') {
+    if (!ACCEPTING_STATUSES.includes(group.subscription_status)) {
       return res.status(400).json({ error: 'This group\'s subscription is not active.' });
     }
 

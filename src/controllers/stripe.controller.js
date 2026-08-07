@@ -89,6 +89,37 @@ function resolveTier(subscription, session) {
 // every trialing customer looks unsubscribed until their first payment clears.
 const ENTITLED_STATUSES = ['active', 'trialing'];
 
+/**
+ * Read a subscription period boundary as an ISO string, or null.
+ *
+ * WHY THIS EXISTS
+ * `new Date(undefined * 1000).toISOString()` throws RangeError: Invalid time
+ * value. handleSubscriptionDeleted built its cascade argument that way, inline,
+ * so when current_period_end was absent the throw happened BEFORE the cascade
+ * call, was caught by the surrounding try/catch, and logged as "failed to update
+ * group status". Three live cancellations updated the user rows and left every
+ * group active.
+ *
+ * It can legitimately be absent: Stripe moved current_period_start/end off the
+ * Subscription and onto its items in 2025-03-31.basil. Webhook payloads are
+ * rendered in the ENDPOINT's API version, not the SDK's pinned apiVersion, so a
+ * subscription fetched via stripe.subscriptions.retrieve() can carry the field
+ * while the very same subscription arriving as an event does not.
+ *
+ * Falls back to the item, then gives up quietly - a missing date is a missing
+ * date, not a reason to abandon the status write that matters far more.
+ */
+function periodDate(subscription, field) {
+  const seconds = subscription?.[field] ?? subscription?.items?.data?.[0]?.[field];
+  if (typeof seconds !== 'number' || !Number.isFinite(seconds)) return null;
+  return new Date(seconds * 1000);
+}
+
+function periodDateISO(subscription, field) {
+  const date = periodDate(subscription, field);
+  return date ? date.toISOString() : null;
+}
+
 // Tier display names and pricing.
 // 'standard' is retired but MUST stay here: existing subscribers still carry
 // subscription_tier = 'standard' in the database and are looked up by it.
@@ -478,8 +509,10 @@ async function handleCheckoutComplete(session) {
       subscription_tier: tier,
       stripe_subscription_id: subscription.id,
       stripe_customer_id: session.customer, // Also store customer ID
-      subscription_start_date: new Date(subscription.current_period_start * 1000).toISOString(),
-      subscription_end_date: new Date(subscription.current_period_end * 1000).toISOString(),
+      ...(periodDateISO(subscription, 'current_period_start')
+        ? { subscription_start_date: periodDateISO(subscription, 'current_period_start') } : {}),
+      ...(periodDateISO(subscription, 'current_period_end')
+        ? { subscription_end_date: periodDateISO(subscription, 'current_period_end') } : {}),
     })
     .eq('create_user_id', finalUserId);
 
@@ -547,9 +580,9 @@ async function handleCheckoutComplete(session) {
         userName: user.name || `${user.name} ${user.surname}`,
         tier: tierDisplayName,
         subscriptionStartDate: new Date(),
-        subscriptionEndDate: new Date(subscription.current_period_end * 1000),
+        subscriptionEndDate: periodDate(subscription, 'current_period_end'),
         trialEndsAt,
-        firstPaymentDate: trialEndsAt || new Date(subscription.current_period_start * 1000),
+        firstPaymentDate: trialEndsAt || periodDate(subscription, 'current_period_start'),
         firstPaymentAmount,
         isGroupPlan,
         maxMembers: isGroupPlan ? tierConfig.maxMembers : 1,
@@ -624,9 +657,7 @@ async function handleSubscriptionUpdated(subscription) {
   };
 
   const mappedStatus = statusMap[subscription.status] || subscription.status;
-  const periodEnd = subscription.current_period_end
-    ? new Date(subscription.current_period_end * 1000).toISOString()
-    : null;
+  const periodEnd = periodDateISO(subscription, 'current_period_end');
 
   const { error } = await supabase
     .from('user_signup')
@@ -687,15 +718,22 @@ async function handleSubscriptionDeleted(subscription) {
     console.error('[Stripe] Failed to update cancelled subscription:', error);
   }
 
-  // Update group status if this was a group subscription
+  // Cascade to the group, if this subscription pays for one.
+  //
+  // The period end is computed BEFORE the call and tolerates absence. Building
+  // it inline as `new Date(sub.current_period_end * 1000).toISOString()` threw
+  // RangeError when the field was missing, which aborted the cascade before it
+  // started - the user row said cancelled while the group and its join code
+  // stayed live. See periodDateISO.
   try {
     await groupsController.updateGroupSubscriptionStatus(
       subscription.id,
       'cancelled',
-      new Date(subscription.current_period_end * 1000).toISOString()
+      periodDateISO(subscription, 'current_period_end')
     );
   } catch (groupError) {
-    console.error('[Stripe] Failed to update group status:', groupError);
+    console.error('[Stripe] Group cascade threw for cancelled subscription:',
+      subscription.id, '-', groupError.message);
   }
 
   // Send cancellation email
@@ -735,16 +773,31 @@ async function handleInvoicePaid(invoice) {
   }
 
   // Extend subscription period
+  const renewedTo = periodDateISO(subscription, 'current_period_end');
+
   const { error } = await supabase
     .from('user_signup')
     .update({
       subscription_status: 'active',
-      subscription_end_date: new Date(subscription.current_period_end * 1000).toISOString(),
+      ...(renewedTo ? { subscription_end_date: renewedTo } : {}),
     })
     .eq('create_user_id', user.create_user_id);
 
   if (error) {
     console.error('[Stripe] Failed to update renewed subscription:', error);
+  }
+
+  // Carry the renewal to the group's members too. customer.subscription.updated
+  // normally fires on renewal and cascades, but relying on that leaves members'
+  // access expiring on the old date if the event ordering ever differs. The
+  // cascade is idempotent, so running it twice costs nothing.
+  try {
+    await groupsController.updateGroupSubscriptionStatus(
+      subscription.id, 'active', renewedTo
+    );
+  } catch (groupError) {
+    console.error('[Stripe] Group cascade threw on renewal:',
+      subscription.id, '-', groupError.message);
   }
 
   console.log('[Stripe] Subscription renewed for user:', user.create_user_id);
@@ -952,4 +1005,11 @@ module.exports = {
   getSubscriptionStatus,
   createPortalSession,
   verifySession,
+
+  // Exported so the cascade can be exercised directly. Driving it through
+  // handleWebhook would need a forged Stripe signature, which tests the
+  // signature check rather than the cascade that actually broke.
+  handleSubscriptionDeleted,
+  handleSubscriptionUpdated,
+  periodDateISO,
 };
