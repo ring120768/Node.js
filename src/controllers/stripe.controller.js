@@ -553,24 +553,32 @@ async function handleSubscriptionCreated(subscription) {
  * Handle customer.subscription.updated
  */
 async function handleSubscriptionUpdated(subscription) {
-  console.log('[Stripe] Subscription updated:', subscription.id);
+  console.log('[Stripe] Subscription updated:', subscription.id, '->', subscription.status);
 
-  const userId = subscription.metadata?.userId;
-  if (!userId) {
-    // Try to find user by customer ID
+  // NOTE: `user` used to be declared with const INSIDE the `if (!userId)` block
+  // and then read outside it, which is a ReferenceError. Pricing Table
+  // subscriptions never carry metadata.userId, so !userId was always true and
+  // this function threw on every real subscription update - silently, because
+  // the webhook's try/catch returns 200 regardless. Look the user up here, in
+  // scope, and fall back to the subscription id as well as the customer id.
+  let finalUserId = subscription.metadata?.userId || null;
+
+  if (!finalUserId) {
     const { data: user } = await supabase
       .from('user_signup')
       .select('create_user_id')
-      .eq('stripe_customer_id', subscription.customer)
-      .single();
+      .or(`stripe_subscription_id.eq.${subscription.id},stripe_customer_id.eq.${subscription.customer}`)
+      .is('deleted_at', null)
+      .maybeSingle();
 
     if (!user) {
-      console.error('[Stripe] Cannot find user for subscription:', subscription.id);
+      console.error('[Stripe] Cannot find user for subscription:', subscription.id,
+        '(customer:', subscription.customer, ')');
       return;
     }
-  }
 
-  const finalUserId = userId || user.create_user_id;
+    finalUserId = user.create_user_id;
+  }
 
   // Map Stripe status to our status
   const statusMap = {
@@ -584,16 +592,36 @@ async function handleSubscriptionUpdated(subscription) {
     paused: 'paused',
   };
 
+  const mappedStatus = statusMap[subscription.status] || subscription.status;
+  const periodEnd = subscription.current_period_end
+    ? new Date(subscription.current_period_end * 1000).toISOString()
+    : null;
+
   const { error } = await supabase
     .from('user_signup')
     .update({
-      subscription_status: statusMap[subscription.status] || subscription.status,
-      subscription_end_date: new Date(subscription.current_period_end * 1000).toISOString(),
+      subscription_status: mappedStatus,
+      ...(periodEnd ? { subscription_end_date: periodEnd } : {}),
     })
     .eq('create_user_id', finalUserId);
 
   if (error) {
     console.error('[Stripe] Failed to update subscription:', error);
+  }
+
+  // Cascade to the group, if this subscription pays for one. Previously only
+  // customer.subscription.deleted cascaded, so a family plan going past_due or
+  // paused left every member reading 'active' indefinitely - and a renewal
+  // never extended members' end dates, so they lost access at the old date
+  // while the subscription was healthy.
+  try {
+    await groupsController.updateGroupSubscriptionStatus(
+      subscription.id,
+      mappedStatus,
+      periodEnd
+    );
+  } catch (groupError) {
+    console.error('[Stripe] Failed to cascade status to group:', groupError.message);
   }
 }
 

@@ -968,13 +968,30 @@ async function updateGroupSubscriptionStatus(stripeSubscriptionId, status, expir
 
     if (!group) return;
 
-    // Update all members' subscription status
-    await supabase
-      .from('user_signup')
-      .update({ subscription_status: status })
-      .eq('group_id', group.id);
+    // Propagate to every member.
+    //
+    // The end date matters as much as the status: entitlement is
+    // `ENTITLED_STATUSES.includes(status) && endDate > now`, and members get
+    // their end date copied from the group when they join. Without carrying the
+    // new period end through, a renewal would extend the payer's access but not
+    // anyone else's - members would silently lose access on the old date while
+    // the subscription was perfectly healthy.
+    const memberUpdate = { subscription_status: status };
+    if (expiresAt) memberUpdate.subscription_end_date = expiresAt;
 
-    console.log('[Groups] Updated group status:', group.id, '→', status);
+    const { error: memberError, count } = await supabase
+      .from('user_signup')
+      .update(memberUpdate, { count: 'exact' })
+      .eq('group_id', group.id)
+      .is('deleted_at', null);
+
+    if (memberError) {
+      console.error('[Groups] Failed to update members:', memberError.message);
+      return;
+    }
+
+    console.log('[Groups] Updated group status:', group.id, '→', status,
+      `(${count ?? 0} member(s)${expiresAt ? ', end date ' + expiresAt.slice(0, 10) : ''})`);
 
   } catch (error) {
     console.error('[Groups] Update group status error:', error);
