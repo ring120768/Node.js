@@ -120,6 +120,60 @@ function periodDateISO(subscription, field) {
   return date ? date.toISOString() : null;
 }
 
+/**
+ * Read the subscription id off an invoice, or null.
+ *
+ * Same trap as periodDate, same shape of fix. Stripe removed top-level
+ * `invoice.subscription` in the 2025 API versions and moved it under
+ * `parent.subscription_details`. This endpoint renders in a 2025 version - that
+ * is why current_period_end came back undefined and threw the RangeError fixed
+ * in d0bccce - so `invoice.subscription` is undefined here today.
+ *
+ * Unfixed, a renewal payment succeeds while subscriptions.retrieve(undefined)
+ * is called and stripe_subscription_id is matched against undefined: the
+ * customer keeps being billed and loses access on their old end date. It has
+ * never fired only because nothing has renewed yet - every row is a trial
+ * started 7 Aug or a lifetime comp.
+ *
+ * Top-level first so it keeps working if the endpoint is ever pinned back.
+ */
+function invoiceSubscriptionId(invoice) {
+  return invoice?.subscription
+      || invoice?.parent?.subscription_details?.subscription
+      || null;
+}
+
+/**
+ * Find the user who owns a subscription.
+ *
+ * The empty/failed distinction is the entire point of this function, so it is
+ * made once here rather than implied at four call sites:
+ *
+ *   throws  -> the QUERY failed. Becomes a 500, Stripe retries, the ledger
+ *              records why. This is the case that bug #2 of the silent-200
+ *              trilogy hid: a bad column name returned an error that the code
+ *              read as "user not found" and carried on from.
+ *   null    -> the query succeeded and nobody owns this subscription. Normal,
+ *              not an error - test-mode events legitimately reference ids that
+ *              do not exist in this database. Caller logs and returns; the
+ *              ledger records 'succeeded'.
+ */
+async function findUserBySubscriptionId(subscriptionId, columns = 'create_user_id') {
+  if (!subscriptionId) return null;
+
+  const { data, error } = await supabase
+    .from('user_signup')
+    .select(columns)
+    .eq('stripe_subscription_id', subscriptionId)
+    .maybeSingle();
+
+  if (error) {
+    throw new Error(`user lookup failed for ${subscriptionId}: ${error.message}`);
+  }
+
+  return data || null;
+}
+
 // Tier display names and pricing.
 // 'standard' is retired but MUST stay here: existing subscribers still carry
 // subscription_tier = 'standard' in the database and are looked up by it.
@@ -383,7 +437,17 @@ async function handleWebhook(req, res) {
     // a real customer's payment. See STRIPE_WEBHOOK_FORCE_ERROR in .env.example.
     maybeForceError(event);
 
-    await handler(event.data.object, event);
+    // A handler may report that there was legitimately nothing to do - a
+    // one-off invoice with no subscription, an event for a subscription this
+    // database has never heard of. That is 'ignored', not 'succeeded': the
+    // ledger should never claim work happened when none did.
+    const result = await handler(event.data.object, event);
+
+    if (result && result.ignored) {
+      console.log('[Stripe] Nothing to do for', event.type, event.id, '-', result.reason);
+      await finishEvent(event.id, 'ignored');
+      return res.json({ received: true, ignored: true, reason: result.reason });
+    }
 
     await finishEvent(event.id, 'succeeded');
     return res.json({ received: true });
@@ -821,17 +885,25 @@ async function handleSubscriptionUpdated(subscription) {
   let finalUserId = subscription.metadata?.userId || null;
 
   if (!finalUserId) {
-    const { data: user } = await supabase
+    const { data: user, error: findError } = await supabase
       .from('user_signup')
       .select('create_user_id')
       .or(`stripe_subscription_id.eq.${subscription.id},stripe_customer_id.eq.${subscription.customer}`)
       .is('deleted_at', null)
       .maybeSingle();
 
+    // A failed query is not an empty result. This line used to discard `error`
+    // entirely, so a broken query was indistinguishable from "no such user".
+    if (findError) {
+      throw new Error(`user lookup failed for ${subscription.id}: ${findError.message}`);
+    }
+
     if (!user) {
-      console.error('[Stripe] Cannot find user for subscription:', subscription.id,
-        '(customer:', subscription.customer, ')');
-      return;
+      // Normal for test-mode events against the production database, and for
+      // subscriptions belonging to the retired Stripe account.
+      console.log('[Stripe] No user holds subscription', subscription.id,
+        '(customer:', subscription.customer, ') - nothing to update');
+      return { ignored: true, reason: 'no user holds this subscription' };
     }
 
     finalUserId = user.create_user_id;
@@ -861,7 +933,7 @@ async function handleSubscriptionUpdated(subscription) {
     .eq('create_user_id', finalUserId);
 
   if (error) {
-    console.error('[Stripe] Failed to update subscription:', error);
+    throw new Error(`failed to update ${finalUserId} to ${mappedStatus}: ${error.message}`);
   }
 
   // Cascade to the group, if this subscription pays for one. Previously only
@@ -886,29 +958,30 @@ async function handleSubscriptionUpdated(subscription) {
 async function handleSubscriptionDeleted(subscription) {
   console.log('[Stripe] Subscription deleted:', subscription.id);
 
-  // Find user by subscription ID
-  const { data: user, error: findError } = await supabase
-    .from('user_signup')
-    .select('create_user_id, email, name')
-    .eq('stripe_subscription_id', subscription.id)
-    .single();
+  // Throws on a real query failure; returns null when nobody owns this
+  // subscription. `findError || !user` used to conflate the two, which is how a
+  // non-existent column read as "user not found" for three live cancellations.
+  const user = await findUserBySubscriptionId(subscription.id, 'create_user_id, email, name');
 
-  if (findError || !user) {
-    console.error('[Stripe] Cannot find user for deleted subscription:', subscription.id);
-    return;
-  }
+  // Normal, not an error: test-mode events reference subscriptions that do not
+  // exist in this database. Returning here still lets the group cascade below
+  // run - a group could be paid for by a subscription whose user row has since
+  // been removed, and it should still be cancelled.
+  if (!user) {
+    console.log('[Stripe] No user holds cancelled subscription', subscription.id,
+      '- cascading to any group anyway');
+  } else {
+    const { error } = await supabase
+      .from('user_signup')
+      .update({
+        subscription_status: 'cancelled',
+        // Keep subscription_end_date as the access expiry
+      })
+      .eq('create_user_id', user.create_user_id);
 
-  // Update status to cancelled
-  const { error } = await supabase
-    .from('user_signup')
-    .update({
-      subscription_status: 'cancelled',
-      // Keep subscription_end_date as the access expiry
-    })
-    .eq('create_user_id', user.create_user_id);
-
-  if (error) {
-    console.error('[Stripe] Failed to update cancelled subscription:', error);
+    if (error) {
+      throw new Error(`failed to cancel ${user.create_user_id}: ${error.message}`);
+    }
   }
 
   // Cascade to the group, if this subscription pays for one.
@@ -945,39 +1018,61 @@ async function handleSubscriptionDeleted(subscription) {
 async function handleInvoicePaid(invoice) {
   // Skip first invoice (handled by checkout.session.completed)
   if (invoice.billing_reason === 'subscription_create') {
-    return;
+    return { ignored: true, reason: 'first invoice, handled by checkout.session.completed' };
   }
 
   console.log('[Stripe] Invoice paid (renewal):', invoice.id);
 
-  const stripeClient = getStripe();
-  const subscription = await stripeClient.subscriptions.retrieve(invoice.subscription);
+  const subscriptionId = invoiceSubscriptionId(invoice);
 
-  // Find user by subscription
-  const { data: user, error: findError } = await supabase
-    .from('user_signup')
-    .select('create_user_id')
-    .eq('stripe_subscription_id', invoice.subscription)
-    .single();
+  // No subscription on the invoice at all - a one-off charge, or a payload
+  // shape we do not understand. Either way there is nothing to renew, and
+  // retrying forever will not make one appear.
+  if (!subscriptionId) {
+    console.warn('[Stripe] Invoice has no subscription id, nothing to renew:', invoice.id,
+      '- checked invoice.subscription and invoice.parent.subscription_details.subscription');
+    return { ignored: true, reason: 'invoice carries no subscription id' };
+  }
 
-  if (findError || !user) {
-    console.error('[Stripe] Cannot find user for invoice:', invoice.id);
+  const user = await findUserBySubscriptionId(subscriptionId);
+
+  // Query succeeded, nobody owns this subscription. Normal for test-mode events
+  // against the production database. Not an error, so no 500 and no retry.
+  if (!user) {
+    console.log('[Stripe] No user holds subscription', subscriptionId,
+      '- nothing to renew for invoice', invoice.id);
     return;
   }
 
+  // Retrieved through the SDK's pinned apiVersion, so current_period_end is
+  // present here even though the webhook payload omits it.
+  const stripeClient = getStripe();
+  const subscription = await stripeClient.subscriptions.retrieve(subscriptionId);
+
   // Extend subscription period
   const renewedTo = periodDateISO(subscription, 'current_period_end');
+
+  if (!renewedTo) {
+    // Renewing without moving the date forward is the exact silent failure this
+    // handler exists to prevent - it would log success while the customer is
+    // locked out on their old end date.
+    throw new Error(
+      `renewal for ${subscriptionId} has no current_period_end - refusing to report success without extending access`
+    );
+  }
 
   const { error } = await supabase
     .from('user_signup')
     .update({
       subscription_status: 'active',
-      ...(renewedTo ? { subscription_end_date: renewedTo } : {}),
+      subscription_end_date: renewedTo,
     })
     .eq('create_user_id', user.create_user_id);
 
+  // Throw, do not log-and-continue: if the date did not move, the renewal did
+  // not happen as far as the customer is concerned. 500 -> Stripe retries.
   if (error) {
-    console.error('[Stripe] Failed to update renewed subscription:', error);
+    throw new Error(`failed to extend access for ${user.create_user_id}: ${error.message}`);
   }
 
   // Carry the renewal to the group's members too. customer.subscription.updated
@@ -986,14 +1081,15 @@ async function handleInvoicePaid(invoice) {
   // cascade is idempotent, so running it twice costs nothing.
   try {
     await groupsController.updateGroupSubscriptionStatus(
-      subscription.id, 'active', renewedTo
+      subscriptionId, 'active', renewedTo
     );
   } catch (groupError) {
     console.error('[Stripe] Group cascade threw on renewal:',
-      subscription.id, '-', groupError.message);
+      subscriptionId, '-', groupError.message);
   }
 
-  console.log('[Stripe] Subscription renewed for user:', user.create_user_id);
+  console.log('[Stripe] Subscription renewed for user:', user.create_user_id,
+    '- access now runs to', renewedTo);
 }
 
 /**
@@ -1002,23 +1098,33 @@ async function handleInvoicePaid(invoice) {
 async function handlePaymentFailed(invoice) {
   console.log('[Stripe] Payment failed:', invoice.id);
 
-  // Find user
-  const { data: user } = await supabase
-    .from('user_signup')
-    .select('create_user_id, email, name')
-    .eq('stripe_subscription_id', invoice.subscription)
-    .single();
+  const subscriptionId = invoiceSubscriptionId(invoice);
+
+  if (!subscriptionId) {
+    console.warn('[Stripe] Failed invoice has no subscription id:', invoice.id,
+      '- no subscription to mark past_due');
+    return { ignored: true, reason: 'invoice carries no subscription id' };
+  }
+
+  // This lookup previously discarded `error` entirely - a failed query and an
+  // absent user were literally the same line of code.
+  const user = await findUserBySubscriptionId(subscriptionId, 'create_user_id, email, name');
 
   if (!user) {
-    console.error('[Stripe] Cannot find user for failed invoice:', invoice.id);
+    console.log('[Stripe] No user holds subscription', subscriptionId,
+      '- nothing to mark past_due for invoice', invoice.id);
     return;
   }
 
   // Update status
-  await supabase
+  const { error: updateError } = await supabase
     .from('user_signup')
     .update({ subscription_status: 'past_due' })
     .eq('create_user_id', user.create_user_id);
+
+  if (updateError) {
+    throw new Error(`failed to mark ${user.create_user_id} past_due: ${updateError.message}`);
+  }
 
   // Send payment failed email
   try {
@@ -1204,5 +1310,8 @@ module.exports = {
   // signature check rather than the cascade that actually broke.
   handleSubscriptionDeleted,
   handleSubscriptionUpdated,
+  handleInvoicePaid,
+  handlePaymentFailed,
   periodDateISO,
+  invoiceSubscriptionId,
 };
