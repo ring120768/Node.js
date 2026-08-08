@@ -420,6 +420,19 @@ async function handleWebhook(req, res) {
     return res.json({ received: true, duplicate: true, status: claim.status });
   }
 
+  // Another delivery of this same event is running right now. Answering 409
+  // rather than 200 makes Stripe come back later, by which time the first
+  // delivery has finished and it reads 'succeeded'. Running it concurrently
+  // instead would, for checkout.session.completed, create two groups.
+  if (claim.inFlight) {
+    console.warn('[Stripe] Concurrent delivery of', event.id,
+      `(delivery #${claim.attempts}) - another attempt is still running, asking Stripe to retry`);
+    return res.status(409).json({
+      error: 'Event already being processed',
+      event: event.id,
+    });
+  }
+
   const handler = HANDLED_EVENTS[event.type];
 
   // Unhandled types are recorded as 'ignored' and answered 200. A 500 here would
@@ -529,6 +542,9 @@ async function claimEvent(event) {
 
   return {
     duplicate: row.out_status === 'succeeded' || row.out_status === 'ignored',
+    // Never a stored status - a decision meaning "another delivery of this
+    // event is mid-flight". See claim_stripe_event in migration 039.
+    inFlight: row.out_status === 'in_flight',
     status: row.out_status,
     attempts: row.out_attempts,
   };
@@ -605,6 +621,89 @@ async function alertWebhookFailure(event, error) {
   });
 
   console.log('[Stripe] Failure alert sent to', to, 'for', event.id);
+}
+
+/**
+ * Daily sweep for events the ledger never finished.
+ *
+ * A 'failed' row means Stripe gave up retrying, or is still trying and nobody
+ * noticed the first alert. A row stuck in 'processing' means a delivery claimed
+ * the event and never came back - the process was killed mid-handler, which no
+ * error path can report because no error was ever raised.
+ *
+ * Deliberately a once-a-day digest rather than a poll: one email covering
+ * everything outstanding needs no dedup state and cannot turn into hourly spam
+ * for the same stuck row, which is how alerting stops being read.
+ *
+ * @returns {Promise<{stuck: number, failed: number, alerted: boolean}>}
+ */
+async function reportStuckWebhookEvents() {
+  const staleBefore = new Date(Date.now() - 15 * 60 * 1000).toISOString();
+
+  const { data, error } = await supabase
+    .from('stripe_webhook_events')
+    .select('event_id, type, status, attempts, last_error, received_at, claimed_at')
+    .in('status', ['processing', 'failed'])
+    .lt('claimed_at', staleBefore)
+    .order('received_at', { ascending: false })
+    .limit(50);
+
+  if (error) {
+    console.error('[Stripe] Stuck-event sweep failed:', error.message);
+    throw new Error(`stuck-event sweep failed: ${error.message}`);
+  }
+
+  const rows = data || [];
+  const stuck = rows.filter((r) => r.status === 'processing').length;
+  const failed = rows.filter((r) => r.status === 'failed').length;
+
+  if (!rows.length) {
+    console.log('[Stripe] Webhook ledger clean - no stuck or failed events');
+    return { stuck: 0, failed: 0, alerted: false };
+  }
+
+  console.error('[Stripe] Webhook ledger has unfinished events:',
+    `${failed} failed, ${stuck} stuck in processing`);
+
+  const to = process.env.ALERT_EMAIL || process.env.ACCOUNTS_EMAIL;
+  if (!to) {
+    console.error('[Stripe] No ALERT_EMAIL or ACCOUNTS_EMAIL set - digest not sent');
+    return { stuck, failed, alerted: false };
+  }
+
+  const emailService = require('../../lib/emailService');
+
+  const rowsHtml = rows.map((r) => `
+    <tr>
+      <td>${escapeAlertHtml(r.event_id)}</td>
+      <td>${escapeAlertHtml(r.type)}</td>
+      <td>${escapeAlertHtml(r.status)}</td>
+      <td style="text-align:center">${r.attempts}</td>
+      <td>${escapeAlertHtml((r.received_at || '').slice(0, 19).replace('T', ' '))}</td>
+      <td style="color:#b91c1c">${escapeAlertHtml(r.last_error || '')}</td>
+    </tr>`).join('');
+
+  await emailService.sendEmail({
+    to,
+    subject: `Stripe webhook: ${failed} failed, ${stuck} stuck`,
+    html: `
+      <h2 style="color:#b91c1c;margin:0 0 12px">Unfinished Stripe webhook events</h2>
+      <p><strong>${failed}</strong> failed and <strong>${stuck}</strong> stuck in
+         <code>processing</code> for more than 15 minutes. A stuck row means a
+         delivery claimed the event and never returned - usually the process was
+         killed mid-handler, which raises no error to report.</p>
+      <table cellpadding="6" style="border-collapse:collapse;font-family:monospace;font-size:12px">
+        <tr style="background:#f3f4f6;text-align:left">
+          <th>Event</th><th>Type</th><th>Status</th><th>Attempts</th><th>Received</th><th>Last error</th>
+        </tr>
+        ${rowsHtml}
+      </table>
+      <p style="margin-top:16px">Fix the cause, then resend from the Stripe
+         dashboard rather than editing rows by hand.</p>
+    `,
+  });
+
+  return { stuck, failed, alerted: true };
 }
 
 function escapeAlertHtml(value) {
@@ -1314,4 +1413,7 @@ module.exports = {
   handlePaymentFailed,
   periodDateISO,
   invoiceSubscriptionId,
+
+  // Called by the daily cron sweep in cronManager
+  reportStuckWebhookEvents,
 };

@@ -43,15 +43,32 @@ delete process.env.STRIPE_WEBHOOK_FORCE_ERROR;
 const ledger = new Map();
 const sideEffects = [];   // anything a handler "wrote" - proves no duplicates
 
+const STALE_MS = 5 * 60 * 1000;
+
 function claim(eventId, type, livemode) {
   const existing = ledger.get(eventId);
   if (!existing) {
-    ledger.set(eventId, { event_id: eventId, type, livemode, status: 'processing', attempts: 1 });
+    ledger.set(eventId, {
+      event_id: eventId, type, livemode,
+      status: 'processing', attempts: 1, claimed_at: Date.now(),
+    });
     return { out_status: 'processing', out_attempts: 1 };
   }
+
   existing.attempts += 1;
-  if (!['succeeded', 'ignored'].includes(existing.status)) existing.status = 'processing';
-  return { out_status: existing.status, out_attempts: existing.attempts };
+
+  if (['succeeded', 'ignored'].includes(existing.status)) {
+    return { out_status: existing.status, out_attempts: existing.attempts };
+  }
+
+  // 'in_flight' is a decision, never a stored status - matching the plpgsql.
+  if (existing.status === 'processing' && Date.now() - existing.claimed_at < STALE_MS) {
+    return { out_status: 'in_flight', out_attempts: existing.attempts };
+  }
+
+  existing.status = 'processing';
+  existing.claimed_at = Date.now();
+  return { out_status: 'processing', out_attempts: existing.attempts };
 }
 
 const fakeSupabase = {
@@ -190,6 +207,27 @@ const forceFailure = (on) => {
   t('NO second write from the duplicate', sideEffects.length === 0);
   t('attempts still counts the duplicate delivery', ledger.get('evt_fail').attempts === 4);
   t('status stays succeeded', ledger.get('evt_fail').status === 'succeeded');
+
+  // ---------------------------------- concurrency: a mid-flight event gets 409
+  // The previous claim returned 'processing' to a second delivery arriving while
+  // the first was still running, so BOTH executed. For
+  // checkout.session.completed that means two groups for one payment.
+  ledger.set('evt_busy', {
+    event_id: 'evt_busy', type: 'customer.subscription.deleted', livemode: false,
+    status: 'processing', attempts: 1, claimed_at: Date.now(),
+  });
+  sideEffects.length = 0;
+  const busy = await deliver(makeEvent('evt_busy', 'customer.subscription.deleted'));
+  t('a concurrent delivery gets 409, not 200', busy.status === 409);
+  t('and the handler does NOT run concurrently', sideEffects.length === 0);
+  t('and in_flight is never stored', ledger.get('evt_busy').status === 'processing');
+
+  // a handler that died mid-flight must still be recoverable
+  ledger.get('evt_busy').claimed_at = Date.now() - (6 * 60 * 1000);
+  sideEffects.length = 0;
+  const staleRetry = await deliver(makeEvent('evt_busy', 'customer.subscription.deleted'));
+  t('a stale processing row is reclaimed after the window', staleRetry.status === 200);
+  t('and the work then runs', sideEffects.length > 0);
 
   // ------------------------------------------ 4. unknown type does not storm
   const unknown = await deliver(makeEvent('evt_unknown', 'customer.discount.created'));

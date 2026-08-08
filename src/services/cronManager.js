@@ -149,6 +149,30 @@ class CronManager {
       }
     );
 
+    // 4c. Stripe webhook ledger sweep - Daily at 8:00 AM
+    //
+    // A 'failed' row means Stripe gave up, or is still retrying and the first
+    // alert went unread. A row stuck in 'processing' means a delivery claimed
+    // the event and never returned - the process was killed mid-handler, which
+    // raises no error and so reaches no error path. Nothing else surfaces
+    // either state; before this, a payment event could sit unfinished forever.
+    this.scheduleJob(
+      'stripe-webhook-sweep',
+      '0 8 * * *', // Every day at 8:00 AM
+      async () => {
+        logger.info('[CRON] Sweeping Stripe webhook ledger...');
+        try {
+          const stripeController = require('../controllers/stripe.controller');
+          const stats = await stripeController.reportStuckWebhookEvents();
+          logger.info('[CRON] Stripe webhook sweep completed:', stats);
+          return { success: true, stats };
+        } catch (error) {
+          logger.error('[CRON] Stripe webhook sweep failed:', error);
+          return { success: false, error: error.message };
+        }
+      }
+    );
+
     // 5. S3 Cleanup - Monthly on the 1st at 4:00 AM
     this.scheduleJob(
       'cleanup-s3-backups',
